@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SONOFF Configuration</title>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="index.css" />
+        <script src="jquery-1.12.3.min.js"></script>
+        <script>
+
+            $(function() {
+
+                $("#config").submit(function(event) {
+                    $(":submit").prop("value", "Wait...").attr("disabled", true);
+                    $.ajax({
+                        'method': 'POST',
+                        'url': '/save',
+                        'dataType': 'json',
+                        'data': $(this).serializeArray()
+                    }).done(function(data) {
+                        if (data.ip) $("span.ip").html(data.ip);
+                        if (data.network) $("span.network").html(data.network);
+                        if (data.status) $("span.status").html(data.status);
+                        $(":submit").prop("value", "Connect").removeAttr("disabled");
+                    }).fail(function() {
+                        $(":submit").prop("value", "Connect").removeAttr("disabled");
+                    });
+                    event.preventDefault();
+                });
+
+            });
+
+        </script>
+    </head>
+    <body>
+
+        <form id="config" action="/" method="post">
+
+            <header>
+                <h2>SONOFF Configuration</h2>
+                <div>This form lets you define the WIFI network this SONOFF should try to join.</div>
+            </header>
+
+            <div>
+                <p>Connection: <span class="status">{status}</span></p>
+                <p>Network: <span class="network">{network}</span> (<span class="ip">{ip}</span>)</p>
+            </div>
+
+            <div>
+                <label class="desc" for="ssid0">Network SSID 0</label>
+                <div>
+                    <input id="ssid0" name="ssid0" type="text" class="field text fn" value="{ssid0}" size="8" tabindex="1">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="pass0">Network Password 0</label>
+                <div>
+                    <input id="pass0" name="pass0" type="text" spellcheck="false" value="{pass0}" maxlength="255" tabindex="2">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="ssid1">Network SSID 1</label>
+                <div>
+                    <input id="ssid1" name="ssid1" type="text" class="field text fn" value="{ssid1}" size="8" tabindex="3">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="pass1">Network Password 1</label>
+                <div>
+                    <input id="pass1" name="pass1" type="text" spellcheck="false" value="{pass1}" maxlength="255" tabindex="4">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="ssid2">Network SSID 2</label>
+                <div>
+                    <input id="ssid2" name="ssid2" type="text" class="field text fn" value="{ssid2}" size="8" tabindex="5">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="pass2">Network Password 2</label>
+                <div>
+                    <input id="pass2" name="pass2" type="text" spellcheck="false" value="{pass2}" maxlength="255" tabindex="6">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="mqtt_server">MQTT Server</label>
+                <div>
+                    <input id="mqtt_server" name="mqtt_server" type="text" class="field text fn" value="{mqtt_server}" size="8" tabindex="7">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="mqtt_port">MQTT Port</label>
+                <div>
+                    <input id="mqtt_port" name="mqtt_port" type="text" spellcheck="false" value="{mqtt_port}" maxlength="255" tabindex="8">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="mqtt_topic">MQTT Topic</label>
+                <div>
+                    <input id="mqtt_topic" name="mqtt_topic" type="text" class="field text fn" value="{mqtt_topic}" size="8" tabindex="9">
+                </div>
+            </div>
+
+            <div>
+                <div>
+                    <input id="submit" name="submit" type="submit" value="Connect">
+                </div>
+            </div>
+
+        </form>
+
+    </body>
+</html>
