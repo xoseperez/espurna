@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <PubSubClient.h>
+#include <DebounceEvent.h>
+#include <ArduinoOTA.h>
 #include "FS.h"
 
 // -----------------------------------------------------------------------------
@@ -31,20 +33,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG
 
+#define APP_NAME                "Espurna"
+#define MAX_VERSION             0
+#define MIN_VERSION             9
+#define APP_AUTHOR              "xose.perez@gmail.com"
+#define APP_WEBSITE             "http://tinkerman.cat"
+
+#define MODEL                   "SONOFF"
 #define BUTTON_PIN              0
 #define RELAY_PIN               12
 #define LED_PIN                 13
 
-#define DEBOUNCE_COUNTER_START  150
 #define AP_PASS                 "fibonacci"
+#define OTA_PASS                "fibonacci"
 #define BUFFER_SIZE             1024
 #define CONFIG_PATH             "/.config"
-
 #define WIFI_CONNECT_TIMEOUT    5000
-#define WIFI_RECONNECT_DELAY    30000
-
-#define MQTT_RECONNECT_DELAY    30000
-
+#define WIFI_RECONNECT_DELAY    5000
+#define MQTT_RECONNECT_DELAY    10000
 #define NETWORK_BUFFER          3
 
 // -----------------------------------------------------------------------------
@@ -55,9 +61,7 @@ ESP8266WebServer server(80);
 WiFiClient client;
 PubSubClient mqtt(client);
 
-bool relayOn = false;
-char identifier[] = "SONOFF_0000";
-bool identifierSet = false;
+char identifier[20] = {0};
 
 byte network = 0;
 String config_ssid[NETWORK_BUFFER];
@@ -68,6 +72,8 @@ String mqtt_port = "1883";
 
 char mqtt_subscribe_to[30];
 char mqtt_publish_to[30];
+
+DebounceEvent button1 = false;
 
 // -----------------------------------------------------------------------------
 // Relay
@@ -81,8 +87,6 @@ void switchRelayOn() {
         mqtt.publish(mqtt_publish_to, "1");
     }
     digitalWrite(RELAY_PIN, HIGH);
-    digitalWrite(LED_PIN, HIGH);
-    relayOn = true;
 }
 
 void switchRelayOff() {
@@ -93,12 +97,10 @@ void switchRelayOff() {
         mqtt.publish(mqtt_publish_to, "0");
     }
     digitalWrite(RELAY_PIN, LOW);
-    digitalWrite(LED_PIN, LOW);
-    relayOn = false;
 }
 
 void toggleRelay() {
-    if (relayOn) {
+    if (digitalRead(RELAY_PIN)) {
         switchRelayOff();
     } else {
         switchRelayOn();
@@ -292,15 +294,13 @@ void webServerLoop() {
 // -----------------------------------------------------------------------------
 
 char * getIdentifier() {
-    if (!identifierSet) {
+    if (identifier[0] == 0) {
         uint8_t mac[WL_MAC_ADDR_LENGTH];
         WiFi.softAPmacAddress(mac);
-        String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) + String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
-        macID.toUpperCase();
-        for (byte i=0; i<4; i++) {
-            identifier[7+i] = macID.charAt(i);
-        }
-        identifierSet = true;
+        String name = MODEL + String("_") + String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) + String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
+        name.toUpperCase();
+        byte length = std::min(20, (int) name.length() + 1);
+        name.toCharArray(identifier, length);
     }
     return identifier;
 }
@@ -327,6 +327,7 @@ void wifiSetup() {
         // Wait
         unsigned long timeout = millis() + WIFI_CONNECT_TIMEOUT;
         while (timeout > millis()) {
+            showStatus();
             if (WiFi.status() == WL_CONNECTED) break;
             delay(100);
         }
@@ -439,6 +440,7 @@ void mqttConnect() {
                 Serial.println(mqtt_subscribe_to);
             #endif
 
+            mqtt.publish(mqtt_publish_to, "HOLA");
             mqtt.subscribe(mqtt_subscribe_to);
 
 
@@ -538,45 +540,118 @@ bool loadConfig() {
 }
 
 // -----------------------------------------------------------------------------
-// Generic methods
+// OTA
+// -----------------------------------------------------------------------------
+
+void OTASetup() {
+
+    // Port defaults to 8266
+    ArduinoOTA.setPort(8266);
+
+    // Hostname defaults to esp8266-[ChipID]
+    ArduinoOTA.setHostname(getIdentifier());
+
+    // No authentication by default
+    ArduinoOTA.setPassword((const char *) OTA_PASS);
+
+    ArduinoOTA.onStart([]() {
+        #ifdef DEBUG
+            Serial.println("OTA - Start");
+        #endif
+    });
+
+    ArduinoOTA.onEnd([]() {
+        #ifdef DEBUG
+            Serial.println("OTA - End");
+        #endif
+    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        #ifdef DEBUG
+            Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+        #endif
+    });
+
+    ArduinoOTA.onError([](ota_error_t error) {
+        #ifdef DEBUG
+            Serial.printf("Error[%u]: ", error);
+            if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+            else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+            else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+            else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+            else if (error == OTA_END_ERROR) Serial.println("End Failed");
+        #endif
+    });
+
+    ArduinoOTA.begin();
+
+}
+
+void OTALoop() {
+    ArduinoOTA.handle();
+}
+
+// -----------------------------------------------------------------------------
+// Hardware (buttons, LEDs,...)
 // -----------------------------------------------------------------------------
 
 void hardwareSetup() {
     Serial.begin(115200);
     pinMode(RELAY_PIN, OUTPUT);
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
     pinMode(LED_PIN, OUTPUT);
-    SPIFFS.begin();
+    button1 = DebounceEvent(BUTTON_PIN);
 }
 
-void buttonLoop() {
-
-    static int lastButtonState = HIGH;
-    static int debounceCounter = 0;
-
-    if (debounceCounter > 0) {
-        if (debounceCounter == 1) {
-            int newButtonState = lastButtonState == HIGH ? LOW : HIGH;
-            if (newButtonState == LOW) {
-                toggleRelay();
-            }
-            lastButtonState = newButtonState;
-        }
-        debounceCounter--;
-
-    } else if (lastButtonState != digitalRead(BUTTON_PIN)) {
-        debounceCounter = DEBOUNCE_COUNTER_START;
+void blink(unsigned long delayOff, unsigned long delayOn) {
+    static unsigned long next = millis();
+    static bool status = HIGH;
+    if (next < millis()) {
+        status = !status;
+        digitalWrite(LED_PIN, status);
+        next += ((status) ? delayOff : delayOn);
     }
+}
 
+void showStatus() {
+    if (WiFi.status() == WL_CONNECTED) {
+        blink(5000, 500);
+    } else {
+        blink(500, 500);
+    }
+}
+
+void hardwareLoop() {
+    if (button1.loop()) {
+        if (!button1.pressed()) toggleRelay();
+    }
+    showStatus();
 }
 
 // -----------------------------------------------------------------------------
 // Booting
 // -----------------------------------------------------------------------------
 
+void welcome() {
+    Serial.println();
+    Serial.print(APP_NAME);
+    Serial.print(" ");
+    Serial.print(MAX_VERSION);
+    Serial.print(".");
+    Serial.println(MIN_VERSION);
+    Serial.println(APP_WEBSITE);
+    Serial.println(APP_AUTHOR);
+    Serial.println();
+    Serial.print("Device: ");
+    Serial.println(getIdentifier());
+    Serial.println();
+}
+
 void setup() {
     hardwareSetup();
+    SPIFFS.begin();
     delay(5000);
+    welcome();
+    OTASetup();
     switchRelayOff();
     loadConfig();
     wifiSetup();
@@ -585,9 +660,10 @@ void setup() {
 }
 
 void loop() {
+    OTALoop();
     wifiLoop();
     webServerLoop();
     mqttLoop();
-    buttonLoop();
+    hardwareLoop();
     delay(1);
 }

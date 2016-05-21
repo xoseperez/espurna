@@ -1,14 +1,14 @@
-# ITead Sonoff Custom Firmware
+# Espurna
 
-This is a custom C firmware for [ITead Sonoff][1] Smart WiFi Switch. This device
-has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3V3 transformer
-and a relay (GPIO12). It also features a button (GPIO0), a LED (GPIO13) and
-an unpopulated header you can use to reprogram it.
+Espurna ("spark" in Catalan) is a custom C firmware for [ITead Sonoff][1] Smart WiFi Switch.
+This device has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3V3 transformer
+and a relay (GPIO12). It also features a button (GPIO0), a LED (GPIO13) and an unpopulated header you can use to reprogram it.
 
 ## Features
 
 * WebServer for configuration and simple relay toggle
-* You can configure up to 3 WIFI networks
+* Flashing firmware Over-The-Air (OTA)
+* Up to 3 configurable WIFI networks
 * MQTT support with configurable host and topic
 * Manual switch ON/OFF with button
 * Visual status of the connection via the LED
@@ -22,24 +22,27 @@ in-line with the button. They are (from the button outwards):
 * RX
 * TX
 * GND
-* MTNS
+* GPIO14
 
 Last one is not necessary. Mind it's a **3V3 device**, if connected to 5V you will
 probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter
 flash mode you have to hold the button pressed while powering on the board, then
 you can realease it again.
 
-## Firmware
-
 The project is ready to be build using [PlatformIO][2].
 Please refer to their web page for instructions on how to install the builder.
 Once installed:
 
 ```bash
-> platformio init -b esp01_1m
-> platformio run
-> platformio run --target upload
-> platformio run --target uploadfs
+> platformio run --target upload -e wire
+> platformio run --target uploadfs -e wire
+```
+
+Once you have flashed it you can flash it again over-the-air using the ```ota``` environment:
+
+```bash
+> platformio run --target upload -e ota
+> platformio run --target uploadfs -e ota
 ```
 
 Library dependencies are automatically managed via PlatformIO Library Manager.
