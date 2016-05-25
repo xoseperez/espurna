@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <PubSubClient.h>
 #include <DebounceEvent.h>
 #include <ArduinoOTA.h>
+#include <RemoteReceiver.h>
 #include "FS.h"
 
 // -----------------------------------------------------------------------------
@@ -32,6 +33,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 #define DEBUG
+
+#define ENABLE_RF               1
+#define ENABLE_OTA              1
+#define ENABLE_MQTT             1
+#define ENABLE_WEBSERVER        1
 
 #define APP_NAME                "Espurna"
 #define MAX_VERSION             0
@@ -44,59 +50,85 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define RELAY_PIN               12
 #define LED_PIN                 13
 
-#define AP_PASS                 "fibonacci"
-#define OTA_PASS                "fibonacci"
-#define BUFFER_SIZE             1024
+#define ADMIN_PASS              "fibonacci"
 #define CONFIG_PATH             "/.config"
 #define WIFI_CONNECT_TIMEOUT    5000
 #define WIFI_RECONNECT_DELAY    5000
 #define MQTT_RECONNECT_DELAY    10000
 #define NETWORK_BUFFER          3
+#define BUFFER_SIZE             1024
+
+#define RF_PIN                  14
+#define RF_CHANNEL              31
+#define RF_DEVICE               1
+
+#define MQTT_RETAIN             true
 
 // -----------------------------------------------------------------------------
 // Globals
 // -----------------------------------------------------------------------------
-
-ESP8266WebServer server(80);
-WiFiClient client;
-PubSubClient mqtt(client);
 
 char identifier[20] = {0};
 
 byte network = 0;
 String config_ssid[NETWORK_BUFFER];
 String config_pass[NETWORK_BUFFER];
-String mqtt_server = "192.168.1.100";
-String mqtt_topic = "/test/switch/{identifier}";
-String mqtt_port = "1883";
-
-char mqtt_subscribe_to[30];
-char mqtt_publish_to[30];
 
 DebounceEvent button1 = false;
+
+#if ENABLE_WEBSERVER
+    ESP8266WebServer server(80);
+#endif
+
+#if ENABLE_MQTT
+    WiFiClient client;
+    PubSubClient mqtt(client);
+    String mqtt_server = "192.168.1.100";
+    String mqtt_topic = "/test/switch/{identifier}";
+    String mqtt_port = "1883";
+    char mqtt_subscribe_status[30];
+    char mqtt_publish_status[30];
+    char mqtt_publish_ip[30];
+#endif
+
+#if ENABLE_RF
+    unsigned long rf_code = 0;
+    unsigned long rf_code_on = 0;
+    unsigned long rf_code_off = 0;
+    String rf_channel = String(RF_CHANNEL);
+    String rf_device = String(RF_DEVICE);
+#endif
 
 // -----------------------------------------------------------------------------
 // Relay
 // -----------------------------------------------------------------------------
 
 void switchRelayOn() {
-    #ifdef DEBUG
-        Serial.println("Turning the relay ON");
-    #endif
-    if (mqtt.connected()) {
-        mqtt.publish(mqtt_publish_to, "1");
+    if (!digitalRead(RELAY_PIN)) {
+        #ifdef DEBUG
+            Serial.println("Turning the relay ON");
+        #endif
+        #if ENABLE_MQTT
+            if (mqtt.connected()) {
+                mqtt.publish(mqtt_publish_status, "1", MQTT_RETAIN);
+            }
+        #endif
+        digitalWrite(RELAY_PIN, HIGH);
     }
-    digitalWrite(RELAY_PIN, HIGH);
 }
 
 void switchRelayOff() {
-    #ifdef DEBUG
-        Serial.println("Turning the relay OFF");
-    #endif
-    if (mqtt.connected()) {
-        mqtt.publish(mqtt_publish_to, "0");
+    if (digitalRead(RELAY_PIN)) {
+        #ifdef DEBUG
+            Serial.println("Turning the relay OFF");
+        #endif
+        #if ENABLE_MQTT
+            if (mqtt.connected()) {
+                mqtt.publish(mqtt_publish_status, "0", MQTT_RETAIN);
+            }
+        #endif
+        digitalWrite(RELAY_PIN, LOW);
     }
-    digitalWrite(RELAY_PIN, LOW);
 }
 
 void toggleRelay() {
@@ -111,186 +143,213 @@ void toggleRelay() {
 // WebServer
 // -----------------------------------------------------------------------------
 
-String getContentType(String filename) {
-    if (server.hasArg("download")) return "application/octet-stream";
-    else if (filename.endsWith(".htm")) return "text/html";
-    else if (filename.endsWith(".html")) return "text/html";
-    else if (filename.endsWith(".css")) return "text/css";
-    else if (filename.endsWith(".js")) return "application/javascript";
-    else if (filename.endsWith(".png")) return "image/png";
-    else if (filename.endsWith(".gif")) return "image/gif";
-    else if (filename.endsWith(".jpg")) return "image/jpeg";
-    else if (filename.endsWith(".ico")) return "image/x-icon";
-    else if (filename.endsWith(".xml")) return "text/xml";
-    else if (filename.endsWith(".pdf")) return "application/x-pdf";
-    else if (filename.endsWith(".zip")) return "application/x-zip";
-    else if (filename.endsWith(".gz")) return "application/x-gzip";
-    return "text/plain";
-}
+#if ENABLE_WEBSERVER
 
-void handleRelayOn() {
-    #ifdef DEBUG
-        Serial.println("Request: /on");
-    #endif
-    switchRelayOn();
-    server.send(200, "text/plain", "ON");
-}
+    String getContentType(String filename) {
+        if (server.hasArg("download")) return "application/octet-stream";
+        else if (filename.endsWith(".htm")) return "text/html";
+        else if (filename.endsWith(".html")) return "text/html";
+        else if (filename.endsWith(".css")) return "text/css";
+        else if (filename.endsWith(".js")) return "application/javascript";
+        else if (filename.endsWith(".png")) return "image/png";
+        else if (filename.endsWith(".gif")) return "image/gif";
+        else if (filename.endsWith(".jpg")) return "image/jpeg";
+        else if (filename.endsWith(".ico")) return "image/x-icon";
+        else if (filename.endsWith(".xml")) return "text/xml";
+        else if (filename.endsWith(".pdf")) return "application/x-pdf";
+        else if (filename.endsWith(".zip")) return "application/x-zip";
+        else if (filename.endsWith(".gz")) return "application/x-gzip";
+        return "text/plain";
+    }
 
-void handleRelayOff() {
-    #ifdef DEBUG
-        Serial.println("Request: /off");
-    #endif
-    switchRelayOff();
-    server.send(200, "text/plain", "OFF");
-}
+    void handleRelayOn() {
+        #ifdef DEBUG
+            Serial.println("Request: /on");
+        #endif
+        switchRelayOn();
+        server.send(200, "text/plain", "ON");
+    }
 
-bool handleFileRead(String path) {
+    void handleRelayOff() {
+        #ifdef DEBUG
+            Serial.println("Request: /off");
+        #endif
+        switchRelayOff();
+        server.send(200, "text/plain", "OFF");
+    }
 
-    #ifdef DEBUG
-        Serial.println("Request: " + path);
-    #endif
+    bool handleFileRead(String path) {
 
-    if (path.endsWith("/")) path += "index.html";
-    String contentType = getContentType(path);
-    String pathWithGz = path + ".gz";
+        #ifdef DEBUG
+            Serial.println("Request: " + path);
+        #endif
 
-    if (SPIFFS.exists(pathWithGz)) path = pathWithGz;
-    if (SPIFFS.exists(path)) {
-        File file = SPIFFS.open(path, "r");
-        size_t sent = server.streamFile(file, contentType);
-        size_t contentLength = file.size();
+        if (path.endsWith("/")) path += "index.html";
+        String contentType = getContentType(path);
+        String pathWithGz = path + ".gz";
+
+        if (SPIFFS.exists(pathWithGz)) path = pathWithGz;
+        if (SPIFFS.exists(path)) {
+            File file = SPIFFS.open(path, "r");
+            size_t sent = server.streamFile(file, contentType);
+            size_t contentLength = file.size();
+            file.close();
+            return true;
+        }
+
+        return false;
+
+    }
+
+    void handleHome() {
+
+        #ifdef DEBUG
+            Serial.println("Request: /index.html");
+        #endif
+
+        String filename = "/index.html";
+        String content = "";
+        char buffer[BUFFER_SIZE];
+
+        // Read file in chunks
+        File file = SPIFFS.open(filename, "r");
+        int size = file.size();
+        while (size > 0) {
+            size_t len = std::min(BUFFER_SIZE-1, size);
+            file.read((uint8_t *) buffer, len);
+            buffer[len] = 0;
+            content += buffer;
+            size -= len;
+        }
         file.close();
-        return true;
+
+        // Replace placeholders
+        content.replace("{appname}", APP_NAME);
+        content.replace("{appversion}", String(MAX_VERSION) + String(".") + String(MIN_VERSION));
+        content.replace("{ssid0}", config_ssid[0]);
+        content.replace("{pass0}", config_pass[0]);
+        content.replace("{ssid1}", config_ssid[1]);
+        content.replace("{pass1}", config_pass[1]);
+        content.replace("{ssid2}", config_ssid[2]);
+        content.replace("{pass2}", config_pass[2]);
+        #if ENABLE_MQTT
+            content.replace("{mqtt_server}", mqtt_server);
+            content.replace("{mqtt_port}", mqtt_port);
+            content.replace("{mqtt_topic}", mqtt_topic);
+        #endif
+        #if ENABLE_RF
+            content.replace("{rf_channel}", rf_channel);
+            content.replace("{rf_device}", rf_device);
+        #endif
+
+        // Serve content
+        String contentType = getContentType(filename);
+        server.send(200, contentType, content);
+
     }
 
-    return false;
+    void handleSave() {
 
-}
+        #ifdef DEBUG
+            Serial.println("Request: /save");
+        #endif
 
-void handleHome() {
+        config_ssid[0] = server.arg("ssid0");
+        config_pass[0] = server.arg("pass0");
+        config_ssid[1] = server.arg("ssid1");
+        config_pass[1] = server.arg("pass1");
+        config_ssid[2] = server.arg("ssid2");
+        config_pass[2] = server.arg("pass2");
+        #if ENABLE_MQTT
+            mqtt_server = server.arg("mqtt_server");
+            mqtt_port = server.arg("mqtt_port");
+            mqtt_topic = server.arg("mqtt_topic");
+        #endif
+        #if ENABLE_RF
+            rf_channel = server.arg("rf_channel");
+            rf_device = server.arg("rf_device");
+        #endif
 
-    #ifdef DEBUG
-        Serial.println("Request: /index.html");
-    #endif
+        server.send(202, "text/json", "{}");
 
-    String filename = "/index.html";
-    String content = "";
-    char buffer[BUFFER_SIZE];
+        saveConfig();
+        #if ENABLE_RF
+            rfBuildCodes();
+        #endif
+        network = 0;
+        wifiSetup(true);
 
-    // Read file in chunks
-    File file = SPIFFS.open(filename, "r");
-    int size = file.size();
-    while (size > 0) {
-        size_t len = std::min(BUFFER_SIZE-1, size);
-        file.read((uint8_t *) buffer, len);
-        buffer[len] = 0;
-        content += buffer;
-        size -= len;
     }
-    file.close();
 
-    // Replace placeholders
-    if (WiFi.status() == WL_CONNECTED) {
-        content.replace("{status}", "Client + Acces Point");
-        content.replace("{network}", config_ssid[network]);
-        content.replace("{ip}", WiFi.localIP().toString());
-    } else {
-        content.replace("{status}", "Acces Point");
-        content.replace("{network}", "");
-        content.replace("{ip}", "");
-    }
-    content.replace("{ssid0}", config_ssid[0]);
-    content.replace("{pass0}", config_pass[0]);
-    content.replace("{ssid1}", config_ssid[1]);
-    content.replace("{pass1}", config_pass[1]);
-    content.replace("{ssid2}", config_ssid[2]);
-    content.replace("{pass2}", config_pass[2]);
-    content.replace("{mqtt_server}", mqtt_server);
-    content.replace("{mqtt_port}", mqtt_port);
-    content.replace("{mqtt_topic}", mqtt_topic);
+    void handleStatus() {
 
-    // Serve content
-    String contentType = getContentType(filename);
-    server.send(200, contentType, content);
+        #ifdef DEBUG
+            //Serial.println("Request: /status");
+        #endif
 
-}
-
-void handleSave() {
-
-    #ifdef DEBUG
-        Serial.println("Request: /save");
-    #endif
-
-    config_ssid[0] = server.arg("ssid0");
-    config_pass[0] = server.arg("pass0");
-    config_ssid[1] = server.arg("ssid1");
-    config_pass[1] = server.arg("pass1");
-    config_ssid[2] = server.arg("ssid2");
-    config_pass[2] = server.arg("pass2");
-    mqtt_server = server.arg("mqtt_server");
-    mqtt_port = server.arg("mqtt_port");
-    mqtt_topic = server.arg("mqtt_topic");
-
-    saveConfig();
-    network = 0;
-    wifiSetup();
-    delay(100);
-
-    String output = "{";
-    output += "\"status\": \"";
-    if (WiFi.status() == WL_CONNECTED) {
-        output += "Client + Acces Point";
-    } else {
-        output += "Acces Point";
-    }
-    output += "\", \"ip\": \"";
-    if (WiFi.status() == WL_CONNECTED) {
-        output += WiFi.localIP().toString();
-    }
-    output += "\" }";
-    server.send(200, "text/json", output);
-
-}
-
-void webServerSetup() {
-
-    // Relay control
-    server.on("/on", HTTP_GET, handleRelayOn);
-    server.on("/off", HTTP_GET, handleRelayOff);
-
-    // Configuration page
-    server.on("/save", HTTP_POST, handleSave);
-    server.on("/", HTTP_GET, handleHome);
-    server.on("/index.html", HTTP_GET, handleHome);
-
-    // Anything else
-    server.onNotFound([]() {
-
-        // Hidden files
-        if (server.uri().startsWith("/.")) {
-            server.send(403, "text/plain", "Forbidden");
-            return;
+        String output = "{ ";
+        output += "\"wifi\": ";
+        output += (WiFi.status() == WL_CONNECTED) ? "1": "0";
+        if ((WiFi.status() == WL_CONNECTED)) {
+            output += ", \"network\": \"";
+            output += WiFi.SSID();
+            output += "\", \"ip\": \"";
+            output += WiFi.localIP().toString();
+            output += "\"";
         }
+        #if ENABLE_MQTT
+            output += ", \"mqtt\": ";
+            output += (mqtt.connected()) ? "1": "0";
+        #endif
+        output += ", \"relay\": ";
+        output += (digitalRead(RELAY_PIN)) ? "1": "0";
+        output += " }";
 
-        // Existing files in SPIFFS
-        if (!handleFileRead(server.uri())) {
-            server.send(404, "text/plain", "NotFound");
-            return;
-        }
+        server.send(200, "text/json", output);
+    }
 
-    });
+    void webServerSetup() {
 
-    // Run server
-    server.begin();
+        // Relay control
+        server.on("/relay/on", HTTP_GET, handleRelayOn);
+        server.on("/relay/off", HTTP_GET, handleRelayOff);
 
-}
+        // Configuration page
+        server.on("/save", HTTP_POST, handleSave);
+        server.on("/status", HTTP_GET, handleStatus);
+        server.on("/", HTTP_GET, handleHome);
+        server.on("/index.html", HTTP_GET, handleHome);
 
-void webServerLoop() {
-    server.handleClient();
-}
+        // Anything else
+        server.onNotFound([]() {
+
+            // Hidden files
+            if (server.uri().startsWith("/.")) {
+                server.send(403, "text/plain", "Forbidden");
+                return;
+            }
+
+            // Existing files in SPIFFS
+            if (!handleFileRead(server.uri())) {
+                server.send(404, "text/plain", "NotFound");
+                return;
+            }
+
+        });
+
+        // Run server
+        server.begin();
+
+    }
+
+    void webServerLoop() {
+        server.handleClient();
+    }
+
+#endif
 
 // -----------------------------------------------------------------------------
-// Wifi modes
+// Wifi
 // -----------------------------------------------------------------------------
 
 char * getIdentifier() {
@@ -305,13 +364,35 @@ char * getIdentifier() {
     return identifier;
 }
 
-void wifiSetup() {
+void wifiSetup(bool force) {
 
-    // Disconnect MQTT
-    if (mqtt.connected()) mqtt.disconnect();
+    if ((!force) && (WiFi.status() == WL_CONNECTED)) return;
+
+    #if ENABLE_MQTT
+        if (mqtt.connected()) mqtt.disconnect();
+    #endif
+
+    #if ENABLE_RF
+        RemoteReceiver::disable();
+    #endif
+
+    WiFi.mode(WIFI_AP_STA);
+    #ifdef DEBUG
+        WiFi.printDiag(Serial);
+    #endif
+
+    // SoftAP mode
+    WiFi.softAP(getIdentifier(), ADMIN_PASS);
+    #ifdef DEBUG
+        Serial.print("AP Mode: ");
+        Serial.print(getIdentifier());
+        Serial.print("/");
+        Serial.print(ADMIN_PASS);
+        Serial.print(", IP address: ");
+        Serial.println(WiFi.softAPIP());
+    #endif
 
     // STA mode
-    WiFi.mode(WIFI_AP_STA);
     if (config_ssid[network].length() > 0) {
 
         char ssid[config_ssid[network].length()+1];
@@ -341,6 +422,7 @@ void wifiSetup() {
         #endif
 
         if (WiFi.status() == WL_CONNECTED) {
+            WiFi.setAutoConnect(true);
             #ifdef DEBUG
                 Serial.println(WiFi.localIP());
             #endif
@@ -353,16 +435,8 @@ void wifiSetup() {
 
     }
 
-    if (WiFi.status() != WL_CONNECTED) WiFi.mode(WIFI_AP);
-    WiFi.softAP(getIdentifier(), AP_PASS);
-
-    #ifdef DEBUG
-        Serial.print("AP Mode: ");
-        Serial.print(getIdentifier());
-        Serial.print("/");
-        Serial.print(AP_PASS);
-        Serial.print(", IP address: ");
-        Serial.println(WiFi.softAPIP());
+    #if ENABLE_RF
+        RemoteReceiver::enable();
     #endif
 
 }
@@ -371,7 +445,10 @@ void wifiLoop() {
     static unsigned long timeout = millis();
     if (WiFi.status() != WL_CONNECTED) {
         if (timeout < millis()) {
-            wifiSetup();
+            #if ENABLE_RF
+                //RemoteReceiver::disable();
+            #endif
+            wifiSetup(false);
             timeout = millis() + WIFI_RECONNECT_DELAY;
         }
     }
@@ -381,97 +458,169 @@ void wifiLoop() {
 // MQTT
 // -----------------------------------------------------------------------------
 
-void buildTopics() {
+#if ENABLE_MQTT
 
-    // Replace identifier
-    String base = mqtt_topic;
-    base.replace("{identifier}", getIdentifier());
+    void buildTopics() {
 
-    // Get publish topic
-    base.toCharArray(mqtt_publish_to, base.length()+1);
-    mqtt_publish_to[base.length()+1] = 0;
+        String tmp;
 
-    // Get subscribe topic
-    String subscribe = base + "/set";
-    subscribe.toCharArray(mqtt_subscribe_to, subscribe.length()+1);
-    mqtt_subscribe_to[subscribe.length()+1] = 0;
+        // Replace identifier
+        String base = mqtt_topic;
+        base.replace("{identifier}", getIdentifier());
 
-}
+        // Get publish status topic
+        base.toCharArray(mqtt_publish_status, base.length()+1);
+        mqtt_publish_status[base.length()+1] = 0;
 
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+        // Get publish ip topic
+        tmp = base + "/ip";
+        tmp.toCharArray(mqtt_publish_ip, tmp.length()+1);
+        mqtt_publish_ip[tmp.length()+1] = 0;
 
-    #ifdef DEBUG
-        Serial.print("MQTT message ");
-        Serial.print(topic);
-        Serial.print(" => ");
-        for (int i = 0; i < length; i++) {
-            Serial.print((char)payload[i]);
-        }
-        Serial.println();
-    #endif
+        // Get subscribe status topic
+        tmp = base + "/set";
+        tmp.toCharArray(mqtt_subscribe_status, tmp.length()+1);
+        mqtt_subscribe_status[tmp.length()+1] = 0;
 
-    if ((char)payload[0] == '1') {
-        switchRelayOn();
-    } else {
-        switchRelayOff();
     }
 
-}
-
-void mqttConnect() {
-
-    if (!mqtt.connected()) {
-
-        char buffer[mqtt_server.length()+1];
-        mqtt_server.toCharArray(buffer, mqtt_server.length()+1);
-        mqtt.setServer(buffer, mqtt_port.toInt());
+    void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
         #ifdef DEBUG
-            Serial.print("Connecting to MQTT broker: ");
+            Serial.print("MQTT message ");
+            Serial.print(topic);
+            Serial.print(" => ");
+            for (int i = 0; i < length; i++) {
+                Serial.print((char)payload[i]);
+            }
+            Serial.println();
         #endif
 
-        if (mqtt.connect(getIdentifier())) {
-
-            buildTopics();
-
-            #ifdef DEBUG
-                Serial.println("connected!");
-                Serial.print("Subscribing to ");
-                Serial.println(mqtt_subscribe_to);
-            #endif
-
-            mqtt.publish(mqtt_publish_to, "HOLA");
-            mqtt.subscribe(mqtt_subscribe_to);
-
-
+        if ((char)payload[0] == '1') {
+            switchRelayOn();
         } else {
-
-            #ifdef DEBUG
-                Serial.print("failed, rc=");
-                Serial.println(mqtt.state());
-            #endif
-
+            switchRelayOff();
         }
+
     }
 
-}
+    void mqttConnect() {
 
-void mqttSetup() {
-    mqtt.setCallback(mqttCallback);
-}
-
-void mqttLoop() {
-    static unsigned long timeout = millis();
-    if (WiFi.status() == WL_CONNECTED) {
         if (!mqtt.connected()) {
-            if (timeout < millis()) {
-                mqttConnect();
-                timeout = millis() + MQTT_RECONNECT_DELAY;
+
+            char buffer[mqtt_server.length()+1];
+            mqtt_server.toCharArray(buffer, mqtt_server.length()+1);
+            mqtt.setServer(buffer, mqtt_port.toInt());
+
+            #ifdef DEBUG
+                Serial.print("Connecting to MQTT broker: ");
+            #endif
+
+            if (mqtt.connect(getIdentifier())) {
+
+                buildTopics();
+
+                #ifdef DEBUG
+                    Serial.println("connected!");
+                    Serial.print("Subscribing to ");
+                    Serial.println(mqtt_subscribe_status);
+                #endif
+
+                String ipString = WiFi.localIP().toString();
+                char ip[ipString.length()+1];
+                ipString.toCharArray(ip, ipString.length()+1);
+                mqtt.publish(mqtt_publish_ip, ip, MQTT_RETAIN);
+                mqtt.subscribe(mqtt_subscribe_status);
+
+
+            } else {
+
+                #ifdef DEBUG
+                    Serial.print("failed, rc=");
+                    Serial.println(mqtt.state());
+                #endif
+
             }
         }
-        if (mqtt.connected()) mqtt.loop();
+
     }
-}
+
+    void mqttSetup() {
+        mqtt.setCallback(mqttCallback);
+    }
+
+    void mqttLoop() {
+        static unsigned long timeout = millis();
+        if (WiFi.status() == WL_CONNECTED) {
+            if (!mqtt.connected()) {
+                if (timeout < millis()) {
+                    mqttConnect();
+                    timeout = millis() + MQTT_RECONNECT_DELAY;
+                }
+            }
+            if (mqtt.connected()) mqtt.loop();
+        }
+    }
+
+#endif
+
+// -----------------------------------------------------------------------------
+// RF
+// -----------------------------------------------------------------------------
+
+#if ENABLE_RF
+
+    void rfLoop() {
+        if (rf_code == 0) return;
+        Serial.print("RF code: ");
+        Serial.println(rf_code);
+        if (rf_code == rf_code_on ) switchRelayOn();
+        if (rf_code == rf_code_off ) switchRelayOff();
+        rf_code = 0;
+    }
+
+    void rfBuildCodes() {
+
+        unsigned long code = 0;
+
+        // channel
+        unsigned int channel = rf_channel.toInt();
+        for (byte i = 0; i < 5; i++) {
+            code *= 3;
+            if (channel & 1) code += 1;
+            channel >>= 1;
+        }
+
+        // device
+        unsigned int device = rf_device.toInt();
+        for (byte i = 0; i < 5; i++) {
+            code *= 3;
+            if (device != i) code += 2;
+        }
+
+        // status
+        code *= 9;
+        rf_code_off = code + 2;
+        rf_code_on = code + 6;
+
+        Serial.print("RF code ON: ");
+        Serial.println(rf_code_on);
+        Serial.print("RF code OFF: ");
+        Serial.println(rf_code_off);
+
+    }
+
+    void rfCallback(unsigned long code, unsigned int period) {
+        rf_code = code;
+    }
+
+    void rfSetup() {
+        rfBuildCodes();
+        RemoteReceiver::init(RF_PIN, 3, rfCallback);
+        RemoteReceiver::enable();
+    }
+
+#endif
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -486,9 +635,15 @@ bool saveConfig() {
         file.println("pass1=" + config_pass[1]);
         file.println("ssid2=" + config_ssid[2]);
         file.println("pass2=" + config_pass[2]);
-        file.println("mqtt_server=" + mqtt_server);
-        file.println("mqtt_port=" + mqtt_port);
-        file.println("mqtt_topic=" + mqtt_topic);
+        #if ENABLE_MQTT
+            file.println("mqtt_server=" + mqtt_server);
+            file.println("mqtt_port=" + mqtt_port);
+            file.println("mqtt_topic=" + mqtt_topic);
+        #endif
+        #if ENABLE_RF
+            file.println("rf_channel=" + rf_channel);
+            file.println("rf_device=" + rf_device);
+        #endif
         file.close();
         return true;
     }
@@ -525,9 +680,15 @@ bool loadConfig() {
             else if (line.startsWith("pass1=")) config_pass[1] = line.substring(6);
             else if (line.startsWith("ssid2=")) config_ssid[2] = line.substring(6);
             else if (line.startsWith("pass2=")) config_pass[2] = line.substring(6);
-            else if (line.startsWith("mqtt_server=")) mqtt_server = line.substring(12);
-            else if (line.startsWith("mqtt_port=")) mqtt_port = line.substring(10);
-            else if (line.startsWith("mqtt_topic=")) mqtt_topic = line.substring(11);
+            #if ENABLE_MQTT
+                else if (line.startsWith("mqtt_server=")) mqtt_server = line.substring(12);
+                else if (line.startsWith("mqtt_port=")) mqtt_port = line.substring(10);
+                else if (line.startsWith("mqtt_topic=")) mqtt_topic = line.substring(11);
+            #endif
+            #if ENABLE_RF
+                else if (line.startsWith("rf_channel=")) rf_channel = line.substring(11);
+                else if (line.startsWith("rf_device=")) rf_device = line.substring(10);
+            #endif
             if (end < 0) break;
             start = end + 1;
             end = content.indexOf("\n", start);
@@ -543,53 +704,63 @@ bool loadConfig() {
 // OTA
 // -----------------------------------------------------------------------------
 
-void OTASetup() {
+#if ENABLE_OTA
 
-    // Port defaults to 8266
-    ArduinoOTA.setPort(8266);
+    void OTASetup() {
 
-    // Hostname defaults to esp8266-[ChipID]
-    ArduinoOTA.setHostname(getIdentifier());
+        // Port defaults to 8266
+        ArduinoOTA.setPort(8266);
 
-    // No authentication by default
-    ArduinoOTA.setPassword((const char *) OTA_PASS);
+        // Hostname defaults to esp8266-[ChipID]
+        ArduinoOTA.setHostname(getIdentifier());
 
-    ArduinoOTA.onStart([]() {
-        #ifdef DEBUG
-            Serial.println("OTA - Start");
-        #endif
-    });
+        // No authentication by default
+        ArduinoOTA.setPassword((const char *) ADMIN_PASS);
 
-    ArduinoOTA.onEnd([]() {
-        #ifdef DEBUG
-            Serial.println("OTA - End");
-        #endif
-    });
+        ArduinoOTA.onStart([]() {
+            #ifdef ENABLE_RF
+                RemoteReceiver::disable();
+            #endif
+            #ifdef DEBUG
+                Serial.println("OTA - Start");
+            #endif
+        });
 
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        #ifdef DEBUG
-            Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-        #endif
-    });
+        ArduinoOTA.onEnd([]() {
+            #ifdef DEBUG
+                Serial.println("OTA - End");
+            #endif
+            #ifdef ENABLE_RF
+                RemoteReceiver::enable();
+            #endif
+        });
 
-    ArduinoOTA.onError([](ota_error_t error) {
-        #ifdef DEBUG
-            Serial.printf("Error[%u]: ", error);
-            if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-            else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-            else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-            else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-            else if (error == OTA_END_ERROR) Serial.println("End Failed");
-        #endif
-    });
+        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+            #ifdef DEBUG
+                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+            #endif
+        });
 
-    ArduinoOTA.begin();
+        ArduinoOTA.onError([](ota_error_t error) {
+            #ifdef DEBUG
+                Serial.printf("Error[%u]: ", error);
+                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+                else if (error == OTA_END_ERROR) Serial.println("End Failed");
+            #endif
+        });
 
-}
+        ArduinoOTA.begin();
 
-void OTALoop() {
-    ArduinoOTA.handle();
-}
+    }
+
+    void OTALoop() {
+        ArduinoOTA.handle();
+    }
+
+#endif
 
 // -----------------------------------------------------------------------------
 // Hardware (buttons, LEDs,...)
@@ -599,7 +770,10 @@ void hardwareSetup() {
     Serial.begin(115200);
     pinMode(RELAY_PIN, OUTPUT);
     pinMode(LED_PIN, OUTPUT);
+    pinMode(RF_PIN, INPUT_PULLUP);
     button1 = DebounceEvent(BUTTON_PIN);
+    //switchRelayOff();
+    SPIFFS.begin();
 }
 
 void blink(unsigned long delayOff, unsigned long delayOn) {
@@ -647,23 +821,44 @@ void welcome() {
 }
 
 void setup() {
+
     hardwareSetup();
-    SPIFFS.begin();
     delay(5000);
     welcome();
-    OTASetup();
-    switchRelayOff();
+
+    #if ENABLE_OTA
+        OTASetup();
+    #endif
     loadConfig();
-    wifiSetup();
-    webServerSetup();
-    mqttSetup();
+    wifiSetup(false);
+    #if ENABLE_WEBSERVER
+        webServerSetup();
+    #endif
+    #if ENABLE_MQTT
+        mqttSetup();
+    #endif
+    #if ENABLE_RF
+        rfSetup();
+    #endif
+
 }
 
 void loop() {
-    OTALoop();
+
+    #if ENABLE_OTA
+        OTALoop();
+    #endif
     wifiLoop();
-    webServerLoop();
-    mqttLoop();
+    #if ENABLE_MQTT
+        mqttLoop();
+    #endif
+    #if ENABLE_RF
+        rfLoop();
+    #endif
+    #if ENABLE_WEBSERVER
+        webServerLoop();
+    #endif
     hardwareLoop();
-    delay(1);
+    delay(10);
+
 }

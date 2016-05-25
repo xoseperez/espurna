@@ -1,0 +1,12 @@
+RemoteSwitch	KEYWORD1
+ActionSwitch	KEYWORD1
+BlokkerSwitch	KEYWORD1
+KaKuSwitch	KEYWORD1
+sendTelegram	KEYWORD2
+sendSignal	KEYWORD2
+isSameCode	KEYWORD2
+RemoteReceiver	KEYWORD1
+init	KEYWORD2
+enable	KEYWORD2
+disable	KEYWORD2
+isReceiving	KEYWORD2

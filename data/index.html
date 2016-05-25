@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>SONOFF Configuration</title>
+        <title>{appname} {appversion} - Configuration</title>
         <meta charset="utf-8" />
         <link rel="stylesheet" href="index.css" />
         <script src="jquery-1.12.3.min.js"></script>
@@ -17,15 +17,28 @@
                         'dataType': 'json',
                         'data': $(this).serializeArray()
                     }).done(function(data) {
-                        if (data.ip) $("span.ip").html(data.ip);
-                        if (data.network) $("span.network").html(data.network);
-                        if (data.status) $("span.status").html(data.status);
                         $(":submit").prop("value", "Connect").removeAttr("disabled");
                     }).fail(function() {
                         $(":submit").prop("value", "Connect").removeAttr("disabled");
                     });
                     event.preventDefault();
                 });
+
+                function update() {
+                    $.ajax({
+                        'method': 'GET',
+                        'url': '/status',
+                        'dataType': 'json'
+                    }).done(function(data) {
+                        $("span.network").html(data.wifi ? data.network.toUpperCase() : "NOT CONNECTED");
+                        $("span.ip").html(data.wifi ? "("+data.ip+")" : "");
+                        $("span.mqtt").html(data.mqtt ? "CONNECTED" : "NOT CONNECTED");
+                        $("span.relay").html(data.relay ? "ON" : "OFF");
+                    });
+                }
+
+                update();
+                var updateTimer = setInterval(update, 5000);
 
             });
 
@@ -36,13 +49,14 @@
         <form id="config" action="/" method="post">
 
             <header>
-                <h2>SONOFF Configuration</h2>
-                <div>This form lets you define the WIFI network this SONOFF should try to join.</div>
+                <h2>{appname} {appversion} - Configuration</h2>
+                <div>This form lets you define the WIFI network this device should try to join.</div>
             </header>
 
             <div>
-                <p>Connection: <span class="status">{status}</span></p>
-                <p>Network: <span class="network">{network}</span> (<span class="ip">{ip}</span>)</p>
+                <p>Wifi: <span class="network"></span> <span class="ip"></span></p>
+                <p>MQTT: <span class="mqtt"></span></p>
+                <p>Relay: <span class="relay"></span></p>
             </div>
 
             <div>
@@ -105,6 +119,20 @@
                 <label class="desc" for="mqtt_topic">MQTT Topic</label>
                 <div>
                     <input id="mqtt_topic" name="mqtt_topic" type="text" class="field text fn" value="{mqtt_topic}" size="8" tabindex="9">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="mqtt_port">RF Channel</label>
+                <div>
+                    <input id="rf_channel" name="rf_channel" type="text" spellcheck="false" value="{rf_channel}" maxlength="255" tabindex="8">
+                </div>
+            </div>
+
+            <div>
+                <label class="desc" for="mqtt_topic">RF Device</label>
+                <div>
+                    <input id="rf_device" name="rf_device" type="text" class="field text fn" value="{rf_device}" size="8" tabindex="9">
                 </div>
             </div>
 
