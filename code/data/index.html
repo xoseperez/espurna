@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>{appname} {appversion} - Configuration</title>
+        <title>{appname} - Configuration</title>
         <meta charset="utf-8" />
         <link rel="stylesheet" href="index.css" />
         <script src="jquery-1.12.3.min.js"></script>
         <script>
 
             $(function() {
+
+                var updateInterval = 1000;
 
                 $("#config").submit(function(event) {
                     $(":submit").prop("value", "Wait...").attr("disabled", true);
@@ -30,15 +32,20 @@
                         'url': '/status',
                         'dataType': 'json'
                     }).done(function(data) {
-                        $("span.network").html(data.wifi ? data.network.toUpperCase() : "NOT CONNECTED");
-                        $("span.ip").html(data.wifi ? "("+data.ip+")" : "");
+                        $("span.device").html(data.device);
+                        $("span.network").html(data.network.toUpperCase());
+                        $("span.ip").html(data.ip);
                         $("span.mqtt").html(data.mqtt ? "CONNECTED" : "NOT CONNECTED");
                         $("span.relay").html(data.relay ? "ON" : "OFF");
+                        updateInterval = parseInt(data.interval);
+                        setTimeout(update, updateInterval);
+                    }).fail(function() {
+                        setTimeout(update, updateInterval);
                     });
                 }
 
                 update();
-                var updateTimer = setInterval(update, 5000);
+
 
             });
 
@@ -49,12 +56,14 @@
         <form id="config" action="/" method="post">
 
             <header>
-                <h2>{appname} {appversion} - Configuration</h2>
+                <h2>{appname} - Configuration</h2>
                 <div>This form lets you define the WIFI network this device should try to join.</div>
             </header>
 
             <div>
-                <p>Wifi: <span class="network"></span> <span class="ip"></span></p>
+                <p>Device: <span class="device"></span></p>
+                <p>Network: <span class="network"></span></p>
+                <p>IP: <span class="ip"></span></p>
                 <p>MQTT: <span class="mqtt"></span></p>
                 <p>Relay: <span class="relay"></span></p>
             </div>
