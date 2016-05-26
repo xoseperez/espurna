@@ -1,6 +1,6 @@
 /*
 
-ITead Sonoff Custom Firmware
+ESPurna
 Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
@@ -772,7 +772,6 @@ void hardwareSetup() {
     pinMode(LED_PIN, OUTPUT);
     pinMode(RF_PIN, INPUT_PULLUP);
     button1 = DebounceEvent(BUTTON_PIN);
-    //switchRelayOff();
     SPIFFS.begin();
 }
 
