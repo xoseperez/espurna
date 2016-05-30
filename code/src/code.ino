@@ -83,11 +83,11 @@ DebounceEvent button1 = false;
     WiFiClient client;
     PubSubClient mqtt(client);
     String mqttServer = "192.168.1.100";
-    String mqttBaseTopic = "/test/switch/{identifier}";
+    String mqttTopic = "/test/switch/{identifier}";
     String mqttPort = "1883";
-    char mqttStatusSetTopic[30];
     char mqttStatusTopic[30];
     char mqttIPTopic[30];
+    bool isMQTTMessage = false;
 #endif
 
 #if ENABLE_RF
@@ -108,7 +108,7 @@ void switchRelayOn() {
             Serial.println("Turning the relay ON");
         #endif
         #if ENABLE_MQTT
-            if (mqtt.connected()) {
+            if (!isMQTTMessage && mqtt.connected()) {
                 mqtt.publish(mqttStatusTopic, "1", MQTT_RETAIN);
             }
         #endif
@@ -122,7 +122,7 @@ void switchRelayOff() {
             Serial.println("Turning the relay OFF");
         #endif
         #if ENABLE_MQTT
-            if (mqtt.connected()) {
+            if (!isMQTTMessage && mqtt.connected()) {
                 mqtt.publish(mqttStatusTopic, "0", MQTT_RETAIN);
             }
         #endif
@@ -332,7 +332,7 @@ void wifiLoop() {
         #if ENABLE_MQTT
             content.replace("{mqttServer}", mqttServer);
             content.replace("{mqttPort}", mqttPort);
-            content.replace("{mqttBaseTopic}", mqttBaseTopic);
+            content.replace("{mqttTopic}", mqttTopic);
         #endif
         #if ENABLE_RF
             content.replace("{rfChannel}", rfChannel);
@@ -360,7 +360,7 @@ void wifiLoop() {
         #if ENABLE_MQTT
             mqttServer = server.arg("mqttServer");
             mqttPort = server.arg("mqttPort");
-            mqttBaseTopic = server.arg("mqttBaseTopic");
+            mqttTopic = server.arg("mqttTopic");
         #endif
         #if ENABLE_RF
             rfChannel = server.arg("rfChannel");
@@ -457,7 +457,7 @@ void wifiLoop() {
         String tmp;
 
         // Replace identifier
-        String base = mqttBaseTopic;
+        String base = mqttTopic;
         base.replace("{identifier}", getIdentifier());
 
         // Get publish status topic
@@ -468,11 +468,6 @@ void wifiLoop() {
         tmp = base + "/ip";
         tmp.toCharArray(mqttIPTopic, tmp.length()+1);
         mqttIPTopic[tmp.length()+1] = 0;
-
-        // Get subscribe status topic
-        tmp = base + "/set";
-        tmp.toCharArray(mqttStatusSetTopic, tmp.length()+1);
-        mqttStatusSetTopic[tmp.length()+1] = 0;
 
     }
 
@@ -488,11 +483,16 @@ void wifiLoop() {
             Serial.println();
         #endif
 
+        isMQTTMessage = true;
+
         if ((char)payload[0] == '1') {
             switchRelayOn();
         } else {
             switchRelayOff();
         }
+
+        isMQTTMessage = false;
+
 
     }
 
@@ -515,14 +515,20 @@ void wifiLoop() {
                 #ifdef DEBUG
                     Serial.println("connected!");
                     Serial.print("Subscribing to ");
-                    Serial.println(mqttStatusSetTopic);
+                    Serial.println(mqttStatusTopic);
                 #endif
 
+                // Say hello and report our IP
                 String ipString = WiFi.localIP().toString();
                 char ip[ipString.length()+1];
                 ipString.toCharArray(ip, ipString.length()+1);
                 mqtt.publish(mqttIPTopic, ip, MQTT_RETAIN);
-                mqtt.subscribe(mqttStatusSetTopic);
+
+                // Publish current relay status
+                mqtt.publish(mqttStatusTopic, digitalRead(RELAY_PIN) ? "1" : "0", MQTT_RETAIN);
+
+                // Subscribe to topic
+                mqtt.subscribe(mqttStatusTopic);
 
 
             } else {
@@ -634,7 +640,7 @@ bool saveConfig() {
         #if ENABLE_MQTT
             file.println("mqttServer=" + mqttServer);
             file.println("mqttPort=" + mqttPort);
-            file.println("mqttBaseTopic=" + mqttBaseTopic);
+            file.println("mqttTopic=" + mqttTopic);
         #endif
         #if ENABLE_RF
             file.println("rfChannel=" + rfChannel);
@@ -679,7 +685,7 @@ bool loadConfig() {
             #if ENABLE_MQTT
                 else if (line.startsWith("mqttServer=")) mqttServer = line.substring(11);
                 else if (line.startsWith("mqttPort=")) mqttPort = line.substring(9);
-                else if (line.startsWith("mqttBaseTopic=")) mqttBaseTopic = line.substring(14);
+                else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(14);
             #endif
             #if ENABLE_RF
                 else if (line.startsWith("rfChannel=")) rfChannel = line.substring(10);
