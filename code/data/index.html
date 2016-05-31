@@ -1,29 +1,54 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>{appname} - Configuration</title>
+        <title>{appname}</title>
         <meta charset="utf-8" />
-        <link rel="stylesheet" href="index.css" />
+        <link rel="stylesheet" href="spectre.min.css" />
         <script src="jquery-1.12.3.min.js"></script>
+        <style>
+            html, body {
+                 font-size: 12px;
+                 margin: 0;
+                 padding: 0;
+                 width: 100%;
+                 height: 100%;
+            }
+            div.page {
+                display: none;
+            }
+            .bg-grey {
+                background-color: #efefef;
+                padding: 1rem;
+                border-radius: .3rem;
+            }
+            div.hint {
+                background-color: #efefef;
+                padding: 2rem;
+                margin: 20px 0;
+                border-left: 2px solid blue;
+            }
+        </style>
         <script>
 
             $(function() {
 
-                var updateInterval = 1000;
+                var timer = null;
 
-                $("#config").submit(function(event) {
-                    $(":submit").prop("value", "Wait...").attr("disabled", true);
+                $("form").submit(function(event) {
+                    button = $(":submit", this);
+                    button.addClass("loading");
                     $.ajax({
                         'method': 'POST',
                         'url': '/save',
                         'dataType': 'json',
                         'data': $(this).serializeArray()
                     }).done(function(data) {
-                        $(":submit").prop("value", "Connect").removeAttr("disabled");
+                        button.removeClass("loading");
                     }).fail(function() {
-                        $(":submit").prop("value", "Connect").removeAttr("disabled");
+                        button.removeClass("loading");
                     });
                     event.preventDefault();
+                    setTimeout(update, 200);
                 });
 
                 function update() {
@@ -32,20 +57,52 @@
                         'url': '/status',
                         'dataType': 'json'
                     }).done(function(data) {
-                        $("span.device").html(data.device);
-                        $("span.network").html(data.network.toUpperCase());
-                        $("span.ip").html(data.ip);
-                        $("span.mqtt").html(data.mqtt ? "CONNECTED" : "NOT CONNECTED");
-                        $("span.relay").html(data.relay ? "ON" : "OFF");
-                        updateInterval = parseInt(data.interval);
-                        setTimeout(update, updateInterval);
-                    }).fail(function() {
-                        setTimeout(update, updateInterval);
+                        $("#device").val(data.device);
+                        $("#network").val(data.network.toUpperCase());
+                        $("#ip").val(data.ip);
+                        $("#mqtt").val(data.mqtt ? "CONNECTED" : "NOT CONNECTED");
+                        if (data.relay) {
+                            $("#relay").addClass('btn-primary').html("ON");
+                            $("#status").val(1);
+                        } else {
+                            $("#relay").removeClass('btn-primary').html("OFF");
+                            $("#status").val(0);
+                        }
                     });
                 }
 
-                update();
+                $("#btn-admin").click(function() {
+                    $("#panel-admin").show();
+                    $("#panel-status").hide();
+                    $("#btn-admin").addClass('btn-primary');
+                    $("#btn-status").removeClass('btn-primary');
+                });
 
+                $("#btn-status").click(function() {
+                    $("#panel-admin").hide();
+                    $("#panel-status").show();
+                    $("#btn-admin").removeClass('btn-primary');
+                    $("#btn-status").addClass('btn-primary');
+                });
+
+                $("#relay").click(function(event) {
+                    var status = parseInt($("#status").val());
+                    if (status == 1) {
+                        $.ajax({'method': 'GET', 'url': '/relay/off'});
+                    } else {
+                        $.ajax({'method': 'GET', 'url': '/relay/on'});
+                    }
+                    setTimeout(update, 200);
+                    event.preventDefault();
+                })
+
+                function init() {
+                    update();
+                    timer = setInterval(update, {updateInterval});
+                    $("[name='rfDevice']").val({rfDevice});
+                }
+
+                init();
 
             });
 
@@ -53,105 +110,195 @@
     </head>
     <body>
 
-        <form id="config" action="/" method="post">
+        <div class="container">
 
-            <header>
-                <h2>{appname} - Configuration</h2>
-                <div>This form lets you define the WIFI network this device should try to join.</div>
+            <header class="navbar bg-grey">
+                <section class="navbar-section">
+                    <a href="#" class="navbar-brand">{appname}</a>
+                </section>
+                <section class="navbar-section">
+                    <button class="btn" id="btn-admin">Administration</button>
+                    <button class="btn btn-primary" id="btn-status">Status</button>
+                </section>
             </header>
 
-            <div>
-                <p>Device: <span class="device"></span></p>
-                <p>Network: <span class="network"></span></p>
-                <p>IP: <span class="ip"></span></p>
-                <p>MQTT: <span class="mqtt"></span></p>
-                <p>Relay: <span class="relay"></span></p>
-            </div>
+            <div class="page" id="panel-status" style="display: block;">
 
-            <div>
-                <label class="desc" for="ssid0">Network SSID 0</label>
-                <div>
-                    <input id="ssid0" name="ssid0" type="text" class="field text fn" value="{ssid0}" size="8" tabindex="1">
+                <div class="columns">
+                    <div class="column col-12">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="device">Device</label>
+                                </div>
+                                <div class="col-xs-9">
+                                    <input type="text" class="form-input" id="device" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="network">Network</label>
+                                </div>
+                                <div class="col-xs-9">
+                                    <input type="text" class="form-input" id="network" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="ip">IP</label>
+                                </div>
+                                <div class="col-xs-9">
+                                    <input type="text" class="form-input" id="ip" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="mqtt">MQTT Status</label>
+                                </div>
+                                <div class="col-xs-9">
+                                    <input type="text" class="form-input" id="mqtt" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="relay">Relay Status</label>
+                                </div>
+                                <div class="col-xs-6">
+                                    <input type="hidden" class="form-input" name="status" id="status" value="0" />
+                                    <a class="btn" data="0" id="relay">OFF</a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <label class="desc" for="pass0">Network Password 0</label>
-                <div>
-                    <input id="pass0" name="pass0" type="text" spellcheck="false" value="{pass0}" maxlength="255" tabindex="2">
-                </div>
+            <div class="page" id="panel-admin">
+
+                <form action="/" method="post">
+
+                    <div class="hint">
+                        You can configure up to 3 different WiFi networks. The device will try to connect to any of them starting with the first one.
+                    </div>
+
+                    <div class="columns">
+
+                        <div class="column col-4">
+                            <h5>Network 1</h5>
+                            <div class="form-group">
+                                <label class="form-label" for="ssid0">Network SSID</label>
+                                <input name="ssid0" type="text" class="form-input" value="{ssid0}" size="8" tabindex="1" placeholder="Network SSID">
+                            </div>
+                            <div>
+                                <label class="form-label" for="pass0">Network Password</label>
+                                <input name="pass0" type="text" class="form-input" value="{pass0}" maxlength="255" tabindex="2" placeholder="Network password">
+                            </div>
+                        </div>
+                        <div class="column col-4">
+                            <h5>Network 2</h5>
+                            <div class="form-group">
+                                <label class="form-label" for="ssid1">Network SSID</label>
+                                <input name="ssid1" type="text" class="form-input" value="{ssid1}" size="8" tabindex="3" placeholder="Network SSID">
+                            </div>
+                            <div>
+                                <label class="form-label" for="pass1">Network Password</label>
+                                <input name="pass1" type="text" class="form-input" value="{pass1}" maxlength="255" tabindex="4" placeholder="Network password">
+                            </div>
+                        </div>
+                        <div class="column col-4">
+                            <h5>Network 3</h5>
+                            <div class="form-group">
+                                <label class="form-label" for="ssid2">Network SSID</label>
+                                <input name="ssid2" type="text" class="form-input" value="{ssid2}" size="8" tabindex="5" placeholder="Network SSID">
+                            </div>
+                            <div>
+                                <label class="form-label" for="pass2">Network Password</label>
+                                <input name="pass2" type="text" class="form-input" value="{pass2}" maxlength="255" tabindex="6" placeholder="Network password">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="clearfix"></div>
+
+                    <div class="hint">
+                        Configure an <strong>MQTT broker</strong> in your network and you will be able to change the switch status via an MQTT message. Just send a 0 or a 1 as a payload to the provided topic below.
+                        The switch will also report its current open/close status to the same topic and its IP address to the topic you define plus "<code>/ip</code>". Leave the server field empty to disable MQTT.
+                    </div>
+
+                    <div class="columns">
+                        <div class="column col-4">
+                            <div class="form-group">
+                                <label class="form-label" for="mqttServer">MQTT Server</label>
+                                <input name="mqttServer" type="text" class="form-input" value="{mqttServer}" size="8" tabindex="8" placeholder="MQTT Server">
+                            </div>
+                        </div>
+                        <div class="column col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="mqttPort">MQTT Port</label>
+                                <input name="mqttPort" type="text" class="form-input" value="{mqttPort}" size="8" tabindex="9" placeholder="1883">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns">
+                        <div class="column col-4">
+                            <div class="form-group">
+                                <label class="form-label" for="mqttUser">MQTT User</label>
+                                <input name="mqttUser" type="text" class="form-input" value="{mqttUser}" size="8" tabindex="10" placeholder="Leave blank if no user/pass">
+                            </div>
+                        </div>
+                        <div class="column col-4">
+                            <div class="form-group">
+                                <label class="form-label" for="mqttPassword">MQTT Password</label>
+                                <input name="mqttPassword" type="text" class="form-input" value="{mqttPassword}" size="8" tabindex="11" placeholder="Leave blank if no user/pass">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns">
+                        <div class="column col-4">
+                            <div class="form-group">
+                                <label class="form-label" for="mqttTopic">MQTT Topic</label>
+                                <input name="mqttTopic" type="text" class="form-input" value="{mqttTopic}" size="8" tabindex="12" placeholder="MQTT Topic">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clearfix"></div>
+
+                    <div class="hint">
+                        If your device supports RF switching you can configure here the channel and device ID.
+                    </div>
+
+                    <div class="columns">
+                        <div class="column col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="rfChannel">RF Channel</label>
+                                <input name="rfChannel" type="number" min="0" max="31" step="1" class="form-input" value="{rfChannel}" tabindex="13"/>
+                            </div>
+                        </div>
+                        <div class="column col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="rfDevice">RF Device</label>
+                                <select name="rfDevice" class="form-input" tabindex="14">
+                                    <option value="0">A</a>
+                                    <option value="1">B</a>
+                                    <option value="2">C</a>
+                                    <option value="3">D</a>
+                                    <option value="4">E</a>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div>
+                            <button class="btn btn-primary float-right">Update</button>
+                        </div>
+                    </div>
+
+                </form>
             </div>
 
-            <div>
-                <label class="desc" for="ssid1">Network SSID 1</label>
-                <div>
-                    <input id="ssid1" name="ssid1" type="text" class="field text fn" value="{ssid1}" size="8" tabindex="3">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="pass1">Network Password 1</label>
-                <div>
-                    <input id="pass1" name="pass1" type="text" spellcheck="false" value="{pass1}" maxlength="255" tabindex="4">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="ssid2">Network SSID 2</label>
-                <div>
-                    <input id="ssid2" name="ssid2" type="text" class="field text fn" value="{ssid2}" size="8" tabindex="5">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="pass2">Network Password 2</label>
-                <div>
-                    <input id="pass2" name="pass2" type="text" spellcheck="false" value="{pass2}" maxlength="255" tabindex="6">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="mqttServer">MQTT Server</label>
-                <div>
-                    <input id="mqttServer" name="mqttServer" type="text" class="field text fn" value="{mqttServer}" size="8" tabindex="7">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="mqttPort">MQTT Port</label>
-                <div>
-                    <input id="mqttPort" name="mqttPort" type="text" spellcheck="false" value="{mqttPort}" maxlength="255" tabindex="8">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="mqttTopic">MQTT Topic</label>
-                <div>
-                    <input id="mqttTopic" name="mqttTopic" type="text" class="field text fn" value="{mqttTopic}" size="8" tabindex="9">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="rfChannel">RF Channel</label>
-                <div>
-                    <input id="rfChannel" name="rfChannel" type="text" spellcheck="false" value="{rfChannel}" maxlength="255" tabindex="10">
-                </div>
-            </div>
-
-            <div>
-                <label class="desc" for="rfDevice">RF Device</label>
-                <div>
-                    <input id="rfDevice" name="rfDevice" type="text" class="field text fn" value="{rfDevice}" size="8" tabindex="11">
-                </div>
-            </div>
-
-            <div>
-                <div>
-                    <input id="submit" name="submit" type="submit" value="Connect">
-                </div>
-            </div>
-
-        </form>
-
+        </div>
     </body>
 </html>

@@ -26,7 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <DebounceEvent.h>
 #include <ArduinoOTA.h>
 #include <RemoteReceiver.h>
+#include <EEPROM.h>
 #include "FS.h"
+#include <stdio.h>
 
 // -----------------------------------------------------------------------------
 // Configuració
@@ -82,9 +84,11 @@ DebounceEvent button1 = false;
 #if ENABLE_MQTT
     WiFiClient client;
     PubSubClient mqtt(client);
-    String mqttServer = "192.168.1.100";
+    String mqttServer = "";
     String mqttTopic = "/test/switch/{identifier}";
     String mqttPort = "1883";
+    String mqttUser = "";
+    String mqttPassword = "";
     char mqttStatusTopic[30];
     char mqttIPTopic[30];
     bool isMQTTMessage = false;
@@ -97,6 +101,44 @@ DebounceEvent button1 = false;
     String rfChannel = String(RF_CHANNEL);
     String rfDevice = String(RF_DEVICE);
 #endif
+
+// -----------------------------------------------------------------------------
+// Utils
+// -----------------------------------------------------------------------------
+
+char * getCompileTime(char * buffer) {
+
+    int day, month, year, hour, minute, second;
+
+    // parse date
+    String tmp = String(__DATE__);
+    day = tmp.substring(4,6).toInt();
+    year = tmp.substring(7).toInt();
+    tmp = tmp.substring(0,3);
+    if (tmp.equals("Jan")) month = 1;
+    if (tmp.equals("Feb")) month = 2;
+    if (tmp.equals("Mar")) month = 3;
+    if (tmp.equals("Apr")) month = 4;
+    if (tmp.equals("May")) month = 5;
+    if (tmp.equals("Jun")) month = 6;
+    if (tmp.equals("Jul")) month = 7;
+    if (tmp.equals("Aug")) month = 8;
+    if (tmp.equals("Sep")) month = 9;
+    if (tmp.equals("Oct")) month = 10;
+    if (tmp.equals("Nov")) month = 11;
+    if (tmp.equals("Dec")) month = 12;
+
+    // parse time
+    tmp = String(__TIME__);
+    hour = tmp.substring(0,2).toInt();
+    minute = tmp.substring(3,5).toInt();
+    second = tmp.substring(6,8).toInt();
+
+    sprintf(buffer, "%d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second);
+    buffer[14] = 0;
+    return buffer;
+
+}
 
 // -----------------------------------------------------------------------------
 // Relay
@@ -113,6 +155,10 @@ void switchRelayOn() {
             }
         #endif
         digitalWrite(RELAY_PIN, HIGH);
+        if (EEPROM.read(0) == 0) {
+            EEPROM.write(0, 1);
+            EEPROM.commit();
+        }
     }
 }
 
@@ -127,6 +173,10 @@ void switchRelayOff() {
             }
         #endif
         digitalWrite(RELAY_PIN, LOW);
+        if (EEPROM.read(0) == 1) {
+            EEPROM.write(0, 0);
+            EEPROM.commit();
+        }
     }
 }
 
@@ -322,7 +372,11 @@ void wifiLoop() {
         file.close();
 
         // Replace placeholders
-        content.replace("{appname}", APP_NAME);
+        getCompileTime(buffer);
+
+        content.replace("{appname}", String(APP_NAME) + "." + String(buffer));
+        content.replace("{status}", digitalRead(RELAY_PIN) ? "1" : "0");
+        content.replace("{updateInterval}", String(STATUS_UPDATE_INTERVAL));
         content.replace("{ssid0}", configSSID[0]);
         content.replace("{pass0}", configPASS[0]);
         content.replace("{ssid1}", configSSID[1]);
@@ -332,6 +386,8 @@ void wifiLoop() {
         #if ENABLE_MQTT
             content.replace("{mqttServer}", mqttServer);
             content.replace("{mqttPort}", mqttPort);
+            content.replace("{mqttUser}", mqttUser);
+            content.replace("{mqttPassword}", mqttPassword);
             content.replace("{mqttTopic}", mqttTopic);
         #endif
         #if ENABLE_RF
@@ -351,20 +407,30 @@ void wifiLoop() {
             Serial.println("Request: /save");
         #endif
 
-        configSSID[0] = server.arg("ssid0");
-        configPASS[0] = server.arg("pass0");
-        configSSID[1] = server.arg("ssid1");
-        configPASS[1] = server.arg("pass1");
-        configSSID[2] = server.arg("ssid2");
-        configPASS[2] = server.arg("pass2");
+        if (server.hasArg("status")) {
+            if (server.arg("status") == "1") {
+                switchRelayOn();
+            } else {
+                switchRelayOff();
+            }
+        }
+
+        if (server.hasArg("ssid0")) configSSID[0] = server.arg("ssid0");
+        if (server.hasArg("pass0")) configPASS[0] = server.arg("pass0");
+        if (server.hasArg("ssid1")) configSSID[1] = server.arg("ssid1");
+        if (server.hasArg("pass1")) configPASS[1] = server.arg("pass1");
+        if (server.hasArg("ssid2")) configSSID[2] = server.arg("ssid2");
+        if (server.hasArg("pass2")) configPASS[2] = server.arg("pass2");
         #if ENABLE_MQTT
-            mqttServer = server.arg("mqttServer");
-            mqttPort = server.arg("mqttPort");
-            mqttTopic = server.arg("mqttTopic");
+            if (server.hasArg("mqttServer")) mqttServer = server.arg("mqttServer");
+            if (server.hasArg("mqttPort")) mqttPort = server.arg("mqttPort");
+            if (server.hasArg("mqttUser")) mqttUser = server.arg("mqttUser");
+            if (server.hasArg("mqttPassword")) mqttPassword = server.arg("mqttPassword");
+            if (server.hasArg("mqttTopic")) mqttTopic = server.arg("mqttTopic");
         #endif
         #if ENABLE_RF
-            rfChannel = server.arg("rfChannel");
-            rfDevice = server.arg("rfDevice");
+            if (server.hasArg("rfChannel")) rfChannel = server.arg("rfChannel");
+            if (server.hasArg("rfDevice")) rfDevice = server.arg("rfDevice");
         #endif
 
         server.send(202, "text/json", "{}");
@@ -398,8 +464,6 @@ void wifiLoop() {
             output += ", \"mqtt\": ";
             output += (mqtt.connected()) ? "1": "0";
         #endif
-        output += ", \"interval\": ";
-        output += (int) STATUS_UPDATE_INTERVAL;
         output += "}";
 
         server.send(200, "text/json", output);
@@ -484,13 +548,11 @@ void wifiLoop() {
         #endif
 
         isMQTTMessage = true;
-
         if ((char)payload[0] == '1') {
             switchRelayOn();
         } else {
             switchRelayOff();
         }
-
         isMQTTMessage = false;
 
 
@@ -498,7 +560,7 @@ void wifiLoop() {
 
     void mqttConnect() {
 
-        if (!mqtt.connected()) {
+        if (!mqtt.connected() && (mqttServer.length()>0)) {
 
             char buffer[mqttServer.length()+1];
             mqttServer.toCharArray(buffer, mqttServer.length()+1);
@@ -508,7 +570,17 @@ void wifiLoop() {
                 Serial.print("Connecting to MQTT broker: ");
             #endif
 
-            if (mqtt.connect(getIdentifier())) {
+            if (mqttUser.length() > 0) {
+                char user[mqttUser.length() + 1];
+                mqttUser.toCharArray(user, mqttUser.length() + 1);
+                char password[mqttPassword.length() + 1];
+                mqttPassword.toCharArray(password, mqttPassword.length() + 1);
+                mqtt.connect(getIdentifier(), user, password);
+            } else {
+                mqtt.connect(getIdentifier());
+            }
+
+            if (mqtt.connected()) {
 
                 buildTopics();
 
@@ -685,7 +757,7 @@ bool loadConfig() {
             #if ENABLE_MQTT
                 else if (line.startsWith("mqttServer=")) mqttServer = line.substring(11);
                 else if (line.startsWith("mqttPort=")) mqttPort = line.substring(9);
-                else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(14);
+                else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(10);
             #endif
             #if ENABLE_RF
                 else if (line.startsWith("rfChannel=")) rfChannel = line.substring(10);
@@ -775,6 +847,8 @@ void hardwareSetup() {
     pinMode(RF_PIN, INPUT_PULLUP);
     button1 = DebounceEvent(BUTTON_PIN);
     SPIFFS.begin();
+    EEPROM.begin(1);
+    EEPROM.read(0) == 1 ? switchRelayOn() : switchRelayOff();
 }
 
 void blink(unsigned long delayOff, unsigned long delayOn) {
@@ -822,7 +896,6 @@ void welcome() {
 void setup() {
 
     hardwareSetup();
-    delay(5000);
     welcome();
 
     #if ENABLE_OTA
