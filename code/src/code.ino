@@ -547,11 +547,17 @@ void wifiLoop() {
             Serial.println();
         #endif
 
-        isMQTTMessage = true;
-        if ((char)payload[0] == '1') {
-            switchRelayOn();
-        } else {
+        // Action to perform
+        if ((char)payload[0] == '0') {
+            isMQTTMessage = true;
             switchRelayOff();
+        }
+        if ((char)payload[0] == '1') {
+            isMQTTMessage = true;
+            switchRelayOn();
+        }
+        if ((char)payload[0] == '2') {
+            toggleRelay();
         }
         isMQTTMessage = false;
 
