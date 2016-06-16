@@ -5,6 +5,10 @@ This device has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3
 and a relay (GPIO12). It also features a button (GPIO0), an LED (GPIO13) and an unpopulated header you can use to reprogram it.
 You can read about this board and firmware in [my blog][2].
 
+![Sonoff board - front view](/images/pinout_front.jpg)
+
+![Sonoff board - back view](/images/pinout_back.jpg)
+
 ## Features
 
 * WebServer for configuration and simple relay toggle
