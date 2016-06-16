@@ -1,8 +1,9 @@
-# Espurna
+# ESPurna
 
-Espurna ("spark" in Catalan) is a custom C firmware for [ITead Sonoff][1] Smart WiFi Switch.
+ESPurna ("spark" in Catalan) is a custom C firmware for [ITead Sonoff][1] Smart WiFi Switch.
 This device has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3V3 transformer
-and a relay (GPIO12). It also features a button (GPIO0), a LED (GPIO13) and an unpopulated header you can use to reprogram it.
+and a relay (GPIO12). It also features a button (GPIO0), an LED (GPIO13) and an unpopulated header you can use to reprogram it.
+You can read about this board and firmware in [my blog][2].
 
 ## Features
 
@@ -11,6 +12,7 @@ and a relay (GPIO12). It also features a button (GPIO0), a LED (GPIO13) and an u
 * Up to 3 configurable WIFI networks
 * MQTT support with configurable host and topic
 * Manual switch ON/OFF with button
+* Support for custom RF module (check blog post)
 * Visual status of the connection via the LED
 
 ## Flashing
@@ -29,7 +31,7 @@ probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter
 flash mode you have to hold the button pressed while powering on the board, then
 you can realease it again.
 
-The project is ready to be build using [PlatformIO][2].
+The project is ready to be build using [PlatformIO][3].
 Please refer to their web page for instructions on how to install the builder.
 Once installed:
 
@@ -72,4 +74,5 @@ your device ID (same as the soft AP network it creates).
 
 
 [1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html
-[2]: http://www.platformio.org
+[2]: http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff
+[3]: http://www.platformio.org
