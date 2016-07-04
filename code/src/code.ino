@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <EEPROM.h>
 #include "FS.h"
 #include <stdio.h>
+#include <EmonLiteESP.h>
 
 // -----------------------------------------------------------------------------
 // Configuració
@@ -40,6 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ENABLE_OTA              1
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
+#define ENABLE_ENERGYMONITOR    1
 
 #define APP_NAME                "Espurna 0.9"
 #define APP_AUTHOR              "xose.perez@gmail.com"
@@ -64,6 +66,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define RF_DEVICE               1
 
 #define MQTT_RETAIN             true
+#define MQTT_TOPIC              "/test/switch/{identifier}"
+#define MQTT_PORT               1883
+
+#define CURRENT_PIN             A0
+#define REFERENCE_VOLTAGE       1.0
+#define MAINS_VOLTAGE           230.0
+#define CURRENT_RATIO           156
+#define CURRENT_PRECISION       1
+#define SAMPLES_X_MEASUREMENT   1500
+#define MEASUREMENT_INTERVAL    10000
+#define MEASUREMENTS_X_MESSAGE  6
 
 // -----------------------------------------------------------------------------
 // Globals
@@ -85,12 +98,15 @@ DebounceEvent button1 = false;
     WiFiClient client;
     PubSubClient mqtt(client);
     String mqttServer = "";
-    String mqttTopic = "/test/switch/{identifier}";
-    String mqttPort = "1883";
+    String mqttTopic = MQTT_TOPIC;
+    String mqttPort = String(MQTT_PORT);
     String mqttUser = "";
     String mqttPassword = "";
     char mqttStatusTopic[30];
     char mqttIPTopic[30];
+    #if ENABLE_ENERGYMONITOR
+        char mqttPowerTopic[30];
+    #endif
     bool isMQTTMessage = false;
 #endif
 
@@ -100,6 +116,10 @@ DebounceEvent button1 = false;
     unsigned long rfCodeOFF = 0;
     String rfChannel = String(RF_CHANNEL);
     String rfDevice = String(RF_DEVICE);
+#endif
+
+#if ENABLE_ENERGYMONITOR
+    EnergyMonitor monitor;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -533,6 +553,13 @@ void wifiLoop() {
         tmp.toCharArray(mqttIPTopic, tmp.length()+1);
         mqttIPTopic[tmp.length()+1] = 0;
 
+        // Get publish current topic
+        #if ENABLE_ENERGYMONITOR
+            tmp = base + "/power";
+            tmp.toCharArray(mqttPowerTopic, tmp.length()+1);
+            mqttPowerTopic[tmp.length()+1] = 0;
+        #endif
+
     }
 
     void mqttCallback(char* topic, byte* payload, unsigned int length) {
@@ -573,16 +600,25 @@ void wifiLoop() {
             mqtt.setServer(buffer, mqttPort.toInt());
 
             #ifdef DEBUG
-                Serial.print("Connecting to MQTT broker: ");
+                Serial.print("Connecting to MQTT broker at ");
+                Serial.print(mqttServer);
             #endif
 
             if (mqttUser.length() > 0) {
+                #ifdef DEBUG
+                    Serial.print(" as user ");
+                    Serial.print(mqttUser);
+                    Serial.print(": ");
+                #endif
                 char user[mqttUser.length() + 1];
                 mqttUser.toCharArray(user, mqttUser.length() + 1);
                 char password[mqttPassword.length() + 1];
                 mqttPassword.toCharArray(password, mqttPassword.length() + 1);
                 mqtt.connect(getIdentifier(), user, password);
             } else {
+                #ifdef DEBUG
+                    Serial.print(" anonymously: ");
+                #endif
                 mqtt.connect(getIdentifier());
             }
 
@@ -798,7 +834,7 @@ bool loadConfig() {
         ArduinoOTA.setPassword((const char *) ADMIN_PASS);
 
         ArduinoOTA.onStart([]() {
-            #ifdef ENABLE_RF
+            #if ENABLE_RF
                 RemoteReceiver::disable();
             #endif
             #ifdef DEBUG
@@ -810,7 +846,7 @@ bool loadConfig() {
             #ifdef DEBUG
                 Serial.println("OTA - End");
             #endif
-            #ifdef ENABLE_RF
+            #if ENABLE_RF
                 RemoteReceiver::enable();
             #endif
         });
@@ -838,6 +874,56 @@ bool loadConfig() {
 
     void OTALoop() {
         ArduinoOTA.handle();
+    }
+
+#endif
+
+// -----------------------------------------------------------------------------
+// Energy Monitor
+// -----------------------------------------------------------------------------
+
+#if ENABLE_ENERGYMONITOR
+
+    void energyMonitorSetup() {
+        monitor.initCurrent(CURRENT_PIN, REFERENCE_VOLTAGE, CURRENT_RATIO);
+        monitor.setPrecision(CURRENT_PRECISION);
+    }
+
+    void energyMonitorLoop() {
+
+        static unsigned long next_measurement = millis();
+        static byte measurements = 0;
+        static double sum = 0;
+
+        if (millis() > next_measurement) {
+
+            double current = monitor.getCurrent(SAMPLES_X_MEASUREMENT);
+            sum += current;
+            ++measurements;
+
+            #ifdef DEBUG
+                Serial.print("Power reading: ");
+                Serial.println(current * MAINS_VOLTAGE);
+            #endif
+
+            if (measurements == MEASUREMENTS_X_MESSAGE) {
+                char buffer[8];
+                sprintf(buffer, "%d", int(sum * MAINS_VOLTAGE / measurements));
+                #ifdef DEBUG
+                    Serial.print("Power sending: ");
+                    Serial.println(buffer);
+                #endif
+                #if ENABLE_MQTT
+                    mqtt.publish(mqttPowerTopic, buffer, MQTT_RETAIN);
+                #endif
+                sum = 0;
+                measurements = 0;
+            }
+
+            next_measurement += MEASUREMENT_INTERVAL;
+
+        }
+
     }
 
 #endif
@@ -918,6 +1004,9 @@ void setup() {
     #if ENABLE_RF
         rfSetup();
     #endif
+    #if ENABLE_ENERGYMONITOR
+        energyMonitorSetup();
+    #endif
 
 }
 
@@ -935,6 +1024,9 @@ void loop() {
     #endif
     #if ENABLE_WEBSERVER
         webServerLoop();
+    #endif
+    #if ENABLE_ENERGYMONITOR
+        energyMonitorLoop();
     #endif
     hardwareLoop();
     delay(1);
