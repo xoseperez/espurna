@@ -1,1 +1,6 @@
+*.s#?
+*.b#?
+.modgit
+firmware*
 .pioenvs
+.sconsign.dblite
