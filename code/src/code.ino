@@ -50,7 +50,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MODEL                   "SONOFF"
 #define BUTTON_PIN              0
 #define RELAY_PIN               12
-#define LED_PIN                 13ter
+#define LED_PIN                 13
 
 #define ADMIN_PASS              "fibonacci"
 #define CONFIG_PATH             "/.config"
@@ -986,7 +986,7 @@ void hardwareLoop() {
     if (button1.loop()) {
         if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
         if (button1.getEvent() == EVENT_DOUBLE_CLICK) wifiSetupAP();
-        if (button1.getEvent() == EVENT_LONG_CLICK) ESP.restart();
+        if (button1.getEvent() == EVENT_LONG_CLICK) ESP.reset();
     }
     showStatus();
 }
