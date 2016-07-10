@@ -21,10 +21,17 @@
 #ifndef _DEBOUNCE_EVENT_h
 #define _DEBOUNCE_EVENT_h
 
-#define DEBOUNCE_DELAY 100
-#define EVENT_CHANGED 0
-#define EVENT_PRESSED 1
-#define EVENT_RELEASED 2
+#define DEBOUNCE_DELAY 50
+#define LONG_CLICK_DELAY 1000
+#define DOUBLE_CLICK_DELAY 500
+
+#define EVENT_NONE 0
+#define EVENT_CHANGED 1
+#define EVENT_PRESSED 2
+#define EVENT_RELEASED 3
+#define EVENT_SINGLE_CLICK 3
+#define EVENT_DOUBLE_CLICK 4
+#define EVENT_LONG_CLICK 5
 
 typedef void(*callback_t)(uint8_t pin, uint8_t event);
 
@@ -34,6 +41,9 @@ class DebounceEvent {
 
         uint8_t _pin;
         uint8_t _status;
+        uint8_t _event;
+        unsigned long _this_start;
+        unsigned long _last_start;
         uint8_t _defaultStatus;
         unsigned long _delay;
         callback_t _callback;
@@ -43,6 +53,7 @@ class DebounceEvent {
         DebounceEvent(uint8_t pin, callback_t callback = false, uint8_t defaultStatus = HIGH, unsigned long delay = DEBOUNCE_DELAY);
         bool pressed();
         bool loop();
+        uint8_t getEvent();
 
 };
 

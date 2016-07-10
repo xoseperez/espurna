@@ -15,7 +15,8 @@ You can read about this board and firmware in [my blog][2].
 * Flashing firmware Over-The-Air (OTA)
 * Up to 3 configurable WIFI networks
 * MQTT support with configurable host and topic
-* Manual switch ON/OFF with button
+* Manual switch ON/OFF with button (single click the button)
+* AP mode backup (double click the button)
 * Support for custom RF module (check blog post)
 * Visual status of the connection via the LED
 
@@ -60,14 +61,13 @@ It configures the hardware (button, LED, relay), the SPIFFS memory access, the
 WIFI, the WebServer and MQTT connection.
 
 Obviously the default values for WIFI network and MQTT will probably not match
-your requirements. Either it connects to a WiFi or not, it will set up a Soft AP
-named "SONOFF_XXXX", where XXXX are the las 2 bytes of the radio MAC. Connect with
+your requirements. The device will start in Soft AP creating a WIFI SSID named "SONOFF_XXXXXX", where XXXXXX are the last 3 bytes of the radio MAC. Connect with
 phone, PC, laptop, whatever to that network, password is "fibonacci". Once connected
 browse to 192.168.4.1 and you will be presented a configuration page where you will
 be able to define up to 3 possible WIFI networks and the MQTT configuration parameters.
 
 It will then try to connect to the first WIFI network. If fail it will try the second
-in 30 seconds, and so on. Once connected it will try to connect the MQTT server.
+in 30 seconds, and so on. Once connected it will try to connect the MQTT server. If there are no configured networks or none of the configured ones is reachable it defaults to SoftAP mode. You can also switch to SoftAP mode by double clicking the on board button.
 
 The device will publish the relay state to the given topic and it will subscribe to
 the same topic plus "/set" for remote switching. So if your topic is "/home/living/switch"

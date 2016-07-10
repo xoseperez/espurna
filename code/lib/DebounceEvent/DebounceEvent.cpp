@@ -41,33 +41,62 @@ DebounceEvent::DebounceEvent(uint8_t pin, callback_t callback, uint8_t defaultSt
 bool DebounceEvent::loop() {
 
     // holds whether status has changed or not
+    static bool pending = false;
     bool changed = false;
+    _event = EVENT_NONE;
 
     if (digitalRead(_pin) != _status) {
+
+        // Debounce
         delay(_delay);
         uint8_t newStatus = digitalRead(_pin);
         if (newStatus != _status) {
 
             changed = true;
+            pending = false;
             _status = newStatus;
 
-            // raise events if callback defined
-            if (_callback) {
+            // released
+            if (_status == _defaultStatus) {
 
-                // raise change event
-                _callback(_pin, EVENT_CHANGED);
-
-                if (_status == _defaultStatus) {
-                    // raise released event
-                    _callback(_pin, EVENT_RELEASED);
+                // get event
+                if (millis() - _this_start > LONG_CLICK_DELAY) {
+                    _event = EVENT_LONG_CLICK;
+                } else if (millis() - _last_start < DOUBLE_CLICK_DELAY ) {
+                    _event = EVENT_DOUBLE_CLICK;
                 } else {
-                    // raise pressed event
-                    _callback(_pin, EVENT_PRESSED);
+                    Serial.println("deferring");
+                    changed = false;
+                    pending = true;
+                    //_event = EVENT_SINGLE_CLICK;
                 }
 
+            // pressed
+            } else {
+
+                _last_start = _this_start;
+                _this_start = millis();
+                _event = EVENT_PRESSED;
+
             }
+
         }
     }
+
+    if (pending && (millis() - _this_start > DOUBLE_CLICK_DELAY) && (!changed) && (_status == _defaultStatus)) {
+        Serial.println("catched");
+        pending = false;
+        changed = true;
+        _event = EVENT_SINGLE_CLICK;
+    }
+
+    if (changed) {
+        if (_callback) {
+            _callback(_pin, EVENT_CHANGED);
+            _callback(_pin, _event);
+        }
+    }
+
 
     return changed;
 
@@ -75,4 +104,8 @@ bool DebounceEvent::loop() {
 
 bool DebounceEvent::pressed() {
     return (_status != _defaultStatus);
+}
+
+uint8_t DebounceEvent::getEvent() {
+    return _event;
 }

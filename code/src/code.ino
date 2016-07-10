@@ -43,21 +43,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ENABLE_WEBSERVER        1
 #define ENABLE_ENERGYMONITOR    1
 
-#define APP_NAME                "Espurna 0.9"
+#define APP_NAME                "Espurna 0.9.1"
 #define APP_AUTHOR              "xose.perez@gmail.com"
 #define APP_WEBSITE             "http://tinkerman.cat"
 
 #define MODEL                   "SONOFF"
 #define BUTTON_PIN              0
 #define RELAY_PIN               12
-#define LED_PIN                 13
+#define LED_PIN                 13ter
 
 #define ADMIN_PASS              "fibonacci"
 #define CONFIG_PATH             "/.config"
-#define WIFI_CONNECT_TIMEOUT    5000
-#define WIFI_RECONNECT_DELAY    5000
-#define MQTT_RECONNECT_DELAY    10000
-#define NETWORK_BUFFER          3
+
 #define BUFFER_SIZE             1024
 #define STATUS_UPDATE_INTERVAL  10000
 
@@ -65,9 +62,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define RF_CHANNEL              31
 #define RF_DEVICE               1
 
+#define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
 #define MQTT_TOPIC              "/test/switch/{identifier}"
 #define MQTT_PORT               1883
+
+#define NETWORK_BUFFER          3
+#define WIFI_CONNECT_TIMEOUT    5000
+#define WIFI_RECONNECT_DELAY    5000
+#define WIFI_STATUS_CONNECTING  0
+#define WIFI_STATUS_CONNECTED   1
+#define WIFI_STATUS_AP          2
 
 #define CURRENT_PIN             A0
 #define REFERENCE_VOLTAGE       1.0
@@ -84,7 +89,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 char identifier[20] = {0};
 
-byte network = 0;
+byte status = WIFI_STATUS_CONNECTING;
 String configSSID[NETWORK_BUFFER];
 String configPASS[NETWORK_BUFFER];
 
@@ -214,26 +219,22 @@ void toggleRelay() {
 
 char * getIdentifier() {
     if (identifier[0] == 0) {
-        uint8_t mac[WL_MAC_ADDR_LENGTH];
-        WiFi.softAPmacAddress(mac);
-        String name = MODEL + String("_") + String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) + String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
-        name.toUpperCase();
-        byte length = std::min(20, (int) name.length() + 1);
-        name.toCharArray(identifier, length);
+        sprintf(identifier, "%s_%06X", MODEL, ESP.getChipId());
     }
     return identifier;
 }
 
-void wifiSetup(bool force) {
+void wifiSetupAP() {
 
-    // Set WIFI module to Mixed Mode
-    WiFi.mode(WIFI_AP_STA);
+    // Set WIFI module AP mode
+    WiFi.mode(WIFI_AP);
     #ifdef DEBUG
         WiFi.printDiag(Serial);
     #endif
 
     // SoftAP mode
     WiFi.softAP(getIdentifier(), ADMIN_PASS);
+    status = WIFI_STATUS_AP;
     #ifdef DEBUG
         Serial.print("[AP Mode] SSID: ");
         Serial.print(getIdentifier());
@@ -243,45 +244,66 @@ void wifiSetup(bool force) {
         Serial.println(WiFi.softAPIP());
     #endif
 
-    // STA mode
+}
+
+void wifiSetupSTA(bool force) {
+
+    byte network = 0;
+
     if (force || (WiFi.status() != WL_CONNECTED)) {
-        if (configSSID[network].length() > 0) {
 
-            #if ENABLE_MQTT
-                if (mqtt.connected()) mqtt.disconnect();
-            #endif
+        // Set WIFI module to STA mode
+        WiFi.mode(WIFI_STA);
+        #ifdef DEBUG
+            WiFi.printDiag(Serial);
+        #endif
 
-            #if ENABLE_RF
-                RemoteReceiver::disable();
-            #endif
+        #if ENABLE_MQTT
+            if (mqtt.connected()) mqtt.disconnect();
+        #endif
 
-            char ssid[configSSID[network].length()+1];
-            char pass[configPASS[network].length()+1];
-            configSSID[network].toCharArray(ssid, configSSID[network].length()+1);
-            configPASS[network].toCharArray(pass, configPASS[network].length()+1);
-            WiFi.begin(ssid, pass);
+        #if ENABLE_RF
+            RemoteReceiver::disable();
+        #endif
 
-            #ifdef DEBUG
-                Serial.println("Connecting to WIFI " + configSSID[network]);
-            #endif
+        while (network < 3) {
 
-            // Wait
-            unsigned long timeout = millis() + WIFI_CONNECT_TIMEOUT;
-            while (timeout > millis()) {
-                showStatus();
-                if (WiFi.status() == WL_CONNECTED) break;
-                delay(100);
+            if (configSSID[network].length() > 0) {
+
+                char ssid[configSSID[network].length()+1];
+                char pass[configPASS[network].length()+1];
+                configSSID[network].toCharArray(ssid, configSSID[network].length()+1);
+                configPASS[network].toCharArray(pass, configPASS[network].length()+1);
+                WiFi.begin(ssid, pass);
+
+                #ifdef DEBUG
+                    Serial.println("Connecting to WIFI " + configSSID[network]);
+                #endif
+
+                // Wait
+                unsigned long timeout = millis() + WIFI_CONNECT_TIMEOUT;
+                while (timeout > millis()) {
+                    showStatus();
+                    if (WiFi.status() == WL_CONNECTED) break;
+                    delay(100);
+                }
+
             }
 
-            #if ENABLE_RF
-                RemoteReceiver::enable();
-            #endif
+            if (WiFi.status() == WL_CONNECTED) break;
+            network++;
 
         }
+
+        #if ENABLE_RF
+            RemoteReceiver::enable();
+        #endif
+
     }
 
     if (WiFi.status() == WL_CONNECTED) {
         WiFi.setAutoConnect(true);
+        status = WIFI_STATUS_CONNECTED;
         #ifdef DEBUG
             Serial.print("[STA Mode] SSID: ");
             Serial.print(WiFi.SSID());
@@ -289,22 +311,22 @@ void wifiSetup(bool force) {
             Serial.println(WiFi.localIP());
         #endif
     } else {
-        network = (network + 1) % NETWORK_BUFFER;
         #ifdef DEBUG
             Serial.println("[STA Mode] NOT CONNECTED");
         #endif
+        wifiSetupAP();
     }
 
 }
 
 void wifiLoop() {
-    static unsigned long timeout = millis();
-    if (WiFi.status() != WL_CONNECTED) {
-        if (timeout < millis()) {
-            wifiSetup(false);
-            timeout = millis() + WIFI_RECONNECT_DELAY;
-        }
+
+    // Trying to reconnect in case of disconnection
+    if ((status == WIFI_STATUS_CONNECTED) && (WiFi.status() != WL_CONNECTED)) {
+        status = WIFI_STATUS_CONNECTING;
+        wifiSetupSTA(false);
     }
+
 }
 
 // -----------------------------------------------------------------------------
@@ -459,8 +481,7 @@ void wifiLoop() {
         #if ENABLE_RF
             rfBuildCodes();
         #endif
-        network = 0;
-        wifiSetup(true);
+        wifiSetupSTA(true);
 
     }
 
@@ -963,7 +984,9 @@ void showStatus() {
 
 void hardwareLoop() {
     if (button1.loop()) {
-        if (!button1.pressed()) toggleRelay();
+        if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
+        if (button1.getEvent() == EVENT_DOUBLE_CLICK) wifiSetupAP();
+        if (button1.getEvent() == EVENT_LONG_CLICK) ESP.restart();
     }
     showStatus();
 }
@@ -994,7 +1017,7 @@ void setup() {
         OTASetup();
     #endif
     loadConfig();
-    wifiSetup(false);
+    wifiSetupSTA(false);
     #if ENABLE_WEBSERVER
         webServerSetup();
     #endif
