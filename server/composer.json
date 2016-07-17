@@ -1,0 +1,21 @@
+{
+    "name": "tinkerman/espurna-update-server",
+    "description": "Update server that listen to ESPurna devices queries and returns last available firmware",
+    "keywords": ["esp8266", "ota", "espurna", "firmware"],
+    "homepage": "http://tinkerman.cat",
+    "license": "GPLv3",
+    "authors": [
+        {
+            "name": "Xose Pérez",
+            "email": "xose.perez@gmail.com",
+            "homepage": "http://tinkerman.cat/"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.0",
+        "slim/slim": "^3.1",
+        "slim/php-view": "^2.0",
+        "monolog/monolog": "^1.17",
+        "slim/twig-view": "^2.1"
+    }
+}

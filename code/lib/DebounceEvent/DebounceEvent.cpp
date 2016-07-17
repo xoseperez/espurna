@@ -65,7 +65,6 @@ bool DebounceEvent::loop() {
                 } else if (millis() - _last_start < DOUBLE_CLICK_DELAY ) {
                     _event = EVENT_DOUBLE_CLICK;
                 } else {
-                    Serial.println("deferring");
                     changed = false;
                     pending = true;
                     //_event = EVENT_SINGLE_CLICK;
@@ -84,7 +83,6 @@ bool DebounceEvent::loop() {
     }
 
     if (pending && (millis() - _this_start > DOUBLE_CLICK_DELAY) && (!changed) && (_status == _defaultStatus)) {
-        Serial.println("catched");
         pending = false;
         changed = true;
         _event = EVENT_SINGLE_CLICK;

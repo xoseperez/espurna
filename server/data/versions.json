@@ -1,0 +1,14 @@
+[
+    {
+        "model": "SONOFF",
+        "firmware": {
+            "min": "*",
+            "max": "0.9.2"
+        },
+        "target": {
+            "version": "0.9.2",
+            "firmware": "/firmware/espurna-0.9.2.bin",
+            "spiffs": "/firmware/espurna-0.9.1-spiffs.bin"
+        }
+    }
+]

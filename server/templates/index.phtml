@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>ESPurna Update Server</title>
+        <link href='//fonts.googleapis.com/css?family=Lato:300' rel='stylesheet' type='text/css'>
+        <style>
+            body {
+                margin: 50px 0 0 0;
+                padding: 0;
+                width: 100%;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                text-align: center;
+                color: #aaa;
+                font-size: 18px;
+            }
+
+            h1 {
+                color: #719e40;
+                letter-spacing: -3px;
+                font-family: 'Lato', sans-serif;
+                font-size: 100px;
+                font-weight: 200;
+                margin-bottom: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>ESPurna Update Server</h1>
+
+        <table>
+        <thead>
+            <tr>
+                <th>Device</th>
+                <th>Minimum Hardware Version</th>
+                <th>Maximum Hardware Version</th>
+                <th>Minimum Firmware Version</th>
+                <th>Maximum Firmware Version</th>
+                <th>Latest Firmware Version</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for version in versions %}
+                <tr>
+                    <td>{{ version.model }}</td>
+                    <td>{{ version.hardware_min }}</td>
+                    <td>{{ version.hardware_max }}</td>
+                    <td>{{ version.firmware_min }}</td>
+                    <td>{{ version.firmware_max }}</td>
+                    <td>{{ version.firmware_version }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+
+    </body>
+</html>

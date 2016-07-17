@@ -55,8 +55,8 @@ Once you have flashed it you can flash it again over-the-air using the ```ota```
 When using OTA environment it defaults to the IP address of the device in SoftAP mode. If you want to flash it when connected to your home network best way is to supply the IP of the device:
 
 ```bash
-> platformio run --target upload -e ota --upload_port 192.168.1.151
-> platformio run --target uploadfs -e ota --upload_port 192.168.1.151
+> platformio run --target upload -e ota --upload-port 192.168.1.151
+> platformio run --target uploadfs -e ota --upload-port 192.168.1.151
 ```
 
 
@@ -84,7 +84,15 @@ you will be able to switch it on/off sending "1"/"0" to "/home/living/switch/set
 You can also use "{identifier}" as place holder in the topic. It will be translated to
 your device ID (same as the soft AP network it creates).
 
+## Troubleshooting
+
+After flashing the firmware via serial do a hard reset of the device (unplug & plug). There is an issue with the ESP.reset() method. Check [https://github.com/esp8266/Arduino/issues/1017][4] for more info.
+
+Current version of ESP8266httpUpdate restarts the modules after SPIFFS update, thus preventing the firmware to be updated too. There is a recent commit fixing that which is not yet pushed to PLatformIO. Check [Fix example for ESP8266httpUpdate][5] for more info.
+
 
 [1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html
 [2]: http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff
 [3]: http://www.platformio.org
+[4]: https://github.com/esp8266/Arduino/issues/1017
+[5]: https://github.com/esp8266/Arduino/pull/2251

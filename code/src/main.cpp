@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
 #include <ESP8266mDNS.h>
 #include <PubSubClient.h>
 #include <DebounceEvent.h>
@@ -30,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "FS.h"
 #include <stdio.h>
 #include <EmonLiteESP.h>
+#include <ArduinoJson.h>
+#include <ESP8266httpUpdate.h>
 
 // -----------------------------------------------------------------------------
 // Configuració
@@ -39,13 +42,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define ENABLE_RF               1
 #define ENABLE_OTA              1
+#define ENABLE_OTA_AUTO         0
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
-#define ENABLE_ENERGYMONITOR    1
+#define ENABLE_ENERGYMONITOR    0
 
-#define APP_NAME                "Espurna 0.9.1"
+#define APP_NAME                "Espurna"
+#define APP_VERSION             "0.9.2"
 #define APP_AUTHOR              "xose.perez@gmail.com"
 #define APP_WEBSITE             "http://tinkerman.cat"
+
+#define OTA_SERVER              "http://192.168.1.100"
+#define OTA_CHECK_INTERVAL      30000
 
 #define MODEL                   "SONOFF"
 #define BUTTON_PIN              0
@@ -165,6 +173,31 @@ char * getCompileTime(char * buffer) {
 
 }
 
+char * getIdentifier() {
+    if (identifier[0] == 0) {
+        sprintf(identifier, "%s_%06X", MODEL, ESP.getChipId());
+    }
+    return identifier;
+}
+
+void blink(unsigned long delayOff, unsigned long delayOn) {
+    static unsigned long next = millis();
+    static bool status = HIGH;
+    if (next < millis()) {
+        status = !status;
+        digitalWrite(LED_PIN, status);
+        next += ((status) ? delayOff : delayOn);
+    }
+}
+
+void showStatus() {
+    if (WiFi.status() == WL_CONNECTED) {
+        blink(5000, 500);
+    } else {
+        blink(500, 500);
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Relay
 // -----------------------------------------------------------------------------
@@ -214,15 +247,297 @@ void toggleRelay() {
 }
 
 // -----------------------------------------------------------------------------
-// Wifi
+// Configuration
 // -----------------------------------------------------------------------------
 
-char * getIdentifier() {
-    if (identifier[0] == 0) {
-        sprintf(identifier, "%s_%06X", MODEL, ESP.getChipId());
+bool saveConfig() {
+    File file = SPIFFS.open(CONFIG_PATH, "w");
+    if (file) {
+        file.println("ssid0=" + configSSID[0]);
+        file.println("pass0=" + configPASS[0]);
+        file.println("ssid1=" + configSSID[1]);
+        file.println("pass1=" + configPASS[1]);
+        file.println("ssid2=" + configSSID[2]);
+        file.println("pass2=" + configPASS[2]);
+        #if ENABLE_MQTT
+            file.println("mqttServer=" + mqttServer);
+            file.println("mqttPort=" + mqttPort);
+            file.println("mqttTopic=" + mqttTopic);
+        #endif
+        #if ENABLE_RF
+            file.println("rfChannel=" + rfChannel);
+            file.println("rfDevice=" + rfDevice);
+        #endif
+        file.close();
+        return true;
     }
-    return identifier;
+    return false;
 }
+
+bool loadConfig() {
+
+    if (SPIFFS.exists(CONFIG_PATH)) {
+
+        #ifdef DEBUG
+            Serial.println("Reading config file");
+        #endif
+
+        // Read contents
+        File file = SPIFFS.open(CONFIG_PATH, "r");
+        String content = file.readString();
+        file.close();
+
+        // Parse contents
+        content.replace("\r\n", "\n");
+        content.replace("\r", "\n");
+
+        int start = 0;
+        int end = content.indexOf("\n", start);
+        while (end > 0) {
+            String line = content.substring(start, end);
+            #ifdef DEBUG
+                Serial.println(line);
+            #endif
+            if (line.startsWith("ssid0=")) configSSID[0] = line.substring(6);
+            else if (line.startsWith("pass0=")) configPASS[0] = line.substring(6);
+            else if (line.startsWith("ssid1=")) configSSID[1] = line.substring(6);
+            else if (line.startsWith("pass1=")) configPASS[1] = line.substring(6);
+            else if (line.startsWith("ssid2=")) configSSID[2] = line.substring(6);
+            else if (line.startsWith("pass2=")) configPASS[2] = line.substring(6);
+            #if ENABLE_MQTT
+                else if (line.startsWith("mqttServer=")) mqttServer = line.substring(11);
+                else if (line.startsWith("mqttPort=")) mqttPort = line.substring(9);
+                else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(10);
+            #endif
+            #if ENABLE_RF
+                else if (line.startsWith("rfChannel=")) rfChannel = line.substring(10);
+                else if (line.startsWith("rfDevice=")) rfDevice = line.substring(9);
+            #endif
+            if (end < 0) break;
+            start = end + 1;
+            end = content.indexOf("\n", start);
+        }
+
+        return true;
+    }
+    return false;
+
+}
+
+// -----------------------------------------------------------------------------
+// OTA
+// -----------------------------------------------------------------------------
+
+#if ENABLE_OTA
+
+    void OTASetup() {
+
+        // Port defaults to 8266
+        ArduinoOTA.setPort(8266);
+
+        // Hostname defaults to esp8266-[ChipID]
+        ArduinoOTA.setHostname(getIdentifier());
+
+        // No authentication by default
+        ArduinoOTA.setPassword((const char *) ADMIN_PASS);
+
+        ArduinoOTA.onStart([]() {
+            #if ENABLE_RF
+                RemoteReceiver::disable();
+            #endif
+            #ifdef DEBUG
+                Serial.println("OTA - Start");
+            #endif
+        });
+
+        ArduinoOTA.onEnd([]() {
+            #ifdef DEBUG
+                Serial.println("OTA - End");
+            #endif
+            #if ENABLE_RF
+                RemoteReceiver::enable();
+            #endif
+        });
+
+        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+            #ifdef DEBUG
+                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+            #endif
+        });
+
+        ArduinoOTA.onError([](ota_error_t error) {
+            #ifdef DEBUG
+                Serial.printf("Error[%u]: ", error);
+                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+                else if (error == OTA_END_ERROR) Serial.println("End Failed");
+            #endif
+        });
+
+        ArduinoOTA.begin();
+
+    }
+
+    #if ENABLE_OTA_AUTO
+        void OTAUpdate() {
+
+            static unsigned long last_check = 0;
+
+            if (WiFi.status() != WL_CONNECTED) return;
+            if ((last_check > 0) && (millis() - last_check < OTA_CHECK_INTERVAL)) return;
+            last_check = millis();
+
+            HTTPClient http;
+            char url[100];
+            sprintf(url, "%s/%s/%s", OTA_SERVER, MODEL, APP_VERSION);
+            http.begin(url);
+            int httpCode = http.GET();
+
+            #ifdef DEBUG
+                Serial.print("AUTO OTA UPDATE - GET ");
+                Serial.print(url);
+                Serial.print(" [");
+                Serial.print(httpCode);
+                Serial.println("]");
+            #endif
+
+            if (httpCode > 0) {
+
+                String payload = http.getString();
+                StaticJsonBuffer<500> jsonBuffer;
+                JsonObject& root = jsonBuffer.parseObject(payload);
+
+                if (root.success()) {
+
+                    const char* action = root["action"];
+                    if (strcmp("update", action) == 0) {
+
+                        bool error = false;
+                        uint8_t updates = 0;
+
+                        #ifdef DEBUG
+                            const char* version = root["target"]["version"];
+                            Serial.print("Updating with version: ");
+                            Serial.println(version);
+                        #endif
+
+                        const char* spiffs = root["target"]["spiffs"];
+                        if (spiffs[0] != 0) {
+
+                            // Update SPIFFS
+                            sprintf(url, "%s/%s", OTA_SERVER, spiffs);
+                            #ifdef DEBUG
+                                Serial.print("Updating file system from ");
+                                Serial.println(url);
+                            #endif
+
+                            t_httpUpdate_return ret = ESPhttpUpdate.updateSpiffs(url);
+                            if (ret == HTTP_UPDATE_FAILED) {
+                                error = true;
+                                #ifdef DEBUG
+                                    Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+                                #endif
+                            } else if (ret == HTTP_UPDATE_OK) {
+                                updates++;
+                                #ifdef DEBUG
+                                    Serial.println("HTTP_UPDATE_OK");
+                                #endif
+                            } else {
+                                #ifdef DEBUG
+                                    Serial.printf("HTTP_UPDATE_NO_UPDATES");
+                                #endif
+                            }
+
+                            // Restore config
+                            saveConfig();
+
+                        } else {
+
+                            #ifdef DEBUG
+                                Serial.println("No file system binary available");
+                            #endif
+
+                        }
+
+                        if (!error) {
+
+                            const char* firmware = root["target"]["firmware"];
+                            if (firmware[0] != 0) {
+
+                                // Update binary
+                                sprintf(url, "%s%s", OTA_SERVER, firmware);
+                                #ifdef DEBUG
+                                    Serial.print("Updating firmware from ");
+                                    Serial.println(url);
+                                #endif
+
+                                t_httpUpdate_return ret = ESPhttpUpdate.update(url);
+                                if (ret == HTTP_UPDATE_FAILED) {
+                                    #ifdef DEBUG
+                                        Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+                                    #endif
+                                } else if (ret == HTTP_UPDATE_OK) {
+                                    updates++;
+                                    #ifdef DEBUG
+                                        Serial.println("HTTP_UPDATE_OK");
+                                    #endif
+                                } else {
+                                    #ifdef DEBUG
+                                        Serial.printf("HTTP_UPDATE_NO_UPDATES");
+                                    #endif
+                                }
+
+                                if (updates > 0) {
+                                    ESP.restart();
+                                }
+
+                            } else {
+
+                                #ifdef DEBUG
+                                    Serial.println("No firmware binary available");
+                                #endif
+
+                            }
+
+                        }
+
+                    } else {
+
+                        #ifdef DEBUG
+                            Serial.println("Already in the latest version");
+                        #endif
+
+                    }
+
+                } else {
+
+                    #ifdef DEBUG
+                        Serial.println("Error parsing JSON");
+                    #endif
+
+                }
+
+            }
+
+            http.end();
+
+        }
+    #endif
+
+    void OTALoop() {
+        ArduinoOTA.handle();
+        #if ENABLE_OTA_AUTO
+            OTAUpdate();
+        #endif
+    }
+
+#endif
+
+// -----------------------------------------------------------------------------
+// Wifi
+// -----------------------------------------------------------------------------
 
 void wifiSetupAP() {
 
@@ -235,6 +550,7 @@ void wifiSetupAP() {
     // SoftAP mode
     WiFi.softAP(getIdentifier(), ADMIN_PASS);
     status = WIFI_STATUS_AP;
+    delay(100);
     #ifdef DEBUG
         Serial.print("[AP Mode] SSID: ");
         Serial.print(getIdentifier());
@@ -310,6 +626,9 @@ void wifiSetupSTA(bool force) {
             Serial.print(", IP address: ");
             Serial.println(WiFi.localIP());
         #endif
+        #if ENABLE_OTA_AUTO
+            OTAUpdate();
+        #endif
     } else {
         #ifdef DEBUG
             Serial.println("[STA Mode] NOT CONNECTED");
@@ -328,6 +647,68 @@ void wifiLoop() {
     }
 
 }
+
+// -----------------------------------------------------------------------------
+// RF
+// -----------------------------------------------------------------------------
+
+#if ENABLE_RF
+
+    void rfLoop() {
+        if (rfCode == 0) return;
+        #ifdef DEBUG
+            Serial.print("RF code: ");
+            Serial.println(rfCode);
+        #endif
+        if (rfCode == rfCodeON) switchRelayOn();
+        if (rfCode == rfCodeOFF) switchRelayOff();
+        rfCode = 0;
+    }
+
+    void rfBuildCodes() {
+
+        unsigned long code = 0;
+
+        // channel
+        unsigned int channel = rfChannel.toInt();
+        for (byte i = 0; i < 5; i++) {
+            code *= 3;
+            if (channel & 1) code += 1;
+            channel >>= 1;
+        }
+
+        // device
+        unsigned int device = rfDevice.toInt();
+        for (byte i = 0; i < 5; i++) {
+            code *= 3;
+            if (device != i) code += 2;
+        }
+
+        // status
+        code *= 9;
+        rfCodeOFF = code + 2;
+        rfCodeON = code + 6;
+
+        #ifdef DEBUG
+            Serial.print("RF code ON: ");
+            Serial.println(rfCodeON);
+            Serial.print("RF code OFF: ");
+            Serial.println(rfCodeOFF);
+        #endif
+
+    }
+
+    void rfCallback(unsigned long code, unsigned int period) {
+        rfCode = code;
+    }
+
+    void rfSetup() {
+        rfBuildCodes();
+        RemoteReceiver::init(RF_PIN, 3, rfCallback);
+        RemoteReceiver::enable();
+    }
+
+#endif
 
 // -----------------------------------------------------------------------------
 // WebServer
@@ -416,7 +797,7 @@ void wifiLoop() {
         // Replace placeholders
         getCompileTime(buffer);
 
-        content.replace("{appname}", String(APP_NAME) + "." + String(buffer));
+        content.replace("{appname}", String(APP_NAME) + " " + String(APP_VERSION) + " built " + String(buffer));
         content.replace("{status}", digitalRead(RELAY_PIN) ? "1" : "0");
         content.replace("{updateInterval}", String(STATUS_UPDATE_INTERVAL));
         content.replace("{ssid0}", configSSID[0]);
@@ -698,208 +1079,6 @@ void wifiLoop() {
 #endif
 
 // -----------------------------------------------------------------------------
-// RF
-// -----------------------------------------------------------------------------
-
-#if ENABLE_RF
-
-    void rfLoop() {
-        if (rfCode == 0) return;
-        #ifdef DEBUG
-            Serial.print("RF code: ");
-            Serial.println(rfCode);
-        #endif
-        if (rfCode == rfCodeON) switchRelayOn();
-        if (rfCode == rfCodeOFF) switchRelayOff();
-        rfCode = 0;
-    }
-
-    void rfBuildCodes() {
-
-        unsigned long code = 0;
-
-        // channel
-        unsigned int channel = rfChannel.toInt();
-        for (byte i = 0; i < 5; i++) {
-            code *= 3;
-            if (channel & 1) code += 1;
-            channel >>= 1;
-        }
-
-        // device
-        unsigned int device = rfDevice.toInt();
-        for (byte i = 0; i < 5; i++) {
-            code *= 3;
-            if (device != i) code += 2;
-        }
-
-        // status
-        code *= 9;
-        rfCodeOFF = code + 2;
-        rfCodeON = code + 6;
-
-        #ifdef DEBUG
-            Serial.print("RF code ON: ");
-            Serial.println(rfCodeON);
-            Serial.print("RF code OFF: ");
-            Serial.println(rfCodeOFF);
-        #endif
-
-    }
-
-    void rfCallback(unsigned long code, unsigned int period) {
-        rfCode = code;
-    }
-
-    void rfSetup() {
-        rfBuildCodes();
-        RemoteReceiver::init(RF_PIN, 3, rfCallback);
-        RemoteReceiver::enable();
-    }
-
-#endif
-
-// -----------------------------------------------------------------------------
-// Configuration
-// -----------------------------------------------------------------------------
-
-bool saveConfig() {
-    File file = SPIFFS.open(CONFIG_PATH, "w");
-    if (file) {
-        file.println("ssid0=" + configSSID[0]);
-        file.println("pass0=" + configPASS[0]);
-        file.println("ssid1=" + configSSID[1]);
-        file.println("pass1=" + configPASS[1]);
-        file.println("ssid2=" + configSSID[2]);
-        file.println("pass2=" + configPASS[2]);
-        #if ENABLE_MQTT
-            file.println("mqttServer=" + mqttServer);
-            file.println("mqttPort=" + mqttPort);
-            file.println("mqttTopic=" + mqttTopic);
-        #endif
-        #if ENABLE_RF
-            file.println("rfChannel=" + rfChannel);
-            file.println("rfDevice=" + rfDevice);
-        #endif
-        file.close();
-        return true;
-    }
-    return false;
-}
-
-bool loadConfig() {
-
-    if (SPIFFS.exists(CONFIG_PATH)) {
-
-        #ifdef DEBUG
-            Serial.println("Reading config file");
-        #endif
-
-        // Read contents
-        File file = SPIFFS.open(CONFIG_PATH, "r");
-        String content = file.readString();
-        file.close();
-
-        // Parse contents
-        content.replace("\r\n", "\n");
-        content.replace("\r", "\n");
-
-        int start = 0;
-        int end = content.indexOf("\n", start);
-        while (end > 0) {
-            String line = content.substring(start, end);
-            #ifdef DEBUG
-                Serial.println(line);
-            #endif
-            if (line.startsWith("ssid0=")) configSSID[0] = line.substring(6);
-            else if (line.startsWith("pass0=")) configPASS[0] = line.substring(6);
-            else if (line.startsWith("ssid1=")) configSSID[1] = line.substring(6);
-            else if (line.startsWith("pass1=")) configPASS[1] = line.substring(6);
-            else if (line.startsWith("ssid2=")) configSSID[2] = line.substring(6);
-            else if (line.startsWith("pass2=")) configPASS[2] = line.substring(6);
-            #if ENABLE_MQTT
-                else if (line.startsWith("mqttServer=")) mqttServer = line.substring(11);
-                else if (line.startsWith("mqttPort=")) mqttPort = line.substring(9);
-                else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(10);
-            #endif
-            #if ENABLE_RF
-                else if (line.startsWith("rfChannel=")) rfChannel = line.substring(10);
-                else if (line.startsWith("rfDevice=")) rfDevice = line.substring(9);
-            #endif
-            if (end < 0) break;
-            start = end + 1;
-            end = content.indexOf("\n", start);
-        }
-
-        return true;
-    }
-    return false;
-
-}
-
-// -----------------------------------------------------------------------------
-// OTA
-// -----------------------------------------------------------------------------
-
-#if ENABLE_OTA
-
-    void OTASetup() {
-
-        // Port defaults to 8266
-        ArduinoOTA.setPort(8266);
-
-        // Hostname defaults to esp8266-[ChipID]
-        ArduinoOTA.setHostname(getIdentifier());
-
-        // No authentication by default
-        ArduinoOTA.setPassword((const char *) ADMIN_PASS);
-
-        ArduinoOTA.onStart([]() {
-            #if ENABLE_RF
-                RemoteReceiver::disable();
-            #endif
-            #ifdef DEBUG
-                Serial.println("OTA - Start");
-            #endif
-        });
-
-        ArduinoOTA.onEnd([]() {
-            #ifdef DEBUG
-                Serial.println("OTA - End");
-            #endif
-            #if ENABLE_RF
-                RemoteReceiver::enable();
-            #endif
-        });
-
-        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-            #ifdef DEBUG
-                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-            #endif
-        });
-
-        ArduinoOTA.onError([](ota_error_t error) {
-            #ifdef DEBUG
-                Serial.printf("Error[%u]: ", error);
-                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-                else if (error == OTA_END_ERROR) Serial.println("End Failed");
-            #endif
-        });
-
-        ArduinoOTA.begin();
-
-    }
-
-    void OTALoop() {
-        ArduinoOTA.handle();
-    }
-
-#endif
-
-// -----------------------------------------------------------------------------
 // Energy Monitor
 // -----------------------------------------------------------------------------
 
@@ -964,24 +1143,6 @@ void hardwareSetup() {
     EEPROM.read(0) == 1 ? switchRelayOn() : switchRelayOff();
 }
 
-void blink(unsigned long delayOff, unsigned long delayOn) {
-    static unsigned long next = millis();
-    static bool status = HIGH;
-    if (next < millis()) {
-        status = !status;
-        digitalWrite(LED_PIN, status);
-        next += ((status) ? delayOff : delayOn);
-    }
-}
-
-void showStatus() {
-    if (WiFi.status() == WL_CONNECTED) {
-        blink(5000, 500);
-    } else {
-        blink(500, 500);
-    }
-}
-
 void hardwareLoop() {
     if (button1.loop()) {
         if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
@@ -996,10 +1157,16 @@ void hardwareLoop() {
 // -----------------------------------------------------------------------------
 
 void welcome() {
+    char buffer[BUFFER_SIZE];
+    getCompileTime(buffer);
     Serial.println();
-    Serial.println(APP_NAME);
-    Serial.println(APP_WEBSITE);
+    Serial.print(APP_NAME);
+    Serial.print(" ");
+    Serial.print(APP_VERSION);
+    Serial.print(" built ");
+    Serial.println(buffer);
     Serial.println(APP_AUTHOR);
+    Serial.println(APP_WEBSITE);
     Serial.println();
     Serial.print("Device: ");
     Serial.println(getIdentifier());
@@ -1011,6 +1178,7 @@ void welcome() {
 void setup() {
 
     hardwareSetup();
+    delay(1000);
     welcome();
 
     #if ENABLE_OTA
