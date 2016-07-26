@@ -1,7 +1,6 @@
 <?php
 
-// Routes
-
+// Check update entry point
 $app->get('/{model}/{current}', function($request, $response, $args) {
 
     $found = false;
@@ -10,15 +9,11 @@ $app->get('/{model}/{current}', function($request, $response, $args) {
 
     foreach ($this->get('data') as $version) {
 
-        if (($model == $version['model'])
-            && (($version['firmware']['min'] == "*" || version_compare($version['firmware']['min'], $current, "<=")))
-            && (($version['firmware']['max'] == "*" || version_compare($version['firmware']['max'], $current, ">")))) {
+        if (($model == $version['origin']['model'])
+            && (($version['origin']['min'] == '*' || version_compare($version['origin']['min'], $current, '<=')))
+            && (($version['origin']['max'] == '*' || version_compare($version['origin']['max'], $current, '>=')))) {
 
-            $response->getBody()->write(stripslashes(json_encode(array(
-                'action' => 'update',
-                'target' => $version["target"]
-            ))));
-
+            $response->getBody()->write(stripslashes(json_encode($version['target'])));
             $found = true;
             break;
 
@@ -26,10 +21,15 @@ $app->get('/{model}/{current}', function($request, $response, $args) {
     };
 
     if (!$found) {
-        $response->getBody()->write(stripslashes(json_encode(array(
-            'action' => 'none',
-        ))));
+        $response->getBody()->write("{}");
     }
+
+    $this->get('devices')->info(
+        "from:"
+        . $request->getAttribute('ip_address')
+        . " model:$model version:$current update:"
+        . ($found ? $version['target']['version'] : "none")
+    );
 
     return $response;
 

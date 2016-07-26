@@ -16,6 +16,7 @@
         "slim/slim": "^3.1",
         "slim/php-view": "^2.0",
         "monolog/monolog": "^1.17",
-        "slim/twig-view": "^2.1"
+        "slim/twig-view": "^2.1",
+        "akrabat/rka-ip-address-middleware": "^0.4.0"
     }
 }

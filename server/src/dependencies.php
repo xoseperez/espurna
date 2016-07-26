@@ -19,12 +19,21 @@ $container['view'] = function ($container) {
 };
 
 // monolog
-$container['logger'] = function ($container) {
-    $settings = $container->get('settings')['logger'];
+$container['devices'] = function ($container) {
+
+    $settings = $container->get('settings')['devices'];
+
+    $dateFormat = "[Y/m/d H:i:s]";
+    $output = "%datetime% %message%\n";
+    $formatter = new Monolog\Formatter\LineFormatter($output, $dateFormat);
+    $stream = new Monolog\Handler\StreamHandler($settings['path'], Monolog\Logger::INFO);
+    $stream->setFormatter($formatter);
+
     $logger = new Monolog\Logger($settings['name']);
-    $logger->pushProcessor(new Monolog\Processor\UidProcessor());
-    $logger->pushHandler(new Monolog\Handler\StreamHandler($settings['path'], Monolog\Logger::DEBUG));
+    $logger->pushHandler($stream);
+
     return $logger;
+
 };
 
 // version database
