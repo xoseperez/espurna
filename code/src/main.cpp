@@ -18,21 +18,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#include <stdio.h>
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266HTTPClient.h>
 #include <ESP8266mDNS.h>
-#include <PubSubClient.h>
-#include <DebounceEvent.h>
 #include <ArduinoOTA.h>
-#include <RemoteReceiver.h>
 #include <EEPROM.h>
 #include "FS.h"
-#include <stdio.h>
+
+#include "Config.h"
+#include "AutoOTA.h"
+#include <DebounceEvent.h>
 #include <EmonLiteESP.h>
+
+#include <PubSubClient.h>
+#include <RemoteReceiver.h>
 #include <ArduinoJson.h>
-#include <ESP8266httpUpdate.h>
 
 // -----------------------------------------------------------------------------
 // Configuració
@@ -40,7 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG
 
-#define ENABLE_RF               1
+#define ENABLE_RF               0
 #define ENABLE_OTA              1
 #define ENABLE_OTA_AUTO         0
 #define ENABLE_MQTT             1
@@ -48,34 +51,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ENABLE_ENERGYMONITOR    0
 
 #define APP_NAME                "Espurna"
-#define APP_VERSION             "0.9.2"
+#define APP_VERSION             "0.9.3"
 #define APP_AUTHOR              "xose.perez@gmail.com"
 #define APP_WEBSITE             "http://tinkerman.cat"
 
-#define OTA_SERVER              "http://192.168.1.100"
-#define OTA_CHECK_INTERVAL      30000
-
-#define MODEL                   "SONOFF"
+#define MANUFACTURER            "ITEAD"
+//#define MODEL                   "SONOFF"
+#define MODEL                   "S20"
 #define BUTTON_PIN              0
 #define RELAY_PIN               12
 #define LED_PIN                 13
 
 #define ADMIN_PASS              "fibonacci"
-#define CONFIG_PATH             "/.config"
 
 #define BUFFER_SIZE             1024
 #define STATUS_UPDATE_INTERVAL  10000
 
 #define RF_PIN                  14
-#define RF_CHANNEL              31
-#define RF_DEVICE               1
 
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
-#define MQTT_TOPIC              "/test/switch/{identifier}"
-#define MQTT_PORT               1883
 
-#define NETWORK_BUFFER          3
 #define WIFI_CONNECT_TIMEOUT    5000
 #define WIFI_RECONNECT_DELAY    5000
 #define WIFI_STATUS_CONNECTING  0
@@ -84,8 +80,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define CURRENT_PIN             A0
 #define REFERENCE_VOLTAGE       1.0
-#define MAINS_VOLTAGE           230.0
-#define CURRENT_RATIO           156
 #define CURRENT_PRECISION       1
 #define SAMPLES_X_MEASUREMENT   1500
 #define MEASUREMENT_INTERVAL    10000
@@ -95,11 +89,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Globals
 // -----------------------------------------------------------------------------
 
-char identifier[20] = {0};
-
 byte status = WIFI_STATUS_CONNECTING;
-String configSSID[NETWORK_BUFFER];
-String configPASS[NETWORK_BUFFER];
 
 DebounceEvent button1 = false;
 
@@ -110,15 +100,10 @@ DebounceEvent button1 = false;
 #if ENABLE_MQTT
     WiFiClient client;
     PubSubClient mqtt(client);
-    String mqttServer = "";
-    String mqttTopic = MQTT_TOPIC;
-    String mqttPort = String(MQTT_PORT);
-    String mqttUser = "";
-    String mqttPassword = "";
-    char mqttStatusTopic[30];
-    char mqttIPTopic[30];
+    char mqttStatusTopic[40];
+    char mqttIPTopic[40];
     #if ENABLE_ENERGYMONITOR
-        char mqttPowerTopic[30];
+        char mqttPowerTopic[40];
     #endif
     bool isMQTTMessage = false;
 #endif
@@ -127,12 +112,11 @@ DebounceEvent button1 = false;
     unsigned long rfCode = 0;
     unsigned long rfCodeON = 0;
     unsigned long rfCodeOFF = 0;
-    String rfChannel = String(RF_CHANNEL);
-    String rfDevice = String(RF_DEVICE);
 #endif
 
 #if ENABLE_ENERGYMONITOR
     EnergyMonitor monitor;
+    double current;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -173,11 +157,10 @@ char * getCompileTime(char * buffer) {
 
 }
 
-char * getIdentifier() {
-    if (identifier[0] == 0) {
-        sprintf(identifier, "%s_%06X", MODEL, ESP.getChipId());
-    }
-    return identifier;
+String getIdentifier() {
+    char identifier[20];
+    sprintf(identifier, "%s_%06X", MODEL, ESP.getChipId());
+    return String(identifier);
 }
 
 void blink(unsigned long delayOff, unsigned long delayOn) {
@@ -205,7 +188,7 @@ void showStatus() {
 void switchRelayOn() {
     if (!digitalRead(RELAY_PIN)) {
         #ifdef DEBUG
-            Serial.println("Turning the relay ON");
+            Serial.println(F("Turning the relay ON"));
         #endif
         #if ENABLE_MQTT
             if (!isMQTTMessage && mqtt.connected()) {
@@ -223,7 +206,7 @@ void switchRelayOn() {
 void switchRelayOff() {
     if (digitalRead(RELAY_PIN)) {
         #ifdef DEBUG
-            Serial.println("Turning the relay OFF");
+            Serial.println(F("Turning the relay OFF"));
         #endif
         #if ENABLE_MQTT
             if (!isMQTTMessage && mqtt.connected()) {
@@ -247,84 +230,6 @@ void toggleRelay() {
 }
 
 // -----------------------------------------------------------------------------
-// Configuration
-// -----------------------------------------------------------------------------
-
-bool saveConfig() {
-    File file = SPIFFS.open(CONFIG_PATH, "w");
-    if (file) {
-        file.println("ssid0=" + configSSID[0]);
-        file.println("pass0=" + configPASS[0]);
-        file.println("ssid1=" + configSSID[1]);
-        file.println("pass1=" + configPASS[1]);
-        file.println("ssid2=" + configSSID[2]);
-        file.println("pass2=" + configPASS[2]);
-        #if ENABLE_MQTT
-            file.println("mqttServer=" + mqttServer);
-            file.println("mqttPort=" + mqttPort);
-            file.println("mqttTopic=" + mqttTopic);
-        #endif
-        #if ENABLE_RF
-            file.println("rfChannel=" + rfChannel);
-            file.println("rfDevice=" + rfDevice);
-        #endif
-        file.close();
-        return true;
-    }
-    return false;
-}
-
-bool loadConfig() {
-
-    if (SPIFFS.exists(CONFIG_PATH)) {
-
-        #ifdef DEBUG
-            Serial.println("Reading config file");
-        #endif
-
-        // Read contents
-        File file = SPIFFS.open(CONFIG_PATH, "r");
-        String content = file.readString();
-        file.close();
-
-        // Parse contents
-        content.replace("\r\n", "\n");
-        content.replace("\r", "\n");
-
-        int start = 0;
-        int end = content.indexOf("\n", start);
-        while (end > 0) {
-            String line = content.substring(start, end);
-            #ifdef DEBUG
-                Serial.println(line);
-            #endif
-            if (line.startsWith("ssid0=")) configSSID[0] = line.substring(6);
-            else if (line.startsWith("pass0=")) configPASS[0] = line.substring(6);
-            else if (line.startsWith("ssid1=")) configSSID[1] = line.substring(6);
-            else if (line.startsWith("pass1=")) configPASS[1] = line.substring(6);
-            else if (line.startsWith("ssid2=")) configSSID[2] = line.substring(6);
-            else if (line.startsWith("pass2=")) configPASS[2] = line.substring(6);
-            #if ENABLE_MQTT
-                else if (line.startsWith("mqttServer=")) mqttServer = line.substring(11);
-                else if (line.startsWith("mqttPort=")) mqttPort = line.substring(9);
-                else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(10);
-            #endif
-            #if ENABLE_RF
-                else if (line.startsWith("rfChannel=")) rfChannel = line.substring(10);
-                else if (line.startsWith("rfDevice=")) rfDevice = line.substring(9);
-            #endif
-            if (end < 0) break;
-            start = end + 1;
-            end = content.indexOf("\n", start);
-        }
-
-        return true;
-    }
-    return false;
-
-}
-
-// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
@@ -332,13 +237,8 @@ bool loadConfig() {
 
     void OTASetup() {
 
-        // Port defaults to 8266
         ArduinoOTA.setPort(8266);
-
-        // Hostname defaults to esp8266-[ChipID]
-        ArduinoOTA.setHostname(getIdentifier());
-
-        // No authentication by default
+        ArduinoOTA.setHostname(config.hostname.c_str());
         ArduinoOTA.setPassword((const char *) ADMIN_PASS);
 
         ArduinoOTA.onStart([]() {
@@ -346,13 +246,13 @@ bool loadConfig() {
                 RemoteReceiver::disable();
             #endif
             #ifdef DEBUG
-                Serial.println("OTA - Start");
+                Serial.println(F("[OTA] - Start"));
             #endif
         });
 
         ArduinoOTA.onEnd([]() {
             #ifdef DEBUG
-                Serial.println("OTA - End");
+                Serial.println(F("[OTA] - End"));
             #endif
             #if ENABLE_RF
                 RemoteReceiver::enable();
@@ -361,176 +261,99 @@ bool loadConfig() {
 
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
             #ifdef DEBUG
-                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+                Serial.printf("[OTA] - Progress: %u%%\r", (progress / (total / 100)));
             #endif
         });
 
         ArduinoOTA.onError([](ota_error_t error) {
             #ifdef DEBUG
-                Serial.printf("Error[%u]: ", error);
-                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-                else if (error == OTA_END_ERROR) Serial.println("End Failed");
+                Serial.printf("[OTA] - Error[%u]: ", error);
+                if (error == OTA_AUTH_ERROR) Serial.println(F("[OTA] - Auth Failed"));
+                else if (error == OTA_BEGIN_ERROR) Serial.println(F("[OTA] - Begin Failed"));
+                else if (error == OTA_CONNECT_ERROR) Serial.println(F("[OTA] - Connect Failed"));
+                else if (error == OTA_RECEIVE_ERROR) Serial.println(F("[OTA] - Receive Failed"));
+                else if (error == OTA_END_ERROR) Serial.println(F("[OTA] - End Failed"));
             #endif
         });
+
+        #if ENABLE_OTA_AUTO
+
+            AutoOTA.setServer(config.otaServer);
+            AutoOTA.setModel(MODEL);
+            AutoOTA.setVersion(APP_VERSION);
+
+            AutoOTA.onMessage([](auto_ota_t code) {
+
+                if (code == AUTO_OTA_FILESYSTEM_UPDATED) {
+                    #ifdef DEBUG
+                        Serial.print(F("[AUTOOTA] - File System Updated"));
+                    #endif
+                    config.save();
+                }
+                #ifdef DEBUG
+
+                    if (code == AUTO_OTA_START) {
+                        Serial.println(F("[AUTOOTA] - Start"));
+                    }
+
+                    if (code == AUTO_OTA_UPTODATE) {
+                        Serial.println(F("[AUTOOTA] - Already in the last version"));
+                    }
+
+                    if (code == AUTO_OTA_PARSE_ERROR) {
+                        Serial.println(F("[AUTOOTA] - Error parsing server response"));
+                    }
+
+                    if (code == AUTO_OTA_UPDATING) {
+                        Serial.println(F("[AUTOOTA] - Updating"));
+                        Serial.print(  F("          New version: "));
+                        Serial.println(AutoOTA.getNewVersion());
+                        Serial.print(  F("          Firmware: "));
+                        Serial.println(AutoOTA.getNewFirmware());
+                        Serial.print(  F("          File System: "));
+                        Serial.println(AutoOTA.getNewFileSystem());
+                    }
+
+                    if (code == AUTO_OTA_FILESYSTEM_UPDATE_ERROR) {
+                        Serial.print(F("[AUTOOTA] - File System Update Error: "));
+                        Serial.println(AutoOTA.getErrorString());
+                    }
+
+                    if (code == AUTO_OTA_FIRMWARE_UPDATE_ERROR) {
+                        Serial.print(F("[AUTOOTA] - Firmware Update Error: "));
+                        Serial.println(AutoOTA.getErrorString());
+                    }
+
+                    if (code == AUTO_OTA_FIRMWARE_UPDATED) {
+                        Serial.print(F("[AUTOOTA] - Firmware Updated"));
+                    }
+
+                    if (code == AUTO_OTA_RESET) {
+                        Serial.println(F("[AUTOOTA] - Resetting board"));
+                    }
+
+                    if (code == AUTO_OTA_END) {
+                        Serial.println(F("[AUTOOTA] - End"));
+                    }
+
+                #endif
+            });
+
+        #endif
 
         ArduinoOTA.begin();
 
     }
 
-    #if ENABLE_OTA_AUTO
-        void OTAUpdate() {
-
-            static unsigned long last_check = 0;
-
-            if (WiFi.status() != WL_CONNECTED) return;
-            if ((last_check > 0) && (millis() - last_check < OTA_CHECK_INTERVAL)) return;
-            last_check = millis();
-
-            HTTPClient http;
-            char url[100];
-            sprintf(url, "%s/%s/%s", OTA_SERVER, MODEL, APP_VERSION);
-            http.begin(url);
-            int httpCode = http.GET();
-
-            #ifdef DEBUG
-                Serial.print("AUTO OTA UPDATE - GET ");
-                Serial.print(url);
-                Serial.print(" [");
-                Serial.print(httpCode);
-                Serial.println("]");
-            #endif
-
-            if (httpCode > 0) {
-
-                String payload = http.getString();
-                StaticJsonBuffer<500> jsonBuffer;
-                JsonObject& root = jsonBuffer.parseObject(payload);
-
-                if (root.success()) {
-
-                    const char* action = root["action"];
-                    if (strcmp("update", action) == 0) {
-
-                        bool error = false;
-                        uint8_t updates = 0;
-
-                        #ifdef DEBUG
-                            const char* version = root["target"]["version"];
-                            Serial.print("Updating with version: ");
-                            Serial.println(version);
-                        #endif
-
-                        const char* spiffs = root["target"]["spiffs"];
-                        if (spiffs[0] != 0) {
-
-                            // Update SPIFFS
-                            sprintf(url, "%s/%s", OTA_SERVER, spiffs);
-                            #ifdef DEBUG
-                                Serial.print("Updating file system from ");
-                                Serial.println(url);
-                            #endif
-
-                            t_httpUpdate_return ret = ESPhttpUpdate.updateSpiffs(url);
-                            if (ret == HTTP_UPDATE_FAILED) {
-                                error = true;
-                                #ifdef DEBUG
-                                    Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-                                #endif
-                            } else if (ret == HTTP_UPDATE_OK) {
-                                updates++;
-                                #ifdef DEBUG
-                                    Serial.println("HTTP_UPDATE_OK");
-                                #endif
-                            } else {
-                                #ifdef DEBUG
-                                    Serial.printf("HTTP_UPDATE_NO_UPDATES");
-                                #endif
-                            }
-
-                            // Restore config
-                            saveConfig();
-
-                        } else {
-
-                            #ifdef DEBUG
-                                Serial.println("No file system binary available");
-                            #endif
-
-                        }
-
-                        if (!error) {
-
-                            const char* firmware = root["target"]["firmware"];
-                            if (firmware[0] != 0) {
-
-                                // Update binary
-                                sprintf(url, "%s%s", OTA_SERVER, firmware);
-                                #ifdef DEBUG
-                                    Serial.print("Updating firmware from ");
-                                    Serial.println(url);
-                                #endif
-
-                                t_httpUpdate_return ret = ESPhttpUpdate.update(url);
-                                if (ret == HTTP_UPDATE_FAILED) {
-                                    #ifdef DEBUG
-                                        Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-                                    #endif
-                                } else if (ret == HTTP_UPDATE_OK) {
-                                    updates++;
-                                    #ifdef DEBUG
-                                        Serial.println("HTTP_UPDATE_OK");
-                                    #endif
-                                } else {
-                                    #ifdef DEBUG
-                                        Serial.printf("HTTP_UPDATE_NO_UPDATES");
-                                    #endif
-                                }
-
-                                if (updates > 0) {
-                                    ESP.restart();
-                                }
-
-                            } else {
-
-                                #ifdef DEBUG
-                                    Serial.println("No firmware binary available");
-                                #endif
-
-                            }
-
-                        }
-
-                    } else {
-
-                        #ifdef DEBUG
-                            Serial.println("Already in the latest version");
-                        #endif
-
-                    }
-
-                } else {
-
-                    #ifdef DEBUG
-                        Serial.println("Error parsing JSON");
-                    #endif
-
-                }
-
-            }
-
-            http.end();
-
-        }
-    #endif
-
     void OTALoop() {
-        ArduinoOTA.handle();
         #if ENABLE_OTA_AUTO
-            OTAUpdate();
+            static unsigned long last_check = 0;
+            if (WiFi.status() != WL_CONNECTED) return;
+            if ((last_check > 0) && ((millis() - last_check) < config.otaInterval.toInt())) return;
+            last_check = millis();
+            AutoOTA.handle();
         #endif
+        ArduinoOTA.handle();
     }
 
 #endif
@@ -548,15 +371,15 @@ void wifiSetupAP() {
     #endif
 
     // SoftAP mode
-    WiFi.softAP(getIdentifier(), ADMIN_PASS);
+    WiFi.softAP(config.hostname.c_str(), ADMIN_PASS);
     status = WIFI_STATUS_AP;
     delay(100);
     #ifdef DEBUG
-        Serial.print("[AP Mode] SSID: ");
-        Serial.print(getIdentifier());
-        Serial.print(", Password: \"");
+        Serial.print(F("[AP Mode] SSID: "));
+        Serial.print(config.hostname);
+        Serial.print(F(", Password: \""));
         Serial.print(ADMIN_PASS);
-        Serial.print("\", IP address: ");
+        Serial.print(F("\", IP address: "));
         Serial.println(WiFi.softAPIP());
     #endif
 
@@ -584,16 +407,16 @@ void wifiSetupSTA(bool force) {
 
         while (network < 3) {
 
-            if (configSSID[network].length() > 0) {
+            if (config.ssid[network].length() > 0) {
 
-                char ssid[configSSID[network].length()+1];
-                char pass[configPASS[network].length()+1];
-                configSSID[network].toCharArray(ssid, configSSID[network].length()+1);
-                configPASS[network].toCharArray(pass, configPASS[network].length()+1);
-                WiFi.begin(ssid, pass);
+                WiFi.begin(
+                    (const char *) config.ssid[network].c_str(),
+                    (const char *) config.pass[network].c_str()
+                );
 
                 #ifdef DEBUG
-                    Serial.println("Connecting to WIFI " + configSSID[network]);
+                    Serial.print(F("Connecting to WIFI "));
+                    Serial.println(config.ssid[network]);
                 #endif
 
                 // Wait
@@ -621,17 +444,17 @@ void wifiSetupSTA(bool force) {
         WiFi.setAutoConnect(true);
         status = WIFI_STATUS_CONNECTED;
         #ifdef DEBUG
-            Serial.print("[STA Mode] SSID: ");
+            Serial.print(F("[STA Mode] SSID: "));
             Serial.print(WiFi.SSID());
-            Serial.print(", IP address: ");
+            Serial.print(F(", IP address: "));
             Serial.println(WiFi.localIP());
         #endif
         #if ENABLE_OTA_AUTO
-            OTAUpdate();
+            AutoOTA.handle();
         #endif
     } else {
         #ifdef DEBUG
-            Serial.println("[STA Mode] NOT CONNECTED");
+            Serial.println(F("[STA Mode] NOT CONNECTED"));
         #endif
         wifiSetupAP();
     }
@@ -657,7 +480,7 @@ void wifiLoop() {
     void rfLoop() {
         if (rfCode == 0) return;
         #ifdef DEBUG
-            Serial.print("RF code: ");
+            Serial.print(F("RF code: "));
             Serial.println(rfCode);
         #endif
         if (rfCode == rfCodeON) switchRelayOn();
@@ -670,7 +493,7 @@ void wifiLoop() {
         unsigned long code = 0;
 
         // channel
-        unsigned int channel = rfChannel.toInt();
+        unsigned int channel = config.rfChannel.toInt();
         for (byte i = 0; i < 5; i++) {
             code *= 3;
             if (channel & 1) code += 1;
@@ -678,7 +501,7 @@ void wifiLoop() {
         }
 
         // device
-        unsigned int device = rfDevice.toInt();
+        unsigned int device = config.rfDevice.toInt();
         for (byte i = 0; i < 5; i++) {
             code *= 3;
             if (device != i) code += 2;
@@ -690,9 +513,9 @@ void wifiLoop() {
         rfCodeON = code + 6;
 
         #ifdef DEBUG
-            Serial.print("RF code ON: ");
+            Serial.print(F("RF code ON: "));
             Serial.println(rfCodeON);
-            Serial.print("RF code OFF: ");
+            Serial.print(F("RF code OFF: "));
             Serial.println(rfCodeOFF);
         #endif
 
@@ -735,7 +558,7 @@ void wifiLoop() {
 
     void handleRelayOn() {
         #ifdef DEBUG
-            Serial.println("Request: /relay/on");
+            Serial.println(F("Request: /relay/on"));
         #endif
         switchRelayOn();
         server.send(200, "text/plain", "ON");
@@ -743,7 +566,7 @@ void wifiLoop() {
 
     void handleRelayOff() {
         #ifdef DEBUG
-            Serial.println("Request: /relay/off");
+            Serial.println(F("Request: /relay/off"));
         #endif
         switchRelayOff();
         server.send(200, "text/plain", "OFF");
@@ -752,7 +575,8 @@ void wifiLoop() {
     bool handleFileRead(String path) {
 
         #ifdef DEBUG
-            Serial.println("Request: " + path);
+            Serial.print(F("Request: "));
+            Serial.println(path);
         #endif
 
         if (path.endsWith("/")) path += "index.html";
@@ -772,62 +596,85 @@ void wifiLoop() {
 
     }
 
-    void handleHome() {
+    void handleInit() {
 
         #ifdef DEBUG
-            Serial.println("Request: /index.html");
+            Serial.println("Request: /init");
         #endif
 
-        String filename = "/index.html";
-        String content = "";
-        char buffer[BUFFER_SIZE];
+        char buffer[64];
+        char built[16];
+        getCompileTime(built);
+        sprintf(buffer, "%s %s built %s", APP_NAME, APP_VERSION, built);
 
-        // Read file in chunks
-        File file = SPIFFS.open(filename, "r");
-        int size = file.size();
-        while (size > 0) {
-            size_t len = std::min(BUFFER_SIZE-1, size);
-            file.read((uint8_t *) buffer, len);
-            buffer[len] = 0;
-            content += buffer;
-            size -= len;
-        }
-        file.close();
+        StaticJsonBuffer<1024> jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
 
-        // Replace placeholders
-        getCompileTime(buffer);
+        root["appname"] = String(buffer);
+        root["manufacturer"] = String(MANUFACTURER);
+        root["model"] = String(MODEL);
+        root["hostname"] = config.hostname;
+        root["network"] = (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "ACCESS POINT";
+        root["ip"] = (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+        root["updateInterval"] = STATUS_UPDATE_INTERVAL;
 
-        content.replace("{appname}", String(APP_NAME) + " " + String(APP_VERSION) + " built " + String(buffer));
-        content.replace("{status}", digitalRead(RELAY_PIN) ? "1" : "0");
-        content.replace("{updateInterval}", String(STATUS_UPDATE_INTERVAL));
-        content.replace("{ssid0}", configSSID[0]);
-        content.replace("{pass0}", configPASS[0]);
-        content.replace("{ssid1}", configSSID[1]);
-        content.replace("{pass1}", configPASS[1]);
-        content.replace("{ssid2}", configSSID[2]);
-        content.replace("{pass2}", configPASS[2]);
+        root["ssid0"] = config.ssid[0];
+        root["pass0"] = config.pass[0];
+        root["ssid1"] = config.ssid[1];
+        root["pass1"] = config.pass[1];
+        root["ssid2"] = config.ssid[2];
+        root["pass2"] = config.pass[2];
+
         #if ENABLE_MQTT
-            content.replace("{mqttServer}", mqttServer);
-            content.replace("{mqttPort}", mqttPort);
-            content.replace("{mqttUser}", mqttUser);
-            content.replace("{mqttPassword}", mqttPassword);
-            content.replace("{mqttTopic}", mqttTopic);
-        #endif
-        #if ENABLE_RF
-            content.replace("{rfChannel}", rfChannel);
-            content.replace("{rfDevice}", rfDevice);
+            root["mqttServer"] = config.mqttServer;
+            root["mqttPort"] = config.mqttPort;
+            root["mqttUser"] = config.mqttUser;
+            root["mqttPassword"] = config.mqttPassword;
+            root["mqttTopic"] = config.mqttTopic;
         #endif
 
-        // Serve content
-        String contentType = getContentType(filename);
-        server.send(200, contentType, content);
+        #if ENABLE_RF
+            root["rfChannel"] = config.rfChannel;
+            root["rfDevice"] = config.rfDevice;
+        #endif
+
+        #if ENABLE_ENERGYMONITOR
+            root["pwMainsVoltage"] = config.pwMainsVoltage;
+            root["pwCurrentRatio"] = config.pwCurrentRatio;
+        #endif
+
+        String output;
+        root.printTo(output);
+        server.send(200, "text/json", output);
+
+    }
+
+    void handleStatus() {
+
+        #ifdef DEBUG
+            //Serial.println("Request: /status");
+        #endif
+
+        StaticJsonBuffer<256> jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        root["relay"] = digitalRead(RELAY_PIN) ? 1: 0;
+        #if ENABLE_MQTT
+            root["mqtt"] = mqtt.connected() ? 1: 0;
+        #endif
+        #if ENABLE_ENERGYMONITOR
+            root["power"] = current * config.pwMainsVoltage.toFloat();
+        #endif
+
+        String output;
+        root.printTo(output);
+        server.send(200, "text/json", output);
 
     }
 
     void handleSave() {
 
         #ifdef DEBUG
-            Serial.println("Request: /save");
+            Serial.println(F("Request: /save"));
         #endif
 
         if (server.hasArg("status")) {
@@ -838,57 +685,38 @@ void wifiLoop() {
             }
         }
 
-        if (server.hasArg("ssid0")) configSSID[0] = server.arg("ssid0");
-        if (server.hasArg("pass0")) configPASS[0] = server.arg("pass0");
-        if (server.hasArg("ssid1")) configSSID[1] = server.arg("ssid1");
-        if (server.hasArg("pass1")) configPASS[1] = server.arg("pass1");
-        if (server.hasArg("ssid2")) configSSID[2] = server.arg("ssid2");
-        if (server.hasArg("pass2")) configPASS[2] = server.arg("pass2");
+        if (server.hasArg("ssid0")) config.ssid[0] = server.arg("ssid0");
+        if (server.hasArg("pass0")) config.pass[0] = server.arg("pass0");
+        if (server.hasArg("ssid1")) config.ssid[1] = server.arg("ssid1");
+        if (server.hasArg("pass1")) config.pass[1] = server.arg("pass1");
+        if (server.hasArg("ssid2")) config.ssid[2] = server.arg("ssid2");
+        if (server.hasArg("pass2")) config.pass[2] = server.arg("pass2");
         #if ENABLE_MQTT
-            if (server.hasArg("mqttServer")) mqttServer = server.arg("mqttServer");
-            if (server.hasArg("mqttPort")) mqttPort = server.arg("mqttPort");
-            if (server.hasArg("mqttUser")) mqttUser = server.arg("mqttUser");
-            if (server.hasArg("mqttPassword")) mqttPassword = server.arg("mqttPassword");
-            if (server.hasArg("mqttTopic")) mqttTopic = server.arg("mqttTopic");
+            if (server.hasArg("mqttServer")) config.mqttServer = server.arg("mqttServer");
+            if (server.hasArg("mqttPort")) config.mqttPort = server.arg("mqttPort");
+            if (server.hasArg("mqttUser")) config.mqttUser = server.arg("mqttUser");
+            if (server.hasArg("mqttPassword")) config.mqttPassword = server.arg("mqttPassword");
+            if (server.hasArg("mqttTopic")) config.mqttTopic = server.arg("mqttTopic");
         #endif
         #if ENABLE_RF
-            if (server.hasArg("rfChannel")) rfChannel = server.arg("rfChannel");
-            if (server.hasArg("rfDevice")) rfDevice = server.arg("rfDevice");
+            if (server.hasArg("rfChannel")) config.rfChannel = server.arg("rfChannel");
+            if (server.hasArg("rfDevice")) config.rfDevice = server.arg("rfDevice");
+        #endif
+        #if ENABLE_ENERGYMONITOR
+            if (server.hasArg("pwMainsVoltage")) config.pwMainsVoltage = server.arg("pwMainsVoltage");
+            if (server.hasArg("pwCurrentRatio")) config.pwCurrentRatio = server.arg("pwCurrentRatio");
         #endif
 
         server.send(202, "text/json", "{}");
 
-        saveConfig();
+        config.save();
         #if ENABLE_RF
             rfBuildCodes();
         #endif
+        #if ENABLE_ENERGYMONITOR
+            monitor.setCurrentRatio(config.pwCurrentRatio.toFloat());
+        #endif
         wifiSetupSTA(true);
-
-    }
-
-    void handleStatus() {
-
-        #ifdef DEBUG
-            //Serial.println("Request: /status");
-        #endif
-
-        String output = "{";
-
-        output += "\"device\": \"";
-        output += getIdentifier();
-        output += "\", \"ip\": \"";
-        output += (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "NOT CONNECTED";
-        output += "\", \"network\": \"";
-        output += (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "";
-        output += "\", \"relay\": ";
-        output += (digitalRead(RELAY_PIN)) ? "1": "0";
-        #if ENABLE_MQTT
-            output += ", \"mqtt\": ";
-            output += (mqtt.connected()) ? "1": "0";
-        #endif
-        output += "}";
-
-        server.send(200, "text/json", output);
 
     }
 
@@ -899,19 +727,20 @@ void wifiLoop() {
         server.on("/relay/off", HTTP_GET, handleRelayOff);
 
         // Configuration page
-        server.on("/save", HTTP_POST, handleSave);
+        server.on("/init", HTTP_GET, handleInit);
         server.on("/status", HTTP_GET, handleStatus);
-        server.on("/", HTTP_GET, handleHome);
-        server.on("/index.html", HTTP_GET, handleHome);
+        server.on("/save", HTTP_POST, handleSave);
 
         // Anything else
         server.onNotFound([]() {
 
             // Hidden files
-            if (server.uri().startsWith("/.")) {
-                server.send(403, "text/plain", "Forbidden");
-                return;
-            }
+            #ifndef DEBUG
+                if (server.uri().startsWith("/.")) {
+                    server.send(403, "text/plain", "Forbidden");
+                    return;
+                }
+            #endif
 
             // Existing files in SPIFFS
             if (!handleFileRead(server.uri())) {
@@ -943,8 +772,8 @@ void wifiLoop() {
         String tmp;
 
         // Replace identifier
-        String base = mqttTopic;
-        base.replace("{identifier}", getIdentifier());
+        String base = config.mqttTopic;
+        base.replace("{identifier}", config.hostname);
 
         // Get publish status topic
         base.toCharArray(mqttStatusTopic, base.length()+1);
@@ -967,9 +796,9 @@ void wifiLoop() {
     void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
         #ifdef DEBUG
-            Serial.print("MQTT message ");
+            Serial.print(F("MQTT message "));
             Serial.print(topic);
-            Serial.print(" => ");
+            Serial.print(F(" => "));
             for (int i = 0; i < length; i++) {
                 Serial.print((char)payload[i]);
             }
@@ -995,33 +824,31 @@ void wifiLoop() {
 
     void mqttConnect() {
 
-        if (!mqtt.connected() && (mqttServer.length()>0)) {
+        if (!mqtt.connected() && (config.mqttServer.length()>0)) {
 
-            char buffer[mqttServer.length()+1];
-            mqttServer.toCharArray(buffer, mqttServer.length()+1);
-            mqtt.setServer(buffer, mqttPort.toInt());
+            mqtt.setServer((const char *) config.mqttServer.c_str(), config.mqttPort.toInt());
 
             #ifdef DEBUG
-                Serial.print("Connecting to MQTT broker at ");
-                Serial.print(mqttServer);
+                Serial.print(F("Connecting to MQTT broker at "));
+                Serial.print(config.mqttServer);
             #endif
 
-            if (mqttUser.length() > 0) {
+            if (config.mqttUser.length() > 0) {
                 #ifdef DEBUG
-                    Serial.print(" as user ");
-                    Serial.print(mqttUser);
-                    Serial.print(": ");
+                    Serial.print(F(" as user "));
+                    Serial.print(config.mqttUser);
+                    Serial.print(F(": "));
                 #endif
-                char user[mqttUser.length() + 1];
-                mqttUser.toCharArray(user, mqttUser.length() + 1);
-                char password[mqttPassword.length() + 1];
-                mqttPassword.toCharArray(password, mqttPassword.length() + 1);
-                mqtt.connect(getIdentifier(), user, password);
+                mqtt.connect(
+                    config.hostname.c_str(),
+                    (const char *) config.mqttUser.c_str(),
+                    (const char *) config.mqttPassword.c_str()
+                );
             } else {
                 #ifdef DEBUG
-                    Serial.print(" anonymously: ");
+                    Serial.print(F(" anonymously: "));
                 #endif
-                mqtt.connect(getIdentifier());
+                mqtt.connect(config.hostname.c_str());
             }
 
             if (mqtt.connected()) {
@@ -1029,16 +856,14 @@ void wifiLoop() {
                 buildTopics();
 
                 #ifdef DEBUG
-                    Serial.println("connected!");
-                    Serial.print("Subscribing to ");
+                    Serial.println(F("connected!"));
+                    Serial.print(F("Subscribing to "));
                     Serial.println(mqttStatusTopic);
                 #endif
 
                 // Say hello and report our IP
                 String ipString = WiFi.localIP().toString();
-                char ip[ipString.length()+1];
-                ipString.toCharArray(ip, ipString.length()+1);
-                mqtt.publish(mqttIPTopic, ip, MQTT_RETAIN);
+                mqtt.publish(mqttIPTopic, (const char *) ipString.c_str(), MQTT_RETAIN);
 
                 // Publish current relay status
                 mqtt.publish(mqttStatusTopic, digitalRead(RELAY_PIN) ? "1" : "0", MQTT_RETAIN);
@@ -1050,7 +875,7 @@ void wifiLoop() {
             } else {
 
                 #ifdef DEBUG
-                    Serial.print("failed, rc=");
+                    Serial.print(F("failed, rc="));
                     Serial.println(mqtt.state());
                 #endif
 
@@ -1084,8 +909,12 @@ void wifiLoop() {
 
 #if ENABLE_ENERGYMONITOR
 
+    unsigned int getCurrent() {
+        return analogRead(CURRENT_PIN);
+    }
+
     void energyMonitorSetup() {
-        monitor.initCurrent(CURRENT_PIN, REFERENCE_VOLTAGE, CURRENT_RATIO);
+        monitor.initCurrent(getCurrent, REFERENCE_VOLTAGE, config.pwCurrentRatio.toFloat());
         monitor.setPrecision(CURRENT_PRECISION);
     }
 
@@ -1097,20 +926,22 @@ void wifiLoop() {
 
         if (millis() > next_measurement) {
 
-            double current = monitor.getCurrent(SAMPLES_X_MEASUREMENT);
+            current = monitor.getCurrent(SAMPLES_X_MEASUREMENT);
             sum += current;
             ++measurements;
 
+            /*
             #ifdef DEBUG
-                Serial.print("Power reading: ");
-                Serial.println(current * MAINS_VOLTAGE);
+                Serial.print(F("Power reading: "));
+                Serial.println(current * config.pwMainsVoltage.toFloat());
             #endif
+            */
 
             if (measurements == MEASUREMENTS_X_MESSAGE) {
                 char buffer[8];
-                sprintf(buffer, "%d", int(sum * MAINS_VOLTAGE / measurements));
+                sprintf(buffer, "%d", int(sum * config.pwMainsVoltage.toFloat() / measurements));
                 #ifdef DEBUG
-                    Serial.print("Power sending: ");
+                    Serial.print(F("Power: "));
                     Serial.println(buffer);
                 #endif
                 #if ENABLE_MQTT
@@ -1139,15 +970,15 @@ void hardwareSetup() {
     pinMode(RF_PIN, INPUT_PULLUP);
     button1 = DebounceEvent(BUTTON_PIN);
     SPIFFS.begin();
-    EEPROM.begin(1);
+    EEPROM.begin(4096);
     EEPROM.read(0) == 1 ? switchRelayOn() : switchRelayOff();
 }
 
 void hardwareLoop() {
     if (button1.loop()) {
         if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
-        if (button1.getEvent() == EVENT_DOUBLE_CLICK) wifiSetupAP();
-        if (button1.getEvent() == EVENT_LONG_CLICK) ESP.reset();
+        if (button1.getEvent() == EVENT_LONG_CLICK) wifiSetupAP();
+        if (button1.getEvent() == EVENT_DOUBLE_CLICK) ESP.reset();
     }
     showStatus();
 }
@@ -1161,30 +992,46 @@ void welcome() {
     getCompileTime(buffer);
     Serial.println();
     Serial.print(APP_NAME);
-    Serial.print(" ");
+    Serial.print(F(" "));
     Serial.print(APP_VERSION);
-    Serial.print(" built ");
+    Serial.print(F(" built "));
     Serial.println(buffer);
     Serial.println(APP_AUTHOR);
     Serial.println(APP_WEBSITE);
     Serial.println();
-    Serial.print("Device: ");
+    Serial.print(F("Device: "));
     Serial.println(getIdentifier());
-    Serial.print("Last reset reason: ");
+    Serial.print(F("Hostname: "));
+    Serial.println(config.hostname);
+    Serial.print(F("Last reset reason: "));
     Serial.println(ESP.getResetReason());
+    FSInfo fs_info;
+    if (SPIFFS.info(fs_info)) {
+        Serial.print("File system total size: ");
+        Serial.println(fs_info.totalBytes);
+        Serial.print("File system used size : ");
+        Serial.println(fs_info.usedBytes);
+    }
+    int value = EEPROM.read(10);
+    Serial.println(value++);
+    EEPROM.write(10, value);
+    EEPROM.commit();
     Serial.println();
 }
 
 void setup() {
 
     hardwareSetup();
+    config.load();
+    if (config.hostname.length() == 0) {
+        config.hostname = getIdentifier();
+    }
     delay(1000);
     welcome();
 
     #if ENABLE_OTA
         OTASetup();
     #endif
-    loadConfig();
     wifiSetupSTA(false);
     #if ENABLE_WEBSERVER
         webServerSetup();

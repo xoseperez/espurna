@@ -8,13 +8,18 @@
 #include "Arduino.h"
 #include "EmonLiteESP.h"
 
-void EnergyMonitor::initCurrent(unsigned int pin, double ref, double ratio) {
-    _currentPin = pin;
+void EnergyMonitor::initCurrent(current_c callback, double ref, double ratio) {
+
+    _currentCallback = callback;
     _referenceVoltage = ref;
     _currentRatio = ratio;
     _currentMidPoint = (ADC_COUNTS>>1);
 
-    // Calculate default precision
+    calculatePrecision();
+
+};
+
+void EnergyMonitor::calculatePrecision() {
     _currentFactor = _currentRatio * _referenceVoltage / ADC_COUNTS;
     _precision = 0;
     _multiplier = 1;
@@ -24,8 +29,15 @@ void EnergyMonitor::initCurrent(unsigned int pin, double ref, double ratio) {
     }
     --_precision;
     _multiplier /= 10;
+}
 
-};
+void EnergyMonitor::setReference(double ref) {
+    _referenceVoltage = ref;
+}
+
+void EnergyMonitor::setCurrentRatio(double ratio) {
+    _currentRatio = ratio;
+}
 
 byte EnergyMonitor::getPrecision() {
     return _precision;
@@ -46,10 +58,10 @@ double EnergyMonitor::getCurrent(unsigned int samples) {
     for (unsigned int n = 0; n < samples; n++) {
 
         // Read analog value
-        sample = analogRead(_currentPin);
+        sample = _currentCallback();
 
         // Digital low pass filter extracts the VDC offset
-        _currentMidPoint = (_currentMidPoint + (sample - _currentMidPoint) / 1024.0);
+        _currentMidPoint = (_currentMidPoint + (sample - _currentMidPoint) / 10.0);
         filtered = sample - _currentMidPoint;
 
         // Root-mean-square method
@@ -59,7 +71,11 @@ double EnergyMonitor::getCurrent(unsigned int samples) {
 
     double rms = int(sqrt(sum / samples) - 0.5);
     double current = _currentFactor * rms;
+    Serial.println(sum);
+    Serial.println(rms);
+    Serial.println(current);
     current = round(current * _multiplier) / _multiplier;
+    Serial.println(current);
     return current;
 
 };

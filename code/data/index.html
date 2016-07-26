@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>{appname}</title>
+        <title>ESPurna</title>
         <meta charset="utf-8" />
         <link rel="stylesheet" href="spectre.min.css" />
         <script src="jquery-1.12.3.min.js"></script>
@@ -51,16 +51,41 @@
                     setTimeout(update, 200);
                 });
 
+                function init() {
+                    $.ajax({
+                        'method': 'GET',
+                        'url': '/init',
+                        'dataType': 'json'
+                    }).done(function(data) {
+                        keys = Object.keys(data);
+                        for (index in keys) {
+                            key = "#" + keys[index];
+                            value = data[keys[index]];
+                            try {
+                                if ($(key).prop('tagName') == 'INPUT') {
+                                    $(key).val(value);
+                                } else {
+                                    $(key).html(value);
+                                }
+                            } catch(err) {
+                                // nope
+                            };
+                        };
+                        timer = setInterval(update, data.updateInterval);
+                        document.title = data.hostname;
+                        $("[name='pwMainsVoltage']").val(data.pwMainsVoltage);
+                        $("[name='rfDevice']").val(data.rfDevice);
+                    });
+                }
+
                 function update() {
                     $.ajax({
                         'method': 'GET',
                         'url': '/status',
                         'dataType': 'json'
                     }).done(function(data) {
-                        $("#device").val(data.device);
-                        $("#network").val(data.network.toUpperCase());
-                        $("#ip").val(data.ip);
                         $("#mqtt").val(data.mqtt ? "CONNECTED" : "NOT CONNECTED");
+                        $("#power").val((data.power | 0) + "W");
                         if (data.relay) {
                             $("#relay").addClass('btn-primary').html("ON");
                             $("#status").val(1);
@@ -72,8 +97,8 @@
                 }
 
                 $("#btn-admin").click(function() {
-                    $("#panel-admin").show();
                     $("#panel-status").hide();
+                    $("#panel-admin").show();
                     $("#btn-admin").addClass('btn-primary');
                     $("#btn-status").removeClass('btn-primary');
                 });
@@ -96,13 +121,8 @@
                     event.preventDefault();
                 })
 
-                function init() {
-                    update();
-                    timer = setInterval(update, {updateInterval});
-                    $("[name='rfDevice']").val({rfDevice});
-                }
-
                 init();
+                update();
 
             });
 
@@ -114,7 +134,7 @@
 
             <header class="navbar bg-grey">
                 <section class="navbar-section">
-                    <a href="#" class="navbar-brand">{appname}</a>
+                    <a href="#" class="navbar-brand"><span id="appname"></span></a>
                 </section>
                 <section class="navbar-section">
                     <button class="btn" id="btn-admin">Administration</button>
@@ -129,10 +149,26 @@
                         <form class="form-horizontal">
                             <div class="form-group">
                                 <div class="col-xs-3">
-                                    <label class="form-label" for="device">Device</label>
+                                    <label class="form-label" for="manufacturer">Manufacturer</label>
                                 </div>
                                 <div class="col-xs-9">
-                                    <input type="text" class="form-input" id="device" disabled>
+                                    <input type="text" class="form-input" id="manufacturer" value="" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="model">Model</label>
+                                </div>
+                                <div class="col-xs-9">
+                                    <input type="text" class="form-input" id="model" value="" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="hostname">Hostname</label>
+                                </div>
+                                <div class="col-xs-9">
+                                    <input type="text" class="form-input" id="hostname" value="" disabled>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -140,7 +176,7 @@
                                     <label class="form-label" for="network">Network</label>
                                 </div>
                                 <div class="col-xs-9">
-                                    <input type="text" class="form-input" id="network" disabled>
+                                    <input type="text" class="form-input" id="network" value="" disabled>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -148,7 +184,7 @@
                                     <label class="form-label" for="ip">IP</label>
                                 </div>
                                 <div class="col-xs-9">
-                                    <input type="text" class="form-input" id="ip" disabled>
+                                    <input type="text" class="form-input" id="ip" value="" disabled>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -157,6 +193,14 @@
                                 </div>
                                 <div class="col-xs-9">
                                     <input type="text" class="form-input" id="mqtt" disabled>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-xs-3">
+                                    <label class="form-label" for="power">Power</label>
+                                </div>
+                                <div class="col-xs-6">
+                                    <input type="text" class="form-input" id="power" disabled>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -187,33 +231,33 @@
                             <h5>Network 1</h5>
                             <div class="form-group">
                                 <label class="form-label" for="ssid0">Network SSID</label>
-                                <input name="ssid0" type="text" class="form-input" value="{ssid0}" size="8" tabindex="1" placeholder="Network SSID">
+                                <input name="ssid0" id="ssid0" type="text" class="form-input" size="8" tabindex="1" placeholder="Network SSID">
                             </div>
                             <div>
                                 <label class="form-label" for="pass0">Network Password</label>
-                                <input name="pass0" type="text" class="form-input" value="{pass0}" maxlength="255" tabindex="2" placeholder="Network password">
+                                <input name="pass0" id="pass0" type="text" class="form-input" maxlength="255" tabindex="2" placeholder="Network password">
                             </div>
                         </div>
                         <div class="column col-4">
                             <h5>Network 2</h5>
                             <div class="form-group">
                                 <label class="form-label" for="ssid1">Network SSID</label>
-                                <input name="ssid1" type="text" class="form-input" value="{ssid1}" size="8" tabindex="3" placeholder="Network SSID">
+                                <input name="ssid1" id="ssid1" type="text" class="form-input" size="8" tabindex="3" placeholder="Network SSID">
                             </div>
                             <div>
                                 <label class="form-label" for="pass1">Network Password</label>
-                                <input name="pass1" type="text" class="form-input" value="{pass1}" maxlength="255" tabindex="4" placeholder="Network password">
+                                <input name="pass1" id="pass1" type="text" class="form-input" maxlength="255" tabindex="4" placeholder="Network password">
                             </div>
                         </div>
                         <div class="column col-4">
                             <h5>Network 3</h5>
                             <div class="form-group">
                                 <label class="form-label" for="ssid2">Network SSID</label>
-                                <input name="ssid2" type="text" class="form-input" value="{ssid2}" size="8" tabindex="5" placeholder="Network SSID">
+                                <input name="ssid2" id="ssid2" type="text" class="form-input" size="8" tabindex="5" placeholder="Network SSID">
                             </div>
                             <div>
                                 <label class="form-label" for="pass2">Network Password</label>
-                                <input name="pass2" type="text" class="form-input" value="{pass2}" maxlength="255" tabindex="6" placeholder="Network password">
+                                <input name="pass2" id="pass2" type="text" class="form-input" maxlength="255" tabindex="6" placeholder="Network password">
                             </div>
                         </div>
 
@@ -230,13 +274,13 @@
                         <div class="column col-4">
                             <div class="form-group">
                                 <label class="form-label" for="mqttServer">MQTT Server</label>
-                                <input name="mqttServer" type="text" class="form-input" value="{mqttServer}" size="8" tabindex="8" placeholder="MQTT Server">
+                                <input name="mqttServer" id="mqttServer" type="text" class="form-input" size="8" tabindex="8" placeholder="MQTT Server">
                             </div>
                         </div>
                         <div class="column col-2">
                             <div class="form-group">
                                 <label class="form-label" for="mqttPort">MQTT Port</label>
-                                <input name="mqttPort" type="text" class="form-input" value="{mqttPort}" size="8" tabindex="9" placeholder="1883">
+                                <input name="mqttPort" id="mqttPort" type="text" class="form-input" size="8" tabindex="9" placeholder="1883">
                             </div>
                         </div>
                     </div>
@@ -244,13 +288,13 @@
                         <div class="column col-4">
                             <div class="form-group">
                                 <label class="form-label" for="mqttUser">MQTT User</label>
-                                <input name="mqttUser" type="text" class="form-input" value="{mqttUser}" size="8" tabindex="10" placeholder="Leave blank if no user/pass">
+                                <input name="mqttUser" id="mqttUser" type="text" class="form-input" size="8" tabindex="10" placeholder="Leave blank if no user/pass">
                             </div>
                         </div>
                         <div class="column col-4">
                             <div class="form-group">
                                 <label class="form-label" for="mqttPassword">MQTT Password</label>
-                                <input name="mqttPassword" type="text" class="form-input" value="{mqttPassword}" size="8" tabindex="11" placeholder="Leave blank if no user/pass">
+                                <input name="mqttPassword" id="mqttPassword" type="text" class="form-input" size="8" tabindex="11" placeholder="Leave blank if no user/pass">
                             </div>
                         </div>
                     </div>
@@ -258,7 +302,7 @@
                         <div class="column col-4">
                             <div class="form-group">
                                 <label class="form-label" for="mqttTopic">MQTT Topic</label>
-                                <input name="mqttTopic" type="text" class="form-input" value="{mqttTopic}" size="8" tabindex="12" placeholder="MQTT Topic">
+                                <input name="mqttTopic" id="mqttTopic" type="text" class="form-input" size="8" tabindex="12" maxlength="35" placeholder="MQTT Topic">
                             </div>
                         </div>
                     </div>
@@ -273,7 +317,7 @@
                         <div class="column col-2">
                             <div class="form-group">
                                 <label class="form-label" for="rfChannel">RF Channel</label>
-                                <input name="rfChannel" type="number" min="0" max="31" step="1" class="form-input" value="{rfChannel}" tabindex="13"/>
+                                <input name="rfChannel" id="rfChannel" type="number" min="0" max="31" step="1" class="form-input" tabindex="13"/>
                             </div>
                         </div>
                         <div class="column col-2">
@@ -286,6 +330,32 @@
                                     <option value="3">D</a>
                                     <option value="4">E</a>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clearfix"></div>
+
+                    <div class="hint">
+                        If your device supports power measurement, here you can configure line potential and current ratio.
+                    </div>
+
+                    <div class="columns">
+                        <div class="column col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="pwMainsVoltage">AC RMS Voltage</label>
+                                <select name="pwMainsVoltage" class="form-input" tabindex="15">
+                                    <option value="125">125</a>
+                                    <option value="220">220</a>
+                                    <option value="230">230</a>
+                                    <option value="240">240</a>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="column col-2">
+                            <div class="form-group">
+                                <label class="form-label" for="pwCurrentRatio">Current ratio</label>
+                                <input name="pwCurrentRatio" id="pwCurrentRatio" type="text" class="form-input" size="8" tabindex="16" placeholder="30">
                             </div>
                         </div>
                     </div>

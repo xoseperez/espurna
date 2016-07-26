@@ -46,11 +46,12 @@ class DebounceEvent {
         unsigned long _last_start;
         uint8_t _defaultStatus;
         unsigned long _delay;
-        callback_t _callback;
+        callback_t _callback = false;
 
     public:
 
-        DebounceEvent(uint8_t pin, callback_t callback = false, uint8_t defaultStatus = HIGH, unsigned long delay = DEBOUNCE_DELAY);
+        DebounceEvent(uint8_t pin, callback_t callback, uint8_t defaultStatus = HIGH, unsigned long delay = DEBOUNCE_DELAY);
+        DebounceEvent(uint8_t pin, uint8_t defaultStatus = HIGH, unsigned long delay = DEBOUNCE_DELAY);
         bool pressed();
         bool loop();
         uint8_t getEvent();

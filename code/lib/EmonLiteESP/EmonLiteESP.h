@@ -11,18 +11,23 @@
 #define ADC_BITS    10
 #define ADC_COUNTS  (1<<ADC_BITS)
 
+typedef unsigned int (*current_c)();
+
 class EnergyMonitor {
 
   public:
 
-    void initCurrent(unsigned int pin, double ref, double ratio);
+    void initCurrent(current_c callback, double ref, double ratio);
     double getCurrent(unsigned int samples);
     byte getPrecision();
     void setPrecision(byte precision);
+    void setReference(double ref);
+    void setCurrentRatio(double ratio);
+    void calculatePrecision();
 
   private:
 
-    unsigned int _currentPin;
+    current_c _currentCallback;
     double _referenceVoltage;
     double _currentRatio;
     double _currentMidPoint;

@@ -22,12 +22,16 @@
 #include "DebounceEvent.h"
 
 DebounceEvent::DebounceEvent(uint8_t pin, callback_t callback, uint8_t defaultStatus, unsigned long delay) {
+    _callback = callback;
+    DebounceEvent(pin, defaultStatus, delay);
+}
+
+DebounceEvent::DebounceEvent(uint8_t pin, uint8_t defaultStatus, unsigned long delay) {
 
     // store configuration
     _pin = pin;
     _status = _defaultStatus = defaultStatus;
     _delay = delay;
-    _callback = callback;
 
     // set up button
     if (_defaultStatus == LOW) {
