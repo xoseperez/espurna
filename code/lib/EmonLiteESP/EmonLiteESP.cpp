@@ -71,11 +71,7 @@ double EnergyMonitor::getCurrent(unsigned int samples) {
 
     double rms = int(sqrt(sum / samples) - 0.5);
     double current = _currentFactor * rms;
-    Serial.println(sum);
-    Serial.println(rms);
-    Serial.println(current);
     current = round(current * _multiplier) / _multiplier;
-    Serial.println(current);
     return current;
 
 };

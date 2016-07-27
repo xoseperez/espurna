@@ -13,7 +13,8 @@
 // Defaults
 // -----------------------------------------------------------------------------
 
-#define CONFIG_PATH         "/.config"
+#define CONFIG_START        128
+#define CONFIG_VERSION      0x81
 
 #define NETWORK_BUFFER      3
 

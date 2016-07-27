@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
@@ -36,6 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <PubSubClient.h>
 #include <RemoteReceiver.h>
 #include <ArduinoJson.h>
+#include "DHT.h"
 
 // -----------------------------------------------------------------------------
 // Configuració
@@ -48,7 +50,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ENABLE_OTA_AUTO         0
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
-#define ENABLE_ENERGYMONITOR    0
+#define ENABLE_ENERGYMONITOR    1
+#define ENABLE_DHT              1
 
 #define APP_NAME                "Espurna"
 #define APP_VERSION             "0.9.3"
@@ -56,8 +59,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define APP_WEBSITE             "http://tinkerman.cat"
 
 #define MANUFACTURER            "ITEAD"
-//#define MODEL                   "SONOFF"
-#define MODEL                   "S20"
+#define MODEL                   "SONOFF"
+//#define MODEL                   "S20"
 #define BUTTON_PIN              0
 #define RELAY_PIN               12
 #define LED_PIN                 13
@@ -69,11 +72,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define RF_PIN                  14
 
+#define DHT_PIN                 14
+#define DHT_UPDATE_INTERVAL     300000
+#define DHT_TYPE                DHT22
+#define DHT_TIMING              11
+
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
 
 #define WIFI_CONNECT_TIMEOUT    5000
-#define WIFI_RECONNECT_DELAY    5000
+#define WIFI_RECONNECT_DELAY    2000
+
 #define WIFI_STATUS_CONNECTING  0
 #define WIFI_STATUS_CONNECTED   1
 #define WIFI_STATUS_AP          2
@@ -102,6 +111,10 @@ DebounceEvent button1 = false;
     PubSubClient mqtt(client);
     char mqttStatusTopic[40];
     char mqttIPTopic[40];
+    #if ENABLE_DHT
+        char mqttTemperatureTopic[40];
+        char mqttHumidityTopic[40];
+    #endif
     #if ENABLE_ENERGYMONITOR
         char mqttPowerTopic[40];
     #endif
@@ -112,6 +125,10 @@ DebounceEvent button1 = false;
     unsigned long rfCode = 0;
     unsigned long rfCodeON = 0;
     unsigned long rfCodeOFF = 0;
+#endif
+
+#if ENABLE_DHT
+    DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
 #endif
 
 #if ENABLE_ENERGYMONITOR
@@ -188,7 +205,7 @@ void showStatus() {
 void switchRelayOn() {
     if (!digitalRead(RELAY_PIN)) {
         #ifdef DEBUG
-            Serial.println(F("Turning the relay ON"));
+            Serial.println(F("[RELAY] ON"));
         #endif
         #if ENABLE_MQTT
             if (!isMQTTMessage && mqtt.connected()) {
@@ -206,7 +223,7 @@ void switchRelayOn() {
 void switchRelayOff() {
     if (digitalRead(RELAY_PIN)) {
         #ifdef DEBUG
-            Serial.println(F("Turning the relay OFF"));
+            Serial.println(F("[RELAY] OFF"));
         #endif
         #if ENABLE_MQTT
             if (!isMQTTMessage && mqtt.connected()) {
@@ -375,7 +392,7 @@ void wifiSetupAP() {
     status = WIFI_STATUS_AP;
     delay(100);
     #ifdef DEBUG
-        Serial.print(F("[AP Mode] SSID: "));
+        Serial.print(F("[WIFI] Mode: AP, SSID: "));
         Serial.print(config.hostname);
         Serial.print(F(", Password: \""));
         Serial.print(ADMIN_PASS);
@@ -385,66 +402,62 @@ void wifiSetupAP() {
 
 }
 
-void wifiSetupSTA(bool force) {
+void wifiSetupSTA() {
 
     byte network = 0;
 
-    if (force || (WiFi.status() != WL_CONNECTED)) {
+    // Set WIFI module to STA mode
+    WiFi.mode(WIFI_STA);
+    #ifdef DEBUG
+        //WiFi.printDiag(Serial);
+    #endif
 
-        // Set WIFI module to STA mode
-        WiFi.mode(WIFI_STA);
-        #ifdef DEBUG
-            WiFi.printDiag(Serial);
-        #endif
+    #if ENABLE_MQTT
+        if (mqtt.connected()) mqtt.disconnect();
+    #endif
 
-        #if ENABLE_MQTT
-            if (mqtt.connected()) mqtt.disconnect();
-        #endif
+    #if ENABLE_RF
+        RemoteReceiver::disable();
+    #endif
 
-        #if ENABLE_RF
-            RemoteReceiver::disable();
-        #endif
+    while (network < 3) {
 
-        while (network < 3) {
+        if (config.ssid[network].length() > 0) {
 
-            if (config.ssid[network].length() > 0) {
+            WiFi.begin(
+                (const char *) config.ssid[network].c_str(),
+                (const char *) config.pass[network].c_str()
+            );
 
-                WiFi.begin(
-                    (const char *) config.ssid[network].c_str(),
-                    (const char *) config.pass[network].c_str()
-                );
+            #ifdef DEBUG
+                Serial.print(F("[WIFI] Connecting to "));
+                Serial.println(config.ssid[network]);
+            #endif
 
-                #ifdef DEBUG
-                    Serial.print(F("Connecting to WIFI "));
-                    Serial.println(config.ssid[network]);
-                #endif
-
-                // Wait
-                unsigned long timeout = millis() + WIFI_CONNECT_TIMEOUT;
-                while (timeout > millis()) {
-                    showStatus();
-                    if (WiFi.status() == WL_CONNECTED) break;
-                    delay(100);
-                }
-
+            // Wait
+            unsigned long timeout = millis() + WIFI_CONNECT_TIMEOUT;
+            while (timeout > millis()) {
+                showStatus();
+                if (WiFi.status() == WL_CONNECTED) break;
+                delay(100);
             }
-
-            if (WiFi.status() == WL_CONNECTED) break;
-            network++;
 
         }
 
-        #if ENABLE_RF
-            RemoteReceiver::enable();
-        #endif
+        if (WiFi.status() == WL_CONNECTED) break;
+        network++;
 
     }
+
+    #if ENABLE_RF
+        RemoteReceiver::enable();
+    #endif
 
     if (WiFi.status() == WL_CONNECTED) {
         WiFi.setAutoConnect(true);
         status = WIFI_STATUS_CONNECTED;
         #ifdef DEBUG
-            Serial.print(F("[STA Mode] SSID: "));
+            Serial.print(F("[WIFI] Mode: STA, SSID: "));
             Serial.print(WiFi.SSID());
             Serial.print(F(", IP address: "));
             Serial.println(WiFi.localIP());
@@ -454,19 +467,34 @@ void wifiSetupSTA(bool force) {
         #endif
     } else {
         #ifdef DEBUG
-            Serial.println(F("[STA Mode] NOT CONNECTED"));
+            Serial.println(F("[WIFI] Not connected"));
         #endif
-        wifiSetupAP();
     }
 
 }
 
+void wifiSetup(bool force) {
+    if (force || (WiFi.status() != WL_CONNECTED)) {
+        wifiSetupSTA();
+        if (WiFi.status() != WL_CONNECTED) wifiSetupAP();
+    }
+}
+
 void wifiLoop() {
 
-    // Trying to reconnect in case of disconnection
+    static unsigned long last_check = 0;
+
+    // Check disconnection
     if ((status == WIFI_STATUS_CONNECTED) && (WiFi.status() != WL_CONNECTED)) {
         status = WIFI_STATUS_CONNECTING;
-        wifiSetupSTA(false);
+    }
+
+    // If not connected (either AP or STA) try to reconnect every WIFI_RECONNECT_DELAY
+    if (status == WIFI_STATUS_CONNECTING) {
+        if ((millis() - last_check) > WIFI_RECONNECT_DELAY) {
+            wifiSetup(false);
+            last_check = millis();
+        }
     }
 
 }
@@ -480,7 +508,7 @@ void wifiLoop() {
     void rfLoop() {
         if (rfCode == 0) return;
         #ifdef DEBUG
-            Serial.print(F("RF code: "));
+            Serial.print(F("[RF] Received code: "));
             Serial.println(rfCode);
         #endif
         if (rfCode == rfCodeON) switchRelayOn();
@@ -513,9 +541,9 @@ void wifiLoop() {
         rfCodeON = code + 6;
 
         #ifdef DEBUG
-            Serial.print(F("RF code ON: "));
+            Serial.print(F("[RF] Code ON: "));
             Serial.println(rfCodeON);
-            Serial.print(F("RF code OFF: "));
+            Serial.print(F("[RF] Code OFF: "));
             Serial.println(rfCodeOFF);
         #endif
 
@@ -558,7 +586,7 @@ void wifiLoop() {
 
     void handleRelayOn() {
         #ifdef DEBUG
-            Serial.println(F("Request: /relay/on"));
+            Serial.println(F("[WEBSERVER] Request: /relay/on"));
         #endif
         switchRelayOn();
         server.send(200, "text/plain", "ON");
@@ -566,7 +594,7 @@ void wifiLoop() {
 
     void handleRelayOff() {
         #ifdef DEBUG
-            Serial.println(F("Request: /relay/off"));
+            Serial.println(F("[WEBSERVER] Request: /relay/off"));
         #endif
         switchRelayOff();
         server.send(200, "text/plain", "OFF");
@@ -575,7 +603,7 @@ void wifiLoop() {
     bool handleFileRead(String path) {
 
         #ifdef DEBUG
-            Serial.print(F("Request: "));
+            Serial.print(F("[WEBSERVER] Request: "));
             Serial.println(path);
         #endif
 
@@ -599,7 +627,7 @@ void wifiLoop() {
     void handleInit() {
 
         #ifdef DEBUG
-            Serial.println("Request: /init");
+            Serial.println("[WEBSERVER] Request: /init");
         #endif
 
         char buffer[64];
@@ -652,7 +680,7 @@ void wifiLoop() {
     void handleStatus() {
 
         #ifdef DEBUG
-            //Serial.println("Request: /status");
+            //Serial.println("[WEBSERVER] Request: /status");
         #endif
 
         StaticJsonBuffer<256> jsonBuffer;
@@ -674,7 +702,7 @@ void wifiLoop() {
     void handleSave() {
 
         #ifdef DEBUG
-            Serial.println(F("Request: /save"));
+            Serial.println(F("[WEBSERVER] Request: /save"));
         #endif
 
         if (server.hasArg("status")) {
@@ -716,7 +744,7 @@ void wifiLoop() {
         #if ENABLE_ENERGYMONITOR
             monitor.setCurrentRatio(config.pwCurrentRatio.toFloat());
         #endif
-        wifiSetupSTA(true);
+        wifiSetup(true);
 
     }
 
@@ -791,12 +819,22 @@ void wifiLoop() {
             mqttPowerTopic[tmp.length()+1] = 0;
         #endif
 
+        // Get publish current topic
+        #if ENABLE_DHT
+            tmp = base + "/temperature";
+            tmp.toCharArray(mqttTemperatureTopic, tmp.length()+1);
+            mqttTemperatureTopic[tmp.length()+1] = 0;
+            tmp = base + "/humidity";
+            tmp.toCharArray(mqttHumidityTopic, tmp.length()+1);
+            mqttHumidityTopic[tmp.length()+1] = 0;
+        #endif
+
     }
 
     void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
         #ifdef DEBUG
-            Serial.print(F("MQTT message "));
+            Serial.print(F("[MQTT] Message "));
             Serial.print(topic);
             Serial.print(F(" => "));
             for (int i = 0; i < length; i++) {
@@ -829,7 +867,7 @@ void wifiLoop() {
             mqtt.setServer((const char *) config.mqttServer.c_str(), config.mqttPort.toInt());
 
             #ifdef DEBUG
-                Serial.print(F("Connecting to MQTT broker at "));
+                Serial.print(F("[MQTT] Connecting to broker at "));
                 Serial.print(config.mqttServer);
             #endif
 
@@ -853,22 +891,23 @@ void wifiLoop() {
 
             if (mqtt.connected()) {
 
-                buildTopics();
-
                 #ifdef DEBUG
                     Serial.println(F("connected!"));
-                    Serial.print(F("Subscribing to "));
-                    Serial.println(mqttStatusTopic);
                 #endif
 
+                buildTopics();
+
                 // Say hello and report our IP
-                String ipString = WiFi.localIP().toString();
-                mqtt.publish(mqttIPTopic, (const char *) ipString.c_str(), MQTT_RETAIN);
+                mqtt.publish(mqttIPTopic, (const char *) WiFi.localIP().toString().c_str(), MQTT_RETAIN);
 
                 // Publish current relay status
                 mqtt.publish(mqttStatusTopic, digitalRead(RELAY_PIN) ? "1" : "0", MQTT_RETAIN);
 
                 // Subscribe to topic
+                #ifdef DEBUG
+                    Serial.print(F("[MQTT] Subscribing to "));
+                    Serial.println(mqttStatusTopic);
+                #endif
                 mqtt.subscribe(mqttStatusTopic);
 
 
@@ -901,6 +940,59 @@ void wifiLoop() {
         }
     }
 
+#endif
+
+// -----------------------------------------------------------------------------
+// DHT
+// -----------------------------------------------------------------------------
+
+#if ENABLE_MQTT
+#if ENABLE_DHT
+
+    void dhtSetup() {
+        dht.begin();
+    }
+
+    void dhtLoop() {
+
+        static unsigned long last_check = 0;
+        if (!mqtt.connected()) return;
+        if ((millis() - last_check) < DHT_UPDATE_INTERVAL) return;
+        last_check = millis();
+
+        char buffer[10];
+
+        float t = dht.readTemperature();
+        if (isnan(t)) {
+            #ifdef DEBUG
+                Serial.println(F("[DHT] - Error reading temperature"));
+            #endif
+        } else {
+            dtostrf(t, 4, 1, buffer);
+            mqtt.publish(mqttTemperatureTopic, buffer, MQTT_RETAIN);
+            #ifdef DEBUG
+                Serial.print(F("[DHT] - Temperature: "));
+                Serial.println(t);
+            #endif
+        }
+
+        float h = dht.readHumidity();
+        if (isnan(h)) {
+            #ifdef DEBUG
+                Serial.println(F("[DHT] - Error reading humidity"));
+            #endif
+        } else {
+            dtostrf(h, 4, 1, buffer);
+            mqtt.publish(mqttHumidityTopic, buffer, MQTT_RETAIN);
+            #ifdef DEBUG
+                Serial.print(F("[DHT] - Humidity: "));
+                Serial.println(h);
+            #endif
+        }
+
+    }
+
+#endif
 #endif
 
 // -----------------------------------------------------------------------------
@@ -941,7 +1033,7 @@ void wifiLoop() {
                 char buffer[8];
                 sprintf(buffer, "%d", int(sum * config.pwMainsVoltage.toFloat() / measurements));
                 #ifdef DEBUG
-                    Serial.print(F("Power: "));
+                    Serial.print(F("[ENERGY] Power: "));
                     Serial.println(buffer);
                 #endif
                 #if ENABLE_MQTT
@@ -991,6 +1083,7 @@ void welcome() {
     char buffer[BUFFER_SIZE];
     getCompileTime(buffer);
     Serial.println();
+    Serial.println();
     Serial.print(APP_NAME);
     Serial.print(F(" "));
     Serial.print(APP_VERSION);
@@ -1001,8 +1094,6 @@ void welcome() {
     Serial.println();
     Serial.print(F("Device: "));
     Serial.println(getIdentifier());
-    Serial.print(F("Hostname: "));
-    Serial.println(config.hostname);
     Serial.print(F("Last reset reason: "));
     Serial.println(ESP.getResetReason());
     FSInfo fs_info;
@@ -1012,35 +1103,44 @@ void welcome() {
         Serial.print("File system used size : ");
         Serial.println(fs_info.usedBytes);
     }
+
+    /*
     int value = EEPROM.read(10);
     Serial.println(value++);
     EEPROM.write(10, value);
     EEPROM.commit();
+    */
+
     Serial.println();
 }
 
 void setup() {
 
     hardwareSetup();
+    delay(1000);
+    welcome();
     config.load();
     if (config.hostname.length() == 0) {
         config.hostname = getIdentifier();
     }
-    delay(1000);
-    welcome();
+
+    // We are handling first connection in the loop
+    //wifiSetup(false);
 
     #if ENABLE_OTA
         OTASetup();
     #endif
-    wifiSetupSTA(false);
-    #if ENABLE_WEBSERVER
-        webServerSetup();
-    #endif
     #if ENABLE_MQTT
         mqttSetup();
     #endif
+    #if ENABLE_WEBSERVER
+        webServerSetup();
+    #endif
     #if ENABLE_RF
         rfSetup();
+    #endif
+    #if ENABLE_DHT
+        dhtSetup();
     #endif
     #if ENABLE_ENERGYMONITOR
         energyMonitorSetup();
@@ -1050,23 +1150,28 @@ void setup() {
 
 void loop() {
 
+    wifiLoop();
+    hardwareLoop();
+
     #if ENABLE_OTA
         OTALoop();
     #endif
-    wifiLoop();
     #if ENABLE_MQTT
         mqttLoop();
-    #endif
-    #if ENABLE_RF
-        rfLoop();
     #endif
     #if ENABLE_WEBSERVER
         webServerLoop();
     #endif
+    #if ENABLE_RF
+        rfLoop();
+    #endif
+    #if ENABLE_DHT
+        dhtLoop();
+    #endif
     #if ENABLE_ENERGYMONITOR
         energyMonitorLoop();
     #endif
-    hardwareLoop();
+
     delay(1);
 
 }
