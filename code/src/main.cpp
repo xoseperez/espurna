@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "FS.h"
 
 #include "Config.h"
-#include "AutoOTA.h"
+#include "NoFUSSClient.h"
 #include <DebounceEvent.h>
 #include <EmonLiteESP.h>
 
@@ -52,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define ENABLE_RF               0
 #define ENABLE_OTA              1
-#define ENABLE_OTA_AUTO         0
+#define ENABLE_NOFUSS           1
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
 #define ENABLE_ENERGYMONITOR    0
@@ -274,6 +274,85 @@ void toggleRelay() {
 }
 
 // -----------------------------------------------------------------------------
+// NoFUSS
+// -----------------------------------------------------------------------------
+
+#if ENABLE_NOFUSS
+
+    void nofussSetup() {
+
+        NoFUSSClient.setServer(config.nofussServer);
+        NoFUSSClient.setDevice(MODEL);
+        NoFUSSClient.setVersion(APP_VERSION);
+
+        NoFUSSClient.onMessage([](nofuss_t code) {
+
+            if (code == NOFUSS_START) {
+                Serial.println(F("[NoFUSS] Start"));
+            }
+
+            if (code == NOFUSS_UPTODATE) {
+                Serial.println(F("[NoFUSS] Already in the last version"));
+            }
+
+            if (code == NOFUSS_PARSE_ERROR) {
+                Serial.println(F("[NoFUSS] Error parsing server response"));
+            }
+
+            if (code == NOFUSS_UPDATING) {
+                Serial.println(F("[NoFUSS] Updating"));
+                Serial.print(  F("         New version: "));
+                Serial.println(NoFUSSClient.getNewVersion());
+                Serial.print(  F("         Firmware: "));
+                Serial.println(NoFUSSClient.getNewFirmware());
+                Serial.print(  F("         File System: "));
+                Serial.println(NoFUSSClient.getNewFileSystem());
+            }
+
+            if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
+                Serial.print(F("[NoFUSS] File System Update Error: "));
+                Serial.println(NoFUSSClient.getErrorString());
+            }
+
+            if (code == NOFUSS_FILESYSTEM_UPDATED) {
+                Serial.println(F("[NoFUSS] File System Updated"));
+            }
+
+            if (code == NOFUSS_FIRMWARE_UPDATE_ERROR) {
+                Serial.print(F("[NoFUSS] Firmware Update Error: "));
+                Serial.println(NoFUSSClient.getErrorString());
+            }
+
+            if (code == NOFUSS_FIRMWARE_UPDATED) {
+                Serial.println(F("[NoFUSS] Firmware Updated"));
+            }
+
+            if (code == NOFUSS_RESET) {
+                Serial.println(F("[NoFUSS] Resetting board"));
+            }
+
+            if (code == NOFUSS_END) {
+                Serial.println(F("[NoFUSS] End"));
+            }
+
+        });
+
+    }
+
+    void nofussLoop() {
+
+        static unsigned long last_check = 0;
+        if (WiFi.status() != WL_CONNECTED) return;
+        if ((last_check > 0) && ((millis() - last_check) < config.nofussInterval.toInt())) return;
+        last_check = millis();
+        NoFUSSClient.handle();
+
+    }
+
+#endif
+
+
+// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
@@ -320,83 +399,11 @@ void toggleRelay() {
             #endif
         });
 
-        #if ENABLE_OTA_AUTO
-
-            AutoOTA.setServer(config.otaServer);
-            AutoOTA.setModel(MODEL);
-            AutoOTA.setVersion(APP_VERSION);
-
-            AutoOTA.onMessage([](auto_ota_t code) {
-
-                if (code == AUTO_OTA_FILESYSTEM_UPDATED) {
-                    #ifdef DEBUG
-                        Serial.print(F("[AUTOOTA] File System Updated"));
-                    #endif
-                    config.save();
-                }
-                #ifdef DEBUG
-
-                    if (code == AUTO_OTA_START) {
-                        Serial.println(F("[AUTOOTA] Start"));
-                    }
-
-                    if (code == AUTO_OTA_UPTODATE) {
-                        Serial.println(F("[AUTOOTA] Already in the last version"));
-                    }
-
-                    if (code == AUTO_OTA_PARSE_ERROR) {
-                        Serial.println(F("[AUTOOTA] Error parsing server response"));
-                    }
-
-                    if (code == AUTO_OTA_UPDATING) {
-                        Serial.println(F("[AUTOOTA] Updating"));
-                        Serial.print(  F("          New version: "));
-                        Serial.println(AutoOTA.getNewVersion());
-                        Serial.print(  F("          Firmware: "));
-                        Serial.println(AutoOTA.getNewFirmware());
-                        Serial.print(  F("          File System: "));
-                        Serial.println(AutoOTA.getNewFileSystem());
-                    }
-
-                    if (code == AUTO_OTA_FILESYSTEM_UPDATE_ERROR) {
-                        Serial.print(F("[AUTOOTA] File System Update Error: "));
-                        Serial.println(AutoOTA.getErrorString());
-                    }
-
-                    if (code == AUTO_OTA_FIRMWARE_UPDATE_ERROR) {
-                        Serial.print(F("[AUTOOTA] Firmware Update Error: "));
-                        Serial.println(AutoOTA.getErrorString());
-                    }
-
-                    if (code == AUTO_OTA_FIRMWARE_UPDATED) {
-                        Serial.print(F("[AUTOOTA] Firmware Updated"));
-                    }
-
-                    if (code == AUTO_OTA_RESET) {
-                        Serial.println(F("[AUTOOTA] Resetting board"));
-                    }
-
-                    if (code == AUTO_OTA_END) {
-                        Serial.println(F("[AUTOOTA] End"));
-                    }
-
-                #endif
-            });
-
-        #endif
-
         ArduinoOTA.begin();
 
     }
 
     void OTALoop() {
-        #if ENABLE_OTA_AUTO
-            static unsigned long last_check = 0;
-            if (WiFi.status() != WL_CONNECTED) return;
-            if ((last_check > 0) && ((millis() - last_check) < config.otaInterval.toInt())) return;
-            last_check = millis();
-            AutoOTA.handle();
-        #endif
         ArduinoOTA.handle();
     }
 
@@ -481,21 +488,27 @@ void wifiSetupSTA() {
     #endif
 
     if (WiFi.status() == WL_CONNECTED) {
+
         WiFi.setAutoConnect(true);
         status = WIFI_STATUS_CONNECTED;
+
         #ifdef DEBUG
             Serial.print(F("[WIFI] STATION Mode, SSID: "));
             Serial.print(WiFi.SSID());
             Serial.print(F(", IP address: "));
             Serial.println(WiFi.localIP());
         #endif
-        #if ENABLE_OTA_AUTO
-            AutoOTA.handle();
+
+        #if ENABLE_NOFUSS
+            NoFUSSClient.handle();
         #endif
+
     } else {
+
         #ifdef DEBUG
             Serial.println(F("[WIFI] Not connected"));
         #endif
+
     }
 
 }
@@ -1180,6 +1193,9 @@ void setup() {
     #if ENABLE_OTA
         OTASetup();
     #endif
+    #if ENABLE_NOFUSS
+        nofussSetup();
+    #endif
     #if ENABLE_MQTT
         mqttSetup();
     #endif
@@ -1205,6 +1221,9 @@ void loop() {
 
     #if ENABLE_OTA
         OTALoop();
+    #endif
+    #if ENABLE_NOFUSS
+        nofussLoop();
     #endif
     #if ENABLE_MQTT
         mqttLoop();

@@ -29,8 +29,8 @@ bool ConfigClass::save() {
     content += "mqttTopic=" + mqttTopic + "|";
     content += "rfChannel=" + rfChannel + "|";
     content += "rfDevice=" + rfDevice + "|";
-    content += "otaServer=" + otaServer + "|";
-    content += "otaInterval=" + otaInterval + "|";
+    content += "nofussServer=" + nofussServer + "|";
+    content += "nofussInterval=" + nofussInterval + "|";
     content += "pwMainsVoltage=" + pwMainsVoltage + "|";
     content += "pwCurrentRatio=" + pwCurrentRatio + "|";
 
@@ -92,8 +92,8 @@ bool ConfigClass::load() {
         else if (line.startsWith("mqttTopic=")) mqttTopic = line.substring(10);
         else if (line.startsWith("rfChannel=")) rfChannel = line.substring(10);
         else if (line.startsWith("rfDevice=")) rfDevice = line.substring(9);
-        else if (line.startsWith("otaServer=")) otaServer = line.substring(10);
-        else if (line.startsWith("otaInterval=")) otaInterval = line.substring(12);
+        else if (line.startsWith("nofussServer=")) nofussServer = line.substring(13);
+        else if (line.startsWith("nofussInterval=")) nofussInterval = line.substring(15);
         else if (line.startsWith("pwMainsVoltage=")) pwMainsVoltage = line.substring(15);
         else if (line.startsWith("pwCurrentRatio=")) pwCurrentRatio = line.substring(15);
 

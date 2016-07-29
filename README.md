@@ -1,29 +1,38 @@
 # ESPurna
 
-ESPurna ("spark" in Catalan) is a custom C firmware for [ITead Sonoff][1] Smart WiFi Switch.
-This device has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3V3 transformer
-and a relay (GPIO12). It also features a button (GPIO0), an LED (GPIO13) and an unpopulated header you can use to reprogram it.
+ESPurna ("spark" in Catalan) is a custom C firmware for ESP8266 based smart switches. It was originally developed with the **[ITead Sonoff][1]** in mind. This device has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3V3 transformer and a relay (GPIO12). It also features a button (GPIO0), an LED (GPIO13) and an unpopulated header you can use to reprogram it.
 You can read about this board and firmware in [my blog][2].
 
 ![Sonoff board - front view](/images/pinout_front.jpg)
 
 ![Sonoff board - back view](/images/pinout_back.jpg)
 
+## Hardware support
+
+* [ITead Sonoff TH][1]
+* [ITead Sonoff RF][8]
+* [ITead Slampher][9]
+* [ITead S20 Smart Socket][10]
+* Tinkerman ESPurna board
+
 ## Features
 
-* WebServer for configuration and simple relay toggle
-* Flashing firmware Over-The-Air (OTA)
-* Up to 3 configurable WIFI networks
-* MQTT support with configurable host and topic
+* **WebServer for configuration** and simple relay toggle
+* **Flashing firmware Over-The-Air** (OTA)
+* Up to **3 configurable WIFI networks**
+* **MQTT support** with configurable host and topic
 * Manual switch ON/OFF with button (single click the button)
 * AP mode backup (double click the button)
-* Support for custom RF module (check blog post)
 * Visual status of the connection via the LED
+* Support for custom **[RF module][2]**
+* Support for **automatic over-the-air updates** through the [NoFUSS Library][6]
+* Support for **current monitoring** through then [EmonLiteESP Library][7]
+* Support for **DHT22** sensors
+
 
 ## Flashing
 
-The unpopulated header has all the required pins. My board has a 5 pins header
-in-line with the button. They are (from the button outwards):
+The unpopulated header has all the required pins. My board has a 5 pins header in-line with the button. They are (from the button outwards):
 
 * 3V3
 * RX
@@ -31,14 +40,10 @@ in-line with the button. They are (from the button outwards):
 * GND
 * GPIO14
 
-Last one is not necessary. Mind it's a **3V3 device**, if connected to 5V you will
-probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter
-flash mode you have to hold the button pressed while powering on the board, then
-you can realease it again.
+Last one is not necessary. Mind it's a **3V3 device**, if connected to 5V you will probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter flash mode you have to hold the button pressed while powering on the board, then you can realease it again.
 
 The project is ready to be build using [PlatformIO][3].
-Please refer to their web page for instructions on how to install the builder.
-Once installed:
+Please refer to their web page for instructions on how to install the builder. Once installed:
 
 ```bash
 > platformio run --target upload -e wire
@@ -59,36 +64,28 @@ When using OTA environment it defaults to the IP address of the device in SoftAP
 > platformio run --target uploadfs -e ota --upload-port 192.168.1.151
 ```
 
+You can also use the automatic OTA update feature. Check the [NoFUSS library][6] for more info.
 
 Library dependencies are automatically managed via PlatformIO Library Manager.
 
 ## Usage
 
-On normal boot (i.e. button not pressed) it will execute the firmware.
-It configures the hardware (button, LED, relay), the SPIFFS memory access, the
-WIFI, the WebServer and MQTT connection.
+On normal boot (i.e. button not pressed) it will execute the firmware. It configures the hardware (button, LED, relay), the SPIFFS memory access, the WIFI, the WebServer and MQTT connection.
 
-Obviously the default values for WIFI network and MQTT will probably not match
-your requirements. The device will start in Soft AP creating a WIFI SSID named "SONOFF_XXXXXX", where XXXXXX are the last 3 bytes of the radio MAC. Connect with
-phone, PC, laptop, whatever to that network, password is "fibonacci". Once connected
-browse to 192.168.4.1 and you will be presented a configuration page where you will
-be able to define up to 3 possible WIFI networks and the MQTT configuration parameters.
+Obviously the default values for WIFI network and MQTT will probably not match your requirements. The device will start in Soft AP creating a WIFI SSID named "SONOFF_XXXXXX", where XXXXXX are the last 3 bytes of the radio MAC. Connect with phone, PC, laptop, whatever to that network, password is "fibonacci". Once connected
+browse to 192.168.4.1 and you will be presented a configuration page where you will be able to define up to 3 possible WIFI networks and the MQTT configuration parameters.
 
-It will then try to connect to the first WIFI network. If fail it will try the second
-in 30 seconds, and so on. Once connected it will try to connect the MQTT server. If there are no configured networks or none of the configured ones is reachable it defaults to SoftAP mode. You can also switch to SoftAP mode by double clicking the on board button.
+It will then try to connect to the configure WIFI networks one after the other. If none of the 3 attempts succeed it will default to SoftAP mode again. Once connected it will try to connect the MQTT server. You can also switch to SoftAP mode by long clicking the on board button or reset the board double clicking the it.
 
-The device will publish the relay state to the given topic and it will subscribe to
-the same topic plus "/set" for remote switching. So if your topic is "/home/living/switch"
-you will be able to switch it on/off sending "1"/"0" to "/home/living/switch/set".
+The device will publish the relay state to the given topic and it will subscribe to the same topic for remote switching. Don't worry, it avoids infinite loops.
 
-You can also use "{identifier}" as place holder in the topic. It will be translated to
-your device ID (same as the soft AP network it creates).
+You can also use "{identifier}" as place holder in the topic. It will be translated to your device ID (same as the soft AP network it creates).
 
 ## Troubleshooting
 
 After flashing the firmware via serial do a hard reset of the device (unplug & plug). There is an issue with the ESP.reset() method. Check [https://github.com/esp8266/Arduino/issues/1017][4] for more info.
 
-Current version of ESP8266httpUpdate restarts the modules after SPIFFS update, thus preventing the firmware to be updated too. There is a recent commit fixing that which is not yet pushed to PLatformIO. Check [Fix example for ESP8266httpUpdate][5] for more info.
+Current version of ESP8266httpUpdate restarts the modules after SPIFFS update, thus preventing the firmware to be updated too. There is a recent commit fixing that which is not yet pushed to PLatformIO. Check [Fix example for ESP8266httpUpdate][5] for more info. Anyway, current expected behaviour is to not resetting the board from the ESP8266httpUpdate class (comment out line 300 in ```ESP8266httpUpdate.cpp```).
 
 
 [1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html
@@ -96,3 +93,8 @@ Current version of ESP8266httpUpdate restarts the modules after SPIFFS update, t
 [3]: http://www.platformio.org
 [4]: https://github.com/esp8266/Arduino/issues/1017
 [5]: https://github.com/esp8266/Arduino/pull/2251
+[6]: https://bitbucket.org/xoseperez/nofuss
+[7]: https://bitbucket.org/xoseperez
+[8]: https://www.itead.cc/sonoff-rf.html
+[9]: https://www.itead.cc/slampher-wifi-wireless-light-holder.html
+[10]: https://www.itead.cc/smart-socket-eu.html

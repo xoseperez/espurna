@@ -22,8 +22,8 @@
 #define MQTT_PORT           1883
 #define MQTT_TOPIC          "/test/switch/{identifier}"
 
-#define AUTOOTA_SERVER      "http://192.168.1.100"
-#define AUTOOTA_INTERVAL    600000
+#define NOFUSS_SERVER       "http://192.168.1.100"
+#define NOFUSS_INTERVAL     600000
 
 #define MAINS_VOLTAGE       230
 #define CURRENT_RATIO       180
@@ -53,8 +53,8 @@ class ConfigClass {
         String rfChannel = String(RF_CHANNEL);
         String rfDevice = String(RF_DEVICE);
 
-        String otaServer = String(AUTOOTA_SERVER);
-        String otaInterval = String(AUTOOTA_INTERVAL);
+        String nofussServer = String(NOFUSS_SERVER);
+        String nofussInterval = String(NOFUSS_INTERVAL);
 
         String pwMainsVoltage = String(MAINS_VOLTAGE);
         String pwCurrentRatio = String(CURRENT_RATIO);
