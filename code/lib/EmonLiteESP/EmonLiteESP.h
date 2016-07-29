@@ -8,8 +8,11 @@
 #ifndef EmonLiteESP_h
 #define EmonLiteESP_h
 
-#define ADC_BITS    10
-#define ADC_COUNTS  (1<<ADC_BITS)
+#define ADC_BITS        10
+#define ADC_COUNTS      (1<<ADC_BITS)
+#define COUNT_OFFSET    3
+#define FILTER_SPEED    1024.0
+#define WARMUP_COUNTS   3000
 
 typedef unsigned int (*current_c)();
 
@@ -23,6 +26,7 @@ class EnergyMonitor {
     void setPrecision(byte precision);
     void setReference(double ref);
     void setCurrentRatio(double ratio);
+    void setCurrentOffset(double offset);
     void calculatePrecision();
 
   private:
@@ -34,6 +38,8 @@ class EnergyMonitor {
     double _currentFactor;
     byte _precision;
     double _multiplier;
+
+    void warmup();
 
 };
 

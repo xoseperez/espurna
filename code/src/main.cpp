@@ -45,22 +45,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG
 
+//#define ESPURNA
+//#define SONOFF
+#define SLAMPHER
+//#define S20
+
 #define ENABLE_RF               0
 #define ENABLE_OTA              1
 #define ENABLE_OTA_AUTO         0
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
-#define ENABLE_ENERGYMONITOR    1
-#define ENABLE_DHT              1
+#define ENABLE_ENERGYMONITOR    0
+#define ENABLE_DHT              0
 
 #define APP_NAME                "Espurna"
-#define APP_VERSION             "0.9.3"
+#define APP_VERSION             "0.9.4"
 #define APP_AUTHOR              "xose.perez@gmail.com"
 #define APP_WEBSITE             "http://tinkerman.cat"
 
-#define MANUFACTURER            "ITEAD"
-#define MODEL                   "SONOFF"
-//#define MODEL                   "S20"
+#ifdef ESPURNA
+    #define MANUFACTURER        "TINKERMAN"
+    #define MODEL               "ESPURNA"
+#endif
+
+#ifdef SONOFF
+    #define MANUFACTURER        "ITEAD"
+    #define MODEL               "SONOFF"
+#endif
+
+#ifdef SLAMPHER
+    #define MANUFACTURER        "ITEAD"
+    #define MODEL               "SLAMPHER"
+#endif
+
+#ifdef S20
+    #define MANUFACTURER        "ITEAD"
+    #define MODEL               "S20"
+#endif
+
 #define BUTTON_PIN              0
 #define RELAY_PIN               12
 #define LED_PIN                 13
@@ -90,7 +112,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define CURRENT_PIN             A0
 #define REFERENCE_VOLTAGE       1.0
 #define CURRENT_PRECISION       1
-#define SAMPLES_X_MEASUREMENT   1500
+#define SAMPLES_X_MEASUREMENT   1000
 #define MEASUREMENT_INTERVAL    10000
 #define MEASUREMENTS_X_MESSAGE  6
 
@@ -107,6 +129,7 @@ DebounceEvent button1 = false;
 #endif
 
 #if ENABLE_MQTT
+    void mqttSend(char * topic, char * message);
     WiFiClient client;
     PubSubClient mqtt(client);
     char mqttStatusTopic[40];
@@ -129,6 +152,8 @@ DebounceEvent button1 = false;
 
 #if ENABLE_DHT
     DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
+    double temperature;
+    double humidity;
 #endif
 
 #if ENABLE_ENERGYMONITOR
@@ -203,39 +228,41 @@ void showStatus() {
 // -----------------------------------------------------------------------------
 
 void switchRelayOn() {
+
     if (!digitalRead(RELAY_PIN)) {
+
         #ifdef DEBUG
             Serial.println(F("[RELAY] ON"));
         #endif
-        #if ENABLE_MQTT
-            if (!isMQTTMessage && mqtt.connected()) {
-                mqtt.publish(mqttStatusTopic, "1", MQTT_RETAIN);
-            }
-        #endif
         digitalWrite(RELAY_PIN, HIGH);
-        if (EEPROM.read(0) == 0) {
-            EEPROM.write(0, 1);
-            EEPROM.commit();
-        }
+        EEPROM.write(0, 1);
+        EEPROM.commit();
+
+        #if ENABLE_MQTT
+            if (!isMQTTMessage) mqttSend(mqttStatusTopic, (char *) "1");
+        #endif
+
     }
+
 }
 
 void switchRelayOff() {
+
     if (digitalRead(RELAY_PIN)) {
+
         #ifdef DEBUG
             Serial.println(F("[RELAY] OFF"));
         #endif
-        #if ENABLE_MQTT
-            if (!isMQTTMessage && mqtt.connected()) {
-                mqtt.publish(mqttStatusTopic, "0", MQTT_RETAIN);
-            }
-        #endif
         digitalWrite(RELAY_PIN, LOW);
-        if (EEPROM.read(0) == 1) {
-            EEPROM.write(0, 0);
-            EEPROM.commit();
-        }
+        EEPROM.write(0, 0);
+        EEPROM.commit();
+
+        #if ENABLE_MQTT
+            if (!isMQTTMessage) mqttSend(mqttStatusTopic, (char *) "0");
+        #endif
+
     }
+
 }
 
 void toggleRelay() {
@@ -263,13 +290,13 @@ void toggleRelay() {
                 RemoteReceiver::disable();
             #endif
             #ifdef DEBUG
-                Serial.println(F("[OTA] - Start"));
+                Serial.println(F("[OTA] Start"));
             #endif
         });
 
         ArduinoOTA.onEnd([]() {
             #ifdef DEBUG
-                Serial.println(F("[OTA] - End"));
+                Serial.println(F("[OTA] End"));
             #endif
             #if ENABLE_RF
                 RemoteReceiver::enable();
@@ -278,18 +305,18 @@ void toggleRelay() {
 
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
             #ifdef DEBUG
-                Serial.printf("[OTA] - Progress: %u%%\r", (progress / (total / 100)));
+                Serial.printf("[OTA] Progress: %u%%\r", (progress / (total / 100)));
             #endif
         });
 
         ArduinoOTA.onError([](ota_error_t error) {
             #ifdef DEBUG
-                Serial.printf("[OTA] - Error[%u]: ", error);
-                if (error == OTA_AUTH_ERROR) Serial.println(F("[OTA] - Auth Failed"));
-                else if (error == OTA_BEGIN_ERROR) Serial.println(F("[OTA] - Begin Failed"));
-                else if (error == OTA_CONNECT_ERROR) Serial.println(F("[OTA] - Connect Failed"));
-                else if (error == OTA_RECEIVE_ERROR) Serial.println(F("[OTA] - Receive Failed"));
-                else if (error == OTA_END_ERROR) Serial.println(F("[OTA] - End Failed"));
+                Serial.printf("[OTA] Error[%u]: ", error);
+                if (error == OTA_AUTH_ERROR) Serial.println(F("[OTA] Auth Failed"));
+                else if (error == OTA_BEGIN_ERROR) Serial.println(F("[OTA] Begin Failed"));
+                else if (error == OTA_CONNECT_ERROR) Serial.println(F("[OTA] Connect Failed"));
+                else if (error == OTA_RECEIVE_ERROR) Serial.println(F("[OTA] Receive Failed"));
+                else if (error == OTA_END_ERROR) Serial.println(F("[OTA] End Failed"));
             #endif
         });
 
@@ -303,26 +330,26 @@ void toggleRelay() {
 
                 if (code == AUTO_OTA_FILESYSTEM_UPDATED) {
                     #ifdef DEBUG
-                        Serial.print(F("[AUTOOTA] - File System Updated"));
+                        Serial.print(F("[AUTOOTA] File System Updated"));
                     #endif
                     config.save();
                 }
                 #ifdef DEBUG
 
                     if (code == AUTO_OTA_START) {
-                        Serial.println(F("[AUTOOTA] - Start"));
+                        Serial.println(F("[AUTOOTA] Start"));
                     }
 
                     if (code == AUTO_OTA_UPTODATE) {
-                        Serial.println(F("[AUTOOTA] - Already in the last version"));
+                        Serial.println(F("[AUTOOTA] Already in the last version"));
                     }
 
                     if (code == AUTO_OTA_PARSE_ERROR) {
-                        Serial.println(F("[AUTOOTA] - Error parsing server response"));
+                        Serial.println(F("[AUTOOTA] Error parsing server response"));
                     }
 
                     if (code == AUTO_OTA_UPDATING) {
-                        Serial.println(F("[AUTOOTA] - Updating"));
+                        Serial.println(F("[AUTOOTA] Updating"));
                         Serial.print(  F("          New version: "));
                         Serial.println(AutoOTA.getNewVersion());
                         Serial.print(  F("          Firmware: "));
@@ -332,25 +359,25 @@ void toggleRelay() {
                     }
 
                     if (code == AUTO_OTA_FILESYSTEM_UPDATE_ERROR) {
-                        Serial.print(F("[AUTOOTA] - File System Update Error: "));
+                        Serial.print(F("[AUTOOTA] File System Update Error: "));
                         Serial.println(AutoOTA.getErrorString());
                     }
 
                     if (code == AUTO_OTA_FIRMWARE_UPDATE_ERROR) {
-                        Serial.print(F("[AUTOOTA] - Firmware Update Error: "));
+                        Serial.print(F("[AUTOOTA] Firmware Update Error: "));
                         Serial.println(AutoOTA.getErrorString());
                     }
 
                     if (code == AUTO_OTA_FIRMWARE_UPDATED) {
-                        Serial.print(F("[AUTOOTA] - Firmware Updated"));
+                        Serial.print(F("[AUTOOTA] Firmware Updated"));
                     }
 
                     if (code == AUTO_OTA_RESET) {
-                        Serial.println(F("[AUTOOTA] - Resetting board"));
+                        Serial.println(F("[AUTOOTA] Resetting board"));
                     }
 
                     if (code == AUTO_OTA_END) {
-                        Serial.println(F("[AUTOOTA] - End"));
+                        Serial.println(F("[AUTOOTA] End"));
                     }
 
                 #endif
@@ -392,7 +419,7 @@ void wifiSetupAP() {
     status = WIFI_STATUS_AP;
     delay(100);
     #ifdef DEBUG
-        Serial.print(F("[WIFI] Mode: AP, SSID: "));
+        Serial.print(F("[WIFI] ACCESS POINT Mode, SSID: "));
         Serial.print(config.hostname);
         Serial.print(F(", Password: \""));
         Serial.print(ADMIN_PASS);
@@ -457,7 +484,7 @@ void wifiSetupSTA() {
         WiFi.setAutoConnect(true);
         status = WIFI_STATUS_CONNECTED;
         #ifdef DEBUG
-            Serial.print(F("[WIFI] Mode: STA, SSID: "));
+            Serial.print(F("[WIFI] STATION Mode, SSID: "));
             Serial.print(WiFi.SSID());
             Serial.print(F(", IP address: "));
             Serial.println(WiFi.localIP());
@@ -554,6 +581,7 @@ void wifiLoop() {
     }
 
     void rfSetup() {
+        pinMode(RF_PIN, INPUT_PULLUP);
         rfBuildCodes();
         RemoteReceiver::init(RF_PIN, 3, rfCallback);
         RemoteReceiver::enable();
@@ -692,6 +720,10 @@ void wifiLoop() {
         #if ENABLE_ENERGYMONITOR
             root["power"] = current * config.pwMainsVoltage.toFloat();
         #endif
+        #if ENABLE_DHT
+            root["temperature"] = temperature;
+            root["humidity"] = humidity;
+        #endif
 
         String output;
         root.printTo(output);
@@ -719,6 +751,7 @@ void wifiLoop() {
         if (server.hasArg("pass1")) config.pass[1] = server.arg("pass1");
         if (server.hasArg("ssid2")) config.ssid[2] = server.arg("ssid2");
         if (server.hasArg("pass2")) config.pass[2] = server.arg("pass2");
+
         #if ENABLE_MQTT
             if (server.hasArg("mqttServer")) config.mqttServer = server.arg("mqttServer");
             if (server.hasArg("mqttPort")) config.mqttPort = server.arg("mqttPort");
@@ -831,12 +864,27 @@ void wifiLoop() {
 
     }
 
+    void mqttSend(char * topic, char * message) {
+
+        if (!mqtt.connected()) return;
+
+        #ifdef DEBUG
+            Serial.print(F("[MQTT] Sending "));
+            Serial.print(topic);
+            Serial.print(F(" "));
+            Serial.println(message);
+        #endif
+
+        mqtt.publish(topic, message, MQTT_RETAIN);
+
+    }
+
     void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
         #ifdef DEBUG
-            Serial.print(F("[MQTT] Message "));
+            Serial.print(F("[MQTT] Received "));
             Serial.print(topic);
-            Serial.print(F(" => "));
+            Serial.print(F(" "));
             for (int i = 0; i < length; i++) {
                 Serial.print((char)payload[i]);
             }
@@ -898,10 +946,10 @@ void wifiLoop() {
                 buildTopics();
 
                 // Say hello and report our IP
-                mqtt.publish(mqttIPTopic, (const char *) WiFi.localIP().toString().c_str(), MQTT_RETAIN);
+                mqttSend(mqttIPTopic, (char *) WiFi.localIP().toString().c_str());
 
                 // Publish current relay status
-                mqtt.publish(mqttStatusTopic, digitalRead(RELAY_PIN) ? "1" : "0", MQTT_RETAIN);
+                mqttSend(mqttStatusTopic, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
 
                 // Subscribe to topic
                 #ifdef DEBUG
@@ -957,36 +1005,36 @@ void wifiLoop() {
 
         static unsigned long last_check = 0;
         if (!mqtt.connected()) return;
-        if ((millis() - last_check) < DHT_UPDATE_INTERVAL) return;
+        if ((last_check > 0) && ((millis() - last_check) < DHT_UPDATE_INTERVAL)) return;
         last_check = millis();
 
         char buffer[10];
 
-        float t = dht.readTemperature();
-        if (isnan(t)) {
+        temperature = dht.readTemperature();
+        if (isnan(temperature)) {
             #ifdef DEBUG
-                Serial.println(F("[DHT] - Error reading temperature"));
+                Serial.println(F("[DHT] Error reading temperature"));
             #endif
         } else {
-            dtostrf(t, 4, 1, buffer);
-            mqtt.publish(mqttTemperatureTopic, buffer, MQTT_RETAIN);
+            dtostrf(temperature, 4, 1, buffer);
+            mqttSend(mqttTemperatureTopic, buffer);
             #ifdef DEBUG
-                Serial.print(F("[DHT] - Temperature: "));
-                Serial.println(t);
+                Serial.print(F("[DHT] Temperature: "));
+                Serial.println(temperature);
             #endif
         }
 
-        float h = dht.readHumidity();
-        if (isnan(h)) {
+        humidity = dht.readHumidity();
+        if (isnan(humidity)) {
             #ifdef DEBUG
-                Serial.println(F("[DHT] - Error reading humidity"));
+                Serial.println(F("[DHT] Error reading humidity"));
             #endif
         } else {
-            dtostrf(h, 4, 1, buffer);
-            mqtt.publish(mqttHumidityTopic, buffer, MQTT_RETAIN);
+            dtostrf(humidity, 4, 1, buffer);
+            mqttSend(mqttHumidityTopic, buffer);
             #ifdef DEBUG
-                Serial.print(F("[DHT] - Humidity: "));
-                Serial.println(h);
+                Serial.print(F("[DHT] Humidity: "));
+                Serial.println(humidity);
             #endif
         }
 
@@ -1000,6 +1048,7 @@ void wifiLoop() {
 // -----------------------------------------------------------------------------
 
 #if ENABLE_ENERGYMONITOR
+#if ENABLE_MQTT
 
     unsigned int getCurrent() {
         return analogRead(CURRENT_PIN);
@@ -1014,31 +1063,41 @@ void wifiLoop() {
 
         static unsigned long next_measurement = millis();
         static byte measurements = 0;
+        static double max = 0;
+        static double min = 0;
         static double sum = 0;
+
+        if (!mqtt.connected()) return;
 
         if (millis() > next_measurement) {
 
-            current = monitor.getCurrent(SAMPLES_X_MEASUREMENT);
+            // Safety check: do not read current if relay is OFF
+            if (!digitalRead(RELAY_PIN)) {
+                current = 0;
+            } else {
+                current = monitor.getCurrent(SAMPLES_X_MEASUREMENT);
+            }
+
+            if (measurements == 0) {
+                max = min = current;
+            } else {
+                if (current > max) max = current;
+                if (current < min) min = current;
+            }
             sum += current;
             ++measurements;
 
-            /*
             #ifdef DEBUG
-                Serial.print(F("Power reading: "));
-                Serial.println(current * config.pwMainsVoltage.toFloat());
+                Serial.print(F("[ENERGY] Power now: "));
+                Serial.print(int(current * config.pwMainsVoltage.toFloat()));
+                Serial.println(F("W"));
             #endif
-            */
 
             if (measurements == MEASUREMENTS_X_MESSAGE) {
                 char buffer[8];
-                sprintf(buffer, "%d", int(sum * config.pwMainsVoltage.toFloat() / measurements));
-                #ifdef DEBUG
-                    Serial.print(F("[ENERGY] Power: "));
-                    Serial.println(buffer);
-                #endif
-                #if ENABLE_MQTT
-                    mqtt.publish(mqttPowerTopic, buffer, MQTT_RETAIN);
-                #endif
+                double power = (sum - max - min) * config.pwMainsVoltage.toFloat() / (measurements - 2);
+                sprintf(buffer, "%d", int(power));
+                mqttSend(mqttPowerTopic, buffer);
                 sum = 0;
                 measurements = 0;
             }
@@ -1050,6 +1109,7 @@ void wifiLoop() {
     }
 
 #endif
+#endif
 
 // -----------------------------------------------------------------------------
 // Hardware (buttons, LEDs,...)
@@ -1059,7 +1119,6 @@ void hardwareSetup() {
     Serial.begin(115200);
     pinMode(RELAY_PIN, OUTPUT);
     pinMode(LED_PIN, OUTPUT);
-    pinMode(RF_PIN, INPUT_PULLUP);
     button1 = DebounceEvent(BUTTON_PIN);
     SPIFFS.begin();
     EEPROM.begin(4096);
@@ -1104,13 +1163,6 @@ void welcome() {
         Serial.println(fs_info.usedBytes);
     }
 
-    /*
-    int value = EEPROM.read(10);
-    Serial.println(value++);
-    EEPROM.write(10, value);
-    EEPROM.commit();
-    */
-
     Serial.println();
 }
 
@@ -1119,10 +1171,8 @@ void setup() {
     hardwareSetup();
     delay(1000);
     welcome();
+    config.hostname = getIdentifier();
     config.load();
-    if (config.hostname.length() == 0) {
-        config.hostname = getIdentifier();
-    }
 
     // We are handling first connection in the loop
     //wifiSetup(false);

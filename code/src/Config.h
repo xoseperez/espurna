@@ -26,7 +26,7 @@
 #define AUTOOTA_INTERVAL    600000
 
 #define MAINS_VOLTAGE       230
-#define CURRENT_RATIO       156
+#define CURRENT_RATIO       180
 
 #define RF_CHANNEL          31
 #define RF_DEVICE           1
