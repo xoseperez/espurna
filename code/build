@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Environments to build
+ENVIRONMENTS="sonoff-debug s20-debug"
+
+# Get current version
+version=`cat src/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
+echo $version
+
+# Create output folder
+mkdir -p firmware
+
+# Build all the required firmwares
+for environment in $ENVIRONMENTS; do
+    platformio run -vv -e $environment
+    mv .pioenvs/$environment/firmware.bin firmware/espurna-$environment-$version.bin
+done

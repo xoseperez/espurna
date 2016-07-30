@@ -7,8 +7,6 @@
 #include "Config.h"
 #include "EEPROM.h"
 
-#define DEBUG
-
 bool ConfigClass::save() {
 
     #ifdef DEBUG

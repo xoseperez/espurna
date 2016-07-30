@@ -39,48 +39,52 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ArduinoJson.h>
 #include "DHT.h"
 
+#include "version.h"
+
 // -----------------------------------------------------------------------------
-// Configuració
+// Configuration
 // -----------------------------------------------------------------------------
 
-#define DEBUG
-
+// Managed from platformio.ini
+//#define DEBUG
 //#define ESPURNA
 //#define SONOFF
-#define SLAMPHER
+//#define SLAMPHER
 //#define S20
+//#define NODEMCUV2
 
-#define ENABLE_RF               0
 #define ENABLE_OTA              1
-#define ENABLE_NOFUSS           1
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
-#define ENABLE_POWERMONITOR     1
-#define ENABLE_DHT              0
 
-#define APP_NAME                "Espurna"
-#define APP_VERSION             "0.9.4"
-#define APP_AUTHOR              "xose.perez@gmail.com"
-#define APP_WEBSITE             "http://tinkerman.cat"
+#define ENABLE_NOFUSS           0
+#define ENABLE_POWERMONITOR     0
+#define ENABLE_RF               0
+#define ENABLE_DHT              0
 
 #ifdef ESPURNA
     #define MANUFACTURER        "TINKERMAN"
-    #define MODEL               "ESPURNA"
+    #define DEVICE              "ESPURNA"
 #endif
 
 #ifdef SONOFF
     #define MANUFACTURER        "ITEAD"
-    #define MODEL               "SONOFF"
+    #define DEVICE              "SONOFF"
 #endif
 
 #ifdef SLAMPHER
     #define MANUFACTURER        "ITEAD"
-    #define MODEL               "SLAMPHER"
+    #define DEVICE              "SLAMPHER"
 #endif
 
 #ifdef S20
     #define MANUFACTURER        "ITEAD"
-    #define MODEL               "S20"
+    #define DEVICE              "S20"
+#endif
+
+#ifdef NODEMCUV2
+    #define MANUFACTURER        "NODEMCU"
+    #define DEVICE              "LOLIN"
 #endif
 
 #define BUTTON_PIN              0
@@ -88,7 +92,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LED_PIN                 13
 
 #define ADMIN_PASS              "fibonacci"
-
 #define BUFFER_SIZE             1024
 #define STATUS_UPDATE_INTERVAL  10000
 
@@ -102,9 +105,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
 
-#define WIFI_CONNECT_TIMEOUT    5000
+#define WIFI_CONNECT_TIMEOUT    10000
 #define WIFI_RECONNECT_DELAY    2000
-
 #define WIFI_STATUS_CONNECTING  0
 #define WIFI_STATUS_CONNECTED   1
 #define WIFI_STATUS_AP          2
@@ -167,7 +169,7 @@ DebounceEvent button1 = false;
 // Utils
 // -----------------------------------------------------------------------------
 
-char * getCompileTime(char * buffer) {
+void getCompileTime(char * buffer) {
 
     int day, month, year, hour, minute, second;
 
@@ -197,13 +199,12 @@ char * getCompileTime(char * buffer) {
 
     sprintf(buffer, "%d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second);
     buffer[14] = 0;
-    return buffer;
 
 }
 
 String getIdentifier() {
     char identifier[20];
-    sprintf(identifier, "%s_%06X", MODEL, ESP.getChipId());
+    sprintf(identifier, "%s_%06X", DEVICE, ESP.getChipId());
     return String(identifier);
 }
 
@@ -284,7 +285,7 @@ void toggleRelay() {
     void nofussSetup() {
 
         NoFUSSClient.setServer(config.nofussServer);
-        NoFUSSClient.setDevice(MODEL);
+        NoFUSSClient.setDevice(DEVICE);
         NoFUSSClient.setVersion(APP_VERSION);
 
         NoFUSSClient.onMessage([](nofuss_t code) {
@@ -683,7 +684,7 @@ void wifiLoop() {
 
         root["appname"] = String(buffer);
         root["manufacturer"] = String(MANUFACTURER);
-        root["model"] = String(MODEL);
+        root["device"] = String(DEVICE);
         root["hostname"] = config.hostname;
         root["network"] = (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "ACCESS POINT";
         root["ip"] = (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
@@ -1187,10 +1188,14 @@ void setup() {
     hardwareSetup();
     delay(1000);
     welcome();
-    config.hostname = getIdentifier();
     config.load();
 
-    // We are handling first connection in the loop
+    // At the moment I am overriding any possible hostname stored in EEPROM
+    // with the generated one until I have a way to change them from the
+    // configuration interface
+    config.hostname = getIdentifier();
+
+    // I am handling first connection in the loop
     //wifiSetup(false);
 
     #if ENABLE_OTA
