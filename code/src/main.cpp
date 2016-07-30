@@ -55,7 +55,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ENABLE_NOFUSS           1
 #define ENABLE_MQTT             1
 #define ENABLE_WEBSERVER        1
-#define ENABLE_ENERGYMONITOR    0
+#define ENABLE_POWERMONITOR     1
 #define ENABLE_DHT              0
 
 #define APP_NAME                "Espurna"
@@ -109,9 +109,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define WIFI_STATUS_CONNECTED   1
 #define WIFI_STATUS_AP          2
 
-#define CURRENT_PIN             A0
+#define CURRENT_PIN             0
+#define ADC_BITS                10
 #define REFERENCE_VOLTAGE       1.0
 #define CURRENT_PRECISION       1
+#define CURRENT_OFFSET          0.3
 #define SAMPLES_X_MEASUREMENT   1000
 #define MEASUREMENT_INTERVAL    10000
 #define MEASUREMENTS_X_MESSAGE  6
@@ -138,7 +140,7 @@ DebounceEvent button1 = false;
         char mqttTemperatureTopic[40];
         char mqttHumidityTopic[40];
     #endif
-    #if ENABLE_ENERGYMONITOR
+    #if ENABLE_POWERMONITOR
         char mqttPowerTopic[40];
     #endif
     bool isMQTTMessage = false;
@@ -156,8 +158,8 @@ DebounceEvent button1 = false;
     double humidity;
 #endif
 
-#if ENABLE_ENERGYMONITOR
-    EnergyMonitor monitor;
+#if ENABLE_POWERMONITOR
+    EmonLiteESP power;
     double current;
 #endif
 
@@ -707,7 +709,7 @@ void wifiLoop() {
             root["rfDevice"] = config.rfDevice;
         #endif
 
-        #if ENABLE_ENERGYMONITOR
+        #if ENABLE_POWERMONITOR
             root["pwMainsVoltage"] = config.pwMainsVoltage;
             root["pwCurrentRatio"] = config.pwCurrentRatio;
         #endif
@@ -730,7 +732,7 @@ void wifiLoop() {
         #if ENABLE_MQTT
             root["mqtt"] = mqtt.connected() ? 1: 0;
         #endif
-        #if ENABLE_ENERGYMONITOR
+        #if ENABLE_POWERMONITOR
             root["power"] = current * config.pwMainsVoltage.toFloat();
         #endif
         #if ENABLE_DHT
@@ -776,7 +778,7 @@ void wifiLoop() {
             if (server.hasArg("rfChannel")) config.rfChannel = server.arg("rfChannel");
             if (server.hasArg("rfDevice")) config.rfDevice = server.arg("rfDevice");
         #endif
-        #if ENABLE_ENERGYMONITOR
+        #if ENABLE_POWERMONITOR
             if (server.hasArg("pwMainsVoltage")) config.pwMainsVoltage = server.arg("pwMainsVoltage");
             if (server.hasArg("pwCurrentRatio")) config.pwCurrentRatio = server.arg("pwCurrentRatio");
         #endif
@@ -787,8 +789,8 @@ void wifiLoop() {
         #if ENABLE_RF
             rfBuildCodes();
         #endif
-        #if ENABLE_ENERGYMONITOR
-            monitor.setCurrentRatio(config.pwCurrentRatio.toFloat());
+        #if ENABLE_POWERMONITOR
+            power.setCurrentRatio(config.pwCurrentRatio.toFloat());
         #endif
         wifiSetup(true);
 
@@ -859,7 +861,7 @@ void wifiLoop() {
         mqttIPTopic[tmp.length()+1] = 0;
 
         // Get publish current topic
-        #if ENABLE_ENERGYMONITOR
+        #if ENABLE_POWERMONITOR
             tmp = base + "/power";
             tmp.toCharArray(mqttPowerTopic, tmp.length()+1);
             mqttPowerTopic[tmp.length()+1] = 0;
@@ -1060,19 +1062,19 @@ void wifiLoop() {
 // Energy Monitor
 // -----------------------------------------------------------------------------
 
-#if ENABLE_ENERGYMONITOR
+#if ENABLE_POWERMONITOR
 #if ENABLE_MQTT
 
-    unsigned int getCurrent() {
+    unsigned int currentCallback() {
         return analogRead(CURRENT_PIN);
     }
 
-    void energyMonitorSetup() {
-        monitor.initCurrent(getCurrent, REFERENCE_VOLTAGE, config.pwCurrentRatio.toFloat());
-        monitor.setPrecision(CURRENT_PRECISION);
+    void powerMonitorSetup() {
+        power.initCurrent(currentCallback, ADC_BITS, REFERENCE_VOLTAGE, config.pwCurrentRatio.toFloat());
+        power.setPrecision(CURRENT_PRECISION);
     }
 
-    void energyMonitorLoop() {
+    void powerMonitorLoop() {
 
         static unsigned long next_measurement = millis();
         static byte measurements = 0;
@@ -1088,7 +1090,8 @@ void wifiLoop() {
             if (!digitalRead(RELAY_PIN)) {
                 current = 0;
             } else {
-                current = monitor.getCurrent(SAMPLES_X_MEASUREMENT);
+                current = power.getCurrent(SAMPLES_X_MEASUREMENT);
+                current -= CURRENT_OFFSET;
             }
 
             if (measurements == 0) {
@@ -1208,8 +1211,8 @@ void setup() {
     #if ENABLE_DHT
         dhtSetup();
     #endif
-    #if ENABLE_ENERGYMONITOR
-        energyMonitorSetup();
+    #if ENABLE_POWERMONITOR
+        powerMonitorSetup();
     #endif
 
 }
@@ -1237,8 +1240,8 @@ void loop() {
     #if ENABLE_DHT
         dhtLoop();
     #endif
-    #if ENABLE_ENERGYMONITOR
-        energyMonitorLoop();
+    #if ENABLE_POWERMONITOR
+        powerMonitorLoop();
     #endif
 
     delay(1);

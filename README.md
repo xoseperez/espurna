@@ -85,9 +85,6 @@ You can also use "{identifier}" as place holder in the topic. It will be transla
 
 After flashing the firmware via serial do a hard reset of the device (unplug & plug). There is an issue with the ESP.reset() method. Check [https://github.com/esp8266/Arduino/issues/1017][4] for more info.
 
-Current version of ESP8266httpUpdate restarts the modules after SPIFFS update, thus preventing the firmware to be updated too. There is a recent commit fixing that which is not yet pushed to PLatformIO. Check [Fix example for ESP8266httpUpdate][5] for more info. Anyway, current expected behaviour is to not resetting the board from the ESP8266httpUpdate class (comment out line 300 in ```ESP8266httpUpdate.cpp```).
-
-
 [1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html
 [2]: http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff
 [3]: http://www.platformio.org
