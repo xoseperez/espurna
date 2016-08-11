@@ -39,6 +39,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ArduinoJson.h>
 #include "DHT.h"
 
+extern "C" {
+    #include "user_interface.h"
+}
+
 #include "version.h"
 
 // -----------------------------------------------------------------------------
@@ -58,7 +62,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ENABLE_WEBSERVER        1
 
 #define ENABLE_NOFUSS           0
-#define ENABLE_POWERMONITOR     0
+#define ENABLE_POWER            0
 #define ENABLE_RF               0
 #define ENABLE_DHT              0
 
@@ -94,6 +98,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ADMIN_PASS              "fibonacci"
 #define BUFFER_SIZE             1024
 #define STATUS_UPDATE_INTERVAL  10000
+#define HEARTBEAT_INTERVAL      60000
+#define FS_VERSION_FILE         "/fsversion"
 
 #define RF_PIN                  14
 
@@ -105,6 +111,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
 
+#define MQTT_STATUS_TOPIC       ""
+#define MQTT_IP_TOPIC           "/ip"
+#define MQTT_VERSION_TOPIC      "/version"
+#define MQTT_FSVERSION_TOPIC    "/fsversion"
+#define MQTT_HEARTBEAT_TOPIC    "/heartbeat"
+#define MQTT_POWER_TOPIC        "/power"
+#define MQTT_TEMPERATURE_TOPIC  "/temperature"
+#define MQTT_HUMIDITY_TOPIC     "/humidity"
+
 #define WIFI_CONNECT_TIMEOUT    10000
 #define WIFI_RECONNECT_DELAY    2000
 #define WIFI_STATUS_CONNECTING  0
@@ -115,7 +130,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define ADC_BITS                10
 #define REFERENCE_VOLTAGE       1.0
 #define CURRENT_PRECISION       1
-#define CURRENT_OFFSET          0.3
+#define CURRENT_OFFSET          0.25
 #define SAMPLES_X_MEASUREMENT   1000
 #define MEASUREMENT_INTERVAL    10000
 #define MEASUREMENTS_X_MESSAGE  6
@@ -134,17 +149,10 @@ DebounceEvent button1 = false;
 
 #if ENABLE_MQTT
     void mqttSend(char * topic, char * message);
+    void getFSVersion(char * buffer);
     WiFiClient client;
     PubSubClient mqtt(client);
-    char mqttStatusTopic[40];
-    char mqttIPTopic[40];
-    #if ENABLE_DHT
-        char mqttTemperatureTopic[40];
-        char mqttHumidityTopic[40];
-    #endif
-    #if ENABLE_POWERMONITOR
-        char mqttPowerTopic[40];
-    #endif
+    String mqttTopic;
     bool isMQTTMessage = false;
 #endif
 
@@ -160,7 +168,7 @@ DebounceEvent button1 = false;
     double humidity;
 #endif
 
-#if ENABLE_POWERMONITOR
+#if ENABLE_POWER
     EmonLiteESP power;
     double current;
 #endif
@@ -242,7 +250,7 @@ void switchRelayOn() {
         EEPROM.commit();
 
         #if ENABLE_MQTT
-            if (!isMQTTMessage) mqttSend(mqttStatusTopic, (char *) "1");
+            if (!isMQTTMessage) mqttSend((char *) MQTT_STATUS_TOPIC, (char *) "1");
         #endif
 
     }
@@ -261,7 +269,7 @@ void switchRelayOff() {
         EEPROM.commit();
 
         #if ENABLE_MQTT
-            if (!isMQTTMessage) mqttSend(mqttStatusTopic, (char *) "0");
+            if (!isMQTTMessage) mqttSend((char *) MQTT_STATUS_TOPIC, (char *) "0");
         #endif
 
     }
@@ -654,8 +662,8 @@ void wifiLoop() {
         if (path.endsWith("/")) path += "index.html";
         String contentType = getContentType(path);
         String pathWithGz = path + ".gz";
-
         if (SPIFFS.exists(pathWithGz)) path = pathWithGz;
+
         if (SPIFFS.exists(path)) {
             File file = SPIFFS.open(path, "r");
             size_t sent = server.streamFile(file, contentType);
@@ -710,7 +718,7 @@ void wifiLoop() {
             root["rfDevice"] = config.rfDevice;
         #endif
 
-        #if ENABLE_POWERMONITOR
+        #if ENABLE_POWER
             root["pwMainsVoltage"] = config.pwMainsVoltage;
             root["pwCurrentRatio"] = config.pwCurrentRatio;
         #endif
@@ -733,7 +741,7 @@ void wifiLoop() {
         #if ENABLE_MQTT
             root["mqtt"] = mqtt.connected() ? 1: 0;
         #endif
-        #if ENABLE_POWERMONITOR
+        #if ENABLE_POWER
             root["power"] = current * config.pwMainsVoltage.toFloat();
         #endif
         #if ENABLE_DHT
@@ -779,7 +787,7 @@ void wifiLoop() {
             if (server.hasArg("rfChannel")) config.rfChannel = server.arg("rfChannel");
             if (server.hasArg("rfDevice")) config.rfDevice = server.arg("rfDevice");
         #endif
-        #if ENABLE_POWERMONITOR
+        #if ENABLE_POWER
             if (server.hasArg("pwMainsVoltage")) config.pwMainsVoltage = server.arg("pwMainsVoltage");
             if (server.hasArg("pwCurrentRatio")) config.pwCurrentRatio = server.arg("pwCurrentRatio");
         #endif
@@ -790,7 +798,7 @@ void wifiLoop() {
         #if ENABLE_RF
             rfBuildCodes();
         #endif
-        #if ENABLE_POWERMONITOR
+        #if ENABLE_POWER
             power.setCurrentRatio(config.pwCurrentRatio.toFloat());
         #endif
         wifiSetup(true);
@@ -845,53 +853,25 @@ void wifiLoop() {
 #if ENABLE_MQTT
 
     void buildTopics() {
-
-        String tmp;
-
         // Replace identifier
-        String base = config.mqttTopic;
-        base.replace("{identifier}", config.hostname);
-
-        // Get publish status topic
-        base.toCharArray(mqttStatusTopic, base.length()+1);
-        mqttStatusTopic[base.length()+1] = 0;
-
-        // Get publish ip topic
-        tmp = base + "/ip";
-        tmp.toCharArray(mqttIPTopic, tmp.length()+1);
-        mqttIPTopic[tmp.length()+1] = 0;
-
-        // Get publish current topic
-        #if ENABLE_POWERMONITOR
-            tmp = base + "/power";
-            tmp.toCharArray(mqttPowerTopic, tmp.length()+1);
-            mqttPowerTopic[tmp.length()+1] = 0;
-        #endif
-
-        // Get publish current topic
-        #if ENABLE_DHT
-            tmp = base + "/temperature";
-            tmp.toCharArray(mqttTemperatureTopic, tmp.length()+1);
-            mqttTemperatureTopic[tmp.length()+1] = 0;
-            tmp = base + "/humidity";
-            tmp.toCharArray(mqttHumidityTopic, tmp.length()+1);
-            mqttHumidityTopic[tmp.length()+1] = 0;
-        #endif
-
+        mqttTopic = config.mqttTopic;
+        mqttTopic.replace("{identifier}", config.hostname);
     }
 
     void mqttSend(char * topic, char * message) {
 
         if (!mqtt.connected()) return;
 
+        String path = mqttTopic + String(topic);
+
         #ifdef DEBUG
             Serial.print(F("[MQTT] Sending "));
-            Serial.print(topic);
+            Serial.print(path);
             Serial.print(F(" "));
             Serial.println(message);
         #endif
 
-        mqtt.publish(topic, message, MQTT_RETAIN);
+        mqtt.publish(path.c_str(), message, MQTT_RETAIN);
 
     }
 
@@ -961,18 +941,22 @@ void wifiLoop() {
 
                 buildTopics();
 
-                // Say hello and report our IP
-                mqttSend(mqttIPTopic, (char *) WiFi.localIP().toString().c_str());
+                // Say hello and report our IP and VERSION
+                mqttSend((char *) MQTT_IP_TOPIC, (char *) WiFi.localIP().toString().c_str());
+                mqttSend((char *) MQTT_VERSION_TOPIC, (char *) APP_VERSION);
+                char buffer[10];
+                getFSVersion(buffer);
+                mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
 
                 // Publish current relay status
-                mqttSend(mqttStatusTopic, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
+                mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
 
                 // Subscribe to topic
                 #ifdef DEBUG
                     Serial.print(F("[MQTT] Subscribing to "));
-                    Serial.println(mqttStatusTopic);
+                    Serial.println(mqttTopic);
                 #endif
-                mqtt.subscribe(mqttStatusTopic);
+                mqtt.subscribe(mqttTopic.c_str());
 
 
             } else {
@@ -1033,7 +1017,7 @@ void wifiLoop() {
             #endif
         } else {
             dtostrf(temperature, 4, 1, buffer);
-            mqttSend(mqttTemperatureTopic, buffer);
+            mqttSend((char *) MQTT_TEMPERATURE_TOPIC, buffer);
             #ifdef DEBUG
                 Serial.print(F("[DHT] Temperature: "));
                 Serial.println(temperature);
@@ -1047,7 +1031,7 @@ void wifiLoop() {
             #endif
         } else {
             dtostrf(humidity, 4, 1, buffer);
-            mqttSend(mqttHumidityTopic, buffer);
+            mqttSend((char *) MQTT_HUMIDITY_TOPIC, buffer);
             #ifdef DEBUG
                 Serial.print(F("[DHT] Humidity: "));
                 Serial.println(humidity);
@@ -1063,7 +1047,7 @@ void wifiLoop() {
 // Energy Monitor
 // -----------------------------------------------------------------------------
 
-#if ENABLE_POWERMONITOR
+#if ENABLE_POWER
 #if ENABLE_MQTT
 
     unsigned int currentCallback() {
@@ -1093,6 +1077,7 @@ void wifiLoop() {
             } else {
                 current = power.getCurrent(SAMPLES_X_MEASUREMENT);
                 current -= CURRENT_OFFSET;
+                if (current < 0) current = 0;
             }
 
             if (measurements == 0) {
@@ -1114,7 +1099,7 @@ void wifiLoop() {
                 char buffer[8];
                 double power = (sum - max - min) * config.pwMainsVoltage.toFloat() / (measurements - 2);
                 sprintf(buffer, "%d", int(power));
-                mqttSend(mqttPowerTopic, buffer);
+                mqttSend((char *) MQTT_POWER_TOPIC, buffer);
                 sum = 0;
                 measurements = 0;
             }
@@ -1142,13 +1127,41 @@ void hardwareSetup() {
     EEPROM.read(0) == 1 ? switchRelayOn() : switchRelayOff();
 }
 
+void getFSVersion(char * buffer) {
+    File h = SPIFFS.open(FS_VERSION_FILE, "r");
+    if (!h) {
+        #ifdef DEBUG
+            Serial.println(F("[SPIFFS] Could not open file system version file."));
+        #endif
+        strcpy(buffer, APP_VERSION);
+        return;
+    }
+    size_t size = h.size();
+    h.readBytes(buffer, size - 1);
+    h.close();
+}
+
 void hardwareLoop() {
+
     if (button1.loop()) {
         if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
         if (button1.getEvent() == EVENT_LONG_CLICK) wifiSetupAP();
         if (button1.getEvent() == EVENT_DOUBLE_CLICK) ESP.reset();
     }
+
     showStatus();
+
+    // Heartbeat
+    static unsigned long last_heartbeat = 0;
+    if (millis() - last_heartbeat > HEARTBEAT_INTERVAL) {
+        last_heartbeat = millis();
+        mqttSend((char *) MQTT_HEARTBEAT_TOPIC, (char *) "1");
+        #ifdef DEBUG
+            Serial.print(F("[BEAT] Free heap: "));
+            Serial.println(ESP.getFreeHeap());
+        #endif
+    }
+
 }
 
 // -----------------------------------------------------------------------------
@@ -1172,12 +1185,20 @@ void welcome() {
     Serial.println(getIdentifier());
     Serial.print(F("Last reset reason: "));
     Serial.println(ESP.getResetReason());
+    Serial.print(F("Free heap: "));
+    Serial.print(ESP.getFreeHeap());
+    Serial.println(F(" bytes"));
+    Serial.print(F("Memory size: "));
+    Serial.print(ESP.getFlashChipSize());
+    Serial.println(F(" bytes"));
     FSInfo fs_info;
     if (SPIFFS.info(fs_info)) {
-        Serial.print("File system total size: ");
-        Serial.println(fs_info.totalBytes);
-        Serial.print("File system used size : ");
-        Serial.println(fs_info.usedBytes);
+        Serial.print(F("File system total size: "));
+        Serial.print(fs_info.totalBytes);
+        Serial.println(F(" bytes"));
+        Serial.print(F("File system used size : "));
+        Serial.print(fs_info.usedBytes);
+        Serial.println(F(" bytes"));
     }
 
     Serial.println();
@@ -1194,6 +1215,7 @@ void setup() {
     // with the generated one until I have a way to change them from the
     // configuration interface
     config.hostname = getIdentifier();
+    wifi_station_set_hostname((char *) config.hostname.c_str());
 
     // I am handling first connection in the loop
     //wifiSetup(false);
@@ -1216,7 +1238,7 @@ void setup() {
     #if ENABLE_DHT
         dhtSetup();
     #endif
-    #if ENABLE_POWERMONITOR
+    #if ENABLE_POWER
         powerMonitorSetup();
     #endif
 
@@ -1245,7 +1267,7 @@ void loop() {
     #if ENABLE_DHT
         dhtLoop();
     #endif
-    #if ENABLE_POWERMONITOR
+    #if ENABLE_POWER
         powerMonitorLoop();
     #endif
 
