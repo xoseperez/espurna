@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Config.h"
 #include "NoFUSSClient.h"
+#include "JustWifi.h"
 #include <DebounceEvent.h>
 #include <EmonLiteESP.h>
 
@@ -66,6 +67,10 @@ extern "C" {
 #define ENABLE_RF               0
 #define ENABLE_DHT              0
 
+#define BUTTON_PIN              0
+#define RELAY_PIN               12
+#define LED_PIN                 13
+
 #ifdef ESPURNA
     #define MANUFACTURER        "TINKERMAN"
     #define DEVICE              "ESPURNA"
@@ -89,11 +94,9 @@ extern "C" {
 #ifdef NODEMCUV2
     #define MANUFACTURER        "NODEMCU"
     #define DEVICE              "LOLIN"
+    #undef LED_PIN
+    #define LED_PIN             16
 #endif
-
-#define BUTTON_PIN              0
-#define RELAY_PIN               12
-#define LED_PIN                 13
 
 #define ADMIN_PASS              "fibonacci"
 #define BUFFER_SIZE             1024
@@ -120,12 +123,6 @@ extern "C" {
 #define MQTT_TEMPERATURE_TOPIC  "/temperature"
 #define MQTT_HUMIDITY_TOPIC     "/humidity"
 
-#define WIFI_CONNECT_TIMEOUT    10000
-#define WIFI_RECONNECT_DELAY    2000
-#define WIFI_STATUS_CONNECTING  0
-#define WIFI_STATUS_CONNECTED   1
-#define WIFI_STATUS_AP          2
-
 #define CURRENT_PIN             0
 #define ADC_BITS                10
 #define REFERENCE_VOLTAGE       1.0
@@ -139,8 +136,7 @@ extern "C" {
 // Globals
 // -----------------------------------------------------------------------------
 
-byte status = WIFI_STATUS_CONNECTING;
-
+JustWifi jw;
 DebounceEvent button1 = false;
 
 #if ENABLE_WEBSERVER
@@ -227,7 +223,7 @@ void blink(unsigned long delayOff, unsigned long delayOn) {
 }
 
 void showStatus() {
-    if (WiFi.status() == WL_CONNECTED) {
+    if (jw.connected()) {
         blink(5000, 500);
     } else {
         blink(500, 500);
@@ -424,128 +420,126 @@ void toggleRelay() {
 // Wifi
 // -----------------------------------------------------------------------------
 
-void wifiSetupAP() {
+void wifiSetup() {
 
-    // Set WIFI module AP mode
-    WiFi.mode(WIFI_AP);
-    #ifdef DEBUG
-        WiFi.printDiag(Serial);
-    #endif
+    // Message callbacks
+    jw.onMessage([](justwifi_messages_t code, char * parameter) {
 
-    // SoftAP mode
-    WiFi.softAP(config.hostname.c_str(), ADMIN_PASS);
-    status = WIFI_STATUS_AP;
-    delay(100);
-    #ifdef DEBUG
-        Serial.print(F("[WIFI] ACCESS POINT Mode, SSID: "));
-        Serial.print(config.hostname);
-        Serial.print(F(", Password: \""));
-        Serial.print(ADMIN_PASS);
-        Serial.print(F("\", IP address: "));
-        Serial.println(WiFi.softAPIP());
-    #endif
-
-}
-
-void wifiSetupSTA() {
-
-    byte network = 0;
-
-    // Set WIFI module to STA mode
-    WiFi.mode(WIFI_STA);
-    #ifdef DEBUG
-        //WiFi.printDiag(Serial);
-    #endif
-
-    #if ENABLE_MQTT
-        if (mqtt.connected()) mqtt.disconnect();
-    #endif
-
-    #if ENABLE_RF
-        RemoteReceiver::disable();
-    #endif
-
-    while (network < 3) {
-
-        if (config.ssid[network].length() > 0) {
-
-            WiFi.begin(
-                (const char *) config.ssid[network].c_str(),
-                (const char *) config.pass[network].c_str()
-            );
-
-            #ifdef DEBUG
-                Serial.print(F("[WIFI] Connecting to "));
-                Serial.println(config.ssid[network]);
+        if (code == MESSAGE_CONNECTED) {
+            #if ENABLE_NOFUSS
+                NoFUSSClient.handle();
             #endif
-
-            // Wait
-            unsigned long timeout = millis() + WIFI_CONNECT_TIMEOUT;
-            while (timeout > millis()) {
-                showStatus();
-                if (WiFi.status() == WL_CONNECTED) break;
-                delay(100);
-            }
-
+        } else {
+            #if ENABLE_MQTT
+                if (mqtt.connected()) mqtt.disconnect();
+            #endif
         }
 
-        if (WiFi.status() == WL_CONNECTED) break;
-        network++;
+        #if ENABLE_RF
+            if (code == MESSAGE_CONNECTING) {
+                RemoteReceiver::disable();
+            } else if (code != MESSAGE_CONNECT_WAITING) {
+                RemoteReceiver::enable();
+            }
+        #endif
 
-    }
-
-    #if ENABLE_RF
-        RemoteReceiver::enable();
-    #endif
-
-    if (WiFi.status() == WL_CONNECTED) {
-
-        WiFi.setAutoConnect(true);
-        status = WIFI_STATUS_CONNECTED;
+        if (code == MESSAGE_CONNECT_WAITING) {
+            showStatus();
+        }
 
         #ifdef DEBUG
-            Serial.print(F("[WIFI] STATION Mode, SSID: "));
-            Serial.print(WiFi.SSID());
-            Serial.print(F(", IP address: "));
-            Serial.println(WiFi.localIP());
+
+            if (code == MESSAGE_AUTO_NOSSID) {
+                Serial.println("[WIFI] No information about the last successful network");
+            }
+
+            if (code == MESSAGE_AUTO_CONNECTING) {
+                Serial.print("[WIFI] Connecting to last successful network: ");
+                Serial.println(parameter);
+            }
+
+            if (code == MESSAGE_AUTO_FAILED) {
+                Serial.println("[WIFI] Could not connect to last successful network");
+            }
+
+            if (code == MESSAGE_CONNECTING) {
+                Serial.print("[WIFI] Connecting to ");
+                Serial.println(parameter);
+            }
+
+            if (code == MESSAGE_CONNECT_WAITING) {
+                //
+            }
+
+            if (code == MESSAGE_CONNECT_FAILED) {
+                Serial.print("[WIFI] Could not connect to ");
+                Serial.println(parameter);
+            }
+
+            if (code == MESSAGE_CONNECTED) {
+                Serial.print("[WIFI] Connected to ");
+                Serial.print(jw.getNetwork());
+                Serial.print(" with IP ");
+                Serial.println(jw.getIP());
+            }
+
+            if (code == MESSAGE_DISCONNECTED) {
+                Serial.println("[WIFI] Disconnected");
+            }
+
+            if (code == MESSAGE_ACCESSPOINT_CREATING) {
+                Serial.println("[WIFI] Creating access point");
+            }
+
+            if (code == MESSAGE_ACCESSPOINT_CREATED) {
+                Serial.print("[WIFI] Access point created with SSID ");
+                Serial.print(jw.getNetwork());
+                Serial.print(" and IP ");
+                Serial.println(jw.getIP());
+            }
+
+            if (code == MESSAGE_ACCESSPOINT_FAILED) {
+                Serial.println("[WIFI] Could not create access point");
+            }
+
         #endif
 
-        #if ENABLE_NOFUSS
-            NoFUSSClient.handle();
-        #endif
+    });
 
-    } else {
-
-        #ifdef DEBUG
-            Serial.println(F("[WIFI] Not connected"));
-        #endif
-
-    }
 
 }
 
-void wifiSetup(bool force) {
-    if (force || (WiFi.status() != WL_CONNECTED)) {
-        wifiSetupSTA();
-        if (WiFi.status() != WL_CONNECTED) wifiSetupAP();
-    }
+bool wifiAP() {
+    //jw.disconnect();
+    return jw.startAP((char *) config.hostname.c_str(), (char *) ADMIN_PASS);
 }
 
 void wifiLoop() {
 
-    static unsigned long last_check = 0;
+    jw.loop();
 
     // Check disconnection
-    if ((status == WIFI_STATUS_CONNECTED) && (WiFi.status() != WL_CONNECTED)) {
-        status = WIFI_STATUS_CONNECTING;
-    }
+    if ((!jw.connected()) && (jw.getMode() != MODE_ACCESS_POINT)) {
 
-    // If not connected (either AP or STA) try to reconnect every WIFI_RECONNECT_DELAY
-    if (status == WIFI_STATUS_CONNECTING) {
-        if ((millis() - last_check) > WIFI_RECONNECT_DELAY) {
-            wifiSetup(false);
-            last_check = millis();
+        WiFi.printDiag(Serial);
+
+        // Set networks
+        jw.cleanNetworks();
+        jw.addNetwork((char *) config.ssid[0].c_str(), (char *) config.pass[0].c_str());
+        jw.addNetwork((char *) config.ssid[1].c_str(), (char *) config.pass[1].c_str());
+        jw.addNetwork((char *) config.ssid[2].c_str(), (char *) config.pass[2].c_str());
+
+        // Connecting
+        if (!jw.autoConnect()) {
+            if (!jw.connect()) {
+                if (!wifiAP()) {
+                    #ifdef DEBUG
+                        Serial.println("[WIFI] Could not start any wifi interface!");
+                    #endif
+                }
+            }
         }
+
     }
 
 }
@@ -801,7 +795,9 @@ void wifiLoop() {
         #if ENABLE_POWER
             power.setCurrentRatio(config.pwCurrentRatio.toFloat());
         #endif
-        wifiSetup(true);
+
+        // Disconnect from current WIFI network, wifiLoop will take care of the reconnection
+        jw.disconnect();
 
     }
 
@@ -1145,7 +1141,7 @@ void hardwareLoop() {
 
     if (button1.loop()) {
         if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
-        if (button1.getEvent() == EVENT_LONG_CLICK) wifiSetupAP();
+        if (button1.getEvent() == EVENT_LONG_CLICK) wifiAP();
         if (button1.getEvent() == EVENT_DOUBLE_CLICK) ESP.reset();
     }
 
@@ -1185,11 +1181,11 @@ void welcome() {
     Serial.println(getIdentifier());
     Serial.print(F("Last reset reason: "));
     Serial.println(ESP.getResetReason());
-    Serial.print(F("Free heap: "));
-    Serial.print(ESP.getFreeHeap());
-    Serial.println(F(" bytes"));
     Serial.print(F("Memory size: "));
     Serial.print(ESP.getFlashChipSize());
+    Serial.println(F(" bytes"));
+    Serial.print(F("Free heap: "));
+    Serial.print(ESP.getFreeHeap());
     Serial.println(F(" bytes"));
     FSInfo fs_info;
     if (SPIFFS.info(fs_info)) {
@@ -1216,9 +1212,7 @@ void setup() {
     // configuration interface
     config.hostname = getIdentifier();
     wifi_station_set_hostname((char *) config.hostname.c_str());
-
-    // I am handling first connection in the loop
-    //wifiSetup(false);
+    wifiSetup();
 
     #if ENABLE_OTA
         OTASetup();
