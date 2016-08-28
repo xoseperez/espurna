@@ -26,7 +26,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
             RemoteReceiver::disable();
         }
     }
-    
+
     void rfLoop() {
         if (rfCode == 0) return;
         #ifdef DEBUG
@@ -79,7 +79,6 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
         pinMode(RF_PIN, INPUT_PULLUP);
         rfBuildCodes();
         RemoteReceiver::init(RF_PIN, 3, rfCallback);
-        RemoteReceiver::enable();
     }
 
 #endif

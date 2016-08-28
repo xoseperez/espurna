@@ -1,0 +1,12 @@
+[submodule "code/vendor/embedis"]
+	path = code/vendor/embedis
+	url = https://github.com/thingSoC/embedis.git
+[submodule "code/vendor/nofuss"]
+	path = code/vendor/nofuss
+	url = git@bitbucket.org:xoseperez/nofuss.git
+[submodule "code/vendor/emonliteesp"]
+	path = code/vendor/emonliteesp
+	url = git@bitbucket.org:xoseperez/emonliteesp.git
+[submodule "code/vendor/RemoteSwitch-arduino-library"]
+	path = code/vendor/RemoteSwitch-arduino-library
+	url = https://github.com/jccprj/RemoteSwitch-arduino-library
