@@ -30,18 +30,29 @@ bool JustWifi::connected() {
 
 bool JustWifi::autoConnect() {
 
+    unsigned long timeout;
+
     // Return if already connected
     if (connected()) return true;
 
     // Try to connect to last successful network
-    WiFi.mode(WIFI_STA);
-    if (WiFi.SSID()) {
+    if (WiFi.SSID().length() > 0) {
 
-        _doCallback(MESSAGE_AUTO_CONNECTING, (char *) WiFi.SSID().c_str());
         ETS_UART_INTR_DISABLE();
         wifi_station_disconnect();
         ETS_UART_INTR_ENABLE();
+
+        _doCallback(MESSAGE_AUTO_CONNECTING, (char *) WiFi.SSID().c_str());
+        WiFi.mode(WIFI_STA);
         WiFi.begin();
+
+        // Check connection with timeout
+        timeout = millis();
+        while (millis() - timeout < _connect_timeout) {
+            _doCallback(MESSAGE_CONNECT_WAITING);
+            if (WiFi.status() == WL_CONNECTED) break;
+            delay(100);
+        }
 
         if (WiFi.status() == WL_CONNECTED) {
             _mode = MODE_STATION;
@@ -71,6 +82,9 @@ bool JustWifi::connect() {
 
     // Loop through configured networks
     for (unsigned char i=0; i<_network_count; i++) {
+
+        // Skip if no SSID defined
+        if (_network[i].ssid.length() == 0) continue;
 
         // TODO: Static IP options here
 
