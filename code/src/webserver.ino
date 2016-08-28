@@ -74,38 +74,37 @@ bool handleFileRead(String path) {
 
 }
 
-void handleInit() {
+void handleGet() {
 
     #ifdef DEBUG
-        Serial.println("[WEBSERVER] Request: /init");
+        Serial.println("[WEBSERVER] Request: /get");
     #endif
 
     char buffer[64];
-    char built[16];
-    getCompileTime(built);
-    sprintf(buffer, "%s %s built %s", APP_NAME, APP_VERSION, built);
+    sprintf(buffer, "%s %s", APP_NAME, APP_VERSION);
 
     StaticJsonBuffer<1024> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
-    root["appname"] = String(buffer);
+    root["app"] = buffer;
     root["manufacturer"] = String(MANUFACTURER);
     root["device"] = String(DEVICE);
     root["hostname"] = getSetting("hostname");
     root["network"] = getNetwork();
     root["ip"] = getIP();
     root["updateInterval"] = STATUS_UPDATE_INTERVAL;
-
-    for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
-        root["ssid" + String(i)] = getSetting("ssid" + String(i));
-        root["pass" + String(i)] = getSetting("pass" + String(i));
-    }
-
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", String(MQTT_PORT));
     root["mqttUser"] = getSetting("mqttUser");
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
+
+    JsonArray& wifi = root.createNestedArray("wifi");
+    for (byte i=0; i<3; i++) {
+        JsonObject& network = wifi.createNestedObject();
+        network["ssid"] = getSetting("ssid" + String(i));
+        network["pass"] = getSetting("pass" + String(i));
+    }
 
     #if ENABLE_RF
         root["rfChannel"] = getSetting("rfChannel", String(RF_CHANNEL));
@@ -134,8 +133,8 @@ void handleStatus() {
 
     StaticJsonBuffer<256> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
-    root["relay"] = digitalRead(RELAY_PIN) ? 1: 0;
-    root["mqtt"] = mqttConnected();
+    root["relayStatus"] = (digitalRead(RELAY_PIN) == HIGH);
+    root["mqttStatus"] = mqttConnected();
     #if ENABLE_EMON
         root["power"] = getCurrent() * getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE)).toFloat();
     #endif
@@ -150,27 +149,27 @@ void handleStatus() {
 
 }
 
-void handleSave() {
+void handlePost() {
 
     #ifdef DEBUG
-        Serial.println(F("[WEBSERVER] Request: /save"));
+        Serial.println(F("[WEBSERVER] Request: /post"));
     #endif
 
     bool dirty = false;
     bool dirtyMQTT = false;
+    unsigned int network = 0;
 
     for (unsigned int i=0; i<server.args(); i++) {
 
         String key = server.argName(i);
         String value = server.arg(i);
 
-        if (key == "status") {
-            if (value == "1") {
-                switchRelayOn();
-            } else {
-                switchRelayOff();
-            }
-            continue;
+        if (key == "ssid") {
+            key = key + String(network);
+        }
+        if (key == "pass") {
+            key = key + String(network);
+            ++network;
         }
 
         if (value != getSetting(key)) {
@@ -212,9 +211,9 @@ void webServerSetup() {
     server.on("/relay/off", HTTP_GET, handleRelayOff);
 
     // Configuration page
-    server.on("/init", HTTP_GET, handleInit);
+    server.on("/get", HTTP_GET, handleGet);
+    server.on("/post", HTTP_POST, handlePost);
     server.on("/status", HTTP_GET, handleStatus);
-    server.on("/save", HTTP_POST, handleSave);
 
     // Anything else
     server.onNotFound([]() {

@@ -28,7 +28,7 @@ You can read about this board and firmware in [my blog][2].
 * Support for **automatic over-the-air updates** through the [NoFUSS Library][6]
 * Support for **current monitoring** through then [EmonLiteESP Library][7]
 * Support for **DHT22** sensors
-
+* Command line configuration
 
 ## Flashing
 
@@ -46,27 +46,27 @@ The project is ready to be build using [PlatformIO][3].
 Please refer to their web page for instructions on how to install the builder. Once installed:
 
 ```bash
-> platformio run --target upload -e wire
-> platformio run --target uploadfs -e wire
+> platformio run --target upload -e node-debug
+> platformio run --target uploadfs -e node-debug
 ```
 
 Once you have flashed it you can flash it again over-the-air using the ```ota``` environment:
 
 ```bash
-> platformio run --target upload -e ota
-> platformio run --target uploadfs -e ota
+> platformio run --target upload -e node-debug-ota
+> platformio run --target uploadfs -e node-debug-ota
 ```
 
 When using OTA environment it defaults to the IP address of the device in SoftAP mode. If you want to flash it when connected to your home network best way is to supply the IP of the device:
 
 ```bash
-> platformio run --target upload -e ota --upload-port 192.168.1.151
-> platformio run --target uploadfs -e ota --upload-port 192.168.1.151
+> platformio run --target upload -e node-debug-ota --upload-port 192.168.1.151
+> platformio run --target uploadfs -e node-debug-ota --upload-port 192.168.1.151
 ```
 
 You can also use the automatic OTA update feature. Check the [NoFUSS library][6] for more info.
 
-Library dependencies are automatically managed via PlatformIO Library Manager.
+Library dependencies are automatically managed via PlatformIO Library Manager or included via submodules and linked from the "lib" folder.
 
 ## Usage
 

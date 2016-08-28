@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <title>ESPurna 0.0.0</title>
+        <meta charset="utf-8" />
+        <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="pure-min.css" />
+        <link rel="stylesheet" href="side-menu-min.css" />
+        <link rel="stylesheet" href="grids-responsive-min.css" />
+        <link rel="stylesheet" href="checkboxes-min.css" />
+        <script src="jquery-1.12.3.min.js"></script>
+        <script src="checkboxes-min.js"></script>
+
+        <style>
+            #menu .pure-menu-heading {
+                font-size: 100%;
+                padding: .5em .5em;
+            }
+            .header h2 {
+                font-size: 1em;
+            }
+            .panel  {
+                display: none;
+            }
+            .content {
+                margin: 0px;
+            }
+            .page {
+                margin-top: 40px;
+            }
+            .center {
+                text-align: center;
+            }
+            .pure-button {
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+            }
+            .button-update {
+                width: 100px;
+                margin: 50px auto;
+                background: #1f8dd6;
+            }
+            .pure-g {
+                margin-bottom: 20px;
+            }
+            legend {
+                font-weight: bold;
+            }
+            .l-box {
+                padding-right: 1px;
+            }
+            #topics .pure-g {
+                padding-bottom: 5px;
+                margin-bottom: 5px;
+                border-bottom: 1px dashed #e5e5e5;
+            }
+            .pure-form input[type=text][disabled] {
+                color: #777777;
+            }
+            div.hint {
+                font-size: 80%;
+                color: #ccc;
+                margin-top: -5px;
+            }
+            .iPhoneCheckContainer {
+                letter-spacing: 0em;
+                height: 36px;
+            }
+            .iPhoneCheckHandle {
+                top: 8px;
+            }
+        </style>
+
+        <script>
+
+            var update_timer = null;
+            var relaySlider;
+
+            function doUpdate() {
+                var self = $(this);
+                self.addClass("loading");
+                $.ajax({
+                    'method': 'POST',
+                    'url': '/post',
+                    'dataType': 'json',
+                    'data': $("#formSave").serializeArray()
+                }).done(function(data) {
+                    self.removeClass("loading");
+                }).fail(function() {
+                    self.removeClass("loading");
+                });
+            }
+
+            function showPanel() {
+                $(".panel").hide();
+                $("#" + $(this).attr("data")).show();
+                if ($("#layout").hasClass('active')) toggleMenu();
+            };
+
+            function toggleMenu() {
+                $("#layout").toggleClass('active');
+                $("#menu").toggleClass('active');
+                $("#menuLink").toggleClass('active');
+            }
+
+            function parseResponse(data) {
+
+                // pre-process
+                if ("network" in data) data.network = data.network.toUpperCase();
+                if ("mqttStatus" in data) data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
+
+                // relay
+                if ("relayStatus" in data) {
+                    $("input[name='relayStatus']")
+                        .prop("checked", data.relayStatus)
+                        .iphoneStyle("refresh");
+                }
+
+                // title
+                if ("app" in data) {
+                    document.title = data.app;
+                    $(".pure-menu-heading").html(data.app);
+                }
+
+                // automatic assign
+                Object.keys(data).forEach(function(key) {
+                    var id = "input[name=" + key + "]";
+                    if ($(id).length) $(id).val(data[key]);
+                });
+
+                // WIFI
+                var groups = $("#panel-wifi .pure-g");
+                for (var i in data.wifi) {
+                    var wifi = data.wifi[i];
+                    Object.keys(wifi).forEach(function(key) {
+                        var id = "input[name=" + key + "]";
+                        if ($(id, groups[i]).length) $(id, groups[i]).val(wifi[key]);
+                    });
+                };
+
+                if ("updateInterval" in data) {
+                    if (update_timer) clearInterval(update_timer);
+                    if (data.updateInterval > 0) {
+                        update_timer = setInterval(update, data.updateInterval);
+                    }
+                }
+
+            }
+
+            function update() {
+                $.ajax({
+                    'method': 'GET',
+                    'url': '/status',
+                    'dataType': 'json'
+                }).done(parseResponse);
+            }
+
+            function init() {
+                $.ajax({
+                    'method': 'GET',
+                    'url': '/get',
+                    'dataType': 'json'
+                }).done(parseResponse);
+            }
+
+            $(function() {
+                $("#menuLink").on('click', toggleMenu);
+                $(".button-update").on('click', doUpdate);
+                $(".pure-menu-link").on('click', showPanel);
+                relaySlider = $('#relayStatus').iphoneStyle({
+                    checkedLabel: 'ON',
+                    uncheckedLabel: 'OFF',
+                    onChange: function(elem, value) {
+                        $.ajax({
+                            'method': 'GET',
+                            'url': value ? '/relay/on' : '/relay/off',
+                            'dataType': 'json'
+                        });
+                        setTimeout(update, 200);
+                    }
+                });
+                init();
+            });
+
+        </script>
+    </head>
+
+    <body>
+
+        <div id="layout">
+
+            <a href="#menu" id="menuLink" class="menu-link">
+                <span></span>
+            </a>
+
+            <div id="menu">
+                <div class="pure-menu">
+
+                    <span class="pure-menu-heading">ESPurna 0.0.0</span>
+
+                    <ul class="pure-menu-list">
+
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-status">STATUS</a>
+                        </li>
+
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-wifi">WIFI</a>
+                        </li>
+
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-mqtt">MQTT</a>
+                        </li>
+
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-rf">RF</a>
+                        </li>
+
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-power">POWER</a>
+                        </li>
+
+                    </ul>
+
+                    <div class="center">
+                        <button class="pure-button button-update">Update</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="content">
+
+                <div class="panel" id="panel-status" style="display: block;">
+
+                    <div class="header">
+                        <h1>STATUS</h1>
+                        <h2>Current configuration</h2>
+                    </div>
+
+                    <div class="page">
+
+                        <form class="pure-form pure-form-aligned">
+                            <fieldset>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="manufacturer">Manufacturer</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="manufacturer" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="device">Device</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="device" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="hostname">Hostname</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="hostname" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="network">Network</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="network" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="ip">IP</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="ip" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="mqtt">MQTT Status</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="mqttStatus" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="temperature">Temperature</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="temperature" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="humidity">Humidity</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="humidity" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="power">Power</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="power" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="relayStatus">Relay Status</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="checkbox" checked="checked" name="relayStatus" id="relayStatus"/>
+                                </div>
+
+                            </fieldset>
+
+                        </form>
+                    </div>
+                </div>
+
+                <form id="formSave" class="pure-form pure-form-stacked" action="/" method="post">
+
+                    <div class="panel" id="panel-wifi">
+
+                        <div class="header">
+                            <h1>WIFI</h1>
+                            <h2>You can configure up to 3 different WiFi networks. The device will try to connect to any of them starting with the first one.</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <legend>First network</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-md-1-2">
+                                        <label for="ssid">SSID</label>
+                                        <input type="text" class="pure-u-23-24" tabindex="10" name="ssid">
+                                    </div>
+                                    <div class="pure-u-1 pure-u-md-1-2">
+                                        <label for="pass">Password</label>
+                                        <input type="text" class="pure-u-23-24" tabindex="11" name="pass">
+                                    </div>
+                                </div>
+
+                                <legend>Second network</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-md-1-2">
+                                        <label for="ssid">SSID</label>
+                                        <input type="text" class="pure-u-23-24" tabindex="12" name="ssid">
+                                    </div>
+                                    <div class="pure-u-1 pure-u-md-1-2">
+                                        <label for="pass">Password</label>
+                                        <input type="text" class="pure-u-23-24" tabindex="13" name="pass">
+                                    </div>
+                                </div>
+
+                                <legend>Third network</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-md-1-2">
+                                        <label for="ssid">SSID</label>
+                                            <input type="text" class="pure-u-23-24" tabindex="14" name="ssid">
+                                    </div>
+                                    <div class="pure-u-1 pure-u-md-1-2">
+                                        <label for="pass">Password</label>
+                                        <input type="text" class="pure-u-23-24" tabindex="15" name="pass">
+                                    </div>
+                                </div>
+
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="panel" id="panel-mqtt">
+
+                        <div class="header">
+                            <h1>MQTT</h1>
+                            <h2>Configure an <strong>MQTT broker</strong> in your network and you will be able to change the switch status via an MQTT message. Leave the server field empty to disable MQTT.</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g">
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="mqttServer">MQTT Server</label>
+                                        <input name="mqttServer" type="text" class="pure-u-23-24" value="" size="20" tabindex="10" placeholder="MQTT Server">
+                                    </div>
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="mqttPort">MQTT Port</label>
+                                        <input name="mqttPort" type="text" class="pure-u-23-24" value="" size="21" tabindex="11" placeholder="1883">
+                                    </div>
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="mqttUser">MQTT User</label>
+                                        <input name="mqttUser" type="text" class="pure-u-23-24" value="" size="22" tabindex="12" placeholder="Leave blank if no user/pass">
+                                    </div>
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="mqttPassword">MQTT Password</label>
+                                        <input name="mqttPassword" type="text" class="pure-u-23-24" value="" size="23" tabindex="13" placeholder="Leave blank if no user/pass">
+                                    </div>
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="mqttTopic">MQTT Topic</label>
+                                        <div class="hint">Send a 0 or a 1 as a payload to the provided topic below to switch it on or off. You can also send a 2 to toggle its current state. The switch will also report its current open/close status to the same topic and its IP address, hertbeat, firmware version and file system version to the topic you define plus "/ip", "/heartbeat", "/version" and "/fsversion" respectively. </div>
+                                        <input name="mqttTopic" type="text" class="pure-u-23-24" value="" size="24" tabindex="13" placeholder="Leave blank if no user/pass">
+                                    </div>
+
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-rf">
+
+                        <div class="header">
+                            <h1>RADIO</h1>
+                            <h2>
+                                Configure your radio channel and device ID.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g">
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="rfChannel">Channel</label>
+                                        <div class="hint">This is the 5 bits code (0-31) you define on your remote, usually from a DIP switch.</div>
+                                        <input name="rfChannel" type="number" class="pure-u-1-4" min="0" max="30" step="1" tabindex="13"/>
+                                    </div>
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="rfDevice">Device</label>
+                                        <div class="hint">This is the button in your remote that will trigger the switch</div>
+                                        <select name="rfDevice" class="pure-u-1-4" tabindex="31">
+                                            <option value="0">A</a>
+                                            <option value="1">B</a>
+                                            <option value="2">C</a>
+                                            <option value="3">D</a>
+                                            <option value="4">E</a>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-power">
+
+                        <div class="header">
+                            <h1>POWER</h1>
+                            <h2>
+                                Configure your power monitor variables.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g">
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="pwMainsVoltage">AC RMS Voltage</label>
+                                        <div class="hint">This is your house nominal voltage, you probably know this or you wont be playing with this device...</div>
+                                        <select name="pwMainsVoltage" class="pure-u-1-4" tabindex="40">
+                                            <option value="125">125</a>
+                                            <option value="220">220</a>
+                                            <option value="230">230</a>
+                                            <option value="240">240</a>
+                                        </select>
+                                    </div>
+
+                                    <div class="pure-u-1">
+                                        <label class="form-label" for="pwCurrentRatio">Current Ratio</label>
+                                        <div class="hint">This is the value in amps for a 1V output for your sensor. Some current sensors like the YHDC SCT-013-030 have it written in the enclosure: 30A 1V. If you are using a current sensor that outputs a current (no built in burden resistor) it will depend on the turns ratio between the primary and secondary coils in the sensor and the burden resistor you use. Check about this constant in the <a href="https://openenergymonitor.org/emon/buildingblocks/calibration" target="_blank">post about calibration</a> in the Open Energy Monitor site.</div>
+                                        <input name="pwCurrentRatio" type="text" class="pure-u-1-4" value="" size="8" tabindex="41" placeholder="0">
+                                    </div>
+
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div> <!-- content -->
+
+        </div> <!-- layout -->
+
+    </body>
+
+</html>

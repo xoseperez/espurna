@@ -50,7 +50,7 @@
 #define OTA_PORT                8266
 
 #define BUFFER_SIZE             1024
-#define STATUS_UPDATE_INTERVAL  30000
+#define STATUS_UPDATE_INTERVAL  10000
 #define HEARTBEAT_INTERVAL      60000
 #define FS_VERSION_FILE         "/fsversion"
 
