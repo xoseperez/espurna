@@ -60,4 +60,4 @@ if valid_ip $ip; then
     exit 3
 fi
 
-echo platformio run -vv -e $device --target upload --upload-port $ip
+platformio run -vv -e $device --target upload --upload-port $ip
