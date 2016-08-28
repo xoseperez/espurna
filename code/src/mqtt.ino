@@ -23,10 +23,14 @@ bool mqttConnected() {
     return mqtt.connected();
 }
 
+void mqttDisconnect() {
+    mqtt.disconnect();
+}
+
 void buildTopics() {
     // Replace identifier
-    mqttTopic = config.mqttTopic;
-    mqttTopic.replace("{identifier}", config.hostname);
+    mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
+    mqttTopic.replace("{identifier}", getSetting("hostname"));
 }
 
 void mqttSend(char * topic, char * message) {
@@ -78,31 +82,36 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
 void mqttConnect() {
 
-    if (!mqtt.connected() && (config.mqttServer.length()>0)) {
+    String mqttServer = getSetting("mqttServer", MQTT_SERVER);
+    int mqttPort = getSetting("mqttPort", String(MQTT_PORT)).toInt();
+    String mqttUser = getSetting("mqttUser");
+    String mqttPassword = getSetting("mqttPassword");
 
-        mqtt.setServer((const char *) config.mqttServer.c_str(), config.mqttPort.toInt());
+    if (!mqtt.connected() && (mqttServer.length()>0)) {
+
+        mqtt.setServer((const char *) mqttServer.c_str(), mqttPort);
 
         #ifdef DEBUG
             Serial.print(F("[MQTT] Connecting to broker at "));
-            Serial.print(config.mqttServer);
+            Serial.print(mqttServer);
         #endif
 
-        if (config.mqttUser.length() > 0) {
+        if (mqttUser.length() > 0) {
             #ifdef DEBUG
                 Serial.print(F(" as user "));
-                Serial.print(config.mqttUser);
+                Serial.print(mqttUser);
                 Serial.print(F(": "));
             #endif
             mqtt.connect(
-                config.hostname.c_str(),
-                (const char *) config.mqttUser.c_str(),
-                (const char *) config.mqttPassword.c_str()
+                getSetting("hostname").c_str(),
+                (const char *) mqttUser.c_str(),
+                (const char *) mqttPassword.c_str()
             );
         } else {
             #ifdef DEBUG
                 Serial.print(F(" anonymously: "));
             #endif
-            mqtt.connect(config.hostname.c_str());
+            mqtt.connect(getSetting("hostname").c_str());
         }
 
         if (mqtt.connected()) {

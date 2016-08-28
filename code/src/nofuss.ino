@@ -17,7 +17,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
     void nofussSetup() {
 
-        NoFUSSClient.setServer(config.nofussServer);
+        NoFUSSClient.setServer(getSetting("nofussServer", NOFUSS_SERVER));
         NoFUSSClient.setDevice(DEVICE);
         NoFUSSClient.setVersion(APP_VERSION);
 
@@ -79,7 +79,8 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
         static unsigned long last_check = 0;
         if (!wifiConnected()) return;
-        if ((last_check > 0) && ((millis() - last_check) < config.nofussInterval.toInt())) return;
+        unsigned long interval = getSetting("nofussInterval", String(NOFUSS_INTERVAL)).toInt();
+        if ((last_check > 0) && ((millis() - last_check) < interval)) return;
         last_check = millis();
         NoFUSSClient.handle();
 

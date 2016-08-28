@@ -54,6 +54,7 @@
 #define HEARTBEAT_INTERVAL      60000
 #define FS_VERSION_FILE         "/fsversion"
 
+#define WIFI_MAX_NETWORKS       3
 #define WIFI_RECONNECT_INTERVAL 300000
 
 #define RF_PIN                  14
@@ -63,6 +64,9 @@
 #define DHT_TYPE                DHT22
 #define DHT_TIMING              11
 
+#define MQTT_SERVER             "192.168.1.100"
+#define MQTT_PORT               1883
+#define MQTT_TOPIC              "/test/switch/{identifier}"
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
 #define MQTT_STATUS_TOPIC       ""
@@ -74,6 +78,12 @@
 #define MQTT_TEMPERATURE_TOPIC  "/temperature"
 #define MQTT_HUMIDITY_TOPIC     "/humidity"
 
+#define NOFUSS_SERVER           "http://192.168.1.100"
+#define NOFUSS_INTERVAL         600000
+
+#define RF_CHANNEL              31
+#define RF_DEVICE               1
+
 #define EMON_CURRENT_PIN        0
 #define EMON_SAMPLES            1000
 #define EMON_INTERVAL           10000
@@ -82,3 +92,5 @@
 #define EMON_REFERENCE_VOLTAGE  1.0
 #define EMON_CURRENT_PRECISION  1
 #define EMON_CURRENT_OFFSET     0.25
+#define EMON_MAINS_VOLTAGE      230
+#define EMON_CURRENT_RATIO      180

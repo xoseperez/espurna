@@ -18,15 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-extern "C" {
-    #include "user_interface.h"
-}
-
 #include <Arduino.h>
 #include "version.h"
 #include "defaults.h"
 #include "FS.h"
-#include "Config.h"
+
+String getSetting(const String& key, String defaultValue = "");
 
 // -----------------------------------------------------------------------------
 // Methods
@@ -169,19 +166,16 @@ void welcome() {
 void setup() {
 
     hardwareSetup();
+    settingsSetup();
+    setSetting("hostname", String() + getIdentifier());
+    saveSettings();
     relaySetup();
-    buttonSetup();
-    delay(1000);
+
+    delay(2000);
     welcome();
-    config.load();
 
-    // At the moment I am overriding any possible hostname stored in EEPROM
-    // with the generated one until I have a way to change them from the
-    // configuration interface
-    config.hostname = getIdentifier();
-    wifi_station_set_hostname((char *) config.hostname.c_str());
+    buttonSetup();
     wifiSetup();
-
     otaSetup();
     mqttSetup();
     webServerSetup();
@@ -222,6 +216,8 @@ void loop() {
     #if ENABLE_EMON
         powerMonitorLoop();
     #endif
+
+    settingsLoop();
 
     delay(1);
 

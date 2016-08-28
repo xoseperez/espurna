@@ -91,32 +91,30 @@ void handleInit() {
     root["appname"] = String(buffer);
     root["manufacturer"] = String(MANUFACTURER);
     root["device"] = String(DEVICE);
-    root["hostname"] = config.hostname;
-    root["network"] = (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "ACCESS POINT";
-    root["ip"] = (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+    root["hostname"] = getSetting("hostname");
+    root["network"] = getNetwork();
+    root["ip"] = getIP();
     root["updateInterval"] = STATUS_UPDATE_INTERVAL;
 
-    root["ssid0"] = config.ssid[0];
-    root["pass0"] = config.pass[0];
-    root["ssid1"] = config.ssid[1];
-    root["pass1"] = config.pass[1];
-    root["ssid2"] = config.ssid[2];
-    root["pass2"] = config.pass[2];
+    for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
+        root["ssid" + String(i)] = getSetting("ssid" + String(i));
+        root["pass" + String(i)] = getSetting("pass" + String(i));
+    }
 
-    root["mqttServer"] = config.mqttServer;
-    root["mqttPort"] = config.mqttPort;
-    root["mqttUser"] = config.mqttUser;
-    root["mqttPassword"] = config.mqttPassword;
-    root["mqttTopic"] = config.mqttTopic;
+    root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
+    root["mqttPort"] = getSetting("mqttPort", String(MQTT_PORT));
+    root["mqttUser"] = getSetting("mqttUser");
+    root["mqttPassword"] = getSetting("mqttPassword");
+    root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
 
     #if ENABLE_RF
-        root["rfChannel"] = config.rfChannel;
-        root["rfDevice"] = config.rfDevice;
+        root["rfChannel"] = getSetting("rfChannel", String(RF_CHANNEL));
+        root["rfDevice"] = getSetting("rfDevice", String(RF_DEVICE));
     #endif
 
     #if ENABLE_EMON
-        root["pwMainsVoltage"] = config.pwMainsVoltage;
-        root["pwCurrentRatio"] = config.pwCurrentRatio;
+        root["pwMainsVoltage"] = getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE));
+        root["pwCurrentRatio"] = getSetting("pwCurrentRatio", String(EMON_CURRENT_RATIO));
     #endif
 
     String output;
@@ -137,9 +135,9 @@ void handleStatus() {
     StaticJsonBuffer<256> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
     root["relay"] = digitalRead(RELAY_PIN) ? 1: 0;
-    root["mqtt"] = mqtt.connected() ? 1: 0;
+    root["mqtt"] = mqttConnected();
     #if ENABLE_EMON
-        root["power"] = getCurrent() * config.pwMainsVoltage.toFloat();
+        root["power"] = getCurrent() * getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE)).toFloat();
     #endif
     #if ENABLE_DHT
         root["temperature"] = getTemperature();
@@ -158,48 +156,52 @@ void handleSave() {
         Serial.println(F("[WEBSERVER] Request: /save"));
     #endif
 
-    if (server.hasArg("status")) {
-        if (server.arg("status") == "1") {
-            switchRelayOn();
-        } else {
-            switchRelayOff();
+    bool disconnectMQTT = false;
+
+    for (unsigned int i=0; i<server.args(); i++) {
+
+        String key = server.argName(i);
+        String value = server.arg(i);
+
+        if (key == "status") {
+            if (value == "1") {
+                switchRelayOn();
+            } else {
+                switchRelayOff();
+            }
+            continue;
         }
+
+        // Check wether we will have to reconfigure MQTT connection
+        if (!disconnectMQTT && key.startsWith("mqtt")) {
+            if (value != getSetting(key)) disconnectMQTT = true;
+        }
+
+        if (value != getSetting(key)) setSetting(key, value);
+
     }
-
-    if (server.hasArg("ssid0")) config.ssid[0] = server.arg("ssid0");
-    if (server.hasArg("pass0")) config.pass[0] = server.arg("pass0");
-    if (server.hasArg("ssid1")) config.ssid[1] = server.arg("ssid1");
-    if (server.hasArg("pass1")) config.pass[1] = server.arg("pass1");
-    if (server.hasArg("ssid2")) config.ssid[2] = server.arg("ssid2");
-    if (server.hasArg("pass2")) config.pass[2] = server.arg("pass2");
-
-    if (server.hasArg("mqttServer")) config.mqttServer = server.arg("mqttServer");
-    if (server.hasArg("mqttPort")) config.mqttPort = server.arg("mqttPort");
-    if (server.hasArg("mqttUser")) config.mqttUser = server.arg("mqttUser");
-    if (server.hasArg("mqttPassword")) config.mqttPassword = server.arg("mqttPassword");
-    if (server.hasArg("mqttTopic")) config.mqttTopic = server.arg("mqttTopic");
-
-    #if ENABLE_RF
-        if (server.hasArg("rfChannel")) config.rfChannel = server.arg("rfChannel");
-        if (server.hasArg("rfDevice")) config.rfDevice = server.arg("rfDevice");
-    #endif
-    #if ENABLE_EMON
-        if (server.hasArg("pwMainsVoltage")) config.pwMainsVoltage = server.arg("pwMainsVoltage");
-        if (server.hasArg("pwCurrentRatio")) config.pwCurrentRatio = server.arg("pwCurrentRatio");
-    #endif
 
     server.send(202, "text/json", "{}");
 
-    config.save();
+    saveSettings();
+
     #if ENABLE_RF
         rfBuildCodes();
     #endif
+
     #if ENABLE_EMON
-        power.setCurrentRatio(config.pwCurrentRatio.toFloat());
+        setCurrentRatio(getSetting("pwCurrentRatio").toFloat());
     #endif
 
-    // Disconnect from current WIFI network, wifiLoop will take care of the reconnection
-    wifiDisconnect();
+    // Disconnect from current WIFI network if it's not the first on the list
+    // wifiLoop will take care of the reconnection
+    if (getNetwork() != getSetting("ssid0")) {
+        wifiDisconnect();
+
+    // else check if we should reconigure MQTT connection
+    } else if (disconnectMQTT) {
+        mqttDisconnect();
+    }
 
 }
 

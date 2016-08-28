@@ -43,7 +43,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
         unsigned long code = 0;
 
         // channel
-        unsigned int channel = config.rfChannel.toInt();
+        unsigned int channel = getSetting("rfChannel", String(RF_CHANNEL)).toInt();
         for (byte i = 0; i < 5; i++) {
             code *= 3;
             if (channel & 1) code += 1;
@@ -51,7 +51,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
         }
 
         // device
-        unsigned int device = config.rfDevice.toInt();
+        unsigned int device = getSetting("rfDevice", String(RF_DEVICE)).toInt();
         for (byte i = 0; i < 5; i++) {
             code *= 3;
             if (device != i) code += 2;
