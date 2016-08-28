@@ -31,6 +31,9 @@ void settingsSetup() {
             []() {}
         #endif
     );
+    #if DEBUG
+        Serial.println("[SETTINGS] Initialized");
+    #endif
 }
 
 void settingsLoop() {
@@ -52,6 +55,9 @@ bool delSetting(const String& key) {
 }
 
 void saveSettings() {
+    #if DEBUG
+        Serial.println("[SETTINGS] Saving");
+    #endif
     #if not AUTO_SAVE
         EEPROM.commit();
     #endif

@@ -156,7 +156,8 @@ void handleSave() {
         Serial.println(F("[WEBSERVER] Request: /save"));
     #endif
 
-    bool disconnectMQTT = false;
+    bool dirty = false;
+    bool dirtyMQTT = false;
 
     for (unsigned int i=0; i<server.args(); i++) {
 
@@ -172,18 +173,17 @@ void handleSave() {
             continue;
         }
 
-        // Check wether we will have to reconfigure MQTT connection
-        if (!disconnectMQTT && key.startsWith("mqtt")) {
-            if (value != getSetting(key)) disconnectMQTT = true;
+        if (value != getSetting(key)) {
+            setSetting(key, value);
+            dirty = true;
+            if (key.startsWith("mqtt")) dirtyMQTT = true;
         }
-
-        if (value != getSetting(key)) setSetting(key, value);
 
     }
 
     server.send(202, "text/json", "{}");
 
-    saveSettings();
+    if (dirty) saveSettings();
 
     #if ENABLE_RF
         rfBuildCodes();
@@ -199,7 +199,7 @@ void handleSave() {
         wifiDisconnect();
 
     // else check if we should reconigure MQTT connection
-    } else if (disconnectMQTT) {
+    } else if (dirtyMQTT) {
         mqttDisconnect();
     }
 
