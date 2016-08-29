@@ -30,9 +30,11 @@ You can read about this board and firmware in [my blog][2].
 * Support for **DHT22** sensors
 * Command line configuration
 
-## Flashing
+# Flashing a Sonoff
 
-The unpopulated header has all the required pins. My board has a 5 pins header in-line with the button. They are (from the button outwards):
+*This section only applies to the Sonoff, but pretty much every other ESP8266-based hardware will be similar.*
+
+The unpopulated header in the Sonoff has all the required pins. My board has a 5 pins header in-line with the button. They are (from the button outwards):
 
 * 3V3
 * RX
@@ -42,8 +44,38 @@ The unpopulated header has all the required pins. My board has a 5 pins header i
 
 Last one is not necessary. Mind it's a **3V3 device**, if connected to 5V you will probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter flash mode you have to hold the button pressed while powering on the board, then you can realease it again.
 
+## Firmware
+
 The project is ready to be build using [PlatformIO][3].
-Please refer to their web page for instructions on how to install the builder. Once installed:
+Please refer to their web page for instructions on how to install the builder.
+
+PlatformIO will take care of some of the library dependencies, but not all the required libraries are available in the platform library manager. Some dependencies are thus checked out as submodules in GIT. So the normal initial checkout should be:
+
+```
+git clone git@bitbucket.org:xoseperez/espurna.git
+git submodule init
+git submodule update
+```
+
+On linux/max systems the libraries are soft linked to the code/lib folder and you are ready to go. Windows systems do not have this feature so you will have to copy them manually like this (ONLY WINDOWS):
+
+```
+cd espurna/code
+copy vendor/embedis/src lib/Embedis
+copy vendor/emonliteesp/code/lib/EmonLiteESP lib/EmonLiteESP
+copy vendor/nofuss/client/lib/NoFUSSClient lib/NoFUSSClient
+copy vendor/RemoteSwitch-arduino-library lib/RemoteSwitch
+```
+
+The Embedis library is the only one required in all cases. The other three are optional at the moment and will only be linked if you set ENABLE_NOFUSS, ENABLE_EMON or ENABLE_RF in the defaults.h file.
+
+Once you have all the code, you can check if it's working by:
+
+```bash
+> platformio run -e node-debug
+```
+
+If it compiles you are ready to flash, wire your board like in the flashing section above and:
 
 ```bash
 > platformio run --target upload -e node-debug
