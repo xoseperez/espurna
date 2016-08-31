@@ -41,7 +41,7 @@
 #ifdef NODEMCUV2
     #define MANUFACTURER        "NODEMCU"
     #define DEVICE              "LOLIN"
-    #define LED_PIN             16
+    #define LED_PIN             4
 #endif
 
 #define AP_PASS                 "fibonacci"

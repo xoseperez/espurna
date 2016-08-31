@@ -30,21 +30,31 @@ You can read about this board and firmware in [my blog][2].
 * Support for **DHT22** sensors
 * Command line configuration
 
-# Flashing a Sonoff
+## Installing
 
-*This section only applies to the Sonoff, but pretty much every other ESP8266-based hardware will be similar.*
+### Build the web config site
 
-The unpopulated header in the Sonoff has all the required pins. My board has a 5 pins header in-line with the button. They are (from the button outwards):
+Normally when you flash an ESP8266 you only flash the firmware, like for any other microcontroller. But the ESP8266 has plenty of room and normally it is split into different partitions. One such partition is used to store web files like a normal webserver. In the "Flash your board" section below you'll know how to flash this special partition, but first we will have to build it.
 
-* 3V3
-* RX
-* TX
-* GND
-* GPIO14
+The build process read the HTML files, looks for the stylesheet and script files linked there, grabs them, merges them, minifies them and compresses them. Thus, a single HTML with N linked scripts and M linked CSS files is transformed in just 3 files (index.html.gz, style.css.gz and script.js.gz). This way the ESP8266 webserver can serve them really fast. Mind the ESP8266 is just a microcontroller, the webserver has a very limited capacity to hold concurrent requests, so few and lighter files are a must.
 
-Last one is not necessary. Mind it's a **3V3 device**, if connected to 5V you will probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter flash mode you have to hold the button pressed while powering on the board, then you can realease it again.
+To build these files we are using **[Gulp][11]**, a build system built in [node.js][13]. So you will need node (and [npm][14], its package manager) first. [Read the documentation][12] on how to install them.
 
-## Firmware
+Once you have node and npm installed, go to the 'code' folder and install all the dependencies with:
+
+```
+npm install
+```
+
+It will take a minute or two. Then you are ready to build the webserver files with:
+
+```
+gulp
+```
+
+It will create a populate a 'data' folder with all the required files.
+
+### Build the firmware
 
 The project is ready to be build using [PlatformIO][3].
 Please refer to their web page for instructions on how to install the builder.
@@ -75,7 +85,23 @@ Once you have all the code, you can check if it's working by:
 > platformio run -e node-debug
 ```
 
-If it compiles you are ready to flash, wire your board like in the flashing section above and:
+If it compiles you are ready to flash the firmware.
+
+### Flash your board
+
+*This section only applies to the Sonoff, but pretty much every other ESP8266-based hardware will be similar.*
+
+The unpopulated header in the Sonoff has all the required pins. My board has a 5 pins header in-line with the button. They are (from the button outwards):
+
+* 3V3
+* RX
+* TX
+* GND
+* GPIO14
+
+Last one is not necessary. Mind it's a **3V3 device**, if connected to 5V you will probably fry it. Button is connected to GPIO0 on the ESP8266 chip, so to enter flash mode you have to hold the button pressed while powering on the board, then you can realease it again.
+
+Wire your board and flash the firmware (with ```upload```) and the file system (with ```uploadfs```):
 
 ```bash
 > platformio run --target upload -e node-debug
@@ -127,3 +153,7 @@ After flashing the firmware via serial do a hard reset of the device (unplug & p
 [8]: https://www.itead.cc/sonoff-rf.html
 [9]: https://www.itead.cc/slampher-wifi-wireless-light-holder.html
 [10]: https://www.itead.cc/smart-socket-eu.html
+[11]: http://gulpjs.com/
+[12]: https://docs.npmjs.com/getting-started/installing-node
+[13]: https://nodejs.org/en/
+[14]: https://www.npmjs.com/

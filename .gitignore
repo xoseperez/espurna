@@ -4,3 +4,4 @@
 firmware*
 .pioenvs
 .sconsign.dblite
+node_modules

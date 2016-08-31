@@ -6,187 +6,15 @@
         <meta charset="utf-8" />
         <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <!-- build:css style.css -->
         <link rel="stylesheet" href="pure-min.css" />
-        <link rel="stylesheet" href="side-menu-min.css" />
+        <link rel="stylesheet" href="side-menu.css" />
         <link rel="stylesheet" href="grids-responsive-min.css" />
-        <link rel="stylesheet" href="checkboxes-min.css" />
-        <script src="jquery-1.12.3.min.js"></script>
-        <script src="checkboxes-min.js"></script>
+        <link rel="stylesheet" href="checkboxes.css" />
+        <link rel="stylesheet" href="custom.css" />
+        <!-- endbuild -->
 
-        <style>
-            #menu .pure-menu-heading {
-                font-size: 100%;
-                padding: .5em .5em;
-            }
-            .header h2 {
-                font-size: 1em;
-            }
-            .panel  {
-                display: none;
-            }
-            .content {
-                margin: 0px;
-            }
-            .page {
-                margin-top: 40px;
-            }
-            .center {
-                text-align: center;
-            }
-            .pure-button {
-                color: white;
-                padding: 8px 16px;
-                border-radius: 4px;
-                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-            }
-            .button-update {
-                width: 100px;
-                margin: 50px auto;
-                background: #1f8dd6;
-            }
-            .pure-g {
-                margin-bottom: 20px;
-            }
-            legend {
-                font-weight: bold;
-            }
-            .l-box {
-                padding-right: 1px;
-            }
-            #topics .pure-g {
-                padding-bottom: 5px;
-                margin-bottom: 5px;
-                border-bottom: 1px dashed #e5e5e5;
-            }
-            .pure-form input[type=text][disabled] {
-                color: #777777;
-            }
-            div.hint {
-                font-size: 80%;
-                color: #ccc;
-                margin-top: -5px;
-            }
-            .iPhoneCheckContainer {
-                letter-spacing: 0em;
-                height: 36px;
-            }
-            .iPhoneCheckHandle {
-                top: 8px;
-            }
-        </style>
-
-        <script>
-
-            var update_timer = null;
-            var relaySlider;
-
-            function doUpdate() {
-                var self = $(this);
-                self.addClass("loading");
-                $.ajax({
-                    'method': 'POST',
-                    'url': '/post',
-                    'dataType': 'json',
-                    'data': $("#formSave").serializeArray()
-                }).done(function(data) {
-                    self.removeClass("loading");
-                }).fail(function() {
-                    self.removeClass("loading");
-                });
-            }
-
-            function showPanel() {
-                $(".panel").hide();
-                $("#" + $(this).attr("data")).show();
-                if ($("#layout").hasClass('active')) toggleMenu();
-            };
-
-            function toggleMenu() {
-                $("#layout").toggleClass('active');
-                $("#menu").toggleClass('active');
-                $("#menuLink").toggleClass('active');
-            }
-
-            function parseResponse(data) {
-
-                // pre-process
-                if ("network" in data) data.network = data.network.toUpperCase();
-                if ("mqttStatus" in data) data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
-
-                // relay
-                if ("relayStatus" in data) {
-                    $("input[name='relayStatus']")
-                        .prop("checked", data.relayStatus)
-                        .iphoneStyle("refresh");
-                }
-
-                // title
-                if ("app" in data) {
-                    document.title = data.app;
-                    $(".pure-menu-heading").html(data.app);
-                }
-
-                // automatic assign
-                Object.keys(data).forEach(function(key) {
-                    var id = "input[name=" + key + "]";
-                    if ($(id).length) $(id).val(data[key]);
-                });
-
-                // WIFI
-                var groups = $("#panel-wifi .pure-g");
-                for (var i in data.wifi) {
-                    var wifi = data.wifi[i];
-                    Object.keys(wifi).forEach(function(key) {
-                        var id = "input[name=" + key + "]";
-                        if ($(id, groups[i]).length) $(id, groups[i]).val(wifi[key]);
-                    });
-                };
-
-                if ("updateInterval" in data) {
-                    if (update_timer) clearInterval(update_timer);
-                    if (data.updateInterval > 0) {
-                        update_timer = setInterval(update, data.updateInterval);
-                    }
-                }
-
-            }
-
-            function update() {
-                $.ajax({
-                    'method': 'GET',
-                    'url': '/status',
-                    'dataType': 'json'
-                }).done(parseResponse);
-            }
-
-            function init() {
-                $.ajax({
-                    'method': 'GET',
-                    'url': '/get',
-                    'dataType': 'json'
-                }).done(parseResponse);
-            }
-
-            $(function() {
-                $("#menuLink").on('click', toggleMenu);
-                $(".button-update").on('click', doUpdate);
-                $(".pure-menu-link").on('click', showPanel);
-                relaySlider = $('#relayStatus').iphoneStyle({
-                    checkedLabel: 'ON',
-                    uncheckedLabel: 'OFF',
-                    onChange: function(elem, value) {
-                        $.ajax({
-                            'method': 'GET',
-                            'url': value ? '/relay/on' : '/relay/off',
-                            'dataType': 'json'
-                        });
-                        setTimeout(update, 200);
-                    }
-                });
-                init();
-            });
-
-        </script>
     </head>
 
     <body>
@@ -491,5 +319,11 @@
         </div> <!-- layout -->
 
     </body>
+
+    <!-- build:js script.js -->
+    <script src="jquery-1.12.3.min.js"></script>
+    <script src="checkboxes.js"></script>
+    <script src="custom.js"></script>
+    <!-- endbuild -->
 
 </html>

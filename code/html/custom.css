@@ -1,0 +1,59 @@
+#menu .pure-menu-heading {
+    font-size: 100%;
+    padding: .5em .5em;
+}
+.header h2 {
+    font-size: 1em;
+}
+.panel  {
+    display: none;
+}
+.content {
+    margin: 0px;
+}
+.page {
+    margin-top: 40px;
+}
+.center {
+    text-align: center;
+}
+.pure-button {
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+.button-update {
+    width: 100px;
+    margin: 50px auto;
+    background: #1f8dd6;
+}
+.pure-g {
+    margin-bottom: 20px;
+}
+legend {
+    font-weight: bold;
+}
+.l-box {
+    padding-right: 1px;
+}
+#topics .pure-g {
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    border-bottom: 1px dashed #e5e5e5;
+}
+.pure-form input[type=text][disabled] {
+    color: #777777;
+}
+div.hint {
+    font-size: 80%;
+    color: #ccc;
+    margin-top: -5px;
+}
+.iPhoneCheckContainer {
+    letter-spacing: 0em;
+    height: 36px;
+}
+.iPhoneCheckHandle {
+    top: 8px;
+}
