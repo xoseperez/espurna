@@ -79,8 +79,12 @@ function processData(data) {
 
     // title
     if ("app" in data) {
-        document.title = data.app;
         $(".pure-menu-heading").html(data.app);
+        var title = data.app;
+        if ("hostname" in data) {
+            title = data.hostname + " - " + title;
+        }
+        document.title = title;
     }
 
     // automatic assign
