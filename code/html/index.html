@@ -37,6 +37,10 @@
                         </li>
 
                         <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-general">GENERAL</a>
+                        </li>
+
+                        <li class="pure-menu-item">
                             <a href="#" class="pure-menu-link" data="panel-wifi">WIFI</a>
                         </li>
 
@@ -50,8 +54,10 @@
 
                     </ul>
 
-                    <div class="center">
+                    <div class="main-buttons">
                         <button class="pure-button button-update">Update</button>
+                        <button class="pure-button button-reconnect">Reconnect</button>
+                        <button class="pure-button button-reset">Reset</button>
                     </div>
 
                 </div>
@@ -77,13 +83,18 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="device">Device</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="device" disabled>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="chipid">Chip ID</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="chipid" disabled>
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="hostname">Hostname</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="hostname" readonly />
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="mac">MAC</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="mac" disabled>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="device">Device</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="device" disabled>
                                 </div>
 
                                 <div class="pure-g">
@@ -128,6 +139,37 @@
                 </div>
 
                 <form id="formSave" class="pure-form pure-form-stacked" action="/" method="post">
+
+                    <div class="panel" id="panel-general">
+
+                        <div class="header">
+                            <h1>GENERAL</h1>
+                            <h2></h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-u-1">
+                                    <label class="form-label" for="hostname">Hostname</label>
+                                    <div class="hint">This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface clicking the "Reconnect" button.</div>
+                                    <input name="hostname" type="text" class="pure-u-1-4" tabindex="1">
+                                </div>
+
+                                <div class="pure-u-1">
+                                    <label class="form-label" for="relayMode">Relay boot mode</label>
+                                    <div class="hint">Here you can define what will be the status of the relay after a reboot.</div>
+                                    <select name="relayMode" class="pure-u-1-4" tabindex="2">
+                                        <option value="0">Always OFF</a>
+                                        <option value="1">Always ON</a>
+                                        <option value="2">Same as before</a>
+                                    </select>
+                                </div>
+
+                            </fieldset>
+                        </div>
+                    </div>
 
                     <div class="panel" id="panel-wifi">
 

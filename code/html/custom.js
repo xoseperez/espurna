@@ -15,6 +15,28 @@ function doUpdate() {
     });
 }
 
+function doReset() {
+    var response = window.confirm("Are you sure you want to reset the device?");
+    if (response == false) return;
+    var self = $(this);
+    self.addClass("loading");
+    $.ajax({
+        'method': 'GET',
+        'url': '/reset'
+    });
+}
+
+function doReconnect() {
+    var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
+    if (response == false) return;
+    var self = $(this);
+    self.addClass("loading");
+    $.ajax({
+        'method': 'GET',
+        'url': '/reconnect'
+    });
+}
+
 function showPanel() {
     $(".panel").hide();
     $("#" + $(this).attr("data")).show();
@@ -113,6 +135,8 @@ function init() {
 
     $("#menuLink").on('click', toggleMenu);
     $(".button-update").on('click', doUpdate);
+    $(".button-reset").on('click', doReset);
+    $(".button-reconnect").on('click', doReconnect);
     $(".pure-menu-link").on('click', showPanel);
 
     var host = window.location.hostname;

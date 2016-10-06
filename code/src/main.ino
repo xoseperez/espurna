@@ -131,8 +131,10 @@ void setup() {
     welcome();
 
     settingsSetup();
-    setSetting("hostname", String() + getIdentifier());
-    saveSettings();
+    if (getSetting("hostname").length() == 0) {
+        setSetting("hostname", String() + getIdentifier());
+        saveSettings();
+    }
 
     relaySetup();
     wifiSetup();

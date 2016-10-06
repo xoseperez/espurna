@@ -29,14 +29,19 @@ bool webSocketSend(uint8_t num, char * payload) {
 
 void webSocketStart(uint8_t num) {
 
-    char buffer[64];
-    sprintf(buffer, "%s %s", APP_NAME, APP_VERSION);
+    char app[64];
+    sprintf(app, "%s %s", APP_NAME, APP_VERSION);
+
+    char chipid[6];
+    sprintf(chipid, "%06X", ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
-    root["app"] = buffer;
+    root["app"] = app;
     root["manufacturer"] = String(MANUFACTURER);
+    root["chipid"] = chipid;
+    root["mac"] = WiFi.macAddress();
     root["device"] = String(DEVICE);
     root["hostname"] = getSetting("hostname", HOSTNAME);
     root["network"] = getNetwork();
@@ -48,6 +53,7 @@ void webSocketStart(uint8_t num) {
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
     root["relayStatus"] = digitalRead(RELAY_PIN) == HIGH;
+    root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
 
     #if ENABLE_RF
         root["rfChannel"] = getSetting("rfChannel", String(RF_CHANNEL));

@@ -34,6 +34,16 @@ String getContentType(String filename) {
     return "text/plain";
 }
 
+void handleReconnect() {
+    DEBUG_MSG("[WEBSERVER] Request: /reconnect\n");
+    wifiDisconnect();
+}
+
+void handleReset() {
+    DEBUG_MSG("[WEBSERVER] Request: /reset\n");
+    ESP.reset();
+}
+
 void handleRelayOn() {
     DEBUG_MSG("[WEBSERVER] Request: /relay/on\n");
     switchRelayOn();
@@ -112,7 +122,6 @@ void handleSave() {
 
     // Reconfigure networks
     wifiConfigure();
-    wifiDisconnect();
 
     // Check if we should reconigure MQTT connection
     if (dirtyMQTT) {
@@ -126,10 +135,10 @@ void webServerSetup() {
     //SPIFFS.begin();
 
     // Relay control
+    server.on("/reconnect", HTTP_GET, handleReconnect);
+    server.on("/reset", HTTP_GET, handleReset);
     server.on("/relay/on", HTTP_GET, handleRelayOn);
     server.on("/relay/off", HTTP_GET, handleRelayOff);
-
-    // Configuration page
     server.on("/save", HTTP_POST, handleSave);
 
     // Anything else

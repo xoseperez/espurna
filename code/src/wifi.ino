@@ -44,19 +44,18 @@ bool createAP() {
 }
 
 void wifiConfigure() {
+    jw.scanNetworks(true);
+    jw.setHostname((char *) getSetting("hostname", HOSTNAME).c_str());
+    jw.setSoftAP((char *) getSetting("hostname", HOSTNAME).c_str(), (char *) AP_PASS);
+    jw.setAPMode(AP_MODE_ALONE);
     jw.cleanNetworks();
     if (getSetting("ssid0").length() > 0) jw.addNetwork((char *) getSetting("ssid0").c_str(), (char *) getSetting("pass0").c_str());
     if (getSetting("ssid1").length() > 0) jw.addNetwork((char *) getSetting("ssid1").c_str(), (char *) getSetting("pass1").c_str());
     if (getSetting("ssid2").length() > 0) jw.addNetwork((char *) getSetting("ssid2").c_str(), (char *) getSetting("pass2").c_str());
-    jw.disconnect();
 }
 
 void wifiSetup() {
 
-    jw.setHostname((char *) getSetting("hostname", HOSTNAME).c_str());
-    jw.scanNetworks(true);
-    jw.setAPMode(AP_MODE_ALONE);
-    jw.setSoftAP((char *) getIdentifier().c_str(), (char *) AP_PASS);
     wifiConfigure();
 
     // Message callbacks

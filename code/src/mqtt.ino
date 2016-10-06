@@ -44,11 +44,21 @@ void mqttSend(char * topic, char * message) {
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
-    char buffer[length+1];
-    memcpy(buffer, payload, length);
-    buffer[length] = 0;
+    static bool isFirstMessage = true;
 
-    DEBUG_MSG("[MQTT] Received %s %s\n", topic, buffer);
+    #ifdef DEBUG_PORT
+        char buffer[length+1];
+        memcpy(buffer, payload, length);
+        buffer[length] = 0;
+        DEBUG_MSG("[MQTT] Received %s %s\n", topic, buffer);
+    #endif
+
+    // If relayMode is not SAME avoid responding to a retained message
+    if (isFirstMessage) {
+        isFirstMessage = false;
+        byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
+        if (relayMode != 2) return;
+    }
 
     // Action to perform
     if ((char)payload[0] == '0') {
