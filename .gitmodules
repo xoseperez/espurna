@@ -10,3 +10,6 @@
 [submodule "code/vendor/RemoteSwitch-arduino-library"]
 	path = code/vendor/RemoteSwitch-arduino-library
 	url = https://github.com/jccprj/RemoteSwitch-arduino-library
+[submodule "code/lib/JustWifi"]
+	path = code/lib/JustWifi
+	url = https://bitbucket.org/xoseperez/justwifi

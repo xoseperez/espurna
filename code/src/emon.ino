@@ -71,17 +71,19 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
             float mainsVoltage = getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE)).toFloat();
 
-            #ifdef DEBUG
-                Serial.print(F("[ENERGY] Power now: "));
-                Serial.print(int(current * mainsVoltage));
-                Serial.println(F("W"));
-            #endif
+            //DEBUG_MSG("[ENERGY] Power now: %dW\n", int(current * mainsVoltage));
 
+            // Update websocket clients
+            char text[20];
+            sprintf_P(text, PSTR("{\"power\": %d}"), int(current * mainsVoltage));
+            webSocketSend(text);
+
+            // Send MQTT messages averaged every EMON_MEASUREMENTS
             if (measurements == EMON_MEASUREMENTS) {
                 char buffer[8];
                 double power = (sum - max - min) * mainsVoltage / (measurements - 2);
                 sprintf(buffer, "%d", int(power));
-                mqttSend((char *) MQTT_POWER_TOPIC, buffer);
+                mqttSend((char *) getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), buffer);
                 sum = 0;
                 measurements = 0;
             }

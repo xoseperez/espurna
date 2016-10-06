@@ -1,12 +1,11 @@
-var update_timer = null;
-var relaySlider;
+var websock;
 
 function doUpdate() {
     var self = $(this);
     self.addClass("loading");
     $.ajax({
         'method': 'POST',
-        'url': '/post',
+        'url': '/save',
         'dataType': 'json',
         'data': $("#formSave").serializeArray()
     }).done(function(data) {
@@ -28,16 +27,31 @@ function toggleMenu() {
     $("#menuLink").toggleClass('active');
 }
 
-function parseResponse(data) {
+function processData(data) {
 
     // pre-process
-    if ("network" in data) data.network = data.network.toUpperCase();
-    if ("mqttStatus" in data) data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
+    if ("network" in data) {
+        data.network = data.network.toUpperCase();
+    }
+    if ("mqttStatus" in data) {
+        data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
+    }
 
     // relay
     if ("relayStatus" in data) {
         $("input[name='relayStatus']")
             .prop("checked", data.relayStatus)
+            .iphoneStyle({
+                checkedLabel: 'ON',
+                uncheckedLabel: 'OFF',
+                onChange: function(elem, value) {
+                    $.ajax({
+                        'method': 'GET',
+                        'url': value ? '/relay/on' : '/relay/off',
+                        'dataType': 'json'
+                    });
+                }
+            })
             .iphoneStyle("refresh");
     }
 
@@ -49,8 +63,30 @@ function parseResponse(data) {
 
     // automatic assign
     Object.keys(data).forEach(function(key) {
-        var id = "input[name=" + key + "]";
-        if ($(id).length) $(id).val(data[key]);
+
+        // Look for INPUTs
+        var element = $("input[name=" + key + "]");
+        if (element.length > 0) {
+            if (element.attr('type') == 'checkbox') {
+                element.prop("checked", data[key] == 1)
+                    .iphoneStyle({
+                        resizeContainer: false,
+                        resizeHandle: false,
+                        checkedLabel: 'ON',
+                        uncheckedLabel: 'OFF'
+                    })
+                    .iphoneStyle("refresh");
+            } else {
+                element.val(data[key]);
+            }
+        }
+
+        // Look for SELECTs
+        var element = $("select[name=" + key + "]");
+        if (element.length > 0) {
+            element.val(data[key]);
+        }
+
     });
 
     // WIFI
@@ -63,46 +99,32 @@ function parseResponse(data) {
         });
     };
 
-    if ("updateInterval" in data) {
-        if (update_timer) clearInterval(update_timer);
-        if (data.updateInterval > 0) {
-            update_timer = setInterval(update, data.updateInterval);
-        }
-    }
-
 }
 
-function update() {
-    $.ajax({
-        'method': 'GET',
-        'url': '/status',
-        'dataType': 'json'
-    }).done(parseResponse);
+function getJson(str) {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
 }
 
 function init() {
-    $.ajax({
-        'method': 'GET',
-        'url': '/get',
-        'dataType': 'json'
-    }).done(parseResponse);
-}
 
-$(function() {
     $("#menuLink").on('click', toggleMenu);
     $(".button-update").on('click', doUpdate);
     $(".pure-menu-link").on('click', showPanel);
-    relaySlider = $('#relayStatus').iphoneStyle({
-        checkedLabel: 'ON',
-        uncheckedLabel: 'OFF',
-        onChange: function(elem, value) {
-            $.ajax({
-                'method': 'GET',
-                'url': value ? '/relay/on' : '/relay/off',
-                'dataType': 'json'
-            });
-            setTimeout(update, 200);
-        }
-    });
-    init();
-});
+
+    var host = window.location.hostname;
+    websock = new WebSocket('ws://' + host + ':81/');
+    websock.onopen = function(evt) {};
+    websock.onclose = function(evt) {};
+    websock.onerror = function(evt) {};
+    websock.onmessage = function(evt) {
+        var data = getJson(evt.data);
+        if (data) processData(data);
+    };
+
+}
+
+$(init);

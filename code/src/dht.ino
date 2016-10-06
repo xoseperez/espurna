@@ -9,63 +9,57 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if ENABLE_DHT
 
-    #include "DHT.h"
+    #include <DHT.h>
 
     DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
-    double temperature;
-    double humidity;
 
     // -----------------------------------------------------------------------------
     // DHT
     // -----------------------------------------------------------------------------
 
-    double getTemperature() {
-        return temperature;
-    }
-
-    double getHumidity() {
-        return humidity;
-    }
-    
     void dhtSetup() {
         dht.begin();
     }
 
     void dhtLoop() {
 
-        static unsigned long last_check = 0;
         if (!mqttConnected()) return;
-        if ((last_check > 0) && ((millis() - last_check) < DHT_UPDATE_INTERVAL)) return;
-        last_check = millis();
 
-        char buffer[10];
+        // Check if we should read new data
+        static unsigned long last_update = 0;
+        if ((millis() - last_update > DHT_UPDATE_INTERVAL) || (last_update == 0)) {
+            last_update = millis();
 
-        temperature = dht.readTemperature();
-        if (isnan(temperature)) {
-            #ifdef DEBUG
-                Serial.println(F("[DHT] Error reading temperature"));
-            #endif
-        } else {
-            dtostrf(temperature, 4, 1, buffer);
-            mqttSend((char *) MQTT_TEMPERATURE_TOPIC, buffer);
-            #ifdef DEBUG
-                Serial.print(F("[DHT] Temperature: "));
-                Serial.println(temperature);
-            #endif
-        }
+            // Read sensor data
+            double h = dht.readHumidity();
+            double t = dht.readTemperature();
 
-        humidity = dht.readHumidity();
-        if (isnan(humidity)) {
-            #ifdef DEBUG
-                Serial.println(F("[DHT] Error reading humidity"));
-            #endif
-        } else {
-            dtostrf(humidity, 4, 1, buffer);
-            mqttSend((char *) MQTT_HUMIDITY_TOPIC, buffer);
-            #ifdef DEBUG
-                Serial.print(F("[DHT] Humidity: "));
-                Serial.println(humidity);
-            #endif
+            // Check if readings are valid
+            if (isnan(h) || isnan(t)) {
+
+                DEBUG_MSG("[DHT] Error reading sensor\n");
+
+            } else {
+
+                char temperature[6];
+                char humidity[6];
+                dtostrf(t, 4, 1, temperature);
+                itoa((int) h, humidity, 10);
+
+                DEBUG_MSG("[DHT] Temperature: %s\n", temperature);
+                DEBUG_MSG("[DHT] Humidity: %s\n", humidity);
+
+                // Send MQTT messages
+                mqttSend((char *) getSetting("dhtTemperatureTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+                mqttSend((char *) getSetting("dhtHumidityTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+
+                // Update websocket clients
+                char buffer[20];
+                sprintf_P(buffer, PSTR("{\"temperature\": %s, \"humidity\": %s}"), temperature, humidity);
+                webSocketSend(buffer);
+
+            }
+
         }
 
     }

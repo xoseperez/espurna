@@ -19,48 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <Arduino.h>
-#include "version.h"
 #include "defaults.h"
-#include "FS.h"
+#include "version.h"
+#include "debug.h"
 
+// -----------------------------------------------------------------------------
+// PROTOTYPES
+// -----------------------------------------------------------------------------
+
+#include <NtpClientLib.h>
+#include <WebSocketsServer.h>
+#include "FS.h"
 String getSetting(const String& key, String defaultValue = "");
 
 // -----------------------------------------------------------------------------
-// Methods
+// METHODS
 // -----------------------------------------------------------------------------
-
-void getCompileTime(char * buffer) {
-
-    int day, month, year, hour, minute, second;
-
-    // parse date
-    String tmp = String(__DATE__);
-    day = tmp.substring(4,6).toInt();
-    year = tmp.substring(7).toInt();
-    tmp = tmp.substring(0,3);
-    if (tmp.equals("Jan")) month = 1;
-    if (tmp.equals("Feb")) month = 2;
-    if (tmp.equals("Mar")) month = 3;
-    if (tmp.equals("Apr")) month = 4;
-    if (tmp.equals("May")) month = 5;
-    if (tmp.equals("Jun")) month = 6;
-    if (tmp.equals("Jul")) month = 7;
-    if (tmp.equals("Aug")) month = 8;
-    if (tmp.equals("Sep")) month = 9;
-    if (tmp.equals("Oct")) month = 10;
-    if (tmp.equals("Nov")) month = 11;
-    if (tmp.equals("Dec")) month = 12;
-
-    // parse time
-    tmp = String(__TIME__);
-    hour = tmp.substring(0,2).toInt();
-    minute = tmp.substring(3,5).toInt();
-    second = tmp.substring(6,8).toInt();
-
-    sprintf(buffer, "%d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second);
-    buffer[14] = 0;
-
-}
 
 String getIdentifier() {
     char identifier[20];
@@ -95,9 +69,7 @@ void hardwareSetup() {
 void getFSVersion(char * buffer) {
     File h = SPIFFS.open(FS_VERSION_FILE, "r");
     if (!h) {
-        #ifdef DEBUG
-            Serial.println(F("[SPIFFS] Could not open file system version file."));
-        #endif
+        DEBUG_MSG("[SPIFFS] Could not open file system version file.\n");
         strcpy(buffer, APP_VERSION);
         return;
     }
@@ -112,82 +84,72 @@ void hardwareLoop() {
 
     // Heartbeat
     static unsigned long last_heartbeat = 0;
-    if (millis() - last_heartbeat > HEARTBEAT_INTERVAL) {
-        last_heartbeat = millis();
-        mqttSend((char *) MQTT_HEARTBEAT_TOPIC, (char *) "1");
-        #ifdef DEBUG
-            Serial.print(F("[BEAT] Free heap: "));
-            Serial.println(ESP.getFreeHeap());
-        #endif
+    if (mqttConnected()) {
+        if ((millis() - last_heartbeat > HEARTBEAT_INTERVAL) || (last_heartbeat == 0)) {
+            last_heartbeat = millis();
+            mqttSend((char *) MQTT_HEARTBEAT_TOPIC, (char *) "1");
+            DEBUG_MSG("[BEAT] Free heap: %d\n", ESP.getFreeHeap());
+            DEBUG_MSG("[NTP] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
+        }
     }
 
 }
 
 // -----------------------------------------------------------------------------
-// Booting
+// BOOTING
 // -----------------------------------------------------------------------------
 
 void welcome() {
-    char buffer[BUFFER_SIZE];
-    getCompileTime(buffer);
-    Serial.println();
-    Serial.println();
-    Serial.print(APP_NAME);
-    Serial.print(F(" "));
-    Serial.print(APP_VERSION);
-    Serial.print(F(" built "));
-    Serial.println(buffer);
-    Serial.println(APP_AUTHOR);
-    Serial.println(APP_WEBSITE);
-    Serial.println();
-    Serial.print(F("Device: "));
-    Serial.println(getIdentifier());
-    Serial.print(F("Last reset reason: "));
-    Serial.println(ESP.getResetReason());
-    Serial.print(F("Memory size: "));
-    Serial.print(ESP.getFlashChipSize());
-    Serial.println(F(" bytes"));
-    Serial.print(F("Free heap: "));
-    Serial.print(ESP.getFreeHeap());
-    Serial.println(F(" bytes"));
+
+    delay(2000);
+    Serial.printf("%s %s\n", (char *) APP_NAME, (char *) APP_VERSION);
+    Serial.printf("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);
+    //Serial.printf("Device: %s\n", (char *) getIdentifier().c_str());
+    Serial.printf("ChipID: %06X\n", ESP.getChipId());
+    Serial.printf("Last reset reason: %s\n", (char *) ESP.getResetReason().c_str());
+    Serial.printf("Memory size: %d bytes\n", ESP.getFlashChipSize());
+    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
     FSInfo fs_info;
     if (SPIFFS.info(fs_info)) {
-        Serial.print(F("File system total size: "));
-        Serial.print(fs_info.totalBytes);
-        Serial.println(F(" bytes"));
-        Serial.print(F("File system used size : "));
-        Serial.print(fs_info.usedBytes);
-        Serial.println(F(" bytes"));
+        Serial.printf("File system total size: %d bytes\n", fs_info.totalBytes);
+        Serial.printf("            used size : %d bytes\n", fs_info.usedBytes);
+        Serial.printf("            block size: %d bytes\n", fs_info.blockSize);
+        Serial.printf("            page size : %d bytes\n", fs_info.pageSize);
+        Serial.printf("            max files : %d\n", fs_info.maxOpenFiles);
+        Serial.printf("            max length: %d\n", fs_info.maxPathLength);
     }
-
     Serial.println();
+    Serial.println();
+
 }
 
 void setup() {
 
     hardwareSetup();
+    buttonSetup();
+
+    welcome();
+
     settingsSetup();
     setSetting("hostname", String() + getIdentifier());
     saveSettings();
+
     relaySetup();
-
-    delay(2000);
-    welcome();
-
-    buttonSetup();
     wifiSetup();
     otaSetup();
     mqttSetup();
     webServerSetup();
+    webSocketSetup();
+    ntpSetup();
 
     #if ENABLE_NOFUSS
         nofussSetup();
     #endif
-    #if ENABLE_RF
-        rfSetup();
-    #endif
     #if ENABLE_DHT
         dhtSetup();
+    #endif
+    #if ENABLE_RF
+        rfSetup();
     #endif
     #if ENABLE_EMON
         powerMonitorSetup();
@@ -197,27 +159,28 @@ void setup() {
 
 void loop() {
 
-    wifiLoop();
     hardwareLoop();
     buttonLoop();
+    settingsLoop();
+    wifiLoop();
     otaLoop();
     mqttLoop();
     webServerLoop();
+    webSocketLoop();
+    ntpLoop();
 
     #if ENABLE_NOFUSS
         nofussLoop();
     #endif
-    #if ENABLE_RF
-        rfLoop();
-    #endif
     #if ENABLE_DHT
         dhtLoop();
+    #endif
+    #if ENABLE_RF
+        rfLoop();
     #endif
     #if ENABLE_EMON
         powerMonitorLoop();
     #endif
-
-    settingsLoop();
 
     delay(1);
 

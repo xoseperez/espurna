@@ -21,7 +21,7 @@
 MQTT_HOST=192.168.1.10
 
 function help() {
-    echo "Syntax: $0 <device>"
+    echo "Syntax: $0 <device> <target>"
     devices
 }
 
@@ -40,14 +40,15 @@ function valid_ip() {
 }
 
 # Check arguments
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 2 ]; then
     help
     exit 1
 fi
 device=$1-device
+target=$2
 
 # Get IP
-topic=`cat platformio.ini | grep $device -A 10 | grep "topic" | cut -d' ' -f3`
+topic=`cat platformio.ini | grep $device -A 2 | grep "topic" | cut -d' ' -f3`
 if [ "$topic" == "" ]; then
     echo "Unknown device $device or topic not defined"
     devices
@@ -60,4 +61,4 @@ if valid_ip $ip; then
     exit 3
 fi
 
-platformio run -vv -e $device --target upload --upload-port $ip
+platformio run -vv -e $device --target $target --upload-port $ip

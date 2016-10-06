@@ -51,9 +51,10 @@ div.hint {
     margin-top: -5px;
 }
 .iPhoneCheckContainer {
+    margin-top: -10px;
     letter-spacing: 0em;
     height: 36px;
 }
 .iPhoneCheckHandle {
-    top: 8px;
+    top: 9px;
 }

@@ -7,7 +7,6 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <ArduinoJson.h>
 #include "ArduinoOTA.h"
 
 // -----------------------------------------------------------------------------
@@ -17,41 +16,29 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 void otaSetup() {
 
     ArduinoOTA.setPort(OTA_PORT);
-    ArduinoOTA.setHostname(getSetting("hostname").c_str());
+    ArduinoOTA.setHostname(getSetting("hostname", HOSTNAME).c_str());
     ArduinoOTA.setPassword((const char *) OTA_PASS);
 
     ArduinoOTA.onStart([]() {
-        #if ENABLE_RF
-            rfEnable(false);
-        #endif
-        #if DEBUG
-            Serial.println(F("[OTA] Start"));
-        #endif
+        DEBUG_MSG("[OTA] Start\n");
     });
 
     ArduinoOTA.onEnd([]() {
-        #if DEBUG
-            Serial.println(F("[OTA] End"));
-        #endif
-        #if ENABLE_RF
-            rfEnable(true);
-        #endif
+        DEBUG_MSG("\n[OTA] End\n");
     });
 
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        #if DEBUG
-            Serial.printf("[OTA] Progress: %u%%\r", (progress / (total / 100)));
-        #endif
+        DEBUG_MSG("[OTA] Progress: %u%%\r", (progress / (total / 100)));
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
-        #if DEBUG
-            Serial.printf("[OTA] Error[%u]: ", error);
-            if (error == OTA_AUTH_ERROR) Serial.println(F("[OTA] Auth Failed"));
-            else if (error == OTA_BEGIN_ERROR) Serial.println(F("[OTA] Begin Failed"));
-            else if (error == OTA_CONNECT_ERROR) Serial.println(F("[OTA] Connect Failed"));
-            else if (error == OTA_RECEIVE_ERROR) Serial.println(F("[OTA] Receive Failed"));
-            else if (error == OTA_END_ERROR) Serial.println(F("[OTA] End Failed"));
+        #if DEBUG_PORT
+            DEBUG_MSG("\n[OTA] Error[%u]: ", error);
+            if (error == OTA_AUTH_ERROR) DEBUG_MSG("Auth Failed\n");
+            else if (error == OTA_BEGIN_ERROR) DEBUG_MSG("Begin Failed\n");
+            else if (error == OTA_CONNECT_ERROR) DEBUG_MSG("Connect Failed\n");
+            else if (error == OTA_RECEIVE_ERROR) DEBUG_MSG("Receive Failed\n");
+            else if (error == OTA_END_ERROR) DEBUG_MSG("End Failed\n");
         #endif
     });
 

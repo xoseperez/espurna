@@ -7,11 +7,12 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <WiFiClient.h>
 #include <PubSubClient.h>
+#include <ESP8266WiFi.h>
 
 WiFiClient client;
 PubSubClient mqtt(client);
+boolean mqttStatus = false;
 String mqttTopic;
 bool isCallbackMessage = false;
 
@@ -34,34 +35,20 @@ void buildTopics() {
 }
 
 void mqttSend(char * topic, char * message) {
-
     if (!mqtt.connected()) return;
     if (isCallbackMessage) return;
-
     String path = mqttTopic + String(topic);
-
-    #ifdef DEBUG
-        Serial.print(F("[MQTT] Sending "));
-        Serial.print(path);
-        Serial.print(F(" "));
-        Serial.println(message);
-    #endif
-
+    DEBUG_MSG("[MQTT] Sending %s %s\n", (char *) path.c_str(), message);
     mqtt.publish(path.c_str(), message, MQTT_RETAIN);
-
 }
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
-    #ifdef DEBUG
-        Serial.print(F("[MQTT] Received "));
-        Serial.print(topic);
-        Serial.print(F(" "));
-        for (int i = 0; i < length; i++) {
-            Serial.print((char)payload[i]);
-        }
-        Serial.println();
-    #endif
+    char buffer[length+1];
+    memcpy(buffer, payload, length);
+    buffer[length] = 0;
+
+    DEBUG_MSG("[MQTT] Received %s %s\n", topic, buffer);
 
     // Action to perform
     if ((char)payload[0] == '0') {
@@ -75,52 +62,42 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     if ((char)payload[0] == '2') {
         toggleRelay();
     }
-    isCallbackMessage = false;
 
+    isCallbackMessage = false;
 
 }
 
 void mqttConnect() {
 
-    String mqttServer = getSetting("mqttServer", MQTT_SERVER);
-    int mqttPort = getSetting("mqttPort", String(MQTT_PORT)).toInt();
-    String mqttUser = getSetting("mqttUser");
-    String mqttPassword = getSetting("mqttPassword");
+    if (!mqtt.connected()) {
 
-    if (!mqtt.connected() && (mqttServer.length()>0)) {
+        String host = getSetting("mqttServer", MQTT_SERVER);
+        String port = getSetting("mqttPort", String(MQTT_PORT));
+        String user = getSetting("mqttUser");
+        String pass = getSetting("mqttPassword");
 
-        mqtt.setServer((const char *) mqttServer.c_str(), mqttPort);
+		if (host.length() == 0) return;
 
-        #ifdef DEBUG
-            Serial.print(F("[MQTT] Connecting to broker at "));
-            Serial.print(mqttServer);
-        #endif
+        DEBUG_MSG("[MQTT] Connecting to broker at %s", (char *) host.c_str());
+        mqtt.setServer(host.c_str(), port.toInt());
 
-        if (mqttUser.length() > 0) {
-            #ifdef DEBUG
-                Serial.print(F(" as user "));
-                Serial.print(mqttUser);
-                Serial.print(F(": "));
-            #endif
-            mqtt.connect(
-                getSetting("hostname").c_str(),
-                (const char *) mqttUser.c_str(),
-                (const char *) mqttPassword.c_str()
-            );
+        if ((user != "") & (pass != "")) {
+            DEBUG_MSG(" as user %s: ", (char *) user.c_str());
+            mqtt.connect(getSetting("hostname", HOSTNAME).c_str(), user.c_str(), pass.c_str());
         } else {
-            #ifdef DEBUG
-                Serial.print(F(" anonymously: "));
-            #endif
-            mqtt.connect(getSetting("hostname").c_str());
+            DEBUG_MSG(" anonymously: ");
+            mqtt.connect(getSetting("hostname", HOSTNAME).c_str());
         }
 
         if (mqtt.connected()) {
 
-            #ifdef DEBUG
-                Serial.println(F("connected!"));
-            #endif
+            DEBUG_MSG("connected!\n");
 
             buildTopics();
+            mqttStatus = true;
+
+            // Send status via webSocket
+            webSocketSend((char *) "{\"mqttStatus\": true}");
 
             // Say hello and report our IP and VERSION
             mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
@@ -133,19 +110,13 @@ void mqttConnect() {
             mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
 
             // Subscribe to topic
-            #ifdef DEBUG
-                Serial.print(F("[MQTT] Subscribing to "));
-                Serial.println(mqttTopic);
-            #endif
+            DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) mqttTopic.c_str());
             mqtt.subscribe(mqttTopic.c_str());
 
 
         } else {
 
-            #ifdef DEBUG
-                Serial.print(F("failed, rc="));
-                Serial.println(mqtt.state());
-            #endif
+            DEBUG_MSG("failed (rc=%d)\n", mqtt.state());
 
         }
     }
@@ -157,14 +128,28 @@ void mqttSetup() {
 }
 
 void mqttLoop() {
-    static unsigned long timeout = millis();
-    if (wifiConnected()) {
+
+    static unsigned long lastPeriod = 0;
+
+    if (WiFi.status() == WL_CONNECTED) {
+
         if (!mqtt.connected()) {
-            if (timeout < millis()) {
-                mqttConnect();
-                timeout = millis() + MQTT_RECONNECT_DELAY;
+
+            if (mqttStatus) {
+                webSocketSend((char *) "{\"mqttStatus\": false}");
+                mqttStatus = false;
             }
+
+        	unsigned long currPeriod = millis() / MQTT_RECONNECT_DELAY;
+        	if (currPeriod != lastPeriod) {
+        	    lastPeriod = currPeriod;
+                mqttConnect();
+            }
+
         }
+
         if (mqtt.connected()) mqtt.loop();
+
     }
+
 }

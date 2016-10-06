@@ -45,10 +45,6 @@
                         </li>
 
                         <li class="pure-menu-item">
-                            <a href="#" class="pure-menu-link" data="panel-rf">RF</a>
-                        </li>
-
-                        <li class="pure-menu-item">
                             <a href="#" class="pure-menu-link" data="panel-power">POWER</a>
                         </li>
 
@@ -87,42 +83,42 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="hostname">Hostname</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="hostname" disabled>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="hostname" readonly />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="network">Network</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="network" disabled>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="network" readonly />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="ip">IP</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="ip" disabled>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="ip" readonly />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="mqtt">MQTT Status</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="mqttStatus" disabled>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="mqttStatus" readonly />
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="temperature">Temperature</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="temperature" disabled>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="temperature">Temperature (ºC)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="temperature" readonly />
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="humidity">Humidity</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="humidity" disabled>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="humidity">Humidity (%)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="humidity" readonly />
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="power">Power</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="power" disabled>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="power">Power (W)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="power" readonly />
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="relayStatus">Relay Status</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="checkbox" checked="checked" name="relayStatus" id="relayStatus"/>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="relayStatus">Relay Status</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="relayStatus" /></div>
                                 </div>
 
                             </fieldset>
@@ -137,7 +133,7 @@
 
                         <div class="header">
                             <h1>WIFI</h1>
-                            <h2>You can configure up to 3 different WiFi networks. The device will try to connect to any of them starting with the first one.</h2>
+                            <h2>You can configure up to 3 different WiFi networks. The device will try to connect in order of signal strength.</h2>
                         </div>
 
                         <div class="page">
@@ -233,46 +229,6 @@
 
                     </div>
 
-                    <div class="panel" id="panel-rf">
-
-                        <div class="header">
-                            <h1>RADIO</h1>
-                            <h2>
-                                Configure your radio channel and device ID.
-                            </h2>
-                        </div>
-
-                        <div class="page">
-
-                            <fieldset>
-
-                                <div class="pure-g">
-
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="rfChannel">Channel</label>
-                                        <div class="hint">This is the 5 bits code (0-31) you define on your remote, usually from a DIP switch.</div>
-                                        <input name="rfChannel" type="number" class="pure-u-1-4" min="0" max="30" step="1" tabindex="13"/>
-                                    </div>
-
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="rfDevice">Device</label>
-                                        <div class="hint">This is the button in your remote that will trigger the switch</div>
-                                        <select name="rfDevice" class="pure-u-1-4" tabindex="31">
-                                            <option value="0">A</a>
-                                            <option value="1">B</a>
-                                            <option value="2">C</a>
-                                            <option value="3">D</a>
-                                            <option value="4">E</a>
-                                        </select>
-                                    </div>
-
-                                </div>
-
-                            </fieldset>
-                        </div>
-
-                    </div>
-
                     <div class="panel" id="panel-power">
 
                         <div class="header">
@@ -311,7 +267,6 @@
                         </div>
 
                     </div>
-
                 </form>
 
             </div> <!-- content -->
