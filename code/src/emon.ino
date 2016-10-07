@@ -13,6 +13,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 EmonLiteESP emon;
 double current;
+char power[8];
 
 // -----------------------------------------------------------------------------
 // EMON
@@ -21,6 +22,11 @@ double current;
 void setCurrentRatio(float value) {
     emon.setCurrentRatio(value);
 }
+
+char * getPower() {
+    return power;
+}
+
 double getCurrent() {
     return current;
 }
@@ -42,12 +48,18 @@ void powerMonitorSetup() {
 void powerMonitorLoop() {
 
     static unsigned long next_measurement = millis();
+    static bool warmup = true;
     static byte measurements = 0;
     static double max = 0;
     static double min = 0;
     static double sum = 0;
 
     if (!mqttConnected()) return;
+
+    if (warmup) {
+        warmup = false;
+        emon.warmup();
+    }
 
     if (millis() > next_measurement) {
 
@@ -80,10 +92,9 @@ void powerMonitorLoop() {
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS
         if (measurements == EMON_MEASUREMENTS) {
-            char buffer[8];
-            double power = (sum - max - min) * mainsVoltage / (measurements - 2);
-            sprintf(buffer, "%d", int(power));
-            mqttSend((char *) getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), buffer);
+            double p = (sum - max - min) * mainsVoltage / (measurements - 2);
+            sprintf(power, "%d", int(p));
+            mqttSend((char *) getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
             sum = 0;
             measurements = 0;
         }

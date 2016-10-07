@@ -13,9 +13,20 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
 
+char temperature[6];
+char humidity[6];
+
 // -----------------------------------------------------------------------------
 // DHT
 // -----------------------------------------------------------------------------
+
+char * getTemperature() {
+    return temperature;
+}
+
+char * getHumidity() {
+    return humidity;
+}
 
 void dhtSetup() {
     dht.begin();
@@ -41,8 +52,6 @@ void dhtLoop() {
 
         } else {
 
-            char temperature[6];
-            char humidity[6];
             dtostrf(t, 4, 1, temperature);
             itoa((int) h, humidity, 10);
 

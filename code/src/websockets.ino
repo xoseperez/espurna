@@ -55,12 +55,18 @@ void webSocketStart(uint8_t num) {
     root["relayStatus"] = digitalRead(RELAY_PIN) == HIGH;
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
 
+    #if ENABLE_DHT
+        root["temperature"] = getTemperature();
+        root["humidity"] = getHumidity();
+    #endif
+
     #if ENABLE_RF
         root["rfChannel"] = getSetting("rfChannel", String(RF_CHANNEL));
         root["rfDevice"] = getSetting("rfDevice", String(RF_DEVICE));
     #endif
 
     #if ENABLE_EMON
+        root["power"] = getPower();
         root["pwMainsVoltage"] = getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE));
         root["pwCurrentRatio"] = getSetting("pwCurrentRatio", String(EMON_CURRENT_RATIO));
     #endif
