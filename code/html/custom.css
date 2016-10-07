@@ -46,11 +46,6 @@ legend {
 .l-box {
     padding-right: 1px;
 }
-#topics .pure-g {
-    padding-bottom: 5px;
-    margin-bottom: 5px;
-    border-bottom: 1px dashed #e5e5e5;
-}
 .pure-form input[type=text][disabled] {
     color: #777777;
 }

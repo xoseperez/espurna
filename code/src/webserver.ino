@@ -134,7 +134,7 @@ void webServerSetup() {
 
     //SPIFFS.begin();
 
-    // Relay control
+    // Routes
     server.on("/reconnect", HTTP_GET, handleReconnect);
     server.on("/reset", HTTP_GET, handleReset);
     server.on("/relay/on", HTTP_GET, handleRelayOn);

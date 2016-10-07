@@ -71,9 +71,6 @@
 #define NOFUSS_SERVER           "http://192.168.1.100"
 #define NOFUSS_INTERVAL         3600000
 
-// 0 means OFF, 1 ON and 2 whatever was before
-#define RELAY_MODE         		1
-
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
@@ -81,8 +78,8 @@
 #define MQTT_SERVER             "192.168.1.100"
 #define MQTT_PORT               1883
 #define MQTT_TOPIC              "/test/switch/{identifier}"
-#define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RETAIN             true
+#define MQTT_RECONNECT_DELAY    10000
 #define MQTT_STATUS_TOPIC       ""
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
@@ -101,6 +98,9 @@
 //--------------------------------------------------------------------------------
 // DRIVERS
 //--------------------------------------------------------------------------------
+
+// 0 means OFF, 1 ON and 2 whatever was before
+#define RELAY_MODE         		1
 
 #define RF_PIN                  14
 #define RF_CHANNEL              31
