@@ -63,8 +63,13 @@
       this.offLabel = $("<label class='" + this.labelOffClass + "'>\n  <span>" + this.uncheckedLabel + "</span>\n</label>").appendTo(this.container);
       this.offSpan = this.offLabel.children('span');
       this.onLabel = $("<label class='" + this.labelOnClass + "'>\n  <span>" + this.checkedLabel + "</span>\n</label>").appendTo(this.container);
+      this.onBorder = $("<div class='iPhoneCheckBorderOn'</div>").appendTo(this.container);
+      this.offBorder = $("<div class='iPhoneCheckBorderOff'</div>").appendTo(this.container);
       this.onSpan = this.onLabel.children('span');
-      return this.handle = $("<div class='" + this.handleClass + "'>\n  <div class='" + this.handleRightClass + "'>\n    <div class='" + this.handleCenterClass + "' />\n  </div>\n</div>").appendTo(this.container);
+      this.handle = $("<div class='" + this.handleClass + "'></div>").appendTo(this.container);
+      this.handleCenter = $("<div class='" + this.handleCenterClass + "'></div>").appendTo(this.handle);
+      this.handleRight = $("<div class='" + this.handleRightClass + "'></div>").appendTo(this.handle);
+      return true;
     };
 
     iOSCheckbox.prototype.disableTextSelection = function() {
@@ -98,8 +103,11 @@
         });
       } else {
         newWidth = onLabelWidth > offLabelWidth ? onLabelWidth : offLabelWidth;
+        this.handleCenter.css({
+            width: newWidth + 4
+        });
         return this.handle.css({
-          width: newWidth
+          width: newWidth + 7
         });
       }
     };
@@ -181,7 +189,7 @@
       } else {
         this.container.removeClass(this.disabledClass);
       }
-      new_left = this.elem.prop('checked') ? this.rightSide : 0;
+      new_left = this.elem.prop('checked') ? this.rightSide + 2 : 0;
       this.handle.animate({
         left: new_left
       }, this.duration);
@@ -223,7 +231,10 @@
 
       containerWidth = this._getDimension(this.container, "width");
       this.offLabel.css({
-        width: containerWidth - this.containerRadius
+        width: containerWidth - this.containerRadius - 4
+      });
+      this.offBorder.css({
+          left: containerWidth - 4
       });
       offset = this.containerRadius + 1;
       if ($.browser.msie && $.browser.version < 7) {
@@ -238,7 +249,7 @@
           width: this.rightSide + this.handleRadius
         });
         this.offSpan.css({
-          marginRight: -this.rightSide
+          marginRight: -this.rightSide,
         });
       } else {
         this.onLabel.css({
