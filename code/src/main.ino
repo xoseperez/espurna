@@ -54,7 +54,11 @@ void blink(unsigned long delayOff, unsigned long delayOn) {
 
 void showStatus() {
     if (wifiConnected()) {
-        blink(5000, 500);
+        if (WiFi.getMode() == WIFI_AP) {
+            blink(2000, 2000);
+        } else {
+            blink(5000, 500);
+        }
     } else {
         blink(500, 500);
     }
