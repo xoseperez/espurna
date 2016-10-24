@@ -40,10 +40,8 @@ void powerMonitorSetup() {
     // backwards compatibility
     setSetting("emonMains", getSetting("pwMainsVoltage", EMON_MAINS_VOLTAGE));
     setSetting("emonRatio", getSetting("pwCurrentRatio", EMON_CURRENT_RATIO));
-    setSetting("emonPowerTopic", getSetting("emonPowerTopic", EMON_POWER_TOPIC));
     delSetting("pwMainsVoltage");
     delSetting("pwCurrentRatio");
-    delSetting("emonPowerTopic");
 
     emon.initCurrent(
         currentCallback,
