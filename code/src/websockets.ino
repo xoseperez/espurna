@@ -27,6 +27,90 @@ bool webSocketSend(uint8_t num, char * payload) {
     webSocket.sendTXT(num, payload);
 }
 
+void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
+
+    // Parse JSON input
+
+    char buffer[length+1];
+    memcpy(buffer, payload, length);
+    buffer[length] = 0;
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(buffer);
+    if (!root.success()) {
+        DEBUG_MSG("[WEBSOCKET] Error parsing data\n");
+        return;
+    }
+
+    // Check actions
+    if (root.containsKey("action")) {
+
+        String action = root["action"];
+        DEBUG_MSG("[WEBSOCKET] Requested action: %s\n", action.c_str());
+
+        if (action.equals("reset")) ESP.reset();
+        if (action.equals("reconnect")) wifiDisconnect();
+        if (action.equals("on")) switchRelayOn();
+        if (action.equals("off")) switchRelayOff();
+
+    };
+
+    // Check config
+    if (root.containsKey("config") && root["config"].is<JsonArray&>()) {
+
+        JsonArray& config = root["config"];
+        DEBUG_MSG("[WEBSOCKET] Parsing configuration data\n");
+
+        bool dirty = false;
+        bool dirtyMQTT = false;
+        unsigned int network = 0;
+
+        for (unsigned int i=0; i<config.size(); i++) {
+
+            String key = config[i]["name"];
+            String value = config[i]["value"];
+
+            if (key == "ssid") {
+                key = key + String(network);
+            }
+            if (key == "pass") {
+                key = key + String(network);
+                ++network;
+            }
+
+            if (value != getSetting(key)) {
+                setSetting(key, value);
+                dirty = true;
+                if (key.startsWith("mqtt")) dirtyMQTT = true;
+            }
+
+        }
+
+        // Save settings
+        if (dirty) {
+
+            saveSettings();
+            wifiConfigure();
+
+            #if ENABLE_RF
+                rfBuildCodes();
+            #endif
+
+            #if ENABLE_EMON
+                setCurrentRatio(getSetting("emonRatio").toFloat());
+            #endif
+
+            // Check if we should reconfigure MQTT connection
+            if (dirtyMQTT) {
+                mqttDisconnect();
+            }
+
+        }
+
+    }
+
+}
+
 void webSocketStart(uint8_t num) {
 
     char app[64];
@@ -100,10 +184,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
             webSocketStart(num);
             break;
         case WStype_TEXT:
-            DEBUG_MSG("[WEBSOCKET] #%u sent: %s\n", num, payload);
+            //DEBUG_MSG("[WEBSOCKET] #%u sent: %s\n", num, payload);
+            webSocketParse(num, payload, length);
             break;
         case WStype_BIN:
-            DEBUG_MSG("[WEBSOCKET] #%u sent binary length: %u\n", num, length);
+            //DEBUG_MSG("[WEBSOCKET] #%u sent binary length: %u\n", num, length);
+            webSocketParse(num, payload, length);
             break;
     }
 

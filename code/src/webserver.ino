@@ -34,28 +34,6 @@ String getContentType(String filename) {
     return "text/plain";
 }
 
-void handleReconnect() {
-    DEBUG_MSG("[WEBSERVER] Request: /reconnect\n");
-    wifiDisconnect();
-}
-
-void handleReset() {
-    DEBUG_MSG("[WEBSERVER] Request: /reset\n");
-    ESP.reset();
-}
-
-void handleRelayOn() {
-    DEBUG_MSG("[WEBSERVER] Request: /relay/on\n");
-    switchRelayOn();
-    server.send(200, "text/plain", "ON");
-}
-
-void handleRelayOff() {
-    DEBUG_MSG("[WEBSERVER] Request: /relay/off\n");
-    switchRelayOff();
-    server.send(200, "text/plain", "OFF");
-}
-
 bool handleFileRead(String path) {
 
     DEBUG_MSG("[WEBSERVER] Request: %s\n", (char *) path.c_str());
@@ -77,69 +55,7 @@ bool handleFileRead(String path) {
 
 }
 
-void handleSave() {
-
-    DEBUG_MSG("[WEBSERVER] Request: /save\n");
-
-    bool dirty = false;
-    bool dirtyMQTT = false;
-    unsigned int network = 0;
-
-    for (unsigned int i=0; i<server.args(); i++) {
-
-        String key = server.argName(i);
-        String value = server.arg(i);
-
-        if (key == "ssid") {
-            key = key + String(network);
-        }
-        if (key == "pass") {
-            key = key + String(network);
-            ++network;
-        }
-
-        if (value != getSetting(key)) {
-            setSetting(key, value);
-            dirty = true;
-            if (key.startsWith("mqtt")) dirtyMQTT = true;
-        }
-
-    }
-
-    server.send(202, "text/json", "{}");
-
-    if (dirty) {
-        saveSettings();
-    }
-
-    #if ENABLE_RF
-        rfBuildCodes();
-    #endif
-
-    #if ENABLE_EMON
-        setCurrentRatio(getSetting("emonRatio").toFloat());
-    #endif
-
-    // Reconfigure networks
-    wifiConfigure();
-
-    // Check if we should reconigure MQTT connection
-    if (dirtyMQTT) {
-        mqttDisconnect();
-    }
-
-}
-
 void webServerSetup() {
-
-    //SPIFFS.begin();
-
-    // Routes
-    server.on("/reconnect", HTTP_GET, handleReconnect);
-    server.on("/reset", HTTP_GET, handleReset);
-    server.on("/relay/on", HTTP_GET, handleRelayOn);
-    server.on("/relay/off", HTTP_GET, handleRelayOff);
-    server.on("/save", HTTP_POST, handleSave);
 
     // Anything else
     server.onNotFound([]() {

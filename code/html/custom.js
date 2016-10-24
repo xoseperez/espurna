@@ -1,40 +1,28 @@
 var websock;
 
 function doUpdate() {
-    var self = $(this);
-    self.addClass("loading");
-    $.ajax({
-        'method': 'POST',
-        'url': '/save',
-        'dataType': 'json',
-        'data': $("#formSave").serializeArray()
-    }).done(function(data) {
-        self.removeClass("loading");
-    }).fail(function() {
-        self.removeClass("loading");
-    });
+    var data = $("#formSave").serializeArray();
+    websock.send(JSON.stringify({'config': data}));
+    return false;
 }
 
 function doReset() {
     var response = window.confirm("Are you sure you want to reset the device?");
-    if (response == false) return;
-    var self = $(this);
-    self.addClass("loading");
-    $.ajax({
-        'method': 'GET',
-        'url': '/reset'
-    });
+    if (response == false) return false;
+    websock.send(JSON.stringify({'action': 'reset'}));
+    return false;
 }
 
 function doReconnect() {
     var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
-    if (response == false) return;
-    var self = $(this);
-    self.addClass("loading");
-    $.ajax({
-        'method': 'GET',
-        'url': '/reconnect'
-    });
+    if (response == false) return false;
+    websock.send(JSON.stringify({'action': 'reconnect'}));
+    return false;
+}
+
+function doToggle(element, value) {
+    websock.send(JSON.stringify({'action': value ? 'on' : 'off'}));
+    return false;
 }
 
 function showPanel() {
@@ -66,13 +54,7 @@ function processData(data) {
             .iphoneStyle({
                 checkedLabel: 'ON',
                 uncheckedLabel: 'OFF',
-                onChange: function(elem, value) {
-                    $.ajax({
-                        'method': 'GET',
-                        'url': value ? '/relay/on' : '/relay/off',
-                        'dataType': 'json'
-                    });
-                }
+                onChange: doToggle
             })
             .iphoneStyle("refresh");
     }
@@ -94,7 +76,8 @@ function processData(data) {
         var element = $("input[name=" + key + "]");
         if (element.length > 0) {
             if (element.attr('type') == 'checkbox') {
-                element.prop("checked", data[key] == 1)
+                element
+                    .prop("checked", data[key] == 1)
                     .iphoneStyle({
                         resizeContainer: false,
                         resizeHandle: false,
@@ -144,6 +127,7 @@ function init() {
     $(".pure-menu-link").on('click', showPanel);
 
     var host = window.location.hostname;
+    //host = "studiolamp.local";
     websock = new WebSocket('ws://' + host + ':81/');
     websock.onopen = function(evt) {};
     websock.onclose = function(evt) {};
