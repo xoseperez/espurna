@@ -59,12 +59,12 @@ void dhtLoop() {
             DEBUG_MSG("[DHT] Humidity: %s\n", humidity);
 
             // Send MQTT messages
-            mqttSend((char *) getSetting("dhtTemperatureTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
-            mqttSend((char *) getSetting("dhtHumidityTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+            mqttSend((char *) getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+            mqttSend((char *) getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
 
             // Update websocket clients
             char buffer[20];
-            sprintf_P(buffer, PSTR("{\"temperature\": %s, \"humidity\": %s}"), temperature, humidity);
+            sprintf_P(buffer, PSTR("{\"dhtTmp\": %s, \"dhtHum\": %s}"), temperature, humidity);
             webSocketSend(buffer);
 
         }

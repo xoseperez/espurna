@@ -117,7 +117,7 @@ void handleSave() {
     #endif
 
     #if ENABLE_EMON
-        setCurrentRatio(getSetting("pwCurrentRatio").toFloat());
+        setCurrentRatio(getSetting("emonRatio").toFloat());
     #endif
 
     // Reconfigure networks

@@ -56,8 +56,8 @@ void webSocketStart(uint8_t num) {
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
 
     #if ENABLE_DHT
-        root["temperature"] = getTemperature();
-        root["humidity"] = getHumidity();
+        root["dhtTmp"] = getTemperature();
+        root["dhtHum"] = getHumidity();
     #endif
 
     #if ENABLE_RF
@@ -66,9 +66,9 @@ void webSocketStart(uint8_t num) {
     #endif
 
     #if ENABLE_EMON
-        root["power"] = getPower();
-        root["pwMainsVoltage"] = getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE));
-        root["pwCurrentRatio"] = getSetting("pwCurrentRatio", String(EMON_CURRENT_RATIO));
+        root["emonPower"] = getPower();
+        root["emonMains"] = getSetting("emonMains", String(EMON_MAINS_VOLTAGE));
+        root["emonRatio"] = getSetting("emonRatio", String(EMON_CURRENT_RATIO));
     #endif
 
     JsonArray& wifi = root.createNestedArray("wifi");

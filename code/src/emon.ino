@@ -36,11 +36,20 @@ unsigned int currentCallback() {
 }
 
 void powerMonitorSetup() {
+
+    // backwards compatibility
+    setSetting("emonMains", getSetting("pwMainsVoltage", EMON_MAINS_VOLTAGE));
+    setSetting("emonRatio", getSetting("pwCurrentRatio", EMON_CURRENT_RATIO));
+    setSetting("emonPowerTopic", getSetting("emonPowerTopic", EMON_POWER_TOPIC));
+    delSetting("pwMainsVoltage");
+    delSetting("pwCurrentRatio");
+    delSetting("emonPowerTopic");
+
     emon.initCurrent(
         currentCallback,
         EMON_ADC_BITS,
         EMON_REFERENCE_VOLTAGE,
-        getSetting("pwCurrentRatio", String(EMON_CURRENT_RATIO)).toFloat()
+        getSetting("emonRatio", String(EMON_CURRENT_RATIO)).toFloat()
     );
     emon.setPrecision(EMON_CURRENT_PRECISION);
 }
@@ -81,13 +90,13 @@ void powerMonitorLoop() {
         sum += current;
         ++measurements;
 
-        float mainsVoltage = getSetting("pwMainsVoltage", String(EMON_MAINS_VOLTAGE)).toFloat();
+        float mainsVoltage = getSetting("emonMains", String(EMON_MAINS_VOLTAGE)).toFloat();
 
         //DEBUG_MSG("[ENERGY] Power now: %dW\n", int(current * mainsVoltage));
 
         // Update websocket clients
         char text[20];
-        sprintf_P(text, PSTR("{\"power\": %d}"), int(current * mainsVoltage));
+        sprintf_P(text, PSTR("{\"emonPower\": %d}"), int(current * mainsVoltage));
         webSocketSend(text);
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS
