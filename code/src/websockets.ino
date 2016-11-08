@@ -30,13 +30,8 @@ bool webSocketSend(uint8_t num, char * payload) {
 void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
 
     // Parse JSON input
-
-    char buffer[length+1];
-    memcpy(buffer, payload, length);
-    buffer[length] = 0;
-
     DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(buffer);
+    JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG("[WEBSOCKET] Error parsing data\n");
         return;
@@ -66,6 +61,8 @@ void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
         unsigned int network = 0;
 
         for (unsigned int i=0; i<config.size(); i++) {
+
+            yield();
 
             String key = config[i]["name"];
             String value = config[i]["value"];
