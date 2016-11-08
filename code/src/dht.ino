@@ -10,6 +10,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 #if ENABLE_DHT
 
 #include <DHT.h>
+#include <Adafruit_Sensor.h>
 
 DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
 
