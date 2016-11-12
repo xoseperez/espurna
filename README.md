@@ -13,21 +13,22 @@ You can read about this board and firmware in [my blog][2].
 * [ITead Sonoff RF][8]
 * [ITead Slampher][9]
 * [ITead S20 Smart Socket][10]
+* [ITead Sonoff POW][15]
 * Tinkerman ESPurna board
 
 ## Features
 
 * **WebServer for configuration** and simple relay toggle
 * **Flashing firmware Over-The-Air** (OTA)
-* Up to **3 configurable WIFI networks**
+* Up to **3 configurable WIFI networks**, connects to the strongest signal
 * **MQTT support** with configurable host and topic
 * Manual switch ON/OFF with button (single click the button)
 * AP mode backup (double click the button)
 * Visual status of the connection via the LED
-* Support for custom **[RF module][2]**
 * Support for **automatic over-the-air updates** through the [NoFUSS Library][6]
-* Support for **current monitoring** through then [EmonLiteESP Library][7]
 * Support for **DHT22** sensors
+* Support for the **HLW8012** power sensors present in the Sonoff POW
+* Support for **current monitoring** through then [EmonLiteESP Library][7] using a non-intrusive current sensor (requires some hacking)
 * Command line configuration
 
 ## Installing
@@ -157,3 +158,4 @@ After flashing the firmware via serial do a hard reset of the device (unplug & p
 [12]: https://docs.npmjs.com/getting-started/installing-node
 [13]: https://nodejs.org/en/
 [14]: https://www.npmjs.com/
+[15]: https://www.itead.cc/sonoff-pow.html

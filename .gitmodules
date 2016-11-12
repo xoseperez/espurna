@@ -13,3 +13,6 @@
 [submodule "code/lib/JustWifi"]
 	path = code/lib/JustWifi
 	url = https://bitbucket.org/xoseperez/justwifi
+[submodule "code/lib/HLW8012"]
+	path = code/lib/HLW8012
+	url = https://bitbucket.org/xoseperez/hlw8012.git

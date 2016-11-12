@@ -3,6 +3,7 @@ var websock;
 function doUpdate() {
     var data = $("#formSave").serializeArray();
     websock.send(JSON.stringify({'config': data}));
+    $(".powExpected").val(0);
     return false;
 }
 
@@ -72,6 +73,14 @@ function processData(data) {
     // automatic assign
     Object.keys(data).forEach(function(key) {
 
+        // Enable options
+        if (key.endsWith("Visible")) {
+            var module = key.slice(0,-7);
+            console.log(module);
+            $(".module-" + module).show();
+            return;
+        }
+
         // Look for INPUTs
         var element = $("input[name=" + key + "]");
         if (element.length > 0) {
@@ -127,7 +136,6 @@ function init() {
     $(".pure-menu-link").on('click', showPanel);
 
     var host = window.location.hostname;
-    //host = "studiolamp.local";
     websock = new WebSocket('ws://' + host + ':81/');
     websock.onopen = function(evt) {};
     websock.onclose = function(evt) {};

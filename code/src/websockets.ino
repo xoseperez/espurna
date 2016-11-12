@@ -67,6 +67,15 @@ void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
             String key = config[i]["name"];
             String value = config[i]["value"];
 
+            #if ENABLE_POW
+
+                if (key == "powExpectedPower") {
+                    powSetExpectedActivePower(value.toInt());
+                    continue;
+                }
+
+            #endif
+
             if (key == "ssid") {
                 key = key + String(network);
             }
@@ -137,19 +146,27 @@ void webSocketStart(uint8_t num) {
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
 
     #if ENABLE_DHT
+        root["dhtVisible"] = 1;
         root["dhtTmp"] = getTemperature();
         root["dhtHum"] = getHumidity();
     #endif
 
     #if ENABLE_RF
+        root["rfVisible"] = 1;
         root["rfChannel"] = getSetting("rfChannel", String(RF_CHANNEL));
         root["rfDevice"] = getSetting("rfDevice", String(RF_DEVICE));
     #endif
 
     #if ENABLE_EMON
+        root["emonVisible"] = 1;
         root["emonPower"] = getPower();
         root["emonMains"] = getSetting("emonMains", String(EMON_MAINS_VOLTAGE));
         root["emonRatio"] = getSetting("emonRatio", String(EMON_CURRENT_RATIO));
+    #endif
+
+    #if ENABLE_POW
+        root["powVisible"] = 1;
+        root["powActivePower"] = getActivePower();
     #endif
 
     JsonArray& wifi = root.createNestedArray("wifi");

@@ -54,3 +54,7 @@ div.hint {
     color: #ccc;
     margin-top: -5px;
 }
+
+.module {
+    display: none;
+}

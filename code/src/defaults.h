@@ -14,6 +14,7 @@
 //#define ENABLE_EMON             1
 //#define ENABLE_DHT              1
 //#define ENABLE_RF               1
+//#define ENABLE_POW              1
 
 // -----------------------------------------------------------------------------
 // HARDWARE
@@ -32,6 +33,13 @@
 #ifdef SONOFF
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF"
+    #define LED_PIN             13
+#endif
+
+#ifdef SONOFF_POW
+    #define ENABLE_POW          1
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_POW"
     #define LED_PIN             13
 #endif
 
@@ -124,3 +132,14 @@
 #define EMON_MAINS_VOLTAGE      230
 #define EMON_CURRENT_RATIO      180
 #define EMON_POWER_TOPIC        "/power"
+
+#define POW_SEL_PIN             5
+#define POW_CF1_PIN             13
+#define POW_CF_PIN              14
+#define POW_SEL_CURRENT         HIGH
+#define POW_CURRENT_R           0.001
+#define POW_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
+#define POW_VOLTAGE_R_DOWN      ( 1000 ) // Real 1.009k
+#define POW_POWER_TOPIC         "/power"
+#define POW_UPDATE_INTERVAL     10000
+#define POW_REPORT_EVERY        6

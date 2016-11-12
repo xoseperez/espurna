@@ -151,6 +151,9 @@ void setup() {
     #if ENABLE_NOFUSS
         nofussSetup();
     #endif
+    #if ENABLE_POW
+        powSetup();
+    #endif
     #if ENABLE_DHT
         dhtSetup();
     #endif
@@ -177,6 +180,9 @@ void loop() {
 
     #if ENABLE_NOFUSS
         nofussLoop();
+    #endif
+    #if ENABLE_POW
+        powLoop();
     #endif
     #if ENABLE_DHT
         dhtLoop();
