@@ -1,8 +1,9 @@
 var websock;
+var csrf;
 
 function doUpdate() {
     var data = $("#formSave").serializeArray();
-    websock.send(JSON.stringify({'config': data}));
+    websock.send(JSON.stringify({'csrf': csrf, 'config': data}));
     $(".powExpected").val(0);
     return false;
 }
@@ -10,19 +11,19 @@ function doUpdate() {
 function doReset() {
     var response = window.confirm("Are you sure you want to reset the device?");
     if (response == false) return false;
-    websock.send(JSON.stringify({'action': 'reset'}));
+    websock.send(JSON.stringify({'csrf': csrf, 'action': 'reset'}));
     return false;
 }
 
 function doReconnect() {
     var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
     if (response == false) return false;
-    websock.send(JSON.stringify({'action': 'reconnect'}));
+    websock.send(JSON.stringify({'csrf': csrf, 'action': 'reconnect'}));
     return false;
 }
 
 function doToggle(element, value) {
-    websock.send(JSON.stringify({'action': value ? 'on' : 'off'}));
+    websock.send(JSON.stringify({'csrf': csrf, 'action': value ? 'on' : 'off'}));
     return false;
 }
 
@@ -39,6 +40,11 @@ function toggleMenu() {
 }
 
 function processData(data) {
+
+    // CSRF
+    if ("csrf" in data) {
+        csrf = data.csrf;
+    }
 
     // messages
     if ("message" in data) {

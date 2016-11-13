@@ -10,13 +10,15 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ESP8266mDNS.h>
-#include "FS.h"
+#include <FS.h>
 #include <Hash.h>
-#include "AsyncJson.h"
+#include <AsyncJson.h>
 #include <ArduinoJson.h>
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+unsigned long _csrf[CSRF_BUFFER_SIZE];
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -42,6 +44,16 @@ void webSocketParse(uint32_t client_id, uint8_t * payload, size_t length) {
         ws.text(client_id, "{\"message\": \"Error parsing data!\"}");
         return;
     }
+
+    // CSRF
+    unsigned long csrf = 0;
+    if (root.containsKey("csrf")) csrf = root["csrf"];
+    if (csrf != _csrf[client_id % CSRF_BUFFER_SIZE]) {
+        DEBUG_MSG("[WEBSOCKET] CSRF check failed\n");
+        ws.text(client_id, "{\"message\": \"Session expired, please reload page...\"}");
+        return;
+    }
+
 
     // Check actions
     if (root.containsKey("action")) {
@@ -144,6 +156,12 @@ void webSocketStart(uint32_t client_id) {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
+    // CSRF
+    if (client_id < CSRF_BUFFER_SIZE) {
+        _csrf[client_id] = random(0x7fffffff);
+    }
+    root["csrf"] = _csrf[client_id % CSRF_BUFFER_SIZE];
+
     root["app"] = app;
     root["manufacturer"] = String(MANUFACTURER);
     root["chipid"] = chipid;
@@ -222,14 +240,29 @@ void webSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsE
 // WEBSERVER
 // -----------------------------------------------------------------------------
 
+void onHome(AsyncWebServerRequest *request){
+    String password = getSetting("httpPassword", HTTP_PASSWORD);
+    char httpPassword[password.length() + 1];
+    password.toCharArray(httpPassword, password.length() + 1);
+    Serial.println(httpPassword);
+    if (!request->authenticate(HTTP_USERNAME, httpPassword)) {
+        return request->requestAuthentication();
+    }
+    request->send(SPIFFS, "/index.html");
+}
+
 void webSetup() {
 
     // Setup websocket plugin
     ws.onEvent(webSocketEvent);
     server.addHandler(&ws);
 
+    // Serve home
+    server.on("/", HTTP_GET, onHome);
+    server.on("/index.html", HTTP_GET, onHome);
+
     // Serve static files
-    server.serveStatic("/", SPIFFS, "/").setDefaultFile("/index.html");
+    server.serveStatic("/", SPIFFS, "/");
 
     // 404
     server.onNotFound([](AsyncWebServerRequest *request){
