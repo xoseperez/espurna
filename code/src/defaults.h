@@ -74,16 +74,13 @@
 #define WIFI_RECONNECT_INTERVAL 300000
 #define WIFI_MAX_NETWORKS       3
 #define ADMIN_PASS              "fibonacci"
-#define AP_PASS                 ADMIN_PASS
 #define HTTP_USERNAME           "admin"
-#define HTTP_PASSWORD           ADMIN_PASS
 #define CSRF_BUFFER_SIZE        5
 
 // -----------------------------------------------------------------------------
 // OTA & NOFUSS
 // -----------------------------------------------------------------------------
 
-#define OTA_PASS                ADMIN_PASS
 #define OTA_PORT                8266
 #define NOFUSS_SERVER           "http://192.168.1.100"
 #define NOFUSS_INTERVAL         3600000

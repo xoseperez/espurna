@@ -13,11 +13,15 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 // OTA
 // -----------------------------------------------------------------------------
 
-void otaSetup() {
-
+void otaConfigure() {
     ArduinoOTA.setPort(OTA_PORT);
     ArduinoOTA.setHostname(getSetting("hostname", HOSTNAME).c_str());
-    ArduinoOTA.setPassword((const char *) OTA_PASS);
+    ArduinoOTA.setPassword(getSetting("adminPass", ADMIN_PASS).c_str());
+}
+
+void otaSetup() {
+
+    otaConfigure();
 
     ArduinoOTA.onStart([]() {
         DEBUG_MSG("[OTA] Start\n");

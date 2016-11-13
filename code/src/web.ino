@@ -93,7 +93,7 @@ void webSocketParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #endif
 
             // Do not change the password if empty
-            if (key == "httpPassword") {
+            if (key == "adminPass") {
                 if (value.length() == 0) continue;
             }
 
@@ -118,6 +118,7 @@ void webSocketParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             saveSettings();
             wifiConfigure();
+            otaConfigure();
             buildTopics();
 
             #if ENABLE_RF
@@ -240,11 +241,10 @@ void webSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsE
 // WEBSERVER
 // -----------------------------------------------------------------------------
 
-void onHome(AsyncWebServerRequest *request){
-    String password = getSetting("httpPassword", HTTP_PASSWORD);
+void onHome(AsyncWebServerRequest *request) {
+    String password = getSetting("adminPass", ADMIN_PASS);
     char httpPassword[password.length() + 1];
     password.toCharArray(httpPassword, password.length() + 1);
-    Serial.println(httpPassword);
     if (!request->authenticate(HTTP_USERNAME, httpPassword)) {
         return request->requestAuthentication();
     }

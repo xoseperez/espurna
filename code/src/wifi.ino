@@ -45,13 +45,13 @@ bool createAP() {
 
 void wifiConfigure() {
     jw.scanNetworks(true);
-    jw.setHostname((char *) getSetting("hostname", HOSTNAME).c_str());
-    jw.setSoftAP((char *) getSetting("hostname", HOSTNAME).c_str(), (char *) AP_PASS);
+    jw.setHostname(getSetting("hostname", HOSTNAME).c_str());
+    jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setAPMode(AP_MODE_ALONE);
     jw.cleanNetworks();
-    if (getSetting("ssid0").length() > 0) jw.addNetwork((char *) getSetting("ssid0").c_str(), (char *) getSetting("pass0").c_str());
-    if (getSetting("ssid1").length() > 0) jw.addNetwork((char *) getSetting("ssid1").c_str(), (char *) getSetting("pass1").c_str());
-    if (getSetting("ssid2").length() > 0) jw.addNetwork((char *) getSetting("ssid2").c_str(), (char *) getSetting("pass2").c_str());
+    if (getSetting("ssid0").length() > 0) jw.addNetwork(getSetting("ssid0").c_str(), getSetting("pass0").c_str());
+    if (getSetting("ssid1").length() > 0) jw.addNetwork(getSetting("ssid1").c_str(), getSetting("pass1").c_str());
+    if (getSetting("ssid2").length() > 0) jw.addNetwork(getSetting("ssid2").c_str(), getSetting("pass2").c_str());
 }
 
 void wifiSetup() {
@@ -110,6 +110,7 @@ void wifiSetup() {
 		    if (code == MESSAGE_ACCESSPOINT_CREATED) {
 		        DEBUG_MSG("[WIFI] MODE AP --------------------------------------\n");
 		        DEBUG_MSG("[WIFI] SSID %s\n", jw.getAPSSID().c_str());
+                DEBUG_MSG("[WIFI] PASS %s\n", getSetting("adminPass", ADMIN_PASS).c_str());
 		        DEBUG_MSG("[WIFI] IP   %s\n", WiFi.softAPIP().toString().c_str());
 		        DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.softAPmacAddress().c_str());
 		        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
