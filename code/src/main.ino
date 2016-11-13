@@ -28,7 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 #include <NtpClientLib.h>
-#include <WebSocketsServer.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncMqttClient.h>
 #include "FS.h"
 String getSetting(const String& key, String defaultValue = "");
 
@@ -144,8 +145,7 @@ void setup() {
     wifiSetup();
     otaSetup();
     mqttSetup();
-    webServerSetup();
-    webSocketSetup();
+    webSetup();
     ntpSetup();
 
     #if ENABLE_NOFUSS
@@ -174,8 +174,6 @@ void loop() {
     wifiLoop();
     otaLoop();
     mqttLoop();
-    webServerLoop();
-    webSocketLoop();
     ntpLoop();
 
     #if ENABLE_NOFUSS

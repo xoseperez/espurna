@@ -40,6 +40,11 @@ function toggleMenu() {
 
 function processData(data) {
 
+    // messages
+    if ("message" in data) {
+        window.alert(data.message);
+    }
+
     // pre-process
     if ("network" in data) {
         data.network = data.network.toUpperCase();
@@ -136,7 +141,8 @@ function init() {
     $(".pure-menu-link").on('click', showPanel);
 
     var host = window.location.hostname;
-    websock = new WebSocket('ws://' + host + ':81/');
+    //host = '192.168.1.115';
+    websock = new WebSocket('ws://' + host + '/ws');
     websock.onopen = function(evt) {};
     websock.onclose = function(evt) {};
     websock.onerror = function(evt) {};

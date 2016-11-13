@@ -1,17 +1,22 @@
 /*
 
-RENTALITO
+ESPurna
 WEBSERVER MODULE
 
 Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <WebSocketsServer.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <ESP8266mDNS.h>
+#include "FS.h"
 #include <Hash.h>
+#include "AsyncJson.h"
 #include <ArduinoJson.h>
 
-WebSocketsServer webSocket = WebSocketsServer(81);
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -19,21 +24,22 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 
 bool webSocketSend(char * payload) {
     //DEBUG_MSG("[WEBSOCKET] Broadcasting '%s'\n", payload);
-    webSocket.broadcastTXT(payload);
+    ws.textAll(payload);
 }
 
-bool webSocketSend(uint8_t num, char * payload) {
-    //DEBUG_MSG("[WEBSOCKET] Sending '%s' to #%d\n", payload, num);
-    webSocket.sendTXT(num, payload);
+bool webSocketSend(uint32_t client_id, char * payload) {
+    //DEBUG_MSG("[WEBSOCKET] Sending '%s' to #%ld\n", payload, client_id);
+    ws.text(client_id, payload);
 }
 
-void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
+void webSocketParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
     // Parse JSON input
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG("[WEBSOCKET] Error parsing data\n");
+        ws.text(client_id, "{\"message\": \"Error parsing data!\"}");
         return;
     }
 
@@ -62,8 +68,6 @@ void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
 
         for (unsigned int i=0; i<config.size(); i++) {
 
-            yield();
-
             String key = config[i]["name"];
             String value = config[i]["value"];
 
@@ -75,6 +79,11 @@ void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
                 }
 
             #endif
+
+            // Do not change the password if empty
+            if (key == "httpPassword") {
+                if (value.length() == 0) continue;
+            }
 
             if (key == "ssid") {
                 key = key + String(network);
@@ -97,6 +106,7 @@ void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
 
             saveSettings();
             wifiConfigure();
+            buildTopics();
 
             #if ENABLE_RF
                 rfBuildCodes();
@@ -111,13 +121,19 @@ void webSocketParse(uint8_t num, uint8_t * payload, size_t length) {
                 mqttDisconnect();
             }
 
+            ws.text(client_id, "{\"message\": \"Changes saved\"}");
+
+        } else {
+
+            ws.text(client_id, "{\"message\": \"No changes detected\"}");
+
         }
 
     }
 
 }
 
-void webSocketStart(uint8_t num) {
+void webSocketStart(uint32_t client_id) {
 
     char app[64];
     sprintf(app, "%s %s", APP_NAME, APP_VERSION);
@@ -178,42 +194,49 @@ void webSocketStart(uint8_t num) {
 
     String output;
     root.printTo(output);
-    webSocket.sendTXT(num, (char *) output.c_str());
+    ws.text(client_id, (char *) output.c_str());
 
 }
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-
-    switch(type) {
-        case WStype_DISCONNECTED:
-            DEBUG_MSG("[WEBSOCKET] #%u disconnected\n", num);
-            break;
-        case WStype_CONNECTED:
-            #if DEBUG_PORT
-                {
-                    IPAddress ip = webSocket.remoteIP(num);
-                    DEBUG_MSG("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-                }
-            #endif
-            webSocketStart(num);
-            break;
-        case WStype_TEXT:
-            //DEBUG_MSG("[WEBSOCKET] #%u sent: %s\n", num, payload);
-            webSocketParse(num, payload, length);
-            break;
-        case WStype_BIN:
-            //DEBUG_MSG("[WEBSOCKET] #%u sent binary length: %u\n", num, length);
-            webSocketParse(num, payload, length);
-            break;
+void webSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
+    if (type == WS_EVT_CONNECT) {
+        #if DEBUG_PORT
+            {
+                IPAddress ip = server.remoteIP(client->id());
+                DEBUG_MSG("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n", client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
+            }
+        #endif
+        webSocketStart(client->id());
+    } else if(type == WS_EVT_DISCONNECT) {
+        DEBUG_MSG("[WEBSOCKET] #%u disconnected\n", client->id());
+    } else if(type == WS_EVT_ERROR) {
+        DEBUG_MSG("[WEBSOCKET] #%u error(%u): %s\n", client->id(), *((uint16_t*)arg), (char*)data);
+    } else if(type == WS_EVT_PONG) {
+        DEBUG_MSG("[WEBSOCKET] #%u pong(%u): %s\n", client->id(), len, len ? (char*) data : "");
+    } else if(type == WS_EVT_DATA) {
+        webSocketParse(client->id(), data, len);
     }
-
 }
 
-void webSocketSetup() {
-    webSocket.begin();
-    webSocket.onEvent(webSocketEvent);
-}
+// -----------------------------------------------------------------------------
+// WEBSERVER
+// -----------------------------------------------------------------------------
 
-void webSocketLoop() {
-    webSocket.loop();
+void webSetup() {
+
+    // Setup websocket plugin
+    ws.onEvent(webSocketEvent);
+    server.addHandler(&ws);
+
+    // Serve static files
+    server.serveStatic("/", SPIFFS, "/").setDefaultFile("/index.html");
+
+    // 404
+    server.onNotFound([](AsyncWebServerRequest *request){
+        request->send(404);
+    });
+
+    // Run server
+    server.begin();
+
 }

@@ -7,12 +7,11 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <PubSubClient.h>
 #include <ESP8266WiFi.h>
+#include <AsyncMqttClient.h>
 
-WiFiClient client;
-PubSubClient mqtt(client);
-boolean mqttStatus = false;
+AsyncMqttClient mqtt;
+
 String mqttTopic;
 bool isCallbackMessage = false;
 
@@ -39,19 +38,48 @@ void mqttSend(char * topic, char * message) {
     if (isCallbackMessage) return;
     String path = mqttTopic + String(topic);
     DEBUG_MSG("[MQTT] Sending %s %s\n", (char *) path.c_str(), message);
-    mqtt.publish(path.c_str(), message, MQTT_RETAIN);
+    mqtt.publish(path.c_str(), MQTT_QOS, MQTT_RETAIN, message);
 }
 
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+void _mqttOnConnect(bool sessionPresent) {
+
+    DEBUG_MSG("[MQTT] Connected!\n");
+
+    // Send status via webSocket
+    webSocketSend((char *) "{\"mqttStatus\": true}");
+
+    // Build MQTT topics
+    buildTopics();
+
+    // Say hello and report our IP and VERSION
+    mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
+    mqttSend((char *) MQTT_VERSION_TOPIC, (char *) APP_VERSION);
+    char buffer[10];
+    getFSVersion(buffer);
+    mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
+
+    // Publish current relay status
+    mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
+
+    // Subscribe to topic
+    DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) mqttTopic.c_str());
+    mqtt.subscribe(mqttTopic.c_str(), MQTT_QOS);
+
+}
+
+void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
+
+    // Send status via webSocket
+    webSocketSend((char *) "{\"mqttStatus\": false}");
+
+}
+
+void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
     static bool isFirstMessage = true;
 
-    #ifdef DEBUG_PORT
-        char buffer[length+1];
-        memcpy(buffer, payload, length);
-        buffer[length] = 0;
-        DEBUG_MSG("[MQTT] Received %s %s\n", topic, buffer);
-    #endif
+    payload[len] = '\0';
+    DEBUG_MSG("[MQTT] Received %s %s\n", topic, payload);
 
     // If relayMode is not SAME avoid responding to a retained message
     if (isFirstMessage) {
@@ -89,52 +117,31 @@ void mqttConnect() {
 		if (host.length() == 0) return;
 
         DEBUG_MSG("[MQTT] Connecting to broker at %s", (char *) host.c_str());
+
         mqtt.setServer(host.c_str(), port.toInt());
+        mqtt
+            .setKeepAlive(MQTT_KEEPALIVE)
+            .setCleanSession(false)
+            //.setWill("topic/online", 2, true, "no")
+            .setClientId(getSetting("hostname", HOSTNAME).c_str());
 
         if ((user != "") & (pass != "")) {
-            DEBUG_MSG(" as user %s: ", (char *) user.c_str());
-            mqtt.connect(getSetting("hostname", HOSTNAME).c_str(), user.c_str(), pass.c_str());
+            DEBUG_MSG(" as user %s.\n", (char *) user.c_str());
+            mqtt.setCredentials(user.c_str(), pass.c_str());
         } else {
-            DEBUG_MSG(" anonymously: ");
-            mqtt.connect(getSetting("hostname", HOSTNAME).c_str());
+            DEBUG_MSG(" anonymously\n");
         }
 
-        if (mqtt.connected()) {
+        mqtt.connect();
 
-            DEBUG_MSG("connected!\n");
-
-            buildTopics();
-            mqttStatus = true;
-
-            // Send status via webSocket
-            webSocketSend((char *) "{\"mqttStatus\": true}");
-
-            // Say hello and report our IP and VERSION
-            mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
-            mqttSend((char *) MQTT_VERSION_TOPIC, (char *) APP_VERSION);
-            char buffer[10];
-            getFSVersion(buffer);
-            mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
-
-            // Publish current relay status
-            mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
-
-            // Subscribe to topic
-            DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) mqttTopic.c_str());
-            mqtt.subscribe(mqttTopic.c_str());
-
-
-        } else {
-
-            DEBUG_MSG("failed (rc=%d)\n", mqtt.state());
-
-        }
     }
 
 }
 
 void mqttSetup() {
-    mqtt.setCallback(mqttCallback);
+    mqtt.onConnect(_mqttOnConnect);
+    mqtt.onDisconnect(_mqttOnDisconnect);
+    mqtt.onMessage(_mqttOnMessage);
 }
 
 void mqttLoop() {
@@ -145,11 +152,6 @@ void mqttLoop() {
 
         if (!mqtt.connected()) {
 
-            if (mqttStatus) {
-                webSocketSend((char *) "{\"mqttStatus\": false}");
-                mqttStatus = false;
-            }
-
         	unsigned long currPeriod = millis() / MQTT_RECONNECT_DELAY;
         	if (currPeriod != lastPeriod) {
         	    lastPeriod = currPeriod;
@@ -157,8 +159,6 @@ void mqttLoop() {
             }
 
         }
-
-        if (mqtt.connected()) mqtt.loop();
 
     }
 

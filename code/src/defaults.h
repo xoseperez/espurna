@@ -87,6 +87,8 @@
 #define MQTT_PORT               1883
 #define MQTT_TOPIC              "/test/switch/{identifier}"
 #define MQTT_RETAIN             true
+#define MQTT_QOS                0
+#define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_STATUS_TOPIC       ""
 #define MQTT_IP_TOPIC           "/ip"
