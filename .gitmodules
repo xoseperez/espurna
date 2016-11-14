@@ -1,6 +1,3 @@
-[submodule "code/vendor/embedis"]
-	path = code/vendor/embedis
-	url = https://github.com/thingSoC/embedis.git
 [submodule "code/vendor/nofuss"]
 	path = code/vendor/nofuss
 	url = https://bitbucket.org/xoseperez/nofuss.git
