@@ -138,7 +138,7 @@
                     </div>
                 </div>
 
-                <form id="formSave" class="pure-form pure-form-stacked" action="/" method="post">
+                <form id="formSave" class="pure-form" action="/" method="post">
 
                     <div class="panel" id="panel-general">
 
@@ -151,26 +151,31 @@
 
                             <fieldset>
 
-                                <div class="pure-u-1">
-                                    <label class="form-label" for="hostname">Hostname</label>
-                                    <div class="hint">This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface clicking the "Reconnect" button.</div>
-                                    <input name="hostname" type="text" class="pure-u-1-4" tabindex="1">
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="hostname">Hostname</label>
+                                    <input name="hostname" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="1" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface clicking the "Reconnect" button.</div>
                                 </div>
 
-                                <div class="pure-u-1">
-                                    <label class="form-label" for="relayMode">Relay boot mode</label>
-                                    <div class="hint">Here you can define what will be the status of the relay after a reboot.</div>
-                                    <select name="relayMode" class="pure-u-1-4" tabindex="2">
-                                        <option value="0">Always OFF</a>
-                                        <option value="1">Always ON</a>
-                                        <option value="2">Same as before</a>
-                                    </select>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="relayMode">Relay boot mode</label>
+                                    <div class="pure-u-1 pure-u-md-3-4">
+                                        <select name="relayMode" class="pure-u-1-2" tabindex="2">
+                                            <option value="0">Always OFF</a>
+                                            <option value="1">Always ON</a>
+                                            <option value="2">Same as before</a>
+                                        </select>
+                                    </div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Here you can define what will be the status of the relay after a reboot.</div>
                                 </div>
 
-                                <div class="pure-u-1">
-                                    <label class="form-label" for="adminPass">Administrator password</label>
-                                    <div class="hint">The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).</div>
-                                    <input name="adminPass" type="text" class="pure-u-1-4" tabindex="3">
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="adminPass">Administrator password</label>
+                                    <input name="adminPass" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="3" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).</div>
                                 </div>
 
                             </fieldset>
@@ -193,11 +198,11 @@
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-md-1-2">
                                         <label for="ssid">SSID</label>
-                                        <input type="text" class="pure-u-23-24" tabindex="10" name="ssid">
+                                        <input type="text" class="pure-u-23-24" tabindex="10" name="ssid" />
                                     </div>
                                     <div class="pure-u-1 pure-u-md-1-2">
                                         <label for="pass">Password</label>
-                                        <input type="text" class="pure-u-23-24" tabindex="11" name="pass">
+                                        <input type="text" class="pure-u-23-24" tabindex="11" name="pass" />
                                     </div>
                                 </div>
 
@@ -206,11 +211,11 @@
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-md-1-2">
                                         <label for="ssid">SSID</label>
-                                        <input type="text" class="pure-u-23-24" tabindex="12" name="ssid">
+                                        <input type="text" class="pure-u-23-24" tabindex="12" name="ssid" />
                                     </div>
                                     <div class="pure-u-1 pure-u-md-1-2">
                                         <label for="pass">Password</label>
-                                        <input type="text" class="pure-u-23-24" tabindex="13" name="pass">
+                                        <input type="text" class="pure-u-23-24" tabindex="13" name="pass" />
                                     </div>
                                 </div>
 
@@ -219,11 +224,11 @@
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-md-1-2">
                                         <label for="ssid">SSID</label>
-                                            <input type="text" class="pure-u-23-24" tabindex="14" name="ssid">
+                                            <input type="text" class="pure-u-23-24" tabindex="14" name="ssid" />
                                     </div>
                                     <div class="pure-u-1 pure-u-md-1-2">
                                         <label for="pass">Password</label>
-                                        <input type="text" class="pure-u-23-24" tabindex="15" name="pass">
+                                        <input type="text" class="pure-u-23-24" tabindex="15" name="pass" />
                                     </div>
                                 </div>
 
@@ -243,33 +248,30 @@
                             <fieldset>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttServer">MQTT Server</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttServer" type="text" size="20" tabindex="10" placeholder="MQTT Server" />
+                                </div>
 
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="mqttServer">MQTT Server</label>
-                                        <input name="mqttServer" type="text" class="pure-u-23-24" value="" size="20" tabindex="10" placeholder="MQTT Server">
-                                    </div>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttPort">MQTT Port</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPort" type="text" size="6" tabindex="11" placeholder="1883" />
+                                </div>
 
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="mqttPort">MQTT Port</label>
-                                        <input name="mqttPort" type="text" class="pure-u-23-24" value="" size="21" tabindex="11" placeholder="1883">
-                                    </div>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttUser">MQTT User</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="12" placeholder="Leave blank if no user/pass" />
+                                </div>
 
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="mqttUser">MQTT User</label>
-                                        <input name="mqttUser" type="text" class="pure-u-23-24" value="" size="22" tabindex="12" placeholder="Leave blank if no user/pass">
-                                    </div>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttPassword">MQTT Password</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="text" size="20" tabindex="13" placeholder="Leave blank if no user/pass" />
+                                </div>
 
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="mqttPassword">MQTT Password</label>
-                                        <input name="mqttPassword" type="text" class="pure-u-23-24" value="" size="23" tabindex="13" placeholder="Leave blank if no user/pass">
-                                    </div>
-
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="mqttTopic">MQTT Topic</label>
-                                        <div class="hint">Send a 0 or a 1 as a payload to the provided topic below to switch it on or off. You can also send a 2 to toggle its current state. The switch will also report its current open/close status to the same topic and its IP address, hertbeat, firmware version and file system version to the topic you define plus "/ip", "/heartbeat", "/version" and "/fsversion" respectively. </div>
-                                        <input name="mqttTopic" type="text" class="pure-u-23-24" value="" size="24" tabindex="13" placeholder="Leave blank if no user/pass">
-                                    </div>
-
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttTopic">MQTT Topic</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttTopic" type="text" size="20" tabindex="14" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Send a 0 or a 1 as a payload to the provided topic below to switch it on or off. You can also send a 2 to toggle its current state. The switch will also report its current open/close status to the same topic and its IP address, hertbeat, firmware version and file system version to the topic you define plus "/ip", "/heartbeat", "/version" and "/fsversion" respectively. </div>
                                 </div>
 
                             </fieldset>
@@ -282,7 +284,7 @@
                         <div class="header">
                             <h1>POWER</h1>
                             <h2>
-                                Calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Ste any field to 0 to leave the calibration value untouched.
+                                Calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Set any field to 0 to leave the calibration value untouched.
                             </h2>
                         </div>
 
@@ -291,13 +293,10 @@
                             <fieldset>
 
                                 <div class="pure-g">
-
-                                    <div class="pure-u-1">
-                                        <label class="form-label" for="powExpectedPower">AC RMS Active Power</label>
-                                        <div class="hint">If you are using a pure resistive load like a bulb this will be writen on it, otherwise use a socket multimeter to get this value.</div>
-                                        <input name="powExpectedPower" type="text" class="pure-u-1-4 powExpected" size="8" tabindex="40" placeholder="0">
-                                    </div>
-
+                                    <label class="pure-u-1 pure-u-md-1-4" for="powExpectedPower">AC RMS Active Power</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 powExpected" name="powExpectedPower" type="text" size="8" tabindex="40" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">If you are using a pure resistive load like a bulb this will be writen on it, otherwise use a socket multimeter to get this value.</div>
                                 </div>
 
                             </fieldset>
