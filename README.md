@@ -37,7 +37,7 @@ You can read about this board and firmware in [my blog][2].
 
 Normally when you flash an ESP8266 you only flash the firmware, like for any other microcontroller. But the ESP8266 has plenty of room and normally it is split into different partitions. One such partition is used to store web files like a normal webserver. In the "Flash your board" section below you'll know how to flash this special partition, but first we will have to build it.
 
-The build process read the HTML files, looks for the stylesheet and script files linked there, grabs them, merges them, minifies them and compresses them. Thus, a single HTML with N linked scripts and M linked CSS files is transformed in just 3 files (index.html.gz, style.css.gz and script.js.gz). This way the ESP8266 webserver can serve them really fast. Mind the ESP8266 is just a microcontroller, the webserver has a very limited capacity to hold concurrent requests, so few and lighter files are a must.
+The build process read the HTML files, looks for the stylesheet and script files linked there, grabs them, merges them, minifies them and compresses them. Thus, a single HTML with N linked scripts and M linked CSS files is transformed in just 1 file (index.html.gz). This way the ESP8266 webserver can serve them really fast. Mind the ESP8266 is just a microcontroller, the webserver has a very limited capacity to hold concurrent requests, so few and lighter files are a must.
 
 To build these files we are using **[Gulp][11]**, a build system built in [node.js][13]. So you will need node (and [npm][14], its package manager) first. [Read the documentation][12] on how to install them.
 
@@ -72,7 +72,6 @@ On linux/max systems the libraries are soft linked to the code/lib folder and yo
 
 ```
 cd espurna/code
-copy vendor/embedis/src lib/Embedis
 copy vendor/emonliteesp/code/lib/EmonLiteESP lib/EmonLiteESP
 copy vendor/nofuss/client/lib/NoFUSSClient lib/NoFUSSClient
 copy vendor/RemoteSwitch-arduino-library lib/RemoteSwitch
@@ -90,7 +89,7 @@ If it compiles you are ready to flash the firmware.
 
 ### Flash your board
 
-*This section only applies to the Sonoff, but pretty much every other ESP8266-based hardware will be similar.*
+*This section only applies to the Sonoff Basic, but pretty much every other ESP8266-based hardware will be similar.*
 
 The unpopulated header in the Sonoff has all the required pins. My board has a 5 pins header in-line with the button. They are (from the button outwards):
 
@@ -108,6 +107,8 @@ Wire your board and flash the firmware (with ```upload```) and the file system (
 > platformio run --target upload -e node-debug
 > platformio run --target uploadfs -e node-debug
 ```
+
+You might notice than when you call "uploadfs" target it automatically builds the files (does a "gulp buildfs"). This is done by the hook defined in the extra_script parameter of each environment.
 
 Once you have flashed it you can flash it again over-the-air using the ```ota``` environment:
 
@@ -132,9 +133,9 @@ Library dependencies are automatically managed via PlatformIO Library Manager or
 On normal boot (i.e. button not pressed) it will execute the firmware. It configures the hardware (button, LED, relay), the SPIFFS memory access, the WIFI, the WebServer and MQTT connection.
 
 Obviously the default values for WIFI network and MQTT will probably not match your requirements. The device will start in Soft AP creating a WIFI SSID named "SONOFF_XXXXXX", where XXXXXX are the last 3 bytes of the radio MAC. Connect with phone, PC, laptop, whatever to that network, password is "fibonacci". Once connected
-browse to 192.168.4.1 and you will be presented a configuration page where you will be able to define up to 3 possible WIFI networks and the MQTT configuration parameters.
+browse to 192.168.4.1. It will then present an authentication challenge. Default user and password are "admin" and "fibonacci" (again). Then you will be presented a configuration page where you will be able to define different configuration parameters, including changing the default password. The same password is used for the WIFI Access Point, for the web interface and for the OTA firmware upload.
 
-It will then try to connect to the configure WIFI networks one after the other. If none of the 3 attempts succeed it will default to SoftAP mode again. Once connected it will try to connect the MQTT server. You can also switch to SoftAP mode by long clicking the on board button or reset the board double clicking the it.
+You can configure up to three WIFI networks. It will then try to connect to the configure WIFI networks in order of signal strength. If none of the 3 attempts succeed it will default to SoftAP mode again. Once connected it will try to connect the MQTT server. You can also switch to SoftAP mode by double click the on board button or reset the board long clicking it.
 
 The device will publish the relay state to the given topic and it will subscribe to the same topic for remote switching. Don't worry, it avoids infinite loops.
 
