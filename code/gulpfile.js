@@ -24,14 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 const gulp = require('gulp');
-const plumber = require('gulp-plumber');
 const htmlmin = require('gulp-htmlmin');
 const cleancss = require('gulp-clean-css');
 const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const del = require('del');
-const useref = require('gulp-useref');
-const gulpif = require('gulp-if');
 const inline = require('gulp-inline');
 
 /* Clean destination folder */
@@ -69,24 +66,6 @@ gulp.task('inline', function() {
         .pipe(gulp.dest('data'));
 })
 
-/* Process HTML, CSS, JS */
-gulp.task('html', function() {
-    return gulp.src('html/*.html')
-        .pipe(useref())
-        .pipe(plumber())
-        .pipe(gulpif('*.css', cleancss()))
-        .pipe(gulpif('*.js', uglify()))
-        .pipe(gulpif('*.html', htmlmin({
-            collapseWhitespace: true,
-            removeComments: true,
-            minifyCSS: true,
-            minifyJS: true
-        })))
-        .pipe(gzip())
-        .pipe(gulp.dest('data'));
-});
-
 /* Build file system */
-gulp.task('buildfs', ['clean', 'files', 'html']);
-gulp.task('buildfs2', ['clean', 'files', 'inline']);
+gulp.task('buildfs', ['clean', 'files', 'inline']);
 gulp.task('default', ['buildfs']);

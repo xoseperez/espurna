@@ -11,12 +11,8 @@
     "gulp-clean-css": "^2.0.10",
     "gulp-gzip": "^1.4.0",
     "gulp-htmlmin": "^2.0.0",
-    "gulp-if": "^2.0.1",
     "gulp-inline": "^0.1.1",
-    "gulp-plumber": "^1.1.0",
-    "gulp-uglify": "^1.5.3",
-    "gulp-useref": "^3.1.2",
-    "yargs": "^5.0.0"
+    "gulp-uglify": "^1.5.3"
   },
   "dependencies": {}
 }
