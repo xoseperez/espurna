@@ -242,6 +242,7 @@ void webSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsE
 // -----------------------------------------------------------------------------
 
 void onHome(AsyncWebServerRequest *request) {
+    DEBUG_MSG("[WEBSERVER] Request: %s\n", request->url().c_str());
     String password = getSetting("adminPass", ADMIN_PASS);
     char httpPassword[password.length() + 1];
     password.toCharArray(httpPassword, password.length() + 1);
@@ -251,15 +252,31 @@ void onHome(AsyncWebServerRequest *request) {
     request->send(SPIFFS, "/index.html");
 }
 
+void onRelayOn(AsyncWebServerRequest *request) {
+    DEBUG_MSG("[WEBSERVER] Request: %s\n", request->url().c_str());
+    switchRelayOn();
+    request->send(200, "text/plain", "ON");
+};
+
+void onRelayOff(AsyncWebServerRequest *request) {
+    DEBUG_MSG("[WEBSERVER] Request: %s\n", request->url().c_str());
+    switchRelayOff();
+    request->send(200, "text/plain", "OFF");
+};
+
 void webSetup() {
 
     // Setup websocket plugin
     ws.onEvent(webSocketEvent);
     server.addHandler(&ws);
 
-    // Serve home
+    // Serve home (password protected)
     server.on("/", HTTP_GET, onHome);
     server.on("/index.html", HTTP_GET, onHome);
+
+    // API entry points (non protected)
+    server.on("/relay/on", HTTP_GET, onRelayOn);
+    server.on("/relay/off", HTTP_GET, onRelayOff);
 
     // Serve static files
     server.serveStatic("/", SPIFFS, "/");
