@@ -18,7 +18,8 @@ You can read about this board and firmware in [my blog][2].
 
 ## Features
 
-* **WebServer for configuration** and simple relay toggle
+* **WebServer for configuration** and simple relay toggle with basic authentication
+* Communication between webserver and webclient via websockets with CSRF check
 * **Flashing firmware Over-The-Air** (OTA)
 * Up to **3 configurable WIFI networks**, connects to the strongest signal
 * **MQTT support** with configurable host and topic
