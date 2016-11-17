@@ -71,7 +71,7 @@ void powerMonitorLoop() {
     if (millis() > next_measurement) {
 
         // Safety check: do not read current if relay is OFF
-        if (!digitalRead(RELAY_PIN)) {
+        if (!relayStatus(0)) {
             current = 0;
         } else {
             current = emon.getCurrent(EMON_SAMPLES);

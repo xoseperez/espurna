@@ -59,7 +59,7 @@ void _mqttOnConnect(bool sessionPresent) {
     mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
 
     // Publish current relay status
-    mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (digitalRead(RELAY_PIN) ? "1" : "0"));
+    mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (relayStatus(0) ? "1" : "0"));
 
     // Subscribe to topic
     DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) mqttTopic.c_str());
@@ -91,14 +91,14 @@ void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties
     // Action to perform
     if ((char)payload[0] == '0') {
         isCallbackMessage = true;
-        switchRelayOff();
+        relayStatus(0, false);
     }
     if ((char)payload[0] == '1') {
         isCallbackMessage = true;
-        switchRelayOn();
+        relayStatus(0, true);
     }
     if ((char)payload[0] == '2') {
-        toggleRelay();
+        relayToggle(0);
     }
 
     isCallbackMessage = false;

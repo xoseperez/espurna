@@ -63,8 +63,8 @@ void webSocketParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         if (action.equals("reset")) ESP.reset();
         if (action.equals("reconnect")) wifiDisconnect();
-        if (action.equals("on")) switchRelayOn();
-        if (action.equals("off")) switchRelayOff();
+        if (action.equals("on")) relayStatus(0, true);
+        if (action.equals("off")) relayStatus(0, false);
 
     };
 
@@ -177,7 +177,7 @@ void webSocketStart(uint32_t client_id) {
     root["mqttUser"] = getSetting("mqttUser");
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
-    root["relayStatus"] = digitalRead(RELAY_PIN) == HIGH;
+    root["relayStatus"] = relayStatus(0);
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
 
     #if ENABLE_DHT
@@ -241,8 +241,14 @@ void webSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsE
 // WEBSERVER
 // -----------------------------------------------------------------------------
 
-void onHome(AsyncWebServerRequest *request) {
-    DEBUG_MSG("[WEBSERVER] Request: %s\n", request->url().c_str());
+void _logRequest(AsyncWebServerRequest *request) {
+    DEBUG_MSG("[WEBSERVER] Request: %s %s\n", request->methodToString(), request->url().c_str());
+}
+
+void _onHome(AsyncWebServerRequest *request) {
+
+    _logRequest(request);
+
     String password = getSetting("adminPass", ADMIN_PASS);
     char httpPassword[password.length() + 1];
     password.toCharArray(httpPassword, password.length() + 1);
@@ -252,17 +258,54 @@ void onHome(AsyncWebServerRequest *request) {
     request->send(SPIFFS, "/index.html");
 }
 
-void onRelayOn(AsyncWebServerRequest *request) {
-    DEBUG_MSG("[WEBSERVER] Request: %s\n", request->url().c_str());
-    switchRelayOn();
+void _onRelayOn(AsyncWebServerRequest *request) {
+
+    _logRequest(request);
+
+    relayStatus(0, true);
     request->send(200, "text/plain", "ON");
+
 };
 
-void onRelayOff(AsyncWebServerRequest *request) {
-    DEBUG_MSG("[WEBSERVER] Request: %s\n", request->url().c_str());
-    switchRelayOff();
+void _onRelayOff(AsyncWebServerRequest *request) {
+
+    _logRequest(request);
+
+    relayStatus(0, false);
     request->send(200, "text/plain", "OFF");
+
 };
+
+ArRequestHandlerFunction _onRelayStatusWrapper(bool relayID) {
+
+    return [&](AsyncWebServerRequest *request) {
+
+        _logRequest(request);
+
+        if (request->method() == HTTP_PUT) {
+            if (request->hasParam("status", true)) {
+                AsyncWebParameter* p = request->getParam("status", true);
+                relayStatus(relayID, p->value().toInt() == 1);
+            }
+        }
+
+        bool asJson = false;
+        if (request->hasHeader("Accept")) {
+            AsyncWebHeader* h = request->getHeader("Accept");
+            asJson = h->value().equals("application/json");
+        }
+
+        if (asJson) {
+            char buffer[40];
+            sprintf(buffer, "{\"status\": %d}", relayStatus(relayID) ? 1 : 0);
+            request->send(200, "application/json", buffer);
+        } else {
+            request->send(200, "text/plain", relayStatus(relayID) ? "1" : "0");
+        }
+
+    };
+
+}
 
 void webSetup() {
 
@@ -271,12 +314,14 @@ void webSetup() {
     server.addHandler(&ws);
 
     // Serve home (password protected)
-    server.on("/", HTTP_GET, onHome);
-    server.on("/index.html", HTTP_GET, onHome);
+    server.on("/", HTTP_GET, _onHome);
+    server.on("/index.html", HTTP_GET, _onHome);
 
     // API entry points (non protected)
-    server.on("/relay/on", HTTP_GET, onRelayOn);
-    server.on("/relay/off", HTTP_GET, onRelayOff);
+    server.on("/relay/on", HTTP_GET, _onRelayOn);
+    server.on("/relay/off", HTTP_GET, _onRelayOff);
+    server.on("/relay/0/status", HTTP_GET + HTTP_PUT, _onRelayStatusWrapper(0));
+    //server.on("/relay/1/status", HTTP_GET + HTTP_PUT, _onRelayStatusWrapper(1));
 
     // Serve static files
     server.serveStatic("/", SPIFFS, "/");

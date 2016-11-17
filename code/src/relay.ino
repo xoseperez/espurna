@@ -13,7 +13,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 // RELAY
 // -----------------------------------------------------------------------------
 
-void switchRelayOn() {
+void _relayOn(unsigned char id) {
 
     if (!digitalRead(RELAY_PIN)) {
         DEBUG_MSG("[RELAY] ON\n");
@@ -24,10 +24,10 @@ void switchRelayOn() {
     }
 
     webSocketSend((char *) "{\"relayStatus\": true}");
-    
+
 }
 
-void switchRelayOff() {
+void _relayOff(unsigned char id) {
 
     if (digitalRead(RELAY_PIN)) {
         DEBUG_MSG("[RELAY] OFF\n");
@@ -41,19 +41,23 @@ void switchRelayOff() {
 
 }
 
-void toggleRelay() {
-    if (digitalRead(RELAY_PIN)) {
-        switchRelayOff();
-    } else {
-        switchRelayOn();
-    }
+void relayStatus(unsigned char id, bool status) {
+    status ? _relayOn(id) : _relayOff(id);
+}
+
+bool relayStatus(unsigned char id) {
+    return (digitalRead(RELAY_PIN) == HIGH);
+}
+
+void relayToggle(unsigned char id) {
+    relayStatus(id, !relayStatus(id));
 }
 
 void relaySetup() {
     pinMode(RELAY_PIN, OUTPUT);
     EEPROM.begin(4096);
     byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
-    if (relayMode == 0) switchRelayOff();
-    if (relayMode == 1) switchRelayOn();
-    if (relayMode == 2) EEPROM.read(0) == 1 ? switchRelayOn() : switchRelayOff();
+    if (relayMode == 0) relayStatus(0, false);
+    if (relayMode == 1) relayStatus(0, true);
+    if (relayMode == 2) relayStatus(0, EEPROM.read(0) == 1);
 }
