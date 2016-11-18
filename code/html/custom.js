@@ -1,9 +1,8 @@
 var websock;
-var csrf;
 
 function doUpdate() {
     var data = $("#formSave").serializeArray();
-    websock.send(JSON.stringify({'csrf': csrf, 'config': data}));
+    websock.send(JSON.stringify({'config': data}));
     $(".powExpected").val(0);
     return false;
 }
@@ -11,19 +10,37 @@ function doUpdate() {
 function doReset() {
     var response = window.confirm("Are you sure you want to reset the device?");
     if (response == false) return false;
-    websock.send(JSON.stringify({'csrf': csrf, 'action': 'reset'}));
+    websock.send(JSON.stringify({'action': 'reset'}));
     return false;
 }
 
 function doReconnect() {
     var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
     if (response == false) return false;
-    websock.send(JSON.stringify({'csrf': csrf, 'action': 'reconnect'}));
+    websock.send(JSON.stringify({'action': 'reconnect'}));
     return false;
 }
 
 function doToggle(element, value) {
-    websock.send(JSON.stringify({'csrf': csrf, 'action': value ? 'on' : 'off'}));
+    websock.send(JSON.stringify({'action': value ? 'on' : 'off'}));
+    return false;
+}
+
+function randomString(length, chars) {
+    var mask = '';
+    if (chars.indexOf('a') > -1) mask += 'abcdefghijklmnopqrstuvwxyz';
+    if (chars.indexOf('A') > -1) mask += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (chars.indexOf('#') > -1) mask += '0123456789';
+    if (chars.indexOf('@') > -1) mask += 'ABCDEF';
+    if (chars.indexOf('!') > -1) mask += '~`!@#$%^&*()_+-={}[]:";\'<>?,./|\\';
+    var result = '';
+    for (var i = length; i > 0; --i) result += mask[Math.round(Math.random() * (mask.length - 1))];
+    return result;
+}
+
+function doGenerateAPIKey() {
+    var apikey = randomString(16, '@#');
+    $("input[name=\"apiKey\"]").val(apikey);
     return false;
 }
 
@@ -31,6 +48,7 @@ function showPanel() {
     $(".panel").hide();
     $("#" + $(this).attr("data")).show();
     if ($("#layout").hasClass('active')) toggleMenu();
+    $("input[type='checkbox']").iphoneStyle("calculateDimensions").iphoneStyle("refresh");
 };
 
 function toggleMenu() {
@@ -40,36 +58,6 @@ function toggleMenu() {
 }
 
 function processData(data) {
-
-    // CSRF
-    if ("csrf" in data) {
-        csrf = data.csrf;
-    }
-
-    // messages
-    if ("message" in data) {
-        window.alert(data.message);
-    }
-
-    // pre-process
-    if ("network" in data) {
-        data.network = data.network.toUpperCase();
-    }
-    if ("mqttStatus" in data) {
-        data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
-    }
-
-    // relay
-    if ("relayStatus" in data) {
-        $("input[name='relayStatus']")
-            .prop("checked", data.relayStatus)
-            .iphoneStyle({
-                checkedLabel: 'ON',
-                uncheckedLabel: 'OFF',
-                onChange: doToggle
-            })
-            .iphoneStyle("refresh");
-    }
 
     // title
     if ("app" in data) {
@@ -81,8 +69,26 @@ function processData(data) {
         document.title = title;
     }
 
-    // automatic assign
     Object.keys(data).forEach(function(key) {
+
+        // Wifi
+        if (key == "wifi") {
+            var groups = $("#panel-wifi .pure-g");
+            for (var i in data.wifi) {
+                var wifi = data.wifi[i];
+                Object.keys(wifi).forEach(function(key) {
+                    var id = "input[name=" + key + "]";
+                    if ($(id, groups[i]).length) $(id, groups[i]).val(wifi[key]);
+                });
+            };
+            return;
+        }
+
+        // Messages
+        if (key == "message") {
+            window.alert(data.message);
+            return;
+        }
 
         // Enable options
         if (key.endsWith("Visible")) {
@@ -92,41 +98,40 @@ function processData(data) {
             return;
         }
 
+        // Pre-process
+        if (key == "network") {
+            data.network = data.network.toUpperCase();
+        }
+        if (key == "mqttStatus") {
+            data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
+        }
+
         // Look for INPUTs
         var element = $("input[name=" + key + "]");
         if (element.length > 0) {
             if (element.attr('type') == 'checkbox') {
                 element
-                    .prop("checked", data[key] == 1)
-                    .iphoneStyle({
-                        resizeContainer: false,
-                        resizeHandle: false,
-                        checkedLabel: 'ON',
-                        uncheckedLabel: 'OFF'
-                    })
+                    .prop("checked", data[key])
                     .iphoneStyle("refresh");
             } else {
                 element.val(data[key]);
             }
+            return;
         }
 
         // Look for SELECTs
         var element = $("select[name=" + key + "]");
         if (element.length > 0) {
             element.val(data[key]);
+            return;
         }
 
     });
 
-    // WIFI
-    var groups = $("#panel-wifi .pure-g");
-    for (var i in data.wifi) {
-        var wifi = data.wifi[i];
-        Object.keys(wifi).forEach(function(key) {
-            var id = "input[name=" + key + "]";
-            if ($(id, groups[i]).length) $(id, groups[i]).val(wifi[key]);
-        });
-    };
+    // Auto generate an APIKey if none defined yet
+    if ($("input[name='apiKey']").val() == "") {
+        doGenerateAPIKey();
+    }
 
 }
 
@@ -138,16 +143,10 @@ function getJson(str) {
     }
 }
 
-function init() {
-
-    $("#menuLink").on('click', toggleMenu);
-    $(".button-update").on('click', doUpdate);
-    $(".button-reset").on('click', doReset);
-    $(".button-reconnect").on('click', doReconnect);
-    $(".pure-menu-link").on('click', showPanel);
-
-    var host = window.location.hostname;
-    //host = '192.168.1.115';
+function initWebSocket(host) {
+    if (host === undefined) {
+        host = window.location.hostname;
+    }
     websock = new WebSocket('ws://' + host + '/ws');
     websock.onopen = function(evt) {};
     websock.onclose = function(evt) {};
@@ -156,6 +155,37 @@ function init() {
         var data = getJson(evt.data);
         if (data) processData(data);
     };
+}
+
+function init() {
+
+    $("#menuLink").on('click', toggleMenu);
+    $(".button-update").on('click', doUpdate);
+    $(".button-reset").on('click', doReset);
+    $(".button-reconnect").on('click', doReconnect);
+    $(".button-apikey").on('click', doGenerateAPIKey);
+    $(".pure-menu-link").on('click', showPanel);
+
+    $("input[name='relayStatus']")
+        .iphoneStyle({
+            onChange: doToggle
+        });
+    $("input[type='checkbox']")
+        .iphoneStyle({
+            resizeContainer: true,
+            resizeHandle: true,
+            checkedLabel: 'ON',
+            uncheckedLabel: 'OFF'
+        })
+        .iphoneStyle("refresh");
+
+
+    $.ajax({
+        'method': 'GET',
+        'url': '/auth'
+    }).done(function(data) {
+        initWebSocket();
+    });
 
 }
 

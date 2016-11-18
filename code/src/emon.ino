@@ -95,7 +95,7 @@ void powerMonitorLoop() {
         // Update websocket clients
         char text[20];
         sprintf_P(text, PSTR("{\"emonPower\": %d}"), int(current * mainsVoltage));
-        webSocketSend(text);
+        wsSend(text);
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS
         if (measurements == EMON_MEASUREMENTS) {

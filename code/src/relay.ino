@@ -23,7 +23,7 @@ void _relayOn(unsigned char id) {
         mqttSend((char *) MQTT_STATUS_TOPIC, (char *) "1");
     }
 
-    webSocketSend((char *) "{\"relayStatus\": true}");
+    wsSend((char *) "{\"relayStatus\": true}");
 
 }
 
@@ -37,7 +37,7 @@ void _relayOff(unsigned char id) {
         mqttSend((char *) MQTT_STATUS_TOPIC, (char *) "0");
     }
 
-    webSocketSend((char *) "{\"relayStatus\": false}");
+    wsSend((char *) "{\"relayStatus\": false}");
 
 }
 

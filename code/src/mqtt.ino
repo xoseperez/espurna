@@ -46,7 +46,7 @@ void _mqttOnConnect(bool sessionPresent) {
     DEBUG_MSG("[MQTT] Connected!\n");
 
     // Send status via webSocket
-    webSocketSend((char *) "{\"mqttStatus\": true}");
+    wsSend((char *) "{\"mqttStatus\": true}");
 
     // Build MQTT topics
     buildTopics();
@@ -70,7 +70,7 @@ void _mqttOnConnect(bool sessionPresent) {
 void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
 
     // Send status via webSocket
-    webSocketSend((char *) "{\"mqttStatus\": false}");
+    wsSend((char *) "{\"mqttStatus\": false}");
 
 }
 

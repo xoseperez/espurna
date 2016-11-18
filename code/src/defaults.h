@@ -75,7 +75,8 @@
 #define WIFI_MAX_NETWORKS       3
 #define ADMIN_PASS              "fibonacci"
 #define HTTP_USERNAME           "admin"
-#define CSRF_BUFFER_SIZE        5
+#define WS_BUFFER_SIZE          5
+#define WS_TIMEOUT              1800000
 
 // -----------------------------------------------------------------------------
 // OTA & NOFUSS
