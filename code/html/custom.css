@@ -37,6 +37,10 @@
 .button-reconnect {
     background: rgb(202, 60, 60);
 }
+.button-apikey {
+    background: rgb(0, 202, 0);
+    margin-left: 5px;
+}
 .pure-g {
     margin-bottom: 20px;
 }

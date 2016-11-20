@@ -21,7 +21,7 @@ void buttonSetup() {
 
 void buttonLoop() {
     if (button1.loop()) {
-        if (button1.getEvent() == EVENT_SINGLE_CLICK) toggleRelay();
+        if (button1.getEvent() == EVENT_SINGLE_CLICK) relayToggle(0);
         if (button1.getEvent() == EVENT_DOUBLE_CLICK) createAP();
         if (button1.getEvent() == EVENT_LONG_CLICK) ESP.reset();
     }

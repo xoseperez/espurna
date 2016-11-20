@@ -71,7 +71,7 @@ void powerMonitorLoop() {
     if (millis() > next_measurement) {
 
         // Safety check: do not read current if relay is OFF
-        if (!digitalRead(RELAY_PIN)) {
+        if (!relayStatus(0)) {
             current = 0;
         } else {
             current = emon.getCurrent(EMON_SAMPLES);
@@ -95,7 +95,7 @@ void powerMonitorLoop() {
         // Update websocket clients
         char text[20];
         sprintf_P(text, PSTR("{\"emonPower\": %d}"), int(current * mainsVoltage));
-        webSocketSend(text);
+        wsSend(text);
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS
         if (measurements == EMON_MEASUREMENTS) {

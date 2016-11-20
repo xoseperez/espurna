@@ -146,7 +146,7 @@ void powLoop() {
 
         char buffer[100];
         sprintf_P(buffer, PSTR("{\"powVisible\": 1, \"powActivePower\": %d}"), power);
-        webSocketSend(buffer);
+        wsSend(buffer);
 
         if (--report_count == 0) {
             mqttSend((char *) getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), (char *) String(power).c_str());

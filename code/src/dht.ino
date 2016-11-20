@@ -66,7 +66,7 @@ void dhtLoop() {
             // Update websocket clients
             char buffer[100];
             sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s}"), temperature, humidity);
-            webSocketSend(buffer);
+            wsSend(buffer);
 
         }
 

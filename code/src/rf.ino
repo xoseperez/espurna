@@ -23,8 +23,8 @@ void rfLoop() {
     return;
     if (rfCode == 0) return;
     DEBUG_MSG("[RF] Received code: %lu\n", rfCode);
-    if (rfCode == rfCodeON) switchRelayOn();
-    if (rfCode == rfCodeOFF) switchRelayOff();
+    if (rfCode == rfCodeON) relayStatus(0, true);
+    if (rfCode == rfCodeOFF) relayStatus(0, false);
     rfCode = 0;
 }
 
