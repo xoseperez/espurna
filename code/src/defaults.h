@@ -151,3 +151,5 @@
 #define POW_POWER_TOPIC         "/power"
 #define POW_UPDATE_INTERVAL     10000
 #define POW_REPORT_EVERY        6
+
+#define FAUXMO_ENABLED          1

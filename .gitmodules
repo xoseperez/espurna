@@ -13,3 +13,6 @@
 [submodule "code/lib/HLW8012"]
 	path = code/lib/HLW8012
 	url = https://bitbucket.org/xoseperez/hlw8012.git
+[submodule "code/lib/fauxmoESP"]
+	path = code/lib/fauxmoESP
+	url = https://bitbucket.org/xoseperez/fauxmoesp.git

@@ -147,6 +147,7 @@ void setup() {
     mqttSetup();
     webSetup();
     ntpSetup();
+    fauxmoSetup();
 
     #if ENABLE_NOFUSS
         nofussSetup();
