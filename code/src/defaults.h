@@ -10,6 +10,7 @@
 //#define S20
 //#define NODEMCUV2
 
+//#define ENABLE_FAUXMO           1
 //#define ENABLE_NOFUSS           1
 //#define ENABLE_EMON             1
 //#define ENABLE_DHT              1
@@ -153,4 +154,4 @@
 #define POW_UPDATE_INTERVAL     10000
 #define POW_REPORT_EVERY        6
 
-#define FAUXMO_ENABLED          1
+#define FAUXMO_ENABLED          0

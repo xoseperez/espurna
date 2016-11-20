@@ -72,6 +72,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool dirty = false;
         bool dirtyMQTT = false;
         bool apiEnabled = false;
+        #if ENABLE_FAUXMO
+            bool fauxmoEnabled = false;
+        #endif
         unsigned int network = 0;
 
         for (unsigned int i=0; i<config.size(); i++) {
@@ -98,6 +101,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 apiEnabled = true;
                 continue;
             }
+            #if ENABLE_FAUXMO
+                if (key == "fauxmoEnabled") {
+                    fauxmoEnabled = true;
+                    continue;
+                }
+            #endif
 
             if (key == "ssid") {
                 key = key + String(network);
@@ -120,6 +129,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             setSetting("apiEnabled", String() + (apiEnabled ? 1 : 0));
             dirty = true;
         }
+        #if ENABLE_FAUXMO
+            if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
+                setSetting("fauxmoEnabled", String() + (fauxmoEnabled ? 1 : 0));
+                dirty = true;
+            }
+        #endif
 
         // Save settings
         if (dirty) {
@@ -127,6 +142,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             saveSettings();
             wifiConfigure();
             otaConfigure();
+            #if ENABLE_FAUXMO
+                fauxmoConfigure();
+            #endif
             buildTopics();
 
             #if ENABLE_RF
@@ -183,6 +201,11 @@ void _wsStart(uint32_t client_id) {
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
     root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
+
+    #if ENABLE_FAUXMO
+        root["fauxmoVisible"] = 1;
+        root["fauxmoEnabled"] = getSetting("fauxmoEnabled", String(FAUXMO_ENABLED)).toInt() == 1;
+    #endif
 
     #if ENABLE_DHT
         root["dhtVisible"] = 1;
