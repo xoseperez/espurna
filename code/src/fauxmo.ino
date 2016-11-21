@@ -24,9 +24,9 @@ void fauxmoConfigure() {
 
 void fauxmoSetup() {
     fauxmoConfigure();
-    fauxmo.onMessage([](const char * state) {
-        DEBUG_MSG("[FAUXMO] State: %s\n", state);
-        relayStatus(0, state[0] == '1');
+    fauxmo.onMessage([](bool state) {
+        DEBUG_MSG("[FAUXMO] State: %s\n", state ? "ON" : "OFF");
+        relayStatus(0, state);
     });
 }
 
