@@ -46,7 +46,7 @@ void blink(unsigned long delayOff, unsigned long delayOn) {
     static bool status = HIGH;
     if (next < millis()) {
         status = !status;
-        digitalWrite(LED_PIN, status);
+        digitalWrite(LED_PIN, LED_PIN_INVERSE ? !status : status);
         next += ((status) ? delayOff : delayOn);
     }
 }
