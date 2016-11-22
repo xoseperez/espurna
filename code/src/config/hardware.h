@@ -9,6 +9,7 @@
     #define BUTTON_PIN          0
     #define RELAY_PIN           12
     #define LED_PIN             2
+    #define LED_PIN_INVERSE     0
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
