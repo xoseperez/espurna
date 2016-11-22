@@ -10,4 +10,3 @@ firmware*
 credentials.h
 .build
 node_modules
-code/data
