@@ -105,7 +105,7 @@ void powSetup() {
     // * currentWhen is the value in sel_pin to select current sampling
     // * set use_interrupts to true to use interrupts to monitor pulse widths
     // * leave pulse_timeout to the default value, recommended when using interrupts
-    hlw8012.begin(POW_CF_PIN, POW_CF1_PIN, POW_SEL_PIN, POW_SEL_CURRENT, true);
+    hlw8012.begin(POW_CF_PIN, POW_CF1_PIN, POW_SEL_PIN, POW_SEL_CURRENT, false, 1000000);
 
     // These values are used to calculate current, voltage and power factors as per datasheet formula
     // These are the nominal values for the Sonoff POW resistors:
@@ -116,6 +116,7 @@ void powSetup() {
 
     powRetrieveCalibration();
 
+    /*
     static WiFiEventHandler e1 = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
         powDettachInterrupts();
     });
@@ -131,6 +132,7 @@ void powSetup() {
     static WiFiEventHandler e4 = WiFi.onSoftAPModeStationConnected([](const WiFiEventSoftAPModeStationConnected& event) {
         powAttachInterrupts();
     });
+    */
 
 }
 
