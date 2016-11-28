@@ -18,14 +18,14 @@ fauxmoESP fauxmo;
 // -----------------------------------------------------------------------------
 
 void fauxmoConfigure() {
-    fauxmo.setDeviceName(getSetting("hostname", HOSTNAME).c_str());
     fauxmo.enable(getSetting("fauxmoEnabled", String(FAUXMO_ENABLED)).toInt() == 1);
 }
 
 void fauxmoSetup() {
     fauxmoConfigure();
-    fauxmo.onMessage([](bool state) {
-        DEBUG_MSG("[FAUXMO] State: %s\n", state ? "ON" : "OFF");
+    fauxmo.addDevice(getSetting("hostname", HOSTNAME).c_str());
+    fauxmo.onMessage([](const char * name, bool state) {
+        DEBUG_MSG("[FAUXMO] %s state: %s\n", name, state ? "ON" : "OFF");
         relayStatus(0, state);
     });
 }

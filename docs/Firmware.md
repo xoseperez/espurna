@@ -5,24 +5,27 @@
 The project is ready to be build using [PlatformIO][1].
 Please refer to their web page for instructions on how to install the builder.
 
-PlatformIO will take care of some of the library dependencies, but not all the required libraries are available in the platform library manager. Some dependencies are thus checked out as submodules in GIT. So the normal initial checkout should be:
+If you are using PlatformIO /strongly recommended) it will take care of the library dependencies. Otherwise you will have to install them manually:
 
-```
-git clone https://bitbucket.org/xoseperez/espurna.git
-git submodule init
-git submodule update
-```
+* Benoit Blanchon's [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
+* Hristo Gochkov's [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP)
+* Hristo Gochkov's [ESPAsyncUDP](https://github.com/me-no-dev/ESPAsyncUDP)
+* Hristo Gochkov's [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
+* Marvin Roger's [AyncMqttClient](https://github.com/marvinroger/async-mqtt-client)
+* Adafruit's [DHT Sensor Library](https://github.com/adafruit/DHT-sensor-library) (required if compiling with DHT support: -DENABLE_DHT)
+* Adafruit's [Unified Sensor Library](https://github.com/adafruit/Adafruit_Sensor) (required if compiling with DHT support: -DENABLE_DHT)
+* The PatternAgents (et al.) [Embedis](https://github.com/thingSoC/embedis)
+* German Martin's [NtpCLientLib](https://github.com/gmag11/NtpClient)
+*  Michael Maregolis & Paul Stoffregen's [Time](https://github.com/PaulStoffregen/Time)
+* Randy Simons' [RemoteSwitch](https://github.com/jccprj/RemoteSwitch-arduino-library) (required if using custom RF module: -DENABLE_RF)
 
-On linux/max systems the libraries are soft linked to the code/lib folder and you are ready to go. Windows systems do not have this feature so you will have to copy them manually like this (ONLY WINDOWS):
+And my own libraries:
 
-```
-cd espurna/code
-copy vendor/emonliteesp/code/lib/EmonLiteESP lib/EmonLiteESP
-copy vendor/nofuss/client/lib/NoFUSSClient lib/NoFUSSClient
-copy vendor/RemoteSwitch-arduino-library lib/RemoteSwitch
-```
-
-This libraries are optional at the moment and will only be linked if you set ENABLE_NOFUSS, ENABLE_EMON or ENABLE_RF from your build flag.
+* [JustWifi](https://bitbucket.org/xoseperez/justwifi.git)
+* [FauxmoESP](https://bitbucket.org/xoseperez/fauxmoesp.git) (required if compiling with WeMo emulation support: -DENABLE_FAUXMO)
+* [HLW8012](https://bitbucket.org/xoseperez/hlw8012.git) (required if compiling for Sonoff POW: -DENABLE_POW)
+* [EmonLiteESP](https://bitbucket.org/xoseperez/emonliteesp.git) (required if compiling with Energy Monitoring support: -DENABLE_EMON)
+* [NoFUSS](https://bitbucket.org/xoseperez/nofuss.git) (required if compiling with NoFUSS Automatic OTA support: -DENABLE_NOFUSS)
 
 Once you have all the code, you can check if it's working by:
 
