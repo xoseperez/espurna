@@ -27,6 +27,8 @@ And my own libraries:
 * [EmonLiteESP](https://bitbucket.org/xoseperez/emonliteesp.git) (required if compiling with Energy Monitoring support: -DENABLE_EMON)
 * [NoFUSS](https://bitbucket.org/xoseperez/nofuss.git) (required if compiling with NoFUSS Automatic OTA support: -DENABLE_NOFUSS)
 
+**Note**: The fauxmoESP library requires the staging version of Arduino Core for ESP8266. Either you are using Arduino IDE or PlatformIO you will have to manually install this. Check the [documentation for the fauxmoESP library](https://bitbucket.org/xoseperez/fauxmoesp) for more info.
+
 Once you have all the code, you can check if it's working by:
 
 ```bash
