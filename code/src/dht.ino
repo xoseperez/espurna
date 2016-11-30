@@ -14,19 +14,19 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
 
-char temperature[6];
-char humidity[6];
+char dhtTemperature[6];
+char dhtHumidity[6];
 
 // -----------------------------------------------------------------------------
 // DHT
 // -----------------------------------------------------------------------------
 
-char * getTemperature() {
-    return temperature;
+char * getDHTTemperature() {
+    return dhtTemperature;
 }
 
-char * getHumidity() {
-    return humidity;
+char * getDHTHumidity() {
+    return dhtHumidity;
 }
 
 void dhtSetup() {
@@ -53,19 +53,19 @@ void dhtLoop() {
 
         } else {
 
-            dtostrf(t, 4, 1, temperature);
-            itoa((int) h, humidity, 10);
+            dtostrf(t, 4, 1, dhtTemperature);
+            itoa((int) h, dhtHumidity, 10);
 
-            DEBUG_MSG("[DHT] Temperature: %s\n", temperature);
-            DEBUG_MSG("[DHT] Humidity: %s\n", humidity);
+            DEBUG_MSG("[DHT] Temperature: %s\n", dhtTemperature);
+            DEBUG_MSG("[DHT] Humidity: %s\n", dhtHumidity);
 
             // Send MQTT messages
-            mqttSend((char *) getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
-            mqttSend((char *) getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+            mqttSend((char *) getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), dhtTemperature);
+            mqttSend((char *) getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), dhtHumidity);
 
             // Update websocket clients
             char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s}"), temperature, humidity);
+            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s}"), dhtTemperature, dhtHumidity);
             wsSend(buffer);
 
         }

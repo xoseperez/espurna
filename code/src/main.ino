@@ -155,6 +155,9 @@ void setup() {
     #if ENABLE_POW
         powSetup();
     #endif
+    #if ENABLE_DS18B20
+        dsSetup();
+    #endif
     #if ENABLE_DHT
         dhtSetup();
     #endif
@@ -182,6 +185,9 @@ void loop() {
     #endif
     #if ENABLE_POW
         powLoop();
+    #endif
+    #if ENABLE_DS18B20
+        dsLoop();
     #endif
     #if ENABLE_DHT
         dhtLoop();

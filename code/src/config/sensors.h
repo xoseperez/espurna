@@ -21,6 +21,15 @@
 #define DHT_HUMIDITY_TOPIC      "/humidity"
 
 //--------------------------------------------------------------------------------
+// DS18B20 temperature sensor
+// Enable support by passing ENABLE_DS18B20=1 build flag
+//--------------------------------------------------------------------------------
+
+#define DS_PIN                  14
+#define DS_UPDATE_INTERVAL      60000
+#define DS_TEMPERATURE_TOPIC    "/temperature"
+
+//--------------------------------------------------------------------------------
 // Custom current sensor
 // Check http://tinkerman.cat/your-laundry-is-done/
 // Enable support by passing ENABLE_EMON=1 build flag

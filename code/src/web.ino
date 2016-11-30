@@ -207,10 +207,15 @@ void _wsStart(uint32_t client_id) {
         root["fauxmoEnabled"] = getSetting("fauxmoEnabled", String(FAUXMO_ENABLED)).toInt() == 1;
     #endif
 
+    #if ENABLE_DS18B20
+        root["dsVisible"] = 1;
+        root["dsTmp"] = getDSTemperature();
+    #endif
+
     #if ENABLE_DHT
         root["dhtVisible"] = 1;
-        root["dhtTmp"] = getTemperature();
-        root["dhtHum"] = getHumidity();
+        root["dhtTmp"] = getDHTTemperature();
+        root["dhtHum"] = getDHTHumidity();
     #endif
 
     #if ENABLE_RF
