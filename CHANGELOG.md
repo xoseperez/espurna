@@ -5,8 +5,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Added support for DS18B20 temperature sensor. Thanks to Francesco Boscarino
+- Added reset command from console
 
 ### Changed
+- Not using espressif8266_stage in default environment
 
 ### Deprecated
 
