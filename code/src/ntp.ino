@@ -1,6 +1,6 @@
 /*
 
-RENTALITO
+ESPURNA
 NTP MODULE
 
 Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>

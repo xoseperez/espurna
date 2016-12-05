@@ -199,6 +199,6 @@ void loop() {
         powerMonitorLoop();
     #endif
 
-    delay(1);
+    yield();
 
 }
