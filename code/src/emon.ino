@@ -38,9 +38,12 @@ unsigned int currentCallback() {
 void powerMonitorSetup() {
 
     // backwards compatibility
-    setSetting("emonMains", getSetting("pwMainsVoltage", EMON_MAINS_VOLTAGE));
-    setSetting("emonRatio", getSetting("pwCurrentRatio", EMON_CURRENT_RATIO));
+    String tmp;
+    tmp = getSetting("pwMainsVoltage", String() + EMON_MAINS_VOLTAGE);
+    setSetting("emonMains", tmp);
     delSetting("pwMainsVoltage");
+    tmp = getSetting("pwCurrentRatio", String() + EMON_CURRENT_RATIO);
+    setSetting("emonRatio", tmp);
     delSetting("pwCurrentRatio");
 
     emon.initCurrent(
