@@ -3,21 +3,19 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.1.0] 2016-12-06
 ### Added
 - Added support for DS18B20 temperature sensor. Thanks to Francesco Boscarino
 - Added reset command from console
+- Added support for multirelay boards like Sonoff DUAL or Electrodragon ESP Relay Board
 
 ### Changed
 - Not using espressif8266_stage in default environment
-
-### Deprecated
+- Relay MQTT topics
+- API entry points
 
 ### Removed
-
-### Fixed
-
-### Security
+- Old non protected API
 
 ## [1.0.3] 2016-11-29
 
