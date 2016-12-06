@@ -14,9 +14,11 @@ If you are using PlatformIO /strongly recommended) it will take care of the libr
 * Marvin Roger's [AyncMqttClient](https://github.com/marvinroger/async-mqtt-client)
 * Adafruit's [DHT Sensor Library](https://github.com/adafruit/DHT-sensor-library) (required if compiling with DHT support: -DENABLE_DHT)
 * Adafruit's [Unified Sensor Library](https://github.com/adafruit/Adafruit_Sensor) (required if compiling with DHT support: -DENABLE_DHT)
+* Paul Stoffregen (et al.) [OneWire](https://github.com/PaulStoffregen/OneWire)
+* Miles Burton (et al.) [DallasTemperature](https://github.com/milesburton/Arduino-Temperature-Control-Library)
 * The PatternAgents (et al.) [Embedis](https://github.com/thingSoC/embedis)
 * German Martin's [NtpCLientLib](https://github.com/gmag11/NtpClient)
-*  Michael Maregolis & Paul Stoffregen's [Time](https://github.com/PaulStoffregen/Time)
+* Michael Maregolis & Paul Stoffregen's [Time](https://github.com/PaulStoffregen/Time)
 * Randy Simons' [RemoteSwitch](https://github.com/jccprj/RemoteSwitch-arduino-library) (required if using custom RF module: -DENABLE_RF)
 
 And my own libraries:
@@ -45,7 +47,7 @@ Wire your board (check the [Hardware page](Hardware.md)) and flash the firmware 
 > pio run -t upload -e sonoff
 ```
 
-(or any other environment, depending on the board you are woring with).
+(or any other environment, depending on the board you are working with).
 
 Library dependencies are automatically managed via PlatformIO Library Manager or included via submodules and linked from the "lib" folder.
 

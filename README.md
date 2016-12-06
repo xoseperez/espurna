@@ -1,6 +1,7 @@
 # ESPurna
 
-ESPurna ("spark" in Catalan) is a custom C firmware for ESP8266 based smart switches. It was originally developed with the **[ITead Sonoff][1]** in mind.
+ESPurna ("spark" in Catalan) is a custom C firmware for ESP8266 based smart switches.
+It was originally developed with the **[ITead Sonoff][1]** in mind but now it supports a growing number of ESP8266-based boards.
 
 ## Features
 
@@ -9,13 +10,15 @@ ESPurna ("spark" in Catalan) is a custom C firmware for ESP8266 based smart swit
 * **Flashing firmware Over-The-Air** (OTA)
 * Up to **3 configurable WIFI networks**, connects to the strongest signal
 * **MQTT support** with configurable host and topic
+* **REST API** to query and set relay statuses
+* Support for **multi-relay boards** (Sonoff Dual, Electrodragon ESP Relay Board,...)
 * Manual switch ON/OFF with button (single click the button)
 * AP mode backup (double click the button)
-* Manual reeset the board (long click the button)
+* Manual reset the board (long click the button)
 * Visual status of the connection via the LED
 * **Alexa** integration (Amazon Echo or Dot) by emulating a Belkin WeMo switch
 * Support for **automatic over-the-air updates** through the [NoFUSS Library][2]
-* Support for **DHT22** sensors
+* Support for **DHT22** and **DS18B20** sensors
 * Support for the **HLW8012** power sensor present in the Sonoff POW
 * Support for **current monitoring** through the [EmonLiteESP Library][3] using a non-intrusive current sensor ([requires some hacking][4])
 * Command line configuration

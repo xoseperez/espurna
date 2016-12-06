@@ -8,8 +8,10 @@ This is the official list of supported hardware for the ESPurna firmware. The ha
 * [IteadStudio Sonoff RF](#iteadstudio-sonoff-rf)
 * [IteadStudio Sonoff TH](#iteadstudio-sonoff-th)
 * [IteadStudio Sonoff POW](#iteadstudio-sonoff-pow)
+* [IteadStudio Sonoff DUAL](#iteadstudio-sonoff-dual)
 * [IteadStudio Slampher](#iteadstudio-slampher)
 * [IteadStudio S20](#iteadstudio-s20)
+* [Electrodragon ESP Relay Board](#electrodragon-esp-relay-board)
 
 ## IteadStudio Sonoff
 
@@ -80,6 +82,24 @@ As in the Sonoff the button is connected to GPIO0, so to enter flash mode press 
 
 Same as for the [Sonoff TH](#iteadstudio-sonoff-th) above.
 
+## IteadStudio Sonoff DUAL
+
+|Property|Value|
+|---|---|
+|Manufacturer|Itead Studio|
+|Web page|https://www.itead.cc/sonoff-dual.html|
+|Build flag|SONOFF_DUAL|
+
+### Flashing
+
+![Sonoff DUAL - Inside back view](images/sonoff-dual-flash.jpg)
+
+The Sonoff Dual it's a bit tricky to flash since GPIO0 is not connected to the button as in the TH or POW, but to the pin 15 in the SIL F330 chip that manages the buttons and the relays. SO you have to locate a pad connected to GPIO and short it to ground while powering the device.
+
+In the picture above you have a location of an available and easily accessible GPIO0 pad. The other required pins are brought out in the top header. Remember it's a *3V3* device.
+
+Once flashed use OTA to update the firmware or the filesystem.
+
 ## IteadStudio Slampher
 
 |Property|Value|
@@ -114,6 +134,26 @@ My recommendation is to **temporary shortcut the right pad of the unpopulated R2
 There is a labeled header in the front of the PCB and the button is connected to GPIO0, so no problems here.
 
 Solder a 4 pin male or female header and connect it to your USB-to-UART bridge. Again, remember **it's a 3V3 device**. Then press and hold the button and connect the programmer to your computer. The microcontroller will boot into flash mode and you are ready to update the firmware.
+
+## Electrodragon ESP Relay Board
+
+|Property|Value|
+|---|---|
+|Manufacturer|Electrodragon|
+|Web page|http://www.electrodragon.com/product/wifi-iot-relay-board-based-esp8266/|
+|Build flag|ESP_RELAY_BOARD|
+
+### Flashing
+
+![Electrodragon ESP Relay Board - Front view](images/electrodragon-flash.jpg)
+
+The Electrodragon ESP Relay Board is pretty easy to flash IF you do not follow their wiki, it's all wrong. Check the picture above and note that:
+
+* Power the board from the 5V pin, GND to GND
+* The RX pin in the header should go to your programmer TX pin and
+* The TX pin in the header should go to your programmer RX pin
+* The button labeled BTN2 is connected to GPIO0, so hold it down while powering the board, I've had better results keeping it down until the flashing starts
+
 
 [1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html
 [2]: https://www.itead.cc/sonoff-rf.html
