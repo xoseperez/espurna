@@ -43,6 +43,8 @@ void mqttSend(char * topic, char * message) {
 
 void _mqttOnConnect(bool sessionPresent) {
 
+    char buffer[50];
+
     DEBUG_MSG("[MQTT] Connected!\n");
 
     // Send status via webSocket
@@ -54,16 +56,16 @@ void _mqttOnConnect(bool sessionPresent) {
     // Say hello and report our IP and VERSION
     mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
     mqttSend((char *) MQTT_VERSION_TOPIC, (char *) APP_VERSION);
-    char buffer[10];
     getFSVersion(buffer);
     mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
 
     // Publish current relay status
-    mqttSend((char *) MQTT_STATUS_TOPIC, (char *) (relayStatus(0) ? "1" : "0"));
+    relayMQTT();
 
-    // Subscribe to topic
-    DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) mqttTopic.c_str());
-    mqtt.subscribe(mqttTopic.c_str(), MQTT_QOS);
+    // Subscribe to relay topics
+    sprintf(buffer, "%s/relay/#", mqttTopic.c_str());
+    DEBUG_MSG("[MQTT] Subscribing to %s\n", buffer);
+    mqtt.subscribe(buffer, MQTT_QOS);
 
 }
 
@@ -78,8 +80,7 @@ void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties
 
     static bool isFirstMessage = true;
 
-    payload[len] = '\0';
-    DEBUG_MSG("[MQTT] Received %s %s\n", topic, payload);
+    DEBUG_MSG("[MQTT] Received %s %c\n", topic, payload[0]);
 
     // If relayMode is not SAME avoid responding to a retained message
     if (isFirstMessage) {
@@ -88,17 +89,21 @@ void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties
         if (relayMode != 2) return;
     }
 
+    // Get relay ID
+    unsigned int relayID = topic[strlen(topic)-1] - '0';
+    if (relayID >= relayCount()) relayID = 0;
+
     // Action to perform
     if ((char)payload[0] == '0') {
         isCallbackMessage = true;
-        relayStatus(0, false);
+        relayStatus(relayID, false);
     }
     if ((char)payload[0] == '1') {
         isCallbackMessage = true;
-        relayStatus(0, true);
+        relayStatus(relayID, true);
     }
     if ((char)payload[0] == '2') {
-        relayToggle(0);
+        relayToggle(relayID);
     }
 
     isCallbackMessage = false;

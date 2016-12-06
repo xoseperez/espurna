@@ -15,6 +15,9 @@
 // 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_MODE         		1
 
+// 0 means ANY, 1 zero or one and 2 one and only one
+#define RELAY_SYNC         		0
+
 // -----------------------------------------------------------------------------
 // WIFI & WEB
 // -----------------------------------------------------------------------------
@@ -45,7 +48,7 @@
 #define MQTT_QOS                0
 #define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
-#define MQTT_STATUS_TOPIC       ""
+#define MQTT_RELAY_TOPIC        "/relay/%d"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
 #define MQTT_FSVERSION_TOPIC    "/fsversion"

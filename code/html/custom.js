@@ -22,7 +22,8 @@ function doReconnect() {
 }
 
 function doToggle(element, value) {
-    websock.send(JSON.stringify({'action': value ? 'on' : 'off'}));
+    var relayID = parseInt(element.attr("data"));
+    websock.send(JSON.stringify({'action': value ? 'on' : 'off', 'relayID': relayID}));
     return false;
 }
 
@@ -57,6 +58,31 @@ function toggleMenu() {
     $("#menuLink").toggleClass('active');
 }
 
+function createRelays(count) {
+
+    var current = $("#relays > div").length;
+    if (current > 0) return;
+
+    var template = $("#relayTemplate .pure-g")[0];
+    for (var relayID=0; relayID<count; relayID++) {
+        var line = $(template).clone();
+        $(line).find("input").each(function() {
+            $(this).attr("data", relayID);
+        });
+        if (count > 1) $(".relay_id", line).html(" " + relayID);
+        line.appendTo("#relays");
+        $(":checkbox", line).iphoneStyle({
+            onChange: doToggle,
+            resizeContainer: true,
+            resizeHandle: true,
+            checkedLabel: 'ON',
+            uncheckedLabel: 'OFF'
+        });
+
+    }
+
+}
+
 function processData(data) {
 
     // title
@@ -83,6 +109,26 @@ function processData(data) {
             };
             return;
         }
+
+        // Relay status
+        if (key == "relayStatus") {
+
+            var relays = data.relayStatus;
+            createRelays(relays.length);
+
+            for (var relayID in relays) {
+                var element = $(".relayStatus[data=" + relayID + "]");
+                if (element.length > 0) {
+                    element
+                        .prop("checked", relays[relayID])
+                        .iphoneStyle("refresh");
+                }
+            }
+
+            return;
+
+        }
+
 
         // Messages
         if (key == "message") {
@@ -165,20 +211,6 @@ function init() {
     $(".button-reconnect").on('click', doReconnect);
     $(".button-apikey").on('click', doGenerateAPIKey);
     $(".pure-menu-link").on('click', showPanel);
-
-    $("input[name='relayStatus']")
-        .iphoneStyle({
-            onChange: doToggle
-        });
-    $("input[type='checkbox']")
-        .iphoneStyle({
-            resizeContainer: true,
-            resizeHandle: true,
-            checkedLabel: 'ON',
-            uncheckedLabel: 'OFF'
-        })
-        .iphoneStyle("refresh");
-
 
     $.ajax({
         'method': 'GET',

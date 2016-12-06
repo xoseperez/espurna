@@ -23,10 +23,23 @@ void fauxmoConfigure() {
 
 void fauxmoSetup() {
     fauxmoConfigure();
-    fauxmo.addDevice(getSetting("hostname", HOSTNAME).c_str());
-    fauxmo.onMessage([](const char * name, bool state) {
+    unsigned int relays = relayCount();
+    String hostname = getSetting("hostname", HOSTNAME);
+    if (relays == 1) {
+        fauxmo.addDevice(hostname.c_str());
+    } else {
+        for (unsigned int i=0; i<relays; i++) {
+            fauxmo.addDevice((hostname + "_" + i).c_str());
+        }
+    }
+    fauxmo.onMessage([relays](const char * name, bool state) {
         DEBUG_MSG("[FAUXMO] %s state: %s\n", name, state ? "ON" : "OFF");
-        relayStatus(0, state);
+        unsigned int id = 0;
+        if (relays > 1) {
+            id = name[strlen(name)-1] - '0';
+            if (id >= relays) id = 0;
+        }
+        relayStatus(id, state);
     });
 }
 

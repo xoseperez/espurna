@@ -54,12 +54,18 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
     if (root.containsKey("action")) {
 
         String action = root["action"];
+        unsigned int relayID = 0;
+        if (root.containsKey("relayID")) {
+            String value = root["relayID"];
+            relayID = value.toInt();
+        }
+
         DEBUG_MSG("[WEBSOCKET] Requested action: %s\n", action.c_str());
 
         if (action.equals("reset")) ESP.reset();
         if (action.equals("reconnect")) wifiDisconnect();
-        if (action.equals("on")) relayStatus(0, true);
-        if (action.equals("off")) relayStatus(0, false);
+        if (action.equals("on")) relayStatus(relayID, true);
+        if (action.equals("off")) relayStatus(relayID, false);
 
     };
 
@@ -191,14 +197,24 @@ void _wsStart(uint32_t client_id) {
     root["hostname"] = getSetting("hostname", HOSTNAME);
     root["network"] = getNetwork();
     root["ip"] = getIP();
+
     root["mqttStatus"] = mqttConnected();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", String(MQTT_PORT));
     root["mqttUser"] = getSetting("mqttUser");
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
-    root["relayStatus"] = relayStatus(0);
+
+    JsonArray& relay = root.createNestedArray("relayStatus");
+    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
+        relay.add(relayStatus(relayID));
+    }
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
+    if (relayCount() > 1) {
+        root["multirelayVisible"] = 1;
+        root["relaySync"] = getSetting("relaySync", String(RELAY_SYNC));
+    }
+
     root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
 
@@ -340,24 +356,6 @@ void _onHome(AsyncWebServerRequest *request) {
     request->send(SPIFFS, "/index.html");
 }
 
-void _onRelayOn(AsyncWebServerRequest *request) {
-
-    _logRequest(request);
-
-    relayStatus(0, true);
-    request->send(200, "text/plain", "ON");
-
-};
-
-void _onRelayOff(AsyncWebServerRequest *request) {
-
-    _logRequest(request);
-
-    relayStatus(0, false);
-    request->send(200, "text/plain", "OFF");
-
-};
-
 bool _apiAuth(AsyncWebServerRequest *request) {
 
     if (getSetting("apiEnabled").toInt() == 0) {
@@ -383,9 +381,34 @@ bool _apiAuth(AsyncWebServerRequest *request) {
 
 }
 
+void _onRelay(AsyncWebServerRequest *request) {
+
+    _logRequest(request);
+
+    if (!_apiAuth(request)) return;
+
+    bool asJson = false;
+    if (request->hasHeader("Accept")) {
+        AsyncWebHeader* h = request->getHeader("Accept");
+        asJson = h->value().equals("application/json");
+    }
+
+    String output;
+    if (asJson) {
+        output = relayString();
+        request->send(200, "application/json", output);
+    } else {
+        for (unsigned int i=0; i<relayCount(); i++) {
+            output += "Relay #" + String(i) + String(": ") + String(relayStatus(i) ? "1" : "0") + "\n";
+        }
+        request->send(200, "text/plain", output);
+    }
+
+};
+
 ArRequestHandlerFunction _onRelayStatusWrapper(unsigned int relayID) {
 
-    return [&](AsyncWebServerRequest *request) {
+    return [relayID](AsyncWebServerRequest *request) {
 
         _logRequest(request);
 
@@ -394,6 +417,8 @@ ArRequestHandlerFunction _onRelayStatusWrapper(unsigned int relayID) {
         if (request->method() == HTTP_PUT) {
             if (request->hasParam("status", true)) {
                 AsyncWebParameter* p = request->getParam("status", true);
+                wsSend((char *) String(relayID).c_str());
+                wsSend((char *) p->value().c_str());
                 unsigned int value = p->value().toInt();
                 if (value == 2) {
                     relayToggle(relayID);
@@ -409,10 +434,10 @@ ArRequestHandlerFunction _onRelayStatusWrapper(unsigned int relayID) {
             asJson = h->value().equals("application/json");
         }
 
+        String output;
         if (asJson) {
-            char buffer[20];
-            sprintf(buffer, "{\"status\": %d}", relayStatus(relayID) ? 1 : 0);
-            request->send(200, "application/json", buffer);
+            output = String("{\"relayStatus\": ") + String(relayStatus(relayID) ? "1" : "0") + "}";
+            request->send(200, "application/json", output);
         } else {
             request->send(200, "text/plain", relayStatus(relayID) ? "1" : "0");
         }
@@ -427,16 +452,18 @@ void webSetup() {
     ws.onEvent(_wsEvent);
     server.addHandler(&ws);
 
-    // Serve home (password protected)
+    // Serve home (basic authentication protection)
     server.on("/", HTTP_GET, _onHome);
     server.on("/index.html", HTTP_GET, _onHome);
     server.on("/auth", HTTP_GET, _onAuth);
 
-    // API entry points (non protected)
-    server.on("/relay/on", HTTP_GET, _onRelayOn);
-    server.on("/relay/off", HTTP_GET, _onRelayOff);
-    server.on("/relay/0/status", HTTP_GET + HTTP_PUT, _onRelayStatusWrapper(0));
-    //server.on("/relay/1/status", HTTP_GET + HTTP_PUT, _onRelayStatusWrapper(1));
+    // API entry points (protected with apikey)
+    for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
+        char buffer[15];
+        sprintf(buffer, "/api/relay/%d", relayID);
+        server.on(buffer, HTTP_GET + HTTP_PUT, _onRelayStatusWrapper(relayID));
+    }
+    server.on("/api/relay", HTTP_GET, _onRelay);
 
     // Serve static files
     server.serveStatic("/", SPIFFS, "/");

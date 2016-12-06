@@ -64,7 +64,7 @@ void showStatus() {
 }
 
 void hardwareSetup() {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUDRATE);
     pinMode(LED_PIN, OUTPUT);
     SPIFFS.begin();
 }
@@ -105,24 +105,23 @@ void hardwareLoop() {
 void welcome() {
 
     delay(2000);
-    Serial.printf("%s %s\n", (char *) APP_NAME, (char *) APP_VERSION);
-    Serial.printf("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);
-    //Serial.printf("Device: %s\n", (char *) getIdentifier().c_str());
-    Serial.printf("ChipID: %06X\n", ESP.getChipId());
-    Serial.printf("Last reset reason: %s\n", (char *) ESP.getResetReason().c_str());
-    Serial.printf("Memory size: %d bytes\n", ESP.getFlashChipSize());
-    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+    DEBUG_MSG("%s %s\n", (char *) APP_NAME, (char *) APP_VERSION);
+    DEBUG_MSG("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);
+    //DEBUG_MSG("Device: %s\n", (char *) getIdentifier().c_str());
+    DEBUG_MSG("ChipID: %06X\n", ESP.getChipId());
+    DEBUG_MSG("Last reset reason: %s\n", (char *) ESP.getResetReason().c_str());
+    DEBUG_MSG("Memory size: %d bytes\n", ESP.getFlashChipSize());
+    DEBUG_MSG("Free heap: %d bytes\n", ESP.getFreeHeap());
     FSInfo fs_info;
     if (SPIFFS.info(fs_info)) {
-        Serial.printf("File system total size: %d bytes\n", fs_info.totalBytes);
-        Serial.printf("            used size : %d bytes\n", fs_info.usedBytes);
-        Serial.printf("            block size: %d bytes\n", fs_info.blockSize);
-        Serial.printf("            page size : %d bytes\n", fs_info.pageSize);
-        Serial.printf("            max files : %d\n", fs_info.maxOpenFiles);
-        Serial.printf("            max length: %d\n", fs_info.maxPathLength);
+        DEBUG_MSG("File system total size: %d bytes\n", fs_info.totalBytes);
+        DEBUG_MSG("            used size : %d bytes\n", fs_info.usedBytes);
+        DEBUG_MSG("            block size: %d bytes\n", fs_info.blockSize);
+        DEBUG_MSG("            page size : %d bytes\n", fs_info.pageSize);
+        DEBUG_MSG("            max files : %d\n", fs_info.maxOpenFiles);
+        DEBUG_MSG("            max length: %d\n", fs_info.maxPathLength);
     }
-    Serial.println();
-    Serial.println();
+    DEBUG_MSG("\n\n");
 
 }
 
@@ -174,12 +173,14 @@ void loop() {
 
     hardwareLoop();
     buttonLoop();
-    settingsLoop();
     wifiLoop();
     otaLoop();
     mqttLoop();
     ntpLoop();
 
+    #ifndef SONOFF_DUAL
+        settingsLoop();
+    #endif
     #if ENABLE_NOFUSS
         nofussLoop();
     #endif
