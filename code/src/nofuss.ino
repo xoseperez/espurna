@@ -24,51 +24,46 @@ NoFUSSClient.setVersion(APP_VERSION);
 NoFUSSClient.onMessage([](nofuss_t code) {
 
     if (code == NOFUSS_START) {
-	Serial.println(F("[NoFUSS] Start"));
+    	DEBUG_MSG("[NoFUSS] Start\n");
     }
 
     if (code == NOFUSS_UPTODATE) {
-	Serial.println(F("[NoFUSS] Already in the last version"));
+    	DEBUG_MSG("[NoFUSS] Already in the last version\n");
     }
 
     if (code == NOFUSS_PARSE_ERROR) {
-	Serial.println(F("[NoFUSS] Error parsing server response"));
+    	DEBUG_MSG("[NoFUSS] Error parsing server response\n");
     }
 
     if (code == NOFUSS_UPDATING) {
-	Serial.println(F("[NoFUSS] Updating"));
-	Serial.print(  F("         New version: "));
-	Serial.println(NoFUSSClient.getNewVersion());
-	Serial.print(  F("         Firmware: "));
-	Serial.println(NoFUSSClient.getNewFirmware());
-	Serial.print(  F("         File System: "));
-	Serial.println(NoFUSSClient.getNewFileSystem());
+    	DEBUG_MSG("[NoFUSS] Updating");
+	    DEBUG_MSG("         New version: %s\n", (char *) NoFUSSClient.getNewVersion().c_str());
+    	DEBUG_MSG("         Firmware: %s\n", (char *) NoFUSSClient.getNewFirmware().c_str());
+    	DEBUG_MSG("         File System: %s", (char *) NoFUSSClient.getNewFileSystem().c_str());
     }
 
     if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
-	Serial.print(F("[NoFUSS] File System Update Error: "));
-	Serial.println(NoFUSSClient.getErrorString());
+    	DEBUG_MSG("[NoFUSS] File System Update Error: %s\n", (char *) NoFUSSClient.getErrorString().c_str());
     }
 
     if (code == NOFUSS_FILESYSTEM_UPDATED) {
-	Serial.println(F("[NoFUSS] File System Updated"));
+    	DEBUG_MSG("[NoFUSS] File System Updated\n");
     }
 
     if (code == NOFUSS_FIRMWARE_UPDATE_ERROR) {
-	Serial.print(F("[NoFUSS] Firmware Update Error: "));
-	Serial.println(NoFUSSClient.getErrorString());
+        DEBUG_MSG("[NoFUSS] Firmware Update Error: %s\n", (char *) NoFUSSClient.getErrorString().c_str());
     }
 
     if (code == NOFUSS_FIRMWARE_UPDATED) {
-	Serial.println(F("[NoFUSS] Firmware Updated"));
+    	DEBUG_MSG("[NoFUSS] Firmware Updated\n");
     }
 
     if (code == NOFUSS_RESET) {
-	Serial.println(F("[NoFUSS] Resetting board"));
+    	DEBUG_MSG("[NoFUSS] Resetting board\n");
     }
 
     if (code == NOFUSS_END) {
-	Serial.println(F("[NoFUSS] End"));
+	    DEBUG_MSG("[NoFUSS] End\n");
     }
 
 });
