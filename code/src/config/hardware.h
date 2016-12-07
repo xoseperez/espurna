@@ -48,10 +48,8 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_DUAL"
     #define BUTTON_PIN          0
-    #define RELAY1_PIN          12
-    #define RELAY2_PIN          13
-    #define LED_PIN             15
-    #define LED_PIN_INVERSE     1
+    #define LED_PIN             13
+    #define LED_PIN_INVERSE     0
     #undef SERIAL_BAUDRATE
     #define SERIAL_BAUDRATE     19230
 
@@ -81,7 +79,7 @@
     #define RELAY1_PIN          12
     #define RELAY2_PIN          13
     #define LED_PIN             16
-    #define LED_PIN_INVERSE     0
+    #define LED_PIN_INVERSE     1
 
 // -----------------------------------------------------------------------------
 // ESPurna board (still beta)
