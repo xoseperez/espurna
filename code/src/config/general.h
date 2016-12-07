@@ -12,11 +12,20 @@
 // RELAY
 //--------------------------------------------------------------------------------
 
+#define RELAY_MODE_OFF          0
+#define RELAY_MODE_ON           1
+#define RELAY_MODE_SAME         2
+
+#define RELAY_SYNC_ANY          0
+#define RELAY_SYNC_NONE_OR_ONE  1
+#define RELAY_SYNC_ONE          2
+#define RELAY_SYNC_SAME         3
+
 // 0 means OFF, 1 ON and 2 whatever was before
-#define RELAY_MODE         		1
+#define RELAY_MODE         		RELAY_MODE_OFF
 
 // 0 means ANY, 1 zero or one and 2 one and only one
-#define RELAY_SYNC         		0
+#define RELAY_SYNC         		RELAY_SYNC_ANY
 
 // -----------------------------------------------------------------------------
 // WIFI & WEB

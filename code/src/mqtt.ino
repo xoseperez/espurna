@@ -86,7 +86,7 @@ void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties
     if (isFirstMessage) {
         isFirstMessage = false;
         byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
-        if (relayMode != 2) return;
+        if (relayMode != RELAY_MODE_SAME) return;
     }
 
     // Get relay ID
