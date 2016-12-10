@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+### Changed
+- Using unreleased AsyncMqttClient with stability improvements
+
 ## [1.1.0] 2016-12-06
 ### Added
 - Added support for DS18B20 temperature sensor. Thanks to Francesco Boscarino
