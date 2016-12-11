@@ -63,6 +63,10 @@
 #define MQTT_FSVERSION_TOPIC    "/fsversion"
 #define MQTT_HEARTBEAT_TOPIC    "/heartbeat"
 
+#define MQTT_CONNECT_EVENT      0
+#define MQTT_DISCONNECT_EVENT   1
+#define MQTT_MESSAGE_EVENT      2
+
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------

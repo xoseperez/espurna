@@ -39,6 +39,18 @@ bool wsSend(uint32_t client_id, char * payload) {
     ws.text(client_id, payload);
 }
 
+void wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+    if (type == MQTT_CONNECT_EVENT) {
+        wsSend((char *) "{\"mqttStatus\": true}");
+    }
+
+    if (type == MQTT_DISCONNECT_EVENT) {
+        wsSend((char *) "{\"mqttStatus\": false}");
+    }
+
+}
+
 void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
     // Parse JSON input
@@ -448,8 +460,11 @@ ArRequestHandlerFunction _onRelayStatusWrapper(unsigned int relayID) {
 
 void webSetup() {
 
-    // Setup websocket plugin
+    // Setup websocket
     ws.onEvent(_wsEvent);
+    mqttRegister(wsMQTTCallback);
+
+    // Setup webserver
     server.addHandler(&ws);
 
     // Serve home (basic authentication protection)

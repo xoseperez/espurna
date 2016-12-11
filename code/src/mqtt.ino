@@ -9,11 +9,12 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ESP8266WiFi.h>
 #include <AsyncMqttClient.h>
+#include <vector>
 
 AsyncMqttClient mqtt;
 
 String mqttTopic;
-bool isCallbackMessage = false;
+std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 
 // -----------------------------------------------------------------------------
 // MQTT
@@ -33,22 +34,26 @@ void buildTopics() {
     mqttTopic.replace("{identifier}", getSetting("hostname"));
 }
 
-void mqttSend(char * topic, char * message) {
+void mqttSend(const char * topic, const char * message) {
     if (!mqtt.connected()) return;
-    if (isCallbackMessage) return;
     String path = mqttTopic + String(topic);
     DEBUG_MSG("[MQTT] Sending %s %s\n", (char *) path.c_str(), message);
     mqtt.publish(path.c_str(), MQTT_QOS, MQTT_RETAIN, message);
 }
 
+void mqttSubscribe(const char * topic) {
+    String path = mqttTopic + String(topic);
+    DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) path.c_str());
+    mqtt.subscribe(path.c_str(), MQTT_QOS);
+}
+
+void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
+    _mqtt_callbacks.push_back(callback);
+}
+
 void _mqttOnConnect(bool sessionPresent) {
 
-    char buffer[50];
-
     DEBUG_MSG("[MQTT] Connected!\n");
-
-    // Send status via webSocket
-    wsSend((char *) "{\"mqttStatus\": true}");
 
     // Build MQTT topics
     buildTopics();
@@ -56,57 +61,37 @@ void _mqttOnConnect(bool sessionPresent) {
     // Say hello and report our IP and VERSION
     mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
     mqttSend((char *) MQTT_VERSION_TOPIC, (char *) APP_VERSION);
+    char buffer[50];
     getFSVersion(buffer);
     mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
 
-    // Publish current relay status
-    relayMQTT();
-
-    // Subscribe to relay topics
-    sprintf(buffer, "%s/relay/#", mqttTopic.c_str());
-    DEBUG_MSG("[MQTT] Subscribing to %s\n", buffer);
-    mqtt.subscribe(buffer, MQTT_QOS);
+    // Send connect event to subscribers
+    for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
+        (*_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
+    }
 
 }
 
 void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
 
-    // Send status via webSocket
-    wsSend((char *) "{\"mqttStatus\": false}");
+    DEBUG_MSG("[MQTT] Disconnected!\n");
+
+    // Send disconnect event to subscribers
+    for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
+        (*_mqtt_callbacks[i])(MQTT_DISCONNECT_EVENT, NULL, NULL);
+    }
 
 }
 
 void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-    static bool isFirstMessage = true;
-
     DEBUG_MSG("[MQTT] Received %s %c\n", topic, payload[0]);
 
-    // If relayMode is not SAME avoid responding to a retained message
-    if (isFirstMessage) {
-        isFirstMessage = false;
-        byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
-        if (relayMode != RELAY_MODE_SAME) return;
+    // Send message event to subscribers
+    // Topic is set to the specific part each one might be checking
+    for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
+        (*_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic + mqttTopic.length(), payload);
     }
-
-    // Get relay ID
-    unsigned int relayID = topic[strlen(topic)-1] - '0';
-    if (relayID >= relayCount()) relayID = 0;
-
-    // Action to perform
-    if ((char)payload[0] == '0') {
-        isCallbackMessage = true;
-        relayStatus(relayID, false);
-    }
-    if ((char)payload[0] == '1') {
-        isCallbackMessage = true;
-        relayStatus(relayID, true);
-    }
-    if ((char)payload[0] == '2') {
-        relayToggle(relayID);
-    }
-
-    isCallbackMessage = false;
 
 }
 

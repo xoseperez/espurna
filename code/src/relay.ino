@@ -50,34 +50,48 @@ void relayWS() {
     wsSend((char *) output.c_str());
 }
 
-void relaySave() {
-    unsigned char bit = 1;
-    unsigned char mask = 0;
-    for (unsigned int i=0; i < _relays.size(); i++) {
-        if (relayStatus(i)) mask += bit;
-        bit += bit;
-    }
-    EEPROM.write(0, mask);
-    EEPROM.commit();
-}
-
-void relayRetrieve() {
-    recursive = true;
-    unsigned char bit = 1;
-    unsigned char mask = EEPROM.read(0);
-    for (unsigned int i=0; i < _relays.size(); i++) {
-        relayStatus(i, ((mask & bit) == bit));
-        bit += bit;
-    }
-    recursive = false;
-}
-
 bool relayStatus(unsigned char id) {
     #ifdef SONOFF_DUAL
         return ((dualRelayStatus & (1 << id)) > 0);
     #else
         return (digitalRead(_relays[id]) == HIGH);
     #endif
+}
+
+bool relayStatus(unsigned char id, bool status, bool report = true) {
+
+    bool changed = false;
+
+    if (relayStatus(id) != status) {
+
+        DEBUG_MSG("[RELAY] %d => %s\n", id, status ? "ON" : "OFF");
+        changed = true;
+
+        #ifdef SONOFF_DUAL
+
+            dualRelayStatus ^= (1 << id);
+            Serial.flush();
+            Serial.write(0xA0);
+            Serial.write(0x04);
+            Serial.write(dualRelayStatus);
+            Serial.write(0xA1);
+            Serial.flush();
+
+        #else
+            digitalWrite(_relays[id], status);
+        #endif
+
+        if (!recursive) {
+            relaySync(id);
+            relaySave();
+        }
+
+    }
+
+    if (report) relayMQTT(id);
+    if (!recursive) relayWS();
+    return changed;
+    
 }
 
 void relaySync(unsigned char id) {
@@ -117,39 +131,26 @@ void relaySync(unsigned char id) {
 
 }
 
-bool relayStatus(unsigned char id, bool status) {
-
-    bool changed = false;
-
-    if (relayStatus(id) != status) {
-
-        DEBUG_MSG("[RELAY] %d => %s\n", id, status ? "ON" : "OFF");
-        changed = true;
-
-        #ifdef SONOFF_DUAL
-
-            dualRelayStatus ^= (1 << id);
-            Serial.flush();
-            Serial.write(0xA0);
-            Serial.write(0x04);
-            Serial.write(dualRelayStatus);
-            Serial.write(0xA1);
-            Serial.flush();
-
-        #else
-            digitalWrite(_relays[id], status);
-        #endif
-
-        if (!recursive) {
-            relaySync(id);
-            relaySave();
-        }
-
+void relaySave() {
+    unsigned char bit = 1;
+    unsigned char mask = 0;
+    for (unsigned int i=0; i < _relays.size(); i++) {
+        if (relayStatus(i)) mask += bit;
+        bit += bit;
     }
+    EEPROM.write(0, mask);
+    EEPROM.commit();
+}
 
-    relayMQTT(id);
-    if (!recursive) relayWS();
-    return changed;
+void relayRetrieve() {
+    recursive = true;
+    unsigned char bit = 1;
+    unsigned char mask = EEPROM.read(0);
+    for (unsigned int i=0; i < _relays.size(); i++) {
+        relayStatus(i, ((mask & bit) == bit));
+        bit += bit;
+    }
+    recursive = false;
 }
 
 void relayToggle(unsigned char id) {
@@ -158,6 +159,46 @@ void relayToggle(unsigned char id) {
 
 unsigned char relayCount() {
     return _relays.size();
+}
+
+void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+    static bool isFirstMessage = true;
+
+    if (type == MQTT_CONNECT_EVENT) {
+        relayMQTT();
+        mqttSubscribe("/relay/#");
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+
+        // Match topic
+        if (memcmp("/relay/", topic, 7) != 0) return;
+
+        // If relayMode is not SAME avoid responding to a retained message
+        if (isFirstMessage) {
+            isFirstMessage = false;
+            byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
+            if (relayMode != RELAY_MODE_SAME) return;
+        }
+
+        // Get relay ID
+        unsigned int relayID = topic[strlen(topic)-1] - '0';
+        if (relayID >= relayCount()) relayID = 0;
+
+        // Action to perform
+        if ((char)payload[0] == '0') {
+            relayStatus(relayID, false, false);
+        }
+        if ((char)payload[0] == '1') {
+            relayStatus(relayID, true, false);
+        }
+        if ((char)payload[0] == '2') {
+            relayToggle(relayID);
+        }
+
+    }
+
 }
 
 void relaySetup() {
@@ -195,5 +236,7 @@ void relaySetup() {
     }
 
     if (relayMode == RELAY_MODE_SAME) relayRetrieve();
+
+    mqttRegister(relayMQTTCallback);
 
 }
