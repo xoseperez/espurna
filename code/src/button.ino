@@ -55,6 +55,7 @@ void buttonLoop() {
 }
 
 #else
+#ifdef BUTTON_PIN
 
 #include <DebounceEvent.h>
 DebounceEvent button1 = false;
@@ -71,4 +72,10 @@ void buttonLoop() {
     }
 }
 
+#else
+
+void buttonSetup() {}
+void buttonLoop() {}
+
+#endif
 #endif

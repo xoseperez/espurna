@@ -71,6 +71,10 @@
     #define LED_PIN             13
     #define LED_PIN_INVERSE     0
 
+// -----------------------------------------------------------------------------
+// Electrodragon boards
+// -----------------------------------------------------------------------------
+
 #elif defined(ESP_RELAY_BOARD)
 
     #define MANUFACTURER        "ELECTRODRAGON"

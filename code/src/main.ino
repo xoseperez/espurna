@@ -41,31 +41,8 @@ String getIdentifier() {
     return String(identifier);
 }
 
-void blink(unsigned long delayOff, unsigned long delayOn) {
-    static unsigned long next = millis();
-    static bool status = HIGH;
-    if (next < millis()) {
-        status = !status;
-        digitalWrite(LED_PIN, LED_PIN_INVERSE ? !status : status);
-        next += ((status) ? delayOff : delayOn);
-    }
-}
-
-void showStatus() {
-    if (wifiConnected()) {
-        if (WiFi.getMode() == WIFI_AP) {
-            blink(2000, 2000);
-        } else {
-            blink(5000, 500);
-        }
-    } else {
-        blink(500, 500);
-    }
-}
-
 void hardwareSetup() {
     Serial.begin(SERIAL_BAUDRATE);
-    pinMode(LED_PIN, OUTPUT);
     SPIFFS.begin();
 }
 
@@ -82,8 +59,6 @@ void getFSVersion(char * buffer) {
 }
 
 void hardwareLoop() {
-
-    showStatus();
 
     // Heartbeat
     static unsigned long last_heartbeat = 0;
@@ -129,6 +104,7 @@ void setup() {
 
     hardwareSetup();
     buttonSetup();
+    ledSetup();
 
     welcome();
 
@@ -173,6 +149,7 @@ void loop() {
 
     hardwareLoop();
     buttonLoop();
+    ledLoop();
     wifiLoop();
     otaLoop();
     mqttLoop();
