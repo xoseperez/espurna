@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <AsyncMqttClient.h>
 #include "FS.h"
 String getSetting(const String& key, String defaultValue = "");
+bool relayStatus(unsigned char id, bool status, bool report = true);
 
 // -----------------------------------------------------------------------------
 // METHODS

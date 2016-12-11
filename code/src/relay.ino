@@ -58,7 +58,7 @@ bool relayStatus(unsigned char id) {
     #endif
 }
 
-bool relayStatus(unsigned char id, bool status, bool report = true) {
+bool relayStatus(unsigned char id, bool status, bool report) {
 
     bool changed = false;
 
