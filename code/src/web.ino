@@ -499,8 +499,10 @@ void webSetup() {
     server.on("/api/relay", HTTP_GET, _onRelay);
 
     // Serve static files
-    server.serveStatic("/", SPIFFS, "/");
-
+    char lastModified[50];
+    sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
+    server.serveStatic("/", SPIFFS, "/").setLastModified(lastModified);
+    
     // 404
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404);
