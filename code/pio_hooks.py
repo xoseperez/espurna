@@ -13,7 +13,7 @@ def is_valid_ip(ip):
         return False
 
 def before_build_spiffs(source, target, env):
-    env.Execute("gulp buildfs")
+    env.Execute("gulp buildfs_split")
 
 def before_upload(source, target, env):
     upload_port = env.get('UPLOAD_PORT', False)

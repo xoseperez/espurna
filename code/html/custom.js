@@ -1,4 +1,5 @@
 var websock;
+var password = false;
 
 function doUpdate() {
     var data = $("#formSave").serializeArray();
@@ -87,8 +88,11 @@ function processData(data) {
 
     // title
     if ("app" in data) {
-        $(".pure-menu-heading").html(data.app);
         var title = data.app;
+		if ("version" in data) {
+			title = title + " " + data.version;
+		}
+        $(".pure-menu-heading").html(title);
         if ("hostname" in data) {
             title = data.hostname + " - " + title;
         }
@@ -96,6 +100,35 @@ function processData(data) {
     }
 
     Object.keys(data).forEach(function(key) {
+
+        // Actions
+        if (key == "action") {
+
+            if (data.action == "reload") {
+                if (password) {
+
+                    // Forget current authentication
+                    $.ajax({
+                        'method': 'GET',
+                        'url': '/',
+                        'async': false,
+                        'username': "logmeout",
+                        'password': "123456",
+                        'headers': { "Authorization": "Basic xxx" }
+                    }).done(function(data) {
+                	    // If we don't get an error, we actually got an error as we expect an 401!
+                	}).fail(function(){
+                	    // We expect to get an 401 Unauthorized error! In this case we are successfully
+                        // logged out and we redirect the user.
+                	    window.location = "/";
+                    });
+
+                }
+            }
+
+            return;
+
+        }
 
         // Wifi
         if (key == "wifi") {

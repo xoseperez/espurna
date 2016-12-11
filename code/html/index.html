@@ -41,6 +41,10 @@
                         </li>
 
                         <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-security">SECURITY</a>
+                        </li>
+
+                        <li class="pure-menu-item">
                             <a href="#" class="pure-menu-link" data="panel-wifi">WIFI</a>
                         </li>
 
@@ -196,16 +200,36 @@
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Define how the different relays should be synchronized.</div>
                                 </div>
 
+                                <div class="pure-g module module-fauxmo">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Enable WeMo emulation</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" /></div>
+                                </div>
+
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="panel" id="panel-security">
+
+                        <div class="header">
+                            <h1>SECURITY</h1>
+                            <h2>Device security settings</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-md-1-4" for="adminPass">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="3" />
+                                    <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="3" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).</div>
                                 </div>
 
-                                <div class="pure-g module module-fauxmo">
-                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Enable WeMo emulation</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" /></div>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="3" />
                                 </div>
 
                                 <div class="pure-g">

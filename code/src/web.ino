@@ -94,6 +94,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             bool fauxmoEnabled = false;
         #endif
         unsigned int network = 0;
+        String adminPass;
 
         for (unsigned int i=0; i<config.size(); i++) {
 
@@ -109,9 +110,19 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             #endif
 
-            // Do not change the password if empty
-            if (key == "adminPass") {
+            // Check password
+            if (key == "adminPass1") {
+                adminPass = value;
+                continue;
+            }
+            if (key == "adminPass2") {
+                if (!value.equals(adminPass)) {
+                    ws.text(client_id, "{\"message\": \"Passwords do not match!\"}");
+                    return;
+                }
                 if (value.length() == 0) continue;
+                ws.text(client_id, "{\"action\": \"reload\"}");
+                key = String("adminPass");
             }
 
             // Checkboxes
@@ -192,16 +203,17 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
 void _wsStart(uint32_t client_id) {
 
-    char app[64];
-    sprintf(app, "%s %s", APP_NAME, APP_VERSION);
-
     char chipid[6];
     sprintf(chipid, "%06X", ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
-    root["app"] = app;
+    root["app"] = APP_NAME;
+    root["version"] = APP_VERSION;
+    root["buildDate"] = __DATE__;
+    root["buildTime"] = __TIME__;
+
     root["manufacturer"] = String(MANUFACTURER);
     root["chipid"] = chipid;
     root["mac"] = WiFi.macAddress();
@@ -365,7 +377,13 @@ void _onHome(AsyncWebServerRequest *request) {
 
     if (!_authenticate(request)) return request->requestAuthentication();
 
-    request->send(SPIFFS, "/index.html");
+    String password = getSetting("adminPass", ADMIN_PASS);
+    if (password.equals(ADMIN_PASS)) {
+        request->send(SPIFFS, "/password.html");
+    } else {
+        request->send(SPIFFS, "/index.html");
+    }
+
 }
 
 bool _apiAuth(AsyncWebServerRequest *request) {
