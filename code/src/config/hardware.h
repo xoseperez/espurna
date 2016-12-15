@@ -86,6 +86,19 @@
     #define LED_PIN_INVERSE     1
 
 // -----------------------------------------------------------------------------
+// WorkChoice ecoPlug
+// -----------------------------------------------------------------------------
+
+#elif defined(ECOPLUG)
+
+    #define MANUFACTURER        "WORKCHOICE"
+    #define DEVICE              "ECOPLUG"
+    #define BUTTON_PIN          13
+    #define RELAY_PIN           15
+    #define LED_PIN             2
+    #define LED_PIN_INVERSE     1
+
+// -----------------------------------------------------------------------------
 // ESPurna board (still beta)
 // -----------------------------------------------------------------------------
 
