@@ -33,6 +33,15 @@
     #define LED_PIN             13
     #define LED_PIN_INVERSE     0
 
+#elif defined(SONOFF_TOUCH)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_TOUCH"
+    #define BUTTON_PIN          0
+    #define RELAY1_PIN          12
+    #define LED_PIN             13
+    #define LED_PIN_INVERSE     1
+
 #elif defined(SONOFF_POW)
 
     #define MANUFACTURER        "ITEAD"
