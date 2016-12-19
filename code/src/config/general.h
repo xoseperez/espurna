@@ -37,6 +37,7 @@
 #define HTTP_USERNAME           "admin"
 #define WS_BUFFER_SIZE          5
 #define WS_TIMEOUT              1800000
+#define DNS_PORT                53
 
 // -----------------------------------------------------------------------------
 // OTA & NOFUSS
