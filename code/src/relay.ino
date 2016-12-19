@@ -71,8 +71,11 @@ void relayInching(unsigned char id) {
     if (relayInch == RELAY_INCHING_NONE) return;
 
     bool status = relayStatus(id);
-    if ((relayInch == RELAY_INCHING_ON) & (status)) return;
-    if ((relayInch == RELAY_INCHING_OFF) & (!status)) return;
+    bool inchingStatus = (relayInch == RELAY_INCHING_ON);
+    if (inchingStatus == status) {
+        inching.detach();
+        return;
+    }
 
     inching.attach(
         getSetting("relayInchTime", String(RELAY_INCHING_TIME)).toInt(),
@@ -116,7 +119,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     if (report) relayMQTT(id);
     if (!recursive) relayWS();
     return changed;
-    
+
 }
 
 void relaySync(unsigned char id) {
