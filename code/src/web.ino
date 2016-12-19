@@ -234,6 +234,8 @@ void _wsStart(uint32_t client_id) {
         relay.add(relayStatus(relayID));
     }
     root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
+    root["relayInch"] = getSetting("relayInch", String(RELAY_INCHING));
+    root["relayInchTime"] = getSetting("relayInchTime", String(RELAY_INCHING_TIME));
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", String(RELAY_SYNC));
@@ -502,7 +504,7 @@ void webSetup() {
     char lastModified[50];
     sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
     server.serveStatic("/", SPIFFS, "/").setLastModified(lastModified);
-    
+
     // 404
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404);

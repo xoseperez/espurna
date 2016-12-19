@@ -8,6 +8,7 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <EEPROM.h>
+#include <Ticker.h>
 #include <ArduinoJson.h>
 #include <vector>
 
@@ -16,6 +17,7 @@ bool recursive = false;
 #ifdef SONOFF_DUAL
     unsigned char dualRelayStatus = 0;
 #endif
+Ticker inching;
 
 // -----------------------------------------------------------------------------
 // RELAY
@@ -58,6 +60,28 @@ bool relayStatus(unsigned char id) {
     #endif
 }
 
+void relayInchingBack(unsigned char id) {
+    relayToggle(id);
+    inching.detach();
+}
+
+void relayInching(unsigned char id) {
+
+    byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
+    if (relayInch == RELAY_INCHING_NONE) return;
+
+    bool status = relayStatus(id);
+    if ((relayInch == RELAY_INCHING_ON) & (status)) return;
+    if ((relayInch == RELAY_INCHING_OFF) & (!status)) return;
+
+    inching.attach(
+        getSetting("relayInchTime", String(RELAY_INCHING_TIME)).toInt(),
+        relayInchingBack,
+        id
+    );
+
+}
+
 bool relayStatus(unsigned char id, bool status, bool report) {
 
     bool changed = false;
@@ -82,6 +106,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         #endif
 
         if (!recursive) {
+            relayInching(id);
             relaySync(id);
             relaySave();
         }
