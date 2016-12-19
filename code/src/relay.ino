@@ -239,4 +239,6 @@ void relaySetup() {
 
     mqttRegister(relayMQTTCallback);
 
+    DEBUG_MSG("[RELAY] Number of relays: %d\n", _relays.size());
+
 }

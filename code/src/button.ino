@@ -55,21 +55,46 @@ void buttonLoop() {
 }
 
 #else
-#ifdef BUTTON_PIN
+#ifdef BUTTON1_PIN
 
 #include <DebounceEvent.h>
-DebounceEvent button1 = false;
+#include <vector>
+
+std::vector<DebounceEvent *> _buttons;
 
 void buttonSetup() {
-    button1 = DebounceEvent(BUTTON_PIN);
+
+    #ifdef BUTTON1_PIN
+        _buttons.push_back(new DebounceEvent(BUTTON1_PIN));
+    #endif
+    #ifdef BUTTON2_PIN
+        _buttons.push_back(new DebounceEvent(BUTTON2_PIN));
+    #endif
+    #ifdef BUTTON3_PIN
+        _buttons.push_back(new DebounceEvent(BUTTON3_PIN));
+    #endif
+    #ifdef BUTTON4_PIN
+        _buttons.push_back(new DebounceEvent(BUTTON4_PIN));
+    #endif
+
+    DEBUG_MSG("[BUTTON] Number of buttons: %d\n", _buttons.size());
+
 }
 
 void buttonLoop() {
-    if (button1.loop()) {
-        if (button1.getEvent() == EVENT_SINGLE_CLICK) relayToggle(0);
-        if (button1.getEvent() == EVENT_DOUBLE_CLICK) createAP();
-        if (button1.getEvent() == EVENT_LONG_CLICK) ESP.reset();
+
+    for (unsigned int i=0; i < _buttons.size(); i++) {
+        if (_buttons[i]->loop()) {
+            uint8_t event = _buttons[i]->getEvent();
+            DEBUG_MSG("[BUTTON] Pressed #%d, event: %d\n", i, event);
+            if (i == 0) {
+                if (event == EVENT_DOUBLE_CLICK) createAP();
+                if (event == EVENT_LONG_CLICK) ESP.reset();
+            }
+            if (event == EVENT_SINGLE_CLICK) relayToggle(i);
+        }
     }
+
 }
 
 #else

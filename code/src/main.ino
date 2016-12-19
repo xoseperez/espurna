@@ -104,9 +104,6 @@ void welcome() {
 void setup() {
 
     hardwareSetup();
-    buttonSetup();
-    ledSetup();
-
     welcome();
 
     settingsSetup();
@@ -116,6 +113,8 @@ void setup() {
     }
 
     relaySetup();
+    buttonSetup();
+    ledSetup();
     wifiSetup();
     otaSetup();
     mqttSetup();

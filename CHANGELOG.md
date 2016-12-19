@@ -4,8 +4,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Added last-modified header to static contents
+- Added support for multi-button boards (SONOFF_4CH)
+- Force password changing if it's the default one
+- Comment out hardware selection in hardware.h if using Arduino IDE
+
 ### Changed
 - Using unreleased AsyncMqttClient with stability improvements
+- Better decoupling between MQTT and relays/websockets
 
 ## [1.1.0] 2016-12-06
 ### Added

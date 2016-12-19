@@ -70,7 +70,7 @@ function createRelays(count) {
         $(line).find("input").each(function() {
             $(this).attr("data", relayID);
         });
-        if (count > 1) $(".relay_id", line).html(" " + relayID);
+        if (count > 1) $(".relay_id", line).html(" " + (relayID+1));
         line.appendTo("#relays");
         $(":checkbox", line).iphoneStyle({
             onChange: doToggle,
