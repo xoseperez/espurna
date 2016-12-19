@@ -95,6 +95,15 @@
     #define LED_PIN             13
     #define LED_PIN_INVERSE     1
 
+#elif defined(SONOFF_SV)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_SV"
+    #define BUTTON1_PIN         0
+    #define RELAY1_PIN          12
+    #define LED_PIN             13
+    #define LED_PIN_INVERSE     1
+
 #elif defined(SLAMPHER)
 
     #define MANUFACTURER        "ITEAD"
