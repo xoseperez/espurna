@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Added last-modified header to static contents
 - Added support for multi-button boards (SONOFF_4CH)
+- Added support for WorkChoice ecoPlug (ECOPLUG). Thanks to David Myers
 - Force password changing if it's the default one
 - Comment out hardware selection in hardware.h if using Arduino IDE
 
