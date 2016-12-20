@@ -118,9 +118,11 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "1CH_INCHING"
     #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
     #define RELAY1_PIN          12
     #define LED_PIN             13
     #define LED_PIN_INVERSE     0
+    #define LED_INCHING         5
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards

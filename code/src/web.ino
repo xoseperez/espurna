@@ -184,6 +184,11 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setCurrentRatio(getSetting("emonRatio").toFloat());
             #endif
 
+            #if ITEAD_1CH_INCHING
+                byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
+                digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
+            #endif
+
             // Check if we should reconfigure MQTT connection
             if (dirtyMQTT) {
                 mqttDisconnect();
