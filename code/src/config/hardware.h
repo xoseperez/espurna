@@ -26,8 +26,8 @@
     #define DEVICE              "LOLIN"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
-	    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    0
+	#define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
@@ -40,7 +40,7 @@
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 #elif defined(SONOFF_TH)
 
@@ -49,7 +49,7 @@
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 #elif defined(SONOFF_TOUCH)
 
@@ -67,7 +67,7 @@
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
     #define LED1_PIN            15
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
     #define ENABLE_POW          1
 
 #elif defined(SONOFF_DUAL)
@@ -76,7 +76,7 @@
     #define DEVICE              "SONOFF_DUAL"
     #define BUTTON1_PIN         0
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
     #undef SERIAL_BAUDRATE
     #define SERIAL_BAUDRATE     19230
 
@@ -111,7 +111,7 @@
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 #elif defined(S20)
 
@@ -120,7 +120,7 @@
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
@@ -135,7 +135,7 @@
     #define RELAY1_PIN          12
     #define RELAY2_PIN          13
     #define LED1_PIN            16
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // WorkChoice ecoPlug
@@ -148,7 +148,7 @@
     #define BUTTON1_PIN         13
     #define RELAY_PIN           15
     #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // ESPurna board (still beta)

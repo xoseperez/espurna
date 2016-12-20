@@ -70,7 +70,7 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
 
         // Get led ID
         unsigned int ledID = topic[strlen(topic)-1] - '0';
-        if (ledID >= relayCount()) ledID = 0;
+        if (ledID >= ledCount()) ledID = 0;
 
         // get value
         unsigned int value =  (char)payload[0] - '0';
@@ -93,6 +93,10 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
 
     }
 
+}
+
+unsigned char ledCount() {
+    return _leds.size();
 }
 
 void ledConfigure() {
