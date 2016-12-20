@@ -79,6 +79,8 @@ void buttonSetup() {
 
     #ifdef ITEAD_1CH_INCHING
         pinMode(LED_INCHING, OUTPUT);
+        byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
+        digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
     #endif
 
     DEBUG_MSG("[BUTTON] Number of buttons: %d\n", _buttons.size());
@@ -99,7 +101,7 @@ void buttonLoop() {
                 if (i == 1) {
                     byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
                     relayInch = (relayInch == RELAY_INCHING_NONE) ? RELAY_INCHING_OFF : RELAY_INCHING_NONE;
-                    setSetting("relayInch", String(relayInch));
+                    setSetting("relayInch", String() + relayInch);
                     digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
                     continue;
                 }
