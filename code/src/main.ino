@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "FS.h"
 String getSetting(const String& key, String defaultValue = "");
 bool relayStatus(unsigned char id, bool status, bool report = true);
+void mqttRegister(void (*callback)(unsigned int, const char *, const char *));
 
 // -----------------------------------------------------------------------------
 // METHODS

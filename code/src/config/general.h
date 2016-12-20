@@ -27,6 +27,15 @@
 // 0 means ANY, 1 zero or one and 2 one and only one
 #define RELAY_SYNC         		RELAY_SYNC_ANY
 
+//--------------------------------------------------------------------------------
+// LED
+//--------------------------------------------------------------------------------
+
+// All defined LEDs in the board can be managed through MQTT
+// except the first one when LED_AUTO is set to 1.
+// If LED_AUTO is set to 1 the board will use first defined LED to show wifi status.
+#define LED_AUTO                1
+
 // -----------------------------------------------------------------------------
 // WIFI & WEB
 // -----------------------------------------------------------------------------
