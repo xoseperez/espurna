@@ -79,13 +79,9 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
 
         // Check ledAuto
         if (ledID == 0) {
-            if (bitAuto) {
-                ledAuto = bitState;
-                setSetting("ledAuto", String() + (ledAuto ? "1" : "0"));
-                return;
-            } else if (ledAuto) {
-                return;
-            }
+            ledAuto = bitAuto ? bitState : false;
+            setSetting("ledAuto", String() + (ledAuto ? "1" : "0"));
+            if (bitAuto) return;
         }
 
         // Action to perform
