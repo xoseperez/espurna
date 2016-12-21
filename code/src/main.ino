@@ -111,7 +111,7 @@ void setup() {
 
     settingsSetup();
     if (getSetting("hostname").length() == 0) {
-        setSetting("hostname", String() + getIdentifier());
+        setSetting("hostname", getIdentifier());
         saveSettings();
     }
 

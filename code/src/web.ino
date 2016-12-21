@@ -155,12 +155,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         // Checkboxes
         if (apiEnabled != (getSetting("apiEnabled").toInt() == 1)) {
-            setSetting("apiEnabled", String() + (apiEnabled ? 1 : 0));
+            setSetting("apiEnabled", apiEnabled);
             dirty = true;
         }
         #if ENABLE_FAUXMO
             if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
-                setSetting("fauxmoEnabled", String() + (fauxmoEnabled ? 1 : 0));
+                setSetting("fauxmoEnabled", fauxmoEnabled);
                 dirty = true;
             }
         #endif
@@ -502,7 +502,7 @@ void webSetup() {
     char lastModified[50];
     sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
     server.serveStatic("/", SPIFFS, "/").setLastModified(lastModified);
-    
+
     // 404
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404);

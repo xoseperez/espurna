@@ -41,9 +41,9 @@ void powDettachInterrupts() {
 }
 
 void powSaveCalibration() {
-    setSetting("powPowerMult", String() + hlw8012.getPowerMultiplier());
-    setSetting("powCurrentMult", String() + hlw8012.getCurrentMultiplier());
-    setSetting("powVoltageMult", String() + hlw8012.getVoltageMultiplier());
+    setSetting("powPowerMult", hlw8012.getPowerMultiplier());
+    setSetting("powCurrentMult", hlw8012.getCurrentMultiplier());
+    setSetting("powVoltageMult", hlw8012.getVoltageMultiplier());
 }
 
 void powRetrieveCalibration() {
