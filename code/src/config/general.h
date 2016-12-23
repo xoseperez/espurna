@@ -68,6 +68,7 @@
 #define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
 #define MQTT_RELAY_TOPIC        "/relay"
+#define MQTT_LED_TOPIC          "/led"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
 #define MQTT_FSVERSION_TOPIC    "/fsversion"

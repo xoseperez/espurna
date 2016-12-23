@@ -59,17 +59,23 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
 
     static bool isFirstMessage = true;
 
+    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
+
     if (type == MQTT_CONNECT_EVENT) {
-        mqttSubscribe("/led/#");
+        char buffer[strlen(MQTT_LED_TOPIC) + mqttSetter.length() + 3];
+        sprintf(buffer, "%s/+%s", MQTT_LED_TOPIC, mqttSetter.c_str());
+        mqttSubscribe(buffer);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        if (memcmp("/led/", topic, 5) != 0) return;
+        String t = String(topic);
+        if (!t.startsWith(MQTT_LED_TOPIC)) return;
+        if (!t.endsWith(mqttSetter)) return;
 
         // Get led ID
-        unsigned int ledID = topic[strlen(topic)-1] - '0';
+        unsigned int ledID = topic[strlen(MQTT_LED_TOPIC)+1] - '0';
         if (ledID >= ledCount()) ledID = 0;
 
         // get value
