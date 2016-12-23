@@ -22,8 +22,9 @@ bool recursive = false;
 // -----------------------------------------------------------------------------
 
 void relayMQTT(unsigned char id) {
-    char buffer[10];
-    sprintf(buffer, MQTT_RELAY_TOPIC, id);
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    char buffer[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 3];
+    sprintf(buffer, "%s/%d%s", MQTT_RELAY_TOPIC, id, mqttGetter.c_str());
     mqttSend(buffer, (char *) (relayStatus(id) ? "1" : "0"));
 }
 
@@ -91,7 +92,11 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     if (report) relayMQTT(id);
     if (!recursive) relayWS();
     return changed;
-    
+
+}
+
+bool relayStatus(unsigned char id, bool status) {
+    return relayStatus(id, status, true);
 }
 
 void relaySync(unsigned char id) {
@@ -100,7 +105,7 @@ void relaySync(unsigned char id) {
 
         recursive = true;
 
-        byte relaySync = getSetting("relaySync", String(RELAY_SYNC)).toInt();
+        byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
         bool status = relayStatus(id);
 
         // If RELAY_SYNC_SAME all relays should have the same state
@@ -165,36 +170,41 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     static bool isFirstMessage = true;
 
+    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    bool sameSetGet = mqttGetter.compareTo(mqttSetter) == 0;
+
     if (type == MQTT_CONNECT_EVENT) {
         relayMQTT();
-        mqttSubscribe("/relay/#");
+        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 3];
+        sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
+        mqttSubscribe(buffer);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        if (memcmp("/relay/", topic, 7) != 0) return;
+        String t = String(topic);
+        if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
+        if (!t.endsWith(mqttSetter)) return;
 
         // If relayMode is not SAME avoid responding to a retained message
-        if (isFirstMessage) {
+        if (sameSetGet && isFirstMessage) {
             isFirstMessage = false;
-            byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
+            byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
             if (relayMode != RELAY_MODE_SAME) return;
         }
 
         // Get relay ID
-        unsigned int relayID = topic[strlen(topic)-1] - '0';
+        unsigned int relayID = topic[strlen(MQTT_RELAY_TOPIC)+1] - '0';
         if (relayID >= relayCount()) relayID = 0;
 
         // Action to perform
-        if ((char)payload[0] == '0') {
-            relayStatus(relayID, false, false);
-        }
-        if ((char)payload[0] == '1') {
-            relayStatus(relayID, true, false);
-        }
-        if ((char)payload[0] == '2') {
+        unsigned int value = (char)payload[0] - '0';
+        if (value == 2) {
             relayToggle(relayID);
+        } else {
+            relayStatus(relayID, value > 0, !sameSetGet);
         }
 
     }
@@ -227,7 +237,7 @@ void relaySetup() {
     #endif
 
     EEPROM.begin(4096);
-    byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
+    byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
 
     for (unsigned int i=0; i < _relays.size(); i++) {
         pinMode(_relays[i], OUTPUT);

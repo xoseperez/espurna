@@ -67,7 +67,7 @@
 #define MQTT_QOS                0
 #define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
-#define MQTT_RELAY_TOPIC        "/relay/%d"
+#define MQTT_RELAY_TOPIC        "/relay"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
 #define MQTT_FSVERSION_TOPIC    "/fsversion"
@@ -76,6 +76,12 @@
 #define MQTT_CONNECT_EVENT      0
 #define MQTT_DISCONNECT_EVENT   1
 #define MQTT_MESSAGE_EVENT      2
+
+// Custom get and set postfixes
+// Use something like "/status" or "/set", with trailing slash
+#define MQTT_USE_GETTER         ""
+#define MQTT_USE_SETTER         ""
+
 
 // -----------------------------------------------------------------------------
 // NTP

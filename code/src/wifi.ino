@@ -164,5 +164,7 @@ void wifiSetup() {
 
 void wifiLoop() {
     jw.loop();
-    dnsServer.processNextRequest();
+    if (WiFi.getMode() == WIFI_AP) {
+        dnsServer.processNextRequest();
+    }
 }

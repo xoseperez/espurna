@@ -74,7 +74,7 @@ void nofussLoop() {
 
 static unsigned long last_check = 0;
 if (!wifiConnected()) return;
-unsigned long interval = getSetting("nofussInterval", String(NOFUSS_INTERVAL)).toInt();
+unsigned long interval = getSetting("nofussInterval", NOFUSS_INTERVAL).toInt();
 if ((last_check > 0) && ((millis() - last_check) < interval)) return;
 last_check = millis();
 NoFUSSClient.handle();

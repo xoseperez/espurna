@@ -39,10 +39,10 @@ void powerMonitorSetup() {
 
     // backwards compatibility
     String tmp;
-    tmp = getSetting("pwMainsVoltage", String() + EMON_MAINS_VOLTAGE);
+    tmp = getSetting("pwMainsVoltage", EMON_MAINS_VOLTAGE);
     setSetting("emonMains", tmp);
     delSetting("pwMainsVoltage");
-    tmp = getSetting("pwCurrentRatio", String() + EMON_CURRENT_RATIO);
+    tmp = getSetting("pwCurrentRatio", EMON_CURRENT_RATIO);
     setSetting("emonRatio", tmp);
     delSetting("pwCurrentRatio");
 
@@ -50,7 +50,7 @@ void powerMonitorSetup() {
         currentCallback,
         EMON_ADC_BITS,
         EMON_REFERENCE_VOLTAGE,
-        getSetting("emonRatio", String(EMON_CURRENT_RATIO)).toFloat()
+        getSetting("emonRatio", EMON_CURRENT_RATIO).toFloat()
     );
     emon.setPrecision(EMON_CURRENT_PRECISION);
 }
@@ -91,7 +91,7 @@ void powerMonitorLoop() {
         sum += current;
         ++measurements;
 
-        float mainsVoltage = getSetting("emonMains", String(EMON_MAINS_VOLTAGE)).toFloat();
+        float mainsVoltage = getSetting("emonMains", EMON_MAINS_VOLTAGE).toFloat();
 
         //DEBUG_MSG("[ENERGY] Power now: %dW\n", int(current * mainsVoltage));
 

@@ -20,6 +20,21 @@ Embedis embedis(Serial);
 // Settings
 // -----------------------------------------------------------------------------
 
+unsigned long settingsSize() {
+    bool zero = false;
+    unsigned long size = 0;
+    for (unsigned int i = SPI_FLASH_SEC_SIZE; i>0; i--) {
+        size++;
+        if (EEPROM.read(i) == 0) {
+            if (zero) break;
+            zero = true;
+        } else {
+            zero = false;
+        }
+    }
+    return size-2;
+}
+
 void settingsSetup() {
 
     EEPROM.begin(SPI_FLASH_SEC_SIZE);
@@ -35,24 +50,46 @@ void settingsSetup() {
         #endif
     );
 
-    Embedis::hardware( F("wifi"), [](Embedis* e) {
+    Embedis::hardware( F("WIFI"), [](Embedis* e) {
         StreamString s;
         WiFi.printDiag(s);
         e->response(s);
     }, 0);
 
-    Embedis::command( F("reconnect"), [](Embedis* e) {
+    Embedis::command( F("RECONNECT"), [](Embedis* e) {
         wifiConfigure();
         wifiDisconnect();
         e->response(Embedis::OK);
     });
 
-    Embedis::command( F("reset"), [](Embedis* e) {
+    Embedis::command( F("RESET"), [](Embedis* e) {
         e->response(Embedis::OK);
         ESP.reset();
     });
 
-    DEBUG_MSG("[SETTINGS] Initialized\n");
+    Embedis::command( F("EEPROM.DUMP"), [](Embedis* e) {
+        for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+            if (i % 16 == 0) Serial.printf("\n[%04X] ", i);
+            Serial.printf("%02X ", EEPROM.read(i));
+        }
+        Serial.printf("\n");
+        e->response(Embedis::OK);
+    });
+
+    Embedis::command( F("EEPROM.ERASE"), [](Embedis* e) {
+        for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+            EEPROM.write(i, 0xFF);
+        }
+        EEPROM.commit();
+        e->response(Embedis::OK);
+    });
+
+    Embedis::command( F("SETTINGS.SIZE"), [](Embedis* e) {
+        e->response(String(settingsSize()));
+    });
+
+    DEBUG_MSG("[SETTINGS] EEPROM size: %d bytes\n", SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG("[SETTINGS] Settings size: %d bytes\n", settingsSize());
 
 }
 
@@ -60,14 +97,18 @@ void settingsLoop() {
     embedis.process();
 }
 
-String getSetting(const String& key, String defaultValue) {
+template<typename T> String getSetting(const String& key, T defaultValue) {
     String value;
-    if (!Embedis::get(key, value)) value = defaultValue;
+    if (!Embedis::get(key, value)) value = String(defaultValue);
     return value;
 }
 
-bool setSetting(const String& key, String& value) {
-    return Embedis::set(key, value);
+String getSetting(const String& key) {
+    return getSetting(key, "");
+}
+
+template<typename T> bool setSetting(const String& key, T value) {
+    return Embedis::set(key, String(value));
 }
 
 bool delSetting(const String& key) {
