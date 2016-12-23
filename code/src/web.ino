@@ -224,7 +224,7 @@ void _wsStart(uint32_t client_id) {
 
     root["mqttStatus"] = mqttConnected();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
-    root["mqttPort"] = getSetting("mqttPort", String(MQTT_PORT));
+    root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
     root["mqttUser"] = getSetting("mqttUser");
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
@@ -233,10 +233,10 @@ void _wsStart(uint32_t client_id) {
     for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
         relay.add(relayStatus(relayID));
     }
-    root["relayMode"] = getSetting("relayMode", String(RELAY_MODE));
+    root["relayMode"] = getSetting("relayMode", RELAY_MODE);
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
-        root["relaySync"] = getSetting("relaySync", String(RELAY_SYNC));
+        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 
     root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
@@ -244,7 +244,7 @@ void _wsStart(uint32_t client_id) {
 
     #if ENABLE_FAUXMO
         root["fauxmoVisible"] = 1;
-        root["fauxmoEnabled"] = getSetting("fauxmoEnabled", String(FAUXMO_ENABLED)).toInt() == 1;
+        root["fauxmoEnabled"] = getSetting("fauxmoEnabled", FAUXMO_ENABLED).toInt() == 1;
     #endif
 
     #if ENABLE_DS18B20
@@ -260,15 +260,15 @@ void _wsStart(uint32_t client_id) {
 
     #if ENABLE_RF
         root["rfVisible"] = 1;
-        root["rfChannel"] = getSetting("rfChannel", String(RF_CHANNEL));
-        root["rfDevice"] = getSetting("rfDevice", String(RF_DEVICE));
+        root["rfChannel"] = getSetting("rfChannel", RF_CHANNEL);
+        root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
     #endif
 
     #if ENABLE_EMON
         root["emonVisible"] = 1;
         root["emonPower"] = getPower();
-        root["emonMains"] = getSetting("emonMains", String(EMON_MAINS_VOLTAGE));
-        root["emonRatio"] = getSetting("emonRatio", String(EMON_CURRENT_RATIO));
+        root["emonMains"] = getSetting("emonMains", EMON_MAINS_VOLTAGE);
+        root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
     #endif
 
     #if ENABLE_POW

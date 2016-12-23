@@ -101,7 +101,7 @@ void mqttConnect() {
     if (!mqtt.connected()) {
 
         String host = getSetting("mqttServer", MQTT_SERVER);
-        String port = getSetting("mqttPort", String(MQTT_PORT));
+        String port = getSetting("mqttPort", MQTT_PORT);
         String user = getSetting("mqttUser");
         String pass = getSetting("mqttPassword");
 

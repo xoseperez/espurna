@@ -18,7 +18,7 @@ fauxmoESP fauxmo;
 // -----------------------------------------------------------------------------
 
 void fauxmoConfigure() {
-    fauxmo.enable(getSetting("fauxmoEnabled", String(FAUXMO_ENABLED)).toInt() == 1);
+    fauxmo.enable(getSetting("fauxmoEnabled", FAUXMO_ENABLED).toInt() == 1);
 }
 
 void fauxmoSetup() {

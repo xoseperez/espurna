@@ -29,8 +29,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ESPAsyncWebServer.h>
 #include <AsyncMqttClient.h>
 #include "FS.h"
-String getSetting(const String& key, String defaultValue = "");
-bool relayStatus(unsigned char id, bool status, bool report = true);
+template<typename T> bool setSetting(const String& key, T value);
+template<typename T> String getSetting(const String& key, T defaultValue);
 
 // -----------------------------------------------------------------------------
 // METHODS

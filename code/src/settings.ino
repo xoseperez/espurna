@@ -97,22 +97,18 @@ void settingsLoop() {
     embedis.process();
 }
 
-String getSetting(const String& key, String defaultValue) {
+template<typename T> String getSetting(const String& key, T defaultValue) {
     String value;
-    if (!Embedis::get(key, value)) value = defaultValue;
+    if (!Embedis::get(key, value)) value = String(defaultValue);
     return value;
 }
 
-bool setSetting(const String& key, String& value) {
-    return Embedis::set(key, value);
+String getSetting(const String& key) {
+    return getSetting(key, "");
 }
 
-bool setSetting(const String& key, char * value) {
+template<typename T> bool setSetting(const String& key, T value) {
     return Embedis::set(key, String(value));
-}
-
-bool setSetting(const String& key, bool value) {
-    return Embedis::set(key, value ? String("0") : String("1"));
 }
 
 bool delSetting(const String& key) {

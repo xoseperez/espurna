@@ -91,7 +91,11 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     if (report) relayMQTT(id);
     if (!recursive) relayWS();
     return changed;
-    
+
+}
+
+bool relayStatus(unsigned char id, bool status) {
+    return relayStatus(id, status, true);
 }
 
 void relaySync(unsigned char id) {
@@ -100,7 +104,7 @@ void relaySync(unsigned char id) {
 
         recursive = true;
 
-        byte relaySync = getSetting("relaySync", String(RELAY_SYNC)).toInt();
+        byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
         bool status = relayStatus(id);
 
         // If RELAY_SYNC_SAME all relays should have the same state
@@ -178,7 +182,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         // If relayMode is not SAME avoid responding to a retained message
         if (isFirstMessage) {
             isFirstMessage = false;
-            byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
+            byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
             if (relayMode != RELAY_MODE_SAME) return;
         }
 
@@ -227,7 +231,7 @@ void relaySetup() {
     #endif
 
     EEPROM.begin(4096);
-    byte relayMode = getSetting("relayMode", String(RELAY_MODE)).toInt();
+    byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
 
     for (unsigned int i=0; i < _relays.size(); i++) {
         pinMode(_relays[i], OUTPUT);
