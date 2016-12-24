@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Using unreleased AsyncMqttClient with stability improvements
 - Better decoupling between MQTT and relays/websockets
 
+### Fixed
+- Issue #14 MQTT Connection with Username an Password not working
+- Issue #11 Compile error when building sonoff-dual-debug
+
 ## [1.1.0] 2016-12-06
 ### Added
 - Added support for DS18B20 temperature sensor. Thanks to Francesco Boscarino
