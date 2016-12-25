@@ -45,7 +45,6 @@ DebounceEvent::DebounceEvent(uint8_t pin, uint8_t defaultStatus, unsigned long d
 bool DebounceEvent::loop() {
 
     // holds whether status has changed or not
-    static bool pending = false;
     bool changed = false;
     _event = EVENT_NONE;
 
@@ -57,7 +56,7 @@ bool DebounceEvent::loop() {
         if (newStatus != _status) {
 
             changed = true;
-            pending = false;
+            _clicked = false;
             _status = newStatus;
 
             // released
@@ -69,9 +68,13 @@ bool DebounceEvent::loop() {
                 } else if (millis() - _last_start < DOUBLE_CLICK_DELAY ) {
                     _event = EVENT_DOUBLE_CLICK;
                 } else {
+
+                    // We are not setting the event type here because we still don't
+                    // know what kind of event it will be (it might be a double click).
+                    // Instead we are setting the _clicked variable to check later
+                    _clicked = true;
                     changed = false;
-                    pending = true;
-                    //_event = EVENT_SINGLE_CLICK;
+
                 }
 
             // pressed
@@ -86,8 +89,8 @@ bool DebounceEvent::loop() {
         }
     }
 
-    if (pending && (millis() - _this_start > DOUBLE_CLICK_DELAY) && (!changed) && (_status == _defaultStatus)) {
-        pending = false;
+    if (_clicked && (millis() - _this_start > DOUBLE_CLICK_DELAY) && (!changed) && (_status == _defaultStatus)) {
+        _clicked = false;
         changed = true;
         _event = EVENT_SINGLE_CLICK;
     }
@@ -98,7 +101,6 @@ bool DebounceEvent::loop() {
             _callback(_pin, _event);
         }
     }
-
 
     return changed;
 
