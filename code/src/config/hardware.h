@@ -10,11 +10,20 @@
 //#define SONOFF_POW
 //#define SONOFF_DUAL
 //#define SONOFF_4CH
+//#define SONOFF_SV
 //#define SLAMPHER
 //#define S20
 //#define ESP_RELAY_BOARD
 //#define ECOPLUG
 //#define ESPURNA
+
+//#define ENABLE_DHT            1
+//#define ENABLE_DS18B20        1
+//#define ENABLE_EMON           1
+//#define ENABLE_HLW8018        1
+//#define ENABLE_RF             1
+//#define ENABLE_FAUXMO         1
+//#define ENABLE_NOFUSS         1
 
 // -----------------------------------------------------------------------------
 // NODEMCUv2 development board
