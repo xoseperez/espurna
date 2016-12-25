@@ -41,18 +41,18 @@ void powDettachInterrupts() {
 }
 
 void powSaveCalibration() {
-    setSetting("powPowerMult", String() + hlw8012.getPowerMultiplier());
-    setSetting("powCurrentMult", String() + hlw8012.getCurrentMultiplier());
-    setSetting("powVoltageMult", String() + hlw8012.getVoltageMultiplier());
+    setSetting("powPowerMult", hlw8012.getPowerMultiplier());
+    setSetting("powCurrentMult", hlw8012.getCurrentMultiplier());
+    setSetting("powVoltageMult", hlw8012.getVoltageMultiplier());
 }
 
 void powRetrieveCalibration() {
     double value;
-    value = getSetting("powPowerMult", "0").toFloat();
+    value = getSetting("powPowerMult", 0).toFloat();
     if (value > 0) hlw8012.setPowerMultiplier((int) value);
-    value = getSetting("powCurrentMult", "0").toFloat();
+    value = getSetting("powCurrentMult", 0).toFloat();
     if (value > 0) hlw8012.setCurrentMultiplier((int) value);
-    value = getSetting("powVoltageMult", "0").toFloat();
+    value = getSetting("powVoltageMult", 0).toFloat();
     if (value > 0) hlw8012.setVoltageMultiplier((int) value);
 }
 

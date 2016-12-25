@@ -8,6 +8,9 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include "JustWifi.h"
+#include <DNSServer.h>
+
+DNSServer dnsServer;
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -147,10 +150,21 @@ void wifiSetup() {
 
 	    }
 
+        // Configure captive portal
+        if (code == MESSAGE_ACCESSPOINT_CREATED) {
+            dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+        }
+        if (code == MESSAGE_DISCONNECTED) {
+            dnsServer.stop();
+        }
+
     });
 
 }
 
 void wifiLoop() {
     jw.loop();
+    if (WiFi.getMode() == WIFI_AP) {
+        dnsServer.processNextRequest();
+    }
 }

@@ -42,6 +42,7 @@ class DebounceEvent {
         uint8_t _pin;
         uint8_t _status;
         uint8_t _event;
+        bool _clicked = false;
         unsigned long _this_start;
         unsigned long _last_start;
         uint8_t _defaultStatus;

@@ -33,7 +33,7 @@ void rfBuildCodes() {
     unsigned long code = 0;
 
     // channel
-    unsigned int channel = getSetting("rfChannel", String(RF_CHANNEL)).toInt();
+    unsigned int channel = getSetting("rfChannel", RF_CHANNEL).toInt();
     for (byte i = 0; i < 5; i++) {
         code *= 3;
         if (channel & 1) code += 1;
@@ -41,7 +41,7 @@ void rfBuildCodes() {
     }
 
     // device
-    unsigned int device = getSetting("rfDevice", String(RF_DEVICE)).toInt();
+    unsigned int device = getSetting("rfDevice", RF_DEVICE).toInt();
     for (byte i = 0; i < 5; i++) {
         code *= 3;
         if (device != i) code += 2;

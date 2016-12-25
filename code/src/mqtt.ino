@@ -57,6 +57,7 @@ void _mqttOnConnect(bool sessionPresent) {
 
     // Build MQTT topics
     buildTopics();
+    mqtt.setWill((mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, (char *) "0");
 
     // Say hello and report our IP and VERSION
     mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
@@ -100,7 +101,7 @@ void mqttConnect() {
     if (!mqtt.connected()) {
 
         String host = getSetting("mqttServer", MQTT_SERVER);
-        String port = getSetting("mqttPort", String(MQTT_PORT));
+        String port = getSetting("mqttPort", MQTT_PORT);
         String user = getSetting("mqttUser");
         String pass = getSetting("mqttPassword");
 
@@ -112,12 +113,15 @@ void mqttConnect() {
         mqtt
             .setKeepAlive(MQTT_KEEPALIVE)
             .setCleanSession(false)
-            //.setWill("topic/online", 2, true, "no")
             .setClientId(getSetting("hostname", HOSTNAME).c_str());
 
-        if ((user != "") & (pass != "")) {
-            DEBUG_MSG(" as user %s.\n", (char *) user.c_str());
-            mqtt.setCredentials(user.c_str(), pass.c_str());
+        if ((user != "") && (pass != "")) {
+            DEBUG_MSG(" as user '%s'.\n", (char *) user.c_str());
+            char username[user.length()+1];
+            user.toCharArray(username, user.length()+1);
+            char password[pass.length()+1];
+            pass.toCharArray(password, pass.length()+1);
+            mqtt.setCredentials(username, password);
         } else {
             DEBUG_MSG(" anonymously\n");
         }

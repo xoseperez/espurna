@@ -8,12 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Added last-modified header to static contents
 - Added support for multi-button boards (SONOFF_4CH)
 - Added support for WorkChoice ecoPlug (ECOPLUG). Thanks to David Myers
+- Added support for Sonoff SV
+- Added DNS captive portal for AP mode
 - Force password changing if it's the default one
 - Comment out hardware selection in hardware.h if using Arduino IDE
 
 ### Changed
 - Using unreleased AsyncMqttClient with stability improvements
 - Better decoupling between MQTT and relays/websockets
+
+### Fixed
+- Issue #14 MQTT Connection with Username an Password not working
+- Issue #11 Compile error when building sonoff-dual-debug
 
 ## [1.1.0] 2016-12-06
 ### Added

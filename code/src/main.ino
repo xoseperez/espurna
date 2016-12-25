@@ -29,8 +29,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ESPAsyncWebServer.h>
 #include <AsyncMqttClient.h>
 #include "FS.h"
-String getSetting(const String& key, String defaultValue = "");
-bool relayStatus(unsigned char id, bool status, bool report = true);
+void mqttRegister(void (*callback)(unsigned int, const char *, const char *));
+template<typename T> bool setSetting(const String& key, T value);
+template<typename T> String getSetting(const String& key, T defaultValue);
 
 // -----------------------------------------------------------------------------
 // METHODS
@@ -85,9 +86,12 @@ void welcome() {
     DEBUG_MSG("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);
     //DEBUG_MSG("Device: %s\n", (char *) getIdentifier().c_str());
     DEBUG_MSG("ChipID: %06X\n", ESP.getChipId());
+    DEBUG_MSG("CPU frequency: %d MHz\n", ESP.getCpuFreqMHz());
     DEBUG_MSG("Last reset reason: %s\n", (char *) ESP.getResetReason().c_str());
     DEBUG_MSG("Memory size: %d bytes\n", ESP.getFlashChipSize());
     DEBUG_MSG("Free heap: %d bytes\n", ESP.getFreeHeap());
+    DEBUG_MSG("Firmware size: %d bytes\n", ESP.getSketchSize());
+    DEBUG_MSG("Free firmware space: %d bytes\n", ESP.getFreeSketchSpace());
     FSInfo fs_info;
     if (SPIFFS.info(fs_info)) {
         DEBUG_MSG("File system total size: %d bytes\n", fs_info.totalBytes);
@@ -108,7 +112,7 @@ void setup() {
 
     settingsSetup();
     if (getSetting("hostname").length() == 0) {
-        setSetting("hostname", String() + getIdentifier());
+        setSetting("hostname", getIdentifier());
         saveSettings();
     }
 

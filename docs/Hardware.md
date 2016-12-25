@@ -9,16 +9,20 @@ This is the official list of supported hardware for the ESPurna firmware. The ha
 * [IteadStudio Sonoff TH](#iteadstudio-sonoff-th)
 * [IteadStudio Sonoff POW](#iteadstudio-sonoff-pow)
 * [IteadStudio Sonoff DUAL](#iteadstudio-sonoff-dual)
+* [IteadStudio Sonoff TOUCH](#iteadstudio-sonoff-touch)
+* [IteadStudio Sonoff 4CH](#iteadstudio-sonoff-4ch)
+* [IteadStudio Sonoff SV](#iteadstudio-sonoff-sv)
 * [IteadStudio Slampher](#iteadstudio-slampher)
 * [IteadStudio S20](#iteadstudio-s20)
 * [Electrodragon ESP Relay Board](#electrodragon-esp-relay-board)
+* [WorkChoice EcoPlug](#workchoice-ecoplug)
 
 ## IteadStudio Sonoff
 
 |Property|Value|
 |---|---|
 |Manufacturer|Itead Studio|
-|Web page|https://www.itead.cc/sonoff-wifi-wireless-switch.html|
+|Web page|[https://www.itead.cc/sonoff-wifi-wireless-switch.html](https://www.itead.cc/sonoff-wifi-wireless-switch.html)|
 |Build flag|SONOFF|
 
 The [IteadStudio Sonoff][1] has an ESP8266 on board with a 8Mbit flash memory chip, a mains to 3V3 transformer and a relay (GPIO12). It also features a button (GPIO0), an LED (GPIO13) and an unpopulated header you can use to reprogram it.
@@ -57,7 +61,7 @@ My recommendation is to **temporary shortcut the bottom pad of the unpopulated R
 |Property|Value|
 |---|---|
 |Manufacturer|Itead Studio|
-|Web page|https://www.itead.cc/sonoff-th.html|
+|Web page|[https://www.itead.cc/sonoff-th.html](https://www.itead.cc/sonoff-th.html)|
 |Build flag|SONOFF_TH|
 
 ### Flashing
@@ -73,7 +77,7 @@ As in the Sonoff the button is connected to GPIO0, so to enter flash mode press 
 |Property|Value|
 |---|---|
 |Manufacturer|Itead Studio|
-|Web page|https://www.itead.cc/sonoff-pow.html|
+|Web page|[https://www.itead.cc/sonoff-pow.html](https://www.itead.cc/sonoff-pow.html)|
 |Build flag|SONOFF_POW|
 
 ### Flashing
@@ -87,7 +91,7 @@ Same as for the [Sonoff TH](#iteadstudio-sonoff-th) above.
 |Property|Value|
 |---|---|
 |Manufacturer|Itead Studio|
-|Web page|https://www.itead.cc/sonoff-dual.html|
+|Web page|[https://www.itead.cc/sonoff-dual.html](https://www.itead.cc/sonoff-dual.html)|
 |Build flag|SONOFF_DUAL|
 
 ### Flashing
@@ -100,12 +104,48 @@ In the picture above you have a location of an available and easily accessible G
 
 Once flashed use OTA to update the firmware or the filesystem.
 
+## IteadStudio Sonoff TOUCH
+
+|Property|Value|
+|---|---|
+|Manufacturer|Itead Studio|
+|Web page|[https://www.itead.cc/sonoff-touch.html](https://www.itead.cc/sonoff-touch.html)|
+|Build flag|SONOFF_TOUCH|
+
+### Flashing
+
+*TODO*
+
+## IteadStudio Sonoff 4CH
+
+|Property|Value|
+|---|---|
+|Manufacturer|Itead Studio|
+|Web page|[https://www.itead.cc/sonoff-4ch.html](https://www.itead.cc/sonoff-4ch.html)|
+|Build flag|SONOFF_4CH|
+
+### Flashing
+
+*TODO*
+
+## IteadStudio Sonoff SV
+
+|Property|Value|
+|---|---|
+|Manufacturer|Itead Studio|
+|Web page|[https://www.itead.cc/sonoff-sv.html](https://www.itead.cc/sonoff-sv.html)|
+|Build flag|SONOFF_SV|
+
+### Flashing
+
+*TODO*
+
 ## IteadStudio Slampher
 
 |Property|Value|
 |---|---|
 |Manufacturer|Itead Studio|
-|Web page|https://www.itead.cc/slampher.html|
+|Web page|[https://www.itead.cc/slampher.html](https://www.itead.cc/slampher.html)|
 |Build flag|SLAMPHER|
 
 ### Flashing
@@ -124,7 +164,7 @@ My recommendation is to **temporary shortcut the right pad of the unpopulated R2
 |Property|Value|
 |---|---|
 |Manufacturer|Itead Studio|
-|Web page|https://www.itead.cc/smart-socket.html|
+|Web page|[https://www.itead.cc/smart-socket.html](https://www.itead.cc/smart-socket.html)|
 |Build flag|S20|
 
 ### Flashing
@@ -140,7 +180,7 @@ Solder a 4 pin male or female header and connect it to your USB-to-UART bridge. 
 |Property|Value|
 |---|---|
 |Manufacturer|Electrodragon|
-|Web page|http://www.electrodragon.com/product/wifi-iot-relay-board-based-esp8266/|
+|Web page|[http://www.electrodragon.com/product/wifi-iot-relay-board-based-esp8266/](http://www.electrodragon.com/product/wifi-iot-relay-board-based-esp8266/)|
 |Build flag|ESP_RELAY_BOARD|
 
 ### Flashing
@@ -153,6 +193,19 @@ The Electrodragon ESP Relay Board is pretty easy to flash IF you do not follow t
 * The RX pin in the header should go to your programmer TX pin and
 * The TX pin in the header should go to your programmer RX pin
 * The button labeled BTN2 is connected to GPIO0, so hold it down while powering the board, I've had better results keeping it down until the flashing starts
+
+## WorkChoice EcoPlug
+
+|Property|Value|
+|---|---|
+|Manufacturer|WorkChoice|
+|Web page (non-official)|[http://thegreatgeekery.blogspot.com.es/2016/02/ecoplug-wifi-switch-hacking.html](http://thegreatgeekery.blogspot.com.es/2016/02/ecoplug-wifi-switch-hacking.html)|
+|Build flag|ECOPLUG|
+
+### Flashing
+
+*TODO*
+
 
 
 [1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html

@@ -37,6 +37,15 @@
 // 0 means no inching, 1 means normally off, 2 normally on
 #define RELAY_INCHING     		RELAY_INCHING_NONE
 
+//--------------------------------------------------------------------------------
+// LED
+//--------------------------------------------------------------------------------
+
+// All defined LEDs in the board can be managed through MQTT
+// except the first one when LED_AUTO is set to 1.
+// If LED_AUTO is set to 1 the board will use first defined LED to show wifi status.
+#define LED_AUTO                1
+
 // -----------------------------------------------------------------------------
 // WIFI & WEB
 // -----------------------------------------------------------------------------
@@ -47,6 +56,7 @@
 #define HTTP_USERNAME           "admin"
 #define WS_BUFFER_SIZE          5
 #define WS_TIMEOUT              1800000
+#define DNS_PORT                53
 
 // -----------------------------------------------------------------------------
 // OTA & NOFUSS
@@ -67,7 +77,8 @@
 #define MQTT_QOS                0
 #define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
-#define MQTT_RELAY_TOPIC        "/relay/%d"
+#define MQTT_RELAY_TOPIC        "/relay"
+#define MQTT_LED_TOPIC          "/led"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
 #define MQTT_FSVERSION_TOPIC    "/fsversion"
@@ -76,6 +87,12 @@
 #define MQTT_CONNECT_EVENT      0
 #define MQTT_DISCONNECT_EVENT   1
 #define MQTT_MESSAGE_EVENT      2
+
+// Custom get and set postfixes
+// Use something like "/status" or "/set", with trailing slash
+#define MQTT_USE_GETTER         ""
+#define MQTT_USE_SETTER         ""
+
 
 // -----------------------------------------------------------------------------
 // NTP
