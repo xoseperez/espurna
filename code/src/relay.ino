@@ -22,6 +22,7 @@ bool recursive = false;
 // -----------------------------------------------------------------------------
 
 void relayMQTT(unsigned char id) {
+    if (id >= _relays.size()) return;
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     char buffer[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 3];
     sprintf(buffer, "%s/%d%s", MQTT_RELAY_TOPIC, id, mqttGetter.c_str());
@@ -53,13 +54,17 @@ void relayWS() {
 
 bool relayStatus(unsigned char id) {
     #ifdef SONOFF_DUAL
+        if (id >= 2) return false;
         return ((dualRelayStatus & (1 << id)) > 0);
     #else
+        if (id >= _relays.size()) return false;
         return (digitalRead(_relays[id]) == HIGH);
     #endif
 }
 
 bool relayStatus(unsigned char id, bool status, bool report) {
+
+    if (id >= _relays.size()) return false;
 
     bool changed = false;
 
@@ -96,6 +101,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 }
 
 bool relayStatus(unsigned char id, bool status) {
+    if (id >= _relays.size()) return false;
     return relayStatus(id, status, true);
 }
 
@@ -159,6 +165,7 @@ void relayRetrieve() {
 }
 
 void relayToggle(unsigned char id) {
+    if (id >= _relays.size()) return;
     relayStatus(id, !relayStatus(id));
 }
 
