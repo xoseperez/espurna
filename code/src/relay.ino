@@ -69,9 +69,9 @@ void relayInchingBack(unsigned char id) {
     inching.detach();
 }
 
-void relayInching(unsigned char id) {
+void relayInchingStart(unsigned char id) {
 
-    byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
+    byte relayInch = getSetting("relayInch", RELAY_INCHING).toInt();
     if (relayInch == RELAY_INCHING_NONE) return;
 
     bool status = relayStatus(id);
@@ -82,11 +82,51 @@ void relayInching(unsigned char id) {
     }
 
     inching.attach(
-        getSetting("relayInchTime", String(RELAY_INCHING_TIME)).toInt(),
+        getSetting("relayInchTime", RELAY_INCHING_TIME).toInt(),
         relayInchingBack,
         id
     );
 
+}
+
+unsigned int relayInching() {
+    unsigned int relayInch = getSetting("relayInch", RELAY_INCHING).toInt();
+    return relayInch;
+}
+
+void relayInching(unsigned int relayInch, bool report) {
+
+    setSetting("relayInch", relayInch);
+
+    /*
+    if (report) {
+        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+        char topic[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 10];
+        sprintf(topic, "%s/inching%s", MQTT_RELAY_TOPIC, mqttGetter.c_str());
+        char value[2];
+        sprintf(value, "%d", relayInch);
+        mqttSend(topic, value);
+    }
+    */
+
+    char message[20];
+    sprintf(message, "{\"relayInch\": %d}", relayInch);
+    wsSend(message);
+
+    #ifdef LED_INCHING
+        digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
+    #endif
+
+}
+
+void relayInching(unsigned int relayInch) {
+    relayInching(relayInch, true);
+}
+
+void relayInchingToggle() {
+    unsigned int relayInch = relayInching();
+    relayInch = (relayInch == RELAY_INCHING_NONE) ? RELAY_INCHING_OFF : RELAY_INCHING_NONE;
+    relayInching(relayInch);
 }
 
 bool relayStatus(unsigned char id, bool status, bool report) {
@@ -115,7 +155,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         #endif
 
         if (!recursive) {
-            relayInching(id);
+            relayInchingStart(id);
             relaySync(id);
             relaySave();
         }
@@ -209,10 +249,16 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     bool sameSetGet = mqttGetter.compareTo(mqttSetter) == 0;
 
     if (type == MQTT_CONNECT_EVENT) {
+
         relayMQTT();
-        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 3];
+        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 10];
+
         sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
         mqttSubscribe(buffer);
+
+        sprintf(buffer, "%s/inching%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
+        mqttSubscribe(buffer);
+
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -222,11 +268,13 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
         if (!t.endsWith(mqttSetter)) return;
 
-        // If relayMode is not SAME avoid responding to a retained message
-        if (sameSetGet && isFirstMessage) {
-            isFirstMessage = false;
-            byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
-            if (relayMode != RELAY_MODE_SAME) return;
+        // Get value
+        unsigned int value = (char)payload[0] - '0';
+
+        // Inching topic
+        if (t.indexOf("inching") > 0) {
+            relayInching(value, !sameSetGet);
+            return;
         }
 
         // Get relay ID
@@ -234,7 +282,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (relayID >= relayCount()) relayID = 0;
 
         // Action to perform
-        unsigned int value = (char)payload[0] - '0';
         if (value == 2) {
             relayToggle(relayID);
         } else {

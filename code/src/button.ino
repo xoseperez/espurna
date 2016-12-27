@@ -99,10 +99,7 @@ void buttonLoop() {
             }
             #ifdef ITEAD_1CH_INCHING
                 if (i == 1) {
-                    byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
-                    relayInch = (relayInch == RELAY_INCHING_NONE) ? RELAY_INCHING_OFF : RELAY_INCHING_NONE;
-                    setSetting("relayInch", String() + relayInch);
-                    digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
+                    relayInchingToggle();
                     continue;
                 }
             #endif
