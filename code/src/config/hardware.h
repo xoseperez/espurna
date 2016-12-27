@@ -155,7 +155,7 @@
     #define MANUFACTURER        "WORKCHOICE"
     #define DEVICE              "ECOPLUG"
     #define BUTTON1_PIN         13
-    #define RELAY_PIN           15
+    #define RELAY1_PIN          15
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    0
 
