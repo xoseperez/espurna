@@ -22,25 +22,25 @@ std::vector<led_t> _leds;
 bool ledAuto;
 
 bool ledStatus(unsigned char id) {
-    if (id <= _leds.size()) return false;
+    if (id >= _leds.size()) return false;
     bool status = digitalRead(_leds[id].pin);
     return _leds[id].reverse ? !status : status;
 }
 
 bool ledStatus(unsigned char id, bool status) {
-    if (id <= _leds.size()) return false;
+    if (id >= _leds.size()) return false;
     bool s = _leds[id].reverse ? !status : status;
     digitalWrite(_leds[id].pin, _leds[id].reverse ? !status : status);
     return status;
 }
 
 bool ledToggle(unsigned char id) {
-    if (id <= _leds.size()) return false;
+    if (id >= _leds.size()) return false;
     return ledStatus(id, !ledStatus(id));
 }
 
 void ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) {
-    if (id <= _leds.size()) return;
+    if (id >= _leds.size()) return;
     static unsigned long next = millis();
     if (next < millis()) {
         next += (ledToggle(id) ? delayOn : delayOff);
@@ -134,6 +134,7 @@ void ledSetup() {
     mqttRegister(ledMQTTCallback);
 
     DEBUG_MSG("[LED] Number of leds: %d\n", _leds.size());
+    DEBUG_MSG("[LED] Led auto indicator is %s.\n", ledAuto ? "ON" : "OFF" );
 
 }
 
