@@ -38,33 +38,11 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 
 ## Supported hardware
 
-<table style="text-align: center">
-<tr>
-<td style="border-width: 0px;">![Sonoff](images/devices/s20.jpg)<br /><br />**IteadStudio S20**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/slampher.jpg)<br /><br />**IteadStudio Slampher**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-4ch.jpg)<br /><br />**IteadStudio Sonoff 4CH**</td>
-</tr>
-<tr>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-basic.jpg)<br /><br />**IteadStudio Sonoff Basic**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/motor-switch.jpg)<br /><br />**IteadStudio Motor Switch**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/1ch-inching.jpg)<br /><br />**IteadStudio 1CH Inching**</td>
-</tr>
-<tr>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-dual.jpg)<br /><br />**IteadStudio Sonoff Dual**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-pow.jpg)<br /><br />**IteadStudio Sonoff POW**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-th10-th16.jpg)<br /><br />**IteadStudio Sonoff TH10/TH16**</td>
-</tr>
-<tr>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-rf.jpg)<br /><br />**IteadStudio Sonoff RF**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-sv.jpg)<br /><br />**IteadStudio Sonoff SV**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-led.jpg)<br /><br />**IteadStudio Sonoff LED**</td>
-</tr>
-<tr>
-<td style="border-width: 0px;">![Sonoff](images/devices/sonoff-touch.jpg)<br /><br />**IteadStudio Sonoff Touch**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/electrodragon-relay-board.jpg)<br /><br />**Electrodragon Relay Board**</td>
-<td style="border-width: 0px;">![Sonoff](images/devices/workchoice-ecoplug.jpg)<br /><br />**WorkChoice EcoPlug**</td>
-</tr>
-</table>
+|![Sonoff](images/devices/s20.jpg) **IteadStudio S20**|![Sonoff](images/devices/slampher.jpg) **IteadStudio Slampher**|![Sonoff](images/devices/sonoff-4ch.jpg) **IteadStudio Sonoff 4CH**|
+|![Sonoff](images/devices/sonoff-basic.jpg) **IteadStudio Sonoff Basic**|![Sonoff](images/devices/motor-switch.jpg) **IteadStudio Motor Switch**|![Sonoff](images/devices/1ch-inching.jpg) **IteadStudio 1CH Inching**|
+|![Sonoff](images/devices/sonoff-dual.jpg) **IteadStudio Sonoff Dual**|![Sonoff](images/devices/sonoff-pow.jpg) **IteadStudio Sonoff POW**|![Sonoff](images/devices/sonoff-th10-th16.jpg) **IteadStudio Sonoff TH10/TH16**|
+|![Sonoff](images/devices/sonoff-rf.jpg) **IteadStudio Sonoff RF**|![Sonoff](images/devices/sonoff-sv.jpg) **IteadStudio Sonoff SV**|![Sonoff](images/devices/sonoff-led.jpg) **IteadStudio Sonoff LED**|
+|![Sonoff](images/devices/sonoff-touch.jpg) **IteadStudio Sonoff Touch**|![Sonoff](images/devices/electrodragon-relay-board.jpg) **Electrodragon Relay Board**|![Sonoff](images/devices/workchoice-ecoplug.jpg) **WorkChoice EcoPlug**|
 
 
 ## License
