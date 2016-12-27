@@ -11,24 +11,24 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * Support for **multiple ESP8266-based boards** ([check list](#supported-hardware))
 * Wifi **AP Mode** or **STA mode** with **multiple network definitions**
 * **MQTT** enabled
- * Switch on/off and toggle relays
- * LED notifications
+    * Switch on/off and toggle relays
+    * LED notifications
 * Support for different **sensors**
- * DHT11 / DHT22 / DHT21 / AM2301
- * DS18B20
- * HLW8012 (Sonoff POW)
- * Non-invasive current sensor using the [EmonLiteESP Library][3] (requires some hacking)
+    * DHT11 / DHT22 / DHT21 / AM2301
+    * DS18B20
+    * HLW8012 (Sonoff POW)
+    * Non-invasive current sensor using the [EmonLiteESP Library][3] (requires some hacking)
 * Fast asynchronous **HTTP Server**
- * Basic authentication
- * Web-based configuration
- * Relay switching from the web
- * Websockets-based communication between the device and the browser
+    * Basic authentication
+    * Web-based configuration
+    * Relay switching from the web
+    * Websockets-based communication between the device and the browser
 * **REST API**
- * GET and PUT relay status
+    * GET and PUT relay status
 * **Command line configuration**
 * **Over-The-Air** (OTA) updates even for 1Mb boards
- * Manually from PlatformIO or Arduino Inside
- * Automatic updates through the [NoFUSS Library][2]
+    * Manually from PlatformIO or Arduino Inside
+    * Automatic updates through the [NoFUSS Library][2]
 * **Alexa** integration (requires staging version of Arduino Core for ESP8266)
 
 ## Documentation
