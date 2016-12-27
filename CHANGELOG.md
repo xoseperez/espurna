@@ -3,23 +3,29 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.2.0] 2016-12-27
 ### Added
-- Added last-modified header to static contents
-- Added support for multi-button boards (SONOFF_4CH)
+- Force password changing if it's the default one
+- Added Last-Modified header to static contents
+- Added DNS captive portal for AP mode
+- Added support for Sonoff 4CH
 - Added support for WorkChoice ecoPlug (ECOPLUG). Thanks to David Myers
 - Added support for Sonoff SV
-- Added DNS captive portal for AP mode
-- Force password changing if it's the default one
+- Added support for Sonoff Touch
 - Comment out hardware selection in hardware.h if using Arduino IDE
+- Added support for MQTT get/set suffixes (/status, /set, ...)
+- Added support for LED notifications via MQTT
+- Added EEPROM check commands to terminal interface
 
 ### Changed
 - Using unreleased AsyncMqttClient with stability improvements
 - Better decoupling between MQTT and relays/websockets
+- Skipping retained MQTT messages (configurable)
 
 ### Fixed
-- Issue #14 MQTT Connection with Username an Password not working
 - Issue #11 Compile error when building sonoff-dual-debug
+- Issue #14 MQTT Connection with Username an Password not working
+- Issue #17 Moved static variable 'pending' to class variable
 
 ## [1.1.0] 2016-12-06
 ### Added
