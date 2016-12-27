@@ -67,6 +67,8 @@
 #define MQTT_QOS                0
 #define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
+#define MQTT_SKIP_RETAINED      1
+#define MQTT_SKIP_TIME          1000
 #define MQTT_RELAY_TOPIC        "/relay"
 #define MQTT_LED_TOPIC          "/led"
 #define MQTT_IP_TOPIC           "/ip"

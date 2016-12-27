@@ -15,6 +15,9 @@ AsyncMqttClient mqtt;
 
 String mqttTopic;
 std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
+#if MQTT_SKIP_RETAINED
+    unsigned long mqttConnectedAt = 0;
+#endif
 
 // -----------------------------------------------------------------------------
 // MQTT
@@ -55,6 +58,10 @@ void _mqttOnConnect(bool sessionPresent) {
 
     DEBUG_MSG("[MQTT] Connected!\n");
 
+    #if MQTT_SKIP_RETAINED
+        mqttConnectedAt = millis();
+    #endif
+
     // Build MQTT topics
     buildTopics();
     mqtt.setWill((mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, (char *) "0");
@@ -86,7 +93,16 @@ void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
 
 void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-    DEBUG_MSG("[MQTT] Received %s %c\n", topic, payload[0]);
+    DEBUG_MSG("[MQTT] Received %s %c", topic, payload[0]);
+
+    #if MQTT_SKIP_RETAINED
+        if (millis() - mqttConnectedAt < MQTT_SKIP_TIME) {
+			DEBUG_MSG(" - SKIPPED\n");
+			return;
+		}
+    #endif
+
+	DEBUG_MSG("\n");
 
     // Send message event to subscribers
     // Topic is set to the specific part each one might be checking
