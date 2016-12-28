@@ -1,13 +1,10 @@
 #!/bin/bash
 
-mv platformio.ini platformio.backup
-cp platformio.custom.ini platformio.ini
-
 # Environments to build
-ENVIRONMENTS="sonoff-debug sonoff-dht22-debug sonoff-ds18b20-debug s20-debug sonoff-pow-debug slampher-debug"
+ENVIRONMENTS="sonoff-debug sonoff-dht22-debug sonoff-ds18b20-debug sonoff-pow-debug sonoff-dual-debug sonoff-4ch-debug electrodragon-debug ecoplug-debug"
 
 # Get current version
-version=`cat src/config/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
+version=`cat espurna/config/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
 echo $version
 
 # Create output folder
@@ -15,11 +12,9 @@ mkdir -p firmware
 
 # Build all the required firmwares
 for environment in $ENVIRONMENTS; do
-    platformio run -vv -e $environment
+    platformio run -e $environment
     mv .pioenvs/$environment/firmware.bin firmware/espurna-$version-$environment.bin
 done
 
 platformio run -vv -t uploadfs -e node-debug
 mv .pioenvs/node-debug/spiffs.bin firmware/espurna-$version-spiffs.bin
-
-mv platformio.backup platformio.ini

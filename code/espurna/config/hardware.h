@@ -7,12 +7,12 @@
 //#define NODEMCUV2
 //#define SONOFF
 //#define SONOFF_TH
+//#define SLAMPHER
+//#define S20
+//#define SONOFF_SV
 //#define SONOFF_POW
 //#define SONOFF_DUAL
 //#define SONOFF_4CH
-//#define SONOFF_SV
-//#define SLAMPHER
-//#define S20
 //#define ESP_RELAY_BOARD
 //#define ECOPLUG
 //#define ESPURNA
@@ -60,6 +60,33 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(SONOFF_SV)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_SV"
+    #define BUTTON1_PIN         0
+    #define RELAY1_PIN          12
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(SLAMPHER)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SLAMPHER"
+    #define BUTTON1_PIN         0
+    #define RELAY1_PIN          12
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(S20)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "S20"
+    #define BUTTON1_PIN         0
+    #define RELAY1_PIN          12
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
 #elif defined(SONOFF_TOUCH)
 
     #define MANUFACTURER        "ITEAD"
@@ -101,33 +128,6 @@
     #define RELAY2_PIN          5
     #define RELAY3_PIN          4
     #define RELAY4_PIN          15
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
-
-#elif defined(SONOFF_SV)
-
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "SONOFF_SV"
-    #define BUTTON1_PIN         0
-    #define RELAY1_PIN          12
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
-
-#elif defined(SLAMPHER)
-
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "SLAMPHER"
-    #define BUTTON1_PIN         0
-    #define RELAY1_PIN          12
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
-
-#elif defined(S20)
-
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "S20"
-    #define BUTTON1_PIN         0
-    #define RELAY1_PIN          12
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
