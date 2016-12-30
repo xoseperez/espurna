@@ -146,8 +146,7 @@ void mqttConnect() {
         mqtt.setServer(host.c_str(), port.toInt());
         mqtt
             .setKeepAlive(MQTT_KEEPALIVE)
-            .setCleanSession(false)
-            .setClientId(getSetting("hostname", HOSTNAME).c_str());
+            .setCleanSession(false);
 
         if ((user != "") && (pass != "")) {
             DEBUG_MSG(" as user '%s'.\n", (char *) user.c_str());
