@@ -94,6 +94,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             bool fauxmoEnabled = false;
         #endif
         unsigned int network = 0;
+        unsigned int dczIdx = 0;
         String adminPass;
 
         for (unsigned int i=0; i<config.size(); i++) {
@@ -107,6 +108,24 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                     powSetExpectedActivePower(value.toInt());
                     continue;
                 }
+
+            #else
+
+                if (key.startsWith("pow")) continue;
+
+            #endif
+
+            #if ENABLE_DOMOTICZ
+
+                if (key == "dczIdx") {
+                    if (dczIdx >= relayCount()) continue;
+                    key = key + String(dczIdx);
+                    ++dczIdx;
+                }
+
+            #else
+
+                if (key.startsWith("dcz")) continue;
 
             #endif
 
@@ -241,6 +260,19 @@ void _wsStart(uint32_t client_id) {
 
     root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
+
+    #if ENABLE_DOMOTICZ
+
+        root["dczVisible"] = 1;
+        root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
+        root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+
+        JsonArray& dczIdx = root.createNestedArray("dczIdx");
+        for (byte i=0; i<relayCount(); i++) {
+            dczIdx.add(domoticzIdx(i));
+        }
+
+    #endif
 
     #if ENABLE_FAUXMO
         root["fauxmoVisible"] = 1;

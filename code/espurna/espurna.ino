@@ -125,6 +125,9 @@ void setup() {
     webSetup();
     ntpSetup();
 
+    #if ENABLE_DOMOTICZ
+        domoticzSetup();
+    #endif
     #if ENABLE_FAUXMO
         fauxmoSetup();
     #endif

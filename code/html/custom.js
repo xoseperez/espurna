@@ -84,6 +84,23 @@ function createRelays(count) {
 
 }
 
+function createIdxs(count) {
+
+    var current = $("#idxs > div").length;
+    if (current > 0) return;
+
+    var template = $("#idxTemplate .pure-g")[0];
+    for (var id=0; id<count; id++) {
+        var line = $(template).clone();
+        $(line).find("input").each(function() {
+            $(this).attr("data", id).attr("tabindex", 43+id);
+        });
+        if (count > 1) $(".id", line).html(" " + id);
+        line.appendTo("#idxs");
+    }
+
+}
+
 function processData(data) {
 
     // title
@@ -160,6 +177,19 @@ function processData(data) {
 
             return;
 
+        }
+
+        // Domoticz
+        if (key == "dczIdx") {
+            var idxs = data.dczIdx;
+            createIdxs(idxs.length);
+
+            for (var i in idxs) {
+                var element = $(".dczIdx[data=" + i + "]");
+                if (element.length > 0) element.val(idxs[i]);
+            }
+
+            return;
         }
 
 

@@ -92,6 +92,10 @@ bool relayStatus(unsigned char id, bool status, bool report) {
             relaySave();
         }
 
+        #ifdef ENABLE_DOMOTICZ
+            domoticzSend(id);
+        #endif
+
     }
 
     if (report) relayMQTT(id);
