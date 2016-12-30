@@ -37,17 +37,32 @@ void buildTopics() {
     mqttTopic.replace("{identifier}", getSetting("hostname"));
 }
 
+unsigned int mqttTopicRootLength() {
+    return mqttTopic.length();
+}
+
+void mqttSendRaw(const char * topic, const char * message) {
+    if (mqtt.connected()) {
+        DEBUG_MSG("[MQTT] Sending %s %s\n", topic, message);
+        mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
+    }
+}
+
 void mqttSend(const char * topic, const char * message) {
-    if (!mqtt.connected()) return;
     String path = mqttTopic + String(topic);
-    DEBUG_MSG("[MQTT] Sending %s %s\n", (char *) path.c_str(), message);
-    mqtt.publish(path.c_str(), MQTT_QOS, MQTT_RETAIN, message);
+    mqttSendRaw(path.c_str(), message);
+}
+
+void mqttSubscribeRaw(const char * topic) {
+    if (mqtt.connected()) {
+        DEBUG_MSG("[MQTT] Subscribing to %s\n", topic);
+        mqtt.subscribe(topic, MQTT_QOS);
+    }
 }
 
 void mqttSubscribe(const char * topic) {
     String path = mqttTopic + String(topic);
-    DEBUG_MSG("[MQTT] Subscribing to %s\n", (char *) path.c_str());
-    mqtt.subscribe(path.c_str(), MQTT_QOS);
+    mqttSubscribeRaw(path.c_str());
 }
 
 void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
@@ -67,11 +82,11 @@ void _mqttOnConnect(bool sessionPresent) {
     mqtt.setWill((mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, (char *) "0");
 
     // Say hello and report our IP and VERSION
-    mqttSend((char *) MQTT_IP_TOPIC, (char *) getIP().c_str());
-    mqttSend((char *) MQTT_VERSION_TOPIC, (char *) APP_VERSION);
+    mqttSend(MQTT_IP_TOPIC, getIP().c_str());
+    mqttSend(MQTT_VERSION_TOPIC, APP_VERSION);
     char buffer[50];
     getFSVersion(buffer);
-    mqttSend((char *) MQTT_FSVERSION_TOPIC, buffer);
+    mqttSend(MQTT_FSVERSION_TOPIC, buffer);
 
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
@@ -93,7 +108,10 @@ void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
 
 void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-    DEBUG_MSG("[MQTT] Received %s %c", topic, payload[0]);
+    char message[len+1];
+    strlcpy(message, payload, len+1);
+
+    DEBUG_MSG("[MQTT] Received %s => %s", topic, message);
 
     #if MQTT_SKIP_RETAINED
         if (millis() - mqttConnectedAt < MQTT_SKIP_TIME) {
@@ -107,7 +125,7 @@ void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties
     // Send message event to subscribers
     // Topic is set to the specific part each one might be checking
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic + mqttTopic.length(), payload);
+        (*_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
     }
 
 }

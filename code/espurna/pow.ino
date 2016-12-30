@@ -151,7 +151,7 @@ void powLoop() {
         wsSend(buffer);
 
         if (--report_count == 0) {
-            mqttSend((char *) getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), (char *) String(power).c_str());
+            mqttSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
             report_count = POW_REPORT_EVERY;
         }
 

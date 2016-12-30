@@ -74,7 +74,7 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = String(topic);
+        String t = String(topic + mqttTopicRootLength());
         if (!t.startsWith(MQTT_LED_TOPIC)) return;
         if (!t.endsWith(mqttSetter)) return;
 
@@ -134,7 +134,7 @@ void ledSetup() {
     mqttRegister(ledMQTTCallback);
 
     DEBUG_MSG("[LED] Number of leds: %d\n", _leds.size());
-    DEBUG_MSG("[LED] Led auto indicator is %s.\n", ledAuto ? "ON" : "OFF" );
+    DEBUG_MSG("[LED] Led auto indicator is %s\n", ledAuto ? "ON" : "OFF" );
 
 }
 

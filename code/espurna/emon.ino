@@ -104,7 +104,7 @@ void powerMonitorLoop() {
         if (measurements == EMON_MEASUREMENTS) {
             double p = (sum - max - min) * mainsVoltage / (measurements - 2);
             sprintf(power, "%d", int(p));
-            mqttSend((char *) getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
+            mqttSend(getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
             sum = 0;
             measurements = 0;
         }

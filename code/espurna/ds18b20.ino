@@ -54,7 +54,7 @@ void dsLoop() {
             DEBUG_MSG("[DS18B20] Temperature: %s\n", dsTemperature);
 
             // Send MQTT messages
-            mqttSend((char *) getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), dsTemperature);
+            mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), dsTemperature);
 
             // Update websocket clients
             char buffer[100];

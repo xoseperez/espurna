@@ -26,7 +26,7 @@ void relayMQTT(unsigned char id) {
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     char buffer[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 3];
     sprintf(buffer, "%s/%d%s", MQTT_RELAY_TOPIC, id, mqttGetter.c_str());
-    mqttSend(buffer, (char *) (relayStatus(id) ? "1" : "0"));
+    mqttSend(buffer, relayStatus(id) ? "1" : "0");
 }
 
 void relayMQTT() {
@@ -175,8 +175,6 @@ unsigned char relayCount() {
 
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
-    static bool isFirstMessage = true;
-
     String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     bool sameSetGet = mqttGetter.compareTo(mqttSetter) == 0;
@@ -191,16 +189,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = String(topic);
+        String t = String(topic + mqttTopicRootLength());
         if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
         if (!t.endsWith(mqttSetter)) return;
-
-        // If relayMode is not SAME avoid responding to a retained message
-        if (sameSetGet && isFirstMessage) {
-            isFirstMessage = false;
-            byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
-            if (relayMode != RELAY_MODE_SAME) return;
-        }
 
         // Get relay ID
         unsigned int relayID = topic[strlen(MQTT_RELAY_TOPIC)+1] - '0';
