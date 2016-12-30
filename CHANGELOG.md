@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.0] 2016-12-30
+### Changed
+- Arduino IDE support (changes in the folder structure and documentation)
+
 ## [1.2.0] 2016-12-27
 ### Added
 - Force password changing if it's the default one
