@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+### Added
+- Domoticz support via MQTT (https://www.domoticz.com/wiki/MQTT)
+
+### Changed
+- Using default client_id provided by AsyncMqttClient
+
 ## [1.3.0] 2016-12-30
 ### Changed
 - Arduino IDE support (changes in the folder structure and documentation)
