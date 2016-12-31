@@ -1,10 +1,41 @@
 var websock;
 var password = false;
 
+// http://www.the-art-of-web.com/javascript/validate-password/
+function checkPassword(str) {
+    // at least one number, one lowercase and one uppercase letter
+    // at least eight characters that are letters, numbers or the underscore
+    var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
+    return re.test(str);
+}
+
+function validateForm() {
+
+    var form = $("#formSave");
+
+    // password
+    var adminPass1 = $("input[name='adminPass1']", form).val();
+    if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
+        alert("The password you have entered is not valid, it must have at least 8 characters, 1 lower and 1 uppercase and 1 number!");
+        return false;
+    }
+
+    var adminPass2 = $("input[name='adminPass2']", form).val();
+    if (adminPass1 != adminPass2) {
+        alert("Passwords are different!");
+        return false;
+    }
+
+    return true;
+
+}
+
 function doUpdate() {
-    var data = $("#formSave").serializeArray();
-    websock.send(JSON.stringify({'config': data}));
-    $(".powExpected").val(0);
+    if (validateForm()) {
+        var data = $("#formSave").serializeArray();
+        websock.send(JSON.stringify({'config': data}));
+        $(".powExpected").val(0);
+    }
     return false;
 }
 
