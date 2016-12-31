@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.1] 2016-12-31
+### Fixed
+- data_dir fix for PlatformIO
+
 ## [1.3.0] 2016-12-30
 ### Changed
 - Arduino IDE support (changes in the folder structure and documentation)
