@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for static IP connections
 
 ### Fixed
-- #16 Enforce minimum password strength in web interface
+- Enforce minimum password strength in web interface (#16)
 
 ### Changed
 - Using default client_id provided by AsyncMqttClient
