@@ -134,31 +134,20 @@ void mqttConnect() {
 
     if (!mqtt.connected()) {
 
-        String host = getSetting("mqttServer", MQTT_SERVER);
-        String port = getSetting("mqttPort", MQTT_PORT);
-        String user = getSetting("mqttUser");
-        String pass = getSetting("mqttPassword");
+        char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
+        if (strlen(host) == 0) return;
+        unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
+        char * user = strdup(getSetting("mqttUser").c_str());
+        char * pass = strdup(getSetting("mqttPassword").c_str());
 
-		if (host.length() == 0) return;
-
-        DEBUG_MSG("[MQTT] Connecting to broker at %s", (char *) host.c_str());
-
-        mqtt.setServer(host.c_str(), port.toInt());
-        mqtt
-            .setKeepAlive(MQTT_KEEPALIVE)
-            .setCleanSession(false);
-
-        if ((user != "") && (pass != "")) {
-            DEBUG_MSG(" as user '%s'.\n", (char *) user.c_str());
-            char username[user.length()+1];
-            user.toCharArray(username, user.length()+1);
-            char password[pass.length()+1];
-            pass.toCharArray(password, pass.length()+1);
-            mqtt.setCredentials(username, password);
-        } else {
-            DEBUG_MSG(" anonymously\n");
+        DEBUG_MSG("[MQTT] Connecting to broker at %s", host);
+        mqtt.setServer(host, port);
+        mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
+        if ((strlen(user) > 0) && (strlen(pass) > 0)) {
+            DEBUG_MSG(" as user '%s'.", user);
+            mqtt.setCredentials(user, pass);
         }
-
+        DEBUG_MSG("\n");
         mqtt.connect();
 
     }
