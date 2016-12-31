@@ -1,15 +1,15 @@
 # ESPurna Firmware
 
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches.
-It was originally developed with the **[IteadStudio Sonoff][1]** in mind but now it supports a growing number of ESP8266-based boards.
+It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.3.1**, read the [changelog](CHANGELOG.md).
+**Current Release Version is 1.4.0**, read the [changelog](CHANGELOG.md).
 
 ## Features
 
 * Support for **multiple ESP8266-based boards** ([check list](#supported-hardware))
-* Wifi **AP Mode** or **STA mode** with **multiple network definitions**
+* Wifi **AP Mode** or **STA mode** with **multiple network definitions** and static IP support
 * **MQTT** enabled
     * Switch on/off and toggle relays
     * LED notifications
@@ -17,7 +17,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * DHT11 / DHT22 / DHT21 / AM2301
     * DS18B20
     * HLW8012 (Sonoff POW)
-    * Non-invasive current sensor using the [EmonLiteESP Library][3] (requires some hacking)
+    * Non-invasive current sensor using the [EmonLiteESP Library](https://bitbucket.org/xoseperez/emonliteesp) (requires some hacking)
 * Fast asynchronous **HTTP Server**
     * Basic authentication
     * Web-based configuration
@@ -28,8 +28,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Command line configuration**
 * **Over-The-Air** (OTA) updates even for 1Mb boards
     * Manually from PlatformIO or Arduino Inside
-    * Automatic updates through the [NoFUSS Library][2]
+    * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
 * **Alexa** integration (requires staging version of Arduino Core for ESP8266)
+* [**Domoticz**](https://domoticz.com/) integration via MQTT
 
 ## Documentation
 
@@ -61,8 +62,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-[1]: https://www.itead.cc/sonoff-wifi-wireless-switch.html
-[2]: https://bitbucket.org/xoseperez/nofuss
-[3]: https://bitbucket.org/xoseperez/emonliteesp

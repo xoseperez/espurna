@@ -6,7 +6,6 @@
 #define HOSTNAME                DEVICE
 #define BUFFER_SIZE             1024
 #define HEARTBEAT_INTERVAL      300000
-#define FS_VERSION_FILE         "/fsversion"
 
 //--------------------------------------------------------------------------------
 // RELAY

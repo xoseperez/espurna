@@ -84,9 +84,6 @@ void _mqttOnConnect(bool sessionPresent) {
     // Say hello and report our IP and VERSION
     mqttSend(MQTT_IP_TOPIC, getIP().c_str());
     mqttSend(MQTT_VERSION_TOPIC, APP_VERSION);
-    char buffer[50];
-    getFSVersion(buffer);
-    mqttSend(MQTT_FSVERSION_TOPIC, buffer);
 
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {

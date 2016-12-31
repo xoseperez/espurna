@@ -3,12 +3,20 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.4.0] 2016-12-31
 ### Added
 - Domoticz support via MQTT (https://www.domoticz.com/wiki/MQTT)
+- Support for static IP connections
+
+### Fixed
+- #16 Enforce minimum password strength in web interface
 
 ### Changed
 - Using default client_id provided by AsyncMqttClient
+- Allow up to 5 different WIFI networks
+
+### Removed
+- File system version file
 
 ## [1.3.1] 2016-12-31
 ### Fixed
@@ -126,8 +134,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - Moving wifi management to library (JustWifi)
-
-### Changed
 - Split code into modules
 
 ## [0.9.6] 2016-08-12

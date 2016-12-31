@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <NtpClientLib.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncMqttClient.h>
-#include "FS.h"
+
 void mqttRegister(void (*callback)(unsigned int, const char *, const char *));
 template<typename T> bool setSetting(const String& key, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
@@ -46,18 +46,6 @@ String getIdentifier() {
 void hardwareSetup() {
     Serial.begin(SERIAL_BAUDRATE);
     SPIFFS.begin();
-}
-
-void getFSVersion(char * buffer) {
-    File h = SPIFFS.open(FS_VERSION_FILE, "r");
-    if (!h) {
-        DEBUG_MSG("[SPIFFS] Could not open file system version file.\n");
-        strcpy(buffer, APP_VERSION);
-        return;
-    }
-    size_t size = h.size();
-    h.readBytes(buffer, size - 1);
-    h.close();
 }
 
 void hardwareLoop() {

@@ -177,6 +177,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
 
             if (value != getSetting(key)) {
+                //DEBUG_MSG("[WEBSOCKET] Storing %s = %s\n", key.c_str(), value.c_str());
                 setSetting(key, value);
                 dirty = true;
                 if (key.startsWith("mqtt")) dirtyMQTT = true;
