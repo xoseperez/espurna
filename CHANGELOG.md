@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Using default client_id provided by AsyncMqttClient
 
+## [1.3.1] 2016-12-31
+### Fixed
+- data_dir fix for PlatformIO
+
 ## [1.3.0] 2016-12-30
 ### Changed
 - Arduino IDE support (changes in the folder structure and documentation)
