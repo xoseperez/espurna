@@ -64,3 +64,7 @@ div.hint {
 .template {
     display: none;
 }
+
+.pure-form .center {
+    margin: .5em 0 .2em;
+}
