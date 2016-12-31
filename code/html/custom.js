@@ -1,5 +1,6 @@
 var websock;
 var password = false;
+var maxNetworks;
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
@@ -132,6 +133,38 @@ function createIdxs(count) {
 
 }
 
+function delNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $(parent).remove();
+}
+
+function moreNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $("div.more", parent).toggle();
+}
+
+function addNetwork() {
+
+    var numNetworks = $("#networks > div").length;
+    if (numNetworks >= maxNetworks) {
+        alert("Max number of networks reached");
+        return;
+    }
+
+    var tabindex = 200 + numNetworks * 10;
+    var template = $("#networkTemplate").children();
+    var line = $(template).clone();
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find(".button-del-network").on('click', delNetwork);
+    $(line).find(".button-more-network").on('click', moreNetwork);
+    line.appendTo("#networks");
+
+    return line;
+
+}
+
 function processData(data) {
 
     // title
@@ -178,17 +211,32 @@ function processData(data) {
 
         }
 
+        if (key == "maxNetworks") {
+            maxNetworks = parseInt(data.maxNetworks);
+            return;
+        }
+
         // Wifi
         if (key == "wifi") {
-            var groups = $("#panel-wifi .pure-g");
-            for (var i in data.wifi) {
+
+            var networks = data.wifi;
+
+            for (var i in networks) {
+
+                // add a new row
+                var line = addNetwork();
+
+                // fill in the blanks
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
-                    var id = "input[name=" + key + "]";
-                    if ($(id, groups[i]).length) $(id, groups[i]).val(wifi[key]);
+                    var element = $("input[name=" + key + "]", line);
+                    if (element.length) element.val(wifi[key]);
                 });
-            };
+
+            }
+
             return;
+
         }
 
         // Relay status
@@ -233,7 +281,6 @@ function processData(data) {
         // Enable options
         if (key.endsWith("Visible")) {
             var module = key.slice(0,-7);
-            console.log(module);
             $(".module-" + module).show();
             return;
         }
@@ -305,6 +352,7 @@ function init() {
     $(".button-reconnect").on('click', doReconnect);
     $(".button-apikey").on('click', doGenerateAPIKey);
     $(".pure-menu-link").on('click', showPanel);
+    $(".button-add-network").on('click', addNetwork);
 
     $.ajax({
         'method': 'GET',

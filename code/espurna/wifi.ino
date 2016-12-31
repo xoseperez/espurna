@@ -52,9 +52,24 @@ void wifiConfigure() {
     jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setAPMode(AP_MODE_ALONE);
     jw.cleanNetworks();
-    if (getSetting("ssid0").length() > 0) jw.addNetwork(getSetting("ssid0").c_str(), getSetting("pass0").c_str());
-    if (getSetting("ssid1").length() > 0) jw.addNetwork(getSetting("ssid1").c_str(), getSetting("pass1").c_str());
-    if (getSetting("ssid2").length() > 0) jw.addNetwork(getSetting("ssid2").c_str(), getSetting("pass2").c_str());
+    for (int i = 0; i< WIFI_MAX_NETWORKS; i++) {
+        if (getSetting("ssid" + String(i)).length() == 0) break;
+        if (getSetting("ip" + String(i)).length() == 0) {
+            jw.addNetwork(
+                getSetting("ssid" + String(i)).c_str(),
+                getSetting("pass" + String(i)).c_str()
+            );
+        } else {
+            jw.addNetwork(
+                getSetting("ssid" + String(i)).c_str(),
+                getSetting("pass" + String(i)).c_str(),
+                getSetting("ip" + String(i)).c_str(),
+                getSetting("gw" + String(i)).c_str(),
+                getSetting("mask" + String(i)).c_str(),
+                getSetting("dns" + String(i)).c_str()
+            );
+        }
+    }
 }
 
 void wifiSetup() {

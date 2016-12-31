@@ -41,7 +41,7 @@
 // -----------------------------------------------------------------------------
 
 #define WIFI_RECONNECT_INTERVAL 300000
-#define WIFI_MAX_NETWORKS       3
+#define WIFI_MAX_NETWORKS       5
 #define ADMIN_PASS              "fibonacci"
 #define HTTP_USERNAME           "admin"
 #define WS_BUFFER_SIZE          5

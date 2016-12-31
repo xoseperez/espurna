@@ -161,6 +161,18 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
             if (key == "pass") {
                 key = key + String(network);
+            }
+            if (key == "ip") {
+                key = key + String(network);
+            }
+            if (key == "gw") {
+                key = key + String(network);
+            }
+            if (key == "mask") {
+                key = key + String(network);
+            }
+            if (key == "dns") {
+                key = key + String(network);
                 ++network;
             }
 
@@ -183,6 +195,26 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 dirty = true;
             }
         #endif
+
+        // Clean wifi networks
+        for (int i = 0; i < network; i++) {
+            if (getSetting("pass" + String(i)).length() == 0) delSetting("pass" + String(i));
+            if (getSetting("ip" + String(i)).length() == 0) delSetting("ip" + String(i));
+            if (getSetting("gw" + String(i)).length() == 0) delSetting("gw" + String(i));
+            if (getSetting("mask" + String(i)).length() == 0) delSetting("mask" + String(i));
+            if (getSetting("dns" + String(i)).length() == 0) delSetting("dns" + String(i));
+        }
+        for (int i = network; i<WIFI_MAX_NETWORKS; i++) {
+            if (getSetting("ssid" + String(i)).length() > 0) {
+                dirty = true;
+            }
+            delSetting("ssid" + String(i));
+            delSetting("pass" + String(i));
+            delSetting("ip" + String(i));
+            delSetting("gw" + String(i));
+            delSetting("mask" + String(i));
+            delSetting("dns" + String(i));
+        }
 
         // Save settings
         if (dirty) {
@@ -239,7 +271,7 @@ void _wsStart(uint32_t client_id) {
     root["device"] = String(DEVICE);
     root["hostname"] = getSetting("hostname", HOSTNAME);
     root["network"] = getNetwork();
-    root["ip"] = getIP();
+    root["deviceip"] = getIP();
 
     root["mqttStatus"] = mqttConnected();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
@@ -308,11 +340,17 @@ void _wsStart(uint32_t client_id) {
         root["powActivePower"] = getActivePower();
     #endif
 
+    root["maxNetworks"] = WIFI_MAX_NETWORKS;
     JsonArray& wifi = root.createNestedArray("wifi");
-    for (byte i=0; i<3; i++) {
+    for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
+        if (getSetting("ssid" + String(i)).length() == 0) break;
         JsonObject& network = wifi.createNestedObject();
         network["ssid"] = getSetting("ssid" + String(i));
         network["pass"] = getSetting("pass" + String(i));
+        network["ip"] = getSetting("ip" + String(i));
+        network["gw"] = getSetting("gw" + String(i));
+        network["mask"] = getSetting("mask" + String(i));
+        network["dns"] = getSetting("dns" + String(i));
     }
 
     String output;
