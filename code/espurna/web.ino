@@ -382,6 +382,8 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
+    static uint8_t * message;
+
     // Authorize
     #ifndef NOWSAUTH
         if (!_wsAuth(client)) return;
@@ -398,7 +400,27 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
     } else if(type == WS_EVT_PONG) {
         DEBUG_MSG("[WEBSOCKET] #%u pong(%u): %s\n", client->id(), len, len ? (char*) data : "");
     } else if(type == WS_EVT_DATA) {
-        _wsParse(client->id(), data, len);
+
+        AwsFrameInfo * info = (AwsFrameInfo*)arg;
+
+        // First packet
+        if (info->index == 0) {
+            //Serial.printf("Before malloc: %d\n", ESP.getFreeHeap());
+            message = (uint8_t*) malloc(info->len);
+            //Serial.printf("After malloc: %d\n", ESP.getFreeHeap());
+        }
+
+        // Store data
+        memcpy(message + info->index, data, len);
+
+        // Last packet
+        if (info->index + len == info->len) {
+            _wsParse(client->id(), message, info->len);
+            //Serial.printf("Before free: %d\n", ESP.getFreeHeap());
+            free(message);
+            //Serial.printf("After free: %d\n", ESP.getFreeHeap());
+        }
+
     }
 
 }
