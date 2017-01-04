@@ -26,7 +26,7 @@
 //#define ENABLE_NOFUSS         1
 
 // -----------------------------------------------------------------------------
-// NODEMCUv2 development board
+// Development boards
 // -----------------------------------------------------------------------------
 
 #if defined(NODEMCUV2)
@@ -35,6 +35,14 @@
     #define DEVICE              "LOLIN"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+	#define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(D1_RELAYSHIELD)
+
+    #define MANUFACTURER        "WEMOS"
+    #define DEVICE              "D1_MINI"
+    #define RELAY1_PIN          5
 	#define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
