@@ -32,15 +32,14 @@ void fauxmoSetup() {
             fauxmo.addDevice((hostname + "_" + i).c_str());
         }
     }
-    fauxmo.onMessage([relays](const char * name, bool state) {
+    fauxmo.onMessage([relays](unsigned char device_id, const char * name, bool state) {
         DEBUG_MSG("[FAUXMO] %s state: %s\n", name, state ? "ON" : "OFF");
-        unsigned int id = 0;
-        if (relays > 1) {
-            id = name[strlen(name)-1] - '0';
-            if (id >= relays) id = 0;
-        }
-        relayStatus(id, state);
+        relayStatus(device_id, state);
     });
+}
+
+void fauxmoLoop() {
+    fauxmo.handle();
 }
 
 #endif

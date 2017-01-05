@@ -150,6 +150,9 @@ void loop() {
     mqttLoop();
     ntpLoop();
 
+    #if ENABLE_FAUXMO
+        fauxmoLoop();
+    #endif
     #ifndef SONOFF_DUAL
         settingsLoop();
     #endif
