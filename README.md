@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.4.0**, read the [changelog](CHANGELOG.md).
+**Current Release Version is 1.4.1**, read the [changelog](CHANGELOG.md).
 
 ## Features
 
@@ -29,7 +29,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Over-The-Air** (OTA) updates even for 1Mb boards
     * Manually from PlatformIO or Arduino Inside
     * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
-* **Alexa** integration (requires staging version of Arduino Core for ESP8266)
+* **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
 
 ## Documentation
@@ -39,11 +39,11 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 
 ## Supported hardware
 
-|![Sonoff](images/devices/s20.jpg) **IteadStudio S20**|![Sonoff](images/devices/slampher.jpg) **IteadStudio Slampher**|![Sonoff](images/devices/sonoff-4ch.jpg) **IteadStudio Sonoff 4CH**|
-|![Sonoff](images/devices/sonoff-basic.jpg) **IteadStudio Sonoff Basic**|![Sonoff](images/devices/motor-switch.jpg) **IteadStudio Motor Switch**|![Sonoff](images/devices/1ch-inching.jpg) **IteadStudio 1CH Inching**|
-|![Sonoff](images/devices/sonoff-dual.jpg) **IteadStudio Sonoff Dual**|![Sonoff](images/devices/sonoff-pow.jpg) **IteadStudio Sonoff POW**|![Sonoff](images/devices/sonoff-th10-th16.jpg) **IteadStudio Sonoff TH10/TH16**|
-|![Sonoff](images/devices/sonoff-rf.jpg) **IteadStudio Sonoff RF**|![Sonoff](images/devices/sonoff-sv.jpg) **IteadStudio Sonoff SV**|![Sonoff](images/devices/sonoff-led.jpg) **IteadStudio Sonoff LED**|
-|![Sonoff](images/devices/sonoff-touch.jpg) **IteadStudio Sonoff Touch**|![Sonoff](images/devices/electrodragon-relay-board.jpg) **Electrodragon Relay Board**|![Sonoff](images/devices/workchoice-ecoplug.jpg) **WorkChoice EcoPlug**|
+|![IteadStudio S20](images/devices/s20.jpg) **IteadStudio S20**|![IteadStudio Slampher](images/devices/slampher.jpg) **IteadStudio Slampher**|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg) **IteadStudio Sonoff 4CH**|
+|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg) **IteadStudio Sonoff Basic**|![IteadStudio Motor Switch](images/devices/motor-switch.jpg) **IteadStudio Motor Switch**|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg) **IteadStudio 1CH Inching**|
+|![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg) **IteadStudio Sonoff Dual**|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg) **IteadStudio Sonoff POW**|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg) **IteadStudio Sonoff TH10/TH16**|
+|![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg) **IteadStudio Sonoff RF**|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg) **IteadStudio Sonoff SV**|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg) **IteadStudio Sonoff Touch**|
+|![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg) **Wemos D1 Mini Relay Shield**|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg) **Electrodragon Relay Board**|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg) **WorkChoice EcoPlug**|
 
 
 ## License

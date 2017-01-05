@@ -3,6 +3,14 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.1] 2017-01-05
+### Added
+- Alexa support by default on all devices
+- Added support for Wemos D1 Mini board with official Relay Shield
+
+### Fixed
+- Multi-packet websocket frames
+
 ## [1.4.0] 2016-12-31
 ### Added
 - Domoticz support via MQTT (https://www.domoticz.com/wiki/MQTT)
