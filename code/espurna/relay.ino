@@ -11,7 +11,11 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
-std::vector<unsigned char> _relays;
+typedef struct {
+    unsigned char pin;
+    bool reverse;
+} relay_t;
+std::vector<relay_t> _relays;
 bool recursive = false;
 #ifdef SONOFF_DUAL
     unsigned char dualRelayStatus = 0;
@@ -58,7 +62,8 @@ bool relayStatus(unsigned char id) {
         return ((dualRelayStatus & (1 << id)) > 0);
     #else
         if (id >= _relays.size()) return false;
-        return (digitalRead(_relays[id]) == HIGH);
+        bool status = (digitalRead(_relays[id].pin) == HIGH);
+        return _relays[id].reverse ? !status : status;
     #endif
 }
 
@@ -84,7 +89,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
             Serial.flush();
 
         #else
-            digitalWrite(_relays[id], status);
+            digitalWrite(_relays[id].pin, _relays[id].reverse ? !status : status);
         #endif
 
         if (!recursive) {
@@ -218,22 +223,22 @@ void relaySetup() {
     #ifdef SONOFF_DUAL
 
         // Two dummy relays for the dual
-        _relays.push_back(0);
-        _relays.push_back(0);
+        _relays.push_back((relay_t) {0, 0});
+        _relays.push_back((relay_t) {0, 0});
 
     #else
 
         #ifdef RELAY1_PIN
-            _relays.push_back(RELAY1_PIN);
+            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_PIN_INVERSE });
         #endif
         #ifdef RELAY2_PIN
-            _relays.push_back(RELAY2_PIN);
+            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_PIN_INVERSE });
         #endif
         #ifdef RELAY3_PIN
-            _relays.push_back(RELAY3_PIN);
+            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_PIN_INVERSE });
         #endif
         #ifdef RELAY4_PIN
-            _relays.push_back(RELAY4_PIN);
+            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_PIN_INVERSE });
         #endif
 
     #endif
@@ -242,7 +247,7 @@ void relaySetup() {
     byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
 
     for (unsigned int i=0; i < _relays.size(); i++) {
-        pinMode(_relays[i], OUTPUT);
+        pinMode(_relays[i].pin, OUTPUT);
         if (relayMode == RELAY_MODE_OFF) relayStatus(i, false);
         if (relayMode == RELAY_MODE_ON) relayStatus(i, true);
     }

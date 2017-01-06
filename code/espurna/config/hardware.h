@@ -39,6 +39,7 @@
     #define DEVICE              "LOLIN"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
 	#define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
@@ -47,6 +48,7 @@
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_MINI"
     #define RELAY1_PIN          5
+    #define RELAY1_PIN_INVERSE  0
 	#define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
@@ -60,6 +62,7 @@
     #define DEVICE              "SONOFF"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -69,6 +72,7 @@
     #define DEVICE              "SONOFF_TH"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -78,6 +82,7 @@
     #define DEVICE              "SONOFF_SV"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -87,6 +92,7 @@
     #define DEVICE              "SLAMPHER"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -96,6 +102,7 @@
     #define DEVICE              "S20"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -105,6 +112,7 @@
     #define DEVICE              "SONOFF_TOUCH"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -114,6 +122,7 @@
     #define DEVICE              "SONOFF_POW"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            15
     #define LED1_PIN_INVERSE    0
     #define ENABLE_POW          1
@@ -137,9 +146,13 @@
     #define BUTTON3_PIN         10
     #define BUTTON4_PIN         14
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN          5
+    #define RELAY2_PIN_INVERSE  0
     #define RELAY3_PIN          4
+    #define RELAY3_PIN_INVERSE  0
     #define RELAY4_PIN          15
+    #define RELAY4_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -154,7 +167,9 @@
     #define BUTTON1_PIN         0
     #define BUTTON2_PIN         2
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN          13
+    #define RELAY2_PIN_INVERSE  0
     #define LED1_PIN            16
     #define LED1_PIN_INVERSE    0
 
@@ -168,6 +183,7 @@
     #define DEVICE              "ECOPLUG"
     #define BUTTON1_PIN         13
     #define RELAY1_PIN          15
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    0
 
@@ -181,6 +197,7 @@
     #define DEVICE              "ESPURNA"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
 
