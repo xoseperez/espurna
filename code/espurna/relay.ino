@@ -203,8 +203,11 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (!t.endsWith(mqttSetter)) return;
 
         // Get relay ID
-        unsigned int relayID = topic[strlen(MQTT_RELAY_TOPIC)+1] - '0';
-        if (relayID >= relayCount()) relayID = 0;
+        unsigned int relayID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
+        if (relayID >= relayCount()) {
+            DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
+            return;
+        }
 
         // Action to perform
         unsigned int value = (char)payload[0] - '0';

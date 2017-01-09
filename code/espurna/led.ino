@@ -79,8 +79,11 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
         if (!t.endsWith(mqttSetter)) return;
 
         // Get led ID
-        unsigned int ledID = topic[strlen(MQTT_LED_TOPIC)+1] - '0';
-        if (ledID >= ledCount()) ledID = 0;
+        unsigned int ledID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
+        if (ledID >= ledCount()) {
+            DEBUG_MSG("[LED] Wrong ledID (%d)\n", ledID);
+            return;
+        }
 
         // get value
         unsigned int value =  (char)payload[0] - '0';

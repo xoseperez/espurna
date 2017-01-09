@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.2] 2017-01-09
+### Fixed
+- Fixed error in relay identification from MQTT messages (issue #31)
+
 ## [1.4.1] 2017-01-05
 ### Added
 - Alexa support by default on all devices
