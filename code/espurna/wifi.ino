@@ -148,11 +148,6 @@ void wifiSetup() {
 
 		#endif
 
-        // Disconnect from MQTT server if no WIFI
-        if (code != MESSAGE_CONNECTED) {
-            if (mqttConnected()) mqttDisconnect();
-        }
-
         // Configure mDNS
 	    if (code == MESSAGE_CONNECTED) {
 

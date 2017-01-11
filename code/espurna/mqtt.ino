@@ -94,7 +94,7 @@ void _mqttOnConnect(bool sessionPresent) {
 
 void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
 
-    DEBUG_MSG("[MQTT] Disconnected!\n");
+    DEBUG_MSG("[MQTT] Disconnected\n");
 
     // Send disconnect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
