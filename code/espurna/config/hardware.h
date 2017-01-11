@@ -158,6 +158,10 @@
 
 #elif defined(ITEAD_1CH_INCHING)
 
+    // Note: definitions for this board are based on third party data
+    // and have not been fully tested yet. If you have the chance to
+    // test them, please report back. Thank you.
+
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "1CH_INCHING"
     #define BUTTON1_PIN         0
@@ -165,7 +169,7 @@
     #define RELAY1_PIN          12
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
-    #define LED_INCHING         14
+    #define LED_PULSE           14
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards

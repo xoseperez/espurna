@@ -237,8 +237,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #endif
 
             #if ITEAD_1CH_INCHING
-                byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
-                digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
+                byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
+                digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
             #endif
 
             // Check if we should reconfigure MQTT connection
@@ -291,8 +291,8 @@ void _wsStart(uint32_t client_id) {
         relay.add(relayStatus(relayID));
     }
     root["relayMode"] = getSetting("relayMode", RELAY_MODE);
-    root["relayInch"] = getSetting("relayInch", RELAY_INCHING);
-    root["relayInchTime"] = getSetting("relayInchTime", RELAY_INCHING_TIME);
+    root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
+    root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME);
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);

@@ -20,12 +20,12 @@
 #define RELAY_SYNC_ONE          2
 #define RELAY_SYNC_SAME         3
 
-#define RELAY_INCHING_NONE      0
-#define RELAY_INCHING_OFF       1
-#define RELAY_INCHING_ON        2
+#define RELAY_PULSE_NONE        0
+#define RELAY_PULSE_OFF         1
+#define RELAY_PULSE_ON          2
 
-// Inching time in seconds
-#define RELAY_INCHING_TIME      1
+// Pulse time in seconds
+#define RELAY_PULSE_TIME        1
 
 // 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_MODE         		RELAY_MODE_OFF
@@ -33,8 +33,8 @@
 // 0 means ANY, 1 zero or one and 2 one and only one
 #define RELAY_SYNC         		RELAY_SYNC_ANY
 
-// 0 means no inching, 1 means normally off, 2 normally on
-#define RELAY_INCHING     		RELAY_INCHING_NONE
+// 0 means no pulses, 1 means normally off, 2 normally on
+#define RELAY_PULSE_MODE     	RELAY_PULSE_NONE
 
 //--------------------------------------------------------------------------------
 // LED

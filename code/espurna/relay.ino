@@ -21,7 +21,7 @@ bool recursive = false;
 #ifdef SONOFF_DUAL
     unsigned char dualRelayStatus = 0;
 #endif
-Ticker inching;
+Ticker pulseTicker;
 
 // -----------------------------------------------------------------------------
 // RELAY
@@ -69,69 +69,69 @@ bool relayStatus(unsigned char id) {
     #endif
 }
 
-void relayInchingBack(unsigned char id) {
+void relayPulseBack(unsigned char id) {
     relayToggle(id);
-    inching.detach();
+    pulseTicker.detach();
 }
 
-void relayInchingStart(unsigned char id) {
+void relayPulseStart(unsigned char id) {
 
-    byte relayInch = getSetting("relayInch", RELAY_INCHING).toInt();
-    if (relayInch == RELAY_INCHING_NONE) return;
+    byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
+    if (relayPulseMode == RELAY_PULSE_NONE) return;
 
     bool status = relayStatus(id);
-    bool inchingStatus = (relayInch == RELAY_INCHING_ON);
-    if (inchingStatus == status) {
-        inching.detach();
+    bool pulseStatus = (relayPulseMode == RELAY_PULSE_ON);
+    if (pulseStatus == status) {
+        pulseTicker.detach();
         return;
     }
 
-    inching.attach(
-        getSetting("relayInchTime", RELAY_INCHING_TIME).toInt(),
-        relayInchingBack,
+    pulseTicker.attach(
+        getSetting("relayPulseTime", RELAY_PULSE_TIME).toInt(),
+        relayPulseBack,
         id
     );
 
 }
 
-unsigned int relayInching() {
-    unsigned int relayInch = getSetting("relayInch", RELAY_INCHING).toInt();
-    return relayInch;
+unsigned int relayPulseMode() {
+    unsigned int value = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
+    return value;
 }
 
-void relayInching(unsigned int relayInch, bool report) {
+void relayPulseMode(unsigned int value, bool report) {
 
-    setSetting("relayInch", relayInch);
+    setSetting("relayPulseMode", value);
 
     /*
     if (report) {
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
         char topic[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 10];
-        sprintf(topic, "%s/inching%s", MQTT_RELAY_TOPIC, mqttGetter.c_str());
+        sprintf(topic, "%s/pulse%s", MQTT_RELAY_TOPIC, mqttGetter.c_str());
         char value[2];
-        sprintf(value, "%d", relayInch);
+        sprintf(value, "%d", value);
         mqttSend(topic, value);
     }
     */
 
     char message[20];
-    sprintf(message, "{\"relayInch\": %d}", relayInch);
+    sprintf(message, "{\"relayPulseMode\": %d}", value);
     wsSend(message);
 
-    #ifdef LED_INCHING
-        digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
+    #ifdef LED_PULSE
+        digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
     #endif
 
 }
 
-void relayInching(unsigned int relayInch) {
-    relayInching(relayInch, true);
+void relayPulseMode(unsigned int value) {
+    relayPulseMode(value, true);
 }
 
-void relayInchingToggle() {
-    unsigned int relayInch = relayInching();
-    relayInch = (relayInch == RELAY_INCHING_NONE) ? RELAY_INCHING_OFF : RELAY_INCHING_NONE;
-    relayInching(relayInch);
+void relayPulseToggle() {
+    unsigned int value = relayPulseMode();
+    value = (value == RELAY_PULSE_NONE) ? RELAY_PULSE_OFF : RELAY_PULSE_NONE;
+    relayPulseMode(value);
 }
 
 bool relayStatus(unsigned char id, bool status, bool report) {
@@ -160,7 +160,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         #endif
 
         if (!recursive) {
-            relayInchingStart(id);
+            relayPulseStart(id);
             relaySync(id);
             relaySave();
         }
@@ -263,7 +263,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
         mqttSubscribe(buffer);
 
-        sprintf(buffer, "%s/inching%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
+        sprintf(buffer, "%s/pulse%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
         mqttSubscribe(buffer);
 
     }
@@ -278,9 +278,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         // Get value
         unsigned int value = (char)payload[0] - '0';
 
-        // Inching topic
-        if (t.indexOf("inching") > 0) {
-            relayInching(value, !sameSetGet);
+        // Pulse topic
+        if (t.indexOf("pulse") > 0) {
+            relayPulseMode(value, !sameSetGet);
             return;
         }
 

@@ -197,23 +197,23 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-md-1-4" for="relayInch">Relay inching mode</label>
+                                    <label class="pure-u-1 pure-u-md-1-4" for="relayPulseMode">Relay pulse mode</label>
                                     <div class="pure-u-1 pure-u-md-3-4">
-                                        <select name="relayInch" class="pure-u-1-2" tabindex="4">
-                                            <option value="0">No inching</a>
+                                        <select name="relayPulseMode" class="pure-u-1-2" tabindex="4">
+                                            <option value="0">Don't pulse</a>
                                             <option value="1">Normally OFF (stays on for a brief interval)</a>
                                             <option value="2">Normally ON (stays off for a brief interval)</a>
                                         </select>
                                     </div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">When inching enable the relay will automatically switch back to its normal state after the inching time (below).</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">When pulse mode is enabled the relay will automatically switch back to its normal state after the pulse time (below).</div>
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-md-1-4" for="relayInchTime">Relay inching time</label>
-                                    <input name="relayInchTime" class="pure-u-1 pure-u-md-3-4" type="number" min="1" tabindex="5" />
+                                    <label class="pure-u-1 pure-u-md-1-4" for="relayPulseTime">Relay pulse time</label>
+                                    <input name="relayPulseTime" class="pure-u-1 pure-u-md-3-4" type="number" min="1" tabindex="5" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Inching time in seconds.</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Pulse time in seconds.</div>
                                 </div>
 
                                 <div class="pure-g module module-fauxmo">

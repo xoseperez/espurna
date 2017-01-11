@@ -77,10 +77,10 @@ void buttonSetup() {
         _buttons.push_back(new DebounceEvent(BUTTON4_PIN));
     #endif
 
-    #ifdef ITEAD_1CH_INCHING
-        pinMode(LED_INCHING, OUTPUT);
-        byte relayInch = getSetting("relayInch", String(RELAY_INCHING)).toInt();
-        digitalWrite(LED_INCHING, relayInch != RELAY_INCHING_NONE);
+    #ifdef LED_PULSE
+        pinMode(LED_PULSE, OUTPUT);
+        byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
+        digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
     #endif
 
     DEBUG_MSG("[BUTTON] Number of buttons: %d\n", _buttons.size());
@@ -99,7 +99,7 @@ void buttonLoop() {
             }
             #ifdef ITEAD_1CH_INCHING
                 if (i == 1) {
-                    relayInchingToggle();
+                    relayPulseToggle();
                     continue;
                 }
             #endif
