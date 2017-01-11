@@ -74,7 +74,7 @@ void relayPulseBack(unsigned char id) {
     pulseTicker.detach();
 }
 
-void relayPulseStart(unsigned char id) {
+void relayPulse(unsigned char id) {
 
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     if (relayPulseMode == RELAY_PULSE_NONE) return;
@@ -160,7 +160,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         #endif
 
         if (!recursive) {
-            relayPulseStart(id);
+            relayPulse(id);
             relaySync(id);
             relaySave();
         }
