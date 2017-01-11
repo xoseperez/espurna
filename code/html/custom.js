@@ -1,10 +1,42 @@
 var websock;
 var password = false;
+var maxNetworks;
+
+// http://www.the-art-of-web.com/javascript/validate-password/
+function checkPassword(str) {
+    // at least one number, one lowercase and one uppercase letter
+    // at least eight characters that are letters, numbers or the underscore
+    var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
+    return re.test(str);
+}
+
+function validateForm() {
+
+    var form = $("#formSave");
+
+    // password
+    var adminPass1 = $("input[name='adminPass1']", form).val();
+    if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
+        alert("The password you have entered is not valid, it must have at least 8 characters, 1 lower and 1 uppercase and 1 number!");
+        return false;
+    }
+
+    var adminPass2 = $("input[name='adminPass2']", form).val();
+    if (adminPass1 != adminPass2) {
+        alert("Passwords are different!");
+        return false;
+    }
+
+    return true;
+
+}
 
 function doUpdate() {
-    var data = $("#formSave").serializeArray();
-    websock.send(JSON.stringify({'config': data}));
-    $(".powExpected").val(0);
+    if (validateForm()) {
+        var data = $("#formSave").serializeArray();
+        websock.send(JSON.stringify({'config': data}));
+        $(".powExpected").val(0);
+    }
     return false;
 }
 
@@ -84,6 +116,55 @@ function createRelays(count) {
 
 }
 
+function createIdxs(count) {
+
+    var current = $("#idxs > div").length;
+    if (current > 0) return;
+
+    var template = $("#idxTemplate .pure-g")[0];
+    for (var id=0; id<count; id++) {
+        var line = $(template).clone();
+        $(line).find("input").each(function() {
+            $(this).attr("data", id).attr("tabindex", 43+id);
+        });
+        if (count > 1) $(".id", line).html(" " + id);
+        line.appendTo("#idxs");
+    }
+
+}
+
+function delNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $(parent).remove();
+}
+
+function moreNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $("div.more", parent).toggle();
+}
+
+function addNetwork() {
+
+    var numNetworks = $("#networks > div").length;
+    if (numNetworks >= maxNetworks) {
+        alert("Max number of networks reached");
+        return;
+    }
+
+    var tabindex = 200 + numNetworks * 10;
+    var template = $("#networkTemplate").children();
+    var line = $(template).clone();
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find(".button-del-network").on('click', delNetwork);
+    $(line).find(".button-more-network").on('click', moreNetwork);
+    line.appendTo("#networks");
+
+    return line;
+
+}
+
 function processData(data) {
 
     // title
@@ -130,17 +211,32 @@ function processData(data) {
 
         }
 
+        if (key == "maxNetworks") {
+            maxNetworks = parseInt(data.maxNetworks);
+            return;
+        }
+
         // Wifi
         if (key == "wifi") {
-            var groups = $("#panel-wifi .pure-g");
-            for (var i in data.wifi) {
+
+            var networks = data.wifi;
+
+            for (var i in networks) {
+
+                // add a new row
+                var line = addNetwork();
+
+                // fill in the blanks
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
-                    var id = "input[name=" + key + "]";
-                    if ($(id, groups[i]).length) $(id, groups[i]).val(wifi[key]);
+                    var element = $("input[name=" + key + "]", line);
+                    if (element.length) element.val(wifi[key]);
                 });
-            };
+
+            }
+
             return;
+
         }
 
         // Relay status
@@ -162,6 +258,19 @@ function processData(data) {
 
         }
 
+        // Domoticz
+        if (key == "dczIdx") {
+            var idxs = data.dczIdx;
+            createIdxs(idxs.length);
+
+            for (var i in idxs) {
+                var element = $(".dczIdx[data=" + i + "]");
+                if (element.length > 0) element.val(idxs[i]);
+            }
+
+            return;
+        }
+
 
         // Messages
         if (key == "message") {
@@ -172,7 +281,6 @@ function processData(data) {
         // Enable options
         if (key.endsWith("Visible")) {
             var module = key.slice(0,-7);
-            console.log(module);
             $(".module-" + module).show();
             return;
         }
@@ -244,6 +352,7 @@ function init() {
     $(".button-reconnect").on('click', doReconnect);
     $(".button-apikey").on('click', doGenerateAPIKey);
     $(".pure-menu-link").on('click', showPanel);
+    $(".button-add-network").on('click', addNetwork);
 
     $.ajax({
         'method': 'GET',

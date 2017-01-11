@@ -3,23 +3,64 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.4.2] 2017-01-09
+### Fixed
+- Fixed error in relay identification from MQTT messages (issue #31)
+
+## [1.4.1] 2017-01-05
 ### Added
-- Added last-modified header to static contents
-- Added support for multi-button boards (SONOFF_4CH)
+- Alexa support by default on all devices
+- Added support for Wemos D1 Mini board with official Relay Shield
+
+### Fixed
+- Multi-packet websocket frames
+
+## [1.4.0] 2016-12-31
+### Added
+- Domoticz support via MQTT (https://www.domoticz.com/wiki/MQTT)
+- Support for static IP connections
+
+### Fixed
+- Enforce minimum password strength in web interface (#16)
+
+### Changed
+- Using default client_id provided by AsyncMqttClient
+- Allow up to 5 different WIFI networks
+
+### Removed
+- File system version file
+
+## [1.3.1] 2016-12-31
+### Fixed
+- data_dir fix for PlatformIO
+
+## [1.3.0] 2016-12-30
+### Changed
+- Arduino IDE support (changes in the folder structure and documentation)
+
+## [1.2.0] 2016-12-27
+### Added
+- Force password changing if it's the default one
+- Added Last-Modified header to static contents
+- Added DNS captive portal for AP mode
+- Added support for Sonoff 4CH
 - Added support for WorkChoice ecoPlug (ECOPLUG). Thanks to David Myers
 - Added support for Sonoff SV
-- Added DNS captive portal for AP mode
-- Force password changing if it's the default one
+- Added support for Sonoff Touch
 - Comment out hardware selection in hardware.h if using Arduino IDE
+- Added support for MQTT get/set suffixes (/status, /set, ...)
+- Added support for LED notifications via MQTT
+- Added EEPROM check commands to terminal interface
 
 ### Changed
 - Using unreleased AsyncMqttClient with stability improvements
 - Better decoupling between MQTT and relays/websockets
+- Skipping retained MQTT messages (configurable)
 
 ### Fixed
-- Issue #14 MQTT Connection with Username an Password not working
 - Issue #11 Compile error when building sonoff-dual-debug
+- Issue #14 MQTT Connection with Username an Password not working
+- Issue #17 Moved static variable 'pending' to class variable
 
 ## [1.1.0] 2016-12-06
 ### Added
@@ -105,8 +146,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - Moving wifi management to library (JustWifi)
-
-### Changed
 - Split code into modules
 
 ## [0.9.6] 2016-08-12

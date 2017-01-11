@@ -34,9 +34,11 @@ const useref = require('gulp-useref');
 const gulpif = require('gulp-if');
 const inline = require('gulp-inline');
 
+const destination = 'espurna/data/';
+
 /* Clean destination folder */
 gulp.task('clean', function() {
-    del(['data/*']);
+    del([ destination + '*']);
     return true;
 });
 
@@ -46,7 +48,7 @@ gulp.task('files', function() {
             'html/**/*.{jpg,jpeg,png,ico,gif}',
             'html/fsversion'
         ])
-        .pipe(gulp.dest('data/'));
+        .pipe(gulp.dest(destination));
 });
 
 
@@ -66,7 +68,7 @@ gulp.task('inline', function() {
             minifyJS: true
         }))
         .pipe(gzip())
-        .pipe(gulp.dest('data'));
+        .pipe(gulp.dest(destination));
 })
 
 /* Process HTML, CSS, JS */
@@ -83,10 +85,10 @@ gulp.task('html', function() {
             minifyJS: true
         })))
         .pipe(gzip())
-        .pipe(gulp.dest('data'));
+        .pipe(gulp.dest(destination));
 });
 
 /* Build file system */
 gulp.task('buildfs_split', ['clean', 'files', 'html']);
 gulp.task('buildfs_inline', ['clean', 'files', 'inline']);
-gulp.task('default', ['buildfs_inline']);
+gulp.task('default', ['buildfs_split']);

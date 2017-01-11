@@ -41,6 +41,15 @@
     background: rgb(0, 202, 0);
     margin-left: 5px;
 }
+.button-add-network {
+    background: rgb(28, 184, 65);
+}
+.button-del-network {
+    background: rgb(202, 60, 60);
+}
+.button-more-network {
+    background: rgb(223, 117, 20);
+}
 .pure-g {
     margin-bottom: 20px;
 }
@@ -57,10 +66,23 @@ div.hint {
     font-size: 80%;
     color: #ccc;
 }
-
+.break {
+    margin-top: 5px;
+}
+#networks .pure-g {
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+    border-bottom: 2px dashed #e5e5e5;
+}
+#networks div.more {
+    display: none;
+}
 .module {
     display: none;
 }
-#relayTemplate {
+.template {
     display: none;
+}
+.pure-form .center {
+    margin: .5em 0 .2em;
 }
