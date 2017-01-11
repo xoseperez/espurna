@@ -131,6 +131,8 @@ void mqttConnect() {
 
     if (!mqtt.connected()) {
 
+        mqtt.disconnect();
+
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
         if (strlen(host) == 0) return;
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
