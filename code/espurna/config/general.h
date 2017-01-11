@@ -106,4 +106,7 @@
 // FAUXO
 // -----------------------------------------------------------------------------
 
+#ifndef ENABLE_FAUXMO
+    #define ENABLE_FAUXMO       1
+#endif
 #define FAUXMO_ENABLED          1
