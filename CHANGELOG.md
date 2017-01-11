@@ -3,7 +3,14 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.3] 2017-01-11
+### Fixed
+- #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
+
 ## [1.4.2] 2017-01-09
+### Added
+- Support for inverse logic relays
+
 ### Fixed
 - Fixed error in relay identification from MQTT messages (issue #31)
 

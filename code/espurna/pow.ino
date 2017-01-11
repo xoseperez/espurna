@@ -4,7 +4,7 @@ ESPurna
 POW MODULE
 Support for Sonoff POW HLW8012-based power monitor
 
-Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
