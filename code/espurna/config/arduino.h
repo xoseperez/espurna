@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------------------
-// This setting is normally provided by PlatformIO
-// Uncomment the appropiate line to build from the Arduino IDE
+// These settings are normally provided by PlatformIO
+// Uncomment the appropiate line(s) to build from the Arduino IDE
 //--------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------

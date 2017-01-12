@@ -1,6 +1,5 @@
 /*
 
-ESPurna
 MQTT MODULE
 
 Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
@@ -94,7 +93,7 @@ void _mqttOnConnect(bool sessionPresent) {
 
 void _mqttOnDisconnect(AsyncMqttClientDisconnectReason reason) {
 
-    DEBUG_MSG("[MQTT] Disconnected\n");
+    DEBUG_MSG("[MQTT] Disconnected!\n");
 
     // Send disconnect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {

@@ -1,7 +1,6 @@
 /*
 
-ESPurna
-SD18B20 MODULE
+DS18B20 MODULE
 
 Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 

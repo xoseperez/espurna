@@ -3,6 +3,14 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+### Fixed
+- #35 Fixed frequent MQTT connection drops after WIFI reconnect
+- Defer wifi disconnection from web interface to allow request to return
+
+### Changed
+- Move all Arduino IDE configuration values to their own file
+
 ## [1.4.3] 2017-01-11
 ### Fixed
 - #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
