@@ -195,6 +195,7 @@
     #define DEVICE              "WIFI_RELAY"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            16
     #define LED1_PIN_INVERSE    0
 
