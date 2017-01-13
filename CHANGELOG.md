@@ -3,13 +3,17 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [1.4.4] 2017-01-13
+### Added
+- Adding current, voltage, apparent and reactive power reports to Sonoff POW (Web & MQTT)
+
 ### Fixed
 - #35 Fixed frequent MQTT connection drops after WIFI reconnect
 - Defer wifi disconnection from web interface to allow request to return
 
 ### Changed
 - Move all Arduino IDE configuration values to their own file
+- Using latest HLW8012 library in interrupt mode
 
 ## [1.4.3] 2017-01-11
 ### Fixed
