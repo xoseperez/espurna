@@ -89,7 +89,9 @@
 // DOMOTICZ
 // -----------------------------------------------------------------------------
 
-#define ENABLE_DOMOTICZ         1
+#ifndef ENABLE_DOMOTICZ
+    #define ENABLE_DOMOTICZ     1
+#endif
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"
 
@@ -106,7 +108,12 @@
 // FAUXO
 // -----------------------------------------------------------------------------
 
+// This setting defines whether Alexa support should be built into the firmware
 #ifndef ENABLE_FAUXMO
     #define ENABLE_FAUXMO       1
 #endif
+
+// This is default value for the fauxmoEnabled setting that defines whether
+// this device should be discoberable and respond to Alexa commands.
+// Both ENABLE_FAUXMO and fauxmoEnabled should be 1 for Alexa support to work.
 #define FAUXMO_ENABLED          1
