@@ -175,6 +175,4 @@ void loop() {
         powerMonitorLoop();
     #endif
 
-    yield();
-
 }

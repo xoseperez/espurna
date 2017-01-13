@@ -80,7 +80,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             // Let the HTTP request return and disconnect after 100ms
             deferred.once_ms(100, wifiDisconnect);
-            
+
         }
         if (action.equals("on")) relayStatus(relayID, true);
         if (action.equals("off")) relayStatus(relayID, false);
@@ -93,8 +93,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         JsonArray& config = root["config"];
         DEBUG_MSG("[WEBSOCKET] Parsing configuration data\n");
 
-        bool dirty = false;
-        bool dirtyMQTT = false;
+        bool save = false;
+        bool changed = false;
+        bool changedMQTT = false;
         bool apiEnabled = false;
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
@@ -112,14 +113,27 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
                 if (key == "powExpectedPower") {
                     powSetExpectedActivePower(value.toInt());
-                    continue;
+                    changed = true;
                 }
 
-            #else
+                if (key == "powExpectedVoltage") {
+                    powSetExpectedVoltage(value.toInt());
+                    changed = true;
+                }
 
-                if (key.startsWith("pow")) continue;
+                if (key == "powExpectedCurrent") {
+                    powSetExpectedCurrent(value.toInt());
+                    changed = true;
+                }
+
+                if (key == "powExpectedReset") {
+                    powReset();
+                    changed = true;
+                }
 
             #endif
+
+            if (key.startsWith("pow")) continue;
 
             #if ENABLE_DOMOTICZ
 
@@ -185,8 +199,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (value != getSetting(key)) {
                 //DEBUG_MSG("[WEBSOCKET] Storing %s = %s\n", key.c_str(), value.c_str());
                 setSetting(key, value);
-                dirty = true;
-                if (key.startsWith("mqtt")) dirtyMQTT = true;
+                save = changed = true;
+                if (key.startsWith("mqtt")) changedMQTT = true;
             }
 
         }
@@ -194,12 +208,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         // Checkboxes
         if (apiEnabled != (getSetting("apiEnabled").toInt() == 1)) {
             setSetting("apiEnabled", apiEnabled);
-            dirty = true;
+            save = changed = true;
         }
         #if ENABLE_FAUXMO
             if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
                 setSetting("fauxmoEnabled", fauxmoEnabled);
-                dirty = true;
+                save = changed = true;
             }
         #endif
 
@@ -213,7 +227,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
         for (int i = network; i<WIFI_MAX_NETWORKS; i++) {
             if (getSetting("ssid" + String(i)).length() > 0) {
-                dirty = true;
+                save = changed = true;
             }
             delSetting("ssid" + String(i));
             delSetting("pass" + String(i));
@@ -224,7 +238,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
 
         // Save settings
-        if (dirty) {
+        if (save) {
 
             saveSettings();
             wifiConfigure();
@@ -243,16 +257,15 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #endif
 
             // Check if we should reconfigure MQTT connection
-            if (dirtyMQTT) {
+            if (changedMQTT) {
                 mqttDisconnect();
             }
+        }
 
+        if (changed) {
             ws.text(client_id, "{\"message\": \"Changes saved\"}");
-
         } else {
-
             ws.text(client_id, "{\"message\": \"No changes detected\"}");
-
         }
 
     }
@@ -345,6 +358,11 @@ void _wsStart(uint32_t client_id) {
     #if ENABLE_POW
         root["powVisible"] = 1;
         root["powActivePower"] = getActivePower();
+        root["powApparentPower"] = getApparentPower();
+        root["powReactivePower"] = getReactivePower();
+        root["powVoltage"] = getVoltage();
+        root["powCurrent"] = getCurrent();
+        root["powPowerFactor"] = getPowerFactor();
     #endif
 
     root["maxNetworks"] = WIFI_MAX_NETWORKS;

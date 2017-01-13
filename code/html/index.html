@@ -136,8 +136,33 @@
                                 </div>
 
                                 <div class="pure-g module module-pow">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="powActivePower">Power (W)</label>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powActivePower">Active Power (W)</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powActivePower" readonly />
+                                </div>
+
+                                <div class="pure-g module module-pow">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powApparentPower">Apparent Power (W)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powApparentPower" readonly />
+                                </div>
+
+                                <div class="pure-g module module-pow">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powReactivePower">Reactive Power (W)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powReactivePower" readonly />
+                                </div>
+
+                                <div class="pure-g module module-pow">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powCurrent">Current (A)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powCurrent" readonly />
+                                </div>
+
+                                <div class="pure-g module module-pow">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powVoltage">Voltage (V)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powVoltage" readonly />
+                                </div>
+
+                                <div class="pure-g module module-pow">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powPowerFactor">Power Factor (%)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powPowerFactor" readonly />
                                 </div>
 
                                 <div id="relays">
@@ -363,7 +388,28 @@
                                     <label class="pure-u-1 pure-u-md-1-4" for="powExpectedPower">AC RMS Active Power</label>
                                     <input class="pure-u-1 pure-u-md-3-4 powExpected" name="powExpectedPower" type="text" size="8" tabindex="41" placeholder="0" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">If you are using a pure resistive load like a bulb this will be writen on it, otherwise use a socket multimeter to get this value.</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Watts (W). If you are using a pure resistive load like a bulb this will be writen on it, otherwise use a socket multimeter to get this value.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="powExpectedVoltage">AC RMS Voltage</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 powExpected" name="powExpectedVoltage" type="text" size="8" tabindex="41" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="powExpectedCurrent">AC RMS Current</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 powExpected" name="powExpectedCurrent" type="text" size="8" tabindex="41" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Ampers (A). If you are using a pure resistive load like a bulb this will the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one fo the power wires to get this value.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="powExpectedReset">Reset calibration</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="powExpectedReset" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Move this switch to ON and press "Update" to revert to factory values.</div>
                                 </div>
 
                             </fieldset>

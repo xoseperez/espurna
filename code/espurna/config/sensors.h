@@ -61,5 +61,11 @@
 #define POW_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
 #define POW_VOLTAGE_R_DOWN      ( 1000 ) // Real 1.009k
 #define POW_POWER_TOPIC         "/power"
-#define POW_UPDATE_INTERVAL     10000
-#define POW_REPORT_EVERY        6
+#define POW_CURRENT_TOPIC       "/current"
+#define POW_VOLTAGE_TOPIC       "/voltage"
+#define POW_APOWER_TOPIC        "/apower"
+#define POW_RPOWER_TOPIC        "/rpower"
+#define POW_PFACTOR_TOPIC       "/pfactor"
+#define POW_ENERGY_TOPIC        "/energy"
+#define POW_UPDATE_INTERVAL     5000
+#define POW_REPORT_EVERY        12

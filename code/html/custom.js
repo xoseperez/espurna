@@ -36,6 +36,9 @@ function doUpdate() {
         var data = $("#formSave").serializeArray();
         websock.send(JSON.stringify({'config': data}));
         $(".powExpected").val(0);
+        $("input[name='powExpectedReset']")
+            .prop("checked", false)
+            .iphoneStyle("refresh");
     }
     return false;
 }
