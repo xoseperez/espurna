@@ -24,10 +24,13 @@ void otaSetup() {
 
     ArduinoOTA.onStart([]() {
         DEBUG_MSG("[OTA] Start\n");
+        wsSend("{\"message\": \"OTA update started\"}");
     });
 
     ArduinoOTA.onEnd([]() {
         DEBUG_MSG("\n[OTA] End\n");
+        wsSend("{\"action\": \"reload\"}");
+        delay(100);
     });
 
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {

@@ -52,7 +52,7 @@ String relayString() {
 
 void relayWS() {
     String output = relayString();
-    wsSend((char *) output.c_str());
+    wsSend(output.c_str());
 }
 
 bool relayStatus(unsigned char id) {

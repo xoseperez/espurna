@@ -181,7 +181,7 @@ void powLoop() {
 
         String output;
         root.printTo(output);
-        wsSend((char *) output.c_str());
+        wsSend(output.c_str());
 
         if (--report_count == 0) {
 

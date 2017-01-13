@@ -30,24 +30,24 @@ Ticker deferred;
 // WEBSOCKETS
 // -----------------------------------------------------------------------------
 
-bool wsSend(char * payload) {
-    //DEBUG_MSG("[WEBSOCKET] Broadcasting '%s'\n", payload);
+bool wsSend(const char * payload) {
+    DEBUG_MSG("[WEBSOCKET] Broadcasting '%s'\n", payload);
     ws.textAll(payload);
 }
 
-bool wsSend(uint32_t client_id, char * payload) {
-    //DEBUG_MSG("[WEBSOCKET] Sending '%s' to #%ld\n", payload, client_id);
+bool wsSend(uint32_t client_id, const char * payload) {
+    DEBUG_MSG("[WEBSOCKET] Sending '%s' to #%ld\n", payload, client_id);
     ws.text(client_id, payload);
 }
 
 void wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
-        wsSend((char *) "{\"mqttStatus\": true}");
+        wsSend("{\"mqttStatus\": true}");
     }
 
     if (type == MQTT_DISCONNECT_EVENT) {
-        wsSend((char *) "{\"mqttStatus\": false}");
+        wsSend("{\"mqttStatus\": false}");
     }
 
 }
@@ -564,8 +564,6 @@ ArRequestHandlerFunction _onRelayStatusWrapper(unsigned int relayID) {
         if (request->method() == HTTP_PUT) {
             if (request->hasParam("status", true)) {
                 AsyncWebParameter* p = request->getParam("status", true);
-                wsSend((char *) String(relayID).c_str());
-                wsSend((char *) p->value().c_str());
                 unsigned int value = p->value().toInt();
                 if (value == 2) {
                     relayToggle(relayID);

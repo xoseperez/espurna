@@ -207,6 +207,8 @@ function processData(data) {
                 	    window.location = "/";
                     });
 
+                } else {
+                    window.location = "/";
                 }
             }
 
