@@ -1,6 +1,7 @@
 /*
 
 ESPurna
+
 Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify

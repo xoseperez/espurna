@@ -42,7 +42,7 @@ unsigned int mqttTopicRootLength() {
 
 void mqttSendRaw(const char * topic, const char * message) {
     if (mqtt.connected()) {
-        DEBUG_MSG("[MQTT] Sending %s %s\n", topic, message);
+        DEBUG_MSG("[MQTT] Sending %s => %s\n", topic, message);
         mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
     }
 }
@@ -141,6 +141,7 @@ void mqttConnect() {
         DEBUG_MSG("[MQTT] Connecting to broker at %s", host);
         mqtt.setServer(host, port);
         mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
+	    mqtt.setWill(MQTT_HEARTBEAT_TOPIC, MQTT_QOS, MQTT_RETAIN, "0");
         if ((strlen(user) > 0) && (strlen(pass) > 0)) {
             DEBUG_MSG(" as user '%s'.", user);
             mqtt.setCredentials(user, pass);

@@ -105,7 +105,7 @@
 #define NTP_UPDATE_INTERVAL     1800
 
 // -----------------------------------------------------------------------------
-// FAUXO
+// FAUXMO
 // -----------------------------------------------------------------------------
 
 // This setting defines whether Alexa support should be built into the firmware
