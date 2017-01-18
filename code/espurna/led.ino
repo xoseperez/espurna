@@ -49,9 +49,9 @@ void ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) {
 void showStatus() {
     if (wifiConnected()) {
         if (WiFi.getMode() == WIFI_AP) {
-            ledBlink(0, 2000, 2000);
+            ledBlink(0, 2500, 2500);
         } else {
-            ledBlink(0, 5000, 500);
+            ledBlink(0, 4900, 100);
         }
     } else {
         ledBlink(0, 500, 500);
