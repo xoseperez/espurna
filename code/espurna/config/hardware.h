@@ -7,6 +7,7 @@
     #define MANUFACTURER        "NODEMCU"
     #define DEVICE              "LOLIN"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
 	#define LED1_PIN            2
@@ -30,6 +31,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
@@ -40,6 +42,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_TH"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
@@ -50,6 +53,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_SV"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
@@ -60,6 +64,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SLAMPHER"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
@@ -70,6 +75,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "S20"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
@@ -80,6 +86,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_TOUCH"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
@@ -90,6 +97,7 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_POW"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            15
@@ -111,9 +119,13 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_4CH"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define BUTTON2_PIN         9
+    #define BUTTON2_RELAY       2
     #define BUTTON3_PIN         10
+    #define BUTTON3_RELAY       3
     #define BUTTON4_PIN         14
+    #define BUTTON4_RELAY       4
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN          5
@@ -134,7 +146,9 @@
     #define MANUFACTURER        "ELECTRODRAGON"
     #define DEVICE              "ESP_RELAY_BOARD"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define BUTTON2_PIN         2
+    #define BUTTON2_RELAY       2
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN          13
@@ -151,6 +165,7 @@
     #define MANUFACTURER        "WORKCHOICE"
     #define DEVICE              "ECOPLUG"
     #define BUTTON1_PIN         13
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          15
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            2
@@ -165,6 +180,7 @@
     #define MANUFACTURER        "TINKERMAN"
     #define DEVICE              "ESPURNA"
     #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13

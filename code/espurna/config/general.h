@@ -70,6 +70,7 @@
 #define MQTT_SKIP_TIME          1000
 #define MQTT_RELAY_TOPIC        "/relay"
 #define MQTT_LED_TOPIC          "/led"
+#define MQTT_BUTTON_TOPIC       "/button"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
 #define MQTT_FSVERSION_TOPIC    "/fsversion"
