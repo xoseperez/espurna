@@ -118,7 +118,7 @@ void relayPulseMode(unsigned int value, bool report) {
     wsSend(message);
 
     #ifdef LED_PULSE
-        digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
+        digitalWrite(LED_PULSE, value != RELAY_PULSE_NONE);
     #endif
 
 }
