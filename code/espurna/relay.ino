@@ -1,9 +1,8 @@
 /*
 
-ESPurna
 RELAY MODULE
 
-Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -55,7 +54,7 @@ String relayString() {
 
 void relayWS() {
     String output = relayString();
-    wsSend((char *) output.c_str());
+    wsSend(output.c_str());
 }
 
 bool relayStatus(unsigned char id) {

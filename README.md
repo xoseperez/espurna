@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.4.2**, read the [changelog](CHANGELOG.md).
+**Current Release Version is 1.4.4**, read the [changelog](CHANGELOG.md).
 
 ## Features
 
@@ -44,11 +44,12 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 |![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg) **IteadStudio Sonoff Dual**|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg) **IteadStudio Sonoff POW**|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg) **IteadStudio Sonoff TH10/TH16**|
 |![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg) **IteadStudio Sonoff RF**|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg) **IteadStudio Sonoff SV**|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg) **IteadStudio Sonoff Touch**|
 |![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg) **Wemos D1 Mini Relay Shield**|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg) **Electrodragon Relay Board**|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg) **WorkChoice EcoPlug**|
+|![JanGoe Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png) **JanGoe Wifi Relay (NO/NC)**|||
 
 
 ## License
 
-Copyright (C) 2016 by Xose Pérez (@xoseperez)
+Copyright (C) 2016-2017 by Xose Pérez (@xoseperez)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,9 +1,8 @@
 /*
 
-ESPurna
 BUTTON MODULE
 
-Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -12,6 +11,16 @@ Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #ifdef SONOFF_DUAL
+
+#ifdef MQTT_BUTTON_TOPIC
+void buttonMQTT(unsigned char id) {
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    char buffer[strlen(MQTT_BUTTON_TOPIC) + mqttGetter.length() + 3];
+    sprintf(buffer, "%s/%d%s", MQTT_BUTTON_TOPIC, id, mqttGetter.c_str());
+    mqttSend(buffer, 1);
+    mqttSend(buffer, 0);
+}
+#endif
 
 void buttonSetup() {}
 
@@ -30,7 +39,12 @@ void buttonLoop() {
                     // Since we are not passing back RELAY2 value
                     // (in the relayStatus method) it will only be present
                     // here if it has actually been pressed
-                    if ((value & 4) == 4) value = value ^ 1;
+                    if ((value & 4) == 4) {
+                        value = value ^ 1;
+                        #ifdef MQTT_BUTTON_TOPIC
+                            buttonMQTT(0);
+                        #endif
+                    }
 
                     // Otherwise check if any of the other two BUTTONs
                     // (in the header) has been pressent, but we should
@@ -60,21 +74,36 @@ void buttonLoop() {
 #include <DebounceEvent.h>
 #include <vector>
 
-std::vector<DebounceEvent *> _buttons;
+typedef struct {
+    DebounceEvent * button;
+    unsigned int relayID;
+} button_t;
+
+std::vector<button_t> _buttons;
+
+#ifdef MQTT_BUTTON_TOPIC
+void buttonMQTT(unsigned char id) {
+    if (id >= _buttons.size()) return;
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    char buffer[strlen(MQTT_BUTTON_TOPIC) + mqttGetter.length() + 3];
+    sprintf(buffer, "%s/%d%s", MQTT_BUTTON_TOPIC, id, mqttGetter.c_str());
+    mqttSend(buffer, _buttons[id].button->pressed() ? "1" : "0");
+}
+#endif
 
 void buttonSetup() {
 
     #ifdef BUTTON1_PIN
-        _buttons.push_back(new DebounceEvent(BUTTON1_PIN));
+        _buttons.push_back({new DebounceEvent(BUTTON1_PIN), BUTTON1_RELAY});
     #endif
     #ifdef BUTTON2_PIN
-        _buttons.push_back(new DebounceEvent(BUTTON2_PIN));
+        _buttons.push_back({new DebounceEvent(BUTTON2_PIN), BUTTON2_RELAY});
     #endif
     #ifdef BUTTON3_PIN
-        _buttons.push_back(new DebounceEvent(BUTTON3_PIN));
+        _buttons.push_back({new DebounceEvent(BUTTON3_PIN), BUTTON3_RELAY});
     #endif
     #ifdef BUTTON4_PIN
-        _buttons.push_back(new DebounceEvent(BUTTON4_PIN));
+        _buttons.push_back({new DebounceEvent(BUTTON4_PIN), BUTTON4_RELAY});
     #endif
 
     #ifdef LED_PULSE
@@ -90,20 +119,33 @@ void buttonSetup() {
 void buttonLoop() {
 
     for (unsigned int i=0; i < _buttons.size(); i++) {
-        if (_buttons[i]->loop()) {
-            uint8_t event = _buttons[i]->getEvent();
+        if (_buttons[i].button->loop()) {
+
+            uint8_t event = _buttons[i].button->getEvent();
             DEBUG_MSG("[BUTTON] Pressed #%d, event: %d\n", i, event);
+
+            #ifdef MQTT_BUTTON_TOPIC
+                buttonMQTT(i);
+            #endif
+
             if (i == 0) {
                 if (event == EVENT_DOUBLE_CLICK) createAP();
                 if (event == EVENT_LONG_CLICK) ESP.reset();
             }
+
             #ifdef ITEAD_1CH_INCHING
                 if (i == 1) {
                     relayPulseToggle();
                     continue;
                 }
             #endif
-            if (event == EVENT_SINGLE_CLICK) relayToggle(i);
+
+            if (event == EVENT_SINGLE_CLICK) {
+                if (_buttons[i].relayID > 0) {
+                    relayToggle(_buttons[i].relayID - 1);
+                }
+            }
+
         }
     }
 

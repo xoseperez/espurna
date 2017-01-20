@@ -1,9 +1,8 @@
 /*
 
-ESPurna
 LED MODULE
 
-Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -50,9 +49,9 @@ void ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) {
 void showStatus() {
     if (wifiConnected()) {
         if (WiFi.getMode() == WIFI_AP) {
-            ledBlink(0, 2000, 2000);
+            ledBlink(0, 2500, 2500);
         } else {
-            ledBlink(0, 5000, 500);
+            ledBlink(0, 4900, 100);
         }
     } else {
         ledBlink(0, 500, 500);

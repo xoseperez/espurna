@@ -80,6 +80,7 @@
 #define MQTT_SKIP_TIME          1000
 #define MQTT_RELAY_TOPIC        "/relay"
 #define MQTT_LED_TOPIC          "/led"
+#define MQTT_BUTTON_TOPIC       "/button"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
 #define MQTT_FSVERSION_TOPIC    "/fsversion"
@@ -99,7 +100,9 @@
 // DOMOTICZ
 // -----------------------------------------------------------------------------
 
-#define ENABLE_DOMOTICZ         1
+#ifndef ENABLE_DOMOTICZ
+    #define ENABLE_DOMOTICZ     1
+#endif
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"
 
@@ -113,7 +116,15 @@
 #define NTP_UPDATE_INTERVAL     1800
 
 // -----------------------------------------------------------------------------
-// FAUXO
+// FAUXMO
 // -----------------------------------------------------------------------------
 
+// This setting defines whether Alexa support should be built into the firmware
+#ifndef ENABLE_FAUXMO
+    #define ENABLE_FAUXMO       1
+#endif
+
+// This is default value for the fauxmoEnabled setting that defines whether
+// this device should be discoberable and respond to Alexa commands.
+// Both ENABLE_FAUXMO and fauxmoEnabled should be 1 for Alexa support to work.
 #define FAUXMO_ENABLED          1

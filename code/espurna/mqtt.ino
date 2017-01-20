@@ -1,9 +1,8 @@
 /*
 
-ESPurna
 MQTT MODULE
 
-Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -43,7 +42,7 @@ unsigned int mqttTopicRootLength() {
 
 void mqttSendRaw(const char * topic, const char * message) {
     if (mqtt.connected()) {
-        DEBUG_MSG("[MQTT] Sending %s %s\n", topic, message);
+        DEBUG_MSG("[MQTT] Sending %s => %s\n", topic, message);
         mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
     }
 }
@@ -131,6 +130,8 @@ void mqttConnect() {
 
     if (!mqtt.connected()) {
 
+        mqtt.disconnect();
+
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
         if (strlen(host) == 0) return;
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
@@ -140,6 +141,7 @@ void mqttConnect() {
         DEBUG_MSG("[MQTT] Connecting to broker at %s", host);
         mqtt.setServer(host, port);
         mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
+	    mqtt.setWill(MQTT_HEARTBEAT_TOPIC, MQTT_QOS, MQTT_RETAIN, "0");
         if ((strlen(user) > 0) && (strlen(pass) > 0)) {
             DEBUG_MSG(" as user '%s'.", user);
             mqtt.setCredentials(user, pass);

@@ -3,7 +3,26 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.4] 2017-01-13
+### Added
+- Adding current, voltage, apparent and reactive power reports to Sonoff POW (Web & MQTT)
+
+### Fixed
+- #35 Fixed frequent MQTT connection drops after WIFI reconnect
+- Defer wifi disconnection from web interface to allow request to return
+
+### Changed
+- Move all Arduino IDE configuration values to their own file
+- Using latest HLW8012 library in interrupt mode
+
+## [1.4.3] 2017-01-11
+### Fixed
+- #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
+
 ## [1.4.2] 2017-01-09
+### Added
+- Support for inverse logic relays
+
 ### Fixed
 - Fixed error in relay identification from MQTT messages (issue #31)
 
