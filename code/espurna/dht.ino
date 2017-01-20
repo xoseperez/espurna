@@ -13,25 +13,29 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 DHT dht(DHT_PIN, DHT_TYPE, DHT_TIMING);
 
-char dhtTemperature[6];
-char dhtHumidity[6];
+double _dhtTemperature = 0;
+unsigned int _dhtHumidity = 0;
 
 // -----------------------------------------------------------------------------
 // Values
 // -----------------------------------------------------------------------------
 
-char * getDHTTemperature() {
-    return dhtTemperature;
+double getDHTTemperature() {
+    return _dhtTemperature;
 }
 
-char * getDHTHumidity() {
-    return dhtHumidity;
+unsigned int getDHTHumidity() {
+    return _dhtHumidity;
 }
 
 void dhtSetup() {
     dht.begin();
-    apiRegister("/api/temperature", "temperature", getDHTTemperature);
-    apiRegister("/api/humidity", "humidity", getDHTHumidity);
+    apiRegister("/api/temperature", "temperature", [](char * buffer, size_t len) {
+        dtostrf(_dhtTemperature, len-1, 1, buffer);
+    });
+    apiRegister("/api/humidity", "humidity", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", _dhtHumidity);
+    });
 }
 
 void dhtLoop() {
@@ -52,25 +56,30 @@ void dhtLoop() {
 
         } else {
 
-            dtostrf(t, 4, 1, dhtTemperature);
-            itoa((int) h, dhtHumidity, 10);
+            _dhtTemperature = t;
+            _dhtHumidity = h;
 
-            DEBUG_MSG("[DHT] Temperature: %s\n", dhtTemperature);
-            DEBUG_MSG("[DHT] Humidity: %s\n", dhtHumidity);
+            char temperature[6];
+            char humidity[6];
+            dtostrf(t, 4, 1, temperature);
+            itoa((unsigned int) h, humidity, 10);
+
+            DEBUG_MSG("[DHT] Temperature: %s\n", temperature);
+            DEBUG_MSG("[DHT] Humidity: %s\n", humidity);
 
             // Send MQTT messages
-            mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), dhtTemperature);
-            mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), dhtHumidity);
+            mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+            mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
 
             // Send to Domoticz
             #if ENABLE_DOMOTICZ
-                domoticzSend("dczTmpIdx", dhtTemperature);
-                domoticzSend("dczHumIdx", dhtHumidity);
+                domoticzSend("dczTmpIdx", temperature);
+                domoticzSend("dczHumIdx", humidity);
             #endif
 
             // Update websocket clients
             char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s}"), dhtTemperature, dhtHumidity);
+            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s}"), temperature, humidity);
             wsSend(buffer);
 
         }

@@ -5,7 +5,7 @@
 #include <AsyncMqttClient.h>
 #include <functional>
 
-typedef std::function<char *(void)> apiGetCallbackFunction;
+typedef std::function<void(char *, size_t)> apiGetCallbackFunction;
 typedef std::function<void(const char *)> apiPutCallbackFunction;
 void apiRegister(const char * url, const char * key, apiGetCallbackFunction getFn, apiPutCallbackFunction putFn = NULL);
 void mqttRegister(void (*callback)(unsigned int, const char *, const char *));

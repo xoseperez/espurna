@@ -81,7 +81,7 @@
 #define MQTT_MESSAGE_EVENT      2
 
 // Custom get and set postfixes
-// Use something like "/status" or "/set", with trailing slash
+// Use something like "/status" or "/set", with leading slash
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         ""
 

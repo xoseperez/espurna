@@ -11,8 +11,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <EmonLiteESP.h>
 
 EmonLiteESP emon;
-double current;
-char power[8];
+double _current = 0;
+unsigned int _power = 0;
 
 // -----------------------------------------------------------------------------
 // EMON
@@ -22,12 +22,12 @@ void setCurrentRatio(float value) {
     emon.setCurrentRatio(value);
 }
 
-char * getPower() {
-    return power;
+unsigned int getPower() {
+    return _power;
 }
 
 double getCurrent() {
-    return current;
+    return _current;
 }
 
 unsigned int currentCallback() {
@@ -53,7 +53,9 @@ void powerMonitorSetup() {
     );
     emon.setPrecision(EMON_CURRENT_PRECISION);
 
-    apiRegister("/api/power", "power", getPower);
+    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", _power);
+    });
 
 }
 
@@ -77,41 +79,46 @@ void powerMonitorLoop() {
 
         // Safety check: do not read current if relay is OFF
         if (!relayStatus(0)) {
-            current = 0;
+            _current = 0;
         } else {
-            current = emon.getCurrent(EMON_SAMPLES);
-            current -= EMON_CURRENT_OFFSET;
-            if (current < 0) current = 0;
+            _current = emon.getCurrent(EMON_SAMPLES);
+            _current -= EMON_CURRENT_OFFSET;
+            if (_current < 0) _current = 0;
         }
 
         if (measurements == 0) {
-            max = min = current;
+            max = min = _current;
         } else {
-            if (current > max) max = current;
-            if (current < min) min = current;
+            if (_current > max) max = _current;
+            if (_current < min) min = _current;
         }
-        sum += current;
+        sum += _current;
         ++measurements;
 
         float mainsVoltage = getSetting("emonMains", EMON_MAINS_VOLTAGE).toFloat();
 
-        //DEBUG_MSG("[ENERGY] Power now: %dW\n", int(current * mainsVoltage));
+        //DEBUG_MSG("[ENERGY] Power now: %dW\n", int(_current * mainsVoltage));
 
         // Update websocket clients
         char text[20];
-        sprintf_P(text, PSTR("{\"emonPower\": %d}"), int(current * mainsVoltage));
+        sprintf_P(text, PSTR("{\"emonPower\": %d}"), int(_current * mainsVoltage));
         wsSend(text);
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS
         if (measurements == EMON_MEASUREMENTS) {
-            double p = (sum - max - min) * mainsVoltage / (measurements - 2);
-            sprintf(power, "%d", int(p));
+
+            _power = (int) ((sum - max - min) * mainsVoltage / (measurements - 2));
+            sum = 0;
+            measurements = 0;
+
+            char power[6];
+            snprintf(power, "%d", 6, _power);
             mqttSend(getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
             #if ENABLE_DOMOTICZ
                 domoticzSend("dczPowIdx", power);
             #endif
-            sum = 0;
-            measurements = 0;
+
+
         }
 
         next_measurement += EMON_INTERVAL;

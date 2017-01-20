@@ -181,8 +181,8 @@ void relaySetupAPI() {
         sprintf(key, "relay%d", relayID);
 
         apiRegister(url, key,
-            [relayID]() {
-                return (char *) (relayStatus(relayID) ? "1" : "0");
+            [relayID](char * buffer, size_t len) {
+				snprintf(buffer, "%d", len, relayStatus(relayID) ? 1 : 0);
             },
             [relayID](const char * payload) {
                 unsigned int value = payload[0] - '0';

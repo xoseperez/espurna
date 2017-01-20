@@ -144,17 +144,14 @@ void powSetup() {
         powAttachInterrupts();
     #endif
 
-    apiRegister("/api/power", "power", []() {
-        sprintf(apibuffer, "%d", getActivePower());
-        return apibuffer;
+    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", getActivePower());
     });
-    apiRegister("/api/current", "current", []() {
-        dtostrf(getCurrent(), 5, 2, apibuffer);
-        return apibuffer;
+    apiRegister("/api/current", "current", [](char * buffer, size_t len) {
+        dtostrf(getCurrent(), len-1, 2, buffer);
     });
-    apiRegister("/api/voltage", "voltage", []() {
-        sprintf(apibuffer, "%d", getVoltage());
-        return apibuffer;
+    apiRegister("/api/voltage", "voltage", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", getVoltage());
     });
 
 }

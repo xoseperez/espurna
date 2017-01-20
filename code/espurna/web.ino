@@ -535,14 +535,19 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
             }
         }
 
-        char * value = strdup((api.getFn)());
+        char value[10];
+        (api.getFn)(value, 10);
+
+        // jump over leading spaces
+        char *p = value;
+        while ((unsigned char) *p == ' ') ++p;
 
         if (asJson) {
             char buffer[64];
-            sprintf_P(buffer, PSTR("{ \"%s\": %s }"), api.key, value);
+            sprintf_P(buffer, PSTR("{ \"%s\": %s }"), api.key, p);
             request->send(200, "application/json", buffer);
         } else {
-            request->send(200, "text/plain", value);
+            request->send(200, "text/plain", p);
         }
 
     };
