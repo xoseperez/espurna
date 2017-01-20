@@ -172,6 +172,36 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
+// JanGoe Wifi Relay (https://github.com/JanGoe/esp8266-wifi-relay)
+// -----------------------------------------------------------------------------
+
+#elif defined(WIFI_RELAY_NC)
+
+    #define MANUFACTURER        "JANGOE"
+    #define DEVICE              "WIFI_RELAY_NC"
+    #define BUTTON1_PIN         12
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_PIN         13
+    #define BUTTON2_RELAY       2
+    #define RELAY1_PIN          2
+    #define RELAY1_PIN_INVERSE  1
+    #define RELAY2_PIN          14
+    #define RELAY2_PIN_INVERSE  1
+
+#elif defined(WIFI_RELAY_NO)
+
+    #define MANUFACTURER        "JANGOE"
+    #define DEVICE              "WIFI_RELAY_NO"
+    #define BUTTON1_PIN         12
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_PIN         13
+    #define BUTTON2_RELAY       2
+    #define RELAY1_PIN          2
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN          14
+    #define RELAY2_PIN_INVERSE  0
+
+// -----------------------------------------------------------------------------
 // ESPurna board (still beta)
 // -----------------------------------------------------------------------------
 

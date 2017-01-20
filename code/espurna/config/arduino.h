@@ -25,6 +25,8 @@
 //#define SONOFF_4CH
 //#define ESP_RELAY_BOARD
 //#define ECOPLUG
+//#define WIFI_RELAY_NC
+//#define WIFI_RELAY_NO
 //#define ESPURNA
 
 //--------------------------------------------------------------------------------
