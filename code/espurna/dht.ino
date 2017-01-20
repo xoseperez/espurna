@@ -17,7 +17,7 @@ char dhtTemperature[6];
 char dhtHumidity[6];
 
 // -----------------------------------------------------------------------------
-// DHT
+// Values
 // -----------------------------------------------------------------------------
 
 char * getDHTTemperature() {
@@ -30,11 +30,11 @@ char * getDHTHumidity() {
 
 void dhtSetup() {
     dht.begin();
+    apiRegister("/api/temperature", "temperature", getDHTTemperature);
+    apiRegister("/api/humidity", "humidity", getDHTHumidity);
 }
 
 void dhtLoop() {
-
-    if (!mqttConnected()) return;
 
     // Check if we should read new data
     static unsigned long last_update = 0;
@@ -61,6 +61,12 @@ void dhtLoop() {
             // Send MQTT messages
             mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), dhtTemperature);
             mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), dhtHumidity);
+
+            // Send to Domoticz
+            #if ENABLE_DOMOTICZ
+                domoticzSend("dczTmpIdx", dhtTemperature);
+                domoticzSend("dczHumIdx", dhtHumidity);
+            #endif
 
             // Update websocket clients
             char buffer[100];

@@ -26,6 +26,7 @@ char * getDSTemperature() {
 
 void dsSetup() {
     ds18b20.begin();
+    apiRegister("/api/temperature", "temperature", getDSTemperature);
 }
 
 void dsLoop() {
@@ -54,6 +55,11 @@ void dsLoop() {
 
             // Send MQTT messages
             mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), dsTemperature);
+
+            // Send to Domoticz
+            #if ENABLE_DOMOTICZ
+                domoticzSend("dczTmpIdx", dsTemperature);
+            #endif
 
             // Update websocket clients
             char buffer[100];

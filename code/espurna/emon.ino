@@ -52,6 +52,9 @@ void powerMonitorSetup() {
         getSetting("emonRatio", EMON_CURRENT_RATIO).toFloat()
     );
     emon.setPrecision(EMON_CURRENT_PRECISION);
+
+    apiRegister("/api/power", "power", getPower);
+
 }
 
 void powerMonitorLoop() {
@@ -104,6 +107,9 @@ void powerMonitorLoop() {
             double p = (sum - max - min) * mainsVoltage / (measurements - 2);
             sprintf(power, "%d", int(p));
             mqttSend(getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
+            #if ENABLE_DOMOTICZ
+                domoticzSend("dczPowIdx", power);
+            #endif
             sum = 0;
             measurements = 0;
         }

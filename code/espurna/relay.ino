@@ -9,34 +9,23 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
 #include <vector>
+#include <functional>
 
 typedef struct {
     unsigned char pin;
     bool reverse;
 } relay_t;
 std::vector<relay_t> _relays;
-bool recursive = false;
+
 #ifdef SONOFF_DUAL
     unsigned char dualRelayStatus = 0;
 #endif
 
+bool recursive = false;
+
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
-
-void relayMQTT(unsigned char id) {
-    if (id >= _relays.size()) return;
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    char buffer[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 3];
-    sprintf(buffer, "%s/%d%s", MQTT_RELAY_TOPIC, id, mqttGetter.c_str());
-    mqttSend(buffer, relayStatus(id) ? "1" : "0");
-}
-
-void relayMQTT() {
-    for (unsigned int i=0; i < _relays.size(); i++) {
-        relayMQTT(i);
-    }
-}
 
 String relayString() {
     DynamicJsonBuffer jsonBuffer;
@@ -48,11 +37,6 @@ String relayString() {
     String output;
     root.printTo(output);
     return output;
-}
-
-void relayWS() {
-    String output = relayString();
-    wsSend(output.c_str());
 }
 
 bool relayStatus(unsigned char id) {
@@ -91,19 +75,19 @@ bool relayStatus(unsigned char id, bool status, bool report) {
             digitalWrite(_relays[id].pin, _relays[id].reverse ? !status : status);
         #endif
 
+        if (report) relayMQTT(id);
         if (!recursive) {
             relaySync(id);
             relaySave();
+            relayWS();
         }
 
         #ifdef ENABLE_DOMOTICZ
-            domoticzSend(id);
+            relayDomoticzSend(id);
         #endif
 
     }
 
-    if (report) relayMQTT(id);
-    if (!recursive) relayWS();
     return changed;
 
 }
@@ -181,6 +165,134 @@ unsigned char relayCount() {
     return _relays.size();
 }
 
+//------------------------------------------------------------------------------
+// REST API
+//------------------------------------------------------------------------------
+
+void relaySetupAPI() {
+
+    // API entry points (protected with apikey)
+    for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
+
+        char url[15];
+        sprintf(url, "/api/relay/%d", relayID);
+
+        char key[10];
+        sprintf(key, "relay%d", relayID);
+
+        apiRegister(url, key,
+            [relayID]() {
+                return (char *) (relayStatus(relayID) ? "1" : "0");
+            },
+            [relayID](const char * payload) {
+                unsigned int value = payload[0] - '0';
+                if (value == 2) {
+                    relayToggle(relayID);
+                } else {
+                    relayStatus(relayID, value == 1);
+                }
+            });
+
+    }
+
+}
+
+//------------------------------------------------------------------------------
+// WebSockets
+//------------------------------------------------------------------------------
+
+void relayWS() {
+    String output = relayString();
+    wsSend(output.c_str());
+}
+
+
+//------------------------------------------------------------------------------
+// Domoticz
+//------------------------------------------------------------------------------
+
+#if ENABLE_DOMOTICZ
+
+void relayDomoticzSend(unsigned int relayID) {
+    char buffer[15];
+    sprintf(buffer, "dczRelayIdx%d", relayID);
+    domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
+}
+
+int relayFromIdx(unsigned int idx) {
+    for (int relayID=0; relayID<relayCount(); relayID++) {
+        if (relayToIdx(relayID) == idx) {
+            return relayID;
+        }
+    }
+    return -1;
+}
+
+int relayToIdx(unsigned int relayID) {
+    char buffer[15];
+    sprintf(buffer, "dczRelayIdx%d", relayID);
+    return getSetting(buffer).toInt();
+}
+
+void relayDomoticzSetup() {
+
+    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+
+        String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+
+        if (type == MQTT_CONNECT_EVENT) {
+            mqttSubscribeRaw(dczTopicOut.c_str());
+        }
+
+        if (type == MQTT_MESSAGE_EVENT) {
+
+            // Check topic
+            if (dczTopicOut.equals(topic)) {
+
+                // Parse response
+                DynamicJsonBuffer jsonBuffer;
+                JsonObject& root = jsonBuffer.parseObject((char *) payload);
+                if (!root.success()) {
+                    DEBUG_MSG("[DOMOTICZ] Error parsing data\n");
+                    return;
+                }
+
+                // IDX
+                unsigned long idx = root["idx"];
+                int relayID = relayFromIdx(idx);
+                if (relayID >= 0) {
+                    unsigned long value = root["nvalue"];
+                    DEBUG_MSG("[DOMOTICZ] Received value %d for IDX %d\n", value, idx);
+                    relayStatus(relayID, value == 1);
+                }
+
+            }
+
+        }
+
+    });
+}
+
+#endif
+
+//------------------------------------------------------------------------------
+// MQTT
+//------------------------------------------------------------------------------
+
+void relayMQTT(unsigned char id) {
+    if (id >= _relays.size()) return;
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    char buffer[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 3];
+    sprintf(buffer, "%s/%d%s", MQTT_RELAY_TOPIC, id, mqttGetter.c_str());
+    mqttSend(buffer, relayStatus(id) ? "1" : "0");
+}
+
+void relayMQTT() {
+    for (unsigned int i=0; i < _relays.size(); i++) {
+        relayMQTT(i);
+    }
+}
+
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
@@ -220,6 +332,14 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 }
 
+void relaySetupMQTT() {
+    mqttRegister(relayMQTTCallback);
+}
+
+//------------------------------------------------------------------------------
+// Setup
+//------------------------------------------------------------------------------
+
 void relaySetup() {
 
     #ifdef SONOFF_DUAL
@@ -253,10 +373,13 @@ void relaySetup() {
         if (relayMode == RELAY_MODE_OFF) relayStatus(i, false);
         if (relayMode == RELAY_MODE_ON) relayStatus(i, true);
     }
-
     if (relayMode == RELAY_MODE_SAME) relayRetrieve();
 
-    mqttRegister(relayMQTTCallback);
+    relaySetupAPI();
+    relaySetupMQTT();
+    #if ENABLE_DOMOTICZ
+        relayDomoticzSetup();
+    #endif
 
     DEBUG_MSG("[RELAY] Number of relays: %d\n", _relays.size());
 

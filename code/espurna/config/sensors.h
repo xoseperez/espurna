@@ -14,7 +14,7 @@
 //--------------------------------------------------------------------------------
 
 #define DHT_PIN                 14
-#define DHT_UPDATE_INTERVAL     300000
+#define DHT_UPDATE_INTERVAL     60000
 #define DHT_TYPE                DHT22
 #define DHT_TIMING              11
 #define DHT_TEMPERATURE_TOPIC   "/temperature"

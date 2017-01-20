@@ -128,7 +128,7 @@ function createIdxs(count) {
     for (var id=0; id<count; id++) {
         var line = $(template).clone();
         $(line).find("input").each(function() {
-            $(this).attr("data", id).attr("tabindex", 43+id);
+            $(this).attr("data", id).attr("tabindex", 40+id);
         });
         if (count > 1) $(".id", line).html(" " + id);
         line.appendTo("#idxs");
@@ -264,12 +264,12 @@ function processData(data) {
         }
 
         // Domoticz
-        if (key == "dczIdx") {
-            var idxs = data.dczIdx;
+        if (key == "dczRelayIdx") {
+            var idxs = data.dczRelayIdx;
             createIdxs(idxs.length);
 
             for (var i in idxs) {
-                var element = $(".dczIdx[data=" + i + "]");
+                var element = $(".dczRelayIdx[data=" + i + "]");
                 if (element.length > 0) element.val(idxs[i]);
             }
 
