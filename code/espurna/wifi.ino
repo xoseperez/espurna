@@ -30,6 +30,9 @@ String getNetwork() {
 }
 
 void wifiDisconnect() {
+    #if ENABLE_POW
+        powEnable(false);
+    #endif
     jw.disconnect();
 }
 
@@ -149,14 +152,12 @@ void wifiSetup() {
 
         // Configure mDNS
 	    if (code == MESSAGE_CONNECTED) {
-
             if (MDNS.begin((char *) WiFi.hostname().c_str())) {
                 MDNS.addService("http", "tcp", 80);
 	            DEBUG_MSG("[MDNS] OK\n");
 	        } else {
 	            DEBUG_MSG("[MDNS] FAIL\n");
 	        }
-
 	    }
 
         // Configure captive portal
@@ -166,6 +167,17 @@ void wifiSetup() {
         if (code == MESSAGE_DISCONNECTED) {
             dnsServer.stop();
         }
+
+        // Manage POW
+        #if ENABLE_POW
+            if (code == MESSAGE_CONNECTED) {
+                powEnable(true);
+            }
+            if (code == MESSAGE_DISCONNECTED) {
+                powEnable(false);
+            }
+        #endif
+
 
     });
 

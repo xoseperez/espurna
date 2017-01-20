@@ -11,9 +11,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <HLW8012.h>
 
-#define POW_USE_INTERRUPTS 1
-
 HLW8012 hlw8012;
+bool _powEnabled = false;
 
 // -----------------------------------------------------------------------------
 // POW
@@ -29,16 +28,21 @@ void hlw8012_cf_interrupt() {
     hlw8012.cf_interrupt();
 }
 
-void powAttachInterrupts() {
-    attachInterrupt(POW_CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
-    attachInterrupt(POW_CF_PIN, hlw8012_cf_interrupt, CHANGE);
-    DEBUG_MSG("[POW] Enabled\n");
-}
-
-void powDettachInterrupts() {
-    detachInterrupt(POW_CF1_PIN);
-    detachInterrupt(POW_CF_PIN);
-    DEBUG_MSG("[POW] Disabled\n");
+void powEnable(bool status) {
+    _powEnabled = status;
+    if (_powEnabled) {
+        #if POW_USE_INTERRUPTS == 1
+            attachInterrupt(POW_CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
+            attachInterrupt(POW_CF_PIN, hlw8012_cf_interrupt, CHANGE);
+        #endif
+        DEBUG_MSG("[POW] Enabled\n");
+    } else {
+        #if POW_USE_INTERRUPTS == 1
+            detachInterrupt(POW_CF1_PIN);
+            detachInterrupt(POW_CF_PIN);
+        #endif
+        DEBUG_MSG("[POW] Disabled\n");
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -137,11 +141,6 @@ void powSetup() {
     // Retrieve calibration values
     powRetrieveCalibration();
 
-    // Attach interrupts
-    #if POW_USE_INTERRUPTS
-        powAttachInterrupts();
-    #endif
-
 }
 
 void powLoop() {
@@ -152,8 +151,20 @@ void powLoop() {
     static unsigned long power_sum = 0;
     static double current_sum = 0;
     static unsigned long voltage_sum = 0;
+    static bool powWasEnabled = false;
 
-    if ((millis() - last_update > POW_UPDATE_INTERVAL) || (last_update == 0 )){
+    // POW is disabled while there is no internet connection
+    // When the HLW8012 measurements are enabled back we reset the timer
+    if (!_powEnabled) {
+        powWasEnabled = false;
+        return;
+    }
+    if (!powWasEnabled) {
+        last_update = millis();
+        powWasEnabled = true;
+    }
+
+    if (millis() - last_update > POW_UPDATE_INTERVAL) {
 
         last_update = millis();
 

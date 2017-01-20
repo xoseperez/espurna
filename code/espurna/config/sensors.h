@@ -56,6 +56,7 @@
 #define POW_SEL_PIN             5
 #define POW_CF1_PIN             13
 #define POW_CF_PIN              14
+#define POW_USE_INTERRUPTS      1
 #define POW_SEL_CURRENT         HIGH
 #define POW_CURRENT_R           0.001
 #define POW_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
