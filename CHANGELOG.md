@@ -19,9 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - MQTT will topic
 - Crash with HLW812 interrupts while trying to create a WIFI connection
-- #20 Better inline documentation for Alexa and Domoticz default settings
-- #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
-- #41 Added password requirements to initial password change page
+- Issue #20 Better inline documentation for Alexa and Domoticz default settings
+- Issue #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
+- Issue #41 Added password requirements to initial password change page
 
 ### Changed
 - Changed LED pattern for WIFI notifications (shorter pulses)
@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Adding current, voltage, apparent and reactive power reports to Sonoff POW (Web & MQTT)
 
 ### Fixed
-- #35 Fixed frequent MQTT connection drops after WIFI reconnect
+- Issue #35 Fixed frequent MQTT connection drops after WIFI reconnect
 - Defer wifi disconnection from web interface to allow request to return
 
 ### Changed
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.4.3] 2017-01-11
 ### Fixed
-- #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
+- Issue #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
 
 ## [1.4.2] 2017-01-09
 ### Added
