@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Added support for JanGow Wifi Relay boards (both NC and NO versions)
 - Notify OTA updates to websocket clients, automatically reload page
 - Support for pulse mode notification LED and button
+- Revert relay state mode on boot (thanks to Minh Phuong Ly)
 
 ### Fixed
 - MQTT will topic
