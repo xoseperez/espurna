@@ -14,17 +14,25 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 #include <Ticker.h>
+#include <vector>
 
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+Ticker deferred;
 
 typedef struct {
     IPAddress ip;
     unsigned long timestamp = 0;
 } ws_ticket_t;
-
 ws_ticket_t _ticket[WS_BUFFER_SIZE];
-Ticker deferred;
+
+typedef struct {
+    char * url;
+    char * key;
+    apiGetCallbackFunction getFn = NULL;
+    apiPutCallbackFunction putFn = NULL;
+} web_api_t;
+std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -101,7 +109,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             bool fauxmoEnabled = false;
         #endif
         unsigned int network = 0;
-        unsigned int dczIdx = 0;
+        unsigned int dczRelayIdx = 0;
         String adminPass;
 
         for (unsigned int i=0; i<config.size(); i++) {
@@ -137,10 +145,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             #if ENABLE_DOMOTICZ
 
-                if (key == "dczIdx") {
-                    if (dczIdx >= relayCount()) continue;
-                    key = key + String(dczIdx);
-                    ++dczIdx;
+                if (key == "dczRelayIdx") {
+                    if (dczRelayIdx >= relayCount()) continue;
+                    key = key + String(dczRelayIdx);
+                    ++dczRelayIdx;
                 }
 
             #else
@@ -319,10 +327,27 @@ void _wsStart(uint32_t client_id) {
         root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
         root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
-        JsonArray& dczIdx = root.createNestedArray("dczIdx");
+        JsonArray& dczRelayIdx = root.createNestedArray("dczRelayIdx");
         for (byte i=0; i<relayCount(); i++) {
-            dczIdx.add(domoticzIdx(i));
+            dczRelayIdx.add(relayToIdx(i));
         }
+
+        #if ENABLE_DHT
+            root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
+            root["dczHumIdx"] = getSetting("dczHumIdx").toInt();
+        #endif
+
+        #if ENABLE_DS18B20
+            root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
+        #endif
+
+        #if ENABLE_EMON
+            root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
+        #endif
+
+        #if ENABLE_POW
+            root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
+        #endif
 
     #endif
 
@@ -453,7 +478,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 // WEBSERVER
 // -----------------------------------------------------------------------------
 
-void _logRequest(AsyncWebServerRequest *request) {
+void webLogRequest(AsyncWebServerRequest *request) {
     DEBUG_MSG("[WEBSERVER] Request: %s %s\n", request->methodToString(), request->url().c_str());
 }
 
@@ -464,46 +489,7 @@ bool _authenticate(AsyncWebServerRequest *request) {
     return request->authenticate(HTTP_USERNAME, httpPassword);
 }
 
-void _onAuth(AsyncWebServerRequest *request) {
-
-    _logRequest(request);
-
-    if (!_authenticate(request)) return request->requestAuthentication();
-
-    IPAddress ip = request->client()->remoteIP();
-    unsigned long now = millis();
-    unsigned short index;
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if (_ticket[index].ip == ip) break;
-        if (_ticket[index].timestamp == 0) break;
-        if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
-    }
-    if (index == WS_BUFFER_SIZE) {
-        request->send(423);
-    } else {
-        _ticket[index].ip = ip;
-        _ticket[index].timestamp = now;
-        request->send(204);
-    }
-
-}
-
-void _onHome(AsyncWebServerRequest *request) {
-
-    _logRequest(request);
-
-    if (!_authenticate(request)) return request->requestAuthentication();
-
-    String password = getSetting("adminPass", ADMIN_PASS);
-    if (password.equals(ADMIN_PASS)) {
-        request->send(SPIFFS, "/password.html");
-    } else {
-        request->send(SPIFFS, "/index.html");
-    }
-
-}
-
-bool _apiAuth(AsyncWebServerRequest *request) {
+bool _authAPI(AsyncWebServerRequest *request) {
 
     if (getSetting("apiEnabled").toInt() == 0) {
         DEBUG_MSG("[WEBSERVER] HTTP API is not enabled\n");
@@ -528,11 +514,68 @@ bool _apiAuth(AsyncWebServerRequest *request) {
 
 }
 
-void _onRelay(AsyncWebServerRequest *request) {
+ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
 
-    _logRequest(request);
+    return [apiID](AsyncWebServerRequest *request) {
+        webLogRequest(request);
 
-    if (!_apiAuth(request)) return;
+        if (!_authAPI(request)) return;
+
+        bool asJson = false;
+        if (request->hasHeader("Accept")) {
+            AsyncWebHeader* h = request->getHeader("Accept");
+            asJson = h->value().equals("application/json");
+        }
+
+        web_api_t api = _apis[apiID];
+        if (request->method() == HTTP_PUT) {
+            if (request->hasParam("value", true)) {
+                AsyncWebParameter* p = request->getParam("value", true);
+                (api.putFn)((p->value()).c_str());
+            }
+        }
+
+        char value[10];
+        (api.getFn)(value, 10);
+
+        // jump over leading spaces
+        char *p = value;
+        while ((unsigned char) *p == ' ') ++p;
+
+        if (asJson) {
+            char buffer[64];
+            sprintf_P(buffer, PSTR("{ \"%s\": %s }"), api.key, p);
+            request->send(200, "application/json", buffer);
+        } else {
+            request->send(200, "text/plain", p);
+        }
+
+    };
+
+}
+
+void apiRegister(const char * url, const char * key, apiGetCallbackFunction getFn, apiPutCallbackFunction putFn) {
+
+    // Store it
+    web_api_t api;
+    api.url = strdup(url);
+    api.key = strdup(key);
+    api.getFn = getFn;
+    api.putFn = putFn;
+    _apis.push_back(api);
+
+    // Bind call
+    unsigned int methods = HTTP_GET;
+    if (putFn != NULL) methods += HTTP_PUT;
+    server.on(url, methods, _bindAPI(_apis.size() - 1));
+
+}
+
+void _onAPIs(AsyncWebServerRequest *request) {
+
+    webLogRequest(request);
+
+    if (!_authAPI(request)) return;
 
     bool asJson = false;
     if (request->hasHeader("Accept")) {
@@ -542,53 +585,78 @@ void _onRelay(AsyncWebServerRequest *request) {
 
     String output;
     if (asJson) {
-        output = relayString();
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        for (unsigned int i=0; i < _apis.size(); i++) {
+            root[_apis[i].key] = _apis[i].url;
+        }
+        root.printTo(output);
         request->send(200, "application/json", output);
+
     } else {
-        for (unsigned int i=0; i<relayCount(); i++) {
-            output += "Relay #" + String(i) + String(": ") + String(relayStatus(i) ? "1" : "0") + "\n";
+        for (unsigned int i=0; i < _apis.size(); i++) {
+            output += _apis[i].key + String(" -> ") + _apis[i].url + String("\n<br />");
         }
         request->send(200, "text/plain", output);
     }
 
-};
+}
 
-ArRequestHandlerFunction _onRelayStatusWrapper(unsigned int relayID) {
+void _onHome(AsyncWebServerRequest *request) {
 
-    return [relayID](AsyncWebServerRequest *request) {
+    DEBUG_MSG("[DEBUG] Free heap: %d bytes\n", ESP.getFreeHeap());
 
-        _logRequest(request);
+    FSInfo fs_info;
+    if (SPIFFS.info(fs_info)) {
+        DEBUG_MSG("[DEBUG] File system total size: %d bytes\n", fs_info.totalBytes);
+        DEBUG_MSG("                    used size : %d bytes\n", fs_info.usedBytes);
+        DEBUG_MSG("                    block size: %d bytes\n", fs_info.blockSize);
+        DEBUG_MSG("                    page size : %d bytes\n", fs_info.pageSize);
+        DEBUG_MSG("                    max files : %d\n", fs_info.maxOpenFiles);
+        DEBUG_MSG("                    max length: %d\n", fs_info.maxPathLength);
+    } else {
+        DEBUG_MSG("[DEBUG] Error, FS not accesible!\n");
+    }
 
-        if (!_apiAuth(request)) return;
+    webLogRequest(request);
 
-        if (request->method() == HTTP_PUT) {
-            if (request->hasParam("status", true)) {
-                AsyncWebParameter* p = request->getParam("status", true);
-                unsigned int value = p->value().toInt();
-                if (value == 2) {
-                    relayToggle(relayID);
-                } else {
-                    relayStatus(relayID, value == 1);
-                }
-            }
-        }
+    if (!_authenticate(request)) return request->requestAuthentication();
 
-        bool asJson = false;
-        if (request->hasHeader("Accept")) {
-            AsyncWebHeader* h = request->getHeader("Accept");
-            asJson = h->value().equals("application/json");
-        }
+    String password = getSetting("adminPass", ADMIN_PASS);
+    if (password.equals(ADMIN_PASS)) {
+        request->send(SPIFFS, "/password.html");
+    } else {
+        request->send(SPIFFS, "/index.html");
+    }
 
-        String output;
-        if (asJson) {
-            output = String("{\"relayStatus\": ") + String(relayStatus(relayID) ? "1" : "0") + "}";
-            request->send(200, "application/json", output);
-        } else {
-            request->send(200, "text/plain", relayStatus(relayID) ? "1" : "0");
-        }
+}
 
-    };
+void _onAuth(AsyncWebServerRequest *request) {
 
+    webLogRequest(request);
+
+    if (!_authenticate(request)) return request->requestAuthentication();
+
+    IPAddress ip = request->client()->remoteIP();
+    unsigned long now = millis();
+    unsigned short index;
+    for (index = 0; index < WS_BUFFER_SIZE; index++) {
+        if (_ticket[index].ip == ip) break;
+        if (_ticket[index].timestamp == 0) break;
+        if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
+    }
+    if (index == WS_BUFFER_SIZE) {
+        request->send(423);
+    } else {
+        _ticket[index].ip = ip;
+        _ticket[index].timestamp = now;
+        request->send(204);
+    }
+
+}
+
+AsyncWebServer * getServer() {
+    return &server;
 }
 
 void webSetup() {
@@ -604,14 +672,7 @@ void webSetup() {
     server.on("/", HTTP_GET, _onHome);
     server.on("/index.html", HTTP_GET, _onHome);
     server.on("/auth", HTTP_GET, _onAuth);
-
-    // API entry points (protected with apikey)
-    for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
-        char buffer[15];
-        sprintf(buffer, "/api/relay/%d", relayID);
-        server.on(buffer, HTTP_GET + HTTP_PUT, _onRelayStatusWrapper(relayID));
-    }
-    server.on("/api/relay", HTTP_GET, _onRelay);
+    server.on("/apis", HTTP_GET, _onAPIs);
 
     // Serve static files
     char lastModified[50];

@@ -14,18 +14,21 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 OneWire oneWire(DS_PIN);
 DallasTemperature ds18b20(&oneWire);
 
-char dsTemperature[6];
+double _dsTemperature = 0;
 
 // -----------------------------------------------------------------------------
 // DS18B20
 // -----------------------------------------------------------------------------
 
-char * getDSTemperature() {
-    return dsTemperature;
+double getDSTemperature() {
+    return _dsTemperature;
 }
 
 void dsSetup() {
     ds18b20.begin();
+    apiRegister("/api/temperature", "temperature", [](char * buffer, size_t len) {
+        dtostrf(_dsTemperature, len-1, 1, buffer);
+    });
 }
 
 void dsLoop() {
@@ -48,16 +51,23 @@ void dsLoop() {
 
         } else {
 
-            dtostrf(t, 4, 1, dsTemperature);
+            _dsTemperature = t;
 
-            DEBUG_MSG("[DS18B20] Temperature: %s\n", dsTemperature);
+            char temperature[6];
+            dtostrf(t, 5, 1, temperature);
+            DEBUG_MSG("[DS18B20] Temperature: %s\n", temperature);
 
             // Send MQTT messages
-            mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), dsTemperature);
+            mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), temperature);
+
+            // Send to Domoticz
+            #if ENABLE_DOMOTICZ
+                domoticzSend("dczTmpIdx", temperature);
+            #endif
 
             // Update websocket clients
             char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s}"), dsTemperature);
+            sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s}"), temperature);
             wsSend(buffer);
 
         }

@@ -10,6 +10,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #if ENABLE_POW
 
 #include <HLW8012.h>
+#include <Hash.h>
+#include <ArduinoJson.h>
 
 HLW8012 hlw8012;
 bool _powEnabled = false;
@@ -141,6 +143,17 @@ void powSetup() {
     // Retrieve calibration values
     powRetrieveCalibration();
 
+    // API definitions
+    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", getActivePower());
+    });
+    apiRegister("/api/current", "current", [](char * buffer, size_t len) {
+        dtostrf(getCurrent(), len-1, 2, buffer);
+    });
+    apiRegister("/api/voltage", "voltage", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", getVoltage());
+    });
+
 }
 
 void powLoop() {
@@ -210,6 +223,10 @@ void powLoop() {
             mqttSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
             mqttSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
             mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor).c_str());
+
+            #if ENABLE_DOMOTICZ
+                domoticzSend("dczPowIdx", power);
+            #endif
 
             power_sum = current_sum = voltage_sum = 0;
             report_count = POW_REPORT_EVERY;

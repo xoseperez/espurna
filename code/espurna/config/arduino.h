@@ -30,14 +30,14 @@
 //#define ESPURNA
 
 //--------------------------------------------------------------------------------
-// Features (values below are default values)
+// Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
-//#define ENABLE_DHT            0
-//#define ENABLE_DS18B20        0
-//#define ENABLE_EMON           0
-//#define ENABLE_HLW8018        0
-//#define ENABLE_RF             0
-//#define ENABLE_FAUXMO         1
-//#define ENABLE_NOFUSS         0
-//#define ENABLE_DOMOTICZ       1
+//#define ENABLE_DHT            1
+//#define ENABLE_DS18B20        1
+//#define ENABLE_EMON           1
+//#define ENABLE_HLW8018        1
+//#define ENABLE_RF             1
+//#define ENABLE_FAUXMO         0
+//#define ENABLE_NOFUSS         1
+//#define ENABLE_DOMOTICZ       0

@@ -19,20 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include <Arduino.h>
 #include "config/all.h"
 
 // -----------------------------------------------------------------------------
-// PROTOTYPES
+// GLOBALS
 // -----------------------------------------------------------------------------
 
-#include <NtpClientLib.h>
-#include <ESPAsyncWebServer.h>
-#include <AsyncMqttClient.h>
-
-void mqttRegister(void (*callback)(unsigned int, const char *, const char *));
-template<typename T> bool setSetting(const String& key, T value);
-template<typename T> String getSetting(const String& key, T defaultValue);
+char apibuffer[64];
 
 // -----------------------------------------------------------------------------
 // METHODS
@@ -114,9 +107,6 @@ void setup() {
     webSetup();
     ntpSetup();
 
-    #if ENABLE_DOMOTICZ
-        domoticzSetup();
-    #endif
     #if ENABLE_FAUXMO
         fauxmoSetup();
     #endif
