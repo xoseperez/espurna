@@ -3,6 +3,28 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.0] 2017-01-21
+### Added
+- Pulse mode. Allows to define a pulse time after which the relay will switch back
+- API entry points for sensor data (power, current, voltage, temperature and humidity)
+- Export sensor data to Domoticz (power, current, voltage, temperature and humidity)
+- Configurable (in code) mapping between buttons and relays
+- MQTT messages for button events
+- Added support for Itead Studio 1CH inching/self locking smart switch board
+- Added support for JanGow Wifi Relay boards (both NC and NO versions)
+- Notify OTA updates to websocket clients, automatically reload page
+- Support for pulse mode notification LED and button
+
+### Fixed
+- MQTT will topic
+- Crash with HLW812 interrupts while trying to create a WIFI connection
+- #20 Better inline documentation for Alexa and Domoticz default settings
+- #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
+- #41 Added password requirements to initial password change page
+
+### Changed
+- Changed LED pattern for WIFI notifications (shorter pulses)
+
 ## [1.4.4] 2017-01-13
 ### Added
 - Adding current, voltage, apparent and reactive power reports to Sonoff POW (Web & MQTT)

@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.4.4**, read the [changelog](CHANGELOG.md).
+**Current Release Version is 1.5.0**, read the [changelog](CHANGELOG.md).
 
 ## Features
 
@@ -16,21 +16,23 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * Support for different **sensors**
     * DHT11 / DHT22 / DHT21 / AM2301
     * DS18B20
-    * HLW8012 (Sonoff POW)
+    * HLW8012 using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
     * Non-invasive current sensor using the [EmonLiteESP Library](https://bitbucket.org/xoseperez/emonliteesp) (requires some hacking)
 * Fast asynchronous **HTTP Server**
     * Basic authentication
     * Web-based configuration
     * Relay switching from the web
     * Websockets-based communication between the device and the browser
-* **REST API**
-    * GET and PUT relay status
-* **Command line configuration**
 * **Over-The-Air** (OTA) updates even for 1Mb boards
     * Manually from PlatformIO or Arduino Inside
     * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
+* **REST API**
+    * GET and PUT relay status
+    * GET sensor data (power, current, voltage, temperature and humidity) depending on the available hardware
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
+* [**Home Assistant**](https://home-assistant.io/) integration via MQTT
+* **Command line configuration**
 
 ## Documentation
 
