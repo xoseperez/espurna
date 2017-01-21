@@ -51,7 +51,7 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 
 ## License
 
-Copyright (C) 2016-2017 by Xose Pérez (@xoseperez)
+Copyright (C) 2016-2017 by Xose P�rez (@xoseperez)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
