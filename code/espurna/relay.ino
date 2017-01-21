@@ -161,13 +161,16 @@ void relaySave() {
     EEPROM.commit();
 }
 
-void relayRetrieve() {
+void relayRetrieve(bool invert) {
     recursive = true;
     unsigned char bit = 1;
-    unsigned char mask = EEPROM.read(0);
+    unsigned char mask = invert ? ~EEPROM.read(0) : EEPROM.read(0);
     for (unsigned int i=0; i < _relays.size(); i++) {
         relayStatus(i, ((mask & bit) == bit));
         bit += bit;
+    }
+    if (invert) {
+      relaySave();
     }
     recursive = false;
 }
@@ -254,7 +257,8 @@ void relaySetup() {
         if (relayMode == RELAY_MODE_ON) relayStatus(i, true);
     }
 
-    if (relayMode == RELAY_MODE_SAME) relayRetrieve();
+    if (relayMode == RELAY_MODE_SAME) relayRetrieve(false);
+    if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);
 
     mqttRegister(relayMQTTCallback);
 
