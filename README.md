@@ -8,11 +8,19 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Features
 
-* Support for **multiple ESP8266-based boards** ([check list](#supported-hardware))
+* Support for **multiple ESP8266-based boards**
 * Wifi **AP Mode** or **STA mode** with **multiple network definitions** and static IP support
+* Switch management
+    * Configurable **status on boot** (always ON, always OFF, same as before or toggle)
+    * Support for **pulse mode** (normally ON or normally OFF) with configurable time
+    * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
 * **MQTT** enabled
     * Switch on/off and toggle relays
+    * Enable/disable pulse mode
     * LED notifications
+* **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
+* [**Domoticz**](https://domoticz.com/) integration via MQTT
+* [**Home Assistant**](https://home-assistant.io/) integration via MQTT
 * Support for different **sensors**
     * DHT11 / DHT22 / DHT21 / AM2301
     * DS18B20
@@ -21,17 +29,14 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * Fast asynchronous **HTTP Server**
     * Basic authentication
     * Web-based configuration
-    * Relay switching from the web
+    * Relay switching and sensor data from the web interface
     * Websockets-based communication between the device and the browser
-* **Over-The-Air** (OTA) updates even for 1Mb boards
-    * Manually from PlatformIO or Arduino Inside
-    * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
-* **REST API**
+* **REST API** (enable/disable from web interface)
     * GET and PUT relay status
     * GET sensor data (power, current, voltage, temperature and humidity) depending on the available hardware
-* **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
-* [**Domoticz**](https://domoticz.com/) integration via MQTT
-* [**Home Assistant**](https://home-assistant.io/) integration via MQTT
+* **Over-The-Air** (OTA) updates even for 1Mb boards
+    * Manually from PlatformIO or Arduino IDE
+    * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
 * **Command line configuration**
 
 ## Documentation
