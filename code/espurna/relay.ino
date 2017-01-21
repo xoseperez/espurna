@@ -457,13 +457,8 @@ void relaySetup() {
         if (relayMode == RELAY_MODE_OFF) relayStatus(i, false);
         if (relayMode == RELAY_MODE_ON) relayStatus(i, true);
     }
-<<<<<<< HEAD
-    if (relayMode == RELAY_MODE_SAME) relayRetrieve();
-=======
-
     if (relayMode == RELAY_MODE_SAME) relayRetrieve(false);
     if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);
->>>>>>> Enable revert state mode
 
     relaySetupAPI();
     relaySetupMQTT();
