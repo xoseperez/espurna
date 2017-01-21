@@ -17,8 +17,8 @@ void buttonMQTT(unsigned char id) {
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     char buffer[strlen(MQTT_BUTTON_TOPIC) + mqttGetter.length() + 3];
     sprintf(buffer, "%s/%d%s", MQTT_BUTTON_TOPIC, id, mqttGetter.c_str());
-    mqttSend(buffer, 1);
-    mqttSend(buffer, 0);
+    mqttSend(buffer, "1");
+    mqttSend(buffer, "0");
 }
 #endif
 
