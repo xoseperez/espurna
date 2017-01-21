@@ -106,6 +106,12 @@ void buttonSetup() {
         _buttons.push_back({new DebounceEvent(BUTTON4_PIN), BUTTON4_RELAY});
     #endif
 
+    #ifdef LED_PULSE
+        pinMode(LED_PULSE, OUTPUT);
+        byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
+        digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
+    #endif
+
     DEBUG_MSG("[BUTTON] Number of buttons: %d\n", _buttons.size());
 
 }
@@ -114,20 +120,32 @@ void buttonLoop() {
 
     for (unsigned int i=0; i < _buttons.size(); i++) {
         if (_buttons[i].button->loop()) {
+
             uint8_t event = _buttons[i].button->getEvent();
             DEBUG_MSG("[BUTTON] Pressed #%d, event: %d\n", i, event);
+
             #ifdef MQTT_BUTTON_TOPIC
                 buttonMQTT(i);
             #endif
+
             if (i == 0) {
                 if (event == EVENT_DOUBLE_CLICK) createAP();
                 if (event == EVENT_LONG_CLICK) ESP.reset();
             }
+
+            #ifdef ITEAD_1CH_INCHING
+                if (i == 1) {
+                    relayPulseToggle();
+                    continue;
+                }
+            #endif
+
             if (event == EVENT_SINGLE_CLICK) {
                 if (_buttons[i].relayID > 0) {
                     relayToggle(_buttons[i].relayID - 1);
                 }
             }
+
         }
     }
 

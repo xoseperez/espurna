@@ -264,6 +264,11 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setCurrentRatio(getSetting("emonRatio").toFloat());
             #endif
 
+            #if ITEAD_1CH_INCHING
+                byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
+                digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
+            #endif
+
             // Check if we should reconfigure MQTT connection
             if (changedMQTT) {
                 mqttDisconnect();
@@ -313,6 +318,8 @@ void _wsStart(uint32_t client_id) {
         relay.add(relayStatus(relayID));
     }
     root["relayMode"] = getSetting("relayMode", RELAY_MODE);
+    root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
+    root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME);
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);

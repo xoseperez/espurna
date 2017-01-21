@@ -7,6 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <EEPROM.h>
+#include <Ticker.h>
 #include <ArduinoJson.h>
 #include <vector>
 #include <functional>
@@ -20,6 +21,7 @@ std::vector<relay_t> _relays;
 #ifdef SONOFF_DUAL
     unsigned char dualRelayStatus = 0;
 #endif
+Ticker pulseTicker;
 
 bool recursive = false;
 
@@ -50,6 +52,71 @@ bool relayStatus(unsigned char id) {
     #endif
 }
 
+void relayPulseBack(unsigned char id) {
+    relayToggle(id);
+    pulseTicker.detach();
+}
+
+void relayPulse(unsigned char id) {
+
+    byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
+    if (relayPulseMode == RELAY_PULSE_NONE) return;
+
+    bool status = relayStatus(id);
+    bool pulseStatus = (relayPulseMode == RELAY_PULSE_ON);
+    if (pulseStatus == status) {
+        pulseTicker.detach();
+        return;
+    }
+
+    pulseTicker.attach(
+        getSetting("relayPulseTime", RELAY_PULSE_TIME).toInt(),
+        relayPulseBack,
+        id
+    );
+
+}
+
+unsigned int relayPulseMode() {
+    unsigned int value = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
+    return value;
+}
+
+void relayPulseMode(unsigned int value, bool report) {
+
+    setSetting("relayPulseMode", value);
+
+    /*
+    if (report) {
+        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+        char topic[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 10];
+        sprintf(topic, "%s/pulse%s", MQTT_RELAY_TOPIC, mqttGetter.c_str());
+        char value[2];
+        sprintf(value, "%d", value);
+        mqttSend(topic, value);
+    }
+    */
+
+    char message[20];
+    sprintf(message, "{\"relayPulseMode\": %d}", value);
+    wsSend(message);
+
+    #ifdef LED_PULSE
+        digitalWrite(LED_PULSE, value != RELAY_PULSE_NONE);
+    #endif
+
+}
+
+void relayPulseMode(unsigned int value) {
+    relayPulseMode(value, true);
+}
+
+void relayPulseToggle() {
+    unsigned int value = relayPulseMode();
+    value = (value == RELAY_PULSE_NONE) ? RELAY_PULSE_OFF : RELAY_PULSE_NONE;
+    relayPulseMode(value);
+}
+
 bool relayStatus(unsigned char id, bool status, bool report) {
 
     if (id >= _relays.size()) return false;
@@ -77,6 +144,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
         if (report) relayMQTT(id);
         if (!recursive) {
+            relayPulse(id);
             relaySync(id);
             relaySave();
             relayWS();
@@ -93,7 +161,6 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    if (id >= _relays.size()) return false;
     return relayStatus(id, status, true);
 }
 
@@ -300,10 +367,16 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     bool sameSetGet = mqttGetter.compareTo(mqttSetter) == 0;
 
     if (type == MQTT_CONNECT_EVENT) {
+
         relayMQTT();
-        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 3];
+        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 10];
+
         sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
         mqttSubscribe(buffer);
+
+        sprintf(buffer, "%s/pulse%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
+        mqttSubscribe(buffer);
+
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -313,6 +386,15 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
         if (!t.endsWith(mqttSetter)) return;
 
+        // Get value
+        unsigned int value = (char)payload[0] - '0';
+
+        // Pulse topic
+        if (t.indexOf("pulse") > 0) {
+            relayPulseMode(value, !sameSetGet);
+            return;
+        }
+
         // Get relay ID
         unsigned int relayID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
         if (relayID >= relayCount()) {
@@ -321,7 +403,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         }
 
         // Action to perform
-        unsigned int value = (char)payload[0] - '0';
         if (value == 2) {
             relayToggle(relayID);
         } else {
