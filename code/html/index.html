@@ -331,8 +331,8 @@
                                         - <strong>&lt;root&gt;/relay/#</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the relay ID (starting from 0). If the board has only one relay it will be 0.<br />
                                         - <strong>&lt;root&gt;/led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
                                         - <strong>&lt;root&gt;/ip</strong> The device will report to this topic its IP.<br />
-                                        - <strong>&lt;root&gt;/heartbeat</strong> The device will report to this topic every few minutes.<br />
                                         - <strong>&lt;root&gt;/version</strong> The device will report to this topic its firmware version on boot.<br />
+                                        - <strong>&lt;root&gt;/status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.
                                 </div>
 
                             </fieldset>

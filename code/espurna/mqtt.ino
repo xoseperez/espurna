@@ -78,7 +78,6 @@ void _mqttOnConnect(bool sessionPresent) {
 
     // Build MQTT topics
     buildTopics();
-    mqtt.setWill((mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, (char *) "0");
 
     // Say hello and report our IP and VERSION
     mqttSend(MQTT_IP_TOPIC, getIP().c_str());
@@ -141,7 +140,7 @@ void mqttConnect() {
         DEBUG_MSG("[MQTT] Connecting to broker at %s", host);
         mqtt.setServer(host, port);
         mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-	    mqtt.setWill(MQTT_HEARTBEAT_TOPIC, MQTT_QOS, MQTT_RETAIN, "0");
+	    mqtt.setWill((mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
         if ((strlen(user) > 0) && (strlen(pass) > 0)) {
             DEBUG_MSG(" as user '%s'.", user);
             mqtt.setCredentials(user, pass);
@@ -157,6 +156,7 @@ void mqttSetup() {
     mqtt.onConnect(_mqttOnConnect);
     mqtt.onDisconnect(_mqttOnDisconnect);
     mqtt.onMessage(_mqttOnMessage);
+    buildTopics();
 }
 
 void mqttLoop() {

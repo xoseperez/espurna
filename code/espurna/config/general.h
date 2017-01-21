@@ -73,8 +73,7 @@
 #define MQTT_BUTTON_TOPIC       "/button"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
-#define MQTT_FSVERSION_TOPIC    "/fsversion"
-#define MQTT_HEARTBEAT_TOPIC    "/heartbeat"
+#define MQTT_HEARTBEAT_TOPIC    "/status"
 
 #define MQTT_CONNECT_EVENT      0
 #define MQTT_DISCONNECT_EVENT   1
