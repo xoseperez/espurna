@@ -221,7 +221,8 @@ void relayRetrieve(bool invert) {
         bit += bit;
     }
     if (invert) {
-      relaySave();
+        EEPROM.write(0, mask);
+        EEPROM.commit();
     }
     recursive = false;
 }
