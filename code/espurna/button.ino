@@ -82,28 +82,28 @@ typedef struct {
 std::vector<button_t> _buttons;
 
 #ifdef MQTT_BUTTON_TOPIC
-void buttonMQTT(unsigned char id) {
+void buttonMQTT(unsigned char id, const char * payload) {
     if (id >= _buttons.size()) return;
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     char buffer[strlen(MQTT_BUTTON_TOPIC) + mqttGetter.length() + 3];
     sprintf(buffer, "%s/%d%s", MQTT_BUTTON_TOPIC, id, mqttGetter.c_str());
-    mqttSend(buffer, _buttons[id].button->pressed() ? "1" : "0");
+    mqttSend(buffer, payload);
 }
 #endif
 
 void buttonSetup() {
 
     #ifdef BUTTON1_PIN
-        _buttons.push_back({new DebounceEvent(BUTTON1_PIN), BUTTON1_RELAY});
+        _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE), BUTTON1_RELAY});
     #endif
     #ifdef BUTTON2_PIN
-        _buttons.push_back({new DebounceEvent(BUTTON2_PIN), BUTTON2_RELAY});
+        _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE), BUTTON2_RELAY});
     #endif
     #ifdef BUTTON3_PIN
-        _buttons.push_back({new DebounceEvent(BUTTON3_PIN), BUTTON3_RELAY});
+        _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE), BUTTON3_RELAY});
     #endif
     #ifdef BUTTON4_PIN
-        _buttons.push_back({new DebounceEvent(BUTTON4_PIN), BUTTON4_RELAY});
+        _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE), BUTTON4_RELAY});
     #endif
 
     #ifdef LED_PULSE
@@ -125,7 +125,7 @@ void buttonLoop() {
             DEBUG_MSG("[BUTTON] Pressed #%d, event: %d\n", i, event);
 
             #ifdef MQTT_BUTTON_TOPIC
-                buttonMQTT(i);
+                buttonMQTT(i, (event == EVENT_CHANGED || event == EVENT_PRESSED) ? "1" : "0");
             #endif
 
             if (i == 0) {
@@ -140,7 +140,9 @@ void buttonLoop() {
                 }
             #endif
 
-            if (event == EVENT_SINGLE_CLICK) {
+            // Here we can have EVENT_CHANGED only when using BUTTON_SWITCH
+            // and EVENT_SINGLE_CLICK only when using BUTTON_PUSHBUTTON
+            if (event == EVENT_SINGLE_CLICK || event == EVENT_CHANGED) {
                 if (_buttons[i].relayID > 0) {
                     relayToggle(_buttons[i].relayID - 1);
                 }
