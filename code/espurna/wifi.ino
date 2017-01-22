@@ -168,6 +168,11 @@ void wifiSetup() {
             dnsServer.stop();
         }
 
+        // NTP connection reset
+        if (code == MESSAGE_CONNECTED) {
+            ntpConnect();
+        }
+
         // Manage POW
         #if ENABLE_POW
             if (code == MESSAGE_CONNECTED) {
