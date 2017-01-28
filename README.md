@@ -46,6 +46,8 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 
 ## Supported hardware
 
+||||
+|-|-|-|
 |![IteadStudio S20](images/devices/s20.jpg)|![IteadStudio Slampher](images/devices/slampher.jpg)|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|
 |**IteadStudio S20**|**IteadStudio Slampher**|**IteadStudio Sonoff 4CH**|
 |![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio Motor Switch](images/devices/motor-switch.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)|
@@ -62,7 +64,7 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 
 ## License
 
-Copyright (C) 2016-2017 by Xose Pï¿½rez (@xoseperez)
+Copyright (C) 2016-2017 by Xose Pérez (@xoseperez)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
