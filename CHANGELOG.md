@@ -3,6 +3,14 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.1] 2017-01-28
+### Added
+- OpenEnergyMonitor WiFi MQTT Relay / Thermostat support (thanks to Denis French)
+
+### Fixed
+- NTP connection refresh upon wifi connection
+- Filesystem image build using local gulp installation
+
 ## [1.5.0] 2017-01-21
 ### Added
 - Pulse mode. Allows to define a pulse time after which the relay will switch back
@@ -20,8 +28,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - MQTT will topic
 - Crash with HLW812 interrupts while trying to create a WIFI connection
 - Issue #20 Better inline documentation for Alexa and Domoticz default settings
-- Issue #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
-- Issue #41 Added password requirements to initial password change page
+- #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
+- #41 Added password requirements to initial password change page
 
 ### Changed
 - Changed LED pattern for WIFI notifications (shorter pulses)
@@ -31,7 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Adding current, voltage, apparent and reactive power reports to Sonoff POW (Web & MQTT)
 
 ### Fixed
-- Issue #35 Fixed frequent MQTT connection drops after WIFI reconnect
+- #35 Fixed frequent MQTT connection drops after WIFI reconnect
 - Defer wifi disconnection from web interface to allow request to return
 
 ### Changed
@@ -40,7 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.4.3] 2017-01-11
 ### Fixed
-- Issue #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
+- #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
 
 ## [1.4.2] 2017-01-09
 ### Added
