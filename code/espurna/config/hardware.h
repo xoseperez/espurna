@@ -16,7 +16,7 @@
 //#define ESP_RELAY_BOARD
 //#define ECOPLUG
 //#define ESPURNA
-//#define WIFI_RELAY
+//#define MQTT_RELAY
 
 //#define ENABLE_DHT            1
 //#define ENABLE_DS18B20        1
@@ -189,10 +189,10 @@
 // WiFi MQTT Relay / Thermostat
 // -----------------------------------------------------------------------------
 
-#elif defined(WIFI_RELAY)
+#elif defined(MQTT_RELAY)
 
     #define MANUFACTURER        "OPENENERGYMONITOR"
-    #define DEVICE              "WIFI_RELAY"
+    #define DEVICE              "MQTT_RELAY"
     #define BUTTON1_PIN         0
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
