@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.2] 2017-01-29
+### Fixed
+- Fix bug in emon topic payload
+
 ## [1.5.1] 2017-01-28
 ### Added
 - OpenEnergyMonitor WiFi MQTT Relay / Thermostat support (thanks to Denis French)
