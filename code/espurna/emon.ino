@@ -112,7 +112,7 @@ void powerMonitorLoop() {
             measurements = 0;
 
             char power[6];
-            snprintf(power, "%d", 6, _power);
+            snprintf(power, 6, "%d", _power);
             mqttSend(getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
             #if ENABLE_DOMOTICZ
                 domoticzSend("dczPowIdx", power);
