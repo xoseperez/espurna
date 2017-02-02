@@ -170,8 +170,8 @@ void powerMonitorLoop() {
         DEBUG_MSG("[ENERGY] Power: %dW\n", int(_current * mainsVoltage));
 
         // Update websocket clients
-        char text[20];
-        sprintf_P(text, PSTR("{\"emonPower\": %d}"), int(_current * mainsVoltage));
+        char text[64];
+        sprintf_P(text, PSTR("{\"emonVisible\": 1, \"powApparentPower\": %d}"), int(_current * mainsVoltage));
         wsSend(text);
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS

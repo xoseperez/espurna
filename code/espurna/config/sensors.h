@@ -59,7 +59,7 @@
 	#define EMON_ADC_BITS           12
 	#define EMON_REFERENCE_VOLTAGE  3.3
     #define EMON_CURRENT_PRECISION  2
-    #define EMON_CURRENT_OFFSET     0
+    #define EMON_CURRENT_OFFSET     0.10
 #endif
 
 #define EMON_CURRENT_RATIO      30
