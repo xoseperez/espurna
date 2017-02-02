@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.3] 2017-02-02
+### Fixed
+- Issue #50 and #54. Fixed domoticz MQTT message format
+
+### Added
+- Energy calculation and aggregation. API entry points and MQTT messages.
+
 ## [1.5.2] 2017-01-29
 ### Fixed
 - Fix bug in emon topic payload
@@ -32,8 +39,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - MQTT will topic
 - Crash with HLW812 interrupts while trying to create a WIFI connection
 - Issue #20 Better inline documentation for Alexa and Domoticz default settings
-- #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
-- #41 Added password requirements to initial password change page
+- Issue #39 Fixed autoconnect issue with static IP (fixed in JustWifi library)
+- Issue #41 Added password requirements to initial password change page
 
 ### Changed
 - Changed LED pattern for WIFI notifications (shorter pulses)
@@ -43,7 +50,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Adding current, voltage, apparent and reactive power reports to Sonoff POW (Web & MQTT)
 
 ### Fixed
-- #35 Fixed frequent MQTT connection drops after WIFI reconnect
+- Issue #35 Fixed frequent MQTT connection drops after WIFI reconnect
 - Defer wifi disconnection from web interface to allow request to return
 
 ### Changed
@@ -52,14 +59,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.4.3] 2017-01-11
 ### Fixed
-- #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
+- Issue #6 Using forked Time library to prevent conflict with Arduino Core for ESP8266 time.h file in windows machines
 
 ## [1.4.2] 2017-01-09
 ### Added
 - Support for inverse logic relays
 
 ### Fixed
-- Fixed error in relay identification from MQTT messages (issue #31)
+- Issue #31. Fixed error in relay identification from MQTT messages
 
 ## [1.4.1] 2017-01-05
 ### Added
@@ -75,7 +82,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for static IP connections
 
 ### Fixed
-- Enforce minimum password strength in web interface (#16)
+- Issue #16. Enforce minimum password strength in web interface
 
 ### Changed
 - Using default client_id provided by AsyncMqttClient
