@@ -20,6 +20,11 @@
 #define DHT_TEMPERATURE_TOPIC   "/temperature"
 #define DHT_HUMIDITY_TOPIC      "/humidity"
 
+#define HUMIDITY_NORMAL         0
+#define HUMIDITY_COMFORTABLE    1
+#define HUMIDITY_DRY            2
+#define HUMIDITY_WET            3
+
 //--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
 // Enable support by passing ENABLE_DS18B20=1 build flag
@@ -46,6 +51,7 @@
 #define EMON_MAINS_VOLTAGE      230
 #define EMON_CURRENT_RATIO      180
 #define EMON_POWER_TOPIC        "/power"
+#define EMON_ENERGY_TOPIC       "/energy"
 
 //--------------------------------------------------------------------------------
 // HLW8012 power sensor (Sonoff POW)
