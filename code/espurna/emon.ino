@@ -144,13 +144,14 @@ void powerMonitorLoop() {
     if (millis() > next_measurement) {
 
         // Safety check: do not read current if relay is OFF
-        if (!relayStatus(0)) {
-            _current = 0;
-        } else {
+        // You could be monitoring another line with the current clamp...
+        //if (!relayStatus(0)) {
+        //    _current = 0;
+        //} else {
             _current = emon.getCurrent(EMON_SAMPLES);
             _current -= EMON_CURRENT_OFFSET;
             if (_current < 0) _current = 0;
-        }
+        //}
 
         if (measurements == 0) {
             max = min = _current;

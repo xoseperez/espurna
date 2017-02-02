@@ -37,6 +37,7 @@
 //--------------------------------------------------------------------------------
 // Custom current sensor
 // Check http://tinkerman.cat/your-laundry-is-done/
+// Check http://tinkerman.cat/power-monitoring-sonoff-th-adc121/
 // Enable support by passing ENABLE_EMON=1 build flag
 //--------------------------------------------------------------------------------
 
