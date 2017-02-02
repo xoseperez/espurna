@@ -28,6 +28,7 @@
 //#define WIFI_RELAY_NC
 //#define WIFI_RELAY_NO
 //#define ESPURNA
+//#define MQTT_RELAY
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

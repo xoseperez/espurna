@@ -14,7 +14,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // NTP
 // -----------------------------------------------------------------------------
 
-void ntpConnect(WiFiEventStationModeGotIP ipInfo) {
+void ntpConnect() {
     NTP.begin(NTP_SERVER, NTP_TIME_OFFSET, NTP_DAY_LIGHT);
     NTP.setInterval(NTP_UPDATE_INTERVAL);
 }
@@ -32,9 +32,6 @@ void ntpSetup() {
             DEBUG_MSG("[NTP] Time: %s\n", (char *) NTP.getTimeDateString(NTP.getLastNTPSync()).c_str());
         }
     });
-
-    static WiFiEventHandler e;
-    e = WiFi.onStationModeGotIP(ntpConnect);
 
 }
 

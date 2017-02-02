@@ -73,8 +73,22 @@ void dhtLoop() {
 
             // Send to Domoticz
             #if ENABLE_DOMOTICZ
-                domoticzSend("dczTmpIdx", temperature);
-                domoticzSend("dczHumIdx", humidity);
+            {
+                domoticzSend("dczTmpIdx", 0, temperature);
+                int status;
+                if (h > 70) {
+                    status = HUMIDITY_WET;
+                } else if (h > 45) {
+                    status = HUMIDITY_COMFORTABLE;
+                } else if (h > 30) {
+                    status = HUMIDITY_NORMAL;
+                } else {
+                    status = HUMIDITY_DRY;
+                }
+                char buffer[2];
+                sprintf(buffer, "%d", status);
+                domoticzSend("dczHumIdx", humidity, buffer);
+            }
             #endif
 
             // Update websocket clients
