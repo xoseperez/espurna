@@ -386,6 +386,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
+        if (strncmp(topic, "domoticz", 8) == 0) return;
         String t = String(topic + mqttTopicRootLength());
         if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
         if (!t.endsWith(mqttSetter)) return;
