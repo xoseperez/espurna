@@ -1,4 +1,22 @@
 // -----------------------------------------------------------------------------
+// Configuration HELP
+// -----------------------------------------------------------------------------
+//
+// MANUFACTURER: Name of the manufacturer of the board ("string")
+// DEVICE: Name of the device ("string")
+// BUTTON#_PIN: GPIO for the n-th button (1-based, up to 4 buttons)
+// BUTTON#_RELAY: Relay number that will be bind to the n-th button (1-based)
+// BUTTON#_MODE: A mask of options (BUTTON_PUSHBUTTON and BUTTON_SWITCH cannot be together)
+//   - BUTTON_PUSHBUTTON: button event is fired when released
+//   - BUTTON_SWITCH: button event is fired when pressed or released
+//   - BUTTON_DEFAULT_HIGH: there is a pull up in place
+//   - BUTTON_SET_PULLUP: set pullup by software
+// RELAY#_PIN: GPIO for the n-th relay (1-based, up to 4 relays)
+// RELAY#_PIN_INVERSE: Relay has inversed logic (closed or ON when pulled down)
+// LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
+// LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
+
+// -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
 
@@ -167,6 +185,8 @@
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
+
+    // Special LED that shows pulse mode status
     #define LED_PULSE           14
 
 // -----------------------------------------------------------------------------
