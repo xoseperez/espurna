@@ -257,6 +257,21 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
+// WiFi MQTT Relay / Thermostat
+// -----------------------------------------------------------------------------
+
+#elif defined(MQTT_RELAY)
+
+    #define MANUFACTURER        "OPENENERGYMONITOR"
+    #define DEVICE              "MQTT_RELAY"
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
+    #define LED1_PIN            16
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 

@@ -208,20 +208,21 @@ void relaySave() {
         if (relayStatus(i)) mask += bit;
         bit += bit;
     }
-    EEPROM.write(0, mask);
+    EEPROM.write(EEPROM_RELAY_STATUS, mask);
     EEPROM.commit();
 }
 
 void relayRetrieve(bool invert) {
     recursive = true;
     unsigned char bit = 1;
-    unsigned char mask = invert ? ~EEPROM.read(0) : EEPROM.read(0);
+    unsigned char mask = invert ? ~EEPROM.read(EEPROM_RELAY_STATUS) : EEPROM.read(EEPROM_RELAY_STATUS);
     for (unsigned int i=0; i < _relays.size(); i++) {
         relayStatus(i, ((mask & bit) == bit));
         bit += bit;
     }
     if (invert) {
-      relaySave();
+        EEPROM.write(EEPROM_RELAY_STATUS, mask);
+        EEPROM.commit();
     }
     recursive = false;
 }
@@ -385,6 +386,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
+        if (strncmp(topic, "domoticz", 8) == 0) return;
         String t = String(topic + mqttTopicRootLength());
         if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
         if (!t.endsWith(mqttSetter)) return;

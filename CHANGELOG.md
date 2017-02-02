@@ -3,6 +3,25 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.3] 2017-02-02
+### Fixed
+- Issue #50 and #54. Fixed domoticz MQTT message format
+
+### Added
+- Energy calculation and aggregation. API entry points and MQTT messages.
+
+## [1.5.2] 2017-01-29
+### Fixed
+- Fix bug in emon topic payload
+
+## [1.5.1] 2017-01-28
+### Added
+- OpenEnergyMonitor WiFi MQTT Relay / Thermostat support (thanks to Denis French)
+
+### Fixed
+- NTP connection refresh upon wifi connection
+- Filesystem image build using local gulp installation
+
 ## [1.5.0] 2017-01-21
 ### Added
 - Pulse mode. Allows to define a pulse time after which the relay will switch back
@@ -47,7 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for inverse logic relays
 
 ### Fixed
-- Fixed error in relay identification from MQTT messages (issue #31)
+- Issue #31. Fixed error in relay identification from MQTT messages
 
 ## [1.4.1] 2017-01-05
 ### Added
@@ -63,7 +82,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for static IP connections
 
 ### Fixed
-- Enforce minimum password strength in web interface (#16)
+- Issue #16. Enforce minimum password strength in web interface
 
 ### Changed
 - Using default client_id provided by AsyncMqttClient

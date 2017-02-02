@@ -9,10 +9,12 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #if ENABLE_EMON
 
 #include <EmonLiteESP.h>
+#include <EEPROM.h>
 
 EmonLiteESP emon;
 double _current = 0;
 unsigned int _power = 0;
+double _energy = 0;
 
 // -----------------------------------------------------------------------------
 // EMON
@@ -26,12 +28,30 @@ unsigned int getPower() {
     return _power;
 }
 
+double getEnergy() {
+    return _energy;
+}
+
 double getCurrent() {
     return _current;
 }
 
 unsigned int currentCallback() {
     return analogRead(EMON_CURRENT_PIN);
+}
+
+void retrieveEnergy() {
+    unsigned long energy = EEPROM.read(EEPROM_POWER_COUNT + 1);
+    energy = (energy << 8) + EEPROM.read(EEPROM_POWER_COUNT);
+    if (energy == 0xFFFF) energy = 0;
+    _energy = energy;
+}
+
+void saveEnergy() {
+    unsigned int energy = (int) _energy;
+    EEPROM.write(EEPROM_POWER_COUNT, energy & 0xFF);
+    EEPROM.write(EEPROM_POWER_COUNT + 1, (energy >> 8) & 0xFF);
+    EEPROM.commit();
 }
 
 void powerMonitorSetup() {
@@ -56,6 +76,11 @@ void powerMonitorSetup() {
     apiRegister("/api/power", "power", [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", _power);
     });
+    apiRegister("/api/energy", "energy", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%ld", (unsigned long) _energy);
+    });
+
+    retrieveEnergy();
 
 }
 
@@ -108,14 +133,24 @@ void powerMonitorLoop() {
         if (measurements == EMON_MEASUREMENTS) {
 
             _power = (int) ((sum - max - min) * mainsVoltage / (measurements - 2));
+            double window = (double) EMON_INTERVAL * EMON_MEASUREMENTS / 1000.0 / 3600.0;
+            _energy += _power * window;
+            saveEnergy();
             sum = 0;
             measurements = 0;
 
             char power[6];
-            snprintf(power, "%d", 6, _power);
+            snprintf(power, 6, "%d", _power);
+            char energy[8];
+            snprintf(energy, 6, "%ld", (unsigned long) _energy);
             mqttSend(getSetting("emonPowerTopic", EMON_POWER_TOPIC).c_str(), power);
+            mqttSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), energy);
             #if ENABLE_DOMOTICZ
-                domoticzSend("dczPowIdx", power);
+            {
+                char buffer[20];
+                snprintf(buffer, 20, "%s;%s", power, energy);
+                domoticzSend("dczPowIdx", 0, buffer);
+            }
             #endif
 
 
