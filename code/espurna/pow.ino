@@ -242,7 +242,7 @@ void powLoop() {
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
             factor = (apparent > 0) ? 100 * power / apparent : 100;
             if (factor > 100) factor = 100;
-            unsigned long window = (double) POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
+            double window = (double) POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
             _energy += power * window;
             saveEnergy();
 
