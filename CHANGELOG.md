@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.5.4] 2017-02-03
+### Fixed
+- Issue #50. Fix type bug in window variable when calculating energy for HLW8012 devices (Sonoff POW)
+
 ## [1.5.3] 2017-02-02
 ### Fixed
 - Issue #50 and #54. Fixed domoticz MQTT message format
