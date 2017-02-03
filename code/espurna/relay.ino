@@ -378,24 +378,21 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
         mqttSubscribe(buffer);
 
-        sprintf(buffer, "%s/pulse%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
-        mqttSubscribe(buffer);
-
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        if (strncmp(topic, "domoticz", 8) == 0) return;
-        String t = String(topic + mqttTopicRootLength());
-        if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
-        if (!t.endsWith(mqttSetter)) return;
+        char * t = mqttSubtopic((char *) topic);
+        if (strncmp(t, MQTT_RELAY_TOPIC, strlen(MQTT_RELAY_TOPIC)) != 0) return;
+        int len = mqttSetter.length();
+        if (strncmp(t + strlen(t) - len, mqttSetter.c_str(), len) != 0) return;
 
         // Get value
         unsigned int value = (char)payload[0] - '0';
 
         // Pulse topic
-        if (t.indexOf("pulse") > 0) {
+        if (strncmp(t + strlen(MQTT_RELAY_TOPIC) + 1, "pulse", 5) == 0) {
             relayPulseMode(value, !sameSetGet);
             return;
         }
