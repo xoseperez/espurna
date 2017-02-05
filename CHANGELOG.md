@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Allow reset the board via an RPC (HTTP) message
 - Added support for ADC121 I2C for current monitoring (Check [http://tinkerman.cat/power-monitoring-sonoff-th-adc121/](http://tinkerman.cat/power-monitoring-sonoff-th-adc121/))
 - Reporting voltage to Domoticz (only HLW8012)
-- Map buttons events to actions (toggle relay, AP mode, reset, pulse mode)
+- Map button events to actions (toggle relay, AP mode, reset, pulse mode)
 
 ### Changed
 - Reporting energy incrementals (Domoticz, MQTT)
