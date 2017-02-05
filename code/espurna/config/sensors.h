@@ -37,19 +37,36 @@
 //--------------------------------------------------------------------------------
 // Custom current sensor
 // Check http://tinkerman.cat/your-laundry-is-done/
+// Check http://tinkerman.cat/power-monitoring-sonoff-th-adc121/
 // Enable support by passing ENABLE_EMON=1 build flag
 //--------------------------------------------------------------------------------
 
-#define EMON_CURRENT_PIN        0
+#define EMON_ANALOG_PROVIDER    0
+#define EMON_ADC121_PROVIDER    1
+
+#define EMON_PROVIDER           EMON_ADC121_PROVIDER
+
+#if EMON_PROVIDER == EMON_ANALOG_PROVIDER
+	#define EMON_CURRENT_PIN        0
+	#define EMON_ADC_BITS           10
+	#define EMON_REFERENCE_VOLTAGE  1.0
+    #define EMON_CURRENT_PRECISION  1
+    #define EMON_CURRENT_OFFSET     0.25
+#endif
+
+#if EMON_PROVIDER == EMON_ADC121_PROVIDER
+	#define EMON_ADC121_ADDRESS     0x50
+	#define EMON_ADC_BITS           12
+	#define EMON_REFERENCE_VOLTAGE  3.3
+    #define EMON_CURRENT_PRECISION  2
+    #define EMON_CURRENT_OFFSET     0.10
+#endif
+
+#define EMON_CURRENT_RATIO      30
 #define EMON_SAMPLES            1000
 #define EMON_INTERVAL           10000
 #define EMON_MEASUREMENTS       6
-#define EMON_ADC_BITS           10
-#define EMON_REFERENCE_VOLTAGE  1.0
-#define EMON_CURRENT_PRECISION  1
-#define EMON_CURRENT_OFFSET     0.25
 #define EMON_MAINS_VOLTAGE      230
-#define EMON_CURRENT_RATIO      180
 #define EMON_POWER_TOPIC        "/power"
 #define EMON_ENERGY_TOPIC       "/energy"
 

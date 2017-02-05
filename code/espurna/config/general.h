@@ -102,6 +102,15 @@
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         ""
 
+// -----------------------------------------------------------------------------
+// I2C
+// -----------------------------------------------------------------------------
+
+#define ENABLE_I2C              1
+#define I2C_SDA_PIN             4
+#define I2C_SCL_PIN             14
+#define I2C_CLOCK_STRETCH_TIME  200
+#define I2C_SCL_FREQUENCY       1000
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
