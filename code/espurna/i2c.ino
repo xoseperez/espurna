@@ -27,7 +27,7 @@ void i2cScan() {
             Serial.printf("[I2C] Device found at address 0x%02X\n", address);
             nDevices++;
         } else if (response != 32) {
-            Serial.printf("[I2C] Unknown error at address 0x%02X\n", address);
+            //Serial.printf("[I2C] Unknown error at address 0x%02X\n", address);
         }
     }
 

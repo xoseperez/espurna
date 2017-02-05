@@ -44,6 +44,7 @@
 #define EMON_ANALOG_PROVIDER    0
 #define EMON_ADC121_PROVIDER    1
 
+// If you select EMON_ADC121_PROVIDER you need to enable and configure I2C in general.h
 #define EMON_PROVIDER           EMON_ANALOG_PROVIDER
 
 #if EMON_PROVIDER == EMON_ANALOG_PROVIDER

@@ -639,20 +639,6 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 void _onHome(AsyncWebServerRequest *request) {
 
-    DEBUG_MSG("[DEBUG] Free heap: %d bytes\n", ESP.getFreeHeap());
-
-    FSInfo fs_info;
-    if (SPIFFS.info(fs_info)) {
-        DEBUG_MSG("[DEBUG] File system total size: %d bytes\n", fs_info.totalBytes);
-        DEBUG_MSG("                    used size : %d bytes\n", fs_info.usedBytes);
-        DEBUG_MSG("                    block size: %d bytes\n", fs_info.blockSize);
-        DEBUG_MSG("                    page size : %d bytes\n", fs_info.pageSize);
-        DEBUG_MSG("                    max files : %d\n", fs_info.maxOpenFiles);
-        DEBUG_MSG("                    max length: %d\n", fs_info.maxPathLength);
-    } else {
-        DEBUG_MSG("[DEBUG] Error, FS not accesible!\n");
-    }
-
     webLogRequest(request);
 
     if (!_authenticate(request)) return request->requestAuthentication();

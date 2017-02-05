@@ -127,7 +127,7 @@
 // I2C
 // -----------------------------------------------------------------------------
 
-#define ENABLE_I2C              1
+#define ENABLE_I2C              0
 #define I2C_SDA_PIN             4
 #define I2C_SCL_PIN             14
 #define I2C_CLOCK_STRETCH_TIME  200
