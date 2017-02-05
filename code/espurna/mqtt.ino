@@ -36,8 +36,9 @@ void buildTopics() {
     mqttTopic.replace("{identifier}", getSetting("hostname"));
 }
 
-unsigned int mqttTopicRootLength() {
-    return mqttTopic.length();
+char * mqttSubtopic(char * topic) {
+    int pos = min(mqttTopic.length(), strlen(topic));
+    return topic + pos;
 }
 
 void mqttSendRaw(const char * topic, const char * message) {
@@ -83,6 +84,9 @@ void _mqttOnConnect(bool sessionPresent) {
     mqttSend(MQTT_IP_TOPIC, getIP().c_str());
     mqttSend(MQTT_VERSION_TOPIC, APP_VERSION);
 
+    // Subscribe to system topics
+    mqttSubscribe(MQTT_ACTION_TOPIC);
+
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
         (*_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
@@ -107,15 +111,21 @@ void _mqttOnMessage(char* topic, char* payload, AsyncMqttClientMessageProperties
     strlcpy(message, payload, len+1);
 
     DEBUG_MSG("[MQTT] Received %s => %s", topic, message);
-
     #if MQTT_SKIP_RETAINED
         if (millis() - mqttConnectedAt < MQTT_SKIP_TIME) {
 			DEBUG_MSG(" - SKIPPED\n");
 			return;
 		}
     #endif
-
 	DEBUG_MSG("\n");
+
+    // Check system topics
+    char * p = mqttSubtopic(topic);
+    if (strcmp(p, MQTT_ACTION_TOPIC) == 0) {
+        if (strcmp(payload, MQTT_ACTION_RESET) == 0) {
+            ESP.reset();
+        }
+    }
 
     // Send message event to subscribers
     // Topic is set to the specific part each one might be checking

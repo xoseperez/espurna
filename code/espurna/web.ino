@@ -521,6 +521,15 @@ bool _authAPI(AsyncWebServerRequest *request) {
 
 }
 
+bool _asJson(AsyncWebServerRequest *request) {
+    bool asJson = false;
+    if (request->hasHeader("Accept")) {
+        AsyncWebHeader* h = request->getHeader("Accept");
+        asJson = h->value().equals("application/json");
+    }
+    return asJson;
+}
+
 ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
 
     return [apiID](AsyncWebServerRequest *request) {
@@ -528,11 +537,7 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
 
         if (!_authAPI(request)) return;
 
-        bool asJson = false;
-        if (request->hasHeader("Accept")) {
-            AsyncWebHeader* h = request->getHeader("Accept");
-            asJson = h->value().equals("application/json");
-        }
+        bool asJson = _asJson(request);
 
         web_api_t api = _apis[apiID];
         if (request->method() == HTTP_PUT) {
@@ -584,11 +589,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
 
     if (!_authAPI(request)) return;
 
-    bool asJson = false;
-    if (request->hasHeader("Accept")) {
-        AsyncWebHeader* h = request->getHeader("Accept");
-        asJson = h->value().equals("application/json");
-    }
+    bool asJson = _asJson(request);
 
     String output;
     if (asJson) {
@@ -606,6 +607,32 @@ void _onAPIs(AsyncWebServerRequest *request) {
         }
         request->send(200, "text/plain", output);
     }
+
+}
+
+void _onRPC(AsyncWebServerRequest *request) {
+
+    webLogRequest(request);
+
+    if (!_authAPI(request)) return;
+
+    //bool asJson = _asJson(request);
+    int response = 404;
+
+    if (request->hasParam("action")) {
+
+        AsyncWebParameter* p = request->getParam("action");
+        String action = p->value();
+        DEBUG_MSG("[RPC] Action: %s\n", action.c_str());
+
+        if (action.equals("reset")) {
+            response = 200;
+            deferred.once_ms(100, []() { ESP.reset(); });
+        }
+
+    }
+
+    request->send(response);
 
 }
 
@@ -680,6 +707,7 @@ void webSetup() {
     server.on("/index.html", HTTP_GET, _onHome);
     server.on("/auth", HTTP_GET, _onAuth);
     server.on("/apis", HTTP_GET, _onAPIs);
+    server.on("/rpc", HTTP_GET, _onRPC);
 
     // Serve static files
     char lastModified[50];

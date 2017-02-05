@@ -73,9 +73,10 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = String(topic + mqttTopicRootLength());
-        if (!t.startsWith(MQTT_LED_TOPIC)) return;
-        if (!t.endsWith(mqttSetter)) return;
+        char * t = mqttSubtopic((char *) topic);
+        if (strncmp(t, MQTT_LED_TOPIC, strlen(MQTT_LED_TOPIC)) != 0) return;
+        int len = mqttSetter.length();
+        if (strncmp(t + strlen(t) - len, mqttSetter.c_str(), len) != 0) return;
 
         // Get led ID
         unsigned int ledID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
