@@ -67,7 +67,7 @@
 #define EMON_INTERVAL           10000
 #define EMON_MEASUREMENTS       6
 #define EMON_MAINS_VOLTAGE      230
-#define EMON_POWER_TOPIC        "/power"
+#define EMON_APOWER_TOPIC       "/apower"
 #define EMON_ENERGY_TOPIC       "/energy"
 
 //--------------------------------------------------------------------------------

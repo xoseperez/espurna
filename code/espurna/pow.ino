@@ -16,7 +16,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 HLW8012 hlw8012;
 bool _powEnabled = false;
-double _energy = 0;
 
 // -----------------------------------------------------------------------------
 // POW
@@ -119,25 +118,7 @@ unsigned int getPowerFactor() {
     return (int) (100 * hlw8012.getPowerFactor());
 }
 
-double getEnergy() {
-    return _energy;
-}
-
 // -----------------------------------------------------------------------------
-
-void retrieveEnergy() {
-    unsigned long energy = EEPROM.read(EEPROM_POWER_COUNT + 1);
-    energy = (energy << 8) + EEPROM.read(EEPROM_POWER_COUNT);
-    if (energy == 0xFFFF) energy = 0;
-    _energy = energy;
-}
-
-void saveEnergy() {
-    unsigned int energy = (int) _energy;
-    EEPROM.write(EEPROM_POWER_COUNT, energy & 0xFF);
-    EEPROM.write(EEPROM_POWER_COUNT + 1, (energy >> 8) & 0xFF);
-    EEPROM.commit();
-}
 
 void powSetup() {
 
@@ -163,15 +144,9 @@ void powSetup() {
     // Retrieve calibration values
     powRetrieveCalibration();
 
-    // Recover energy reading
-    retrieveEnergy();
-
     // API definitions
     apiRegister("/api/power", "power", [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getActivePower());
-    });
-    apiRegister("/api/energy", "energy", [](char * buffer, size_t len) {
-        snprintf(buffer, len, "%ld", (unsigned long) _energy);
     });
     apiRegister("/api/current", "current", [](char * buffer, size_t len) {
         dtostrf(getCurrent(), len-1, 2, buffer);
@@ -242,12 +217,15 @@ void powLoop() {
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
             factor = (apparent > 0) ? 100 * power / apparent : 100;
             if (factor > 100) factor = 100;
-            double window = (double) POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
-            _energy += power * window;
-            saveEnergy();
+
+            double energy_inc = (double) power * POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
+            char energy_buf[10];
+            dtostrf(energy_inc, 9, 2, energy_buf);
+            char *e = energy_buf;
+            while ((unsigned char) *e == ' ') ++e;
 
             mqttSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
-            mqttSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), String(_energy).c_str());
+            mqttSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
             mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current).c_str());
             mqttSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
             mqttSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
@@ -257,7 +235,7 @@ void powLoop() {
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
-                snprintf(buffer, 20, "%d;%ld", power, (unsigned long) _energy);
+                snprintf(buffer, 20, "%d;%s", power, e);
                 domoticzSend("dczPowIdx", 0, buffer);
                 snprintf(buffer, 20, "%d", voltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
