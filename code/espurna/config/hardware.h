@@ -26,7 +26,8 @@
     #define DEVICE              "LOLIN"
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_PULSE
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
 	#define LED1_PIN            2
@@ -179,7 +180,7 @@
     #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_PIN         15
-    #define BUTTON2_RELAY       0
+    #define BUTTON2_CLICK       BUTTON_MODE_PULSE
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
@@ -297,4 +298,73 @@
 
 #else
     #error "UNSUPPORTED HARDWARE!"
+#endif
+
+// -----------------------------------------------------------------------------
+// Default values
+// -----------------------------------------------------------------------------
+
+#ifndef BUTTON1_PRESS
+#define BUTTON1_PRESS       BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON2_PRESS
+#define BUTTON2_PRESS       BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON3_PRESS
+#define BUTTON3_PRESS       BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON4_PRESS
+#define BUTTON4_PRESS       BUTTON_MODE_NONE
+#endif
+
+#ifndef BUTTON1_CLICK
+#define BUTTON1_CLICK       BUTTON_MODE_TOGGLE
+#endif
+#ifndef BUTTON2_CLICK
+#define BUTTON2_CLICK       BUTTON_MODE_TOGGLE
+#endif
+#ifndef BUTTON3_CLICK
+#define BUTTON3_CLICK       BUTTON_MODE_TOGGLE
+#endif
+#ifndef BUTTON4_CLICK
+#define BUTTON4_CLICK       BUTTON_MODE_TOGGLE
+#endif
+
+#ifndef BUTTON1_DBLCLICK
+#define BUTTON1_DBLCLICK    BUTTON_MODE_AP
+#endif
+#ifndef BUTTON2_DBLCLICK
+#define BUTTON2_DBLCLICK    BUTTON_MODE_AP
+#endif
+#ifndef BUTTON3_DBLCLICK
+#define BUTTON3_DBLCLICK    BUTTON_MODE_AP
+#endif
+#ifndef BUTTON4_DBLCLICK
+#define BUTTON4_DBLCLICK    BUTTON_MODE_AP
+#endif
+
+#ifndef BUTTON1_LNGCLICK
+#define BUTTON1_LNGCLICK    BUTTON_MODE_RESET
+#endif
+#ifndef BUTTON2_LNGCLICK
+#define BUTTON2_LNGCLICK    BUTTON_MODE_RESET
+#endif
+#ifndef BUTTON3_LNGCLICK
+#define BUTTON3_LNGCLICK    BUTTON_MODE_RESET
+#endif
+#ifndef BUTTON4_LNGCLICK
+#define BUTTON4_LNGCLICK    BUTTON_MODE_RESET
+#endif
+
+#ifndef BUTTON1_RELAY
+#define BUTTON1_RELAY       0
+#endif
+#ifndef BUTTON2_RELAY
+#define BUTTON2_RELAY       0
+#endif
+#ifndef BUTTON3_RELAY
+#define BUTTON3_RELAY       0
+#endif
+#ifndef BUTTON4_RELAY
+#define BUTTON4_RELAY       0
 #endif

@@ -15,6 +15,24 @@
 #define EEPROM_ENERGY_COUNT     1
 
 //--------------------------------------------------------------------------------
+// BUTTON
+//--------------------------------------------------------------------------------
+
+#define BUTTON_EVENT_NONE       0
+#define BUTTON_EVENT_PRESSED    1
+#define BUTTON_EVENT_CLICK      2
+#define BUTTON_EVENT_DBLCLICK   3
+#define BUTTON_EVENT_LNGCLICK   4
+
+#define BUTTON_MODE_NONE        0
+#define BUTTON_MODE_TOGGLE      1
+#define BUTTON_MODE_AP          2
+#define BUTTON_MODE_RESET       3
+#define BUTTON_MODE_PULSE       4
+
+#define BUTTON_DEFAULT_MODE     BUTTON_MODE_TOGGLE
+
+//--------------------------------------------------------------------------------
 // RELAY
 //--------------------------------------------------------------------------------
 
