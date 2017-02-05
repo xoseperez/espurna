@@ -3,6 +3,22 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.0] 2017-02-05
+### Added
+- Added support for toggle switches
+- Allow reset the board via an MQTT message
+- Allow reset the board via an RPC (HTTP) message
+- Added support for ADC121 I2C for current monitoring (Check [http://tinkerman.cat/power-monitoring-sonoff-th-adc121/](http://tinkerman.cat/power-monitoring-sonoff-th-adc121/))
+- Reporting voltage to Domoticz (only HLW8012)
+- Map buttons events to actions (toggle relay, AP mode, reset, pulse mode)
+
+### Changed
+- Reporting energy incrementals (Domoticz, MQTT)
+
+### Removed
+- Removed current monitor bypass when relay is OFF
+- Removed energy API entry point
+
 ## [1.5.4] 2017-02-03
 ### Fixed
 - Issue #50. Fix type bug in window variable when calculating energy for HLW8012 devices (Sonoff POW)
