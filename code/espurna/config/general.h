@@ -70,14 +70,14 @@
 // -----------------------------------------------------------------------------
 
 #define OTA_PORT                8266
-#define NOFUSS_SERVER           "http://192.168.1.100"
+#define NOFUSS_SERVER           ""
 #define NOFUSS_INTERVAL         3600000
 
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
 
-#define MQTT_SERVER             "192.168.1.100"
+#define MQTT_SERVER             ""
 #define MQTT_PORT               1883
 #define MQTT_TOPIC              "/test/switch/{identifier}"
 #define MQTT_RETAIN             true
