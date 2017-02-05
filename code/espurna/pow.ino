@@ -259,6 +259,8 @@ void powLoop() {
                 char buffer[20];
                 snprintf(buffer, 20, "%d;%ld", power, (unsigned long) _energy);
                 domoticzSend("dczPowIdx", 0, buffer);
+                snprintf(buffer, 20, "%d", voltage);
+                domoticzSend("dczVoltIdx", 0, buffer);
             }
             #endif
 
