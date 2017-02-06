@@ -102,6 +102,8 @@
 #define MQTT_QOS                0
 #define MQTT_KEEPALIVE          30
 #define MQTT_RECONNECT_DELAY    10000
+#define MQTT_TRY_INTERVAL       30000
+#define MQTT_MAX_TRIES          5
 #define MQTT_SKIP_RETAINED      1
 #define MQTT_SKIP_TIME          1000
 #define MQTT_ACTION_TOPIC       "/action"

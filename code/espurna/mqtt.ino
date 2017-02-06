@@ -139,6 +139,22 @@ void mqttConnect() {
 
     if (!mqtt.connected()) {
 
+        // Last option: reconnect to wifi after MQTT_MAX_TRIES attemps in a row
+        #if MQTT_MAX_TRIES > 0
+            static unsigned int tries = 0;
+            static unsigned long last_try = millis();
+            if (millis() - last_try < MQTT_TRY_INTERVAL) {
+                if (++tries > MQTT_MAX_TRIES) {
+                    wifiDisconnect();
+                    tries = 0;
+                    return;
+                }
+            } else {
+                tries = 0;
+            }
+            last_try = millis();
+        #endif
+
         mqtt.disconnect();
 
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
