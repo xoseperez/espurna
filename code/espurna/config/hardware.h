@@ -135,7 +135,7 @@
 
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_DUAL"
-    #define BUTTON1_PIN         0
+    #define BUTTON3_RELAY       1
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
     #undef SERIAL_BAUDRATE
