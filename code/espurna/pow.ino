@@ -239,6 +239,8 @@ void powLoop() {
                 domoticzSend("dczPowIdx", 0, buffer);
                 snprintf(buffer, 20, "%d", voltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
+                snprintf(buffer, 20, "%s", String(current).c_str());
+                domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
