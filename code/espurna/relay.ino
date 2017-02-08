@@ -52,11 +52,6 @@ bool relayStatus(unsigned char id) {
     #endif
 }
 
-void relayPulseBack(unsigned char id) {
-    relayToggle(id);
-    pulseTicker.detach();
-}
-
 void relayPulse(unsigned char id) {
 
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
@@ -69,9 +64,9 @@ void relayPulse(unsigned char id) {
         return;
     }
 
-    pulseTicker.attach(
+    pulseTicker.once(
         getSetting("relayPulseTime", RELAY_PULSE_TIME).toInt(),
-        relayPulseBack,
+        relayToggle,
         id
     );
 
