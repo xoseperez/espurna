@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Configurable (in code) mapping between buttons and relays
 - MQTT messages for button events
 - Added support for Itead Studio 1CH inching/self locking smart switch board
-- Added support for JanGow Wifi Relay boards (both NC and NO versions)
+- Added support for Jan Goedeke Wifi Relay boards (both NC and NO versions)
 - Notify OTA updates to websocket clients, automatically reload page
 - Support for pulse mode notification LED and button
 - Revert relay state mode on boot (thanks to Minh Phuong Ly)

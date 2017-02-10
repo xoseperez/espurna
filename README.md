@@ -56,16 +56,16 @@ Here is the list of supported hardware. For more information please refer to the
 |-|-|-|
 |![IteadStudio S20](images/devices/s20.jpg)|![IteadStudio Slampher](images/devices/slampher.jpg)|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|
 |**IteadStudio S20**|**IteadStudio Slampher**|**IteadStudio Sonoff 4CH**|
-|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio Motor Switch](images/devices/motor-switch.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)|
-|**IteadStudio Sonoff Basic**|**IteadStudio Motor Switch**|**IteadStudio 1CH Inching**|
+|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)||
+|**IteadStudio Sonoff Basic**||**IteadStudio 1CH Inching**||
 |![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg)|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg)|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg)|
 |**IteadStudio Sonoff Dual**|**IteadStudio Sonoff POW**|**IteadStudio Sonoff TH10/TH16**|
 |![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg)|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg)|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg)|
 |**IteadStudio Sonoff RF**|**IteadStudio Sonoff SV**|**IteadStudio Sonoff Touch**|
 |![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg)|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|
 |**Wemos D1 Mini Relay Shield**|**Electrodragon Relay Board**|**WorkChoice EcoPlug**|
-|![JanGoe Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays-board-kit.jpg)|
-|**JanGoe Wifi Relay (NO/NC)**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|**Jorge García Wifi + Relays Board Kit**|
+|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays-board-kit.jpg)|
+|**Jan Goedeke Wifi Relay (NO/NC)**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|**Jorge García Wifi + Relays Board Kit**|
 
 ## License
 
