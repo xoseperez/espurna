@@ -160,14 +160,14 @@ void powerMonitorLoop() {
             while ((unsigned char) *c == ' ') ++c;
 
             // Calculate average apparent power from current and create C-string
-            _power = (int) (current_avgd * mainsVoltage);
+            _power = (int) (average * mainsVoltage);
             char power[6];
             snprintf(power, 6, "%d", _power);
 
             // Calculate energy increment (ppower times time) and create C-string
             double energy_inc = (double) _power * EMON_INTERVAL * EMON_MEASUREMENTS / 1000.0 / 3600.0;
             char energy_buf[11];
-            dtostrf(energy_inc, 11, 3, energy_buf);
+            dtostrf(energy_inc, 10, 3, energy_buf);
             char *e = energy_buf;
             while ((unsigned char) *e == ' ') ++e;
 
