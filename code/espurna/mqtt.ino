@@ -139,12 +139,16 @@ void mqttConnect() {
 
     if (!mqtt.connected()) {
 
+        char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
+        if (strlen(host) == 0) return;
+
         // Last option: reconnect to wifi after MQTT_MAX_TRIES attemps in a row
         #if MQTT_MAX_TRIES > 0
             static unsigned int tries = 0;
             static unsigned long last_try = millis();
             if (millis() - last_try < MQTT_TRY_INTERVAL) {
                 if (++tries > MQTT_MAX_TRIES) {
+                    DEBUG_MSG("[MQTT] MQTT_MAX_TRIES met, disconnecting from WiFi\n");
                     wifiDisconnect();
                     tries = 0;
                     return;
@@ -157,8 +161,6 @@ void mqttConnect() {
 
         mqtt.disconnect();
 
-        char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
-        if (strlen(host) == 0) return;
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
         char * user = strdup(getSetting("mqttUser").c_str());
         char * pass = strdup(getSetting("mqttPassword").c_str());
