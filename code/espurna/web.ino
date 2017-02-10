@@ -350,11 +350,16 @@ void _wsStart(uint32_t client_id) {
 
         #if ENABLE_EMON
             root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
+            root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
+            root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
+            root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
         #endif
 
         #if ENABLE_POW
             root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
+            root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
             root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
+            root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
         #endif
 
     #endif

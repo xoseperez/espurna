@@ -219,8 +219,8 @@ void powLoop() {
             if (factor > 100) factor = 100;
 
             double energy_inc = (double) power * POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
-            char energy_buf[10];
-            dtostrf(energy_inc, 9, 2, energy_buf);
+            char energy_buf[11];
+            dtostrf(energy_inc, 11, 3, energy_buf);
             char *e = energy_buf;
             while ((unsigned char) *e == ' ') ++e;
 
@@ -237,8 +237,12 @@ void powLoop() {
                 char buffer[20];
                 snprintf(buffer, 20, "%d;%s", power, e);
                 domoticzSend("dczPowIdx", 0, buffer);
+                snprintf(buffer, 20, "%s", e);
+                domoticzSend("dczEnergyIdx", 0, buffer);
                 snprintf(buffer, 20, "%d", voltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
+                snprintf(buffer, 20, "%s", String(current).c_str());
+                domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
