@@ -647,13 +647,16 @@ void _onHome(AsyncWebServerRequest *request) {
 
     if (!_authenticate(request)) return request->requestAuthentication();
 
-    String password = getSetting("adminPass", ADMIN_PASS);
-    if (password.equals(ADMIN_PASS)) {
-        request->send(SPIFFS, "/password.html");
-    } else {
+    #if FORCE_CHANGE_PASS == 1
+        String password = getSetting("adminPass", ADMIN_PASS);
+        if (password.equals(ADMIN_PASS)) {
+            request->send(SPIFFS, "/password.html");
+        } else {
+            request->send(SPIFFS, "/index.html");
+        }
+    #else
         request->send(SPIFFS, "/index.html");
-    }
-
+    #endif
 }
 
 void _onAuth(AsyncWebServerRequest *request) {
