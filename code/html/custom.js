@@ -335,14 +335,20 @@ function getJson(str) {
     }
 }
 
-function initWebSocket(host) {
-    if (host === undefined) {
+function connect(host) {
+    if (typeof host === 'undefined') {
         host = window.location.hostname;
     }
     websock = new WebSocket('ws://' + host + '/ws');
-    websock.onopen = function(evt) {};
-    websock.onclose = function(evt) {};
-    websock.onerror = function(evt) {};
+    websock.onopen = function(evt) {
+        console.log("Connected");
+    };
+    websock.onclose = function(evt) {
+        console.log("Disconnected");
+    };
+    websock.onerror = function(evt) {
+        console.log("Error: ", evt);
+    };
     websock.onmessage = function(evt) {
         var data = getJson(evt.data);
         if (data) processData(data);
@@ -363,7 +369,7 @@ function init() {
         'method': 'GET',
         'url': '/auth'
     }).done(function(data) {
-        initWebSocket();
+        connect();
     });
 
 }
