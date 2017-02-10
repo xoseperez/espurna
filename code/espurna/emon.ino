@@ -158,8 +158,8 @@ void powerMonitorLoop() {
             snprintf(power, 6, "%d", _power);
 
             double energy_inc = (double) _power * EMON_INTERVAL * EMON_MEASUREMENTS / 1000.0 / 3600.0;
-            char energy_buf[10];
-            dtostrf(energy_inc, 9, 2, energy_buf);
+            char energy_buf[11];
+            dtostrf(energy_inc, 11, 3, energy_buf);
             char *e = energy_buf;
             while ((unsigned char) *e == ' ') ++e;
 
@@ -171,6 +171,8 @@ void powerMonitorLoop() {
                 char buffer[20];
                 snprintf(buffer, 20, "%s;%s", power, e);
                 domoticzSend("dczPowIdx", 0, buffer);
+                snprintf(buffer, 20, "%s", e);
+                domoticzSend("dczEnergyIdx", 0, buffer);
                 snprintf(buffer, 20, "%d", voltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
                 snprintf(buffer, 20, "%s", String(current).c_str());
