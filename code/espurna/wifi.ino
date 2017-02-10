@@ -51,8 +51,8 @@ bool createAP() {
 void wifiConfigure() {
     jw.scanNetworks(true);
     jw.setHostname(getSetting("hostname", HOSTNAME).c_str());
-    jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
-    jw.setAPMode(AP_MODE_ALONE);
+    jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str(), AP_MODE_IP, AP_MODE_GW, AP_MODE_MASK);
+    jw.setAPMode(AP_MODE);
     jw.cleanNetworks();
     for (int i = 0; i< WIFI_MAX_NETWORKS; i++) {
         if (getSetting("ssid" + String(i)).length() == 0) break;
