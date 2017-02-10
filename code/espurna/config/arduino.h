@@ -27,8 +27,8 @@
 //#define ECOPLUG
 //#define WIFI_RELAY_NC
 //#define WIFI_RELAY_NO
-//#define ESPURNA
 //#define MQTT_RELAY
+//#define WIFI_RELAYS_BOARD_KIT
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

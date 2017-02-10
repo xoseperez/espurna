@@ -50,6 +50,8 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 
 ## Supported hardware
 
+Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://bitbucket.org/xoseperez/espurna/wiki/Hardware).
+
 ||||
 |-|-|-|
 |![IteadStudio S20](images/devices/s20.jpg)|![IteadStudio Slampher](images/devices/slampher.jpg)|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|
@@ -62,8 +64,8 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 |**IteadStudio Sonoff RF**|**IteadStudio Sonoff SV**|**IteadStudio Sonoff Touch**|
 |![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg)|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|
 |**Wemos D1 Mini Relay Shield**|**Electrodragon Relay Board**|**WorkChoice EcoPlug**|
-|![JanGoe Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)||
-|**JanGoe Wifi Relay (NO/NC)**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
+|![JanGoe Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays-board-kit.jpg)|
+|**JanGoe Wifi Relay (NO/NC)**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|**Jorge García Wifi + Relays Board Kit**|
 
 ## License
 

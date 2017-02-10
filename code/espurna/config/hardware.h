@@ -228,7 +228,8 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
-// JanGoe Wifi Relay (https://github.com/JanGoe/esp8266-wifi-relay)
+// JanGoe Wifi Relay 
+// https://github.com/JanGoe/esp8266-wifi-relay
 // -----------------------------------------------------------------------------
 
 #elif defined(WIFI_RELAY_NC)
@@ -262,20 +263,19 @@
     #define RELAY2_PIN_INVERSE  0
 
 // -----------------------------------------------------------------------------
-// ESPurna board (still beta)
+// Jorge García Wifi+Relays Board Kit
+// https://www.tindie.com/products/jorgegarciadev/wifi--relays-board-kit
+// https://github.com/jorgegarciadev/wifikit
 // -----------------------------------------------------------------------------
 
-#elif defined(ESPURNA)
+#elif defined(WIFI_RELAYS_BOARD_KIT)
 
-    #define MANUFACTURER        "TINKERMAN"
-    #define DEVICE              "ESPURNA"
-    #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define MANUFACTURER        "JORGE_GARCIA"
+    #define DEVICE              "WIFI_RELAYS_BOARD_KIT"
+    #define RELAY1_PIN          0
+    #define RELAY1_PIN_INVERSE  1
+    #define RELAY2_PIN          2
+    #define RELAY2_PIN_INVERSE  1
 
 // -----------------------------------------------------------------------------
 // WiFi MQTT Relay / Thermostat
