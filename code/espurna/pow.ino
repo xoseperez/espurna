@@ -218,12 +218,14 @@ void powLoop() {
             factor = (apparent > 0) ? 100 * power / apparent : 100;
             if (factor > 100) factor = 100;
 
+            // Calculate energy increment (ppower times time) and create C-string
             double energy_inc = (double) power * POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
             char energy_buf[11];
             dtostrf(energy_inc, 11, 3, energy_buf);
             char *e = energy_buf;
             while ((unsigned char) *e == ' ') ++e;
 
+            // Report values to MQTT broker
             mqttSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
             mqttSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
             mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current).c_str());
@@ -232,6 +234,7 @@ void powLoop() {
             mqttSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
             mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor).c_str());
 
+            // Report values to Domoticz
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
@@ -246,6 +249,7 @@ void powLoop() {
             }
             #endif
 
+            // Reset counters
             power_sum = current_sum = voltage_sum = 0;
             report_count = POW_REPORT_EVERY;
 

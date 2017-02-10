@@ -153,19 +153,30 @@ void powerMonitorLoop() {
         // Send MQTT messages averaged every EMON_MEASUREMENTS
         if (measurements == EMON_MEASUREMENTS) {
 
-            _power = (int) ((sum - max - min) * mainsVoltage / (measurements - 2));
+            // Calculate average current (removing max and min values) and create C-string
+            double average = (sum - max - min) / (measurements - 2);
+            dtostrf(average, 5, 2, current);
+            char *c = current;
+            while ((unsigned char) *c == ' ') ++c;
+
+            // Calculate average apparent power from current and create C-string
+            _power = (int) (current_avgd * mainsVoltage);
             char power[6];
             snprintf(power, 6, "%d", _power);
 
+            // Calculate energy increment (ppower times time) and create C-string
             double energy_inc = (double) _power * EMON_INTERVAL * EMON_MEASUREMENTS / 1000.0 / 3600.0;
             char energy_buf[11];
             dtostrf(energy_inc, 11, 3, energy_buf);
             char *e = energy_buf;
             while ((unsigned char) *e == ' ') ++e;
 
+            // Report values to MQTT broker
             mqttSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), power);
+            mqttSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), c);
             mqttSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), e);
 
+            // Report values to Domoticz
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
@@ -173,13 +184,12 @@ void powerMonitorLoop() {
                 domoticzSend("dczPowIdx", 0, buffer);
                 snprintf(buffer, 20, "%s", e);
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf(buffer, 20, "%d", voltage);
-                domoticzSend("dczVoltIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", String(current).c_str());
+                snprintf(buffer, 20, "%s", c);
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
+            // Reset counters
             sum = measurements = 0;
 
         }

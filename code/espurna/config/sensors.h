@@ -70,6 +70,7 @@
 #define EMON_MAINS_VOLTAGE      230
 #define EMON_APOWER_TOPIC       "/apower"
 #define EMON_ENERGY_TOPIC       "/energy"
+#define EMON_CURRENT_TOPIC      "/current"
 
 //--------------------------------------------------------------------------------
 // HLW8012 power sensor (Sonoff POW)
