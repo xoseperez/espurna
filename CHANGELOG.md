@@ -3,6 +3,12 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.1] 2017-02-10
+### Added
+- Added support for [Jorge Garcia's Wifi+Relay Board Kit](https://www.tindie.com/products/jorgegarciadev/wifi--relays-board-kit/)
+- Reporting current and energy incrementals to a separate counters in Domoticz (thanks to Toni Arte)
+- Force WiFi reconnect after MQTT_MAX_TRIES fails trying to connect to MQTT broker
+
 ## [1.6.0] 2017-02-05
 ### Added
 - Added support for toggle switches
