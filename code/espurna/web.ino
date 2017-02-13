@@ -264,7 +264,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setCurrentRatio(getSetting("emonRatio").toFloat());
             #endif
 
-            #if ITEAD_1CH_INCHING
+            #if LED_PULSE
                 byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
                 digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
             #endif

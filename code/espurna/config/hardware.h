@@ -170,25 +170,24 @@
 
 #elif defined(ITEAD_1CH_INCHING)
 
-    // Note: definitions for this board are based on third party data
-    // and have not been fully tested yet. If you have the chance to
-    // test them, please report back. Thank you.
+    // The inching functionality is managed by a misterious IC in the board.
+    // You cannot control the inching button and functionality from the ESP8266
+    // Besides, enabling the inching functionality using the hardware button
+    // will result in the relay switching on and off continuously.
+    // Fortunately the unkown IC keeps memory of the hardware inching status
+    // so you can just disable it and forget. The inching LED must be lit.
+    // You can still use the pulse options from the web interface
+    // without problem.
 
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "1CH_INCHING"
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PIN         15
-    #define BUTTON2_CLICK       BUTTON_MODE_PULSE
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
-
-    // Special LED that shows pulse mode status
-    #define LED_PULSE           14
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
