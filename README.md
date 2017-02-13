@@ -56,8 +56,8 @@ Here is the list of supported hardware. For more information please refer to the
 |-|-|-|
 |![IteadStudio S20](images/devices/s20.jpg)|![IteadStudio Slampher](images/devices/slampher.jpg)|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|
 |**IteadStudio S20**|**IteadStudio Slampher**|**IteadStudio Sonoff 4CH**|
-|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)||
-|**IteadStudio Sonoff Basic**||**IteadStudio 1CH Inching**||
+|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)|![IteadStudio Motor Clockwise/Anticlockwise](images/devices/motor-switch.jpg)|
+|**IteadStudio Sonoff Basic**|**IteadStudio 1CH Inching**|**IteadStudio Motor Clockwise/Anticlockwise**|
 |![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg)|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg)|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg)|
 |**IteadStudio Sonoff Dual**|**IteadStudio Sonoff POW**|**IteadStudio Sonoff TH10/TH16**|
 |![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg)|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg)|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg)|
