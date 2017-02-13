@@ -98,13 +98,13 @@ void setup() {
         saveSettings();
     }
 
+    webSetup();
     relaySetup();
     buttonSetup();
     ledSetup();
     wifiSetup();
     otaSetup();
     mqttSetup();
-    webSetup();
     ntpSetup();
 
     #if ENABLE_I2C

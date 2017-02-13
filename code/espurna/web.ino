@@ -16,7 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <vector>
 
-AsyncWebServer server(80);
+AsyncWebServer * _server;
 AsyncWebSocket ws("/ws");
 Ticker deferred;
 
@@ -156,6 +156,15 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 if (key.startsWith("dcz")) continue;
 
             #endif
+
+            // Web portions
+            if (key == "webPort") {
+                if ((value.toInt() == 0) || (value.toInt() == 80)) {
+                    save = changed = true;
+                    delSetting(key);
+                    continue;
+                }
+            }
 
             // Check password
             if (key == "adminPass1") {
@@ -324,6 +333,8 @@ void _wsStart(uint32_t client_id) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
+
+    root["webPort"] = getSetting("webPort", WEBSERVER_PORT).toInt();
 
     root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
@@ -584,7 +595,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Bind call
     unsigned int methods = HTTP_GET;
     if (putFn != NULL) methods += HTTP_PUT;
-    server.on(url, methods, _bindAPI(_apis.size() - 1));
+    _server->on(url, methods, _bindAPI(_apis.size() - 1));
 
 }
 
@@ -683,37 +694,36 @@ void _onAuth(AsyncWebServerRequest *request) {
 
 }
 
-AsyncWebServer * getServer() {
-    return &server;
-}
-
 void webSetup() {
+
+    // Create server
+    _server = new AsyncWebServer(getSetting("webPort", WEBSERVER_PORT).toInt());
 
     // Setup websocket
     ws.onEvent(_wsEvent);
     mqttRegister(wsMQTTCallback);
 
     // Setup webserver
-    server.addHandler(&ws);
+    _server->addHandler(&ws);
 
     // Serve home (basic authentication protection)
-    server.on("/", HTTP_GET, _onHome);
-    server.on("/index.html", HTTP_GET, _onHome);
-    server.on("/auth", HTTP_GET, _onAuth);
-    server.on("/apis", HTTP_GET, _onAPIs);
-    server.on("/rpc", HTTP_GET, _onRPC);
+    _server->on("/", HTTP_GET, _onHome);
+    _server->on("/index.html", HTTP_GET, _onHome);
+    _server->on("/auth", HTTP_GET, _onAuth);
+    _server->on("/apis", HTTP_GET, _onAPIs);
+    _server->on("/rpc", HTTP_GET, _onRPC);
 
     // Serve static files
     char lastModified[50];
     sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
-    server.serveStatic("/", SPIFFS, "/").setLastModified(lastModified);
+    _server->serveStatic("/", SPIFFS, "/").setLastModified(lastModified);
 
     // 404
-    server.onNotFound([](AsyncWebServerRequest *request){
+    _server->onNotFound([](AsyncWebServerRequest *request){
         request->send(404);
     });
 
     // Run server
-    server.begin();
+    _server->begin();
 
 }

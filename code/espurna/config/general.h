@@ -82,6 +82,7 @@
 #define HTTP_USERNAME           "admin"
 #define WS_BUFFER_SIZE          5
 #define WS_TIMEOUT              1800000
+#define WEBSERVER_PORT          80
 #define DNS_PORT                53
 
 #define AP_MODE                 AP_MODE_ALONE
