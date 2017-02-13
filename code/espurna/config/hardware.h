@@ -187,7 +187,7 @@
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
