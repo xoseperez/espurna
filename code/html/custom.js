@@ -372,7 +372,9 @@ function init() {
     $(".button-reconnect").on('click', doReconnect);
     $(".button-apikey").on('click', doGenerateAPIKey);
     $(".pure-menu-link").on('click', showPanel);
-    $(".button-add-network").on('click', addNetwork);
+    $(".button-add-network").on('click', function() {
+        $("div.more", addNetwork).toggle();
+    });
 
     $.ajax({
         'method': 'GET',
