@@ -119,13 +119,6 @@ void buttonSetup() {
         }
         #endif
 
-        #ifdef LED_PULSE
-            pinMode(LED_PULSE, OUTPUT);
-            byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
-            digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
-        #endif
-
-
     #endif
 
     DEBUG_MSG("[BUTTON] Number of buttons: %d\n", _buttons.size());
