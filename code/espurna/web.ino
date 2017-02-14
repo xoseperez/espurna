@@ -273,11 +273,6 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setCurrentRatio(getSetting("emonRatio").toFloat());
             #endif
 
-            #if LED_PULSE
-                byte relayPulseMode = getSetting("relayPulseMode", String(RELAY_PULSE_MODE)).toInt();
-                digitalWrite(LED_PULSE, relayPulseMode != RELAY_PULSE_NONE);
-            #endif
-
             // Check if we should reconfigure MQTT connection
             if (changedMQTT) {
                 mqttDisconnect();
@@ -338,6 +333,8 @@ void _wsStart(uint32_t client_id) {
 
     root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
+
+    root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 
     #if ENABLE_DOMOTICZ
 

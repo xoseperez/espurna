@@ -297,6 +297,9 @@ function processData(data) {
         if (key == "mqttStatus") {
             data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
         }
+        if (key == "tmpUnits") {
+            $("span#tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
+        }
 
         // Look for INPUTs
         var element = $("input[name=" + key + "]");
@@ -305,6 +308,8 @@ function processData(data) {
                 element
                     .prop("checked", data[key])
                     .iphoneStyle("refresh");
+            } else if (element.attr('type') == 'radio') {
+                element.val([data[key]]);
             } else {
                 element.val(data[key]);
             }
@@ -342,6 +347,7 @@ function connect(host, port) {
     if (typeof port === 'undefined') {
         port = location.port;
     }
+    if (websock) websock.close();
     websock = new WebSocket('ws://' + host + ':' + port + '/ws');
     websock.onopen = function(evt) {
         console.log("Connected");

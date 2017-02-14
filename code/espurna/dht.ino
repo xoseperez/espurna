@@ -45,9 +45,11 @@ void dhtLoop() {
     if ((millis() - last_update > DHT_UPDATE_INTERVAL) || (last_update == 0)) {
         last_update = millis();
 
+        unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
+
         // Read sensor data
         double h = dht.readHumidity();
-        double t = dht.readTemperature();
+        double t = dht.readTemperature(tmpUnits == TMP_FAHRENHEIT);
 
         // Check if readings are valid
         if (isnan(h) || isnan(t)) {
@@ -64,7 +66,7 @@ void dhtLoop() {
             dtostrf(t, 4, 1, temperature);
             itoa((unsigned int) h, humidity, 10);
 
-            DEBUG_MSG("[DHT] Temperature: %s\n", temperature);
+            DEBUG_MSG("[DHT] Temperature: %s%s\n", temperature, (tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF");
             DEBUG_MSG("[DHT] Humidity: %s\n", humidity);
 
             // Send MQTT messages
@@ -93,7 +95,7 @@ void dhtLoop() {
 
             // Update websocket clients
             char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s}"), temperature, humidity);
+            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
             wsSend(buffer);
 
         }
