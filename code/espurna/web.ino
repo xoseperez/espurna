@@ -244,14 +244,20 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #endif
 
             // Clean wifi networks
-            for (int i = 0; i < network; i++) {
-                if (getSetting("pass" + String(i)).length() > 0) delSetting("pass" + String(i));
+            int i = 0;
+            while (i < network) {
+                if (getSetting("ssid" + String(i)).length() == 0) {
+                    delSetting("ssid" + String(i));
+                    break;
+                }
+                if (getSetting("pass" + String(i)).length() == 0) delSetting("pass" + String(i));
                 if (getSetting("ip" + String(i)).length() == 0) delSetting("ip" + String(i));
                 if (getSetting("gw" + String(i)).length() == 0) delSetting("gw" + String(i));
                 if (getSetting("mask" + String(i)).length() == 0) delSetting("mask" + String(i));
                 if (getSetting("dns" + String(i)).length() == 0) delSetting("dns" + String(i));
+                ++i;
             }
-            for (int i = network; i<WIFI_MAX_NETWORKS; i++) {
+            while (i < WIFI_MAX_NETWORKS) {
                 if (getSetting("ssid" + String(i)).length() > 0) {
                     save = changed = true;
                 }
@@ -261,6 +267,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 delSetting("gw" + String(i));
                 delSetting("mask" + String(i));
                 delSetting("dns" + String(i));
+                ++i;
             }
 
         }
