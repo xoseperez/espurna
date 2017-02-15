@@ -3,6 +3,22 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.3] 2017-02-15
+### Added
+- Issue #69. Temperature unit configuration from the web interface
+- Issue #55. WebServer port configurable from the web interface, defaults to 80
+- Expand network configuration when adding a new network
+
+### Changed
+- Merged web contents except images in a single compressed file for reliability
+- Update support for Itead Motor Clockwise/Anticlockwise board
+- Scan for strongest network only if more than 1 network configured
+
+### Fix
+- Issue #71. Added default values for netmask and DNS in web configuration
+- Fixed Itead 1CH self-locking/inching board definition
+- Fixed PlatformIO environments for ESP8285 boards (4CH and Touch)
+
 ## [1.6.2] 2017-02-10
 ### Fix
 - Check if there is an MQTT broker defined before the MQTT_MAX_TRIES check
