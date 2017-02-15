@@ -390,7 +390,7 @@ function init() {
     $(".button-apikey").on('click', doGenerateAPIKey);
     $(".pure-menu-link").on('click', showPanel);
     $(".button-add-network").on('click', function() {
-        $("div.more", addNetwork).toggle();
+        $("div.more", addNetwork()).toggle();
     });
 
     $.ajax({
