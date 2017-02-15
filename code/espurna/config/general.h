@@ -93,6 +93,9 @@
 #define WEBSERVER_PORT          80
 #define DNS_PORT                53
 
+#define WEB_MODE_NORMAL         0
+#define WEB_MODE_PASSWORD       1
+
 #define AP_MODE                 AP_MODE_ALONE
 #define AP_MODE_IP              "192.168.4.1"
 #define AP_MODE_GW              "192.168.4.1"

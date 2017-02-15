@@ -10,9 +10,7 @@ function checkPassword(str) {
     return re.test(str);
 }
 
-function validateForm() {
-
-    var form = $("#formSave");
+function validateForm(form) {
 
     // password
     var adminPass1 = $("input[name='adminPass1']", form).val();
@@ -32,13 +30,23 @@ function validateForm() {
 }
 
 function doUpdate() {
-    if (validateForm()) {
-        var data = $("#formSave").serializeArray();
+    var form = $("#formSave");
+    if (validateForm(form)) {
+        var data = form.serializeArray();
         websock.send(JSON.stringify({'config': data}));
         $(".powExpected").val(0);
         $("input[name='powExpectedReset']")
             .prop("checked", false)
             .iphoneStyle("refresh");
+    }
+    return false;
+}
+
+function doUpdatePassword() {
+    var form = $("#formPassword");
+    if (validateForm(form)) {
+        var data = form.serializeArray();
+        websock.send(JSON.stringify({'config': data}));
     }
     return false;
 }
@@ -168,6 +176,24 @@ function addNetwork() {
 
 }
 
+function forgetCredentials() {
+    $.ajax({
+        'method': 'GET',
+        'url': '/',
+        'async': false,
+        'username': "logmeout",
+        'password': "123456",
+        'headers': { "Authorization": "Basic xxx" }
+    }).done(function(data) {
+        return false;
+        // If we don't get an error, we actually got an error as we expect an 401!
+    }).fail(function(){
+        // We expect to get an 401 Unauthorized error! In this case we are successfully
+        // logged out and we redirect the user.
+        return true;
+    });
+}
+
 function processData(data) {
 
     // title
@@ -185,31 +211,21 @@ function processData(data) {
 
     Object.keys(data).forEach(function(key) {
 
+        // Web Modes
+        if (key == "webMode") {
+            password = data.webMode == 1;
+            $("#layout").toggle(data.webMode == 0);
+            $("#password").toggle(data.webMode == 1);
+        }
+
         // Actions
         if (key == "action") {
 
             if (data.action == "reload") {
-                if (password) {
-
-                    // Forget current authentication
-                    $.ajax({
-                        'method': 'GET',
-                        'url': '/',
-                        'async': false,
-                        'username': "logmeout",
-                        'password': "123456",
-                        'headers': { "Authorization": "Basic xxx" }
-                    }).done(function(data) {
-                	    // If we don't get an error, we actually got an error as we expect an 401!
-                	}).fail(function(){
-                	    // We expect to get an 401 Unauthorized error! In this case we are successfully
-                        // logged out and we redirect the user.
-                	    window.location = "/";
-                    });
-
-                } else {
+                if (password) forgetCredentials();
+                setTimeout(function() {
                     window.location = "/";
-                }
+                }, 1000);
             }
 
             return;
@@ -368,6 +384,7 @@ function init() {
 
     $("#menuLink").on('click', toggleMenu);
     $(".button-update").on('click', doUpdate);
+    $(".button-update-password").on('click', doUpdatePassword);
     $(".button-reset").on('click', doReset);
     $(".button-reconnect").on('click', doReconnect);
     $(".button-apikey").on('click', doGenerateAPIKey);

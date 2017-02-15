@@ -28,6 +28,7 @@
     width: 100px;
     margin: 5px auto;
 }
+.button-update-password,
 .button-update {
     background: #1f8dd6;
 }
@@ -85,4 +86,7 @@ div.hint {
 }
 .pure-form .center {
     margin: .5em 0 .2em;
+}
+.webmode {
+    display: none;
 }

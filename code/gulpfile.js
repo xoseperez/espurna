@@ -91,4 +91,4 @@ gulp.task('html', function() {
 /* Build file system */
 gulp.task('buildfs_split', ['clean', 'files', 'html']);
 gulp.task('buildfs_inline', ['clean', 'files', 'inline']);
-gulp.task('default', ['buildfs_split']);
+gulp.task('default', ['buildfs_inline']);
