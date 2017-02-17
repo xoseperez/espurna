@@ -46,13 +46,11 @@ void hardwareLoop() {
 
     // Heartbeat
     static unsigned long last_heartbeat = 0;
-    if (mqttConnected()) {
-        if ((millis() - last_heartbeat > HEARTBEAT_INTERVAL) || (last_heartbeat == 0)) {
-            last_heartbeat = millis();
-            mqttSend(MQTT_HEARTBEAT_TOPIC, "1");
-            DEBUG_MSG("[BEAT] Free heap: %d\n", ESP.getFreeHeap());
-            DEBUG_MSG("[NTP] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
-        }
+    if ((millis() - last_heartbeat > HEARTBEAT_INTERVAL) || (last_heartbeat == 0)) {
+        last_heartbeat = millis();
+        mqttSend(MQTT_HEARTBEAT_TOPIC, "1");
+        DEBUG_MSG("[BEAT] Free heap: %d\n", ESP.getFreeHeap());
+        DEBUG_MSG("[NTP] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
     }
 
 }
