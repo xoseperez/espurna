@@ -1,0 +1,18 @@
+#!/bin/python
+
+import binascii
+import string
+
+source = 'espurna/data/index.html.gz'
+destination = 'espurna/config/data.h'
+
+with open(source, 'rb') as f:
+    content = f.read()
+
+array = map(lambda x: '0x%02x' % ord(x), content)
+
+with open(destination, 'w') as f:
+    f.write("#define index_html_gz_len %d\n" % len(array))
+    f.write("const uint8_t index_html_gz[] PROGMEM = {")
+    f.write(string.join(array, ','))
+    f.write("};\n")

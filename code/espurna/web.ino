@@ -16,6 +16,10 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <vector>
 
+#if EMBED_WEB_IN_FIRMWARE == 1
+#include "config/data.h"
+#endif
+
 AsyncWebServer * _server;
 AsyncWebSocket ws("/ws");
 Ticker deferred;
@@ -702,6 +706,14 @@ void _onAuth(AsyncWebServerRequest *request) {
 
 }
 
+#if EMBED_WEB_IN_FIRMWARE == 1
+void _onHome(AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+}
+#endif
+
 void webSetup() {
 
     // Create server
@@ -714,21 +726,28 @@ void webSetup() {
     // Setup webserver
     _server->addHandler(&ws);
 
+    // Rewrites
+    _server->rewrite("/", "/index.html");
+
     // Serve home (basic authentication protection)
+    #if EMBED_WEB_IN_FIRMWARE == 1
+    _server->on("/index.html", HTTP_GET, _onHome);
+    #endif
     _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/apis", HTTP_GET, _onAPIs);
     _server->on("/rpc", HTTP_GET, _onRPC);
 
     // Serve static files
-    char lastModified[50];
-    sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
-    _server->rewrite("/", "/index.html");
-    _server->serveStatic("/", SPIFFS, "/")
-        .setLastModified(lastModified)
-        .setFilter([](AsyncWebServerRequest *request) -> bool {
-            webLogRequest(request);
-            return true;
-        });
+    #if EMBED_WEB_IN_FIRMWARE == 0
+        char lastModified[50];
+        sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
+        _server->serveStatic("/", SPIFFS, "/")
+            .setLastModified(lastModified)
+            .setFilter([](AsyncWebServerRequest *request) -> bool {
+                webLogRequest(request);
+                return true;
+            });
+    #endif
 
     // 404
     _server->onNotFound([](AsyncWebServerRequest *request){
