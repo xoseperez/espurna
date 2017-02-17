@@ -80,6 +80,39 @@ void wifiConfigure() {
 
 }
 
+void wifiStatus() {
+
+    if ((WiFi.getMode() == WIFI_AP) || (WiFi.getMode() == WIFI_AP_STA)) {
+
+        DEBUG_MSG("[WIFI] MODE AP --------------------------------------\n");
+        DEBUG_MSG("[WIFI] SSID %s\n", jw.getAPSSID().c_str());
+        DEBUG_MSG("[WIFI] PASS %s\n", getSetting("adminPass", ADMIN_PASS).c_str());
+        DEBUG_MSG("[WIFI] IP   %s\n", WiFi.softAPIP().toString().c_str());
+        DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.softAPmacAddress().c_str());
+        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
+
+    }
+
+    if ((WiFi.getMode() == WIFI_STA) || (WiFi.getMode() == WIFI_AP_STA)) {
+
+        DEBUG_MSG("[WIFI] MODE STA -------------------------------------\n");
+        DEBUG_MSG("[WIFI] SSID %s\n", WiFi.SSID().c_str());
+        DEBUG_MSG("[WIFI] IP   %s\n", WiFi.localIP().toString().c_str());
+        DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.macAddress().c_str());
+        DEBUG_MSG("[WIFI] GW   %s\n", WiFi.gatewayIP().toString().c_str());
+        DEBUG_MSG("[WIFI] MASK %s\n", WiFi.subnetMask().toString().c_str());
+        DEBUG_MSG("[WIFI] DNS  %s\n", WiFi.dnsIP().toString().c_str());
+        DEBUG_MSG("[WIFI] HOST %s\n", WiFi.hostname().c_str());
+        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
+
+    }
+
+    if (WiFi.getMode() == WIFI_OFF) {
+        DEBUG_MSG("[WIFI] No connection\n");
+    }
+
+}
+
 void wifiSetup() {
 
     wifiConfigure();
@@ -122,24 +155,11 @@ void wifiSetup() {
 		    }
 
 		    if (code == MESSAGE_CONNECTED) {
-		        DEBUG_MSG("[WIFI] MODE STA -------------------------------------\n");
-		        DEBUG_MSG("[WIFI] SSID %s\n", WiFi.SSID().c_str());
-		        DEBUG_MSG("[WIFI] IP   %s\n", WiFi.localIP().toString().c_str());
-		        DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.macAddress().c_str());
-		        DEBUG_MSG("[WIFI] GW   %s\n", WiFi.gatewayIP().toString().c_str());
-		        DEBUG_MSG("[WIFI] MASK %s\n", WiFi.subnetMask().toString().c_str());
-		        DEBUG_MSG("[WIFI] DNS  %s\n", WiFi.dnsIP().toString().c_str());
-		        DEBUG_MSG("[WIFI] HOST %s\n", WiFi.hostname().c_str());
-		        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
+                wifiStatus();
 		    }
 
 		    if (code == MESSAGE_ACCESSPOINT_CREATED) {
-		        DEBUG_MSG("[WIFI] MODE AP --------------------------------------\n");
-		        DEBUG_MSG("[WIFI] SSID %s\n", jw.getAPSSID().c_str());
-                DEBUG_MSG("[WIFI] PASS %s\n", getSetting("adminPass", ADMIN_PASS).c_str());
-		        DEBUG_MSG("[WIFI] IP   %s\n", WiFi.softAPIP().toString().c_str());
-		        DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.softAPmacAddress().c_str());
-		        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
+                wifiStatus();
 		    }
 
 		    if (code == MESSAGE_DISCONNECTED) {
