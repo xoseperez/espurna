@@ -90,3 +90,14 @@ div.hint {
 .webmode {
     display: none;
 }
+#credentials {
+    font-size: 200%;
+    text-align: center;
+    height: 100px;
+    width: 400px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-top: -50px;
+    margin-left: -200px;
+}

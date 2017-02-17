@@ -216,6 +216,7 @@ function processData(data) {
             password = data.webMode == 1;
             $("#layout").toggle(data.webMode == 0);
             $("#password").toggle(data.webMode == 1);
+            $("#credentials").hide();
         }
 
         // Actions
@@ -393,11 +394,16 @@ function init() {
         $("div.more", addNetwork()).toggle();
     });
 
+    var host = window.location.hostname;
+    var port = location.port;
+
     $.ajax({
         'method': 'GET',
-        'url': '/auth'
+        'url': 'http://' + host + ':' + port + '/auth'
     }).done(function(data) {
         connect();
+    }).fail(function(){
+        $("#credentials").show();
     });
 
 }

@@ -508,9 +508,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
         // First packet
         if (info->index == 0) {
-            //Serial.printf("Before malloc: %d\n", ESP.getFreeHeap());
             message = (uint8_t*) malloc(info->len);
-            //Serial.printf("After malloc: %d\n", ESP.getFreeHeap());
         }
 
         // Store data
@@ -519,9 +517,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         // Last packet
         if (info->index + len == info->len) {
             _wsParse(client->id(), message, info->len);
-            //Serial.printf("Before free: %d\n", ESP.getFreeHeap());
             free(message);
-            //Serial.printf("After free: %d\n", ESP.getFreeHeap());
         }
 
     }
@@ -683,16 +679,9 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 }
 
-void _onHome(AsyncWebServerRequest *request) {
-    webLogRequest(request);
-    if (!_authenticate(request)) return request->requestAuthentication();
-    request->send(SPIFFS, "/index.html");
-}
-
 void _onAuth(AsyncWebServerRequest *request) {
 
     webLogRequest(request);
-
     if (!_authenticate(request)) return request->requestAuthentication();
 
     IPAddress ip = request->client()->remoteIP();
@@ -726,8 +715,6 @@ void webSetup() {
     _server->addHandler(&ws);
 
     // Serve home (basic authentication protection)
-    _server->on("/", HTTP_GET, _onHome);
-    _server->on("/index.html", HTTP_GET, _onHome);
     _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/apis", HTTP_GET, _onAPIs);
     _server->on("/rpc", HTTP_GET, _onRPC);
@@ -735,7 +722,13 @@ void webSetup() {
     // Serve static files
     char lastModified[50];
     sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
-    _server->serveStatic("/", SPIFFS, "/").setLastModified(lastModified);
+    _server->rewrite("/", "/index.html");
+    _server->serveStatic("/", SPIFFS, "/")
+        .setLastModified(lastModified)
+        .setFilter([](AsyncWebServerRequest *request) -> bool {
+            webLogRequest(request);
+            return true;
+        });
 
     // 404
     _server->onNotFound([](AsyncWebServerRequest *request){
