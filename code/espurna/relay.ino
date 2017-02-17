@@ -253,7 +253,8 @@ void relaySetupAPI() {
                 } else {
                     relayStatus(relayID, value == 1);
                 }
-            });
+            }
+        );
 
     }
 

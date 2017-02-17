@@ -587,9 +587,9 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         bool asJson = _asJson(request);
 
         web_api_t api = _apis[apiID];
-        if (request->method() == HTTP_PUT) {
-            if (request->hasParam("value", true)) {
-                AsyncWebParameter* p = request->getParam("value", true);
+        if (api.putFn != NULL) {
+            if (request->hasParam("value", request->method() == HTTP_PUT)) {
+                AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
                 (api.putFn)((p->value()).c_str());
             }
         }
