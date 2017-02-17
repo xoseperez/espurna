@@ -33,6 +33,8 @@ const del = require('del');
 const useref = require('gulp-useref');
 const gulpif = require('gulp-if');
 const inline = require('gulp-inline');
+const inlineImages = require('gulp-css-base64');
+const favicon = require('gulp-base64-favicon');
 
 const destination = 'espurna/data/';
 
@@ -51,10 +53,18 @@ gulp.task('files', function() {
         .pipe(gulp.dest(destination));
 });
 
+gulp.task('inline_images', function() {
+    return gulp.src(['html/src/checkboxes.css'])
+        .pipe(inlineImages({
+            baseDir: "../"
+        }))
+        .pipe(gulp.dest('html/'));
+});
 
-/* Process HTML, CSS, JS  --- INLINE --- */
+/* Process HTML, CSS, JS, IMAGES and FAVICON  --- INLINE --- */
 gulp.task('inline', function() {
     return gulp.src('html/*.html')
+        .pipe(favicon())
         .pipe(inline({
             base: 'html/',
             js: uglify,
@@ -90,5 +100,5 @@ gulp.task('html', function() {
 
 /* Build file system */
 gulp.task('buildfs_split', ['clean', 'files', 'html']);
-gulp.task('buildfs_inline', ['clean', 'files', 'inline']);
+gulp.task('buildfs_inline', ['clean', 'inline_images', 'inline']);
 gulp.task('default', ['buildfs_inline']);

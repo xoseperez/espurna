@@ -46,16 +46,14 @@ div.iPhoneCheckBorderOn {
     left: 0;
     width: 4px;
     height: 100%;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFR85CxvmEAAAAPhJREFUGNM1jjtOA1EUQ8+1PW9GgIiIkChooGITtBSwF3YAVLRIlKyGkoLFIGgSPhqF4iWlLdvHBXB2fX8KPAGXdX7zcAG8jQdHy7a/ILIep8Pj5Xh4ghxi+WpanJBxn3IjshYZD3Cb8DARy7hNpO2hjMQ2ScNDQ8PUDWXADqUgx0jeCiHblIQkVEZxUIGqkKpXqKKKbiRBJVSiUKc0G8V4MEnCOIjEONvEFJNm3Nw3yp3g2lJchQsi+g8L7N0PG6sn7F3FRVR4l0h1kZ0hbbAhtUGWv8SM2FACyXqdf1eImWJGlu/mv/XH9+qT+WdNAdy+vJ8Cz8DlP5OVH/+5ZpfdAAAAAElFTkSuQmCC');
     background-repeat: no-repeat;
-    background-position: 0px 0px;
 }
 
 label.iPhoneCheckLabelOn {
     color: white;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFSAYH6zccgAAALhJREFUGNNdkM1VBDEMgz85yrALHHg0sBRAIxRFm5TAiRLYJw4O7Ay5OZasH728vYfd8/PllQBCIPA8P4F6G8A+PyIVC4Z99wCqtQd7uweBJAh4zO0mEXCN+TcLcJU4+CgVWX8KWFUUaQ39UtJOA7gQUXNKwdODvYxPc5C97GkbRx8ukdAnJVwSVIAO6FG3YCDssWtH4FFC0PbDf0SwV1kdUE3JQkhgcqUkIlCCuX6vTtfRr8+PQ2M/SZ8sUjiJqjYAAAAASUVORK5CYII=');
     background-repeat: repeat-x;
-    background-position: 0px -27px;
     text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.6);
     left: 0;
     padding-top: 5px;
@@ -69,9 +67,8 @@ label.iPhoneCheckLabelOn span {
 
 label.iPhoneCheckLabelOff {
     color: #8b8b8b;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFSAnqcrxTwAAAK9JREFUGNNVkEt2wzAMAwcU6ubjNhfyHXzg5mh5RheWnUhLiBiQ0Lqu4eN5WRYG4ffxAIIQAfwzz+PEPN8JoD7n+60L2iVfLtf+HZDw9D1xegDbHqGfQgA3N+CNsctERyy4teI4RoC/pgkIyR7jqkI618B2283sIEsN1DdTcKsipMcIV6sO2G2uUq9HJMFVbbylqkahVZEOhMOiQEQEDhvZ3gX49do4K1Pw8/k3QP8BlXw2dG+s/nEAAAAASUVORK5CYII=');
     background-repeat: repeat-x;
-    background-position: 0px -54px;
     text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.6);
     text-align: right;
     margin-right: 4px;
@@ -87,9 +84,8 @@ div.iPhoneCheckBorderOff {
     position: absolute;
     width: 4px;
     height: 100%;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFSEDjNIk3wAAAQxJREFUGNNNkTtOA0EQRF939Sz+jBzg2EchJLaPgsQBnHAhx6TEPsSKNUgGIhJsdodg1sid9VNVV0lt6/X6FXgBHne7XWfb7bYcjx+8vR2+gLtYLpcsFgsmk5vbtm2fPOdMzpnVaoWk+5jnzOn0g+RIyjGfzUgKDEMSMZ1OcTeGMhARRNM0lFLo+xGklBiGgfP5XEFE0Pc9kRIRgSuEFIRUQShqpI/AvS6Sk1IimtTQDz36jfGGnPBAHqSUcEXUhuFVYeaYGYZVhcsxGeajQma4OX4BdhX7D1yO2cXijruuLOa4G2Y2VjfqFJD07YVCGQY+Po9Iera2bUvXHTgcuvqX/X7/DrxIethsNt0fBBNKg/wAUGwAAAAASUVORK5CYII=');
     background-repeat: no-repeat;
-    background-position: 0px -81px;
 }
 
 .iPhoneCheckHandle {
@@ -100,9 +96,8 @@ div.iPhoneCheckBorderOff {
     top: 0;
     left: 0;
     width: 0;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFSEzqgsUcwAAANZJREFUGNNVkD1qw0AUhL+Z3T5gNRY+QECFTuA2t0rpNpAzbKNbpEypXq0OEAjEcRGZTbH6c7EsDDPzvvcEkFI6AW/AWSmlZ+CzaZpDXddE4NK27aGqKn6uVwy81Mcjv7cb5EyU9BRiRAASsfwqD4qAhC3yIgiQvDkkYRmAuOatx1J7dsydJaK8lPoxUsYGIC+lFI68H2uRs/foAa+lswO8oa8cC6kl0G5byZuw7rKtXwRlYeB7uk9YBd+SPsZxJISAZAy89n3/NQwD0/RXjt113Ql4B87/SLstv7YcoHkAAAAASUVORK5CYII=');
     background-repeat: no-repeat;
-    background-position: 0px -108px;
     padding-left: 4px;
 }
 
@@ -110,9 +105,8 @@ div.iPhoneCheckBorderOff {
     position: absolute;
     width: 100%;
     height: 100%;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFSILqST/LgAAAJVJREFUGNNVkcsVxSAIRO8g/ReRbUrzpYZ5CzAaN3pgPgzqui5zHM05jQEMEvl7nt0FMtRP15VS7DaQklAD8FFoABkRnKoZsQQFuEW1CN4UY0QUxWiLKgJZSAaLDEV7arnEGbYLNpbQsq3RK10NBqiduvCJP3pbNf5GcOzjXZB7UgC1dcaLaJeiqBkmxxjfb7jv+5PlD4a+KFo56aIvAAAAAElFTkSuQmCC');
     background-repeat: repeat-x;
-    background-position: 0px -135px;
 }
 
 .iPhoneCheckHandleRight {
@@ -120,7 +114,6 @@ div.iPhoneCheckBorderOff {
     height: 100%;
     width: 4px;
     right: 0px;
-    background-image: url('images/check.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAbCAYAAABbcS4wAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4QIRFSIm7PujWwAAANdJREFUGNNlkTFuhDAQRd8fU6ZKA7fgBFvmEDScIVKukJNwBNq0uQESLUIKItVW62y1mRRrDNEW1thf/z/PaNR13RfwCby1bbtoWRZf15VxHM/AyeIlUpYldV0/A+/mONefK1VVAbwUkgAIISDpKQtbLcyEu3ZBMtI9CWboELFghqR8iuMjQe0eVmYIXIjNIQOBPUYSdHPs0GDgfuxU2Q5gdmgsfys34AHKPj7Of6hLu0O6j3+7/QJczMwIITDPM5I+FGP0aZoYhuEMnIq+77/T5l6bpln+AEtTOnfJ0VScAAAAAElFTkSuQmCC');
     background-repeat: no-repeat;
-    background-position: 0px -162px;
 }
