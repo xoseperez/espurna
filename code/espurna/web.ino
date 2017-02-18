@@ -697,7 +697,7 @@ void _onAuth(AsyncWebServerRequest *request) {
         if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
     }
     if (index == WS_BUFFER_SIZE) {
-        request->send(423);
+        request->send(429);
     } else {
         _ticket[index].ip = ip;
         _ticket[index].timestamp = now;
