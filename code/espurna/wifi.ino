@@ -7,9 +7,11 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include "JustWifi.h"
-#include <DNSServer.h>
 
+#if ENABLE_CAPTIVE_PORTAL
+#include <DNSServer.h>
 DNSServer dnsServer;
+#endif
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -82,20 +84,25 @@ void wifiConfigure() {
 
 void wifiStatus() {
 
-    if ((WiFi.getMode() == WIFI_AP) || (WiFi.getMode() == WIFI_AP_STA)) {
-
+    if (WiFi.getMode() == WIFI_AP_STA) {
+        DEBUG_MSG("[WIFI] MODE AP + STA --------------------------------\n");
+    } else if (WiFi.getMode() == WIFI_AP) {
         DEBUG_MSG("[WIFI] MODE AP --------------------------------------\n");
+    } else if (WiFi.getMode() == WIFI_STA) {
+        DEBUG_MSG("[WIFI] MODE STA -------------------------------------\n");
+    } else {
+        DEBUG_MSG("[WIFI] MODE OFF -------------------------------------\n");
+        DEBUG_MSG("[WIFI] No connection\n");
+    }
+
+    if ((WiFi.getMode() & WIFI_AP) == WIFI_AP) {
         DEBUG_MSG("[WIFI] SSID %s\n", jw.getAPSSID().c_str());
         DEBUG_MSG("[WIFI] PASS %s\n", getSetting("adminPass", ADMIN_PASS).c_str());
         DEBUG_MSG("[WIFI] IP   %s\n", WiFi.softAPIP().toString().c_str());
         DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.softAPmacAddress().c_str());
-        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
-
     }
 
-    if ((WiFi.getMode() == WIFI_STA) || (WiFi.getMode() == WIFI_AP_STA)) {
-
-        DEBUG_MSG("[WIFI] MODE STA -------------------------------------\n");
+    if ((WiFi.getMode() & WIFI_STA) == WIFI_STA) {
         DEBUG_MSG("[WIFI] SSID %s\n", WiFi.SSID().c_str());
         DEBUG_MSG("[WIFI] IP   %s\n", WiFi.localIP().toString().c_str());
         DEBUG_MSG("[WIFI] MAC  %s\n", WiFi.macAddress().c_str());
@@ -103,13 +110,9 @@ void wifiStatus() {
         DEBUG_MSG("[WIFI] MASK %s\n", WiFi.subnetMask().toString().c_str());
         DEBUG_MSG("[WIFI] DNS  %s\n", WiFi.dnsIP().toString().c_str());
         DEBUG_MSG("[WIFI] HOST %s\n", WiFi.hostname().c_str());
-        DEBUG_MSG("[WIFI] ----------------------------------------------\n");
-
     }
 
-    if (WiFi.getMode() == WIFI_OFF) {
-        DEBUG_MSG("[WIFI] No connection\n");
-    }
+    DEBUG_MSG("[WIFI] ----------------------------------------------\n");
 
 }
 
@@ -187,12 +190,14 @@ void wifiSetup() {
 	    }
 
         // Configure captive portal
-        if (code == MESSAGE_ACCESSPOINT_CREATED) {
-            dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
-        }
-        if (code == MESSAGE_DISCONNECTED) {
-            dnsServer.stop();
-        }
+        #if ENABLE_CAPTIVE_PORTAL
+            if (code == MESSAGE_ACCESSPOINT_CREATED) {
+                dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+            }
+            if (code == MESSAGE_DISCONNECTED) {
+                dnsServer.stop();
+            }
+        #endif
 
         // NTP connection reset
         if (code == MESSAGE_CONNECTED) {
@@ -216,7 +221,9 @@ void wifiSetup() {
 
 void wifiLoop() {
     jw.loop();
-    if (WiFi.getMode() == WIFI_AP) {
-        dnsServer.processNextRequest();
-    }
+    #if ENABLE_CAPTIVE_PORTAL
+        if (WiFi.getMode() == WIFI_AP) {
+            dnsServer.processNextRequest();
+        }
+    #endif
 }
