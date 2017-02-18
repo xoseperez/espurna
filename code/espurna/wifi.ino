@@ -47,6 +47,8 @@ bool wifiConnected() {
 }
 
 bool createAP() {
+    jw.disconnect();
+    jw.resetReconnectTimeout();
     return jw.createAP();
 }
 
