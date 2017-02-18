@@ -756,5 +756,6 @@ void webSetup() {
 
     // Run server
     _server->begin();
+    DEBUG_MSG("[WEBSERVER] Webserver running on port %d\n", getSetting("webPort", WEBSERVER_PORT).toInt());
 
 }
