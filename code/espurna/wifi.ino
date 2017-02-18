@@ -182,14 +182,16 @@ void wifiSetup() {
 		#endif
 
         // Configure mDNS
-	    if (code == MESSAGE_CONNECTED) {
-            if (MDNS.begin((char *) WiFi.hostname().c_str())) {
-                MDNS.addService("http", "tcp", 80);
-	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
-	        } else {
-	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
-	        }
-	    }
+        #if ENABLE_MDNS
+    	    if (code == MESSAGE_CONNECTED) {
+                if (MDNS.begin((char *) WiFi.hostname().c_str())) {
+                    MDNS.addService("http", "tcp", 80);
+    	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
+    	        } else {
+    	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
+    	        }
+    	    }
+        #endif
 
         // Configure captive portal
         #if ENABLE_CAPTIVE_PORTAL

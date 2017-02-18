@@ -93,6 +93,7 @@
 #define WEBSERVER_PORT          80
 #define DNS_PORT                53
 #define ENABLE_CAPTIVE_PORTAL   0
+#define ENABLE_MDNS             1
 
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
