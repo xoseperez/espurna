@@ -22,12 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 
 // -----------------------------------------------------------------------------
-// GLOBALS
-// -----------------------------------------------------------------------------
-
-char apibuffer[64];
-
-// -----------------------------------------------------------------------------
 // METHODS
 // -----------------------------------------------------------------------------
 
@@ -39,7 +33,9 @@ String getIdentifier() {
 
 void hardwareSetup() {
     Serial.begin(SERIAL_BAUDRATE);
-    SPIFFS.begin();
+    #if not EMBEDDED_WEB
+        SPIFFS.begin();
+    #endif
 }
 
 void hardwareLoop() {
@@ -62,9 +58,9 @@ void hardwareLoop() {
 void welcome() {
 
     delay(2000);
+
     DEBUG_MSG("%s %s\n", (char *) APP_NAME, (char *) APP_VERSION);
     DEBUG_MSG("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);
-    //DEBUG_MSG("Device: %s\n", (char *) getIdentifier().c_str());
     DEBUG_MSG("ChipID: %06X\n", ESP.getChipId());
     DEBUG_MSG("CPU frequency: %d MHz\n", ESP.getCpuFreqMHz());
     DEBUG_MSG("Last reset reason: %s\n", (char *) ESP.getResetReason().c_str());
@@ -72,15 +68,19 @@ void welcome() {
     DEBUG_MSG("Free heap: %d bytes\n", ESP.getFreeHeap());
     DEBUG_MSG("Firmware size: %d bytes\n", ESP.getSketchSize());
     DEBUG_MSG("Free firmware space: %d bytes\n", ESP.getFreeSketchSpace());
-    FSInfo fs_info;
-    if (SPIFFS.info(fs_info)) {
-        DEBUG_MSG("File system total size: %d bytes\n", fs_info.totalBytes);
-        DEBUG_MSG("            used size : %d bytes\n", fs_info.usedBytes);
-        DEBUG_MSG("            block size: %d bytes\n", fs_info.blockSize);
-        DEBUG_MSG("            page size : %d bytes\n", fs_info.pageSize);
-        DEBUG_MSG("            max files : %d\n", fs_info.maxOpenFiles);
-        DEBUG_MSG("            max length: %d\n", fs_info.maxPathLength);
-    }
+
+    #if not EMBEDDED_WEB
+        FSInfo fs_info;
+        if (SPIFFS.info(fs_info)) {
+            DEBUG_MSG("File system total size: %d bytes\n", fs_info.totalBytes);
+            DEBUG_MSG("            used size : %d bytes\n", fs_info.usedBytes);
+            DEBUG_MSG("            block size: %d bytes\n", fs_info.blockSize);
+            DEBUG_MSG("            page size : %d bytes\n", fs_info.pageSize);
+            DEBUG_MSG("            max files : %d\n", fs_info.maxOpenFiles);
+            DEBUG_MSG("            max length: %d\n", fs_info.maxPathLength);
+        }
+    #endif
+
     DEBUG_MSG("\n\n");
 
 }

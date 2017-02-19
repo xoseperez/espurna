@@ -16,7 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <vector>
 
-#if EMBED_WEB_IN_FIRMWARE == 1
+#if EMBEDDED_WEB
 #include "config/data.h"
 #endif
 
@@ -37,6 +37,7 @@ typedef struct {
     apiPutCallbackFunction putFn = NULL;
 } web_api_t;
 std::vector<web_api_t> _apis;
+char _last_modified[50];
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -706,12 +707,26 @@ void _onAuth(AsyncWebServerRequest *request) {
 
 }
 
-#if EMBED_WEB_IN_FIRMWARE == 1
+#if EMBEDDED_WEB
 void _onHome(AsyncWebServerRequest *request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
+
+    webLogRequest(request);
+
+    if (request->header("If-Modified-Since").equals(_last_modified)) {
+
+        request->send(304);
+
+    } else {
+
+        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Last-Modified", _last_modified);
+        request->send(response);
+
+    }
+
 }
+
 #endif
 
 void webSetup() {
@@ -723,6 +738,9 @@ void webSetup() {
     ws.onEvent(_wsEvent);
     mqttRegister(wsMQTTCallback);
 
+    // Cache the Last-Modifier header value
+    sprintf(_last_modified, "%s %s GMT", __DATE__, __TIME__);
+
     // Setup webserver
     _server->addHandler(&ws);
 
@@ -730,19 +748,17 @@ void webSetup() {
     _server->rewrite("/", "/index.html");
 
     // Serve home (basic authentication protection)
-    #if EMBED_WEB_IN_FIRMWARE == 1
-    _server->on("/index.html", HTTP_GET, _onHome);
+    #if EMBEDDED_WEB
+        _server->on("/index.html", HTTP_GET, _onHome);
     #endif
     _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/apis", HTTP_GET, _onAPIs);
     _server->on("/rpc", HTTP_GET, _onRPC);
 
     // Serve static files
-    #if EMBED_WEB_IN_FIRMWARE == 0
-        char lastModified[50];
-        sprintf(lastModified, "%s %s GMT", __DATE__, __TIME__);
+    #if not EMBEDDED_WEB
         _server->serveStatic("/", SPIFFS, "/")
-            .setLastModified(lastModified)
+            .setLastModified(_last_modified)
             .setFilter([](AsyncWebServerRequest *request) -> bool {
                 webLogRequest(request);
                 return true;

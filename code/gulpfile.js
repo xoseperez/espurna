@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // File system builder
 // -----------------------------------------------------------------------------
 
+const fs = require('fs');
 const gulp = require('gulp');
 const plumber = require('gulp-plumber');
 const htmlmin = require('gulp-htmlmin');
@@ -36,11 +37,11 @@ const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 
-const destination = 'espurna/data/';
+const dataFolder = 'espurna/data/';
 
 /* Clean destination folder */
 gulp.task('clean', function() {
-    del([ destination + '*']);
+    del([ dataFolder + '*']);
     return true;
 });
 
@@ -50,7 +51,32 @@ gulp.task('files', function() {
             'html/**/*.{jpg,jpeg,png,ico,gif}',
             'html/fsversion'
         ])
-        .pipe(gulp.dest(destination));
+        .pipe(gulp.dest(dataFolder));
+});
+
+gulp.task('embed', function() {
+
+    var source = dataFolder + 'index.html.gz';
+    var destination = dataFolder + '../config/data.h';
+
+    var wstream = fs.createWriteStream(destination);
+    wstream.on('error', function (err) {
+        console.log(err);
+    });
+
+    var data = fs.readFileSync(source);
+
+    wstream.write('#define index_html_gz_len ' + data.length + '\n');
+    wstream.write('const uint8_t index_html_gz[] PROGMEM = {')
+
+    for (i=0; i<data.length; i++) {
+        wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
+        if (i<data.length-1) wstream.write(',');
+    }
+
+    wstream.write('};\n')
+    wstream.end();
+
 });
 
 gulp.task('inline_images', function() {
@@ -78,7 +104,7 @@ gulp.task('inline', function() {
             minifyJS: true
         }))
         .pipe(gzip())
-        .pipe(gulp.dest(destination));
+        .pipe(gulp.dest(dataFolder));
 })
 
 /* Process HTML, CSS, JS */
@@ -95,10 +121,11 @@ gulp.task('html', function() {
             minifyJS: true
         })))
         .pipe(gzip())
-        .pipe(gulp.dest(destination));
+        .pipe(gulp.dest(dataFolder));
 });
 
 /* Build file system */
 gulp.task('buildfs_split', ['clean', 'files', 'html']);
 gulp.task('buildfs_inline', ['clean', 'inline_images', 'inline']);
+gulp.task('buildfs_embed', ['buildfs_inline', 'embed']);
 gulp.task('default', ['buildfs_inline']);

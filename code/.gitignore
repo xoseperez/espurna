@@ -1,4 +1,4 @@
-.pioenvs
+.pio*
 .clang_complete
 .gcc-flags.json
-.piolibdeps
+espurna/config/data.h

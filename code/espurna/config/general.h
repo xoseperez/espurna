@@ -103,7 +103,13 @@
 #define AP_MODE_GW              "192.168.4.1"
 #define AP_MODE_MASK            "255.255.255.0"
 
-#define EMBED_WEB_IN_FIRMWARE   0
+// This option builds the firmware with the web interface embedded.
+// You first have to build the data.h file that holds the contents
+// of the web interface by running "gulp buildfs_embed"
+
+#ifndef EMBEDDED_WEB
+#define EMBEDDED_WEB            0
+#endif
 
 // -----------------------------------------------------------------------------
 // OTA & NOFUSS
