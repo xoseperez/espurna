@@ -15,6 +15,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 typedef struct {
     unsigned char pin;
     bool reverse;
+    unsigned char led;
 } relay_t;
 std::vector<relay_t> _relays;
 
@@ -132,6 +133,10 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         #else
             digitalWrite(_relays[id].pin, _relays[id].reverse ? !status : status);
         #endif
+
+        if (_relays[id].led > 0) {
+            ledStatus(_relays[id].led - 1, status);
+        }
 
         if (report) relayMQTT(id);
         if (!recursive) {
@@ -426,16 +431,16 @@ void relaySetup() {
     #else
 
         #ifdef RELAY1_PIN
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_PIN_INVERSE });
+            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_PIN_INVERSE, RELAY1_LED });
         #endif
         #ifdef RELAY2_PIN
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_PIN_INVERSE });
+            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_PIN_INVERSE, RELAY2_LED });
         #endif
         #ifdef RELAY3_PIN
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_PIN_INVERSE });
+            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_PIN_INVERSE, RELAY3_LED });
         #endif
         #ifdef RELAY4_PIN
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_PIN_INVERSE });
+            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_PIN_INVERSE, RELAY4_LED });
         #endif
 
     #endif

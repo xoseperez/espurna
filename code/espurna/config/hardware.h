@@ -13,8 +13,10 @@
 //   - BUTTON_SET_PULLUP: set pullup by software
 // RELAY#_PIN: GPIO for the n-th relay (1-based, up to 4 relays)
 // RELAY#_PIN_INVERSE: Relay has inversed logic (closed or ON when pulled down)
+// RELAY#_LED: LED number that will be bind to the n-th relay (1-based)
 // LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
+// WIFI_LED: LED number that will used for WIFI notifications (1-based, defaults to 1)
 
 // -----------------------------------------------------------------------------
 // Development boards
@@ -378,4 +380,21 @@
 #endif
 #ifndef BUTTON4_RELAY
 #define BUTTON4_RELAY       0
+#endif
+
+#ifndef RELAY1_LED
+#define RELAY1_LED          0
+#endif
+#ifndef RELAY2_LED
+#define RELAY2_LED          0
+#endif
+#ifndef RELAY3_LED
+#define RELAY3_LED          0
+#endif
+#ifndef RELAY4_LED
+#define RELAY4_LED          0
+#endif
+
+#ifndef WIFI_LED
+#define WIFI_LED            1
 #endif

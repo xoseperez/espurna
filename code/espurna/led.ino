@@ -46,17 +46,19 @@ void ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) {
     }
 }
 
+#if WIFI_LED
 void showStatus() {
     if (wifiConnected()) {
         if (WiFi.getMode() == WIFI_AP) {
-            ledBlink(0, 2500, 2500);
+            ledBlink(WIFI_LED, 2500, 2500);
         } else {
-            ledBlink(0, 4900, 100);
+            ledBlink(WIFI_LED, 4900, 100);
         }
     } else {
-        ledBlink(0, 500, 500);
+        ledBlink(WIFI_LED, 500, 500);
     }
 }
+#endif
 
 void ledMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -142,7 +144,9 @@ void ledSetup() {
 }
 
 void ledLoop() {
-    if (ledAuto) showStatus();
+    #if WIFI_LED
+        if (ledAuto) showStatus();
+    #endif
 }
 
 #else
