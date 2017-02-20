@@ -14,3 +14,4 @@ template<typename T> bool setSetting(const String& key, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> void domoticzSend(const char * key, T value);
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue);
+void relayDomoticzSend(unsigned int relayID);

@@ -19,6 +19,7 @@
 //#define SONOFF_TH
 //#define SLAMPHER
 //#define S20
+//#define SONOFF_TOUCH
 //#define SONOFF_SV
 //#define SONOFF_POW
 //#define SONOFF_DUAL

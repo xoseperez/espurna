@@ -10,8 +10,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // LED
 // -----------------------------------------------------------------------------
 
-#ifdef LED1_PIN
-
 typedef struct {
     unsigned char pin;
     bool reverse;
@@ -148,10 +146,3 @@ void ledLoop() {
         if (ledAuto) showStatus();
     #endif
 }
-
-#else
-
-void ledSetup() {};
-void ledLoop() {};
-
-#endif
