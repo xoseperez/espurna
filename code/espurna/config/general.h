@@ -92,16 +92,12 @@
 #define WS_TIMEOUT              1800000
 #define WEBSERVER_PORT          80
 #define DNS_PORT                53
-#define ENABLE_CAPTIVE_PORTAL   0
 #define ENABLE_MDNS             1
 
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
 
 #define AP_MODE                 AP_MODE_ALONE
-#define AP_MODE_IP              "192.168.4.1"
-#define AP_MODE_GW              "192.168.4.1"
-#define AP_MODE_MASK            "255.255.255.0"
 
 // This option builds the firmware with the web interface embedded.
 // You first have to build the data.h file that holds the contents

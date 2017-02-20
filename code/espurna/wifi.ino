@@ -8,11 +8,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "JustWifi.h"
 
-#if ENABLE_CAPTIVE_PORTAL
-#include <DNSServer.h>
-DNSServer dnsServer;
-#endif
-
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
@@ -55,7 +50,7 @@ bool createAP() {
 void wifiConfigure() {
 
     jw.setHostname(getSetting("hostname", HOSTNAME).c_str());
-    jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str(), AP_MODE_IP, AP_MODE_GW, AP_MODE_MASK);
+    jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setAPMode(AP_MODE);
     jw.cleanNetworks();
 
@@ -183,24 +178,14 @@ void wifiSetup() {
 
         // Configure mDNS
         #if ENABLE_MDNS
-    	    if (code == MESSAGE_CONNECTED) {
-                if (MDNS.begin((char *) WiFi.hostname().c_str())) {
+    	    if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
+                if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
                     MDNS.addService("http", "tcp", 80);
     	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     	        } else {
     	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
     	        }
     	    }
-        #endif
-
-        // Configure captive portal
-        #if ENABLE_CAPTIVE_PORTAL
-            if (code == MESSAGE_ACCESSPOINT_CREATED) {
-                dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
-            }
-            if (code == MESSAGE_DISCONNECTED) {
-                dnsServer.stop();
-            }
         #endif
 
         // NTP connection reset
@@ -225,9 +210,4 @@ void wifiSetup() {
 
 void wifiLoop() {
     jw.loop();
-    #if ENABLE_CAPTIVE_PORTAL
-        if (WiFi.getMode() == WIFI_AP) {
-            dnsServer.processNextRequest();
-        }
-    #endif
 }
