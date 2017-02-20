@@ -79,14 +79,6 @@ gulp.task('embed', function() {
 
 });
 
-gulp.task('inline_images', function() {
-    return gulp.src(['html/src/checkboxes.css'])
-        .pipe(inlineImages({
-            baseDir: "../"
-        }))
-        .pipe(gulp.dest('html/'));
-});
-
 /* Process HTML, CSS, JS, IMAGES and FAVICON  --- INLINE --- */
 gulp.task('inline', function() {
     return gulp.src('html/*.html')
@@ -94,7 +86,7 @@ gulp.task('inline', function() {
         .pipe(inline({
             base: 'html/',
             js: uglify,
-            css: cleancss,
+            css: [cleancss, inlineImages],
             disabledTypes: ['svg', 'img']
         }))
         .pipe(htmlmin({
@@ -126,6 +118,6 @@ gulp.task('html', function() {
 
 /* Build file system */
 gulp.task('buildfs_split', ['clean', 'files', 'html']);
-gulp.task('buildfs_inline', ['clean', 'inline_images', 'inline']);
+gulp.task('buildfs_inline', ['clean', 'inline']);
 gulp.task('buildfs_embed', ['buildfs_inline', 'embed']);
 gulp.task('default', ['buildfs_inline']);
