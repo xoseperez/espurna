@@ -3,6 +3,30 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.4] 2017-02-20
+### Added
+- Option to embed the web interface in the firmware, disabled by default
+- Change relay status with a GET request (browser friendly)
+- Support for PROGMEM debug messages (only wifi module has been changed)
+- Option to disable mDNS, enabled by default
+- Show current web server port in debug log
+- Issue #75. Link relays to LEDs
+- Issue #76. Using http://espurna.local when in AP mode
+
+### Changed
+- Images and favicon is now embedded in the HTML
+- Authentication challenge only in /auth request. All static contents are un-authenticated
+- HTTP response code when out of websocket slots changed from 423 to 429
+
+### Fix
+- Memory leak in MQTT connection method
+- Wait 60 seconds before retrying to connect when in AP mode
+- Issue #24 & #74. Update ESPAsyncTCP and ESPAsyncWebServer to latest GIT version that supports MSS defragmenting
+- Issue #73. Fixes for windows machines
+
+### Removed
+- Captive portal removed, mDNS resolution for AP mode too
+
 ## [1.6.3] 2017-02-15
 ### Added
 - Issue #69. Temperature unit configuration from the web interface
