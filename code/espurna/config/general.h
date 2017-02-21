@@ -119,6 +119,8 @@
 // MQTT
 // -----------------------------------------------------------------------------
 
+#define MQTT_USE_ASYNC          0
+
 #define MQTT_SERVER             ""
 #define MQTT_PORT               1883
 #define MQTT_TOPIC              "/test/switch/{identifier}"
