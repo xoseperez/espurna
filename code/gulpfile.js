@@ -39,14 +39,12 @@ const favicon = require('gulp-base64-favicon');
 
 const dataFolder = 'espurna/data/';
 
-/* Clean destination folder */
 gulp.task('clean', function() {
     del([ dataFolder + '*']);
     return true;
 });
 
-/* Copy static files */
-gulp.task('files', function() {
+gulp.task('files', ['clean'], function() {
     return gulp.src([
             'html/**/*.{jpg,jpeg,png,ico,gif}',
             'html/fsversion'
@@ -54,7 +52,7 @@ gulp.task('files', function() {
         .pipe(gulp.dest(dataFolder));
 });
 
-gulp.task('embed', function() {
+gulp.task('buildfs_embed', ['buildfs_inline'], function() {
 
     var source = dataFolder + 'index.html.gz';
     var destination = dataFolder + '../config/data.h';
@@ -79,8 +77,7 @@ gulp.task('embed', function() {
 
 });
 
-/* Process HTML, CSS, JS, IMAGES and FAVICON  --- INLINE --- */
-gulp.task('inline', function() {
+gulp.task('buildfs_inline', ['clean'], function() {
     return gulp.src('html/*.html')
         .pipe(favicon())
         .pipe(inline({
@@ -99,8 +96,7 @@ gulp.task('inline', function() {
         .pipe(gulp.dest(dataFolder));
 })
 
-/* Process HTML, CSS, JS */
-gulp.task('html', function() {
+gulp.task('buildfs_split', ['files'], function() {
     return gulp.src('html/*.html')
         .pipe(useref())
         .pipe(plumber())
@@ -116,8 +112,4 @@ gulp.task('html', function() {
         .pipe(gulp.dest(dataFolder));
 });
 
-/* Build file system */
-gulp.task('buildfs_split', ['clean', 'files', 'html']);
-gulp.task('buildfs_inline', ['clean', 'inline']);
-gulp.task('buildfs_embed', ['buildfs_inline', 'embed']);
 gulp.task('default', ['buildfs_inline']);
