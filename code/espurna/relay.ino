@@ -146,7 +146,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
             relayWS();
         }
 
-        #ifdef ENABLE_DOMOTICZ
+        #if ENABLE_DOMOTICZ
             relayDomoticzSend(id);
         #endif
 
