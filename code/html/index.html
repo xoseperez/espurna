@@ -294,14 +294,20 @@
                                 </div>
 
                                 <div class="pure-g module module-fauxmo">
-                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Alexa integration</label></div>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="fauxmoEnabled">Alexa integration</label>
                                     <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="6" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
-                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="tmpUnits">Temperature units</label></div>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
                                     <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="7" value="0"> Celsius (ºC)</input></div>
                                     <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="1"> Fahrenheit (ºF)</input></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4">Settings</label>
+                                    <div class="pure-u-1 pure-u-sm-1-8"><button class="pure-button button-settings-backup pure-u-23-24">Backup</button></div>
+                                    <div class="pure-u-1 pure-u-sm-1-8"><button class="pure-button button-settings-restore pure-u-23-24">Restore</button></div>
                                 </div>
 
                             </fieldset>
@@ -615,6 +621,9 @@
                 <div class="pure-u-1 pure-u-sm-5-8 hint center">Set to 0 to disable notifications.</div>
             </div>
         </div>
+
+        <iframe id="downloader" style="display:none;"></iframe>
+        <input id="uploader" type="file" style="display:none;" />
 
     </body>
 

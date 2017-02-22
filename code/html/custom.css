@@ -51,6 +51,10 @@
 .button-more-network {
     background: rgb(223, 117, 20);
 }
+.button-settings-backup,
+.button-settings-restore {
+    background: rgb(0, 202, 0);
+}
 .pure-g {
     margin-bottom: 20px;
 }

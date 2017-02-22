@@ -20,18 +20,44 @@ Embedis embedis(Serial);
 // -----------------------------------------------------------------------------
 
 unsigned long settingsSize() {
-    bool zero = false;
-    unsigned long size = 0;
-    for (unsigned int i = SPI_FLASH_SEC_SIZE; i>0; i--) {
-        size++;
-        if (EEPROM.read(i) == 0) {
-            if (zero) break;
-            zero = true;
-        } else {
-            zero = false;
+    unsigned pos = SPI_FLASH_SEC_SIZE - 1;
+    while (size_t len = EEPROM.read(pos)) {
+        pos = pos - len - 2;
+    }
+    return SPI_FLASH_SEC_SIZE - pos;
+}
+
+unsigned int settingsKeyCount() {
+    unsigned count = 0;
+    unsigned pos = SPI_FLASH_SEC_SIZE - 1;
+    while (size_t len = EEPROM.read(pos)) {
+        pos = pos - len - 2;
+        count ++;
+    }
+    return count / 2;
+}
+
+String settingsKeyName(unsigned int index) {
+
+    String s;
+
+    unsigned count = 0;
+    unsigned stop = index * 2 + 1;
+    unsigned pos = SPI_FLASH_SEC_SIZE - 1;
+    while (size_t len = EEPROM.read(pos)) {
+        pos = pos - len - 2;
+        count++;
+        if (count == stop) {
+            s.reserve(len);
+            for (unsigned char i = 0 ; i < len; i++) {
+                s += (char) EEPROM.read(pos + i + 1);
+            }
+            break;
         }
     }
-    return size-2;
+
+    return s;
+
 }
 
 void settingsSetup() {
@@ -90,6 +116,16 @@ void settingsSetup() {
 
     Embedis::command( F("SETTINGS.SIZE"), [](Embedis* e) {
         e->response(String(settingsSize()));
+    });
+
+    Embedis::command( F("DUMP"), [](Embedis* e) {
+        unsigned int size = settingsKeyCount();
+        for (unsigned int i=0; i<size; i++) {
+            String key = settingsKeyName(i);
+            String value = getSetting(key);
+            e->stream->printf("+%s => %s\n", key.c_str(), value.c_str());
+        }
+        e->response(Embedis::OK);
     });
 
     DEBUG_MSG("[SETTINGS] EEPROM size: %d bytes\n", SPI_FLASH_SEC_SIZE);

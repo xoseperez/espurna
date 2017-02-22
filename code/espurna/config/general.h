@@ -13,6 +13,7 @@
 
 #define EEPROM_RELAY_STATUS     0
 #define EEPROM_ENERGY_COUNT     1
+#define EEPROM_DATA_END         5
 
 //--------------------------------------------------------------------------------
 // BUTTON
