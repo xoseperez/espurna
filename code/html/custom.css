@@ -8,6 +8,19 @@
 .panel  {
     display: none;
 }
+.footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    font-size: 80%;
+    color: #999;
+}
+#menu .footer a {
+    text-decoration: none;
+    padding: 0px;
+}
 .content {
     margin: 0px;
 }
