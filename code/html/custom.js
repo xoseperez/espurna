@@ -83,6 +83,7 @@ function onFileUpload(event) {
     var inputFiles = this.files;
     if (inputFiles == undefined || inputFiles.length == 0) return false;
     var inputFile = inputFiles[0];
+    this.value = "";
 
     var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore this settings?");
     if (response == false) return false;
