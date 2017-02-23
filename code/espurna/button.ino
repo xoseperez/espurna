@@ -78,7 +78,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
         }
     }
     if (action == BUTTON_MODE_AP) createAP();
-    if (action == BUTTON_MODE_RESET) ESP.reset();
+    if (action == BUTTON_MODE_RESET) ESP.restart();
     if (action == BUTTON_MODE_PULSE) relayPulseToggle();
 
 }

@@ -88,7 +88,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         DEBUG_MSG("[WEBSOCKET] Requested action: %s\n", action.c_str());
 
-        if (action.equals("reset")) ESP.reset();
+        if (action.equals("reset")) ESP.restart();
         if (action.equals("restore") && root.containsKey("data")) {
 
             JsonObject& data = root["data"];
@@ -102,6 +102,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
 
             for (auto element : data){
+                if (strcmp(element.key, "app") == 0) continue;
+                if (strcmp(element.key, "version") == 0) continue;
                 setSetting(element.key, element.value.as<char*>());
             }
 
@@ -696,7 +698,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            deferred.once_ms(100, []() { ESP.reset(); });
+            deferred.once_ms(100, []() { ESP.restart(); });
         }
 
     }

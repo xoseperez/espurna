@@ -89,7 +89,7 @@ void settingsSetup() {
 
     Embedis::command( F("RESET"), [](Embedis* e) {
         e->response(Embedis::OK);
-        ESP.reset();
+        ESP.restart();
     });
 
     Embedis::command( F("STATUS"), [](Embedis* e) {
