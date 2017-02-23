@@ -24,14 +24,14 @@ void i2cScan() {
         response = brzo_i2c_end_transaction();
 
         if (response == 0) {
-            Serial.printf("[I2C] Device found at address 0x%02X\n", address);
+            DEBUG_MSG("[I2C] Device found at address 0x%02X\n", address);
             nDevices++;
         } else if (response != 32) {
-            //Serial.printf("[I2C] Unknown error at address 0x%02X\n", address);
+            //DEBUG_MSG("[I2C] Unknown error at address 0x%02X\n", address);
         }
     }
 
-    if (nDevices == 0) Serial.println("[I2C] No devices found");
+    if (nDevices == 0) DEBUG_MSG("[I2C] No devices found");
 
 }
 

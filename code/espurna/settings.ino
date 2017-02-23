@@ -93,16 +93,16 @@ void settingsSetup() {
     });
 
     Embedis::command( F("STATUS"), [](Embedis* e) {
-        Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+        e->stream->printf("Free heap: %d bytes\n", ESP.getFreeHeap());
         e->response(Embedis::OK);
     });
 
     Embedis::command( F("EEPROM.DUMP"), [](Embedis* e) {
         for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-            if (i % 16 == 0) Serial.printf("\n[%04X] ", i);
-            Serial.printf("%02X ", EEPROM.read(i));
+            if (i % 16 == 0) e->stream->printf("\n[%04X] ", i);
+            e->stream->printf("%02X ", EEPROM.read(i));
         }
-        Serial.printf("\n");
+        e->stream->printf("\n");
         e->response(Embedis::OK);
     });
 
