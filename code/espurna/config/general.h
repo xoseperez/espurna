@@ -120,7 +120,9 @@
 // MQTT
 // -----------------------------------------------------------------------------
 
+#ifndef MQTT_USE_ASYNC
 #define MQTT_USE_ASYNC          0
+#endif
 
 #define MQTT_SERVER             ""
 #define MQTT_PORT               1883

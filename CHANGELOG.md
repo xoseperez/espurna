@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.6] 2017-02-23
+### Fix
+- Issue #82. Fix critical bug on Sonoff Dual
+
 ## [1.6.5] 2017-02-22
 ### Added
 - Option to backup and restore settings from the web interface
