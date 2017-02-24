@@ -478,13 +478,19 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
             if (strncmp(t, MQTT_COLOR_TOPIC, strlen(MQTT_COLOR_TOPIC)) == 0) {
 
+                unsigned char red, green, blue = 0;
+
                 char * p;
                 p = strtok((char *) payload, ",");
-                unsigned char red = atoi(p);
+                red = atoi(p);
                 p = strtok(NULL, ",");
-                unsigned char green = atoi(p);
-                p = strtok(NULL, ",");
-                unsigned char blue = atoi(p);
+                if (p != NULL) {
+                    green = atoi(p);
+                    p = strtok(NULL, ",");
+                    if (p != NULL) blue = atoi(p);
+                } else {
+                    green = blue = red;
+                }
                 if ((red == green) && (green == blue)) {
                     setLightColor(0, 0, 0, red);
                 } else {
@@ -541,6 +547,11 @@ void relaySetup() {
 
         // Two dummy relays for the dual
         _relays.push_back((relay_t) {0, 0});
+        _relays.push_back((relay_t) {0, 0});
+
+    #elif AI_LIGHT
+
+        // One dummy relay for the AI Thinker Light
         _relays.push_back((relay_t) {0, 0});
 
     #else

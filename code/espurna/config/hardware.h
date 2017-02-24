@@ -250,8 +250,6 @@
 
     #define MANUFACTURER        "AI THINKER"
     #define DEVICE              "AI LIGHT"
-    #define RELAY1_PIN          2
-    #define RELAY1_PIN_INVERSE  0
     #undef RELAY_PROVIDER
     #define RELAY_PROVIDER      RELAY_PROVIDER_MY9291
 
