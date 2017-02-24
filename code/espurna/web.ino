@@ -101,7 +101,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 EEPROM.write(i, 0xFF);
             }
 
-            for (auto element : data){
+            for (auto element : data) {
                 if (strcmp(element.key, "app") == 0) continue;
                 if (strcmp(element.key, "version") == 0) continue;
                 setSetting(element.key, element.value.as<char*>());
@@ -120,6 +120,13 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
         if (action.equals("on")) relayStatus(relayID, true);
         if (action.equals("off")) relayStatus(relayID, false);
+
+        #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+            if (action.equals("color") && root.containsKey("data")) {
+                JsonArray& data = root["data"];
+                setLightColor(data[0], data[1], data[2], data[3]);
+            }
+        #endif
 
     };
 
@@ -381,6 +388,12 @@ void _wsStart(uint32_t client_id) {
         for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
             relay.add(relayStatus(relayID));
         }
+
+        #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+            root["colorVisible"] = 1;
+            root["color"] = getLightColor();
+        #endif
+
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);
         root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
         root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME);

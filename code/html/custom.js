@@ -31,6 +31,24 @@ function validateForm(form) {
 
 }
 
+function doColor() {
+    var color = $(this).wheelColorPicker('getColor');
+    var data = [];
+    if ((color.r == color.g) && (color.g == color.b)) {
+        data.push(0);
+        data.push(0);
+        data.push(0);
+        data.push(parseInt(color.r * 255));
+    } else {
+        data.push(parseInt(color.r * 255));
+        data.push(parseInt(color.g * 255));
+        data.push(parseInt(color.b * 255));
+        data.push(0);
+    }
+    websock.send(JSON.stringify({'action': 'color', 'data' : data}));
+}
+
+
 function doUpdate() {
     var form = $("#formSave");
     if (validateForm(form)) {
@@ -274,6 +292,13 @@ function processData(data) {
 
         }
 
+        if (key == "color") {
+            var color = data[key].split(",");
+            if (color[3] > 0) color[0] = color[1] = color[2] = color[3];
+            $("input[name='color']").wheelColorPicker('setRgb', color[0] / 255, color[1] / 255, color[2] / 255, true);
+            return;
+        }
+
         if (key == "maxNetworks") {
             maxNetworks = parseInt(data.maxNetworks);
             return;
@@ -441,6 +466,9 @@ function init() {
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
+    $('input[name="color"]').wheelColorPicker({
+        sliders: 'wsvp'
+    }).on('sliderup', doColor);
 
     var host = window.location.hostname;
     var port = location.port;

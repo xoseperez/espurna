@@ -51,6 +51,14 @@
 #define RELAY_PULSE_OFF         1
 #define RELAY_PULSE_ON          2
 
+#define RELAY_PROVIDER_RELAY    0
+#define RELAY_PROVIDER_DUAL     1
+#define RELAY_PROVIDER_MY9291   2
+
+#ifndef RELAY_PROVIDER
+#define RELAY_PROVIDER          RELAY_PROVIDER_RELAY
+#endif
+
 // Pulse time in seconds
 #define RELAY_PULSE_TIME        1
 
@@ -138,6 +146,7 @@
 #define MQTT_ACTION_TOPIC       "/action"
 #define MQTT_RELAY_TOPIC        "/relay"
 #define MQTT_LED_TOPIC          "/led"
+#define MQTT_COLOR_TOPIC        "/color"
 #define MQTT_BUTTON_TOPIC       "/button"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
@@ -163,6 +172,19 @@
 #define I2C_SCL_PIN             14
 #define I2C_CLOCK_STRETCH_TIME  200
 #define I2C_SCL_FREQUENCY       1000
+
+// -----------------------------------------------------------------------------
+// MY9291
+// -----------------------------------------------------------------------------
+
+#define MY9291_DI_PIN           13
+#define MY9291_DCKI_PIN         15
+#define MY9291_COMMAND          MY9291_COMMAND_DEFAULT
+
+#define MY9291_COLOR_RED        0
+#define MY9291_COLOR_GREEN      0
+#define MY9291_COLOR_BLUE       0
+#define MY9291_COLOR_WHITE      192
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

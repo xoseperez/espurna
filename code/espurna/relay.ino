@@ -26,6 +26,110 @@ Ticker pulseTicker;
 
 bool recursive = false;
 
+#if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+#include <my9291.h>
+typedef struct {
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+    unsigned char white;
+} color_t;
+my9291 _my9291 = my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
+bool _my9291_status = false;
+color_t _my9291_color = {0, 0, 0, 255};
+Ticker colorTicker;
+#endif
+
+// -----------------------------------------------------------------------------
+// PROVIDER
+// -----------------------------------------------------------------------------
+
+#if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+
+void setLightColor(unsigned char red, unsigned char green, unsigned char blue, unsigned char white) {
+
+    _my9291_color.red = red;
+    _my9291_color.green = green;
+    _my9291_color.blue = blue;
+    _my9291_color.white = white;
+
+    // Force color change
+    relayProviderStatus(0, _my9291_status);
+
+    // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
+    colorTicker.once(5, saveLightColor);
+
+}
+
+String getLightColor() {
+    char buffer[16];
+    sprintf(buffer, "%d,%d,%d,%d", _my9291_color.red, _my9291_color.green, _my9291_color.blue, _my9291_color.white);
+    return String(buffer);
+}
+
+void saveLightColor() {
+    setSetting("colorRed", _my9291_color.red);
+    setSetting("colorGreen", _my9291_color.green);
+    setSetting("colorBlue", _my9291_color.blue);
+    setSetting("colorWhite", _my9291_color.white);
+    saveSettings();
+}
+
+void retrieveLightColor() {
+    _my9291_color.red = getSetting("colorRed", MY9291_COLOR_RED).toInt();
+    _my9291_color.green = getSetting("colorGreen", MY9291_COLOR_GREEN).toInt();
+    _my9291_color.blue = getSetting("colorBlue", MY9291_COLOR_BLUE).toInt();
+    _my9291_color.white = getSetting("colorWhite", MY9291_COLOR_WHITE).toInt();
+}
+
+#endif
+
+void relayProviderStatus(unsigned char id, bool status) {
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
+        dualRelayStatus ^= (1 << id);
+        Serial.flush();
+        Serial.write(0xA0);
+        Serial.write(0x04);
+        Serial.write(dualRelayStatus);
+        Serial.write(0xA1);
+        Serial.flush();
+    #endif
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+        if (status) {
+            _my9291.send(_my9291_color.red,_my9291_color.green,_my9291_color.blue,_my9291_color.white);
+        } else {
+            _my9291.send(0, 0, 0, 0);
+        }
+        _my9291_status = status;
+    #endif
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
+        digitalWrite(_relays[id].pin, _relays[id].reverse ? !status : status);
+    #endif
+
+}
+
+bool relayProviderStatus(unsigned char id) {
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
+        if (id >= 2) return false;
+        return ((dualRelayStatus & (1 << id)) > 0);
+    #endif
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+        return _my9291_status;
+    #endif
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
+        if (id >= _relays.size()) return false;
+        bool status = (digitalRead(_relays[id].pin) == HIGH);
+        return _relays[id].reverse ? !status : status;
+    #endif
+
+}
+
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
@@ -43,14 +147,7 @@ String relayString() {
 }
 
 bool relayStatus(unsigned char id) {
-    #ifdef SONOFF_DUAL
-        if (id >= 2) return false;
-        return ((dualRelayStatus & (1 << id)) > 0);
-    #else
-        if (id >= _relays.size()) return false;
-        bool status = (digitalRead(_relays[id].pin) == HIGH);
-        return _relays[id].reverse ? !status : status;
-    #endif
+    return relayProviderStatus(id);
 }
 
 void relayPulse(unsigned char id) {
@@ -120,19 +217,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         DEBUG_MSG("[RELAY] %d => %s\n", id, status ? "ON" : "OFF");
         changed = true;
 
-        #ifdef SONOFF_DUAL
-
-            dualRelayStatus ^= (1 << id);
-            Serial.flush();
-            Serial.write(0xA0);
-            Serial.write(0x04);
-            Serial.write(dualRelayStatus);
-            Serial.write(0xA1);
-            Serial.flush();
-
-        #else
-            digitalWrite(_relays[id].pin, _relays[id].reverse ? !status : status);
-        #endif
+        relayProviderStatus(id, status);
 
         if (_relays[id].led > 0) {
             ledStatus(_relays[id].led - 1, status);
@@ -370,10 +455,15 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_CONNECT_EVENT) {
 
         relayMQTT();
-        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 10];
 
+        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 20];
         sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
         mqttSubscribe(buffer);
+
+        #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+            sprintf(buffer, "%s%s", MQTT_COLOR_TOPIC, mqttSetter.c_str());
+            mqttSubscribe(buffer);
+        #endif
 
     }
 
@@ -381,31 +471,56 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         // Match topic
         char * t = mqttSubtopic((char *) topic);
-        if (strncmp(t, MQTT_RELAY_TOPIC, strlen(MQTT_RELAY_TOPIC)) != 0) return;
         int len = mqttSetter.length();
         if (strncmp(t + strlen(t) - len, mqttSetter.c_str(), len) != 0) return;
 
-        // Get value
-        unsigned int value = (char)payload[0] - '0';
+        // Color topic
+        #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+            if (strncmp(t, MQTT_COLOR_TOPIC, strlen(MQTT_COLOR_TOPIC)) == 0) {
 
-        // Pulse topic
-        if (strncmp(t + strlen(MQTT_RELAY_TOPIC) + 1, "pulse", 5) == 0) {
-            relayPulseMode(value, !sameSetGet);
-            return;
-        }
+                char * p;
+                p = strtok((char *) payload, ",");
+                unsigned char red = atoi(p);
+                p = strtok(NULL, ",");
+                unsigned char green = atoi(p);
+                p = strtok(NULL, ",");
+                unsigned char blue = atoi(p);
+                if ((red == green) && (green == blue)) {
+                    setLightColor(0, 0, 0, red);
+                } else {
+                    setLightColor(red, green, blue, 0);
+                }
+                return;
 
-        // Get relay ID
-        unsigned int relayID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
-        if (relayID >= relayCount()) {
-            DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
-            return;
-        }
+            }
+        #endif
 
-        // Action to perform
-        if (value == 2) {
-            relayToggle(relayID);
-        } else {
-            relayStatus(relayID, value > 0, !sameSetGet);
+        // Relay topic
+        if (strncmp(t, MQTT_RELAY_TOPIC, strlen(MQTT_RELAY_TOPIC)) == 0) {
+
+            // Get value
+            unsigned int value = (char)payload[0] - '0';
+
+            // Pulse topic
+            if (strncmp(t + strlen(MQTT_RELAY_TOPIC) + 1, "pulse", 5) == 0) {
+                relayPulseMode(value, !sameSetGet);
+                return;
+            }
+
+            // Get relay ID
+            unsigned int relayID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
+            if (relayID >= relayCount()) {
+                DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
+                return;
+            }
+
+            // Action to perform
+            if (value == 2) {
+                relayToggle(relayID);
+            } else {
+                relayStatus(relayID, value > 0, !sameSetGet);
+            }
+
         }
 
     }
@@ -447,6 +562,10 @@ void relaySetup() {
 
     EEPROM.begin(4096);
     byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+        retrieveLightColor();
+    #endif
 
     for (unsigned int i=0; i < _relays.size(); i++) {
         pinMode(_relays[i].pin, OUTPUT);
