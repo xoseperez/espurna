@@ -18,13 +18,12 @@ typedef struct {
     unsigned char led;
 } relay_t;
 std::vector<relay_t> _relays;
-
-#ifdef SONOFF_DUAL
-    unsigned char dualRelayStatus = 0;
-#endif
 Ticker pulseTicker;
-
 bool recursive = false;
+
+#if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
+unsigned char _dual_status = 0;
+#endif
 
 #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
 #include <my9291.h>
@@ -36,7 +35,7 @@ typedef struct {
 } color_t;
 my9291 _my9291 = my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
 bool _my9291_status = false;
-color_t _my9291_color = {0, 0, 0, 255};
+color_t _my9291_color = {0, 0, 0, 0};
 Ticker colorTicker;
 #endif
 
@@ -87,11 +86,11 @@ void retrieveLightColor() {
 void relayProviderStatus(unsigned char id, bool status) {
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
-        dualRelayStatus ^= (1 << id);
+        _dual_status ^= (1 << id);
         Serial.flush();
         Serial.write(0xA0);
         Serial.write(0x04);
-        Serial.write(dualRelayStatus);
+        Serial.write(_dual_status);
         Serial.write(0xA1);
         Serial.flush();
     #endif
@@ -115,7 +114,7 @@ bool relayProviderStatus(unsigned char id) {
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         if (id >= 2) return false;
-        return ((dualRelayStatus & (1 << id)) > 0);
+        return ((_dual_status & (1 << id)) > 0);
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
