@@ -68,11 +68,12 @@ gulp.task('buildfs_embed', ['buildfs_inline'], function() {
     wstream.write('const uint8_t index_html_gz[] PROGMEM = {')
 
     for (i=0; i<data.length; i++) {
+        if (i % 1000 == 0) wstream.write("\n");
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
         if (i<data.length-1) wstream.write(',');
     }
 
-    wstream.write('};\n')
+    wstream.write('\n};')
     wstream.end();
 
 });
