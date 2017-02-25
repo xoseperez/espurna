@@ -122,6 +122,9 @@ void setup() {
     relaySetup();
     buttonSetup();
     ledSetup();
+
+    delay(500);
+
     wifiSetup();
     otaSetup();
     mqttSetup();
