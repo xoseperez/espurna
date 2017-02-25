@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.6.6**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.6.7**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 ## Features
 
@@ -49,6 +49,11 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Manually from PlatformIO or Arduino IDE
     * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
 * **Command line configuration**
+* Button interface
+    * Click to toggle relays
+    * Double click to enter AP mode (only main button)
+    * Long click (>1 second) to reboot device (only main button)
+    * Extra long click (>10 seconds) to go back to factory settings (only main button)
 
 ## Documentation
 
@@ -60,18 +65,20 @@ Here is the list of supported hardware. For more information please refer to the
 
 ||||
 |-|-|-|
-|![IteadStudio S20](images/devices/s20.jpg)|![IteadStudio Slampher](images/devices/slampher.jpg)|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|
-|**IteadStudio S20**|**IteadStudio Slampher**|**IteadStudio Sonoff 4CH**|
-|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)|![IteadStudio Motor Clockwise/Anticlockwise](images/devices/motor-switch.jpg)|
-|**IteadStudio Sonoff Basic**|**IteadStudio 1CH Inching**|**IteadStudio Motor Clockwise/Anticlockwise**|
+|![IteadStudio S20](images/devices/s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg)|
+|**IteadStudio S20**|**WorkChoice EcoPlug**|**IteadStudio Sonoff Touch**|
+|![IteadStudio Slampher](images/devices/slampher.jpg)|![AI-Thinker Wifi Light](images/devices/aithinker-ailight.jpg)||
+|**IteadStudio Slampher**|**AI-Thinker Wifi Light**||
+|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg)|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg)|
+|**IteadStudio Sonoff Basic**|**IteadStudio Sonoff RF**|**Electrodragon Relay Board**|
 |![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg)|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg)|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg)|
 |**IteadStudio Sonoff Dual**|**IteadStudio Sonoff POW**|**IteadStudio Sonoff TH10/TH16**|
-|![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg)|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg)|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg)|
-|**IteadStudio Sonoff RF**|**IteadStudio Sonoff SV**|**IteadStudio Sonoff Touch**|
-|![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg)|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|
-|**Wemos D1 Mini Relay Shield**|**Electrodragon Relay Board**|**WorkChoice EcoPlug**|
-|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays-board-kit.jpg)|
-|**Jan Goedeke Wifi Relay (NO/NC)**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|**Jorge García Wifi + Relays Board Kit**|
+|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)||
+|**IteadStudio Sonoff 4CH**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
+|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)|![IteadStudio Motor Clockwise/Anticlockwise](images/devices/motor-switch.jpg)|
+|**IteadStudio Sonoff SV**|**IteadStudio 1CH Inching**|**IteadStudio Motor Clockwise/Anticlockwise**|
+|![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays-board-kit.jpg)|
+|**Wemos D1 Mini Relay Shield**|**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|
 
 ## License
 

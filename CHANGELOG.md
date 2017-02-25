@@ -3,6 +3,11 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.7] 2017-02-25
+### Added
+- Support for OpenLight / AI-Light by AI-Thinker based on MY9291 LED driver
+- Issue #87. Factory reset when physical button pressed for >10 seconds
+
 ## [1.6.6] 2017-02-23
 ### Fix
 - Issue #82. Fix critical bug on Sonoff Dual
