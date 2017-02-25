@@ -142,6 +142,8 @@
     #define LED1_PIN_INVERSE    1
     #undef SERIAL_BAUDRATE
     #define SERIAL_BAUDRATE     19230
+    #undef RELAY_PROVIDER
+    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
 
 #elif defined(SONOFF_4CH)
 
@@ -239,6 +241,17 @@
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// AI Thinker
+// -----------------------------------------------------------------------------
+
+#elif defined(AI_LIGHT)
+
+    #define MANUFACTURER        "AI THINKER"
+    #define DEVICE              "AI LIGHT"
+    #undef RELAY_PROVIDER
+    #define RELAY_PROVIDER      RELAY_PROVIDER_MY9291
 
 // -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
