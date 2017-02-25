@@ -27,7 +27,7 @@ unsigned char _dual_status = 0;
 
 #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
 #include <my9291.h>
-my9291 _my9291 = my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
+my9291 * _my9291;
 Ticker colorTicker;
 #endif
 
@@ -40,7 +40,7 @@ Ticker colorTicker;
 void setLightColor(unsigned char red, unsigned char green, unsigned char blue, unsigned char white) {
 
     // Set new color (if light is open it will automatically change)
-    _my9291.setColor((my9291_color_t) { red, green, blue, white });
+    _my9291->setColor((my9291_color_t) { red, green, blue, white });
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     colorTicker.once(5, saveLightColor);
@@ -49,13 +49,13 @@ void setLightColor(unsigned char red, unsigned char green, unsigned char blue, u
 
 String getLightColor() {
     char buffer[16];
-    my9291_color_t color = _my9291.getColor();
+    my9291_color_t color = _my9291->getColor();
     sprintf(buffer, "%d,%d,%d,%d", color.red, color.green, color.blue, color.white);
     return String(buffer);
 }
 
 void saveLightColor() {
-    my9291_color_t color = _my9291.getColor();
+    my9291_color_t color = _my9291->getColor();
     setSetting("colorRed", color.red);
     setSetting("colorGreen", color.green);
     setSetting("colorBlue", color.blue);
@@ -68,7 +68,7 @@ void retrieveLightColor() {
     unsigned int green = getSetting("colorGreen", MY9291_COLOR_GREEN).toInt();
     unsigned int blue = getSetting("colorBlue", MY9291_COLOR_BLUE).toInt();
     unsigned int white = getSetting("colorWhite", MY9291_COLOR_WHITE).toInt();
-    _my9291.setColor((my9291_color_t) { red, green, blue, white });
+    _my9291->setColor((my9291_color_t) { red, green, blue, white });
 }
 
 #endif
@@ -86,7 +86,7 @@ void relayProviderStatus(unsigned char id, bool status) {
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
-        _my9291.setState(status);
+        _my9291->setState(status);
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
@@ -103,7 +103,7 @@ bool relayProviderStatus(unsigned char id) {
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
-        return _my9291.getState();
+        return _my9291->getState();
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
@@ -559,6 +559,7 @@ void relaySetup() {
     byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+        _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
         retrieveLightColor();
     #endif
 
