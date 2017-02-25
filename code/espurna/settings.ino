@@ -60,6 +60,13 @@ String settingsKeyName(unsigned int index) {
 
 }
 
+void settingsFactoryReset() {
+    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+        EEPROM.write(i, 0xFF);
+    }
+    EEPROM.commit();
+}
+
 void settingsSetup() {
 
     EEPROM.begin(SPI_FLASH_SEC_SIZE);
@@ -92,30 +99,21 @@ void settingsSetup() {
         ESP.restart();
     });
 
-    Embedis::command( F("STATUS"), [](Embedis* e) {
-        e->stream->printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+    Embedis::command( F("FACTORY.RESET"), [](Embedis* e) {
+        settingsFactoryReset();
         e->response(Embedis::OK);
     });
 
-    Embedis::command( F("EEPROM.DUMP"), [](Embedis* e) {
-        for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-            if (i % 16 == 0) e->stream->printf("\n[%04X] ", i);
-            e->stream->printf("%02X ", EEPROM.read(i));
-        }
-        e->stream->printf("\n");
+    Embedis::command( F("HEAP"), [](Embedis* e) {
+        e->stream->printf("Free HEAP: %d bytes\n", ESP.getFreeHeap());
         e->response(Embedis::OK);
     });
 
-    Embedis::command( F("EEPROM.ERASE"), [](Embedis* e) {
-        for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-            EEPROM.write(i, 0xFF);
-        }
-        EEPROM.commit();
+    Embedis::command( F("EEPROM"), [](Embedis* e) {
+        unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
+        e->stream->printf("Number of keys: %d\n", settingsKeyCount());
+        e->stream->printf("Free EEPROM: %d bytes (%d%%)\n", freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
         e->response(Embedis::OK);
-    });
-
-    Embedis::command( F("SETTINGS.SIZE"), [](Embedis* e) {
-        e->response(String(settingsSize()));
     });
 
     Embedis::command( F("DUMP"), [](Embedis* e) {
@@ -125,6 +123,15 @@ void settingsSetup() {
             String value = getSetting(key);
             e->stream->printf("+%s => %s\n", key.c_str(), value.c_str());
         }
+        e->response(Embedis::OK);
+    });
+
+    Embedis::command( F("DUMP.RAW"), [](Embedis* e) {
+        for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+            if (i % 16 == 0) e->stream->printf("\n[%04X] ", i);
+            e->stream->printf("%02X ", EEPROM.read(i));
+        }
+        e->stream->printf("\n");
         e->response(Embedis::OK);
     });
 

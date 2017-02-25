@@ -19,19 +19,24 @@
 // BUTTON
 //--------------------------------------------------------------------------------
 
-#define BUTTON_EVENT_NONE       0
-#define BUTTON_EVENT_PRESSED    1
-#define BUTTON_EVENT_CLICK      2
-#define BUTTON_EVENT_DBLCLICK   3
-#define BUTTON_EVENT_LNGCLICK   4
+#define BUTTON_LNGCLICK_LENGTH      1000
+#define BUTTON_LNGLNGCLICK_LENGTH   10000
 
-#define BUTTON_MODE_NONE        0
-#define BUTTON_MODE_TOGGLE      1
-#define BUTTON_MODE_AP          2
-#define BUTTON_MODE_RESET       3
-#define BUTTON_MODE_PULSE       4
+#define BUTTON_EVENT_NONE           0
+#define BUTTON_EVENT_PRESSED        1
+#define BUTTON_EVENT_CLICK          2
+#define BUTTON_EVENT_DBLCLICK       3
+#define BUTTON_EVENT_LNGCLICK       4
+#define BUTTON_EVENT_LNGLNGCLICK    5
 
-#define BUTTON_DEFAULT_MODE     BUTTON_MODE_TOGGLE
+#define BUTTON_MODE_NONE            0
+#define BUTTON_MODE_TOGGLE          1
+#define BUTTON_MODE_AP              2
+#define BUTTON_MODE_RESET           3
+#define BUTTON_MODE_PULSE           4
+#define BUTTON_MODE_FACTORY         5
+
+#define BUTTON_DEFAULT_MODE         BUTTON_MODE_TOGGLE
 
 //--------------------------------------------------------------------------------
 // RELAY
@@ -105,7 +110,7 @@
 // of the web interface by running "gulp buildfs_embed"
 
 #ifndef EMBEDDED_WEB
-#define EMBEDDED_WEB            0
+#define EMBEDDED_WEB            1
 #endif
 
 // -----------------------------------------------------------------------------
