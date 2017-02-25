@@ -1,4 +1,13 @@
 //--------------------------------------------------------------------------------
+// Internal popwer montior
+// Enable support by passing ENABLE_VCC_REPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#if (MQTT_REPORTS | MQTT_VCC_REPORT)
+    ADC_MODE(ADC_VCC);
+#endif
+
+//--------------------------------------------------------------------------------
 // Custom RF module
 // Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Enable support by passing ENABLE_RF=1 build flag

@@ -98,6 +98,7 @@ void _mqttOnConnect() {
     // Say hello and report our IP and VERSION
     mqttSend(MQTT_IP_TOPIC, getIP().c_str());
     mqttSend(MQTT_VERSION_TOPIC, APP_VERSION);
+    mqttSend(MQTT_STATUS_TOPIC, "1");
 
     // Subscribe to system topics
     mqttSubscribe(MQTT_ACTION_TOPIC);
@@ -200,10 +201,10 @@ void mqttConnect() {
 
             if ((strlen(user) > 0) && (strlen(pass) > 0)) {
                 DEBUG_MSG(" as user '%s'\n", user);
-                response = mqtt.connect(getIdentifier().c_str(), user, pass, (mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), user, pass, (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             } else {
                 DEBUG_MSG("\n");
-                response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             }
 
             if (response) {

@@ -40,13 +40,37 @@ void hardwareSetup() {
 
 void hardwareLoop() {
 
+    static unsigned long last_uptime = 0;
+    static unsigned char uptime_overflows = 0;
+
     // Heartbeat
-    static unsigned long last_heartbeat = 0;
-    if ((millis() - last_heartbeat > HEARTBEAT_INTERVAL) || (last_heartbeat == 0)) {
-        last_heartbeat = millis();
-        mqttSend(MQTT_HEARTBEAT_TOPIC, "1");
-        DEBUG_MSG("[BEAT] Free heap: %d\n", ESP.getFreeHeap());
-        DEBUG_MSG("[NTP] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
+    if ((millis() - last_uptime > HEARTBEAT_INTERVAL) || (last_uptime == 0)) {
+
+        if (millis() < last_uptime) ++uptime_overflows;
+        last_uptime = millis();
+        unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
+
+        DEBUG_MSG("[MAIN] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
+        DEBUG_MSG("[MAIN] Uptime: %ld seconds\n", uptime_seconds);
+        DEBUG_MSG("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+
+        #if (MQTT_REPORTS | MQTT_STATUS_REPORT)
+            mqttSend(MQTT_STATUS_TOPIC, "1");
+        #endif
+        #if (MQTT_REPORTS | MQTT_IP_REPORT)
+            mqttSend(MQTT_IP_TOPIC, getIP().c_str());
+        #endif
+        #if (MQTT_REPORTS | MQTT_UPTIME_REPORT)
+            mqttSend(MQTT_UPTIME_TOPIC, String(uptime_seconds).c_str());
+        #endif
+        #if (MQTT_REPORTS | MQTT_FREEHEAP_REPORT)
+            mqttSend(MQTT_FREEHEAP_TOPIC, String(ESP.getFreeHeap()).c_str());
+        #endif
+        #if (MQTT_REPORTS | MQTT_VCC_REPORT)
+            DEBUG_MSG("[BEAT] Power: %d mV\n", ESP.getVcc());
+            mqttSend(MQTT_VCC_TOPIC, String(ESP.getVcc()).c_str());
+        #endif
+
     }
 
 }
@@ -56,8 +80,6 @@ void hardwareLoop() {
 // -----------------------------------------------------------------------------
 
 void welcome() {
-
-    delay(2000);
 
     DEBUG_MSG("%s %s\n", (char *) APP_NAME, (char *) APP_VERSION);
     DEBUG_MSG("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);

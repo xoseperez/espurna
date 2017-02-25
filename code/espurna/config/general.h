@@ -6,6 +6,7 @@
 #define HOSTNAME                DEVICE
 #define BUFFER_SIZE             1024
 #define HEARTBEAT_INTERVAL      300000
+#define UPTIME_OVERFLOW         4294967295
 
 //--------------------------------------------------------------------------------
 // EEPROM
@@ -14,6 +15,14 @@
 #define EEPROM_RELAY_STATUS     0
 #define EEPROM_ENERGY_COUNT     1
 #define EEPROM_DATA_END         5
+
+//--------------------------------------------------------------------------------
+// POWER SUPPLY
+//--------------------------------------------------------------------------------
+
+#ifndef ENABLE_VCC_REPORT
+#define ENABLE_VCC_REPORT       1
+#endif
 
 //--------------------------------------------------------------------------------
 // BUTTON
@@ -155,7 +164,10 @@
 #define MQTT_BUTTON_TOPIC       "/button"
 #define MQTT_IP_TOPIC           "/ip"
 #define MQTT_VERSION_TOPIC      "/version"
-#define MQTT_HEARTBEAT_TOPIC    "/status"
+#define MQTT_UPTIME_TOPIC       "/uptime"
+#define MQTT_FREEHEAP_TOPIC     "/freeheap"
+#define MQTT_VCC_TOPIC          "/vcc"
+#define MQTT_STATUS_TOPIC       "/status"
 
 #define MQTT_ACTION_RESET       "reset"
 
@@ -167,6 +179,15 @@
 // Use something like "/status" or "/set", with leading slash
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         ""
+
+// Periodic reports
+#define MQTT_STATUS_REPORT      1
+#define MQTT_IP_REPORT          2
+#define MQTT_UPTIME_REPORT      4
+#define MQTT_FREEHEAP_REPORT    8
+#define MQTT_VCC_REPORT         16
+
+#define MQTT_REPORTS            (MQTT_STATUS_REPORT | MQTT_UPTIME_REPORT | MQTT_FREEHEAP_REPORT)
 
 // -----------------------------------------------------------------------------
 // I2C
