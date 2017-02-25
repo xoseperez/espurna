@@ -113,7 +113,7 @@
 // of the web interface by running "gulp buildfs_embed"
 
 #ifndef EMBEDDED_WEB
-#define EMBEDDED_WEB            0
+#define EMBEDDED_WEB            1
 #endif
 
 // -----------------------------------------------------------------------------
