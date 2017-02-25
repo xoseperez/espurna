@@ -94,13 +94,6 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
 }
 
-DebounceEvent::TDebounceEventCallback buttonCallbackProvider(unsigned int index) {
-    return [index](uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
-        uint8_t mapped = mapEvent(event, count, length);
-        buttonEvent(index, mapped);
-    };
-}
-
 void buttonSetup() {
 
     #ifdef SONOFF_DUAL
@@ -115,25 +108,25 @@ void buttonSetup() {
         #ifdef BUTTON1_PIN
         {
             unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON1_PIN, buttonCallbackProvider(_buttons.size()), BUTTON1_MODE), actions, BUTTON1_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE), actions, BUTTON1_RELAY});
         }
         #endif
         #ifdef BUTTON2_PIN
         {
             unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON2_PIN,  buttonCallbackProvider(_buttons.size()), BUTTON2_MODE), actions, BUTTON2_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE), actions, BUTTON2_RELAY});
         }
         #endif
         #ifdef BUTTON3_PIN
         {
             unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON3_PIN,  buttonCallbackProvider(_buttons.size()), BUTTON3_MODE), actions, BUTTON3_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE), actions, BUTTON3_RELAY});
         }
         #endif
         #ifdef BUTTON4_PIN
         {
             unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON4_PIN,  buttonCallbackProvider(_buttons.size()), BUTTON4_MODE), actions, BUTTON4_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE), actions, BUTTON4_RELAY});
         }
         #endif
 
@@ -191,8 +184,13 @@ void buttonLoop() {
     #else
 
         for (unsigned int i=0; i < _buttons.size(); i++) {
-            _buttons[i].button->loop();
-        }
+            if (unsigned char event = _buttons[i].button->loop()) {
+                unsigned char count = _buttons[i].button->getEventCount();
+                unsigned long length = _buttons[i].button->getEventLength();
+                unsigned char mapped = mapEvent(event, count, length);
+                buttonEvent(i, mapped);
+            }
+       }
 
     #endif
 
