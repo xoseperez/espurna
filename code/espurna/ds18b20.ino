@@ -26,6 +26,8 @@ double getDSTemperature() {
 
 void dsSetup() {
     ds18b20.begin();
+    ds18b20.setWaitForConversion(false);
+
     apiRegister("/api/temperature", "temperature", [](char * buffer, size_t len) {
         dtostrf(_dsTemperature, len-1, 1, buffer);
     });
@@ -35,13 +37,28 @@ void dsLoop() {
 
     // Check if we should read new data
     static unsigned long last_update = 0;
+    static bool requested = false;
     if ((millis() - last_update > DS_UPDATE_INTERVAL) || (last_update == 0)) {
+        if (!requested) {
+            ds18b20.requestTemperatures();
+            requested = true;
+
+            /* Requesting takes time,
+             * so data will probably not be available in this round */
+            return;
+        }
+
+        /* Check if requested data is already available */
+        if (!ds18b20.isConversionComplete()) {
+            return;
+        }
+
+        requested = false;
         last_update = millis();
 
         unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
 
         // Read sensor data
-        ds18b20.requestTemperatures();
         double t = (tmpUnits == TMP_CELSIUS) ? ds18b20.getTempCByIndex(0) : ds18b20.getTempFByIndex(0);
 
         // Check if readings are valid
