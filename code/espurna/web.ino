@@ -451,7 +451,7 @@ void _wsStart(uint32_t client_id) {
 
         #if ENABLE_DS18B20
             root["dsVisible"] = 1;
-            root["dsTmp"] = getDSTemperature();
+            root["dsTmp"] = getDSTemperatureStr();
         #endif
 
         #if ENABLE_DHT

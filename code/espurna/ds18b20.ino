@@ -14,7 +14,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 OneWire oneWire(DS_PIN);
 DallasTemperature ds18b20(&oneWire);
 
+bool _dsIsConnected = false;
 double _dsTemperature = 0;
+char _dsTemperatureStr[6];
 
 // -----------------------------------------------------------------------------
 // DS18B20
@@ -22,6 +24,13 @@ double _dsTemperature = 0;
 
 double getDSTemperature() {
     return _dsTemperature;
+}
+
+const char* getDSTemperatureStr() {
+    if (!_dsIsConnected)
+        return "NOT CONNECTED";
+
+    return _dsTemperatureStr;
 }
 
 void dsSetup() {
@@ -70,21 +79,29 @@ void dsLoop() {
 
             _dsTemperature = t;
 
-            char temperature[6];
-            dtostrf(t, 5, 1, temperature);
-            DEBUG_MSG("[DS18B20] Temperature: %s%s\n", temperature, (tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF");
+            if ((tmpUnits == TMP_CELSIUS && _dsTemperature == DEVICE_DISCONNECTED_C) ||
+            		(tmpUnits == TMP_FAHRENHEIT && _dsTemperature == DEVICE_DISCONNECTED_F))
+            	_dsIsConnected = false;
+            else
+            	_dsIsConnected = true;
+
+            dtostrf(t, 5, 1, _dsTemperatureStr);
+
+            DEBUG_MSG("[DS18B20] Temperature: %s%s\n",
+                getDSTemperatureStr(),
+			    (_dsIsConnected ? ((tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF") : ""));
 
             // Send MQTT messages
-            mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), temperature);
+            mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
 
             // Send to Domoticz
             #if ENABLE_DOMOTICZ
-                domoticzSend("dczTmpIdx", 0, temperature);
+                domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
             #endif
 
             // Update websocket clients
             char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), temperature, tmpUnits);
+            sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
             wsSend(buffer);
 
         }
