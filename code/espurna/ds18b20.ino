@@ -33,8 +33,6 @@ void dsSetup() {
 
 void dsLoop() {
 
-    if (!mqttConnected()) return;
-
     // Check if we should read new data
     static unsigned long last_update = 0;
     if ((millis() - last_update > DS_UPDATE_INTERVAL) || (last_update == 0)) {

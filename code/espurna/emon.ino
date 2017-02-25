@@ -110,8 +110,6 @@ void powerMonitorLoop() {
     static double min = 0;
     static double sum = 0;
 
-    if (!mqttConnected()) return;
-
     if (warmup) {
         warmup = false;
         emon.warmup();
