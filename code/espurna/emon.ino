@@ -9,8 +9,10 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #if ENABLE_EMON
 
 #include <EmonLiteESP.h>
-#include "brzo_i2c.h"
 #include <EEPROM.h>
+#if EMON_PROVIDER == EMON_ADC121_PROVIDER
+#include "brzo_i2c.h"
+#endif
 
 // ADC121 Registers
 #define ADC121_REG_RESULT       0x00

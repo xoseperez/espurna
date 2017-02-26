@@ -1,13 +1,4 @@
 //--------------------------------------------------------------------------------
-// Internal popwer montior
-// Enable support by passing ENABLE_VCC_REPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#if (MQTT_REPORTS | MQTT_VCC_REPORT)
-    ADC_MODE(ADC_VCC);
-#endif
-
-//--------------------------------------------------------------------------------
 // Custom RF module
 // Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Enable support by passing ENABLE_RF=1 build flag
@@ -57,15 +48,19 @@
 #define EMON_PROVIDER           EMON_ANALOG_PROVIDER
 
 #if EMON_PROVIDER == EMON_ANALOG_PROVIDER
-	#define EMON_CURRENT_PIN        0
+    #define EMON_CURRENT_PIN        0
 	#define EMON_ADC_BITS           10
 	#define EMON_REFERENCE_VOLTAGE  1.0
     #define EMON_CURRENT_PRECISION  1
     #define EMON_CURRENT_OFFSET     0.25
+    #if ENABLE_EMON
+        #undef ENABLE_ADC_VCC
+		#define ENABLE_ADC_VCC      0
+    #endif
 #endif
 
 #if EMON_PROVIDER == EMON_ADC121_PROVIDER
-	#define EMON_ADC121_ADDRESS     0x50
+    #define EMON_ADC121_ADDRESS     0x50
 	#define EMON_ADC_BITS           12
 	#define EMON_REFERENCE_VOLTAGE  3.3
     #define EMON_CURRENT_PRECISION  2
@@ -104,3 +99,17 @@
 #define POW_ENERGY_TOPIC        "/energy"
 #define POW_UPDATE_INTERVAL     5000
 #define POW_REPORT_EVERY        12
+
+//--------------------------------------------------------------------------------
+// Internal power montior
+// Enable support by passing ENABLE_ADC_VCC=1 build flag
+// Do not enable this if using the analog GPIO for any other thing
+//--------------------------------------------------------------------------------
+
+#ifndef ENABLE_ADC_VCC
+#define ENABLE_ADC_VCC       1
+#endif
+
+#if ENABLE_ADC_VCC
+    ADC_MODE(ADC_VCC);
+#endif

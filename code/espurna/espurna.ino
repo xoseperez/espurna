@@ -55,7 +55,7 @@ void hardwareLoop() {
         DEBUG_MSG("[MAIN] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
         DEBUG_MSG("[MAIN] Uptime: %ld seconds\n", uptime_seconds);
         DEBUG_MSG("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
-        #if ENABLE_VCC_REPORT
+        #if ENABLE_ADC_VCC
             DEBUG_MSG("[MAIN] Power: %d mV\n", ESP.getVcc());
         #endif
 
@@ -72,7 +72,7 @@ void hardwareLoop() {
             mqttSend(MQTT_FREEHEAP_TOPIC, String(ESP.getFreeHeap()).c_str());
         #endif
         #if (MQTT_REPORTS | MQTT_VCC_REPORT)
-        #if ENABLE_VCC_REPORT
+        #if ENABLE_ADC_VCC
             mqttSend(MQTT_VCC_TOPIC, String(ESP.getVcc()).c_str());
         #endif
         #endif
