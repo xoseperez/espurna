@@ -555,14 +555,12 @@ void relaySetup() {
 
     #endif
 
-    EEPROM.begin(4096);
-    byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
-
     #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
         _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
         retrieveLightColor();
     #endif
 
+    byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
     for (unsigned int i=0; i < _relays.size(); i++) {
         pinMode(_relays[i].pin, OUTPUT);
         if (relayMode == RELAY_MODE_OFF) relayStatus(i, false);

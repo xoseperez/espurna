@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "config/all.h"
+#include <EEPROM.h>
 
 // -----------------------------------------------------------------------------
 // METHODS
@@ -32,6 +33,7 @@ String getIdentifier() {
 }
 
 void hardwareSetup() {
+    EEPROM.begin(4096);
     Serial.begin(SERIAL_BAUDRATE);
     #if not EMBEDDED_WEB
         SPIFFS.begin();
@@ -53,6 +55,9 @@ void hardwareLoop() {
         DEBUG_MSG("[MAIN] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
         DEBUG_MSG("[MAIN] Uptime: %ld seconds\n", uptime_seconds);
         DEBUG_MSG("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+        #if ENABLE_VCC_REPORT
+            DEBUG_MSG("[MAIN] Power: %d mV\n", ESP.getVcc());
+        #endif
 
         #if (MQTT_REPORTS | MQTT_STATUS_REPORT)
             mqttSend(MQTT_STATUS_TOPIC, "1");
@@ -67,8 +72,9 @@ void hardwareLoop() {
             mqttSend(MQTT_FREEHEAP_TOPIC, String(ESP.getFreeHeap()).c_str());
         #endif
         #if (MQTT_REPORTS | MQTT_VCC_REPORT)
-            DEBUG_MSG("[BEAT] Power: %d mV\n", ESP.getVcc());
+        #if ENABLE_VCC_REPORT
             mqttSend(MQTT_VCC_TOPIC, String(ESP.getVcc()).c_str());
+        #endif
         #endif
 
     }
