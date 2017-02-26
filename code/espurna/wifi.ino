@@ -51,6 +51,7 @@ void wifiConfigure() {
 
     jw.setHostname(getSetting("hostname", HOSTNAME).c_str());
     jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+    jw.setReconnectTimeout(WIFI_RECONNECT_INTERVAL);
     jw.setAPMode(AP_MODE);
     jw.cleanNetworks();
 
