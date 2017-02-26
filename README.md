@@ -67,8 +67,8 @@ Here is the list of supported hardware. For more information please refer to the
 |-|-|-|
 |![IteadStudio S20](images/devices/s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg)|
 |**IteadStudio S20**|**WorkChoice EcoPlug**|**IteadStudio Sonoff Touch**|
-|![IteadStudio Slampher](images/devices/slampher.jpg)|![AI-Thinker Wifi Light](images/devices/aithinker-ailight.jpg)||
-|**IteadStudio Slampher**|**AI-Thinker Wifi Light**||
+|![IteadStudio Slampher](images/devices/slampher.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ailight.jpg)||
+|**IteadStudio Slampher**|**AI-Thinker Wifi Light / Noduino OpenLight**||
 |![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg)|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg)|
 |**IteadStudio Sonoff Basic**|**IteadStudio Sonoff RF**|**Electrodragon Relay Board**|
 |![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg)|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg)|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg)|
