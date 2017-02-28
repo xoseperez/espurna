@@ -20,6 +20,7 @@ bool _mqttConnected = false;
 #endif
 
 String mqttTopic;
+bool _mqttForward;
 std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
     unsigned long mqttConnectedAt = 0;
@@ -43,9 +44,23 @@ void buildTopics() {
     mqttTopic.replace("{identifier}", getSetting("hostname"));
 }
 
-char * mqttSubtopic(char * topic) {
-    int pos = min(mqttTopic.length(), strlen(topic));
-    return topic + pos;
+bool mqttForward() {
+    return _mqttForward;
+}
+
+String mqttSubtopic(char * topic) {
+
+    String response;
+
+    String t = String(topic);
+    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
+
+    if (t.startsWith(mqttTopic) && t.endsWith(mqttSetter)) {
+        response = t.substring(mqttTopic.length(), t.length() - mqttSetter.length());
+    }
+
+    return response;
+
 }
 
 void mqttSendRaw(const char * topic, const char * message) {
@@ -60,7 +75,14 @@ void mqttSendRaw(const char * topic, const char * message) {
 }
 
 void mqttSend(const char * topic, const char * message) {
-    String path = mqttTopic + String(topic);
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    String path = mqttTopic + String(topic) + mqttGetter;
+    mqttSendRaw(path.c_str(), message);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message) {
+    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    String path = mqttTopic + String(topic) + String ("/") + String(index) + mqttGetter;;
     mqttSendRaw(path.c_str(), message);
 }
 
@@ -72,7 +94,8 @@ void mqttSubscribeRaw(const char * topic) {
 }
 
 void mqttSubscribe(const char * topic) {
-    String path = mqttTopic + String(topic);
+    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
+    String path = mqttTopic + String(topic) + mqttSetter;
     mqttSubscribeRaw(path.c_str());
 }
 
@@ -136,8 +159,8 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 	DEBUG_MSG("\n");
 
     // Check system topics
-    char * p = mqttSubtopic(topic);
-    if (strcmp(p, MQTT_ACTION_TOPIC) == 0) {
+    String t = mqttSubtopic((char *) topic);
+    if (t.equals(MQTT_ACTION_TOPIC)) {
         if (strcmp(message, MQTT_ACTION_RESET) == 0) {
             ESP.restart();
         }
@@ -218,6 +241,10 @@ void mqttConnect() {
         free(host);
         free(user);
         free(pass);
+
+        String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
+        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+        bool _mqttForward = !mqttGetter.equals(mqttSetter);
 
     }
 

@@ -123,7 +123,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (action.equals("color") && root.containsKey("data")) {
-                lightColor(root["data"], true);
+                lightColor(root["data"], true, true);
             }
         #endif
 

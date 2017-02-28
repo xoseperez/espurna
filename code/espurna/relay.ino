@@ -121,9 +121,8 @@ void relayPulseMode(unsigned int value, bool report) {
 
     /*
     if (report) {
-        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-        char topic[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 10];
-        sprintf(topic, "%s/pulse%s", MQTT_RELAY_TOPIC, mqttGetter.c_str());
+        char topic[strlen(MQTT_RELAY_TOPIC) + 10];
+        sprintf(topic, "%s/pulse", MQTT_RELAY_TOPIC);
         char value[2];
         sprintf(value, "%d", value);
         mqttSend(topic, value);
@@ -374,10 +373,7 @@ void relayDomoticzSetup() {
 
 void relayMQTT(unsigned char id) {
     if (id >= _relays.size()) return;
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    char buffer[strlen(MQTT_RELAY_TOPIC) + mqttGetter.length() + 3];
-    sprintf(buffer, "%s/%d%s", MQTT_RELAY_TOPIC, id, mqttGetter.c_str());
-    mqttSend(buffer, relayStatus(id) ? "1" : "0");
+    mqttSend(MQTT_RELAY_TOPIC, id, relayStatus(id) ? "1" : "0");
 }
 
 void relayMQTT() {
@@ -388,16 +384,12 @@ void relayMQTT() {
 
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
-    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    bool sameSetGet = mqttGetter.compareTo(mqttSetter) == 0;
-
     if (type == MQTT_CONNECT_EVENT) {
 
         relayMQTT();
 
-        char buffer[strlen(MQTT_RELAY_TOPIC) + mqttSetter.length() + 20];
-        sprintf(buffer, "%s/+%s", MQTT_RELAY_TOPIC, mqttSetter.c_str());
+        char buffer[strlen(MQTT_RELAY_TOPIC) + 3];
+        sprintf(buffer, "%s/+", MQTT_RELAY_TOPIC);
         mqttSubscribe(buffer);
 
     }
@@ -405,36 +397,30 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        char * t = mqttSubtopic((char *) topic);
-        int len = mqttSetter.length();
-        if (strncmp(t + strlen(t) - len, mqttSetter.c_str(), len) != 0) return;
+        String t = mqttSubtopic((char *) topic);
+        if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
 
-        // Relay topic
-        if (strncmp(t, MQTT_RELAY_TOPIC, strlen(MQTT_RELAY_TOPIC)) == 0) {
+        // Get value
+        unsigned int value = (char)payload[0] - '0';
 
-            // Get value
-            unsigned int value = (char)payload[0] - '0';
+        // Pulse topic
+        if (t.endsWith("pulse")) {
+            relayPulseMode(value, mqttForward());
+            return;
+        }
 
-            // Pulse topic
-            if (strncmp(t + strlen(MQTT_RELAY_TOPIC) + 1, "pulse", 5) == 0) {
-                relayPulseMode(value, !sameSetGet);
-                return;
-            }
+        // Get relay ID
+        unsigned int relayID = t.substring(strlen(MQTT_RELAY_TOPIC)+1).toInt();
+        if (relayID >= relayCount()) {
+            DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
+            return;
+        }
 
-            // Get relay ID
-            unsigned int relayID = topic[strlen(topic) - mqttSetter.length() - 1] - '0';
-            if (relayID >= relayCount()) {
-                DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
-                return;
-            }
-
-            // Action to perform
-            if (value == 2) {
-                relayToggle(relayID);
-            } else {
-                relayStatus(relayID, value > 0, !sameSetGet);
-            }
-
+        // Action to perform
+        if (value == 2) {
+            relayToggle(relayID);
+        } else {
+            relayStatus(relayID, value > 0, mqttForward());
         }
 
     }

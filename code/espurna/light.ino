@@ -9,12 +9,11 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 #include <Ticker.h>
+Ticker colorTicker;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 #include <my9291.h>
 my9291 * _my9291;
-Ticker colorTicker;
-bool _mqttSkipColor = false;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -44,7 +43,7 @@ void color_array2rgb(unsigned int * array, char * rgb) {
 // LIGHT MANAGEMENT
 // -----------------------------------------------------------------------------
 
-void lightColor(const char * rgb, bool save) {
+void lightColor(const char * rgb, bool save, bool forward) {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 
@@ -63,13 +62,10 @@ void lightColor(const char * rgb, bool save) {
     #endif
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-    if (save) {
-        colorTicker.once(LIGHT_SAVE_DELAY, lightColorSave);
-    }
+    if (save) colorTicker.once(LIGHT_SAVE_DELAY, lightColorSave);
 
     // Report color to MQTT broker
-    _mqttSkipColor = true;
-    mqttSend(MQTT_COLOR_TOPIC, rgb);
+    if (forward) mqttSend(MQTT_COLOR_TOPIC, rgb);
 
     // Report color to WS clients
     char message[20];
@@ -77,10 +73,6 @@ void lightColor(const char * rgb, bool save) {
     wsSend(message);
 
 
-}
-
-void lightColor(const char * rgb) {
-    lightColor(rgb, true);
 }
 
 String lightColor() {
@@ -130,7 +122,7 @@ void lightColorSave() {
 }
 
 void lightColorRetrieve() {
-    lightColor(getSetting("color", LIGHT_DEFAULT_COLOR).c_str(), false);
+    lightColor(getSetting("color", LIGHT_DEFAULT_COLOR).c_str(), false, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -139,31 +131,18 @@ void lightColorRetrieve() {
 
 void lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
-    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    bool sameSetGet = mqttGetter.compareTo(mqttSetter) == 0;
 
     if (type == MQTT_CONNECT_EVENT) {
-        char buffer[strlen(MQTT_COLOR_TOPIC) + mqttSetter.length() + 20];
-        sprintf(buffer, "%s%s", MQTT_COLOR_TOPIC, mqttSetter.c_str());
-        mqttSubscribe(buffer);
+        mqttSubscribe(MQTT_COLOR_TOPIC);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        char * t = mqttSubtopic((char *) topic);
-        int len = mqttSetter.length();
-        if (strncmp(t + strlen(t) - len, mqttSetter.c_str(), len) != 0) return;
+        String t = mqttSubtopic((char *) topic);
+        if (!t.equals(MQTT_COLOR_TOPIC)) return;
 
-        if (strncmp(t, MQTT_COLOR_TOPIC, strlen(MQTT_COLOR_TOPIC)) == 0) {
-            if (_mqttSkipColor) {
-                _mqttSkipColor = false;
-            } else {
-                lightColor(payload, true);
-            }
-            return;
-        }
+        lightColor(payload, true, mqttForward());
 
     }
 
