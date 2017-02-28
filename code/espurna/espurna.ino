@@ -125,6 +125,9 @@ void setup() {
     }
 
     webSetup();
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        lightSetup();
+    #endif
     relaySetup();
     buttonSetup();
     ledSetup();

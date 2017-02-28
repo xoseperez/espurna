@@ -250,8 +250,8 @@
 
     #define MANUFACTURER        "AI THINKER"
     #define DEVICE              "AI LIGHT"
-    #undef RELAY_PROVIDER
-    #define RELAY_PROVIDER      RELAY_PROVIDER_MY9291
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
 
 // -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
@@ -431,4 +431,14 @@
 #define BUTTON_SWITCH       1
 #define BUTTON_DEFAULT_HIGH 2
 #define BUTTON_SET_PULLUP   4
+#endif
+
+// Relay providers
+#ifndef RELAY_PROVIDER
+#define RELAY_PROVIDER          RELAY_PROVIDER_RELAY
+#endif
+
+// Light provider
+#ifndef LIGHT_PROVIDER
+#define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif

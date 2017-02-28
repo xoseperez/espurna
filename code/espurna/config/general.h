@@ -59,11 +59,7 @@
 
 #define RELAY_PROVIDER_RELAY    0
 #define RELAY_PROVIDER_DUAL     1
-#define RELAY_PROVIDER_MY9291   2
-
-#ifndef RELAY_PROVIDER
-#define RELAY_PROVIDER          RELAY_PROVIDER_RELAY
-#endif
+#define RELAY_PROVIDER_LIGHT    2
 
 // Pulse time in seconds
 #define RELAY_PULSE_TIME        1
@@ -192,17 +188,20 @@
 #define I2C_SCL_FREQUENCY       1000
 
 // -----------------------------------------------------------------------------
-// MY9291
+// LIGHT
 // -----------------------------------------------------------------------------
+
+#define LIGHT_PROVIDER_NONE     0
+#define LIGHT_PROVIDER_WS2812   1
+#define LIGHT_PROVIDER_5050     2
+#define LIGHT_PROVIDER_MY9192   3
+
+#define LIGHT_DEFAULT_COLOR     "#C0C0C0"
+#define LIGHT_SAVE_DELAY        5
 
 #define MY9291_DI_PIN           13
 #define MY9291_DCKI_PIN         15
 #define MY9291_COMMAND          MY9291_COMMAND_DEFAULT
-
-#define MY9291_COLOR_RED        0
-#define MY9291_COLOR_GREEN      0
-#define MY9291_COLOR_BLUE       0
-#define MY9291_COLOR_WHITE      192
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

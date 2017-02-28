@@ -121,10 +121,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         if (action.equals("on")) relayStatus(relayID, true);
         if (action.equals("off")) relayStatus(relayID, false);
 
-        #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (action.equals("color") && root.containsKey("data")) {
-                JsonArray& data = root["data"];
-                setLightColor(data[0], data[1], data[2], data[3]);
+                lightColor(root["data"], true);
             }
         #endif
 
@@ -389,9 +388,9 @@ void _wsStart(uint32_t client_id) {
             relay.add(relayStatus(relayID));
         }
 
-        #if RELAY_PROVIDER == RELAY_PROVIDER_MY9291
+        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             root["colorVisible"] = 1;
-            root["color"] = getLightColor();
+            root["color"] = lightColor();
         #endif
 
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);

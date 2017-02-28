@@ -32,20 +32,8 @@ function validateForm(form) {
 }
 
 function doColor() {
-    var color = $(this).wheelColorPicker('getColor');
-    var data = [];
-    if ((color.r == color.g) && (color.g == color.b)) {
-        data.push(0);
-        data.push(0);
-        data.push(0);
-        data.push(parseInt(color.r * 255));
-    } else {
-        data.push(parseInt(color.r * 255));
-        data.push(parseInt(color.g * 255));
-        data.push(parseInt(color.b * 255));
-        data.push(0);
-    }
-    websock.send(JSON.stringify({'action': 'color', 'data' : data}));
+    var color = $(this).wheelColorPicker('getValue', 'css');
+    websock.send(JSON.stringify({'action': 'color', 'data' : color}));
 }
 
 
@@ -293,9 +281,7 @@ function processData(data) {
         }
 
         if (key == "color") {
-            var color = data[key].split(",");
-            if (color[3] > 0) color[0] = color[1] = color[2] = color[3];
-            $("input[name='color']").wheelColorPicker('setRgb', color[0] / 255, color[1] / 255, color[2] / 255, true);
+            $("input[name='color']").wheelColorPicker('setValue', data[key], true);
             return;
         }
 
