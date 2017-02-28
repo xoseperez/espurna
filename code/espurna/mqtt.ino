@@ -65,7 +65,7 @@ void mqttSend(const char * topic, const char * message) {
 }
 
 void mqttSubscribeRaw(const char * topic) {
-    if (mqtt.connected()) {
+    if (mqtt.connected() && (strlen(topic) > 0)) {
         DEBUG_MSG("[MQTT] Subscribing to %s\n", topic);
         mqtt.subscribe(topic, MQTT_QOS);
     }
@@ -144,7 +144,6 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     }
 
     // Send message event to subscribers
-    // Topic is set to the specific part each one might be checking
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
         (*_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
     }
