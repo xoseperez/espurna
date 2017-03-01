@@ -209,7 +209,7 @@ void mqttConnect() {
         #if MQTT_USE_ASYNC
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-    	    mqtt.setWill((mqttTopic + MQTT_HEARTBEAT_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+    	    mqtt.setWill((mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             if ((strlen(user) > 0) && (strlen(pass) > 0)) {
                 DEBUG_MSG(" as user '%s'.", user);
                 mqtt.setCredentials(user, pass);
