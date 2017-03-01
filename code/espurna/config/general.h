@@ -131,7 +131,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          0
+#define MQTT_USE_ASYNC          1
 #endif
 
 #define MQTT_SERVER             ""
