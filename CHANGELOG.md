@@ -3,6 +3,21 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.8] 2017-03-01
+### Added
+- Issue #85. Heartbeat reports now free heap, uptime and VCC every 5 minutes
+
+### Changed
+- Wait two minutes instead of one in AP mode before trying to reconnect to the router
+- Issue #92. Debug log enabled by default in Arduino IDE
+- Issue #91. Using AsyncMqttClient as default MQTT client again
+
+### Fix
+- Report data from all sensors via websocket even if no MQTT connection
+- Issue #92. Fix unknown reference in Arduino IDE
+- Split data.h contents into 1k lines, otherwise Arduino IDE chokes on them
+- Discard empty MQTT topic while subscribing
+
 ## [1.6.7] 2017-02-25
 ### Added
 - Support for OpenLight / AI-Light by AI-Thinker based on MY9291 LED driver
