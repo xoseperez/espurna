@@ -80,15 +80,13 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
     if (root.containsKey("action")) {
 
         String action = root["action"];
-        unsigned int relayID = 0;
-        if (root.containsKey("relayID")) {
-            String value = root["relayID"];
-            relayID = value.toInt();
-        }
 
         DEBUG_MSG("[WEBSOCKET] Requested action: %s\n", action.c_str());
 
-        if (action.equals("reset")) ESP.restart();
+        if (action.equals("reset")) {
+            ESP.restart();
+        }
+
         if (action.equals("restore") && root.containsKey("data")) {
 
             JsonObject& data = root["data"];
@@ -112,14 +110,33 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             ws.text(client_id, "{\"message\": \"Changes saved. You should reboot your board now.\"}");
 
         }
+
         if (action.equals("reconnect")) {
 
             // Let the HTTP request return and disconnect after 100ms
             deferred.once_ms(100, wifiDisconnect);
 
         }
-        if (action.equals("on")) relayStatus(relayID, true);
-        if (action.equals("off")) relayStatus(relayID, false);
+
+        if (action.equals("relay") && root.containsKey("data")) {
+
+            JsonObject& data = root["data"];
+            
+            if (data.containsKey("status")) {
+
+                bool state = (strcmp(data["status"], "1") == 0);
+
+                unsigned int relayID = 0;
+                if (data.containsKey("id")) {
+                    String value = data["id"];
+                    relayID = value.toInt();
+                }
+
+                relayStatus(relayID, state);
+
+            }
+
+        }
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (action.equals("color") && root.containsKey("data")) {

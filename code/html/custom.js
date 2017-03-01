@@ -75,7 +75,7 @@ function doReconnect() {
 
 function doToggle(element, value) {
     var relayID = parseInt(element.attr("data"));
-    websock.send(JSON.stringify({'action': value ? 'on' : 'off', 'relayID': relayID}));
+    websock.send(JSON.stringify({'action': 'relay', 'data': { 'id': relayID, 'status': value ? 1 : 0 }}));
     return false;
 }
 
