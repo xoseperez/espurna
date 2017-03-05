@@ -109,6 +109,34 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
+    Embedis::command( F("RELAY"), [](Embedis* e) {
+        if (e->argc < 2) {
+            return e->response(Embedis::ARGS_ERROR);
+        }
+        int id = String(e->argv[1]).toInt();
+        if (e->argc > 2) {
+            int value = String(e->argv[2]).toInt();
+            if (value == 2) {
+                relayToggle(id);
+            } else {
+                relayStatus(id, value == 1);
+            }
+        }
+        e->stream->printf("Status: %s\n", relayStatus(id) ? "true" : "false");
+        e->response(Embedis::OK);
+    });
+
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    Embedis::command( F("COLOR"), [](Embedis* e) {
+        if (e->argc > 1) {
+            String color = String(e->argv[1]);
+            lightColor(color.c_str(), true, true);
+        }
+        e->stream->printf("Color: %s\n", lightColor().c_str());
+        e->response(Embedis::OK);
+    });
+    #endif
+
     Embedis::command( F("EEPROM"), [](Embedis* e) {
         unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
         e->stream->printf("Number of keys: %d\n", settingsKeyCount());
