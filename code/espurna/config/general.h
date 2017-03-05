@@ -174,8 +174,9 @@
 #define MQTT_UPTIME_REPORT      4
 #define MQTT_FREEHEAP_REPORT    8
 #define MQTT_VCC_REPORT         16
+#define MQTT_RELAY_REPORT       32
 
-#define MQTT_REPORTS            (MQTT_STATUS_REPORT | MQTT_UPTIME_REPORT | MQTT_FREEHEAP_REPORT)
+#define MQTT_REPORTS            (MQTT_STATUS_REPORT | MQTT_UPTIME_REPORT | MQTT_FREEHEAP_REPORT | MQTT_RELAY_REPORT)
 
 // -----------------------------------------------------------------------------
 // I2C
