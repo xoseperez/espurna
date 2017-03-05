@@ -11,3 +11,4 @@ credentials.h
 .build
 node_modules
 code/utils
+custom.h
