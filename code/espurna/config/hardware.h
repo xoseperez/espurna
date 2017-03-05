@@ -254,6 +254,19 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
 
 // -----------------------------------------------------------------------------
+// LED Controller
+// -----------------------------------------------------------------------------
+
+#elif defined(LED_CONTROLLER)
+
+    #define MANUFACTURER        "MAGIC HOME"
+    #define DEVICE              "LED CONTROLLER"
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGB
+
+// -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
 // https://github.com/JanGoe/esp8266-wifi-relay
 // -----------------------------------------------------------------------------

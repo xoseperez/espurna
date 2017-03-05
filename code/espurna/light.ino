@@ -10,6 +10,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Ticker.h>
 Ticker colorTicker;
+bool _lightState = false;
+unsigned int _lightColor[3] = {0};
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 #include <my9291.h>
@@ -40,26 +42,53 @@ void color_array2rgb(unsigned int * array, char * rgb) {
 }
 
 // -----------------------------------------------------------------------------
+// PROVIDER
+// -----------------------------------------------------------------------------
+
+void lightColorProvider(unsigned int red, unsigned int green, unsigned int blue) {
+
+    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+		unsigned int white = 0;
+
+		// If all set to the same value use white instead
+		if ((red == green) && (green == blue)) {
+		    white = red;
+		    red = green = blue = 0;
+		}
+	#endif
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+        _my9291->setColor((my9291_color_t) { red, green, blue, white });
+    #endif
+
+    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+        if (RGBW_INVERSE_LOGIC) {
+            analogWrite(RGBW_RED_PIN, red);
+            analogWrite(RGBW_GREEN_PIN, green);
+            analogWrite(RGBW_BLUE_PIN, blue);
+		    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+	            analogWrite(RGBW_WHITE_PIN, white);
+			#endif
+        } else {
+            analogWrite(RGBW_RED_PIN, 255 - red);
+            analogWrite(RGBW_GREEN_PIN, 255 - green);
+            analogWrite(RGBW_BLUE_PIN, 255 - blue);
+		    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+	            analogWrite(RGBW_WHITE_PIN, 255 - white);
+			#endif
+        }
+    #endif
+
+}
+
+// -----------------------------------------------------------------------------
 // LIGHT MANAGEMENT
 // -----------------------------------------------------------------------------
 
 void lightColor(const char * rgb, bool save, bool forward) {
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-
-        unsigned int array[4] = {0};
-        color_rgb2array(rgb, array);
-
-        // If all set to the same value use white instead
-        if ((array[0] == array[1]) && (array[1] == array[2])) {
-            array[3] = array[0];
-            array[0] = array[1] = array[2] = 0;
-        }
-
-        // Set new color (if light is open it will automatically change)
-        _my9291->setColor((my9291_color_t) { array[0], array[1], array[2], array[3] });
-
-    #endif
+    color_rgb2array(rgb, _lightColor);
+    lightColorProvider(_lightColor[0], _lightColor[1], _lightColor[2]);
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, lightColorSave);
@@ -72,44 +101,25 @@ void lightColor(const char * rgb, bool save, bool forward) {
     sprintf(message, "{\"color\": \"%s\"}", rgb);
     wsSend(message);
 
-
 }
 
 String lightColor() {
-
-    String response;
-
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-        my9291_color_t color = _my9291->getColor();
-        unsigned int array[3];
-        if (color.white > 0) {
-            array[0] = array[1] = array[2] = color.white;
-        } else {
-            array[0] = color.red;
-            array[1] = color.green;
-            array[2] = color.blue;
-        }
-        char rgb[8];
-        color_array2rgb(array, rgb);
-        response = String(rgb);
-    #endif
-
-    return response;
-
+    char rgb[8];
+    color_array2rgb(_lightColor, rgb);
+    return String(rgb);
 }
 
 void lightState(bool state) {
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-        _my9291->setState(state);
-    #endif
+    if (state) {
+        lightColorProvider(_lightColor[0], _lightColor[1], _lightColor[2]);
+    } else {
+        lightColorProvider(0, 0, 0);
+    }
+    _lightState = state;
 }
 
 bool lightState() {
-    bool response = false;
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-        response = _my9291->getState();
-    #endif
-    return response;
+    return _lightState;
 }
 
 // -----------------------------------------------------------------------------
@@ -156,6 +166,16 @@ void lightSetup() {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
         _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
+    #endif
+
+    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+        pinMode(RGBW_RED_PIN, OUTPUT);
+        pinMode(RGBW_GREEN_PIN, OUTPUT);
+        pinMode(RGBW_BLUE_PIN, OUTPUT);
+		#if LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW
+	        pinMode(RGBW_WHITE_PIN, OUTPUT);
+		#endif
+        lightColorProvider(0, 0, 0);
     #endif
 
     lightColorRetrieve();

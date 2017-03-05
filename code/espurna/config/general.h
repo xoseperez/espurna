@@ -194,15 +194,23 @@
 
 #define LIGHT_PROVIDER_NONE     0
 #define LIGHT_PROVIDER_WS2812   1
-#define LIGHT_PROVIDER_5050     2
-#define LIGHT_PROVIDER_MY9192   3
+#define LIGHT_PROVIDER_RGB      2
+#define LIGHT_PROVIDER_RGBW     3
+#define LIGHT_PROVIDER_MY9192   4
 
-#define LIGHT_DEFAULT_COLOR     "#C0C0C0"
+#define LIGHT_DEFAULT_COLOR     "#000080"
 #define LIGHT_SAVE_DELAY        5
 
 #define MY9291_DI_PIN           13
 #define MY9291_DCKI_PIN         15
 #define MY9291_COMMAND          MY9291_COMMAND_DEFAULT
+
+// Shared settings between RGB and RGBW lights
+#define RGBW_INVERSE_LOGIC      1
+#define RGBW_RED_PIN            14
+#define RGBW_GREEN_PIN          5
+#define RGBW_BLUE_PIN           12
+#define RGBW_WHITE_PIN          13
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
