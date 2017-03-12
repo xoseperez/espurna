@@ -71,7 +71,7 @@ void dsLoop() {
         double t = (tmpUnits == TMP_CELSIUS) ? ds18b20.getTempCByIndex(0) : ds18b20.getTempFByIndex(0);
 
         // Check if readings are valid
-        if (isnan(t)) {
+        if (isnan(t) || t < -50) {
 
             DEBUG_MSG_P(PSTR("[DS18B20] Error reading sensor\n"));
 
