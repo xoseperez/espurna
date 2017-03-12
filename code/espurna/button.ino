@@ -21,12 +21,12 @@ typedef struct {
 
 std::vector<button_t> _buttons;
 
-#ifdef MQTT_BUTTON_TOPIC
+#ifdef MQTT_TOPIC_BUTTON
 void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
     sprintf(payload, "%d", event);
-    mqttSend(MQTT_BUTTON_TOPIC, id, payload);
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload);
 }
 #endif
 
@@ -69,7 +69,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
     DEBUG_MSG("[BUTTON] Pressed #%d, event: %d\n", id, event);
     if (event == 0) return;
 
-    #ifdef MQTT_BUTTON_TOPIC
+    #ifdef MQTT_TOPIC_BUTTON
         buttonMQTT(id, event);
     #endif
 

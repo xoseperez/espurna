@@ -63,8 +63,8 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
     static bool isFirstMessage = true;
 
     if (type == MQTT_CONNECT_EVENT) {
-        char buffer[strlen(MQTT_LED_TOPIC) + 3];
-        sprintf(buffer, "%s/+", MQTT_LED_TOPIC);
+        char buffer[strlen(MQTT_TOPIC_LED) + 3];
+        sprintf(buffer, "%s/+", MQTT_TOPIC_LED);
         mqttSubscribe(buffer);
     }
 
@@ -72,10 +72,10 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
 
         // Match topic
         String t = mqttSubtopic((char *) topic);
-        if (!t.startsWith(MQTT_LED_TOPIC)) return;
+        if (!t.startsWith(MQTT_TOPIC_LED)) return;
 
         // Get led ID
-        unsigned int ledID = t.substring(strlen(MQTT_LED_TOPIC)+1).toInt();
+        unsigned int ledID = t.substring(strlen(MQTT_TOPIC_LED)+1).toInt();
         if (ledID >= ledCount()) {
             DEBUG_MSG("[LED] Wrong ledID (%d)\n", ledID);
             return;

@@ -145,17 +145,38 @@
 #define MQTT_MAX_TRIES          12
 #define MQTT_SKIP_RETAINED      1
 #define MQTT_SKIP_TIME          1000
-#define MQTT_ACTION_TOPIC       "/action"
-#define MQTT_RELAY_TOPIC        "/relay"
-#define MQTT_LED_TOPIC          "/led"
-#define MQTT_COLOR_TOPIC        "/color"
-#define MQTT_BUTTON_TOPIC       "/button"
-#define MQTT_IP_TOPIC           "/ip"
-#define MQTT_VERSION_TOPIC      "/version"
-#define MQTT_UPTIME_TOPIC       "/uptime"
-#define MQTT_FREEHEAP_TOPIC     "/freeheap"
-#define MQTT_VCC_TOPIC          "/vcc"
-#define MQTT_STATUS_TOPIC       "/status"
+
+#define MQTT_TOPIC_ACTION       "/action"
+#define MQTT_TOPIC_RELAY        "/relay"
+#define MQTT_TOPIC_LED          "/led"
+#define MQTT_TOPIC_COLOR        "/color"
+#define MQTT_TOPIC_BUTTON       "/button"
+#define MQTT_TOPIC_IP           "/ip"
+#define MQTT_TOPIC_VERSION      "/version"
+#define MQTT_TOPIC_UPTIME       "/uptime"
+#define MQTT_TOPIC_FREEHEAP     "/freeheap"
+#define MQTT_TOPIC_VCC          "/vcc"
+#define MQTT_TOPIC_STATUS       "/status"
+#define MQTT_TOPIC_MAC          "/mac"
+#define MQTT_TOPIC_APP          "/app"
+#define MQTT_TOPIC_INTERVAL     "/interval"
+#define MQTT_TOPIC_HOSTNAME     "/hostname"
+
+// Periodic reports
+#define MQTT_REPORT_STATUS      1
+#define MQTT_REPORT_IP          1
+#define MQTT_REPORT_MAC         1
+#define MQTT_REPORT_UPTIME      1
+#define MQTT_REPORT_FREEHEAP    1
+#define MQTT_REPORT_VCC         1
+#define MQTT_REPORT_RELAY       1
+#define MQTT_REPORT_HOSTNAME    1
+#define MQTT_REPORT_APP         1
+#define MQTT_REPORT_VERSION     1
+#define MQTT_REPORT_INTERVAL    0
+
+#define MQTT_STATUS_ONLINE      "1"
+#define MQTT_STATUS_OFFLINE     "0"
 
 #define MQTT_ACTION_RESET       "reset"
 
@@ -167,16 +188,6 @@
 // Use something like "/status" or "/set", with leading slash
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         ""
-
-// Periodic reports
-#define MQTT_STATUS_REPORT      1
-#define MQTT_IP_REPORT          2
-#define MQTT_UPTIME_REPORT      4
-#define MQTT_FREEHEAP_REPORT    8
-#define MQTT_VCC_REPORT         16
-#define MQTT_RELAY_REPORT       32
-
-#define MQTT_REPORTS            (MQTT_STATUS_REPORT | MQTT_UPTIME_REPORT | MQTT_FREEHEAP_REPORT | MQTT_RELAY_REPORT)
 
 // -----------------------------------------------------------------------------
 // I2C

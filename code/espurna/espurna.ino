@@ -32,6 +32,62 @@ String getIdentifier() {
     return String(identifier);
 }
 
+void heartbeat() {
+
+    static unsigned long last_uptime = 0;
+    static unsigned char uptime_overflows = 0;
+
+    if (millis() < last_uptime) ++uptime_overflows;
+    last_uptime = millis();
+    unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
+
+    DEBUG_MSG("[MAIN] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
+    if (!mqttConnected()) {
+        DEBUG_MSG("[MAIN] Uptime: %ld seconds\n", uptime_seconds);
+        DEBUG_MSG("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+        #if ENABLE_ADC_VCC
+            DEBUG_MSG("[MAIN] Power: %d mV\n", ESP.getVcc());
+        #endif
+    }
+
+    #if (MQTT_REPORT_INTERVAL)
+        mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
+    #endif
+    #if (MQTT_REPORT_APP)
+        mqttSend(MQTT_TOPIC_APP, APP_NAME);
+    #endif
+    #if (MQTT_REPORT_VERSION)
+        mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
+    #endif
+    #if (MQTT_REPORT_HOSTNAME)
+        mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+    #endif
+    #if (MQTT_REPORT_IP)
+        mqttSend(MQTT_TOPIC_IP, getIP().c_str());
+    #endif
+    #if (MQTT_REPORT_MAC)
+        mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
+    #endif
+    #if (MQTT_REPORT_UPTIME)
+        mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+    #endif
+    #if (MQTT_REPORT_FREEHEAP)
+        mqttSend(MQTT_TOPIC_FREEHEAP, String(ESP.getFreeHeap()).c_str());
+    #endif
+    #if (MQTT_REPORT_RELAY)
+        relayMQTT();
+    #endif
+    #if (MQTT_REPORT_VCC)
+    #if ENABLE_ADC_VCC
+        mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+    #endif
+    #endif
+    #if (MQTT_REPORT_STATUS)
+        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE);
+    #endif
+
+}
+
 void hardwareSetup() {
     EEPROM.begin(4096);
     Serial.begin(SERIAL_BAUDRATE);
@@ -42,44 +98,11 @@ void hardwareSetup() {
 
 void hardwareLoop() {
 
-    static unsigned long last_uptime = 0;
-    static unsigned char uptime_overflows = 0;
-
     // Heartbeat
+    static unsigned long last_uptime = 0;
     if ((millis() - last_uptime > HEARTBEAT_INTERVAL) || (last_uptime == 0)) {
-
-        if (millis() < last_uptime) ++uptime_overflows;
         last_uptime = millis();
-        unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
-
-        DEBUG_MSG("[MAIN] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
-        DEBUG_MSG("[MAIN] Uptime: %ld seconds\n", uptime_seconds);
-        DEBUG_MSG("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
-        #if ENABLE_ADC_VCC
-            DEBUG_MSG("[MAIN] Power: %d mV\n", ESP.getVcc());
-        #endif
-
-        #if (MQTT_REPORTS & MQTT_STATUS_REPORT)
-            mqttSend(MQTT_STATUS_TOPIC, "1");
-        #endif
-        #if (MQTT_REPORTS & MQTT_IP_REPORT)
-            mqttSend(MQTT_IP_TOPIC, getIP().c_str());
-        #endif
-        #if (MQTT_REPORTS & MQTT_UPTIME_REPORT)
-            mqttSend(MQTT_UPTIME_TOPIC, String(uptime_seconds).c_str());
-        #endif
-        #if (MQTT_REPORTS & MQTT_FREEHEAP_REPORT)
-            mqttSend(MQTT_FREEHEAP_TOPIC, String(ESP.getFreeHeap()).c_str());
-        #endif
-        #if (MQTT_REPORTS & MQTT_RELAY_REPORT)
-            relayMQTT();
-        #endif
-        #if (MQTT_REPORTS & MQTT_VCC_REPORT)
-        #if ENABLE_ADC_VCC
-            mqttSend(MQTT_VCC_TOPIC, String(ESP.getVcc()).c_str());
-        #endif
-        #endif
-
+        heartbeat();
     }
 
 }

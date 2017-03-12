@@ -21,6 +21,8 @@ bool _mqttConnected = false;
 
 String mqttTopic;
 bool _mqttForward;
+char * _mqtt_pass = 0;
+char * _mqtt_user = 0;
 std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
     unsigned long mqttConnectedAt = 0;
@@ -118,13 +120,11 @@ void _mqttOnConnect() {
     // Build MQTT topics
     buildTopics();
 
-    // Say hello and report our IP and VERSION
-    mqttSend(MQTT_IP_TOPIC, getIP().c_str());
-    mqttSend(MQTT_VERSION_TOPIC, APP_VERSION);
-    mqttSend(MQTT_STATUS_TOPIC, "1");
+    // Send first Heartbeat
+    heartbeat();
 
     // Subscribe to system topics
-    mqttSubscribe(MQTT_ACTION_TOPIC);
+    mqttSubscribe(MQTT_TOPIC_ACTION);
 
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
@@ -160,7 +160,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
     // Check system topics
     String t = mqttSubtopic((char *) topic);
-    if (t.equals(MQTT_ACTION_TOPIC)) {
+    if (t.equals(MQTT_TOPIC_ACTION)) {
         if (strcmp(message, MQTT_ACTION_RESET) == 0) {
             ESP.restart();
         }
@@ -203,13 +203,13 @@ void mqttConnect() {
         char * user = strdup(getSetting("mqttUser").c_str());
         char * pass = strdup(getSetting("mqttPassword").c_str());
 
-        DEBUG_MSG("[MQTT] Connecting to broker at %s", host);
+        DEBUG_MSG("[MQTT] Connecting to broker at %s:%d", host, port);
         mqtt.setServer(host, port);
 
         #if MQTT_USE_ASYNC
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-    	    mqtt.setWill((mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+    	    mqtt.setWill((mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             if ((strlen(user) > 0) && (strlen(pass) > 0)) {
                 DEBUG_MSG(" as user '%s'.", user);
                 mqtt.setCredentials(user, pass);
@@ -223,10 +223,10 @@ void mqttConnect() {
 
             if ((strlen(user) > 0) && (strlen(pass) > 0)) {
                 DEBUG_MSG(" as user '%s'\n", user);
-                response = mqtt.connect(getIdentifier().c_str(), user, pass, (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), user, pass, (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             } else {
                 DEBUG_MSG("\n");
-                response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             }
 
             if (response) {

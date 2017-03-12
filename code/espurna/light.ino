@@ -94,7 +94,7 @@ void lightColor(const char * rgb, bool save, bool forward) {
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, lightColorSave);
 
     // Report color to MQTT broker
-    if (forward) mqttSend(MQTT_COLOR_TOPIC, rgb);
+    if (forward) mqttSend(MQTT_TOPIC_COLOR, rgb);
 
     // Report color to WS clients
     char message[20];
@@ -143,14 +143,14 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 
     if (type == MQTT_CONNECT_EVENT) {
-        mqttSubscribe(MQTT_COLOR_TOPIC);
+        mqttSubscribe(MQTT_TOPIC_COLOR);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
         String t = mqttSubtopic((char *) topic);
-        if (!t.equals(MQTT_COLOR_TOPIC)) return;
+        if (!t.equals(MQTT_TOPIC_COLOR)) return;
 
         lightColor(payload, true, mqttForward());
 

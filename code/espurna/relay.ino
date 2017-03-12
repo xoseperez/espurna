@@ -121,8 +121,8 @@ void relayPulseMode(unsigned int value, bool report) {
 
     /*
     if (report) {
-        char topic[strlen(MQTT_RELAY_TOPIC) + 10];
-        sprintf(topic, "%s/pulse", MQTT_RELAY_TOPIC);
+        char topic[strlen(MQTT_TOPIC_RELAY) + 10];
+        sprintf(topic, "%s/pulse", MQTT_TOPIC_RELAY);
         char value[2];
         sprintf(value, "%d", value);
         mqttSend(topic, value);
@@ -373,7 +373,7 @@ void relayDomoticzSetup() {
 
 void relayMQTT(unsigned char id) {
     if (id >= _relays.size()) return;
-    mqttSend(MQTT_RELAY_TOPIC, id, relayStatus(id) ? "1" : "0");
+    mqttSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
 
 void relayMQTT() {
@@ -386,10 +386,12 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     if (type == MQTT_CONNECT_EVENT) {
 
-        relayMQTT();
+        #if not MQTT_REPORT_RELAY
+            relayMQTT();
+        #endif
 
-        char buffer[strlen(MQTT_RELAY_TOPIC) + 3];
-        sprintf(buffer, "%s/+", MQTT_RELAY_TOPIC);
+        char buffer[strlen(MQTT_TOPIC_RELAY) + 3];
+        sprintf(buffer, "%s/+", MQTT_TOPIC_RELAY);
         mqttSubscribe(buffer);
 
     }
@@ -398,7 +400,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         // Match topic
         String t = mqttSubtopic((char *) topic);
-        if (!t.startsWith(MQTT_RELAY_TOPIC)) return;
+        if (!t.startsWith(MQTT_TOPIC_RELAY)) return;
 
         // Get value
         unsigned int value = (char)payload[0] - '0';
@@ -410,7 +412,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         }
 
         // Get relay ID
-        unsigned int relayID = t.substring(strlen(MQTT_RELAY_TOPIC)+1).toInt();
+        unsigned int relayID = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
         if (relayID >= relayCount()) {
             DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
             return;
