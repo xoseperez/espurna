@@ -3,6 +3,18 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.6.9] 2017-03-12
+### Added
+- Two stage read for DS18B20 devices. Thanks to Izik Dubnov.
+- Option to report the relay status via MQTT periodically
+- Terminal commands to change relay status an light color
+- Added debug via UDP (disabled by default)
+- Moved debug strings to PROGMEM. ~1.5KByes memory freed
+- Avoid broadcasting websocket messages if no clients connected
+
+### Fix
+- Fixing use after free bug that leads to corrupted auth credentials. Thanks to David Guillen
+
 ## [1.6.8] 2017-03-01
 ### Added
 - Issue #85. Heartbeat reports now free heap, uptime and VCC every 5 minutes
