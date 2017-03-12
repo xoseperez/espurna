@@ -21,7 +21,7 @@ unsigned long rfCodeOFF = 0;
 void rfLoop() {
     return;
     if (rfCode == 0) return;
-    DEBUG_MSG("[RF] Received code: %lu\n", rfCode);
+    DEBUG_MSG_P(PSTR("[RF] Received code: %lu\n"), rfCode);
     if (rfCode == rfCodeON) relayStatus(0, true);
     if (rfCode == rfCodeOFF) relayStatus(0, false);
     rfCode = 0;
@@ -51,8 +51,8 @@ void rfBuildCodes() {
     rfCodeOFF = code + 2;
     rfCodeON = code + 6;
 
-    DEBUG_MSG("[RF] Code ON : %lu\n", rfCodeON);
-    DEBUG_MSG("[RF] Code OFF: %lu\n", rfCodeOFF);
+    DEBUG_MSG_P(PSTR("[RF] Code ON : %lu\n"), rfCodeON);
+    DEBUG_MSG_P(PSTR("[RF] Code OFF: %lu\n"), rfCodeOFF);
 
 }
 
@@ -66,26 +66,26 @@ void rfSetup() {
     rfBuildCodes();
     RemoteReceiver::init(RF_PIN, 3, rfCallback);
     RemoteReceiver::disable();
-    DEBUG_MSG("[RF] Disabled\n");
+    DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
 
     static WiFiEventHandler e1 = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
         RemoteReceiver::disable();
-        DEBUG_MSG("[RF] Disabled\n");
+        DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
     });
 
     static WiFiEventHandler e2 = WiFi.onSoftAPModeStationDisconnected([](const WiFiEventSoftAPModeStationDisconnected& event) {
         RemoteReceiver::disable();
-        DEBUG_MSG("[RF] Disabled\n");
+        DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
         });
 
     static WiFiEventHandler e3 = WiFi.onStationModeConnected([](const WiFiEventStationModeConnected& event) {
         RemoteReceiver::enable();
-        DEBUG_MSG("[RF] Enabled\n");
+        DEBUG_MSG_P(PSTR("[RF] Enabled\n"));
     });
 
     static WiFiEventHandler e4 = WiFi.onSoftAPModeStationConnected([](const WiFiEventSoftAPModeStationConnected& event) {
         RemoteReceiver::enable();
-        DEBUG_MSG("[RF] Enabled\n");
+        DEBUG_MSG_P(PSTR("[RF] Enabled\n"));
     });
 
 }

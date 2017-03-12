@@ -77,7 +77,7 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
         // Get led ID
         unsigned int ledID = t.substring(strlen(MQTT_TOPIC_LED)+1).toInt();
         if (ledID >= ledCount()) {
-            DEBUG_MSG("[LED] Wrong ledID (%d)\n", ledID);
+            DEBUG_MSG_P(PSTR("[LED] Wrong ledID (%d)\n"), ledID);
             return;
         }
 
@@ -132,8 +132,8 @@ void ledSetup() {
 
     mqttRegister(ledMQTTCallback);
 
-    DEBUG_MSG("[LED] Number of leds: %d\n", _leds.size());
-    DEBUG_MSG("[LED] Led auto indicator is %s\n", ledAuto ? "ON" : "OFF" );
+    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
+    DEBUG_MSG_P(PSTR("[LED] Led auto indicator is %s\n"), ledAuto ? "ON" : "OFF" );
 
 }
 

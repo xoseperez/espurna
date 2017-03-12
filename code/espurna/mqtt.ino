@@ -21,8 +21,8 @@ bool _mqttConnected = false;
 
 String mqttTopic;
 bool _mqttForward;
-char * _mqtt_pass = 0;
-char * _mqtt_user = 0;
+char *_mqttUser = 0;
+char *_mqttPass = 0;
 std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
     unsigned long mqttConnectedAt = 0;
@@ -67,7 +67,7 @@ String mqttSubtopic(char * topic) {
 
 void mqttSendRaw(const char * topic, const char * message) {
     if (mqtt.connected()) {
-        DEBUG_MSG("[MQTT] Sending %s => %s\n", topic, message);
+        DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #if MQTT_USE_ASYNC
             mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
         #else
@@ -90,7 +90,7 @@ void mqttSend(const char * topic, unsigned int index, const char * message) {
 
 void mqttSubscribeRaw(const char * topic) {
     if (mqtt.connected() && (strlen(topic) > 0)) {
-        DEBUG_MSG("[MQTT] Subscribing to %s\n", topic);
+        DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
         mqtt.subscribe(topic, MQTT_QOS);
     }
 }
@@ -111,7 +111,7 @@ void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
 
 void _mqttOnConnect() {
 
-    DEBUG_MSG("[MQTT] Connected!\n");
+    DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 
     #if MQTT_SKIP_RETAINED
         mqttConnectedAt = millis();
@@ -135,7 +135,7 @@ void _mqttOnConnect() {
 
 void _mqttOnDisconnect() {
 
-    DEBUG_MSG("[MQTT] Disconnected!\n");
+    DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
     // Send disconnect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
@@ -149,14 +149,14 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     char message[len + 1];
     strlcpy(message, (char *) payload, len + 1);
 
-    DEBUG_MSG("[MQTT] Received %s => %s", topic, message);
+    DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s"), topic, message);
     #if MQTT_SKIP_RETAINED
         if (millis() - mqttConnectedAt < MQTT_SKIP_TIME) {
-			DEBUG_MSG(" - SKIPPED\n");
+			DEBUG_MSG_P(PSTR(" - SKIPPED\n"));
 			return;
 		}
     #endif
-	DEBUG_MSG("\n");
+	DEBUG_MSG_P(PSTR("\n"));
 
     // Check system topics
     String t = mqttSubtopic((char *) topic);
@@ -185,7 +185,7 @@ void mqttConnect() {
             static unsigned long last_try = millis();
             if (millis() - last_try < MQTT_TRY_INTERVAL) {
                 if (++tries > MQTT_MAX_TRIES) {
-                    DEBUG_MSG("[MQTT] MQTT_MAX_TRIES met, disconnecting from WiFi\n");
+                    DEBUG_MSG_P(PSTR("[MQTT] MQTT_MAX_TRIES met, disconnecting from WiFi\n"));
                     wifiDisconnect();
                     tries = 0;
                     return;
@@ -198,34 +198,37 @@ void mqttConnect() {
 
         mqtt.disconnect();
 
+        if (_mqttUser) free(_mqttUser);
+        if (_mqttPass) free(_mqttPass);
+
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
-        char * user = strdup(getSetting("mqttUser").c_str());
-        char * pass = strdup(getSetting("mqttPassword").c_str());
+        _mqttUser = strdup(getSetting("mqttUser").c_str());
+        _mqttPass = strdup(getSetting("mqttPassword").c_str());
 
-        DEBUG_MSG("[MQTT] Connecting to broker at %s:%d", host, port);
+        DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d"), host, port);
         mqtt.setServer(host, port);
 
         #if MQTT_USE_ASYNC
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
     	    mqtt.setWill((mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
-            if ((strlen(user) > 0) && (strlen(pass) > 0)) {
-                DEBUG_MSG(" as user '%s'.", user);
-                mqtt.setCredentials(user, pass);
+            if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
+                DEBUG_MSG_P(PSTR(" as user '%s'."), _mqttUser);
+                mqtt.setCredentials(_mqttUser, _mqttPass);
             }
-            DEBUG_MSG("\n");
+            DEBUG_MSG_P(PSTR("\n"));
             mqtt.connect();
 
         #else
 
             bool response;
 
-            if ((strlen(user) > 0) && (strlen(pass) > 0)) {
-                DEBUG_MSG(" as user '%s'\n", user);
-                response = mqtt.connect(getIdentifier().c_str(), user, pass, (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+            if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
+                DEBUG_MSG_P(PSTR(" as user '%s'\n"), _mqttUser);
+                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             } else {
-                DEBUG_MSG("\n");
+                DEBUG_MSG_P(PSTR("\n"));
                 response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             }
 
@@ -233,14 +236,12 @@ void mqttConnect() {
                 _mqttOnConnect();
                 _mqttConnected = true;
             } else {
-                DEBUG_MSG("[MQTT] Connection failed\n");
+                DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
             }
 
         #endif
 
         free(host);
-        free(user);
-        free(pass);
 
         String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);

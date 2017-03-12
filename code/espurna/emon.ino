@@ -142,8 +142,8 @@ void powerMonitorLoop() {
 
         char current[6];
         dtostrf(_current, 5, 2, current);
-        DEBUG_MSG("[ENERGY] Current: %sA\n", current);
-        DEBUG_MSG("[ENERGY] Power: %dW\n", int(_current * mainsVoltage));
+        DEBUG_MSG_P(PSTR("[ENERGY] Current: %sA\n"), current);
+        DEBUG_MSG_P(PSTR("[ENERGY] Power: %dW\n"), int(_current * mainsVoltage));
 
         // Update websocket clients
         char text[64];

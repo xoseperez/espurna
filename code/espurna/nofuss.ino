@@ -23,46 +23,46 @@ NoFUSSClient.setVersion(APP_VERSION);
 NoFUSSClient.onMessage([](nofuss_t code) {
 
     if (code == NOFUSS_START) {
-    	DEBUG_MSG("[NoFUSS] Start\n");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Start\n"));
     }
 
     if (code == NOFUSS_UPTODATE) {
-    	DEBUG_MSG("[NoFUSS] Already in the last version\n");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Already in the last version\n"));
     }
 
     if (code == NOFUSS_PARSE_ERROR) {
-    	DEBUG_MSG("[NoFUSS] Error parsing server response\n");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Error parsing server response\n"));
     }
 
     if (code == NOFUSS_UPDATING) {
-    	DEBUG_MSG("[NoFUSS] Updating");
-	    DEBUG_MSG("         New version: %s\n", (char *) NoFUSSClient.getNewVersion().c_str());
-    	DEBUG_MSG("         Firmware: %s\n", (char *) NoFUSSClient.getNewFirmware().c_str());
-    	DEBUG_MSG("         File System: %s", (char *) NoFUSSClient.getNewFileSystem().c_str());
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Updating");
+	    DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
+    	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
+    	DEBUG_MSG_P(PSTR("         File System: %s"), (char *) NoFUSSClient.getNewFileSystem().c_str());
     }
 
     if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
-    	DEBUG_MSG("[NoFUSS] File System Update Error: %s\n", (char *) NoFUSSClient.getErrorString().c_str());
+    	DEBUG_MSG_P(PSTR("[NoFUSS] File System Update Error: %s\n"), (char *) NoFUSSClient.getErrorString().c_str());
     }
 
     if (code == NOFUSS_FILESYSTEM_UPDATED) {
-    	DEBUG_MSG("[NoFUSS] File System Updated\n");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] File System Updated\n"));
     }
 
     if (code == NOFUSS_FIRMWARE_UPDATE_ERROR) {
-        DEBUG_MSG("[NoFUSS] Firmware Update Error: %s\n", (char *) NoFUSSClient.getErrorString().c_str());
+        DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Update Error: %s\n"), (char *) NoFUSSClient.getErrorString().c_str());
     }
 
     if (code == NOFUSS_FIRMWARE_UPDATED) {
-    	DEBUG_MSG("[NoFUSS] Firmware Updated\n");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Updated\n"));
     }
 
     if (code == NOFUSS_RESET) {
-    	DEBUG_MSG("[NoFUSS] Resetting board\n");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Resetting board\n"));
     }
 
     if (code == NOFUSS_END) {
-	    DEBUG_MSG("[NoFUSS] End\n");
+	    DEBUG_MSG_P(PSTR("[NoFUSS] End\n"));
     }
 
 });

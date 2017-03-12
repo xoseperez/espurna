@@ -32,7 +32,7 @@ void fauxmoSetup() {
         }
     }
     fauxmo.onMessage([relays](unsigned char device_id, const char * name, bool state) {
-        DEBUG_MSG("[FAUXMO] %s state: %s\n", name, state ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[FAUXMO] %s state: %s\n"), name, state ? "ON" : "OFF");
         relayStatus(device_id, state);
     });
 }

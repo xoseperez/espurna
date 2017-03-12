@@ -24,12 +24,12 @@ void ntpSetup() {
     NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
             if (error == noResponse) {
-                DEBUG_MSG("[NTP] Error: NTP server not reachable\n");
+                DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable\n"));
             } else if (error == invalidAddress) {
-                DEBUG_MSG("[NTP] Error: Invalid NTP server address\n");
+                DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
         } else {
-            DEBUG_MSG("[NTP] Time: %s\n", (char *) NTP.getTimeDateString(NTP.getLastNTPSync()).c_str());
+            DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) NTP.getTimeDateString(NTP.getLastNTPSync()).c_str());
         }
     });
 

@@ -38,13 +38,13 @@ void powEnable(bool status) {
             attachInterrupt(POW_CF1_PIN, hlw8012_cf1_interrupt, CHANGE);
             attachInterrupt(POW_CF_PIN, hlw8012_cf_interrupt, CHANGE);
         #endif
-        DEBUG_MSG("[POW] Enabled\n");
+        DEBUG_MSG_P(PSTR("[POW] Enabled\n"));
     } else {
         #if POW_USE_INTERRUPTS == 1
             detachInterrupt(POW_CF1_PIN);
             detachInterrupt(POW_CF_PIN);
         #endif
-        DEBUG_MSG("[POW] Disabled\n");
+        DEBUG_MSG_P(PSTR("[POW] Disabled\n"));
     }
 }
 

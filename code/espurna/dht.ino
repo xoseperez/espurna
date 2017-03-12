@@ -54,7 +54,7 @@ void dhtLoop() {
         // Check if readings are valid
         if (isnan(h) || isnan(t)) {
 
-            DEBUG_MSG("[DHT] Error reading sensor\n");
+            DEBUG_MSG_P(PSTR("[DHT] Error reading sensor\n"));
 
         } else {
 
@@ -66,8 +66,8 @@ void dhtLoop() {
             dtostrf(t, 4, 1, temperature);
             itoa((unsigned int) h, humidity, 10);
 
-            DEBUG_MSG("[DHT] Temperature: %s%s\n", temperature, (tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF");
-            DEBUG_MSG("[DHT] Humidity: %s\n", humidity);
+            DEBUG_MSG_P(PSTR("[DHT] Temperature: %s%s\n"), temperature, (tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF");
+            DEBUG_MSG_P(PSTR("[DHT] Humidity: %s\n"), humidity);
 
             // Send MQTT messages
             mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);

@@ -153,7 +153,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
     if (relayStatus(id) != status) {
 
-        DEBUG_MSG("[RELAY] %d => %s\n", id, status ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
         changed = true;
 
         relayProviderStatus(id, status);
@@ -345,7 +345,7 @@ void relayDomoticzSetup() {
                 DynamicJsonBuffer jsonBuffer;
                 JsonObject& root = jsonBuffer.parseObject((char *) payload);
                 if (!root.success()) {
-                    DEBUG_MSG("[DOMOTICZ] Error parsing data\n");
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                     return;
                 }
 
@@ -354,7 +354,7 @@ void relayDomoticzSetup() {
                 int relayID = relayFromIdx(idx);
                 if (relayID >= 0) {
                     unsigned long value = root["nvalue"];
-                    DEBUG_MSG("[DOMOTICZ] Received value %d for IDX %d\n", value, idx);
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %d for IDX %d\n"), value, idx);
                     relayStatus(relayID, value == 1);
                 }
 
@@ -414,7 +414,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         // Get relay ID
         unsigned int relayID = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
         if (relayID >= relayCount()) {
-            DEBUG_MSG("[RELAY] Wrong relayID (%d)\n", relayID);
+            DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), relayID);
             return;
         }
 
@@ -482,6 +482,6 @@ void relaySetup() {
         relayDomoticzSetup();
     #endif
 
-    DEBUG_MSG("[RELAY] Number of relays: %d\n", _relays.size());
+    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
 }

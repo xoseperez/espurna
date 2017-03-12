@@ -66,7 +66,7 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
 
 void buttonEvent(unsigned int id, unsigned char event) {
 
-    DEBUG_MSG("[BUTTON] Pressed #%d, event: %d\n", id, event);
+    DEBUG_MSG_P(PSTR("[BUTTON] Pressed #%d, event: %d\n"), id, event);
     if (event == 0) return;
 
     #ifdef MQTT_TOPIC_BUTTON
@@ -84,7 +84,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
     if (action == BUTTON_MODE_RESET) ESP.restart();
     if (action == BUTTON_MODE_PULSE) relayPulseToggle();
     if (action == BUTTON_MODE_FACTORY) {
-        DEBUG_MSG("\n\nFACTORY RESET\n\n");
+        DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
         settingsFactoryReset();
         ESP.restart();
     }
@@ -129,7 +129,7 @@ void buttonSetup() {
 
     #endif
 
-    DEBUG_MSG("[BUTTON] Number of buttons: %d\n", _buttons.size());
+    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %d\n"), _buttons.size());
 
 }
 

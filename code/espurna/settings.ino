@@ -163,8 +163,8 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
-    DEBUG_MSG("[SETTINGS] EEPROM size: %d bytes\n", SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG("[SETTINGS] Settings size: %d bytes\n", settingsSize());
+    DEBUG_MSG_P(PSTR("[SETTINGS] EEPROM size: %d bytes\n"), SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("[SETTINGS] Settings size: %d bytes\n"), settingsSize());
 
 }
 
@@ -191,7 +191,7 @@ bool delSetting(const String& key) {
 }
 
 void saveSettings() {
-    DEBUG_MSG("[SETTINGS] Saving\n");
+    DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
     #if not AUTO_SAVE
         EEPROM.commit();
     #endif

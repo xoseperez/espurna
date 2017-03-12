@@ -73,7 +73,7 @@ void dsLoop() {
         // Check if readings are valid
         if (isnan(t)) {
 
-            DEBUG_MSG("[DS18B20] Error reading sensor\n");
+            DEBUG_MSG_P(PSTR("[DS18B20] Error reading sensor\n"));
 
         } else {
 
@@ -87,7 +87,7 @@ void dsLoop() {
 
             dtostrf(t, 5, 1, _dsTemperatureStr);
 
-            DEBUG_MSG("[DS18B20] Temperature: %s%s\n",
+            DEBUG_MSG_P(PSTR("[DS18B20] Temperature: %s%s\n"),
                 getDSTemperatureStr(),
 			    (_dsIsConnected ? ((tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF") : ""));
 

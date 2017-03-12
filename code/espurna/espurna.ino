@@ -40,13 +40,14 @@ void heartbeat() {
     if (millis() < last_uptime) ++uptime_overflows;
     last_uptime = millis();
     unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
+    unsigned int free_heap = ESP.getFreeHeap();
 
-    DEBUG_MSG("[MAIN] Time: %s\n", (char *) NTP.getTimeDateString().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) NTP.getTimeDateString().c_str());
     if (!mqttConnected()) {
-        DEBUG_MSG("[MAIN] Uptime: %ld seconds\n", uptime_seconds);
-        DEBUG_MSG("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
+        DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
         #if ENABLE_ADC_VCC
-            DEBUG_MSG("[MAIN] Power: %d mV\n", ESP.getVcc());
+            DEBUG_MSG_P(PSTR("[MAIN] Power: %d mV\n"), ESP.getVcc());
         #endif
     }
 
@@ -72,7 +73,7 @@ void heartbeat() {
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
     #endif
     #if (MQTT_REPORT_FREEHEAP)
-        mqttSend(MQTT_TOPIC_FREEHEAP, String(ESP.getFreeHeap()).c_str());
+        mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
     #endif
     #if (MQTT_REPORT_RELAY)
         relayMQTT();
@@ -113,29 +114,29 @@ void hardwareLoop() {
 
 void welcome() {
 
-    DEBUG_MSG("%s %s\n", (char *) APP_NAME, (char *) APP_VERSION);
-    DEBUG_MSG("%s\n%s\n\n", (char *) APP_AUTHOR, (char *) APP_WEBSITE);
-    DEBUG_MSG("ChipID: %06X\n", ESP.getChipId());
-    DEBUG_MSG("CPU frequency: %d MHz\n", ESP.getCpuFreqMHz());
-    DEBUG_MSG("Last reset reason: %s\n", (char *) ESP.getResetReason().c_str());
-    DEBUG_MSG("Memory size: %d bytes\n", ESP.getFlashChipSize());
-    DEBUG_MSG("Free heap: %d bytes\n", ESP.getFreeHeap());
-    DEBUG_MSG("Firmware size: %d bytes\n", ESP.getSketchSize());
-    DEBUG_MSG("Free firmware space: %d bytes\n", ESP.getFreeSketchSpace());
+    DEBUG_MSG_P(PSTR("%s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+    DEBUG_MSG_P(PSTR("%s\n%s\n\n"), (char *) APP_AUTHOR, (char *) APP_WEBSITE);
+    DEBUG_MSG_P(PSTR("ChipID: %06X\n"), ESP.getChipId());
+    DEBUG_MSG_P(PSTR("CPU frequency: %d MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+    DEBUG_MSG_P(PSTR("Memory size: %d bytes\n"), ESP.getFlashChipSize());
+    DEBUG_MSG_P(PSTR("Free heap: %d bytes\n"), ESP.getFreeHeap());
+    DEBUG_MSG_P(PSTR("Firmware size: %d bytes\n"), ESP.getSketchSize());
+    DEBUG_MSG_P(PSTR("Free firmware space: %d bytes\n"), ESP.getFreeSketchSpace());
 
     #if not EMBEDDED_WEB
         FSInfo fs_info;
         if (SPIFFS.info(fs_info)) {
-            DEBUG_MSG("File system total size: %d bytes\n", fs_info.totalBytes);
-            DEBUG_MSG("            used size : %d bytes\n", fs_info.usedBytes);
-            DEBUG_MSG("            block size: %d bytes\n", fs_info.blockSize);
-            DEBUG_MSG("            page size : %d bytes\n", fs_info.pageSize);
-            DEBUG_MSG("            max files : %d\n", fs_info.maxOpenFiles);
-            DEBUG_MSG("            max length: %d\n", fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("File system total size: %d bytes\n"), fs_info.totalBytes);
+            DEBUG_MSG_P(PSTR("            used size : %d bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("            block size: %d bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("            page size : %d bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("            max files : %d\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("            max length: %d\n"), fs_info.maxPathLength);
         }
     #endif
 
-    DEBUG_MSG("\n\n");
+    DEBUG_MSG_P(PSTR("\n\n"));
 
 }
 
