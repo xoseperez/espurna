@@ -9,6 +9,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESP8266WiFi.h>
 #include <vector>
 
+const char *mqtt_user = 0;
+const char *mqtt_pass = 0;
+
 #if MQTT_USE_ASYNC
 #include <AsyncMqttClient.h>
 AsyncMqttClient mqtt;
@@ -198,10 +201,12 @@ void mqttConnect() {
 
         mqtt.disconnect();
 
+        if (mqtt_user) free(mqtt_user);
+        if (mqtt_pass) free(mqtt_pass);
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
-        char * user = strdup(getSetting("mqttUser").c_str());
-        char * pass = strdup(getSetting("mqttPassword").c_str());
+        mqtt_user = strdup(getSetting("mqttUser").c_str());
+        mqtt_pass = strdup(getSetting("mqttPassword").c_str());
 
         DEBUG_MSG("[MQTT] Connecting to broker at %s", host);
         mqtt.setServer(host, port);
@@ -210,9 +215,9 @@ void mqttConnect() {
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
     	    mqtt.setWill((mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
-            if ((strlen(user) > 0) && (strlen(pass) > 0)) {
-                DEBUG_MSG(" as user '%s'.", user);
-                mqtt.setCredentials(user, pass);
+            if ((strlen(mqtt_user) > 0) && (strlen(mqtt_pass) > 0)) {
+                DEBUG_MSG(" as user '%s'.", mqtt_user);
+                mqtt.setCredentials(mqtt_user, mqtt_pass);
             }
             DEBUG_MSG("\n");
             mqtt.connect();
@@ -221,9 +226,9 @@ void mqttConnect() {
 
             bool response;
 
-            if ((strlen(user) > 0) && (strlen(pass) > 0)) {
-                DEBUG_MSG(" as user '%s'\n", user);
-                response = mqtt.connect(getIdentifier().c_str(), user, pass, (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+            if ((strlen(mqtt_user) > 0) && (strlen(mqtt_pass) > 0)) {
+                DEBUG_MSG(" as user '%s'\n", mqtt_user);
+                response = mqtt.connect(getIdentifier().c_str(), mqtt_user, mqtt_pass, (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
             } else {
                 DEBUG_MSG("\n");
                 response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_STATUS_TOPIC).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
@@ -239,8 +244,6 @@ void mqttConnect() {
         #endif
 
         free(host);
-        free(user);
-        free(pass);
 
         String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
