@@ -17,7 +17,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #if EMBEDDED_WEB
-#include "config/data.h"
+#include "static/index.html.gz.h"
 #endif
 
 AsyncWebServer * _server;

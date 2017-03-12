@@ -52,10 +52,10 @@ gulp.task('files', ['clean'], function() {
         .pipe(gulp.dest(dataFolder));
 });
 
-gulp.task('buildfs_embed', ['buildfs_inline'], function() {
+gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
     var source = dataFolder + 'index.html.gz';
-    var destination = dataFolder + '../config/data.h';
+    var destination = dataFolder + '../static/index.html.gz.h';
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
@@ -113,4 +113,4 @@ gulp.task('buildfs_split', ['files'], function() {
         .pipe(gulp.dest(dataFolder));
 });
 
-gulp.task('default', ['buildfs_inline']);
+gulp.task('default', ['buildfs_embeded']);
