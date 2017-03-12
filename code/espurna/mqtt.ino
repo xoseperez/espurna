@@ -9,6 +9,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESP8266WiFi.h>
 #include <vector>
 
+const char *mqtt_user = 0;
+const char *mqtt_pass = 0;
+
 #if MQTT_USE_ASYNC
 #include <AsyncMqttClient.h>
 AsyncMqttClient mqtt;
