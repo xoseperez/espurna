@@ -221,7 +221,11 @@ void mqttConnect() {
                 mqtt.setCredentials(_mqttUser, _mqttPass);
             }
             DEBUG_MSG_P(PSTR("\n"));
-            mqtt.connect();
+            #if ASYNC_TCP_SSL_ENABLED
+                mqtt.connect(getSetting("mqttSSL", MQTT_SSL).toInt() == 1);
+            #else
+                mqtt.connect();
+            #endif
 
         #else
 
