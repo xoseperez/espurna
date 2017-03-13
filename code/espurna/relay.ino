@@ -439,13 +439,13 @@ void relaySetupMQTT() {
 
 void relaySetup() {
 
-    #ifdef SONOFF_DUAL
+    #if defined(SONOFF_DUAL)
 
         // Two dummy relays for the dual
         _relays.push_back((relay_t) {0, 0});
         _relays.push_back((relay_t) {0, 0});
 
-    #elif AI_LIGHT
+    #elif defined(AI_LIGHT)
 
         // One dummy relay for the AI Thinker Light
         _relays.push_back((relay_t) {0, 0});

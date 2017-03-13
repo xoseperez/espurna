@@ -39,6 +39,8 @@
 //#define WIFI_RELAY_NO
 //#define MQTT_RELAY
 //#define WIFI_RELAYS_BOARD_KIT
+//#define AI_LIGHT
+//#define LED_CONTROLLER
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
