@@ -181,6 +181,9 @@ void setup() {
     #if ENABLE_DS18B20
         dsSetup();
     #endif
+    #if ENABLE_ANALOG
+        analogSetup();
+    #endif
     #if ENABLE_DHT
         dhtSetup();
     #endif
@@ -217,6 +220,9 @@ void loop() {
     #endif
     #if ENABLE_DS18B20
         dsLoop();
+    #endif
+    #if ENABLE_ANALOG
+        analogLoop();
     #endif
     #if ENABLE_DHT
         dhtLoop();
