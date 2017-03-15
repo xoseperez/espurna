@@ -35,6 +35,13 @@
 	#define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+#elif defined(D1_MINI)
+    #define MANUFACTURER       "WEMOS"
+    #define DEVICE             "D1_MINI"
+    #define LED1_PIN           2
+    #define LED1_PIN_INVERSE   1
+
+
 #elif defined(D1_RELAYSHIELD)
 
     #define MANUFACTURER        "WEMOS"

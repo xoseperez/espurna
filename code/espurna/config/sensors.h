@@ -26,6 +26,14 @@
 #define HUMIDITY_WET            3
 
 //--------------------------------------------------------------------------------
+// Analog sensor
+// Enable support by passing ENABLE_ANALOG=1 build flag
+//--------------------------------------------------------------------------------
+
+#define ANALOG_UPDATE_INTERVAL      60000
+#define ANALOG_TOPIC    "/analog"
+
+//--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
 // Enable support by passing ENABLE_DS18B20=1 build flag
 //--------------------------------------------------------------------------------
