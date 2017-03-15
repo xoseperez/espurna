@@ -158,6 +158,7 @@
 #define MQTT_TOPIC_VCC          "/vcc"
 #define MQTT_TOPIC_STATUS       "/status"
 #define MQTT_TOPIC_MAC          "/mac"
+#define MQTT_TOPIC_RSSI         "/rssi"
 #define MQTT_TOPIC_APP          "/app"
 #define MQTT_TOPIC_INTERVAL     "/interval"
 #define MQTT_TOPIC_HOSTNAME     "/hostname"
@@ -166,6 +167,7 @@
 #define MQTT_REPORT_STATUS      1
 #define MQTT_REPORT_IP          1
 #define MQTT_REPORT_MAC         1
+#define MQTT_REPORT_RSSI        1
 #define MQTT_REPORT_UPTIME      1
 #define MQTT_REPORT_FREEHEAP    1
 #define MQTT_REPORT_VCC         1

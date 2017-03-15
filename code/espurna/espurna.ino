@@ -69,6 +69,9 @@ void heartbeat() {
     #if (MQTT_REPORT_MAC)
         mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
     #endif
+    #if (MQTT_REPORT_RSSI)
+        mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+    #endif
     #if (MQTT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
     #endif
