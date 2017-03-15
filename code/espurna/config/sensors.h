@@ -30,8 +30,14 @@
 // Enable support by passing ENABLE_ANALOG=1 build flag
 //--------------------------------------------------------------------------------
 
-#define ANALOG_UPDATE_INTERVAL      60000
-#define ANALOG_TOPIC    "/analog"
+#define ANALOG_PIN              0
+#define ANALOG_UPDATE_INTERVAL  60000
+#define ANALOG_TOPIC            "/analog"
+
+#if ENABLE_ANALOG
+    #undef ENABLE_ADC_VCC
+    #define ENABLE_ADC_VCC      0
+#endif
 
 //--------------------------------------------------------------------------------
 // DS18B20 temperature sensor

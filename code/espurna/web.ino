@@ -453,6 +453,10 @@ void _wsStart(uint32_t client_id) {
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
             #endif
 
+            #if ENABLE_ANALOG
+                root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
+            #endif
+
             #if ENABLE_POW
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
@@ -489,6 +493,11 @@ void _wsStart(uint32_t client_id) {
             root["emonPower"] = getPower();
             root["emonMains"] = getSetting("emonMains", EMON_MAINS_VOLTAGE);
             root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
+        #endif
+
+        #if ENABLE_ANALOG
+            root["analogVisible"] = 1;
+            root["analogValue"] = getAnalog();
         #endif
 
         #if ENABLE_POW

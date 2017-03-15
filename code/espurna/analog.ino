@@ -14,12 +14,18 @@ int _analog = 0;
 // ANALOG
 // -----------------------------------------------------------------------------
 
-double getAnalog() {
-    return _analog;
+unsigned int getAnalog() {
+    return analogRead(ANALOG_PIN);
 }
 
 void analogSetup() {
-    //pinMode(0, INPUT);
+
+    pinMode(ANALOG_PIN, INPUT);
+
+    apiRegister("/api/analog", "analog", [](char * buffer, size_t len) {
+        snprintf(buffer, len, "%d", getAnalog());
+    });
+
 }
 
 void analogLoop() {
@@ -28,23 +34,22 @@ void analogLoop() {
     static unsigned long last_update = 0;
     if ((millis() - last_update > ANALOG_UPDATE_INTERVAL) || (last_update == 0)) {
 
-        _analog = analogRead(0);
-
-        DEBUG_MSG_P(PSTR("[ANALOG] Value: %d\n"), _analog);
-
         last_update = millis();
 
+        unsigned int analog = getAnalog();
+        DEBUG_MSG_P(PSTR("[ANALOG] Value: %d\n"), analog);
+
         // Send MQTT messages
-        mqttSend(getSetting("analogTmpTopic", ANALOG_TOPIC).c_str(), String(_analog).c_str());
+        mqttSend(getSetting("analogTopic", ANALOG_TOPIC).c_str(), String(analog).c_str());
 
         // Send to Domoticz
         #if ENABLE_DOMOTICZ
-        //    domoticzSend("dczTmpIdx", 0, _analog);
+            domoticzSend("dczAnaIdx", 0, String(analog).c_str());
         #endif
 
         // Update websocket clients
         char buffer[100];
-        sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), _analog);
+        sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
         wsSend(buffer);
 
     }

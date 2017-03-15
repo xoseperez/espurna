@@ -54,3 +54,4 @@
 //#define ENABLE_FAUXMO         0
 //#define ENABLE_NOFUSS         1
 //#define ENABLE_DOMOTICZ       0
+//#define ENABLE_ANALOG         1
