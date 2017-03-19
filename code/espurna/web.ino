@@ -172,6 +172,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             String key = config[i]["name"];
             String value = config[i]["value"];
 
+            // Skip firmware filename
+            if (key.equals("filename")) continue;
+
             #if ENABLE_POW
 
                 if (key == "powExpectedPower") {
@@ -815,8 +818,40 @@ void _onHome(AsyncWebServerRequest *request) {
     }
 
 }
-
 #endif
+
+void _onUpgrade(AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
+    response->addHeader("Connection", "close");
+    request->send(response);
+    deferred.once_ms(100, []() {
+        ESP.restart();
+    });
+}
+
+void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    if (!index) {
+        DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
+        Update.runAsync(true);
+        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+            Update.printError(Serial);
+        }
+    }
+    if (!Update.hasError()) {
+        if (Update.write(data, len) != len) {
+            Update.printError(Serial);
+        }
+    }
+    if (final) {
+        if (Update.end(true)){
+            DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
+        } else {
+            Update.printError(Serial);
+        }
+    } else {
+        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+    }
+}
 
 void webSetup() {
 
@@ -843,7 +878,8 @@ void webSetup() {
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/apis", HTTP_GET, _onAPIs);
-    _server->on("/rpc", HTTP_GET, _onRPC);
+//    _server->on("/rpc", HTTP_GET, _onRPC);
+    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files
     #if not EMBEDDED_WEB

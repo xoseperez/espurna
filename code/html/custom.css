@@ -45,12 +45,15 @@
 .button-update {
     background: #1f8dd6;
 }
-.button-reset {
-    background: rgb(202, 60, 60);
-}
+.button-reset,
 .button-reconnect {
     background: rgb(202, 60, 60);
 }
+.button-upgrade {
+    background: rgb(202, 60, 60);
+    margin-left: 5px;
+}
+.button-upgrade-browse,
 .button-apikey {
     background: rgb(0, 202, 0);
     margin-left: 5px;
@@ -100,6 +103,15 @@ div.hint {
 }
 .template {
     display: none;
+}
+input[name=upgrade] {
+    display: none;
+}
+#upgrade-progress {
+    display: none;
+    width: 100%;
+    height: 20px;
+    margin-top: 10px;
 }
 .pure-form .center {
     margin: .5em 0 .2em;
