@@ -35,7 +35,7 @@ NoFUSSClient.onMessage([](nofuss_t code) {
     }
 
     if (code == NOFUSS_UPDATING) {
-    	DEBUG_MSG_P(PSTR("[NoFUSS] Updating");
+    	DEBUG_MSG_P(PSTR("[NoFUSS] Updating"));
 	    DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
     	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
     	DEBUG_MSG_P(PSTR("         File System: %s"), (char *) NoFUSSClient.getNewFileSystem().c_str());
