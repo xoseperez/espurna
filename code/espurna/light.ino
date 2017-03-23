@@ -158,6 +158,24 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 }
 
+//------------------------------------------------------------------------------
+// REST API
+//------------------------------------------------------------------------------
+
+void lightSetupAPI() {
+
+    // API entry points (protected with apikey)
+    apiRegister("/api/color", "color",
+        [](char * buffer, size_t len) {
+			snprintf(buffer, len, "%s", lightColor().c_str());
+        },
+        [](const char * payload) {
+            lightColor(payload, true, mqttForward());
+        }
+    );
+
+}
+
 // -----------------------------------------------------------------------------
 // SETUP
 // -----------------------------------------------------------------------------
@@ -181,6 +199,7 @@ void lightSetup() {
     lightColorRetrieve();
 
     mqttRegister(lightMQTTCallback);
+    lightSetupAPI();
 
 }
 
