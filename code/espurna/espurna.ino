@@ -197,6 +197,9 @@ void setup() {
         powerMonitorSetup();
     #endif
 
+    // Prepare configuration for version 2.0
+    hwUpwardsCompatibility();
+
 }
 
 void loop() {

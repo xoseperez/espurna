@@ -172,10 +172,20 @@ void settingsLoop() {
     embedis.process();
 }
 
+void moveSetting(const char * from, const char * to) {
+    String value = getSetting(from);
+    if (value.length() > 0) setSetting(to, value);
+    delSetting(from);
+}
+
 template<typename T> String getSetting(const String& key, T defaultValue) {
     String value;
     if (!Embedis::get(key, value)) value = String(defaultValue);
     return value;
+}
+
+template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue) {
+    return getSetting(key + String(index), defaultValue);
 }
 
 String getSetting(const String& key) {
@@ -186,8 +196,24 @@ template<typename T> bool setSetting(const String& key, T value) {
     return Embedis::set(key, String(value));
 }
 
+template<typename T> bool setSetting(const String& key, unsigned int index, T value) {
+    return setSetting(key + String(index), value);
+}
+
 bool delSetting(const String& key) {
     return Embedis::del(key);
+}
+
+bool delSetting(const String& key, unsigned int index) {
+    return delSetting(key + String(index));
+}
+
+bool hasSetting(const String& key) {
+    return getSetting(key).length() != 0;
+}
+
+bool hasSetting(const String& key, unsigned int index) {
+    return getSetting(key, index, "").length() != 0;
 }
 
 void saveSettings() {
