@@ -81,10 +81,10 @@ function doUpgrade() {
         success: function(data, text) {
             $("#upgrade-progress").hide();
             if (data == 'OK') {
-                alert("Firmware image uploaded, board rebooting. This page will be refreshed in 3 seconds.");
+                alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
                 setTimeout(function() {
                     window.location = "/";
-                }, 3000);
+                }, 5000);
             } else {
                 alert("There was an error trying to upload the new image, please try again.");
             }

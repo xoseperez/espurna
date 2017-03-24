@@ -823,10 +823,10 @@ void _onHome(AsyncWebServerRequest *request) {
 void _onUpgrade(AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
     response->addHeader("Connection", "close");
-    request->send(response);
     deferred.once_ms(100, []() {
         ESP.restart();
     });
+    request->send(response);
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
@@ -878,7 +878,7 @@ void webSetup() {
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/apis", HTTP_GET, _onAPIs);
-//    _server->on("/rpc", HTTP_GET, _onRPC);
+    _server->on("/rpc", HTTP_GET, _onRPC);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files
