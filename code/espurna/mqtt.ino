@@ -47,6 +47,7 @@ void buildTopics() {
     // Replace identifier
     mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
     mqttTopic.replace("{identifier}", getSetting("hostname"));
+    if (!mqttTopic.endsWith("/")) mqttTopic = mqttTopic + "/";
 }
 
 bool mqttForward() {
