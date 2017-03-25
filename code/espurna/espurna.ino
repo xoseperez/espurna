@@ -206,6 +206,7 @@ void loop() {
 
     hardwareLoop();
     buttonLoop();
+    relayLoop();
     ledLoop();
     wifiLoop();
     otaLoop();

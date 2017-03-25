@@ -16,6 +16,13 @@ typedef struct {
     unsigned char pin;
     bool reverse;
     unsigned char led;
+
+    unsigned int floodWindowStart;
+    unsigned char floodWindowChanges;
+
+    unsigned int scheduledStatusTime;
+    bool scheduledStatus;
+    bool scheduledReport;
 } relay_t;
 std::vector<relay_t> _relays;
 Ticker pulseTicker;
@@ -152,32 +159,30 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     bool changed = false;
 
     if (relayStatus(id) != status) {
+        unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
+        unsigned int currentTime = millis();
 
-        DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
+        _relays[id].floodWindowChanges++;
+        _relays[id].scheduledStatusTime = currentTime;
+
+        if (currentTime >= floodWindowEnd || currentTime < _relays[id].floodWindowStart) {
+            _relays[id].floodWindowStart = currentTime;
+            _relays[id].floodWindowChanges = 1;
+        } else if (_relays[id].floodWindowChanges >= RELAY_FLOOD_CHANGES) {
+            _relays[id].scheduledStatusTime = floodWindowEnd;
+        }
+
+        _relays[id].scheduledStatus = status;
+        _relays[id].scheduledReport = (report ? true : _relays[id].scheduledReport);
+
+        DEBUG_MSG_P(PSTR("[RELAY] scheduled %d => %s in %u ms\n"),
+                id, status ? "ON" : "OFF",
+                (_relays[id].scheduledStatusTime - currentTime));
+
         changed = true;
-
-        relayProviderStatus(id, status);
-
-        if (_relays[id].led > 0) {
-            ledStatus(_relays[id].led - 1, status);
-        }
-
-        if (report) relayMQTT(id);
-        if (!recursive) {
-            relayPulse(id);
-            relaySync(id);
-            relaySave();
-            relayWS();
-        }
-
-        #if ENABLE_DOMOTICZ
-            relayDomoticzSend(id);
-        #endif
-
     }
 
     return changed;
-
 }
 
 bool relayStatus(unsigned char id, bool status) {
@@ -484,4 +489,39 @@ void relaySetup() {
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
+}
+
+void relayLoop(void)
+{
+    unsigned char id;
+
+    for (id = 0; id < _relays.size(); id++) {
+        unsigned int currentTime = millis();
+        bool status = _relays[id].scheduledStatus;
+
+        if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
+
+            DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
+
+            relayProviderStatus(id, status);
+
+            if (_relays[id].led > 0) {
+                ledStatus(_relays[id].led - 1, status);
+            }
+
+            if (_relays[id].scheduledReport) relayMQTT(id);
+            if (!recursive) {
+                relayPulse(id);
+                relaySync(id);
+                relaySave();
+                relayWS();
+            }
+
+            #if ENABLE_DOMOTICZ
+                relayDomoticzSend(id);
+            #endif
+
+            _relays[id].scheduledReport = false;
+        }
+    }
 }

@@ -73,6 +73,11 @@
 // 0 means no pulses, 1 means normally off, 2 normally on
 #define RELAY_PULSE_MODE     	RELAY_PULSE_NONE
 
+// Relay requests flood protection window - in seconds
+#define RELAY_FLOOD_WINDOW      3
+// Allowed actual relay changes inside requests flood protection window
+#define RELAY_FLOOD_CHANGES     5
+
 //--------------------------------------------------------------------------------
 // I18N
 //--------------------------------------------------------------------------------
