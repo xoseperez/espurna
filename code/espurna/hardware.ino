@@ -254,6 +254,16 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
+    #if ESPURNA_H
+        setSetting("board", 23);
+        setSetting("ledGPIO", 1, 5);
+        setSetting("ledLogic", 1, 0);
+        setSetting("btnGPIO", 1, 4);
+        setSetting("btnRelay", 1, 1);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayLogic", 1, 1);
+    #endif
+
     saveSettings();
 
 }

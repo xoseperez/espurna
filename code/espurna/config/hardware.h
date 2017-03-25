@@ -45,6 +45,23 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// ESPurna
+// -----------------------------------------------------------------------------
+
+#elif defined(ESPURNA_H)
+
+    #define MANUFACTURER        "TINKERMAN"
+    #define DEVICE              "ESPURNA_H"
+    #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  1
+    #define LED1_PIN            5
+    #define LED1_PIN_INVERSE    0
+    #define BUTTON1_PIN         4
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define ENABLE_POW          1
+
+// -----------------------------------------------------------------------------
 // Itead Studio boards
 // -----------------------------------------------------------------------------
 
