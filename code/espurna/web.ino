@@ -823,9 +823,11 @@ void _onHome(AsyncWebServerRequest *request) {
 void _onUpgrade(AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
     response->addHeader("Connection", "close");
-    deferred.once_ms(100, []() {
-        ESP.restart();
-    });
+    if (!Update.hasError()) {
+        deferred.once_ms(100, []() {
+            ESP.restart();
+        });
+    }
     request->send(response);
 }
 
