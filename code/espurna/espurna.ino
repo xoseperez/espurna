@@ -122,7 +122,8 @@ void welcome() {
     DEBUG_MSG_P(PSTR("ChipID: %06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("CPU frequency: %d MHz\n"), ESP.getCpuFreqMHz());
     DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
-    DEBUG_MSG_P(PSTR("Memory size: %d bytes\n"), ESP.getFlashChipSize());
+    DEBUG_MSG_P(PSTR("Memory size (SDK): %d bytes\n"), ESP.getFlashChipSize());
+    DEBUG_MSG_P(PSTR("Memory size (CHIP): %d bytes\n"), ESP.getFlashChipRealSize());
     DEBUG_MSG_P(PSTR("Free heap: %d bytes\n"), ESP.getFreeHeap());
     DEBUG_MSG_P(PSTR("Firmware size: %d bytes\n"), ESP.getSketchSize());
     DEBUG_MSG_P(PSTR("Free firmware space: %d bytes\n"), ESP.getFreeSketchSpace());

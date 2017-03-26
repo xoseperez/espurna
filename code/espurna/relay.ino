@@ -445,9 +445,9 @@ void relaySetup() {
         _relays.push_back((relay_t) {0, 0});
         _relays.push_back((relay_t) {0, 0});
 
-    #elif defined(AI_LIGHT)
+    #elif defined(AI_LIGHT) | defined(LED_CONTROLLER)
 
-        // One dummy relay for the AI Thinker Light
+        // One dummy relay for the AI Thinker Light & Magic Home Led Controller
         _relays.push_back((relay_t) {0, 0});
 
     #else
