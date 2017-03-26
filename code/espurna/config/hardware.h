@@ -45,6 +45,23 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// ESPurna
+// -----------------------------------------------------------------------------
+
+#elif defined(ESPURNA_H)
+
+    #define MANUFACTURER        "TINKERMAN"
+    #define DEVICE              "ESPURNA_H"
+    #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  1
+    #define LED1_PIN            5
+    #define LED1_PIN_INVERSE    0
+    #define BUTTON1_PIN         4
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define ENABLE_POW          1
+
+// -----------------------------------------------------------------------------
 // Itead Studio boards
 // -----------------------------------------------------------------------------
 
@@ -248,8 +265,8 @@
 
 #elif defined(AI_LIGHT)
 
-    #define MANUFACTURER        "AI THINKER"
-    #define DEVICE              "AI LIGHT"
+    #define MANUFACTURER        "AI_THINKER"
+    #define DEVICE              "AI_LIGHT"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
 
@@ -259,8 +276,8 @@
 
 #elif defined(LED_CONTROLLER)
 
-    #define MANUFACTURER        "MAGIC HOME"
-    #define DEVICE              "LED CONTROLLER"
+    #define MANUFACTURER        "MAGIC_HOME"
+    #define DEVICE              "LED_CONTROLLER"
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT

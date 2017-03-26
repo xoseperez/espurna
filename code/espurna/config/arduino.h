@@ -32,6 +32,8 @@
 //#define SONOFF_SV
 //#define SONOFF_POW
 //#define SONOFF_DUAL
+//#define ITEAD_1CH_INCHING
+//#define ITEAD_MOTOR
 //#define SONOFF_4CH
 //#define ESP_RELAY_BOARD
 //#define ECOPLUG

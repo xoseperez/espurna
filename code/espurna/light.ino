@@ -158,6 +158,24 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 }
 
+//------------------------------------------------------------------------------
+// REST API
+//------------------------------------------------------------------------------
+
+void lightSetupAPI() {
+
+    // API entry points (protected with apikey)
+    apiRegister("/api/color", "color",
+        [](char * buffer, size_t len) {
+			snprintf(buffer, len, "%s", lightColor().c_str());
+        },
+        [](const char * payload) {
+            lightColor(payload, true, mqttForward());
+        }
+    );
+
+}
+
 // -----------------------------------------------------------------------------
 // SETUP
 // -----------------------------------------------------------------------------
@@ -169,6 +187,8 @@ void lightSetup() {
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+        analogWriteRange(255);
+        analogWriteFreq(1000);
         pinMode(RGBW_RED_PIN, OUTPUT);
         pinMode(RGBW_GREEN_PIN, OUTPUT);
         pinMode(RGBW_BLUE_PIN, OUTPUT);
@@ -181,6 +201,7 @@ void lightSetup() {
     lightColorRetrieve();
 
     mqttRegister(lightMQTTCallback);
+    lightSetupAPI();
 
 }
 
