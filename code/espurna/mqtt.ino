@@ -251,7 +251,7 @@ void mqttConnect() {
 
         String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-        bool _mqttForward = !mqttGetter.equals(mqttSetter);
+        _mqttForward = !mqttGetter.equals(mqttSetter);
 
     }
 
