@@ -187,6 +187,8 @@ void lightSetup() {
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+        analogWriteRange(255);
+        analogWriteFreq(1000);
         pinMode(RGBW_RED_PIN, OUTPUT);
         pinMode(RGBW_GREEN_PIN, OUTPUT);
         pinMode(RGBW_BLUE_PIN, OUTPUT);
