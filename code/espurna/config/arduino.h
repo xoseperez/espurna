@@ -43,6 +43,7 @@
 //#define WIFI_RELAYS_BOARD_KIT
 //#define AI_LIGHT
 //#define LED_CONTROLLER
+//#define ESPURNA_H
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
