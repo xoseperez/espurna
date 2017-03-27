@@ -188,7 +188,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 }
 
                 if (key == "powExpectedCurrent") {
-                    powSetExpectedCurrent(value.toInt());
+                    powSetExpectedCurrent(value.toFloat());
                     changed = true;
                 }
 
