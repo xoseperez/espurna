@@ -3,6 +3,29 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.7.0] 2017-03-27
+### Added
+- Web interface embedded in firmware image by default
+- Upload firmware image from web interface
+- Added API entry point to change light color
+- Added generic analog sensor. Thanks to Francesco Boscarino
+- Report RSSI value in debug console and MQTT status messages
+- Added support for Magic Home LED Controller
+- Added support for ESPurna-H Board (based on HLW8012)
+- Added forward compatible code for v2.0
+
+### Changed
+- Added ellipsis (...) in debug messages longer than 80 characters
+- Changed topic constants in code
+- Prevent the SDK from saving WiFi configuration to flash
+
+### Fix
+- Issue #113. Fix light bulb state to OFF in library prevented the bulb from turning on
+- Issue #58. Added code to handle spurious readings
+- Fix bug in HLW8012 calibration current parameter casting to int instead of float
+- Issue #115. Removed local declaration of _mqttForward variable. Thanks to Paweł Fiedor
+- Fix MQTT will topic. Thanks to Asbjorn Tronhus
+
 ## [1.6.9] 2017-03-12
 ### Added
 - Two stage read for DS18B20 devices. Thanks to Izik Dubnov.
