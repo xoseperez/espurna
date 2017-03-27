@@ -95,19 +95,27 @@ void powReset() {
 // -----------------------------------------------------------------------------
 
 unsigned int getActivePower() {
-    return hlw8012.getActivePower();
+    unsigned int power = hlw8012.getActivePower();
+    if (power < POW_MIN_POWER) power = 0;
+    return power;
 }
 
 unsigned int getApparentPower() {
-    return hlw8012.getApparentPower();
+    unsigned int power = hlw8012.getApparentPower();
+    if (power < POW_MIN_POWER) power = 0;
+    return power;
 }
 
 unsigned int getReactivePower() {
-    return hlw8012.getReactivePower();
+    unsigned int power = hlw8012.getReactivePower();
+    if (power < POW_MIN_POWER) power = 0;
+    return power;
 }
 
 double getCurrent() {
-    return hlw8012.getCurrent();
+    double current = hlw8012.getCurrent();
+    if (current < POW_MIN_CURRENT) current = 0;
+    return current;
 }
 
 unsigned int getVoltage() {
@@ -162,17 +170,17 @@ void powLoop() {
     static unsigned long last_update = 0;
     static unsigned char report_count = POW_REPORT_EVERY;
 
+    static bool power_spike = false;
     static unsigned long power_sum = 0;
-    static unsigned long power_max = 0;
-    static unsigned long power_min = 0;
+    static unsigned long power_previous = 0;
 
+    static bool current_spike = false;
     static double current_sum = 0;
-    static double current_max = 0;
-    static double current_min = 0;
+    static double current_previous = 0;
 
+    static bool voltage_spike = false;
     static unsigned long voltage_sum = 0;
-    static unsigned long voltage_min = 0;
-    static unsigned long voltage_max = 0;
+    static unsigned long voltage_previous = 0;
 
     static bool powWasEnabled = false;
 
@@ -198,15 +206,29 @@ void powLoop() {
         unsigned int factor = getPowerFactor();
         unsigned int reactive = getReactivePower();
 
-        power_sum += power;
-        if (power > power_max) power_max = power;
-        if (power < power_min || power_min == 0) power_min = power;
-        current_sum += current;
-        if (current > current_max) current_max = current;
-        if (current < current_min || current_min == 0) current_min = current;
-        voltage_sum += voltage;
-        if (voltage > voltage_max) voltage_max = voltage;
-        if (voltage < voltage_min || voltage_min == 0) voltage_min = voltage;
+        if (power > 0) {
+            power_spike = (power_previous == 0);
+        } else if (power_spike) {
+            power_sum -= power_previous;
+            power_spike = false;
+        }
+        power_previous = power;
+
+        if (current > 0) {
+            current_spike = (current_previous == 0);
+        } else if (current_spike) {
+            current_sum -= current_previous;
+            current_spike = false;
+        }
+        current_previous = current;
+
+        if (voltage > 0) {
+            voltage_spike = (voltage_previous == 0);
+        } else if (voltage_spike) {
+            voltage_sum -= voltage_previous;
+            voltage_spike = false;
+        }
+        voltage_previous = voltage;
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
@@ -225,9 +247,9 @@ void powLoop() {
 
         if (--report_count == 0) {
 
-            power = (power_sum - power_max - power_min) / (POW_REPORT_EVERY - 2);
-            current = (current_sum - current_max - current_min) / (POW_REPORT_EVERY - 2);
-            voltage = (voltage_sum - voltage_max - voltage_min) / (POW_REPORT_EVERY - 2);
+            power = power_sum / POW_REPORT_EVERY;
+            current = current_sum / POW_REPORT_EVERY;
+            voltage = voltage_sum / POW_REPORT_EVERY;
             apparent = current * voltage;
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
             factor = (apparent > 0) ? 100 * power / apparent : 100;
@@ -265,12 +287,15 @@ void powLoop() {
             #endif
 
             // Reset counters
-            power_sum = power_max = power_min = 0;
-            current_sum = current_max = current_min = 0;
-            voltage_sum = voltage_max = voltage_min = 0;
+            power_sum = current_sum = voltage_sum = 0;
             report_count = POW_REPORT_EVERY;
 
         }
+
+        // Post - Accumulators
+        power_sum += power_previous;
+        current_sum += current_previous;
+        voltage_sum += voltage_previous;
 
         // Toggle between current and voltage monitoring
         #if POW_USE_INTERRUPTS == 0
