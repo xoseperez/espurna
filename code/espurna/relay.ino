@@ -266,10 +266,10 @@ void relaySetupAPI() {
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
 
         char url[15];
-        sprintf(url, "/api/relay/%d", relayID);
+        sprintf(url, "%s/%d", MQTT_TOPIC_RELAY, relayID);
 
         char key[10];
-        sprintf(key, "relay%d", relayID);
+        sprintf(key, "%s%d", MQTT_TOPIC_RELAY, relayID);
 
         apiRegister(url, key,
             [relayID](char * buffer, size_t len) {

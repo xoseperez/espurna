@@ -165,7 +165,7 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 void lightSetupAPI() {
 
     // API entry points (protected with apikey)
-    apiRegister("/api/color", "color",
+    apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
         [](char * buffer, size_t len) {
 			snprintf(buffer, len, "%s", lightColor().c_str());
         },

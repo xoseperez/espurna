@@ -37,7 +37,7 @@ void dsSetup() {
     ds18b20.begin();
     ds18b20.setWaitForConversion(false);
 
-    apiRegister("/api/temperature", "temperature", [](char * buffer, size_t len) {
+    apiRegister(DS_TEMPERATURE_TOPIC, DS_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
         dtostrf(_dsTemperature, len-1, 1, buffer);
     });
 }

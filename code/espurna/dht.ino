@@ -30,10 +30,10 @@ unsigned int getDHTHumidity() {
 
 void dhtSetup() {
     dht.begin();
-    apiRegister("/api/temperature", "temperature", [](char * buffer, size_t len) {
+    apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
         dtostrf(_dhtTemperature, len-1, 1, buffer);
     });
-    apiRegister("/api/humidity", "humidity", [](char * buffer, size_t len) {
+    apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", _dhtHumidity);
     });
 }

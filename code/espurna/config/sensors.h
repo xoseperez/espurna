@@ -17,8 +17,8 @@
 #define DHT_UPDATE_INTERVAL     60000
 #define DHT_TYPE                DHT22
 #define DHT_TIMING              11
-#define DHT_TEMPERATURE_TOPIC   "/temperature"
-#define DHT_HUMIDITY_TOPIC      "/humidity"
+#define DHT_TEMPERATURE_TOPIC   "temperature"
+#define DHT_HUMIDITY_TOPIC      "humidity"
 
 #define HUMIDITY_NORMAL         0
 #define HUMIDITY_COMFORTABLE    1
@@ -32,7 +32,7 @@
 
 #define ANALOG_PIN              0
 #define ANALOG_UPDATE_INTERVAL  60000
-#define ANALOG_TOPIC            "/analog"
+#define ANALOG_TOPIC            "analog"
 
 #if ENABLE_ANALOG
     #undef ENABLE_ADC_VCC
@@ -46,7 +46,7 @@
 
 #define DS_PIN                  14
 #define DS_UPDATE_INTERVAL      60000
-#define DS_TEMPERATURE_TOPIC    "/temperature"
+#define DS_TEMPERATURE_TOPIC    "temperature"
 
 //--------------------------------------------------------------------------------
 // Custom current sensor
@@ -86,9 +86,9 @@
 #define EMON_INTERVAL           10000
 #define EMON_MEASUREMENTS       6
 #define EMON_MAINS_VOLTAGE      230
-#define EMON_APOWER_TOPIC       "/apower"
-#define EMON_ENERGY_TOPIC       "/energy"
-#define EMON_CURRENT_TOPIC      "/current"
+#define EMON_APOWER_TOPIC       "apower"
+#define EMON_ENERGY_TOPIC       "energy"
+#define EMON_CURRENT_TOPIC      "current"
 
 //--------------------------------------------------------------------------------
 // HLW8012 power sensor (Sonoff POW)
@@ -104,13 +104,13 @@
 #define POW_CURRENT_R           0.001
 #define POW_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
 #define POW_VOLTAGE_R_DOWN      ( 1000 ) // Real 1.009k
-#define POW_POWER_TOPIC         "/power"
-#define POW_CURRENT_TOPIC       "/current"
-#define POW_VOLTAGE_TOPIC       "/voltage"
-#define POW_APOWER_TOPIC        "/apower"
-#define POW_RPOWER_TOPIC        "/rpower"
-#define POW_PFACTOR_TOPIC       "/pfactor"
-#define POW_ENERGY_TOPIC        "/energy"
+#define POW_POWER_TOPIC         "power"
+#define POW_CURRENT_TOPIC       "current"
+#define POW_VOLTAGE_TOPIC       "voltage"
+#define POW_APOWER_TOPIC        "apower"
+#define POW_RPOWER_TOPIC        "rpower"
+#define POW_PFACTOR_TOPIC       "pfactor"
+#define POW_ENERGY_TOPIC        "energy"
 #define POW_UPDATE_INTERVAL     5000
 #define POW_REPORT_EVERY        12
 

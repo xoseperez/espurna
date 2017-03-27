@@ -97,7 +97,7 @@ void powerMonitorSetup() {
         brzo_i2c_end_transaction();
     #endif
 
-    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+    apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", _power);
     });
 

@@ -145,13 +145,13 @@ void powSetup() {
     powRetrieveCalibration();
 
     // API definitions
-    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+    apiRegister(POW_POWER_TOPIC, POW_POWER_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getActivePower());
     });
-    apiRegister("/api/current", "current", [](char * buffer, size_t len) {
+    apiRegister(POW_CURRENT_TOPIC, POW_CURRENT_TOPIC, [](char * buffer, size_t len) {
         dtostrf(getCurrent(), len-1, 2, buffer);
     });
-    apiRegister("/api/voltage", "voltage", [](char * buffer, size_t len) {
+    apiRegister(POW_VOLTAGE_TOPIC, POW_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getVoltage());
     });
 

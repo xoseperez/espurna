@@ -22,7 +22,7 @@ void analogSetup() {
 
     pinMode(ANALOG_PIN, INPUT);
 
-    apiRegister("/api/analog", "analog", [](char * buffer, size_t len) {
+    apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getAnalog());
     });
 
