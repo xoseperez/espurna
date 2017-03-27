@@ -96,9 +96,14 @@
 // Enabled by default when selecting SONOFF_POW hardware
 //--------------------------------------------------------------------------------
 
-#define POW_SEL_PIN             5
+#ifdef ESPURNA_H
+    #define POW_SEL_PIN         2
+#else
+    #define POW_SEL_PIN         5
+#endif
 #define POW_CF1_PIN             13
 #define POW_CF_PIN              14
+
 #define POW_USE_INTERRUPTS      1
 #define POW_SEL_CURRENT         HIGH
 #define POW_CURRENT_R           0.001
