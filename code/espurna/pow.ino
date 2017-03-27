@@ -163,8 +163,17 @@ void powLoop() {
     static unsigned char report_count = POW_REPORT_EVERY;
 
     static unsigned long power_sum = 0;
+    static unsigned long power_max = 0;
+    static unsigned long power_min = 0;
+
     static double current_sum = 0;
+    static double current_max = 0;
+    static double current_min = 0;
+
     static unsigned long voltage_sum = 0;
+    static unsigned long voltage_min = 0;
+    static unsigned long voltage_max = 0;
+
     static bool powWasEnabled = false;
 
     // POW is disabled while there is no internet connection
@@ -190,8 +199,14 @@ void powLoop() {
         unsigned int reactive = getReactivePower();
 
         power_sum += power;
+        if (power > power_max) power_max = power;
+        if (power < power_min || power_min == 0) power_min = power;
         current_sum += current;
+        if (current > current_max) current_max = current;
+        if (current < current_min || current_min == 0) current_min = current;
         voltage_sum += voltage;
+        if (voltage > voltage_max) voltage_max = voltage;
+        if (voltage < voltage_min || voltage_min == 0) voltage_min = voltage;
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
@@ -210,9 +225,9 @@ void powLoop() {
 
         if (--report_count == 0) {
 
-            power = power_sum / POW_REPORT_EVERY;
-            current = current_sum / POW_REPORT_EVERY;
-            voltage = voltage_sum / POW_REPORT_EVERY;
+            power = (power_sum - power_max - power_min) / (POW_REPORT_EVERY - 2);
+            current = (current_sum - current_max - current_min) / (POW_REPORT_EVERY - 2);
+            voltage = (voltage_sum - voltage_max - voltage_min) / (POW_REPORT_EVERY - 2);
             apparent = current * voltage;
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
             factor = (apparent > 0) ? 100 * power / apparent : 100;
@@ -250,7 +265,9 @@ void powLoop() {
             #endif
 
             // Reset counters
-            power_sum = current_sum = voltage_sum = 0;
+            power_sum = power_max = power_min = 0;
+            current_sum = current_max = current_min = 0;
+            voltage_sum = voltage_max = voltage_min = 0;
             report_count = POW_REPORT_EVERY;
 
         }
