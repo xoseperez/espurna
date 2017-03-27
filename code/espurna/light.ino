@@ -184,6 +184,7 @@ void lightSetup() {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
         _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
+        _my9291->setState(true); // We are handling state from the client code
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
