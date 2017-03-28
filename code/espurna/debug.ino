@@ -67,6 +67,7 @@ void debugSend_P(PGM_P format, ...) {
             udpDebug.write(" (...)\n");
         }
         udpDebug.endPacket();
+        delay(1);
     #endif
 
 }
