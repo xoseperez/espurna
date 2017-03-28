@@ -45,11 +45,11 @@ void color_array2rgb(unsigned int * array, char * rgb) {
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-void lightColorProvider(unsigned int red, unsigned int green, unsigned int blue) {
+void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigned int blue) {
+
+    unsigned int white = 0;
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-		unsigned int white = 0;
-
 		// If all set to the same value use white instead
 		if ((red == green) && (green == blue)) {
 		    white = red;
@@ -58,10 +58,15 @@ void lightColorProvider(unsigned int red, unsigned int green, unsigned int blue)
 	#endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+        _my9291->setState(state);
         _my9291->setColor((my9291_color_t) { red, green, blue, white });
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+
+        // Check state
+        if (!state) red = green = blue = white = 0;
+
         if (RGBW_INVERSE_LOGIC) {
             analogWrite(RGBW_RED_PIN, red);
             analogWrite(RGBW_GREEN_PIN, green);
@@ -85,13 +90,22 @@ void lightColorProvider(unsigned int red, unsigned int green, unsigned int blue)
 // LIGHT MANAGEMENT
 // -----------------------------------------------------------------------------
 
+void lightState(bool state) {
+    _lightState = state;
+    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2]);
+}
+
+bool lightState() {
+    return _lightState;
+}
+
 void lightColor(const char * rgb, bool save, bool forward) {
 
     color_rgb2array(rgb, _lightColor);
-    lightColorProvider(_lightColor[0], _lightColor[1], _lightColor[2]);
+    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2]);
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-    if (save) colorTicker.once(LIGHT_SAVE_DELAY, lightColorSave);
+    if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
 
     // Report color to MQTT broker
     if (forward) mqttSend(MQTT_TOPIC_COLOR, rgb);
@@ -109,30 +123,18 @@ String lightColor() {
     return String(rgb);
 }
 
-void lightState(bool state) {
-    if (state) {
-        lightColorProvider(_lightColor[0], _lightColor[1], _lightColor[2]);
-    } else {
-        lightColorProvider(0, 0, 0);
-    }
-    _lightState = state;
-}
-
-bool lightState() {
-    return _lightState;
-}
-
 // -----------------------------------------------------------------------------
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
-void lightColorSave() {
+void _lightColorSave() {
     setSetting("color", lightColor());
     saveSettings();
 }
 
-void lightColorRetrieve() {
-    lightColor(getSetting("color", LIGHT_DEFAULT_COLOR).c_str(), false, true);
+void _lightColorRestore() {
+    String color = getSetting("color", LIGHT_DEFAULT_COLOR);
+    lightColor(color.c_str(), false, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -158,24 +160,6 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 }
 
-//------------------------------------------------------------------------------
-// REST API
-//------------------------------------------------------------------------------
-
-void lightSetupAPI() {
-
-    // API entry points (protected with apikey)
-    apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
-        [](char * buffer, size_t len) {
-			snprintf(buffer, len, "%s", lightColor().c_str());
-        },
-        [](const char * payload) {
-            lightColor(payload, true, mqttForward());
-        }
-    );
-
-}
-
 // -----------------------------------------------------------------------------
 // SETUP
 // -----------------------------------------------------------------------------
@@ -184,7 +168,6 @@ void lightSetup() {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
         _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
-        _my9291->setState(true); // We are handling state from the client code
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
@@ -196,13 +179,21 @@ void lightSetup() {
 		#if LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW
 	        pinMode(RGBW_WHITE_PIN, OUTPUT);
 		#endif
-        lightColorProvider(0, 0, 0);
     #endif
 
-    lightColorRetrieve();
+    _lightColorRestore();
+
+    // API entry points (protected with apikey)
+    apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
+        [](char * buffer, size_t len) {
+			snprintf(buffer, len, "%s", lightColor().c_str());
+        },
+        [](const char * payload) {
+            lightColor(payload, true, mqttForward());
+        }
+    );
 
     mqttRegister(lightMQTTCallback);
-    lightSetupAPI();
 
 }
 
