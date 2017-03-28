@@ -3,6 +3,11 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.7.1] 2017-03-28
+### Fix
+- Issue #113. Fix restoring color from EEPROM upon reboot
+- Issue #113. Fix bug in API handlers
+
 ## [1.7.0] 2017-03-27
 ### Added
 - Web interface embedded in firmware image by default
