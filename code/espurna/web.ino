@@ -695,7 +695,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Bind call
     unsigned int methods = HTTP_GET;
     if (putFn != NULL) methods += HTTP_PUT;
-    _server->on(url, methods, _bindAPI(_apis.size() - 1));
+    _server->on(buffer, methods, _bindAPI(_apis.size() - 1));
 
 }
 
