@@ -29,7 +29,7 @@ void hwUpwardsCompatibility() {
     unsigned int board = getSetting("board", 0).toInt();
     if (board > 0) return;
 
-    #if NODEMCUV2
+    #ifdef NODEMCUV2
         setSetting("board", 2);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
@@ -39,7 +39,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if D1_RELAYSHIELD
+    #ifdef D1_RELAYSHIELD
         setSetting("board", 3);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
@@ -47,7 +47,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF
+    #ifdef SONOFF
         setSetting("board", 4);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -57,7 +57,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF_TH
+    #ifdef SONOFF_TH
         setSetting("board", 5);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -67,7 +67,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF_SV
+    #ifdef SONOFF_SV
         setSetting("board", 6);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -77,7 +77,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF_TOUCH
+    #ifdef SONOFF_TOUCH
         setSetting("board", 7);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -87,7 +87,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF_POW
+    #ifdef SONOFF_POW
         setSetting("board", 8);
         setSetting("ledGPIO", 1, 15);
         setSetting("ledLogic", 1, 1);
@@ -97,7 +97,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF_DUAL
+    #ifdef SONOFF_DUAL
         setSetting("board", 9);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -105,7 +105,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayProvider", RELAY_PROVIDER_DUAL);
     #endif
 
-    #if ITEAD_1CH_INCHING
+    #ifdef ITEAD_1CH_INCHING
         setSetting("board", 10);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -115,7 +115,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if SONOFF_4CH
+    #ifdef SONOFF_4CH
         setSetting("board", 11);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -137,7 +137,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 4, 0);
     #endif
 
-    #if SLAMPHER
+    #ifdef SLAMPHER
         setSetting("board", 12);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -147,7 +147,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if S20
+    #ifdef S20
         setSetting("board", 13);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -157,7 +157,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if ESP_RELAY_BOARD
+    #ifdef ESP_RELAY_BOARD
         setSetting("board", 14);
         setSetting("ledGPIO", 1, 16);
         setSetting("ledLogic", 1, 0);
@@ -171,7 +171,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 2, 0);
     #endif
 
-    #if ECOPLUG
+    #ifdef ECOPLUG
         setSetting("board", 15);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 0);
@@ -181,7 +181,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if WIFI_RELAY_NC
+    #ifdef WIFI_RELAY_NC
         setSetting("board", 16);
         setSetting("btnGPIO", 1, 12);
         setSetting("btnGPIO", 2, 13);
@@ -193,7 +193,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 2, 1);
     #endif
 
-    #if WIFI_RELAY_NO
+    #ifdef WIFI_RELAY_NO
         setSetting("board", 17);
         setSetting("btnGPIO", 1, 12);
         setSetting("btnGPIO", 2, 13);
@@ -205,7 +205,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 2, 0);
     #endif
 
-    #if MQTT_RELAY
+    #ifdef MQTT_RELAY
         setSetting("board", 18);
         setSetting("ledGPIO", 1, 16);
         setSetting("ledLogic", 1, 1);
@@ -215,7 +215,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if WIFI_RELAYS_BOARD_KIT
+    #ifdef WIFI_RELAYS_BOARD_KIT
         setSetting("board", 19);
         setSetting("relayGPIO", 1, 0);
         setSetting("relayLogic", 1, 1);
@@ -223,7 +223,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 2, 1);
     #endif
 
-    #if AI_LIGHT
+    #ifdef AI_LIGHT
         setSetting("board", 20);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
@@ -231,7 +231,7 @@ void hwUpwardsCompatibility() {
         setSetting("myDCKIGPIO", 15);
     #endif
 
-    #if LED_CONTROLLER
+    #ifdef LED_CONTROLLER
         setSetting("board", 21);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_RGB);
@@ -244,7 +244,7 @@ void hwUpwardsCompatibility() {
         setSetting("lightLogic", 1);
     #endif
 
-    #if ITEAD_MOTOR
+    #ifdef ITEAD_MOTOR
         setSetting("board", 22);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -254,7 +254,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
     #endif
 
-    #if ESPURNA_H
+    #ifdef ESPURNA_H
         setSetting("board", 23);
         setSetting("ledGPIO", 1, 5);
         setSetting("ledLogic", 1, 0);
