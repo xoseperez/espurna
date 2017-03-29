@@ -22,19 +22,48 @@ my9291 * _my9291;
 // UTILS
 // -----------------------------------------------------------------------------
 
-void color_rgb2array(const char * rgb, unsigned int * array) {
+void color_string2array(const char * rgb, unsigned int * array) {
 
     char * p = (char *) rgb;
-    if (p[0] == '#') ++p;
+    if (strlen(p) == 0) return;
 
-    unsigned long value = strtol(p, NULL, 16);
-    array[0] = (value >> 16) & 0xFF;
-    array[1] = (value >> 8) & 0xFF;
-    array[2] = (value) & 0xFF;
+    // if color begins with a # then assume HEX RGB
+    if (p[0] == '#') {
+
+        ++p;
+        unsigned long value = strtol(p, NULL, 16);
+        array[0] = (value >> 16) & 0xFF;
+        array[1] = (value >> 8) & 0xFF;
+        array[2] = (value) & 0xFF;
+
+    // otherwise assume decimal values separated by commas
+    } else {
+
+        char * tok;
+        tok = strtok(p, ",");
+        array[0] = atoi(tok);
+        tok = strtok(NULL, ",");
+
+        // if there are more than one value assume R,G,B
+        if (tok != NULL) {
+            array[1] = atoi(tok);
+            tok = strtok(NULL, ",");
+            if (tok != NULL) {
+                array[2] = atoi(tok);
+            } else {
+                array[2] = 0;
+            }
+
+        // only one value set red, green and blue to the same value
+        } else {
+            array[2] = array[1] = array[0];
+        }
+
+    }
 
 }
 
-void color_array2rgb(unsigned int * array, char * rgb) {
+void color_array2string(unsigned int * array, char * rgb) {
     unsigned long value = array[0];
     value = (value << 8) + array[1];
     value = (value << 8) + array[2];
@@ -101,25 +130,28 @@ bool lightState() {
 
 void lightColor(const char * rgb, bool save, bool forward) {
 
-    color_rgb2array(rgb, _lightColor);
+    color_string2array(rgb, _lightColor);
     _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2]);
+
+    char color[12];
+    color_array2string(_lightColor, color);
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
 
     // Report color to MQTT broker
-    if (forward) mqttSend(MQTT_TOPIC_COLOR, rgb);
+    if (forward) mqttSend(MQTT_TOPIC_COLOR, color);
 
     // Report color to WS clients
     char message[20];
-    sprintf(message, "{\"color\": \"%s\"}", rgb);
+    sprintf(message, "{\"color\": \"%s\"}", color);
     wsSend(message);
 
 }
 
 String lightColor() {
     char rgb[8];
-    color_array2rgb(_lightColor, rgb);
+    color_array2string(_lightColor, rgb);
     return String(rgb);
 }
 
