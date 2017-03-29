@@ -9,6 +9,21 @@
 #define UPTIME_OVERFLOW         4294967295
 
 //--------------------------------------------------------------------------------
+// DEBUG
+//--------------------------------------------------------------------------------
+
+#ifndef DEBUG_PORT
+#define DEBUG_PORT              Serial
+#endif
+
+// Uncomment and configure these lines to enable remote debug via udpDebug
+// To receive the message son the destination computer use nc:
+// nc -ul 8111
+
+//#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+//#define DEBUG_UDP_PORT          8111
+
+//--------------------------------------------------------------------------------
 // EEPROM
 //--------------------------------------------------------------------------------
 
