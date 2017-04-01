@@ -166,7 +166,7 @@ void _lightColorSave() {
 
 void _lightColorRestore() {
     String color = getSetting("color", LIGHT_DEFAULT_COLOR);
-    lightColor(color.c_str(), false, true);
+    color_string2array(color.c_str(), _lightColor);
 }
 
 // -----------------------------------------------------------------------------

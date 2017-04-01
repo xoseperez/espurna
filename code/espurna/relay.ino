@@ -16,10 +16,8 @@ typedef struct {
     unsigned char pin;
     bool reverse;
     unsigned char led;
-
     unsigned int floodWindowStart;
     unsigned char floodWindowChanges;
-
     unsigned int scheduledStatusTime;
     bool scheduledStatus;
     bool scheduledReport;
@@ -159,6 +157,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     bool changed = false;
 
     if (relayStatus(id) != status) {
+
         unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
         unsigned int currentTime = millis();
 
@@ -175,11 +174,12 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         _relays[id].scheduledStatus = status;
         _relays[id].scheduledReport = (report ? true : _relays[id].scheduledReport);
 
-        DEBUG_MSG_P(PSTR("[RELAY] scheduled %d => %s in %u ms\n"),
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduled %d => %s in %u ms\n"),
                 id, status ? "ON" : "OFF",
                 (_relays[id].scheduledStatusTime - currentTime));
 
         changed = true;
+
     }
 
     return changed;
@@ -480,6 +480,7 @@ void relaySetup() {
     }
     if (relayMode == RELAY_MODE_SAME) relayRetrieve(false);
     if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);
+    relayLoop();
 
     relaySetupAPI();
     relaySetupMQTT();
@@ -491,11 +492,12 @@ void relaySetup() {
 
 }
 
-void relayLoop(void)
-{
+void relayLoop(void) {
+
     unsigned char id;
 
     for (id = 0; id < _relays.size(); id++) {
+
         unsigned int currentTime = millis();
         bool status = _relays[id].scheduledStatus;
 
@@ -522,6 +524,9 @@ void relayLoop(void)
             #endif
 
             _relays[id].scheduledReport = false;
+
         }
+
     }
+
 }
