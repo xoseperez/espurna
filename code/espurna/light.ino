@@ -63,7 +63,7 @@ void color_string2array(const char * rgb, unsigned int * array) {
 
 }
 
-void color_array2string(unsigned int * array, char * rgb) {
+void color_array2rgb(unsigned int * array, char * rgb) {
     unsigned long value = array[0];
     value = (value << 8) + array[1];
     value = (value << 8) + array[2];
@@ -128,30 +128,30 @@ bool lightState() {
     return _lightState;
 }
 
-void lightColor(const char * rgb, bool save, bool forward) {
+void lightColor(const char * color, bool save, bool forward) {
 
-    color_string2array(rgb, _lightColor);
+    color_string2array(color, _lightColor);
     _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2]);
 
-    char color[12];
-    color_array2string(_lightColor, color);
+    char rgb[8];
+    color_array2rgb(_lightColor, rgb);
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
 
     // Report color to MQTT broker
-    if (forward) mqttSend(MQTT_TOPIC_COLOR, color);
+    if (forward) mqttSend(MQTT_TOPIC_COLOR, rgb);
 
     // Report color to WS clients
     char message[20];
-    sprintf(message, "{\"color\": \"%s\"}", color);
+    sprintf(message, "{\"color\": \"%s\"}", rgb);
     wsSend(message);
 
 }
 
 String lightColor() {
     char rgb[8];
-    color_array2string(_lightColor, rgb);
+    color_array2rgb(_lightColor, rgb);
     return String(rgb);
 }
 
