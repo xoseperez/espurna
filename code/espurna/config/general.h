@@ -233,6 +233,7 @@
 
 #define LIGHT_DEFAULT_COLOR     "#000080"
 #define LIGHT_SAVE_DELAY        5
+#define LIGHT_MAX_VALUE         255
 
 #define MY9291_DI_PIN           13
 #define MY9291_DCKI_PIN         15

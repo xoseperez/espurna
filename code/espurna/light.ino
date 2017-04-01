@@ -36,6 +36,13 @@ void color_string2array(const char * rgb, unsigned int * array) {
         array[1] = (value >> 8) & 0xFF;
         array[2] = (value) & 0xFF;
 
+    // it's a temperature
+    } else if (p[strlen(p)-1] == 'K') {
+
+        p[strlen(p)-1] = 0;
+        unsigned int temperature = atoi(p);
+        color_temperature2array(temperature, array);
+
     // otherwise assume decimal values separated by commas
     } else {
 
@@ -68,6 +75,32 @@ void color_array2rgb(unsigned int * array, char * rgb) {
     value = (value << 8) + array[1];
     value = (value << 8) + array[2];
     sprintf(rgb, "#%06X", value);
+}
+
+// Thanks to Sacha Telgenhof for sharing this code in his AiLight library
+// https://github.com/stelgenhof/AiLight
+void color_temperature2array(unsigned int temperature, unsigned int * array) {
+
+    // Force boundaries and conversion
+    temperature = constrain(temperature, 1000, 40000) / 100;
+
+    // Calculate colors
+    unsigned int red = (temperature <= 66)
+        ? LIGHT_MAX_VALUE
+        : 329.698727446 * pow((temperature - 60), -0.1332047592);
+    unsigned int green = (temperature <= 66)
+        ? 99.4708025861 * log(temperature) - 161.1195681661
+        : 288.1221695283 * pow(temperature, -0.0755148492);
+    unsigned int blue = (temperature >= 66)
+        ? LIGHT_MAX_VALUE
+        : ((temperature <= 19)
+            ? 0
+            : 138.5177312231 * log(temperature - 10) - 305.0447927307);
+
+    // Save values
+    array[0] = constrain(red, 0, LIGHT_MAX_VALUE);
+    array[1] = constrain(green, 0, LIGHT_MAX_VALUE);
+    array[2] = constrain(blue, 0, LIGHT_MAX_VALUE);
 }
 
 // -----------------------------------------------------------------------------
@@ -104,11 +137,11 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
 	            analogWrite(RGBW_WHITE_PIN, white);
 			#endif
         } else {
-            analogWrite(RGBW_RED_PIN, 255 - red);
-            analogWrite(RGBW_GREEN_PIN, 255 - green);
-            analogWrite(RGBW_BLUE_PIN, 255 - blue);
+            analogWrite(RGBW_RED_PIN, LIGHT_MAX_VALUE - red);
+            analogWrite(RGBW_GREEN_PIN, LIGHT_MAX_VALUE - green);
+            analogWrite(RGBW_BLUE_PIN, LIGHT_MAX_VALUE - blue);
 		    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-	            analogWrite(RGBW_WHITE_PIN, 255 - white);
+	            analogWrite(RGBW_WHITE_PIN, LIGHT_MAX_VALUE - white);
 			#endif
         }
     #endif
@@ -203,7 +236,7 @@ void lightSetup() {
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-        analogWriteRange(255);
+        analogWriteRange(LIGHT_MAX_VALUE);
         analogWriteFreq(1000);
         pinMode(RGBW_RED_PIN, OUTPUT);
         pinMode(RGBW_GREEN_PIN, OUTPUT);
