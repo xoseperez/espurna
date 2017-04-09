@@ -118,8 +118,10 @@
 #define POW_ENERGY_TOPIC        "energy"
 #define POW_UPDATE_INTERVAL     5000
 #define POW_REPORT_EVERY        12
-#define POW_MIN_POWER           10
+#define POW_MIN_POWER           5
+#define POW_MAX_POWER           2500
 #define POW_MIN_CURRENT         0.05
+#define POW_MAX_CURRENT         10
 
 //--------------------------------------------------------------------------------
 // Internal power montior

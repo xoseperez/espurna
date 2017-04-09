@@ -58,7 +58,7 @@
     #define LED1_PIN_INVERSE    0
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define ENABLE_POW          1
 
 // -----------------------------------------------------------------------------

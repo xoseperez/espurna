@@ -96,25 +96,25 @@ void powReset() {
 
 unsigned int getActivePower() {
     unsigned int power = hlw8012.getActivePower();
-    if (power < POW_MIN_POWER) power = 0;
+    if (POW_MIN_POWER > power || power > POW_MAX_POWER) power = 0;
     return power;
 }
 
 unsigned int getApparentPower() {
     unsigned int power = hlw8012.getApparentPower();
-    if (power < POW_MIN_POWER) power = 0;
+    if (POW_MIN_POWER > power || power > POW_MAX_POWER) power = 0;
     return power;
 }
 
 unsigned int getReactivePower() {
     unsigned int power = hlw8012.getReactivePower();
-    if (power < POW_MIN_POWER) power = 0;
+    if (POW_MIN_POWER > power || power > POW_MAX_POWER) power = 0;
     return power;
 }
 
 double getCurrent() {
     double current = hlw8012.getCurrent();
-    if (current < POW_MIN_CURRENT) current = 0;
+    if (POW_MIN_CURRENT > current || current > POW_MAX_CURRENT) power = 0;
     return current;
 }
 
