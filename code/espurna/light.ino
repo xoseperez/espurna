@@ -18,12 +18,37 @@ unsigned int _lightColor[3] = {0};
 my9291 * _my9291;
 #endif
 
+#if ENABLE_GAMMA_CORRECTION
+    #define GAMMA_TABLE_SIZE (256)
+    #undef LIGHT_PWM_RANGE
+    #define LIGHT_PWM_RANGE (4095)
+
+    // Gamma Correction lookup table for gamma=2.8 and 12 bit (4095) full scale
+    const unsigned short gamma_table[GAMMA_TABLE_SIZE] = {
+       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,
+       2,   2,   2,   3,   3,   4,   4,   5,   5,   6,   7,   8,   8,   9,  10,  11,
+      12,  13,  15,  16,  17,  18,  20,  21,  23,  25,  26,  28,  30,  32,  34,  36,
+      38,  40,  43,  45,  48,  50,  53,  56,  59,  62,  65,  68,  71,  75,  78,  82,
+      85,  89,  93,  97, 101, 105, 110, 114, 119, 123, 128, 133, 138, 143, 149, 154,
+     159, 165, 171, 177, 183, 189, 195, 202, 208, 215, 222, 229, 236, 243, 250, 258,
+     266, 273, 281, 290, 298, 306, 315, 324, 332, 341, 351, 360, 369, 379, 389, 399,
+     409, 419, 430, 440, 451, 462, 473, 485, 496, 508, 520, 532, 544, 556, 569, 582,
+     594, 608, 621, 634, 648, 662, 676, 690, 704, 719, 734, 749, 764, 779, 795, 811,
+     827, 843, 859, 876, 893, 910, 927, 944, 962, 980, 998,1016,1034,1053,1072,1091,
+    1110,1130,1150,1170,1190,1210,1231,1252,1273,1294,1316,1338,1360,1382,1404,1427,
+    1450,1473,1497,1520,1544,1568,1593,1617,1642,1667,1693,1718,1744,1770,1797,1823,
+    1850,1877,1905,1932,1960,1988,2017,2045,2074,2103,2133,2162,2192,2223,2253,2284,
+    2315,2346,2378,2410,2442,2474,2507,2540,2573,2606,2640,2674,2708,2743,2778,2813,
+    2849,2884,2920,2957,2993,3030,3067,3105,3143,3181,3219,3258,3297,3336,3376,3416,
+    3456,3496,3537,3578,3619,3661,3703,3745,3788,3831,3874,3918,3962,4006,4050,4095 };
+#endif
+
 #ifndef LIGHT_PWM_FREQUENCY
-  #define LIGHT_PWM_FREQUENCY (1000)
+    #define LIGHT_PWM_FREQUENCY (1000)
 #endif
 
 #ifndef LIGHT_PWM_RANGE
-  #define LIGHT_PWM_RANGE (255)
+    #define LIGHT_PWM_RANGE (255)
 #endif
 
 // -----------------------------------------------------------------------------
@@ -116,12 +141,17 @@ void color_temperature2array(unsigned int temperature, unsigned int * array) {
 unsigned int intensity2pwm(unsigned int intensity)
 {
     unsigned int pwm;
-    // Support integer multiples of 256 (-1) for the LIGHT_PWM_RANGE
-    // The divide should happen at compile time
-    pwm = intensity * ((LIGHT_PWM_RANGE+1) / (LIGHT_MAX_VALUE+1));
+
+    #if ENABLE_GAMMA_CORRECTION
+        pwm = (intensity < GAMMA_TABLE_SIZE) ? gamma_table[intensity] : PWM_RANGE;
+    #else
+        // Support integer multiples of 256 (-1) for the PWM_RANGE
+        // The divide should happen at compile time
+        pwm = intensity * ( (LIGHT_PWM_RANGE+1) / (LIGHT_MAX_VALUE+1) );
+    #endif
 
     #if RGBW_INVERSE_LOGIC != 1
-      pwm = LIGHT_PWM_RANGE - pwm;
+        pwm = LIGHT_PWM_RANGE - pwm;
     #endif
 
     return pwm;
@@ -156,9 +186,9 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         analogWrite(RGBW_RED_PIN, intensity2pwm(red));
         analogWrite(RGBW_GREEN_PIN, intensity2pwm(green));
         analogWrite(RGBW_BLUE_PIN, intensity2pwm(blue));
-		    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-	          analogWrite(RGBW_WHITE_PIN, intensity2pwm(white));
-			  #endif
+        #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+            analogWrite(RGBW_WHITE_PIN, intensity2pwm(white));
+        #endif
     #endif
 
 }
