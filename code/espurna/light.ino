@@ -18,6 +18,14 @@ unsigned int _lightColor[3] = {0};
 my9291 * _my9291;
 #endif
 
+#ifndef LIGHT_PWM_FREQUENCY
+  #define LIGHT_PWM_FREQUENCY (1000)
+#endif
+
+#ifndef LIGHT_PWM_RANGE
+  #define LIGHT_PWM_RANGE (255)
+#endif
+
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
@@ -103,6 +111,22 @@ void color_temperature2array(unsigned int temperature, unsigned int * array) {
     array[2] = constrain(blue, 0, LIGHT_MAX_VALUE);
 }
 
+// Converts a color intensity value (0..255) to a pwm value
+// This takes care of positive or negative logic
+unsigned int intensity2pwm(unsigned int intensity)
+{
+    unsigned int pwm;
+    // Support integer multiples of 256 (-1) for the LIGHT_PWM_RANGE
+    // The divide should happen at compile time
+    pwm = intensity * ((LIGHT_PWM_RANGE+1) / (LIGHT_MAX_VALUE+1));
+
+    #if RGBW_INVERSE_LOGIC != 1
+      pwm = LIGHT_PWM_RANGE - pwm;
+    #endif
+
+    return pwm;
+}
+
 // -----------------------------------------------------------------------------
 // PROVIDER
 // -----------------------------------------------------------------------------
@@ -129,21 +153,12 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         // Check state
         if (!state) red = green = blue = white = 0;
 
-        if (RGBW_INVERSE_LOGIC) {
-            analogWrite(RGBW_RED_PIN, red);
-            analogWrite(RGBW_GREEN_PIN, green);
-            analogWrite(RGBW_BLUE_PIN, blue);
+        analogWrite(RGBW_RED_PIN, intensity2pwm(red));
+        analogWrite(RGBW_GREEN_PIN, intensity2pwm(green));
+        analogWrite(RGBW_BLUE_PIN, intensity2pwm(blue));
 		    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-	            analogWrite(RGBW_WHITE_PIN, white);
-			#endif
-        } else {
-            analogWrite(RGBW_RED_PIN, LIGHT_MAX_VALUE - red);
-            analogWrite(RGBW_GREEN_PIN, LIGHT_MAX_VALUE - green);
-            analogWrite(RGBW_BLUE_PIN, LIGHT_MAX_VALUE - blue);
-		    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-	            analogWrite(RGBW_WHITE_PIN, LIGHT_MAX_VALUE - white);
-			#endif
-        }
+	          analogWrite(RGBW_WHITE_PIN, intensity2pwm(white));
+			  #endif
     #endif
 
 }
@@ -236,8 +251,8 @@ void lightSetup() {
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-        analogWriteRange(LIGHT_MAX_VALUE);
-        analogWriteFreq(1000);
+        analogWriteRange(LIGHT_PWM_RANGE);
+        analogWriteFreq(LIGHT_PWM_FREQUENCY);
         pinMode(RGBW_RED_PIN, OUTPUT);
         pinMode(RGBW_GREEN_PIN, OUTPUT);
         pinMode(RGBW_BLUE_PIN, OUTPUT);
