@@ -194,6 +194,7 @@
 #define MQTT_REPORT_FREEHEAP    1
 #define MQTT_REPORT_VCC         1
 #define MQTT_REPORT_RELAY       1
+#define MQTT_REPORT_COLOR       1
 #define MQTT_REPORT_HOSTNAME    1
 #define MQTT_REPORT_APP         1
 #define MQTT_REPORT_VERSION     1

@@ -81,6 +81,11 @@ void heartbeat() {
     #if (MQTT_REPORT_RELAY)
         relayMQTT();
     #endif
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    #if (MQTT_REPORT_COLOR)
+        mqttSend(MQTT_TOPIC_COLOR, lightColor().c_str());
+    #endif
+    #endif
     #if (MQTT_REPORT_VCC)
     #if ENABLE_ADC_VCC
         mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
