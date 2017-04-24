@@ -19,6 +19,10 @@ void ntpConnect() {
     NTP.setInterval(NTP_UPDATE_INTERVAL);
 }
 
+bool ntpConnected() {
+    return (timeStatus() == timeSet);
+}
+
 void ntpSetup() {
 
     NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
@@ -28,8 +32,10 @@ void ntpSetup() {
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
+            wsSend("{\"ntpStatus\": false}");
         } else {
             DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) NTP.getTimeDateString(NTP.getLastNTPSync()).c_str());
+            wsSend("{\"ntpStatus\": true}");
         }
     });
 

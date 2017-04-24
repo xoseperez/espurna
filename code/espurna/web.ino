@@ -398,6 +398,8 @@ void _wsStart(uint32_t client_id) {
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
 
+        root["ntpStatus"] = ntpConnected();
+
         root["mqttStatus"] = mqttConnected();
         root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
         root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);

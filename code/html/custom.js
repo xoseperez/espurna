@@ -427,6 +427,9 @@ function processData(data) {
         if (key == "mqttStatus") {
             data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
         }
+        if (key == "ntpStatus") {
+            data.ntpStatus = data.ntpStatus ? "SYNC'D" : "NOT SYNC'D";
+        }
         if (key == "tmpUnits") {
             $("span#tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
         }
