@@ -477,6 +477,11 @@ void relaySetup() {
         pinMode(_relays[i].pin, OUTPUT);
         if (relayMode == RELAY_MODE_OFF) relayStatus(i, false);
         if (relayMode == RELAY_MODE_ON) relayStatus(i, true);
+        if (relayMode == RELAY_MODE_FOLLOW) {
+            // retrieve the status of the linked button
+            int buttonID = buttonFromRelay(i);
+            relayStatus(i, (buttonID >=0) ? buttonState(buttonID) : false);
+        }
     }
     if (relayMode == RELAY_MODE_SAME) relayRetrieve(false);
     if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);

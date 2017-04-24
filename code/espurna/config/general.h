@@ -62,6 +62,7 @@
 #define RELAY_MODE_ON           1
 #define RELAY_MODE_SAME         2
 #define RELAY_MODE_TOOGLE       3
+#define RELAY_MODE_FOLLOW       4
 
 #define RELAY_SYNC_ANY          0
 #define RELAY_SYNC_NONE_OR_ONE  1
@@ -90,6 +91,7 @@
 
 // Relay requests flood protection window - in seconds
 #define RELAY_FLOOD_WINDOW      3
+
 // Allowed actual relay changes inside requests flood protection window
 #define RELAY_FLOOD_CHANGES     5
 

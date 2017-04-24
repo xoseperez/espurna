@@ -30,6 +30,18 @@ void buttonMQTT(unsigned char id, uint8_t event) {
 }
 #endif
 
+int buttonFromRelay(unsigned int relayID) {
+    for (unsigned int i=0; i < _buttons.size(); i++) {
+        if (_buttons[i].relayID == relayID) return i;
+    }
+    return -1;
+}
+
+bool buttonState(unsigned char id) {
+    if (id >= _buttons.size()) return false;
+    return _buttons[id].button->pressed();
+}
+
 unsigned char buttonAction(unsigned char id, unsigned char event) {
     if (id >= _buttons.size()) return BUTTON_MODE_NONE;
     unsigned long actions = _buttons[id].actions;
