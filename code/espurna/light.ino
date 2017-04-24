@@ -138,8 +138,7 @@ void color_temperature2array(unsigned int temperature, unsigned int * array) {
 
 // Converts a color intensity value (0..255) to a pwm value
 // This takes care of positive or negative logic
-unsigned int intensity2pwm(unsigned int intensity)
-{
+unsigned int _intensity2pwm(unsigned int intensity) {
     unsigned int pwm;
 
     #if ENABLE_GAMMA_CORRECTION
@@ -183,11 +182,11 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         // Check state
         if (!state) red = green = blue = white = 0;
 
-        analogWrite(RGBW_RED_PIN, intensity2pwm(red));
-        analogWrite(RGBW_GREEN_PIN, intensity2pwm(green));
-        analogWrite(RGBW_BLUE_PIN, intensity2pwm(blue));
+        analogWrite(RGBW_RED_PIN, _intensity2pwm(red));
+        analogWrite(RGBW_GREEN_PIN, _intensity2pwm(green));
+        analogWrite(RGBW_BLUE_PIN, _intensity2pwm(blue));
         #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-            analogWrite(RGBW_WHITE_PIN, intensity2pwm(white));
+            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white));
         #endif
     #endif
 
