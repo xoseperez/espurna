@@ -142,9 +142,9 @@ unsigned int _intensity2pwm(unsigned int intensity) {
     unsigned int pwm;
 
     #if ENABLE_GAMMA_CORRECTION
-        pwm = (intensity < GAMMA_TABLE_SIZE) ? gamma_table[intensity] : PWM_RANGE;
+        pwm = (intensity < GAMMA_TABLE_SIZE) ? gamma_table[intensity] : LIGHT_PWM_RANGE;
     #else
-        // Support integer multiples of 256 (-1) for the PWM_RANGE
+        // Support integer multiples of 256 (-1) for the LIGHT_PWM_RANGE
         // The divide should happen at compile time
         pwm = intensity * ( (LIGHT_PWM_RANGE+1) / (LIGHT_MAX_VALUE+1) );
     #endif
