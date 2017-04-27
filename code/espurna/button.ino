@@ -108,8 +108,8 @@ void buttonSetup() {
     #ifdef SONOFF_DUAL
 
         unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), 0, 1});
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), 0, 2});
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, BUTTON3_RELAY});
 
     #else
@@ -176,7 +176,7 @@ void buttonLoop() {
 
                             bool status = (value & (1 << i)) > 0;
 
-                            // Cjeck if the status for that relay has changed
+                            // Check if the status for that relay has changed
                             if (relayStatus(i) != status) {
                                 buttonEvent(i, BUTTON_EVENT_CLICK);
                                 break;

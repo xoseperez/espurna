@@ -114,7 +114,7 @@ unsigned int getReactivePower() {
 
 double getCurrent() {
     double current = hlw8012.getCurrent();
-    if (POW_MIN_CURRENT > current || current > POW_MAX_CURRENT) power = 0;
+    if (POW_MIN_CURRENT > current || current > POW_MAX_CURRENT) current = 0;
     return current;
 }
 
