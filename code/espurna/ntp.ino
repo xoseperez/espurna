@@ -15,7 +15,13 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 void ntpConnect() {
-    NTP.begin(NTP_SERVER, NTP_TIME_OFFSET, NTP_DAY_LIGHT);
+    NTP.begin(
+        getSetting("ntpServer1", NTP_SERVER),
+        getSetting("ntpOffset", NTP_TIME_OFFSET).toInt(),
+        getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1
+    );
+    if (getSetting("ntpServer2")) NTP.setNtpServerName(getSetting("ntpServer2"), 1);
+    if (getSetting("ntpServer3")) NTP.setNtpServerName(getSetting("ntpServer3"), 2);
     NTP.setInterval(NTP_UPDATE_INTERVAL);
 }
 

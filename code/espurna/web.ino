@@ -159,7 +159,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool save = false;
         bool changed = false;
         bool changedMQTT = false;
+        bool changedNTP = false;
         bool apiEnabled = false;
+        bool dstEnabled = false;
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
@@ -249,6 +251,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 apiEnabled = true;
                 continue;
             }
+            if (key == "ntpDST") {
+                dstEnabled = true;
+                continue;
+            }
             #if ENABLE_FAUXMO
                 if (key == "fauxmoEnabled") {
                     fauxmoEnabled = true;
@@ -281,6 +287,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setSetting(key, value);
                 save = changed = true;
                 if (key.startsWith("mqtt")) changedMQTT = true;
+                if (key.startsWith("ntp")) changedNTP = true;
             }
 
         }
@@ -291,6 +298,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (apiEnabled != (getSetting("apiEnabled").toInt() == 1)) {
                 setSetting("apiEnabled", apiEnabled);
                 save = changed = true;
+            }
+            if (dstEnabled != (getSetting("ntpDST").toInt() == 1)) {
+                setSetting("ntpDST", dstEnabled);
+                save = changed = changedNTP = true;
             }
             #if ENABLE_FAUXMO
                 if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
@@ -351,6 +362,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (changedMQTT) {
                 mqttDisconnect();
             }
+
+            // Check if we should reconfigure NTP connection
+            if (changedNTP) {
+                ntpConnect();
+            }
+
         }
 
         if (changed) {
@@ -399,6 +416,11 @@ void _wsStart(uint32_t client_id) {
         root["deviceip"] = getIP();
 
         root["ntpStatus"] = ntpConnected();
+        root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
+        root["ntpServer2"] = getSetting("ntpServer2");
+        root["ntpServer3"] = getSetting("ntpServer3");
+        root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+        root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
 
         root["mqttStatus"] = mqttConnected();
         root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
