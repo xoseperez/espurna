@@ -234,6 +234,7 @@ void relaySave() {
         bit += bit;
     }
     EEPROM.write(EEPROM_RELAY_STATUS, mask);
+    DEBUG_MSG_P(PSTR("[RELAY] Saving mask: %d\n"), mask);
     EEPROM.commit();
 }
 
@@ -241,8 +242,10 @@ void relayRetrieve(bool invert) {
     recursive = true;
     unsigned char bit = 1;
     unsigned char mask = invert ? ~EEPROM.read(EEPROM_RELAY_STATUS) : EEPROM.read(EEPROM_RELAY_STATUS);
-    for (unsigned int i=0; i < _relays.size(); i++) {
-        relayStatus(i, ((mask & bit) == bit));
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
+    for (unsigned int id=0; id < _relays.size(); id++) {
+        _relays[id].scheduledStatus = ((mask & bit) == bit);
+        _relays[id].scheduledReport = true;
         bit += bit;
     }
     if (invert) {
