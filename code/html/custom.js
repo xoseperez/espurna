@@ -449,6 +449,13 @@ function processData(data) {
             return;
         }
 
+        // Look for SPANs
+        var element = $("span[name=" + key + "]");
+        if (element.length > 0) {
+            element.html(data[key]);
+            return;
+        }
+
         // Look for SELECTs
         var element = $("select[name=" + key + "]");
         if (element.length > 0) {

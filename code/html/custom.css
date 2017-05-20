@@ -130,3 +130,22 @@ input[name=upgrade] {
     margin-top: -50px;
     margin-left: -200px;
 }
+
+div.state {
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+    padding-top: 30px;
+}
+
+.state div {
+    font-size: 80%;
+}
+
+.state span {
+    font-size: 80%;
+    font-weight: bold;
+}
+
+.right {
+    text-align: right;
+}
