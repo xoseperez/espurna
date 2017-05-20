@@ -62,7 +62,6 @@
 #define RELAY_MODE_ON           1
 #define RELAY_MODE_SAME         2
 #define RELAY_MODE_TOOGLE       3
-#define RELAY_MODE_FOLLOW       4
 
 #define RELAY_SYNC_ANY          0
 #define RELAY_SYNC_NONE_OR_ONE  1
