@@ -19,6 +19,7 @@ my9291 * _my9291;
 #endif
 
 #if ENABLE_GAMMA_CORRECTION
+
     #define GAMMA_TABLE_SIZE (256)
     #undef LIGHT_PWM_RANGE
     #define LIGHT_PWM_RANGE (4095)
@@ -41,6 +42,7 @@ my9291 * _my9291;
     2315,2346,2378,2410,2442,2474,2507,2540,2573,2606,2640,2674,2708,2743,2778,2813,
     2849,2884,2920,2957,2993,3030,3067,3105,3143,3181,3219,3258,3297,3336,3376,3416,
     3456,3496,3537,3578,3619,3661,3703,3745,3788,3831,3874,3918,3962,4006,4050,4095 };
+
 #endif
 
 #ifndef LIGHT_PWM_FREQUENCY
@@ -164,7 +166,7 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
 
     unsigned int white = 0;
 
-    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
 		// If all set to the same value use white instead
 		if ((red == green) && (green == blue)) {
 		    white = red;
@@ -177,7 +179,7 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         _my9291->setColor((my9291_color_t) { red, green, blue, white });
     #endif
 
-    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
+    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
 
         // Check state
         if (!state) red = green = blue = white = 0;
@@ -187,6 +189,10 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         analogWrite(RGBW_BLUE_PIN, _intensity2pwm(blue));
         #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
             analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white));
+        #endif
+        #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
+            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white));
+            analogWrite(RGBW_WHITE2_PIN, _intensity2pwm(white));
         #endif
     #endif
 
@@ -287,6 +293,10 @@ void lightSetup() {
         pinMode(RGBW_BLUE_PIN, OUTPUT);
 		#if LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW
 	        pinMode(RGBW_WHITE_PIN, OUTPUT);
+		#endif
+        #if LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W
+	        pinMode(RGBW_WHITE_PIN, OUTPUT);
+            pinMode(RGBW_WHITE2_PIN, OUTPUT);
 		#endif
     #endif
 

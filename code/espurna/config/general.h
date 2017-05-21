@@ -232,6 +232,7 @@
 #define LIGHT_PROVIDER_RGB      2
 #define LIGHT_PROVIDER_RGBW     3
 #define LIGHT_PROVIDER_MY9192   4
+#define LIGHT_PROVIDER_RGB2W    5
 
 #define LIGHT_DEFAULT_COLOR     "#000080"
 #define LIGHT_SAVE_DELAY        5

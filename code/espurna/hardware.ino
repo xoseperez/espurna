@@ -264,6 +264,20 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 1);
     #endif
 
+    #ifdef H801_LED_CONTROLLER
+        setSetting("board", 24);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_RGB2W);
+        setSetting("ledGPIO", 5, 1);
+        setSetting("ledLogic", 1, 1);
+        setSetting("redGPIO", 15);
+        setSetting("greenGPIO", 13);
+        setSetting("blueGPIO", 12);
+        setSetting("whiteGPIO", 14);
+        setSetting("white2GPIO", 4);
+        setSetting("lightLogic", 1);
+    #endif
+
     saveSettings();
 
 }

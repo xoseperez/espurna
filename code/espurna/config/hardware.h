@@ -299,16 +299,14 @@
 // HUACANXING H801
 // -----------------------------------------------------------------------------
 
-#elif defined(H801)
+#elif defined(H801_LED_CONTROLLER)
 
     #define MANUFACTURER        "HUACANXING"
     #define DEVICE              "H801"
     #define LED1_PIN            5
     #define LED1_PIN_INVERSE    1
-    #define LED2_PIN            2
-    #define LED2_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGBW
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGB2W
 
     #undef RGBW_INVERSE_LOGIC
     #undef RGBW_RED_PIN
@@ -316,12 +314,12 @@
     #undef RGBW_BLUE_PIN
     #undef RGBW_WHITE_PIN
 
-    #define RGBW_INVERSE_LOGIC      0
+    #define RGBW_INVERSE_LOGIC      1
     #define RGBW_RED_PIN            15
     #define RGBW_GREEN_PIN          13
     #define RGBW_BLUE_PIN           12
     #define RGBW_WHITE_PIN          14
-    //#define RGBW_WHITE_PIN          4 <= warm white
+    #define RGBW_WHITE2_PIN         4
 
 // -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
