@@ -208,7 +208,7 @@
 #define MQTT_DISCONNECT_EVENT   1
 #define MQTT_MESSAGE_EVENT      2
 
-// Custom get and set postfixes
+// Custom get and set postfixes6+
 // Use something like "/status" or "/set", with leading slash
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         ""
@@ -226,6 +226,8 @@
 // -----------------------------------------------------------------------------
 // LIGHT
 // -----------------------------------------------------------------------------
+
+#define ENABLE_GAMMA_CORRECTION 0
 
 #define LIGHT_PROVIDER_NONE     0
 #define LIGHT_PROVIDER_WS2812   1
