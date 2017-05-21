@@ -3,6 +3,27 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.8.0] 2017-05-21
+### Added
+- Added gamma correction to RGB strips. Thanks to Chris Ward.
+- Added support for Huacanxing H801 WiFi LED Controller. Thanks to Minh Phuong Ly.
+- Issue #138. Added NTP configuration from web interface
+- Issue #128. Report color when booting and in heartbeat stream.
+- Issue #126. Show NTP status in web interface.
+- Added filter limits on POW readings.
+- Added color temperature to RGB calculation. Thanks to Sacha Telgenhof.
+- Issue #120. Added relay flood protection. Thanks to Izik Dubnov.
+- Support for "#RRGGBB", "RRR,GGG,BBB" and "WWW" color formats.
+- Issue #117. Added build date & time to web interface.
+
+### Fix
+- Fix MQTT_RELAY board conifugration. Thanks to Denis French.
+- Issue #125. Fix bug in relay status reading from EEPROM
+- Issue #127. Fix button action in DUAL.
+- Fix bug in Sonoff POW current reading. Thanks to Emmanuel Tatto.
+- Minimizing my9291 flickering when booting.
+- Fix conditional flags in hardware.ino to support Arduino IDE.
+
 ## [1.7.1] 2017-03-28
 ### Fix
 - Issue #113. Fix restoring color from EEPROM upon reboot

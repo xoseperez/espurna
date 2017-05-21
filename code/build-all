@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Environments to build
-ENVIRONMENTS="espurna-debug sonoff-debug sonoff-dht22-debug sonoff-ds18b20-debug sonoff-pow-debug sonoff-dual-debug sonoff-4ch-debug 1ch-inching-debug electrodragon-debug ecoplug-debug jangoe-debug ai-light-debug led-controller-debug"
+ENVIRONMENTS="espurna-debug sonoff-debug sonoff-dht22-debug sonoff-ds18b20-debug sonoff-pow-debug sonoff-dual-debug sonoff-4ch-debug 1ch-inching-debug electrodragon-debug ecoplug-debug jangoe-debug ai-light-debug led-controller-debug h801-debug"
 
 # Get current version
 version=`cat espurna/config/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
