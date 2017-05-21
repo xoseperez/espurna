@@ -99,7 +99,9 @@ void heartbeat() {
 
 void hardwareSetup() {
     EEPROM.begin(4096);
-    Serial.begin(SERIAL_BAUDRATE);
+    #ifdef DEBUG_PORT
+        DEBUG_PORT.begin(SERIAL_BAUDRATE);
+    #endif
     #if not EMBEDDED_WEB
         SPIFFS.begin();
     #endif

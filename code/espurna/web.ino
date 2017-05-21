@@ -862,19 +862,25 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            Update.printError(Serial);
+            #ifdef DEBUG_PORT
+                Update.printError(DEBUG_PORT);
+            #endif
         }
     }
     if (!Update.hasError()) {
         if (Update.write(data, len) != len) {
-            Update.printError(Serial);
+            #ifdef DEBUG_PORT
+                Update.printError(DEBUG_PORT);
+            #endif
         }
     }
     if (final) {
         if (Update.end(true)){
             DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
         } else {
-            Update.printError(Serial);
+            #ifdef DEBUG_PORT
+                Update.printError(DEBUG_PORT);
+            #endif
         }
     } else {
         DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
