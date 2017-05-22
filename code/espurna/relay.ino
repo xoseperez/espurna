@@ -36,6 +36,8 @@ unsigned char _dual_status = 0;
 
 void relayProviderStatus(unsigned char id, bool status) {
 
+    if (id >= _relays.size()) return;
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         _dual_status ^= (1 << id);
         Serial.flush();
@@ -58,8 +60,9 @@ void relayProviderStatus(unsigned char id, bool status) {
 
 bool relayProviderStatus(unsigned char id) {
 
+    if (id >= _relays.size()) return false;
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
-        if (id >= 2) return false;
         return ((_dual_status & (1 << id)) > 0);
     #endif
 
@@ -68,7 +71,6 @@ bool relayProviderStatus(unsigned char id) {
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
-        if (id >= _relays.size()) return false;
         bool status = (digitalRead(_relays[id].pin) == HIGH);
         return _relays[id].reverse ? !status : status;
     #endif

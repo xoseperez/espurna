@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.8.1] 2017-05-22
+### Fix
+- Issue #140. Fix no relay control bug in Sonoff Dual
+
 ## [1.8.0] 2017-05-21
 ### Added
 - Added gamma correction to RGB strips. Thanks to Chris Ward.
