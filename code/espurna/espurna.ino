@@ -102,7 +102,7 @@ void hardwareSetup() {
     #ifdef DEBUG_PORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
     #endif
-    #if SONOFF_DUAL
+    #ifdef SONOFF_DUAL
         Serial.begin(SERIAL_BAUDRATE);
     #endif
     #if not EMBEDDED_WEB
