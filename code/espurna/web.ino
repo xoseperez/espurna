@@ -534,7 +534,7 @@ void _wsStart(uint32_t client_id) {
             root["powReactivePower"] = getReactivePower();
             root["powVoltage"] = getVoltage();
             root["powCurrent"] = String(getCurrent(), 3);
-            root["powPowerFactor"] = getPowerFactor();
+            root["powPowerFactor"] = String(getPowerFactor(), 2);
         #endif
 
         root["maxNetworks"] = WIFI_MAX_NETWORKS;

@@ -122,8 +122,8 @@ unsigned int getVoltage() {
     return hlw8012.getVoltage();
 }
 
-unsigned int getPowerFactor() {
-    return (int) (100 * hlw8012.getPowerFactor());
+double getPowerFactor() {
+    return hlw8012.getPowerFactor();
 }
 
 // -----------------------------------------------------------------------------
@@ -203,7 +203,7 @@ void powLoop() {
         unsigned int voltage = getVoltage();
         double current = getCurrent();
         unsigned int apparent = getApparentPower();
-        unsigned int factor = getPowerFactor();
+        double factor = getPowerFactor();
         unsigned int reactive = getReactivePower();
 
         if (power > 0) {
@@ -239,7 +239,7 @@ void powLoop() {
         root["powVoltage"] = voltage;
         root["powApparentPower"] = apparent;
         root["powReactivePower"] = reactive;
-        root["powPowerFactor"] = factor;
+        root["powPowerFactor"] = String(factor, 2);
 
         String output;
         root.printTo(output);
@@ -252,8 +252,8 @@ void powLoop() {
             voltage = voltage_sum / POW_REPORT_EVERY;
             apparent = current * voltage;
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
-            factor = (apparent > 0) ? 100 * power / apparent : 100;
-            if (factor > 100) factor = 100;
+            factor = (apparent > 0) ? (double) power / apparent : 1;
+            if (factor > 1) factor = 1;
 
             // Calculate energy increment (ppower times time) and create C-string
             double energy_inc = (double) power * POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
@@ -269,7 +269,7 @@ void powLoop() {
             mqttSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
             mqttSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
             mqttSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
-            mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor).c_str());
+            mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
 
             // Report values to Domoticz
             #if ENABLE_DOMOTICZ
