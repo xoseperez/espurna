@@ -157,7 +157,7 @@ void powSetup() {
         snprintf(buffer, len, "%d", getActivePower());
     });
     apiRegister(POW_CURRENT_TOPIC, POW_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        dtostrf(getCurrent(), len-1, 2, buffer);
+        dtostrf(getCurrent(), len-1, 3, buffer);
     });
     apiRegister(POW_VOLTAGE_TOPIC, POW_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getVoltage());
@@ -235,7 +235,7 @@ void powLoop() {
 
         root["powVisible"] = 1;
         root["powActivePower"] = power;
-        root["powCurrent"] = current;
+        root["powCurrent"] = String(current, 3);
         root["powVoltage"] = voltage;
         root["powApparentPower"] = apparent;
         root["powReactivePower"] = reactive;
@@ -265,7 +265,7 @@ void powLoop() {
             // Report values to MQTT broker
             mqttSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
             mqttSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
-            mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current).c_str());
+            mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
             mqttSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
             mqttSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
             mqttSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());

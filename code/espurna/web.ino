@@ -533,7 +533,7 @@ void _wsStart(uint32_t client_id) {
             root["powApparentPower"] = getApparentPower();
             root["powReactivePower"] = getReactivePower();
             root["powVoltage"] = getVoltage();
-            root["powCurrent"] = getCurrent();
+            root["powCurrent"] = String(getCurrent(), 3);
             root["powPowerFactor"] = getPowerFactor();
         #endif
 
