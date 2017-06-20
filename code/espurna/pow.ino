@@ -23,11 +23,11 @@ bool _powEnabled = false;
 
 // When using interrupts we have to call the library entry point
 // whenever an interrupt is triggered
-void hlw8012_cf1_interrupt() {
+void ICACHE_RAM_ATTR hlw8012_cf1_interrupt() {
     hlw8012.cf1_interrupt();
 }
 
-void hlw8012_cf_interrupt() {
+void ICACHE_RAM_ATTR hlw8012_cf_interrupt() {
     hlw8012.cf_interrupt();
 }
 
