@@ -21,9 +21,9 @@ typedef struct {
     unsigned int scheduledStatusTime;
     bool scheduledStatus;
     bool scheduledReport;
+    Ticker pulseTicker;
 } relay_t;
 std::vector<relay_t> _relays;
-Ticker pulseTicker;
 bool recursive = false;
 
 #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
@@ -105,11 +105,11 @@ void relayPulse(unsigned char id) {
     bool status = relayStatus(id);
     bool pulseStatus = (relayPulseMode == RELAY_PULSE_ON);
     if (pulseStatus == status) {
-        pulseTicker.detach();
+        _relays[id].pulseTicker.detach();
         return;
     }
 
-    pulseTicker.once(
+   _relays[id].pulseTicker.once(
         getSetting("relayPulseTime", RELAY_PULSE_TIME).toInt(),
         relayToggle,
         id
