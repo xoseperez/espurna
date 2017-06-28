@@ -122,8 +122,8 @@ unsigned int getVoltage() {
     return hlw8012.getVoltage();
 }
 
-unsigned int getPowerFactor() {
-    return (int) (100 * hlw8012.getPowerFactor());
+double getPowerFactor() {
+    return hlw8012.getPowerFactor();
 }
 
 // -----------------------------------------------------------------------------
@@ -157,7 +157,7 @@ void powSetup() {
         snprintf(buffer, len, "%d", getActivePower());
     });
     apiRegister(POW_CURRENT_TOPIC, POW_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        dtostrf(getCurrent(), len-1, 2, buffer);
+        dtostrf(getCurrent(), len-1, 3, buffer);
     });
     apiRegister(POW_VOLTAGE_TOPIC, POW_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getVoltage());
@@ -203,7 +203,7 @@ void powLoop() {
         unsigned int voltage = getVoltage();
         double current = getCurrent();
         unsigned int apparent = getApparentPower();
-        unsigned int factor = getPowerFactor();
+        double factor = getPowerFactor();
         unsigned int reactive = getReactivePower();
 
         if (power > 0) {
@@ -235,11 +235,11 @@ void powLoop() {
 
         root["powVisible"] = 1;
         root["powActivePower"] = power;
-        root["powCurrent"] = current;
+        root["powCurrent"] = String(current, 3);
         root["powVoltage"] = voltage;
         root["powApparentPower"] = apparent;
         root["powReactivePower"] = reactive;
-        root["powPowerFactor"] = factor;
+        root["powPowerFactor"] = String(factor, 2);
 
         String output;
         root.printTo(output);
@@ -252,8 +252,8 @@ void powLoop() {
             voltage = voltage_sum / POW_REPORT_EVERY;
             apparent = current * voltage;
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
-            factor = (apparent > 0) ? 100 * power / apparent : 100;
-            if (factor > 100) factor = 100;
+            factor = (apparent > 0) ? (double) power / apparent : 1;
+            if (factor > 1) factor = 1;
 
             // Calculate energy increment (ppower times time) and create C-string
             double energy_inc = (double) power * POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
@@ -265,11 +265,11 @@ void powLoop() {
             // Report values to MQTT broker
             mqttSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
             mqttSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
-            mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current).c_str());
+            mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
             mqttSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
             mqttSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
             mqttSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
-            mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor).c_str());
+            mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
 
             // Report values to Domoticz
             #if ENABLE_DOMOTICZ
