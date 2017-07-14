@@ -182,7 +182,7 @@ void wifiSetup() {
         #if ENABLE_MDNS
     	    if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
                 if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
-                    MDNS.addService("http", "tcp", 80);
+                    MDNS.addService("http", "tcp", getSetting("webPort", WEBSERVER_PORT).toInt());
     	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     	        } else {
     	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
