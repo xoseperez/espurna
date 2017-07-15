@@ -348,6 +348,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_FAUXMO
                 fauxmoConfigure();
             #endif
+            #if ENABLE_INFLUXDB
+                influxDBConfigure();
+            #endif
             buildTopics();
 
             #if ENABLE_RF
@@ -491,6 +494,15 @@ void _wsStart(uint32_t client_id) {
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
             #endif
 
+        #endif
+
+        #if ENABLE_INFLUXDB
+            root["idbVisible"] = 1;
+            root["idbHost"] = getSetting("idbHost");
+            root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
+            root["idbDatabase"] = getSetting("idbDatabase");
+            root["idbUsername"] = getSetting("idbUsername");
+            root["idbPassword"] = getSetting("idbPassword");
         #endif
 
         #if ENABLE_FAUXMO

@@ -386,6 +386,15 @@ void relayMQTT(unsigned char id) {
     mqttSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
 
+#if ENABLE_INFLUXDB
+void relayInfluxDB(unsigned char id) {
+    if (id >= _relays.size()) return;
+    char buffer[10];
+    sprintf(buffer, "%s,id=%d", MQTT_TOPIC_RELAY, id);
+    influxDBSend(buffer, relayStatus(id) ? "1" : "0");
+}
+#endif
+
 void relayMQTT() {
     for (unsigned int i=0; i < _relays.size(); i++) {
         relayMQTT(i);
@@ -526,6 +535,10 @@ void relayLoop(void) {
 
             #if ENABLE_DOMOTICZ
                 relayDomoticzSend(id);
+            #endif
+
+            #if ENABLE_INFLUXDB
+                relayInfluxDB(id);
             #endif
 
             _relays[id].scheduledReport = false;

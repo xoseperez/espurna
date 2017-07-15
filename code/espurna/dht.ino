@@ -93,6 +93,11 @@ void dhtLoop() {
             }
             #endif
 
+            #if ENABLE_INFLUXDB
+                influxDBSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+                influxDBSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+            #endif
+
             // Update websocket clients
             char buffer[100];
             sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);

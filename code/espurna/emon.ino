@@ -189,6 +189,12 @@ void powerMonitorLoop() {
             }
             #endif
 
+            #if ENABLE_INFLUXDB
+            influxDBSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), power);
+            //influxDBSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), c);
+            //influxDBSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), e);
+            #endif
+
             // Reset counters
             sum = measurements = 0;
 

@@ -183,6 +183,7 @@
 #define MQTT_TOPIC_APP          "app"
 #define MQTT_TOPIC_INTERVAL     "interval"
 #define MQTT_TOPIC_HOSTNAME     "hostname"
+#define MQTT_TOPIC_ANALOG       "analog"
 
 // Periodic reports
 #define MQTT_REPORT_STATUS      1
@@ -260,6 +261,15 @@
 #endif
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"
+
+// -----------------------------------------------------------------------------
+// INFLUXDB
+// -----------------------------------------------------------------------------
+
+#ifndef ENABLE_INFLUXDB
+    #define ENABLE_INFLUXDB     1
+#endif
+#define INFLUXDB_PORT           8086
 
 // -----------------------------------------------------------------------------
 // NTP

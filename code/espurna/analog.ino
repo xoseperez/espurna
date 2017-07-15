@@ -47,6 +47,11 @@ void analogLoop() {
             domoticzSend("dczAnaIdx", 0, String(analog).c_str());
         #endif
 
+        // Send to InfluxDB
+        #if ENABLE_INFLUXDB
+            influxDBSend(MQTT_TOPIC_ANALOG, analog);
+        #endif
+
         // Update websocket clients
         char buffer[100];
         sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);

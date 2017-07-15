@@ -106,6 +106,10 @@
                             <a href="#" class="pure-menu-link" data="panel-domoticz">DOMOTICZ</a>
                         </li>
 
+                        <li class="pure-menu-item module module-idb">
+                            <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
+                        </li>
+
                         <li class="pure-menu-item module module-pow">
                             <a href="#" class="pure-menu-link" data="panel-power">POWER</a>
                         </li>
@@ -451,7 +455,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttPassword">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="text" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
                                 </div>
 
                                 <div class="pure-g">
@@ -582,6 +586,49 @@
                                 </div>
 
                                 <div id="idxs">
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-idb">
+
+                        <div class="header">
+                            <h1>INFLUXDB</h1>
+                            <h2>
+                                Configure the connection to your InfluxDB server. Leave the host field empty to disable InfluxDB connection.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbHost">Host</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbHost" type="text" tabindex="41" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbPort">Port</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPort" type="text" tabindex="42" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbDatabase">Database</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbDatabase" type="text" tabindex="43" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbUsername">Username</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbPassword">Password</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" />
                                 </div>
 
                             </fieldset>
