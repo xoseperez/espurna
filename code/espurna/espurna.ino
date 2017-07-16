@@ -51,6 +51,7 @@ void heartbeat() {
         #endif
     }
 
+
     #if (MQTT_REPORT_INTERVAL)
         mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
     #endif
@@ -74,9 +75,15 @@ void heartbeat() {
     #endif
     #if (MQTT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        #if ENABLE_INFLUXDB
+        influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        #endif
     #endif
     #if (MQTT_REPORT_FREEHEAP)
         mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        #if ENABLE_INFLUXDB
+        influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        #endif
     #endif
     #if (MQTT_REPORT_RELAY)
         relayMQTT();
@@ -188,6 +195,9 @@ void setup() {
     #endif
     #if ENABLE_NOFUSS
         nofussSetup();
+    #endif
+    #if ENABLE_INFLUXDB
+        influxDBSetup();
     #endif
     #if ENABLE_POW
         powSetup();

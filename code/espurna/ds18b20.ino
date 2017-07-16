@@ -99,6 +99,10 @@ void dsLoop() {
                 domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
             #endif
 
+            #if ENABLE_INFLUXDB
+                influxDBSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+            #endif
+
             // Update websocket clients
             char buffer[100];
             sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);

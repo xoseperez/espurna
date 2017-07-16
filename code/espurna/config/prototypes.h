@@ -16,3 +16,4 @@ template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 template<typename T> void domoticzSend(const char * key, T value);
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue);
+template<typename T> bool influxDBSend(const char * topic, T payload);

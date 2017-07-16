@@ -286,6 +286,16 @@ void powLoop() {
             }
             #endif
 
+            #if ENABLE_INFLUXDB
+            influxDBSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
+            //influxDBSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
+            //influxDBSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
+            //influxDBSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
+            //influxDBSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
+            //influxDBSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
+            //influxDBSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
+            #endif
+
             // Reset counters
             power_sum = current_sum = voltage_sum = 0;
             report_count = POW_REPORT_EVERY;
