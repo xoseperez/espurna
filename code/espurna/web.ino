@@ -86,6 +86,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action.c_str());
 
         if (action.equals("reset")) {
+            customReset(CUSTOM_RESET_WEB);
             ESP.restart();
         }
 
@@ -779,7 +780,10 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            deferred.once_ms(100, []() { ESP.restart(); });
+            deferred.once_ms(100, []() { 
+                customReset(CUSTOM_RESET_RPC);
+                ESP.restart();
+            });
         }
 
     }
@@ -863,6 +867,7 @@ void _onUpgrade(AsyncWebServerRequest *request) {
     response->addHeader("Connection", "close");
     if (!Update.hasError()) {
         deferred.once_ms(100, []() {
+            customReset(CUSTOM_RESET_UPGRADE);
             ESP.restart();
         });
     }

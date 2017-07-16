@@ -166,6 +166,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     String t = mqttSubtopic((char *) topic);
     if (t.equals(MQTT_TOPIC_ACTION)) {
         if (strcmp(message, MQTT_ACTION_RESET) == 0) {
+            customReset(CUSTOM_RESET_MQTT);
             ESP.restart();
         }
     }

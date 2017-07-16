@@ -29,7 +29,41 @@
 
 #define EEPROM_RELAY_STATUS     0
 #define EEPROM_ENERGY_COUNT     1
-#define EEPROM_DATA_END         5
+#define EEPROM_CUSTOM_RESET     5
+#define EEPROM_DATA_END         6
+
+//--------------------------------------------------------------------------------
+// RESET
+//--------------------------------------------------------------------------------
+
+#define CUSTOM_RESET_HARDWARE   1
+#define CUSTOM_RESET_WEB        2
+#define CUSTOM_RESET_TERMINAL   3
+#define CUSTOM_RESET_MQTT       4
+#define CUSTOM_RESET_RPC        5
+#define CUSTOM_RESET_OTA        6
+#define CUSTOM_RESET_NOFUSS     8
+#define CUSTOM_RESET_UPGRADE    9
+#define CUSTOM_RESET_FACTORY    10
+
+#define CUSTOM_RESET_MAX        10
+
+#include <pgmspace.h>
+
+PROGMEM const char custom_reset_hardware[] = "Hardware button";
+PROGMEM const char custom_reset_web[] = "Reset from web interface";
+PROGMEM const char custom_reset_terminal[] = "Reset from terminal";
+PROGMEM const char custom_reset_mqtt[] = "Reset from MQTT";
+PROGMEM const char custom_reset_rpc[] = "Reset from RPC";
+PROGMEM const char custom_reset_ota[] = "Reset after successful OTA update";
+PROGMEM const char custom_reset_nofuss[] = "Reset after successful NoFUSS update";
+PROGMEM const char custom_reset_upgrade[] = "Reset after successful web update";
+PROGMEM const char custom_reset_factory[] = "Factory reset";
+PROGMEM const char* const custom_reset_string[] = {
+    custom_reset_hardware, custom_reset_web, custom_reset_terminal,
+    custom_reset_mqtt, custom_reset_rpc, custom_reset_ota,
+    custom_reset_nofuss, custom_reset_upgrade, custom_reset_factory
+};
 
 //--------------------------------------------------------------------------------
 // BUTTON
