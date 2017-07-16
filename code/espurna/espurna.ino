@@ -123,6 +123,9 @@ void hardwareSetup() {
     EEPROM.begin(4096);
     #ifdef DEBUG_PORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
+        if (customReset() == CUSTOM_RESET_HARDWARE) {
+            DEBUG_PORT.setDebugOutput(true);
+        }
     #endif
     #ifdef SONOFF_DUAL
         Serial.begin(SERIAL_BAUDRATE);
