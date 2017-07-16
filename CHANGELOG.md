@@ -3,6 +3,23 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.8.2] 2017-07-16
+### Added
+- InfluxDB support via HTTP API
+- Added custom reset reason to debug log
+- Enable WIFI debug on hardware reset (button long click)
+
+### Changed
+- Issue #159. Allow decimals in relay pulse interval
+- Updated HLW8012 library
+
+### Fix
+- Issue #148. Fix bug in conditional compilation check
+- Issue #149. Using different pulse counters for each relay (thanks to Lauris Ieviņš)
+- Issue #141. Limit relay pulse interval to 60s
+- Fixed units for apparent & reactive power (thanks to Lauris Ieviņš)
+- Fixed mDNS setup when using custom HTTP port for web interface
+
 ## [1.8.1] 2017-05-22
 ### Fix
 - Issue #140. Fix no relay control bug in Sonoff Dual

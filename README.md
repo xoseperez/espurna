@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.8.1**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.8.2**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 ## Features
 
@@ -28,6 +28,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
 * [**Home Assistant**](https://home-assistant.io/) integration via MQTT
+* [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * Support for different **sensors**
     * DHT11 / DHT22 / DHT21 / AM2301 (supports celsius & fahrenheit reporting)
     * DS18B20 (supports celsius & fahrenheit reporting)
