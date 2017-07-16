@@ -441,7 +441,7 @@ void _wsStart(uint32_t client_id) {
 
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);
         root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
-        root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME);
+        root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
         if (relayCount() > 1) {
             root["multirelayVisible"] = 1;
             root["relaySync"] = getSetting("relaySync", RELAY_SYNC);

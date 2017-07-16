@@ -76,8 +76,8 @@
 #define RELAY_PROVIDER_DUAL     1
 #define RELAY_PROVIDER_LIGHT    2
 
-// Pulse time in seconds
-#define RELAY_PULSE_TIME        1
+// Pulse time in milliseconds
+#define RELAY_PULSE_TIME        1.0
 
 // 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_MODE         		RELAY_MODE_OFF

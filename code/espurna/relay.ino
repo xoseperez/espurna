@@ -101,6 +101,8 @@ void relayPulse(unsigned char id) {
 
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     if (relayPulseMode == RELAY_PULSE_NONE) return;
+    long relayPulseTime = 1000.0 * getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
+    if (relayPulseTime == 0) return;
 
     bool status = relayStatus(id);
     bool pulseStatus = (relayPulseMode == RELAY_PULSE_ON);
@@ -109,11 +111,7 @@ void relayPulse(unsigned char id) {
         return;
     }
 
-   _relays[id].pulseTicker.once(
-        getSetting("relayPulseTime", RELAY_PULSE_TIME).toInt(),
-        relayToggle,
-        id
-    );
+   _relays[id].pulseTicker.once_ms(relayPulseTime, relayToggle, id);
 
 }
 
