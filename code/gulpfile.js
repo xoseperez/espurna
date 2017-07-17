@@ -25,19 +25,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 const fs = require('fs');
 const gulp = require('gulp');
-const plumber = require('gulp-plumber');
 const htmlmin = require('gulp-htmlmin');
 const cleancss = require('gulp-clean-css');
 const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const del = require('del');
-const useref = require('gulp-useref');
-const gulpif = require('gulp-if');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 
-const dataFolder = 'espurna/data/';
+const dataFolder = 'espurna/static/';
 
 gulp.task('clean', function() {
     del([ dataFolder + '*']);
@@ -55,7 +52,7 @@ gulp.task('files', ['clean'], function() {
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
     var source = dataFolder + 'index.html.gz';
-    var destination = dataFolder + '../static/index.html.gz.h';
+    var destination = dataFolder + 'index.html.gz.h';
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
@@ -75,6 +72,8 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
     wstream.write('\n};')
     wstream.end();
+
+    del([source]);
 
 });
 
@@ -96,21 +95,5 @@ gulp.task('buildfs_inline', ['clean'], function() {
         .pipe(gzip())
         .pipe(gulp.dest(dataFolder));
 })
-
-gulp.task('buildfs_split', ['files'], function() {
-    return gulp.src('html/*.html')
-        .pipe(useref())
-        .pipe(plumber())
-        .pipe(gulpif('*.css', cleancss()))
-        .pipe(gulpif('*.js', uglify()))
-        .pipe(gulpif('*.html', htmlmin({
-            collapseWhitespace: true,
-            removeComments: true,
-            minifyCSS: true,
-            minifyJS: true
-        })))
-        .pipe(gzip())
-        .pipe(gulp.dest(dataFolder));
-});
 
 gulp.task('default', ['buildfs_embeded']);

@@ -23,11 +23,11 @@ bool _powEnabled = false;
 
 // When using interrupts we have to call the library entry point
 // whenever an interrupt is triggered
-void hlw8012_cf1_interrupt() {
+void ICACHE_RAM_ATTR hlw8012_cf1_interrupt() {
     hlw8012.cf1_interrupt();
 }
 
-void hlw8012_cf_interrupt() {
+void ICACHE_RAM_ATTR hlw8012_cf_interrupt() {
     hlw8012.cf_interrupt();
 }
 
@@ -95,27 +95,35 @@ void powReset() {
 // -----------------------------------------------------------------------------
 
 unsigned int getActivePower() {
-    return hlw8012.getActivePower();
+    unsigned int power = hlw8012.getActivePower();
+    if (POW_MIN_POWER > power || power > POW_MAX_POWER) power = 0;
+    return power;
 }
 
 unsigned int getApparentPower() {
-    return hlw8012.getApparentPower();
+    unsigned int power = hlw8012.getApparentPower();
+    if (POW_MIN_POWER > power || power > POW_MAX_POWER) power = 0;
+    return power;
 }
 
 unsigned int getReactivePower() {
-    return hlw8012.getReactivePower();
+    unsigned int power = hlw8012.getReactivePower();
+    if (POW_MIN_POWER > power || power > POW_MAX_POWER) power = 0;
+    return power;
 }
 
 double getCurrent() {
-    return hlw8012.getCurrent();
+    double current = hlw8012.getCurrent();
+    if (POW_MIN_CURRENT > current || current > POW_MAX_CURRENT) current = 0;
+    return current;
 }
 
 unsigned int getVoltage() {
     return hlw8012.getVoltage();
 }
 
-unsigned int getPowerFactor() {
-    return (int) (100 * hlw8012.getPowerFactor());
+double getPowerFactor() {
+    return hlw8012.getPowerFactor();
 }
 
 // -----------------------------------------------------------------------------
@@ -145,13 +153,13 @@ void powSetup() {
     powRetrieveCalibration();
 
     // API definitions
-    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+    apiRegister(POW_POWER_TOPIC, POW_POWER_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getActivePower());
     });
-    apiRegister("/api/current", "current", [](char * buffer, size_t len) {
-        dtostrf(getCurrent(), len-1, 2, buffer);
+    apiRegister(POW_CURRENT_TOPIC, POW_CURRENT_TOPIC, [](char * buffer, size_t len) {
+        dtostrf(getCurrent(), len-1, 3, buffer);
     });
-    apiRegister("/api/voltage", "voltage", [](char * buffer, size_t len) {
+    apiRegister(POW_VOLTAGE_TOPIC, POW_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", getVoltage());
     });
 
@@ -162,9 +170,18 @@ void powLoop() {
     static unsigned long last_update = 0;
     static unsigned char report_count = POW_REPORT_EVERY;
 
+    static bool power_spike = false;
     static unsigned long power_sum = 0;
+    static unsigned long power_previous = 0;
+
+    static bool current_spike = false;
     static double current_sum = 0;
+    static double current_previous = 0;
+
+    static bool voltage_spike = false;
     static unsigned long voltage_sum = 0;
+    static unsigned long voltage_previous = 0;
+
     static bool powWasEnabled = false;
 
     // POW is disabled while there is no internet connection
@@ -186,23 +203,43 @@ void powLoop() {
         unsigned int voltage = getVoltage();
         double current = getCurrent();
         unsigned int apparent = getApparentPower();
-        unsigned int factor = getPowerFactor();
+        double factor = getPowerFactor();
         unsigned int reactive = getReactivePower();
 
-        power_sum += power;
-        current_sum += current;
-        voltage_sum += voltage;
+        if (power > 0) {
+            power_spike = (power_previous == 0);
+        } else if (power_spike) {
+            power_sum -= power_previous;
+            power_spike = false;
+        }
+        power_previous = power;
+
+        if (current > 0) {
+            current_spike = (current_previous == 0);
+        } else if (current_spike) {
+            current_sum -= current_previous;
+            current_spike = false;
+        }
+        current_previous = current;
+
+        if (voltage > 0) {
+            voltage_spike = (voltage_previous == 0);
+        } else if (voltage_spike) {
+            voltage_sum -= voltage_previous;
+            voltage_spike = false;
+        }
+        voltage_previous = voltage;
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
 
         root["powVisible"] = 1;
         root["powActivePower"] = power;
-        root["powCurrent"] = current;
+        root["powCurrent"] = String(current, 3);
         root["powVoltage"] = voltage;
         root["powApparentPower"] = apparent;
         root["powReactivePower"] = reactive;
-        root["powPowerFactor"] = factor;
+        root["powPowerFactor"] = String(factor, 2);
 
         String output;
         root.printTo(output);
@@ -215,8 +252,8 @@ void powLoop() {
             voltage = voltage_sum / POW_REPORT_EVERY;
             apparent = current * voltage;
             reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
-            factor = (apparent > 0) ? 100 * power / apparent : 100;
-            if (factor > 100) factor = 100;
+            factor = (apparent > 0) ? (double) power / apparent : 1;
+            if (factor > 1) factor = 1;
 
             // Calculate energy increment (ppower times time) and create C-string
             double energy_inc = (double) power * POW_REPORT_EVERY * POW_UPDATE_INTERVAL / 1000.0 / 3600.0;
@@ -228,11 +265,11 @@ void powLoop() {
             // Report values to MQTT broker
             mqttSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
             mqttSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
-            mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current).c_str());
+            mqttSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
             mqttSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
             mqttSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
             mqttSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
-            mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor).c_str());
+            mqttSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
 
             // Report values to Domoticz
             #if ENABLE_DOMOTICZ
@@ -249,11 +286,26 @@ void powLoop() {
             }
             #endif
 
+            #if ENABLE_INFLUXDB
+            influxDBSend(getSetting("powPowerTopic", POW_POWER_TOPIC).c_str(), String(power).c_str());
+            //influxDBSend(getSetting("powEnergyTopic", POW_ENERGY_TOPIC).c_str(), e);
+            //influxDBSend(getSetting("powCurrentTopic", POW_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
+            //influxDBSend(getSetting("powVoltageTopic", POW_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
+            //influxDBSend(getSetting("powAPowerTopic", POW_APOWER_TOPIC).c_str(), String(apparent).c_str());
+            //influxDBSend(getSetting("powRPowerTopic", POW_RPOWER_TOPIC).c_str(), String(reactive).c_str());
+            //influxDBSend(getSetting("powPFactorTopic", POW_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
+            #endif
+
             // Reset counters
             power_sum = current_sum = voltage_sum = 0;
             report_count = POW_REPORT_EVERY;
 
         }
+
+        // Post - Accumulators
+        power_sum += power_previous;
+        current_sum += current_previous;
+        voltage_sum += voltage_previous;
 
         // Toggle between current and voltage monitoring
         #if POW_USE_INTERRUPTS == 0

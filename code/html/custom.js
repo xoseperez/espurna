@@ -41,6 +41,7 @@ function doUpdate() {
     var form = $("#formSave");
     if (validateForm(form)) {
         var data = form.serializeArray();
+        delete(data['filename']);
         websock.send(JSON.stringify({'config': data}));
         $(".powExpected").val(0);
         $("input[name='powExpectedReset']")
@@ -48,6 +49,66 @@ function doUpdate() {
             .iphoneStyle("refresh");
     }
     return false;
+}
+
+function doUpgrade() {
+
+    var contents = $("input[name='upgrade']")[0].files[0];
+    if (typeof contents == 'undefined') {
+        alert("First you have to select a file from your computer.");
+        return false;
+    }
+    var filename = $("input[name='upgrade']").val().split('\\').pop();
+
+    var data = new FormData();
+    data.append('upgrade', contents, filename);
+
+    $.ajax({
+
+        // Your server script to process the upload
+        url: 'http://' + host + ':' + port + '/upgrade',
+        type: 'POST',
+
+        // Form data
+        data: data,
+
+        // Tell jQuery not to process data or worry about content-type
+        // You *must* include these options!
+        cache: false,
+        contentType: false,
+        processData: false,
+
+        success: function(data, text) {
+            $("#upgrade-progress").hide();
+            if (data == 'OK') {
+                alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
+                setTimeout(function() {
+                    window.location = "/";
+                }, 5000);
+            } else {
+                alert("There was an error trying to upload the new image, please try again.");
+            }
+        },
+
+        // Custom XMLHttpRequest
+        xhr: function() {
+            $("#upgrade-progress").show();
+            var myXhr = $.ajaxSettings.xhr();
+            if (myXhr.upload) {
+                // For handling the progress of the upload
+                myXhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        $('progress').attr({ value: e.loaded, max: e.total });
+                    }
+                } , false);
+            }
+            return myXhr;
+        },
+
+    });
+
+    return false;
+
 }
 
 function doUpdatePassword() {
@@ -366,6 +427,9 @@ function processData(data) {
         if (key == "mqttStatus") {
             data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
         }
+        if (key == "ntpStatus") {
+            data.ntpStatus = data.ntpStatus ? "SYNC'D" : "NOT SYNC'D";
+        }
         if (key == "tmpUnits") {
             $("span#tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
         }
@@ -382,6 +446,13 @@ function processData(data) {
             } else {
                 element.val(data[key]);
             }
+            return;
+        }
+
+        // Look for SPANs
+        var element = $("span[name=" + key + "]");
+        if (element.length > 0) {
+            element.html(data[key]);
             return;
         }
 
@@ -448,6 +519,16 @@ function init() {
     $(".button-settings-restore").on('click', restoreSettings);
     $('#uploader').on('change', onFileUpload);
     $(".button-apikey").on('click', doGenerateAPIKey);
+    $(".button-upgrade").on('click', doUpgrade);
+    $(".button-upgrade-browse").on('click', function() {
+        $("input[name='upgrade']")[0].click();
+        return false;
+    });
+    $("input[name='upgrade']").change(function (){
+        var fileName = $(this).val();
+        $("input[name='filename']").val(fileName.replace(/^.*[\\\/]/, ''));
+    });
+    $('progress').attr({ value: 0, max: 100 });
     $(".pure-menu-link").on('click', showPanel);
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();

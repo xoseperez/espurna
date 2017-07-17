@@ -86,6 +86,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action.c_str());
 
         if (action.equals("reset")) {
+            customReset(CUSTOM_RESET_WEB);
             ESP.restart();
         }
 
@@ -159,7 +160,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool save = false;
         bool changed = false;
         bool changedMQTT = false;
+        bool changedNTP = false;
         bool apiEnabled = false;
+        bool dstEnabled = false;
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
@@ -171,6 +174,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             String key = config[i]["name"];
             String value = config[i]["value"];
+
+            // Skip firmware filename
+            if (key.equals("filename")) continue;
 
             #if ENABLE_POW
 
@@ -185,7 +191,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 }
 
                 if (key == "powExpectedCurrent") {
-                    powSetExpectedCurrent(value.toInt());
+                    powSetExpectedCurrent(value.toFloat());
                     changed = true;
                 }
 
@@ -246,6 +252,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 apiEnabled = true;
                 continue;
             }
+            if (key == "ntpDST") {
+                dstEnabled = true;
+                continue;
+            }
             #if ENABLE_FAUXMO
                 if (key == "fauxmoEnabled") {
                     fauxmoEnabled = true;
@@ -278,6 +288,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setSetting(key, value);
                 save = changed = true;
                 if (key.startsWith("mqtt")) changedMQTT = true;
+                if (key.startsWith("ntp")) changedNTP = true;
             }
 
         }
@@ -288,6 +299,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (apiEnabled != (getSetting("apiEnabled").toInt() == 1)) {
                 setSetting("apiEnabled", apiEnabled);
                 save = changed = true;
+            }
+            if (dstEnabled != (getSetting("ntpDST").toInt() == 1)) {
+                setSetting("ntpDST", dstEnabled);
+                save = changed = changedNTP = true;
             }
             #if ENABLE_FAUXMO
                 if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
@@ -334,6 +349,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_FAUXMO
                 fauxmoConfigure();
             #endif
+            #if ENABLE_INFLUXDB
+                influxDBConfigure();
+            #endif
             buildTopics();
 
             #if ENABLE_RF
@@ -348,6 +366,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (changedMQTT) {
                 mqttDisconnect();
             }
+
+            // Check if we should reconfigure NTP connection
+            if (changedNTP) {
+                ntpConnect();
+            }
+
         }
 
         if (changed) {
@@ -395,6 +419,13 @@ void _wsStart(uint32_t client_id) {
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
 
+        root["ntpStatus"] = ntpConnected();
+        root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
+        root["ntpServer2"] = getSetting("ntpServer2");
+        root["ntpServer3"] = getSetting("ntpServer3");
+        root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+        root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+
         root["mqttStatus"] = mqttConnected();
         root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
         root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
@@ -414,7 +445,7 @@ void _wsStart(uint32_t client_id) {
 
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);
         root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
-        root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME);
+        root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
         if (relayCount() > 1) {
             root["multirelayVisible"] = 1;
             root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
@@ -453,6 +484,10 @@ void _wsStart(uint32_t client_id) {
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
             #endif
 
+            #if ENABLE_ANALOG
+                root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
+            #endif
+
             #if ENABLE_POW
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
@@ -460,6 +495,15 @@ void _wsStart(uint32_t client_id) {
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
             #endif
 
+        #endif
+
+        #if ENABLE_INFLUXDB
+            root["idbVisible"] = 1;
+            root["idbHost"] = getSetting("idbHost");
+            root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
+            root["idbDatabase"] = getSetting("idbDatabase");
+            root["idbUsername"] = getSetting("idbUsername");
+            root["idbPassword"] = getSetting("idbPassword");
         #endif
 
         #if ENABLE_FAUXMO
@@ -491,14 +535,19 @@ void _wsStart(uint32_t client_id) {
             root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
         #endif
 
+        #if ENABLE_ANALOG
+            root["analogVisible"] = 1;
+            root["analogValue"] = getAnalog();
+        #endif
+
         #if ENABLE_POW
             root["powVisible"] = 1;
             root["powActivePower"] = getActivePower();
             root["powApparentPower"] = getApparentPower();
             root["powReactivePower"] = getReactivePower();
             root["powVoltage"] = getVoltage();
-            root["powCurrent"] = getCurrent();
-            root["powPowerFactor"] = getPowerFactor();
+            root["powCurrent"] = String(getCurrent(), 3);
+            root["powPowerFactor"] = String(getPowerFactor(), 2);
         #endif
 
         root["maxNetworks"] = WIFI_MAX_NETWORKS;
@@ -672,7 +721,9 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
 
     // Store it
     web_api_t api;
-    api.url = strdup(url);
+    char buffer[40];
+    snprintf(buffer, 39, "/api/%s", url);
+    api.url = strdup(buffer);
     api.key = strdup(key);
     api.getFn = getFn;
     api.putFn = putFn;
@@ -681,7 +732,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Bind call
     unsigned int methods = HTTP_GET;
     if (putFn != NULL) methods += HTTP_PUT;
-    _server->on(url, methods, _bindAPI(_apis.size() - 1));
+    _server->on(buffer, methods, _bindAPI(_apis.size() - 1));
 
 }
 
@@ -729,7 +780,10 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            deferred.once_ms(100, []() { ESP.restart(); });
+            deferred.once_ms(100, []() { 
+                customReset(CUSTOM_RESET_RPC);
+                ESP.restart();
+            });
         }
 
     }
@@ -806,8 +860,49 @@ void _onHome(AsyncWebServerRequest *request) {
     }
 
 }
-
 #endif
+
+void _onUpgrade(AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
+    response->addHeader("Connection", "close");
+    if (!Update.hasError()) {
+        deferred.once_ms(100, []() {
+            customReset(CUSTOM_RESET_UPGRADE);
+            ESP.restart();
+        });
+    }
+    request->send(response);
+}
+
+void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    if (!index) {
+        DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
+        Update.runAsync(true);
+        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+            #ifdef DEBUG_PORT
+                Update.printError(DEBUG_PORT);
+            #endif
+        }
+    }
+    if (!Update.hasError()) {
+        if (Update.write(data, len) != len) {
+            #ifdef DEBUG_PORT
+                Update.printError(DEBUG_PORT);
+            #endif
+        }
+    }
+    if (final) {
+        if (Update.end(true)){
+            DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
+        } else {
+            #ifdef DEBUG_PORT
+                Update.printError(DEBUG_PORT);
+            #endif
+        }
+    } else {
+        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+    }
+}
 
 void webSetup() {
 
@@ -835,6 +930,7 @@ void webSetup() {
     _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/apis", HTTP_GET, _onAPIs);
     _server->on("/rpc", HTTP_GET, _onRPC);
+    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files
     #if not EMBEDDED_WEB

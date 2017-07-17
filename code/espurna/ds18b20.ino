@@ -37,7 +37,7 @@ void dsSetup() {
     ds18b20.begin();
     ds18b20.setWaitForConversion(false);
 
-    apiRegister("/api/temperature", "temperature", [](char * buffer, size_t len) {
+    apiRegister(DS_TEMPERATURE_TOPIC, DS_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
         dtostrf(_dsTemperature, len-1, 1, buffer);
     });
 }
@@ -97,6 +97,10 @@ void dsLoop() {
             // Send to Domoticz
             #if ENABLE_DOMOTICZ
                 domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
+            #endif
+
+            #if ENABLE_INFLUXDB
+                influxDBSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
             #endif
 
             // Update websocket clients

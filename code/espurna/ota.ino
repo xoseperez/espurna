@@ -28,6 +28,7 @@ void otaSetup() {
     });
 
     ArduinoOTA.onEnd([]() {
+        customReset(CUSTOM_RESET_OTA);
         DEBUG_MSG_P(PSTR("\n[OTA] End\n"));
         wsSend("{\"action\": \"reload\"}");
         delay(100);

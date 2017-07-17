@@ -3,6 +3,76 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.8.2] 2017-07-16
+### Added
+- InfluxDB support via HTTP API
+- Added custom reset reason to debug log
+- Enable WIFI debug on hardware reset (button long click)
+
+### Changed
+- Issue #159. Allow decimals in relay pulse interval
+- Updated HLW8012 library
+
+### Fix
+- Issue #148. Fix bug in conditional compilation check
+- Issue #149. Using different pulse counters for each relay (thanks to Lauris Ieviņš)
+- Issue #141. Limit relay pulse interval to 60s
+- Fixed units for apparent & reactive power (thanks to Lauris Ieviņš)
+- Fixed mDNS setup when using custom HTTP port for web interface
+
+## [1.8.1] 2017-05-22
+### Fix
+- Issue #140. Fix no relay control bug in Sonoff Dual
+
+## [1.8.0] 2017-05-21
+### Added
+- Added gamma correction to RGB strips. Thanks to Chris Ward.
+- Added support for Huacanxing H801 WiFi LED Controller. Thanks to Minh Phuong Ly.
+- Issue #138. Added NTP configuration from web interface
+- Issue #128. Report color when booting and in heartbeat stream.
+- Issue #126. Show NTP status in web interface.
+- Added filter limits on POW readings.
+- Added color temperature to RGB calculation. Thanks to Sacha Telgenhof.
+- Issue #120. Added relay flood protection. Thanks to Izik Dubnov.
+- Support for "#RRGGBB", "RRR,GGG,BBB" and "WWW" color formats.
+- Issue #117. Added build date & time to web interface.
+
+### Fix
+- Fix MQTT_RELAY board conifugration. Thanks to Denis French.
+- Issue #125. Fix bug in relay status reading from EEPROM
+- Issue #127. Fix button action in DUAL.
+- Fix bug in Sonoff POW current reading. Thanks to Emmanuel Tatto.
+- Minimizing my9291 flickering when booting.
+- Fix conditional flags in hardware.ino to support Arduino IDE.
+
+## [1.7.1] 2017-03-28
+### Fix
+- Issue #113. Fix restoring color from EEPROM upon reboot
+- Issue #113. Fix bug in API handlers
+
+## [1.7.0] 2017-03-27
+### Added
+- Web interface embedded in firmware image by default
+- Upload firmware image from web interface
+- Added API entry point to change light color
+- Added generic analog sensor. Thanks to Francesco Boscarino
+- Report RSSI value in debug console and MQTT status messages
+- Added support for Magic Home LED Controller
+- Added support for ESPurna-H Board (based on HLW8012)
+- Added forward compatible code for v2.0
+
+### Changed
+- Added ellipsis (...) in debug messages longer than 80 characters
+- Changed topic constants in code
+- Prevent the SDK from saving WiFi configuration to flash
+
+### Fix
+- Issue #113. Fix light bulb state to OFF in library prevented the bulb from turning on
+- Issue #58. Added code to handle spurious readings
+- Fix bug in HLW8012 calibration current parameter casting to int instead of float
+- Issue #115. Removed local declaration of _mqttForward variable. Thanks to Paweł Fiedor
+- Fix MQTT will topic. Thanks to Asbjorn Tronhus
+
 ## [1.6.9] 2017-03-12
 ### Added
 - Two stage read for DS18B20 devices. Thanks to Izik Dubnov.

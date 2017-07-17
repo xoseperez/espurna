@@ -9,12 +9,61 @@
 #define UPTIME_OVERFLOW         4294967295
 
 //--------------------------------------------------------------------------------
+// DEBUG
+//--------------------------------------------------------------------------------
+
+#ifndef DEBUG_PORT
+#define DEBUG_PORT              Serial
+#endif
+
+// Uncomment and configure these lines to enable remote debug via udpDebug
+// To receive the message son the destination computer use nc:
+// nc -ul 8111
+
+//#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+//#define DEBUG_UDP_PORT          8111
+
+//--------------------------------------------------------------------------------
 // EEPROM
 //--------------------------------------------------------------------------------
 
 #define EEPROM_RELAY_STATUS     0
 #define EEPROM_ENERGY_COUNT     1
-#define EEPROM_DATA_END         5
+#define EEPROM_CUSTOM_RESET     5
+#define EEPROM_DATA_END         6
+
+//--------------------------------------------------------------------------------
+// RESET
+//--------------------------------------------------------------------------------
+
+#define CUSTOM_RESET_HARDWARE   1
+#define CUSTOM_RESET_WEB        2
+#define CUSTOM_RESET_TERMINAL   3
+#define CUSTOM_RESET_MQTT       4
+#define CUSTOM_RESET_RPC        5
+#define CUSTOM_RESET_OTA        6
+#define CUSTOM_RESET_NOFUSS     8
+#define CUSTOM_RESET_UPGRADE    9
+#define CUSTOM_RESET_FACTORY    10
+
+#define CUSTOM_RESET_MAX        10
+
+#include <pgmspace.h>
+
+PROGMEM const char custom_reset_hardware[] = "Hardware button";
+PROGMEM const char custom_reset_web[] = "Reset from web interface";
+PROGMEM const char custom_reset_terminal[] = "Reset from terminal";
+PROGMEM const char custom_reset_mqtt[] = "Reset from MQTT";
+PROGMEM const char custom_reset_rpc[] = "Reset from RPC";
+PROGMEM const char custom_reset_ota[] = "Reset after successful OTA update";
+PROGMEM const char custom_reset_nofuss[] = "Reset after successful NoFUSS update";
+PROGMEM const char custom_reset_upgrade[] = "Reset after successful web update";
+PROGMEM const char custom_reset_factory[] = "Factory reset";
+PROGMEM const char* const custom_reset_string[] = {
+    custom_reset_hardware, custom_reset_web, custom_reset_terminal,
+    custom_reset_mqtt, custom_reset_rpc, custom_reset_ota,
+    custom_reset_nofuss, custom_reset_upgrade, custom_reset_factory
+};
 
 //--------------------------------------------------------------------------------
 // BUTTON
@@ -61,8 +110,8 @@
 #define RELAY_PROVIDER_DUAL     1
 #define RELAY_PROVIDER_LIGHT    2
 
-// Pulse time in seconds
-#define RELAY_PULSE_TIME        1
+// Pulse time in milliseconds
+#define RELAY_PULSE_TIME        1.0
 
 // 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_MODE         		RELAY_MODE_OFF
@@ -72,6 +121,12 @@
 
 // 0 means no pulses, 1 means normally off, 2 normally on
 #define RELAY_PULSE_MODE     	RELAY_PULSE_NONE
+
+// Relay requests flood protection window - in seconds
+#define RELAY_FLOOD_WINDOW      3
+
+// Allowed actual relay changes inside requests flood protection window
+#define RELAY_FLOOD_CHANGES     5
 
 //--------------------------------------------------------------------------------
 // I18N
@@ -147,30 +202,34 @@
 #define MQTT_SKIP_RETAINED      1
 #define MQTT_SKIP_TIME          1000
 
-#define MQTT_TOPIC_ACTION       "/action"
-#define MQTT_TOPIC_RELAY        "/relay"
-#define MQTT_TOPIC_LED          "/led"
-#define MQTT_TOPIC_COLOR        "/color"
-#define MQTT_TOPIC_BUTTON       "/button"
-#define MQTT_TOPIC_IP           "/ip"
-#define MQTT_TOPIC_VERSION      "/version"
-#define MQTT_TOPIC_UPTIME       "/uptime"
-#define MQTT_TOPIC_FREEHEAP     "/freeheap"
-#define MQTT_TOPIC_VCC          "/vcc"
-#define MQTT_TOPIC_STATUS       "/status"
-#define MQTT_TOPIC_MAC          "/mac"
-#define MQTT_TOPIC_APP          "/app"
-#define MQTT_TOPIC_INTERVAL     "/interval"
-#define MQTT_TOPIC_HOSTNAME     "/hostname"
+#define MQTT_TOPIC_ACTION       "action"
+#define MQTT_TOPIC_RELAY        "relay"
+#define MQTT_TOPIC_LED          "led"
+#define MQTT_TOPIC_COLOR        "color"
+#define MQTT_TOPIC_BUTTON       "button"
+#define MQTT_TOPIC_IP           "ip"
+#define MQTT_TOPIC_VERSION      "version"
+#define MQTT_TOPIC_UPTIME       "uptime"
+#define MQTT_TOPIC_FREEHEAP     "freeheap"
+#define MQTT_TOPIC_VCC          "vcc"
+#define MQTT_TOPIC_STATUS       "status"
+#define MQTT_TOPIC_MAC          "mac"
+#define MQTT_TOPIC_RSSI         "rssi"
+#define MQTT_TOPIC_APP          "app"
+#define MQTT_TOPIC_INTERVAL     "interval"
+#define MQTT_TOPIC_HOSTNAME     "hostname"
+#define MQTT_TOPIC_ANALOG       "analog"
 
 // Periodic reports
 #define MQTT_REPORT_STATUS      1
 #define MQTT_REPORT_IP          1
 #define MQTT_REPORT_MAC         1
+#define MQTT_REPORT_RSSI        1
 #define MQTT_REPORT_UPTIME      1
 #define MQTT_REPORT_FREEHEAP    1
 #define MQTT_REPORT_VCC         1
 #define MQTT_REPORT_RELAY       1
+#define MQTT_REPORT_COLOR       1
 #define MQTT_REPORT_HOSTNAME    1
 #define MQTT_REPORT_APP         1
 #define MQTT_REPORT_VERSION     1
@@ -185,7 +244,7 @@
 #define MQTT_DISCONNECT_EVENT   1
 #define MQTT_MESSAGE_EVENT      2
 
-// Custom get and set postfixes
+// Custom get and set postfixes6+
 // Use something like "/status" or "/set", with leading slash
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         ""
@@ -204,14 +263,18 @@
 // LIGHT
 // -----------------------------------------------------------------------------
 
+#define ENABLE_GAMMA_CORRECTION 0
+
 #define LIGHT_PROVIDER_NONE     0
 #define LIGHT_PROVIDER_WS2812   1
 #define LIGHT_PROVIDER_RGB      2
 #define LIGHT_PROVIDER_RGBW     3
 #define LIGHT_PROVIDER_MY9192   4
+#define LIGHT_PROVIDER_RGB2W    5
 
 #define LIGHT_DEFAULT_COLOR     "#000080"
 #define LIGHT_SAVE_DELAY        5
+#define LIGHT_MAX_VALUE         255
 
 #define MY9291_DI_PIN           13
 #define MY9291_DCKI_PIN         15
@@ -233,6 +296,15 @@
 #endif
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"
+
+// -----------------------------------------------------------------------------
+// INFLUXDB
+// -----------------------------------------------------------------------------
+
+#ifndef ENABLE_INFLUXDB
+    #define ENABLE_INFLUXDB     1
+#endif
+#define INFLUXDB_PORT           8086
 
 // -----------------------------------------------------------------------------
 // NTP

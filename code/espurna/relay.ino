@@ -16,9 +16,14 @@ typedef struct {
     unsigned char pin;
     bool reverse;
     unsigned char led;
+    unsigned int floodWindowStart;
+    unsigned char floodWindowChanges;
+    unsigned int scheduledStatusTime;
+    bool scheduledStatus;
+    bool scheduledReport;
+    Ticker pulseTicker;
 } relay_t;
 std::vector<relay_t> _relays;
-Ticker pulseTicker;
 bool recursive = false;
 
 #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
@@ -30,6 +35,8 @@ unsigned char _dual_status = 0;
 // -----------------------------------------------------------------------------
 
 void relayProviderStatus(unsigned char id, bool status) {
+
+    if (id >= _relays.size()) return;
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         _dual_status ^= (1 << id);
@@ -53,8 +60,9 @@ void relayProviderStatus(unsigned char id, bool status) {
 
 bool relayProviderStatus(unsigned char id) {
 
+    if (id >= _relays.size()) return false;
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
-        if (id >= 2) return false;
         return ((_dual_status & (1 << id)) > 0);
     #endif
 
@@ -63,7 +71,6 @@ bool relayProviderStatus(unsigned char id) {
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
-        if (id >= _relays.size()) return false;
         bool status = (digitalRead(_relays[id].pin) == HIGH);
         return _relays[id].reverse ? !status : status;
     #endif
@@ -94,19 +101,17 @@ void relayPulse(unsigned char id) {
 
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     if (relayPulseMode == RELAY_PULSE_NONE) return;
+    long relayPulseTime = 1000.0 * getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
+    if (relayPulseTime == 0) return;
 
     bool status = relayStatus(id);
     bool pulseStatus = (relayPulseMode == RELAY_PULSE_ON);
     if (pulseStatus == status) {
-        pulseTicker.detach();
+        _relays[id].pulseTicker.detach();
         return;
     }
 
-    pulseTicker.once(
-        getSetting("relayPulseTime", RELAY_PULSE_TIME).toInt(),
-        relayToggle,
-        id
-    );
+   _relays[id].pulseTicker.once_ms(relayPulseTime, relayToggle, id);
 
 }
 
@@ -153,31 +158,31 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
     if (relayStatus(id) != status) {
 
-        DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
+        unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
+        unsigned int currentTime = millis();
+
+        _relays[id].floodWindowChanges++;
+        _relays[id].scheduledStatusTime = currentTime;
+
+        if (currentTime >= floodWindowEnd || currentTime < _relays[id].floodWindowStart) {
+            _relays[id].floodWindowStart = currentTime;
+            _relays[id].floodWindowChanges = 1;
+        } else if (_relays[id].floodWindowChanges >= RELAY_FLOOD_CHANGES) {
+            _relays[id].scheduledStatusTime = floodWindowEnd;
+        }
+
+        _relays[id].scheduledStatus = status;
+        _relays[id].scheduledReport = (report ? true : _relays[id].scheduledReport);
+
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduled %d => %s in %u ms\n"),
+                id, status ? "ON" : "OFF",
+                (_relays[id].scheduledStatusTime - currentTime));
+
         changed = true;
-
-        relayProviderStatus(id, status);
-
-        if (_relays[id].led > 0) {
-            ledStatus(_relays[id].led - 1, status);
-        }
-
-        if (report) relayMQTT(id);
-        if (!recursive) {
-            relayPulse(id);
-            relaySync(id);
-            relaySave();
-            relayWS();
-        }
-
-        #if ENABLE_DOMOTICZ
-            relayDomoticzSend(id);
-        #endif
 
     }
 
     return changed;
-
 }
 
 bool relayStatus(unsigned char id, bool status) {
@@ -229,6 +234,7 @@ void relaySave() {
         bit += bit;
     }
     EEPROM.write(EEPROM_RELAY_STATUS, mask);
+    DEBUG_MSG_P(PSTR("[RELAY] Saving mask: %d\n"), mask);
     EEPROM.commit();
 }
 
@@ -236,8 +242,10 @@ void relayRetrieve(bool invert) {
     recursive = true;
     unsigned char bit = 1;
     unsigned char mask = invert ? ~EEPROM.read(EEPROM_RELAY_STATUS) : EEPROM.read(EEPROM_RELAY_STATUS);
-    for (unsigned int i=0; i < _relays.size(); i++) {
-        relayStatus(i, ((mask & bit) == bit));
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
+    for (unsigned int id=0; id < _relays.size(); id++) {
+        _relays[id].scheduledStatus = ((mask & bit) == bit);
+        _relays[id].scheduledReport = true;
         bit += bit;
     }
     if (invert) {
@@ -266,10 +274,10 @@ void relaySetupAPI() {
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
 
         char url[15];
-        sprintf(url, "/api/relay/%d", relayID);
+        sprintf(url, "%s/%d", MQTT_TOPIC_RELAY, relayID);
 
         char key[10];
-        sprintf(key, "relay%d", relayID);
+        sprintf(key, "%s%d", MQTT_TOPIC_RELAY, relayID);
 
         apiRegister(url, key,
             [relayID](char * buffer, size_t len) {
@@ -376,6 +384,15 @@ void relayMQTT(unsigned char id) {
     mqttSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
 
+#if ENABLE_INFLUXDB
+void relayInfluxDB(unsigned char id) {
+    if (id >= _relays.size()) return;
+    char buffer[10];
+    sprintf(buffer, "%s,id=%d", MQTT_TOPIC_RELAY, id);
+    influxDBSend(buffer, relayStatus(id) ? "1" : "0");
+}
+#endif
+
 void relayMQTT() {
     for (unsigned int i=0; i < _relays.size(); i++) {
         relayMQTT(i);
@@ -439,15 +456,15 @@ void relaySetupMQTT() {
 
 void relaySetup() {
 
-    #ifdef SONOFF_DUAL
+    #if defined(SONOFF_DUAL)
 
         // Two dummy relays for the dual
         _relays.push_back((relay_t) {0, 0});
         _relays.push_back((relay_t) {0, 0});
 
-    #elif AI_LIGHT
+    #elif defined(AI_LIGHT) | defined(LED_CONTROLLER) | defined(H801_LED_CONTROLLER)
 
-        // One dummy relay for the AI Thinker Light
+        // One dummy relay for the AI Thinker Light & Magic Home and H801 led controllers
         _relays.push_back((relay_t) {0, 0});
 
     #else
@@ -475,6 +492,7 @@ void relaySetup() {
     }
     if (relayMode == RELAY_MODE_SAME) relayRetrieve(false);
     if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);
+    relayLoop();
 
     relaySetupAPI();
     relaySetupMQTT();
@@ -483,5 +501,48 @@ void relaySetup() {
     #endif
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
+
+}
+
+void relayLoop(void) {
+
+    unsigned char id;
+
+    for (id = 0; id < _relays.size(); id++) {
+
+        unsigned int currentTime = millis();
+        bool status = _relays[id].scheduledStatus;
+
+        if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
+
+            DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
+
+            relayProviderStatus(id, status);
+
+            if (_relays[id].led > 0) {
+                ledStatus(_relays[id].led - 1, status);
+            }
+
+            if (_relays[id].scheduledReport) relayMQTT(id);
+            if (!recursive) {
+                relayPulse(id);
+                relaySync(id);
+                relaySave();
+                relayWS();
+            }
+
+            #if ENABLE_DOMOTICZ
+                relayDomoticzSend(id);
+            #endif
+
+            #if ENABLE_INFLUXDB
+                relayInfluxDB(id);
+            #endif
+
+            _relays[id].scheduledReport = false;
+
+        }
+
+    }
 
 }

@@ -98,8 +98,16 @@
                             <a href="#" class="pure-menu-link" data="panel-mqtt">MQTT</a>
                         </li>
 
+                        <li class="pure-menu-item">
+                            <a href="#" class="pure-menu-link" data="panel-ntp">NTP</a>
+                        </li>
+
                         <li class="pure-menu-item module module-dcz">
                             <a href="#" class="pure-menu-link" data="panel-domoticz">DOMOTICZ</a>
+                        </li>
+
+                        <li class="pure-menu-item module module-idb">
+                            <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
                         </li>
 
                         <li class="pure-menu-item module module-pow">
@@ -143,39 +151,17 @@
                         <form class="pure-form pure-form-aligned">
                             <fieldset>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="manufacturer">Manufacturer</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="manufacturer" readonly />
+                                <div id="relays">
                                 </div>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="device">Device</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="device" readonly />
+                                <div class="pure-g module module-color">
+                                    <label class="pure-u-1 pure-u-sm-1-4">Color</label>
+                                    <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />
                                 </div>
 
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="chipid">Chip ID</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="chipid" readonly />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="mac">MAC</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="mac" readonly />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="network">Network</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="network" readonly />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="deviceip">IP</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="deviceip" readonly />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="mqtt">MQTT Status</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="mqttStatus" readonly />
+                                <div class="pure-g module module-analog">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="analogValue">Analog</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="analogValue" readonly />
                                 </div>
 
                                 <div class="pure-g module module-ds">
@@ -199,12 +185,12 @@
                                 </div>
 
                                 <div class="pure-g module module-pow module-emon">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="powApparentPower">Apparent Power (W)</label>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powApparentPower">Apparent Power (VA)</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powApparentPower" readonly />
                                 </div>
 
                                 <div class="pure-g module module-pow">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="powReactivePower">Reactive Power (W)</label>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powReactivePower">Reactive Power (VAR)</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powReactivePower" readonly />
                                 </div>
 
@@ -219,16 +205,43 @@
                                 </div>
 
                                 <div class="pure-g module module-pow">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="powPowerFactor">Power Factor (%)</label>
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="powPowerFactor">Power Factor</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powPowerFactor" readonly />
                                 </div>
 
-                                <div id="relays">
-                                </div>
+                                <div class="pure-u-1 state">
 
-                                <div class="pure-g module module-color">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Color</label>
-                                    <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />
+                                    <div class="pure-u-1 pure-u-sm-11-24">Manufacturer</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="manufacturer"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">Device</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="device"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">Chip ID</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="chipid"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">MAC</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="mac"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">Network</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="network"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">IP</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="deviceip"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">ESPurna Version</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="version"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">ESPurna Build</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="buildDate"></span> <span class="right" name="buildTime"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">MQTT Status</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="mqttStatus"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-11-24">NTP Status</div>
+                                    <div class="pure-u-1 pure-u-sm-11-24"><span class="right" name="ntpStatus"></span></div>
+
+
                                 </div>
 
                             </fieldset>
@@ -237,7 +250,7 @@
                     </div>
                 </div>
 
-                <form id="formSave" class="pure-form" action="/" method="post">
+                <form id="formSave" class="pure-form" action="/" method="post" enctype="multipart/form-data">
 
                     <input class="pure-u-1 pure-u-sm-3-4" type="hidden" name="webMode" value="0" />
 
@@ -302,13 +315,13 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="relayPulseTime">Switch pulse time</label>
-                                    <input name="relayPulseTime" class="pure-u-1 pure-u-md-3-4" type="number" min="1" tabindex="5" />
+                                    <input name="relayPulseTime" class="pure-u-1 pure-u-md-3-4" type="number" min="0" step="0.1" max="60" tabindex="5" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Pulse time in seconds.</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Pulse time in seconds (maximum value is 60s, accepts decimals).</div>
                                 </div>
 
                                 <div class="pure-g module module-fauxmo">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="fauxmoEnabled">Alexa integration</label>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Alexa integration</label></div>
                                     <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="6" /></div>
                                 </div>
 
@@ -380,6 +393,16 @@
                                     </div>
                                 </div>
 
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4">Upgrade</label>
+                                    <input class="pure-u-1-2 pure-u-md-1-2" name="filename" type="text" readonly />
+                                    <div class=" pure-u-1-8 pure-u-md-1-8"><button class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
+                                    <div class=" pure-u-1-8 pure-u-md-1-8"><button class="pure-button button-upgrade pure-u-23-24">Upgrade</button></div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4"><progress id="upgrade-progress"></progress></div>
+                                    <input name="upgrade" type="file" tabindex="15" />
+                                </div>
+
                             </fieldset>
                         </div>
                     </div>
@@ -432,7 +455,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttPassword">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="text" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
                                 </div>
 
                                 <div class="pure-g">
@@ -440,14 +463,56 @@
                                     <input class="pure-u-1 pure-u-md-3-4" name="mqttTopic" type="text" size="20" tabindex="25" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        This is the root topic for this device. The {identifier} placeholder will be replaces by the device hostname.<br />
-                                        - <strong>&lt;root&gt;/relay/#</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
-                                        - <strong>&lt;root&gt;/led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
-                                        - <strong>&lt;root&gt;/button/#</strong> For each button in the board subscribe to this topic to know when it is pressed (payload 1) or released (payload 0).<br />
-                                        - <strong>&lt;root&gt;/ip</strong> The device will report to this topic its IP.<br />
-                                        - <strong>&lt;root&gt;/version</strong> The device will report to this topic its firmware version on boot.<br />
-                                        - <strong>&lt;root&gt;/status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.
+                                        This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaces by the device hostname.<br />
+                                        - <strong>&lt;root/&gt;relay/#</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
+                                        <span class="module module-color">- <strong>&lt;root&gt;color</strong> The device will report the current color in #RRGGBB format to this topic. You can also set the color using this same topic.<br /></span>
+                                        - <strong>&lt;root/&gt;led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
+                                        - <strong>&lt;root/&gt;button/#</strong> For each button in the board subscribe to this topic to know when it is pressed (payload 1) or released (payload 0).<br />
+                                        - <strong>&lt;root/&gt;status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.<br />
+                                        - Other values reported (depending on the build) are: <strong>firmware</strong> and <strong>version</strong>, <strong>hostname</strong>, <strong>IP</strong>, <strong>MAC</strong>, signal strenth (<strong>RSSI</strong>), <strong>uptime</strong> (in seconds), <strong>free heap</strong> and <strong>power supply</strong>.
                                     </div>
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-ntp">
+
+                        <div class="header">
+                            <h1>NTP</h1>
+                            <h2>Configure your NTP (Network Time Protocol) servers and local configuration to keep your device time up to the second for your location.</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="ntpServer1">NTP Server 1</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="ntpServer1" type="text" size="20" tabindex="41" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="ntpServer2">NTP Server 2</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="ntpServer2" type="text" size="20" tabindex="42" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="ntpServer3">NTP Server 3</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="ntpServer3" type="text" size="20" tabindex="43" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="ntpOffset">Time offset</label>
+                                    <div class="pure-u-1 pure-u-sm-1-8"><input class="pure-u-sm-23-24" name="ntpOffset" type="number" min="-11" max="14" tabindex="44" data="0" /></div>
+                                    <div class="pure-u-1 pure-u-sm-5-8 hint center">Set to 0 for UTC time</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="ntpDST">Enable Daylight Saving Time</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="ntpDST" /></div>
                                 </div>
 
                             </fieldset>
@@ -514,7 +579,56 @@
                                     <div class="pure-u-1 pure-u-sm-5-8 hint center">Set to 0 to disable notifications.</div>
                                 </div>
 
+                                <div class="pure-g module module-analog">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="dczAnaIdx">Analog IDX</label>
+                                    <div class="pure-u-1 pure-u-sm-1-8"><input class="pure-u-sm-23-24" name="dczAnaIdx" type="number" min="0" tabindex="39" data="0" /></div>
+                                    <div class="pure-u-1 pure-u-sm-5-8 hint center">Set to 0 to disable notifications.</div>
+                                </div>
+
                                 <div id="idxs">
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-idb">
+
+                        <div class="header">
+                            <h1>INFLUXDB</h1>
+                            <h2>
+                                Configure the connection to your InfluxDB server. Leave the host field empty to disable InfluxDB connection.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbHost">Host</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbHost" type="text" tabindex="41" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbPort">Port</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPort" type="text" tabindex="42" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbDatabase">Database</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbDatabase" type="text" tabindex="43" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbUsername">Username</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="idbPassword">Password</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" />
                                 </div>
 
                             </fieldset>
@@ -623,8 +737,8 @@
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
-                <label class="pure-u-1 pure-u-sm-1-4">Switch<span class="relay_id"></span> Status</label>
-                <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" class="relayStatus" data="0" /></div>
+                <div class="pure-u-1 pure-u-sm-1-4"><label>Switch<span class="relay_id"></span> Status</label></div>
+                <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" class="relayStatus pure-u-1 pure-u-sm-1-4" data="0" /></div
             </div>
         </div>
 

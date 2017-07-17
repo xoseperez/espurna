@@ -97,7 +97,7 @@ void powerMonitorSetup() {
         brzo_i2c_end_transaction();
     #endif
 
-    apiRegister("/api/power", "power", [](char * buffer, size_t len) {
+    apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
         snprintf(buffer, len, "%d", _power);
     });
 
@@ -187,6 +187,12 @@ void powerMonitorLoop() {
                 snprintf(buffer, 20, "%s", c);
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
+            #endif
+
+            #if ENABLE_INFLUXDB
+            influxDBSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), power);
+            //influxDBSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), c);
+            //influxDBSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), e);
             #endif
 
             // Reset counters

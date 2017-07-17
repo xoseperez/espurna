@@ -47,6 +47,7 @@ void buildTopics() {
     // Replace identifier
     mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
     mqttTopic.replace("{identifier}", getSetting("hostname"));
+    if (!mqttTopic.endsWith("/")) mqttTopic = mqttTopic + "/";
 }
 
 bool mqttForward() {
@@ -165,6 +166,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     String t = mqttSubtopic((char *) topic);
     if (t.equals(MQTT_TOPIC_ACTION)) {
         if (strcmp(message, MQTT_ACTION_RESET) == 0) {
+            customReset(CUSTOM_RESET_MQTT);
             ESP.restart();
         }
     }
@@ -208,6 +210,7 @@ void mqttConnect() {
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
         _mqttUser = strdup(getSetting("mqttUser").c_str());
         _mqttPass = strdup(getSetting("mqttPassword").c_str());
+        char * will = strdup((mqttTopic + MQTT_TOPIC_STATUS).c_str());
 
         DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d"), host, port);
         mqtt.setServer(host, port);
@@ -215,7 +218,7 @@ void mqttConnect() {
         #if MQTT_USE_ASYNC
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-    	    mqtt.setWill((mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+            mqtt.setWill(will, MQTT_QOS, MQTT_RETAIN, "0");
             if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
                 DEBUG_MSG_P(PSTR(" as user '%s'."), _mqttUser);
                 mqtt.setCredentials(_mqttUser, _mqttPass);
@@ -233,10 +236,10 @@ void mqttConnect() {
 
             if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
                 DEBUG_MSG_P(PSTR(" as user '%s'\n"), _mqttUser);
-                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, will, MQTT_QOS, MQTT_RETAIN, "0");
             } else {
                 DEBUG_MSG_P(PSTR("\n"));
-                response = mqtt.connect(getIdentifier().c_str(), (mqttTopic + MQTT_TOPIC_STATUS).c_str(), MQTT_QOS, MQTT_RETAIN, "0");
+				response = mqtt.connect(getIdentifier().c_str(), will, MQTT_QOS, MQTT_RETAIN, "0");
             }
 
             if (response) {
@@ -249,10 +252,11 @@ void mqttConnect() {
         #endif
 
         free(host);
+        free(will);
 
         String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-        bool _mqttForward = !mqttGetter.equals(mqttSetter);
+        _mqttForward = !mqttGetter.equals(mqttSetter);
 
     }
 

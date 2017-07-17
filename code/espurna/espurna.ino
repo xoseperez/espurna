@@ -51,6 +51,7 @@ void heartbeat() {
         #endif
     }
 
+
     #if (MQTT_REPORT_INTERVAL)
         mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
     #endif
@@ -69,14 +70,28 @@ void heartbeat() {
     #if (MQTT_REPORT_MAC)
         mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
     #endif
+    #if (MQTT_REPORT_RSSI)
+        mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+    #endif
     #if (MQTT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        #if ENABLE_INFLUXDB
+        influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        #endif
     #endif
     #if (MQTT_REPORT_FREEHEAP)
         mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        #if ENABLE_INFLUXDB
+        influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        #endif
     #endif
     #if (MQTT_REPORT_RELAY)
         relayMQTT();
+    #endif
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    #if (MQTT_REPORT_COLOR)
+        mqttSend(MQTT_TOPIC_COLOR, lightColor().c_str());
+    #endif
     #endif
     #if (MQTT_REPORT_VCC)
     #if ENABLE_ADC_VCC
@@ -89,9 +104,32 @@ void heartbeat() {
 
 }
 
+void customReset(unsigned char status) {
+    EEPROM.write(EEPROM_CUSTOM_RESET, status);
+    EEPROM.commit();
+}
+
+unsigned char customReset() {
+    static unsigned char status = 255;
+    if (status == 255) {
+        status = EEPROM.read(EEPROM_CUSTOM_RESET);
+        if (status > 0) customReset(0);
+        if (status > CUSTOM_RESET_MAX) status = 0;
+    }
+    return status;
+}
+
 void hardwareSetup() {
     EEPROM.begin(4096);
-    Serial.begin(SERIAL_BAUDRATE);
+    #ifdef DEBUG_PORT
+        DEBUG_PORT.begin(SERIAL_BAUDRATE);
+        if (customReset() == CUSTOM_RESET_HARDWARE) {
+            DEBUG_PORT.setDebugOutput(true);
+        }
+    #endif
+    #ifdef SONOFF_DUAL
+        Serial.begin(SERIAL_BAUDRATE);
+    #endif
     #if not EMBEDDED_WEB
         SPIFFS.begin();
     #endif
@@ -118,8 +156,18 @@ void welcome() {
     DEBUG_MSG_P(PSTR("%s\n%s\n\n"), (char *) APP_AUTHOR, (char *) APP_WEBSITE);
     DEBUG_MSG_P(PSTR("ChipID: %06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("CPU frequency: %d MHz\n"), ESP.getCpuFreqMHz());
-    DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
-    DEBUG_MSG_P(PSTR("Memory size: %d bytes\n"), ESP.getFlashChipSize());
+
+    unsigned char custom_reset = customReset();
+    if (custom_reset > 0) {
+        char buffer[32];
+        strcpy_P(buffer, custom_reset_string[custom_reset-1]);
+        DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), buffer);
+    } else {
+        DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+    }
+
+    DEBUG_MSG_P(PSTR("Memory size (SDK): %d bytes\n"), ESP.getFlashChipSize());
+    DEBUG_MSG_P(PSTR("Memory size (CHIP): %d bytes\n"), ESP.getFlashChipRealSize());
     DEBUG_MSG_P(PSTR("Free heap: %d bytes\n"), ESP.getFreeHeap());
     DEBUG_MSG_P(PSTR("Firmware size: %d bytes\n"), ESP.getSketchSize());
     DEBUG_MSG_P(PSTR("Free firmware space: %d bytes\n"), ESP.getFreeSketchSpace());
@@ -175,11 +223,17 @@ void setup() {
     #if ENABLE_NOFUSS
         nofussSetup();
     #endif
+    #if ENABLE_INFLUXDB
+        influxDBSetup();
+    #endif
     #if ENABLE_POW
         powSetup();
     #endif
     #if ENABLE_DS18B20
         dsSetup();
+    #endif
+    #if ENABLE_ANALOG
+        analogSetup();
     #endif
     #if ENABLE_DHT
         dhtSetup();
@@ -191,12 +245,16 @@ void setup() {
         powerMonitorSetup();
     #endif
 
+    // Prepare configuration for version 2.0
+    hwUpwardsCompatibility();
+
 }
 
 void loop() {
 
     hardwareLoop();
     buttonLoop();
+    relayLoop();
     ledLoop();
     wifiLoop();
     otaLoop();
@@ -217,6 +275,9 @@ void loop() {
     #endif
     #if ENABLE_DS18B20
         dsLoop();
+    #endif
+    #if ENABLE_ANALOG
+        analogLoop();
     #endif
     #if ENABLE_DHT
         dhtLoop();
