@@ -163,6 +163,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool changedNTP = false;
         bool apiEnabled = false;
         bool dstEnabled = false;
+        #if ASYNC_TCP_SSL_ENABLED
+            bool mqttUseSSL = false;
+        #endif
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
@@ -256,6 +259,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 dstEnabled = true;
                 continue;
             }
+            #if ASYNC_TCP_SSL_ENABLED
+                if (key == "mqttUseSSL") {
+                    mqttUseSSL = true;
+                    continue;
+                }
+            #endif
             #if ENABLE_FAUXMO
                 if (key == "fauxmoEnabled") {
                     fauxmoEnabled = true;
@@ -304,6 +313,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setSetting("ntpDST", dstEnabled);
                 save = changed = changedNTP = true;
             }
+            #if ASYNC_TCP_SSL_ENABLED
+                if (mqttUseSSL != (getSetting("mqttUseSSL", 0). toInt() == 1)) {
+                    setSetting("mqttUseSSL", mqttUseSSL);
+                    save = changed = changedMQTT = true;
+                }
+            #endif
             #if ENABLE_FAUXMO
                 if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
                     setSetting("fauxmoEnabled", fauxmoEnabled);
@@ -431,6 +446,11 @@ void _wsStart(uint32_t client_id) {
         root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
         root["mqttUser"] = getSetting("mqttUser");
         root["mqttPassword"] = getSetting("mqttPassword");
+        #if ASYNC_TCP_SSL_ENABLED
+            root["mqttsslVisible"] = 1;
+            root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
+            root["mqttFP"] = getSetting("mqttFP");
+        #endif
         root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
 
         JsonArray& relay = root.createNestedArray("relayStatus");
@@ -780,7 +800,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            deferred.once_ms(100, []() { 
+            deferred.once_ms(100, []() {
                 customReset(CUSTOM_RESET_RPC);
                 ESP.restart();
             });

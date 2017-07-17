@@ -458,9 +458,25 @@
                                     <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
                                 </div>
 
+                                <div class="pure-g module module-mqttssl">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="mqttUseSSL">Use secure connection (SSL)</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="mqttUseSSL" tabindex="25" /></div>
+                                </div>
+
+                                <div class="pure-g module module-mqttssl">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttFP">SSL Fingerprint</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttFP" type="text" size="59" tabindex="26" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        This is the fingerprint for the SSL certificate of the server. If using CloudMQTT you can get it using (use your server and port):<br />
+                                        $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem<br />
+                                        $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
+                                    </div>
+                                </div>
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttTopic">MQTT Root Topic</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttTopic" type="text" size="20" tabindex="25" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttTopic" type="text" size="20" tabindex="27" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaces by the device hostname.<br />

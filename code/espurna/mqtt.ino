@@ -178,6 +178,22 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
 }
 
+bool fp2array(const char * fingerprint, unsigned char * bytearray) {
+
+    // check length (20 2-character digits ':'-separated => 20*2+19 = 59)
+    if (strlen(fingerprint) != 59) return false;
+
+    DEBUG_MSG_P(PSTR("[MQTT] Fingerprint %s\n"), fingerprint);
+
+    // walk the fingerprint
+    for (unsigned int i=0; i<20; i++) {
+        bytearray[i] = strtol(fingerprint + 3*i, NULL, 16);
+    }
+
+    return true;
+
+}
+
 void mqttConnect() {
 
     if (!mqtt.connected()) {
@@ -224,11 +240,20 @@ void mqttConnect() {
                 mqtt.setCredentials(_mqttUser, _mqttPass);
             }
             DEBUG_MSG_P(PSTR("\n"));
+
             #if ASYNC_TCP_SSL_ENABLED
-                mqtt.connect(getSetting("mqttSSL", MQTT_SSL).toInt() == 1);
-            #else
-                mqtt.connect();
+                bool secure = getSetting("mqttUseSSL", MQTT_USE_SSL).toInt() == 1;
+                mqtt.setSecure(secure);
+                if (secure) {
+                    DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
+                    unsigned char fp[20];
+                    if (fp2array(getSetting("mqttFP").c_str(), fp)) {
+                        mqtt.addServerFingerprint(fp);
+                    }
+                }
             #endif
+
+            mqtt.connect();
 
         #else
 
@@ -268,6 +293,24 @@ void mqttSetup() {
             _mqttOnConnect();
         });
         mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
+            if (reason == AsyncMqttClientDisconnectReason::TCP_DISCONNECTED) {
+                DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED) {
+                DEBUG_MSG_P(PSTR("[MQTT] Identifier Rejected\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE) {
+                DEBUG_MSG_P(PSTR("[MQTT] Server unavailable\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS) {
+                DEBUG_MSG_P(PSTR("[MQTT] Malformed credentials\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
+                DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT) {
+                DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
+            }
             _mqttOnDisconnect();
         });
         mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
