@@ -201,6 +201,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_SKIP_RETAINED      1
 #define MQTT_SKIP_TIME          1000
 
+#define MQTT_USE_JSON           1
+
+#define MQTT_TOPIC_JSON         "data"
 #define MQTT_TOPIC_ACTION       "action"
 #define MQTT_TOPIC_RELAY        "relay"
 #define MQTT_TOPIC_LED          "led"

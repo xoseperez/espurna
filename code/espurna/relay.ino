@@ -381,7 +381,7 @@ void relayDomoticzSetup() {
 
 void relayMQTT(unsigned char id) {
     if (id >= _relays.size()) return;
-    mqttSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
+    mqttAppend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
 
 #if ENABLE_INFLUXDB
@@ -405,6 +405,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         #if not MQTT_REPORT_RELAY
             relayMQTT();
+            mqttSend();
         #endif
 
         char buffer[strlen(MQTT_TOPIC_RELAY) + 3];
@@ -523,7 +524,10 @@ void relayLoop(void) {
                 ledStatus(_relays[id].led - 1, status);
             }
 
-            if (_relays[id].scheduledReport) relayMQTT(id);
+            if (_relays[id].scheduledReport) {
+                relayMQTT(id);
+                mqttSend();
+            }
             if (!recursive) {
                 relayPulse(id);
                 relaySync(id);

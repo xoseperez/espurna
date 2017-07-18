@@ -7,6 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 #include <vector>
 
 const char *mqtt_user = 0;
@@ -30,6 +31,13 @@ std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
     unsigned long mqttConnectedAt = 0;
 #endif
+
+typedef struct {
+    char * topic;
+    unsigned char index;
+    char * message;
+} mqtt_message_t;
+std::vector<mqtt_message_t> _mqtt_queue;
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -80,6 +88,50 @@ void mqttSendRaw(const char * topic, const char * message) {
     }
 }
 
+void mqttSend() {
+
+    #if MQTT_USE_JSON
+
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+            mqtt_message_t element = _mqtt_queue[i];
+            if (element.index < 255) {
+                String topic = String(element.topic) + String("/") + String(element.index);
+                root[topic] = element.message;
+            } else {
+                root[element.topic] = element.message;
+            }
+        }
+
+        root["time"] = NTP.getTimeDateString();
+        root["hostname"] = getSetting("hostname", HOSTNAME);
+
+        String output;
+        root.printTo(output);
+        String path = mqttTopic + String(MQTT_TOPIC_JSON);
+        mqttSendRaw(path.c_str(), output.c_str());
+
+    #else
+        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+        for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+            mqtt_message_t element = _mqtt_queue[i];
+            String path = mqttTopic + String(element.topic);
+            if (element.index < 255) path += String ("/") + String(element.index);
+            path += mqttGetter;
+            mqttSendRaw(path.c_str(), element.message);
+        }
+    #endif
+
+    for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        free(element.topic);
+        free(element.message);
+    }
+    _mqtt_queue.clear();
+
+}
+
 void mqttSend(const char * topic, const char * message) {
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     String path = mqttTopic + String(topic) + mqttGetter;
@@ -90,6 +142,19 @@ void mqttSend(const char * topic, unsigned int index, const char * message) {
     String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     String path = mqttTopic + String(topic) + String ("/") + String(index) + mqttGetter;;
     mqttSendRaw(path.c_str(), message);
+}
+
+unsigned int mqttAppend(const char * topic, unsigned int index, const char * message) {
+    mqtt_message_t element;
+    element.topic = strdup(topic);
+    element.index = index;
+    element.message = strdup(message);
+    _mqtt_queue.push_back(element);
+    return _mqtt_queue.size();
+}
+
+unsigned int mqttAppend(const char * topic, const char * message) {
+    return mqttAppend(topic, 255, message);
 }
 
 void mqttSubscribeRaw(const char * topic) {
