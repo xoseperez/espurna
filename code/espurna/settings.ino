@@ -131,7 +131,8 @@ void settingsSetup() {
     Embedis::command( F("COLOR"), [](Embedis* e) {
         if (e->argc > 1) {
             String color = String(e->argv[1]);
-            lightColor(color.c_str(), true, true);
+            parseColor(color.c_str());
+            lightColor(true, true);
         }
         e->stream->printf("Color: %s\n", lightColor().c_str());
         e->response(Embedis::OK);

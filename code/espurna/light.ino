@@ -11,6 +11,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 Ticker colorTicker;
 bool _lightState = false;
+float brightness = 1.0;
 unsigned int _lightColor[3] = {0};
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
@@ -57,7 +58,7 @@ my9291 * _my9291;
 // UTILS
 // -----------------------------------------------------------------------------
 
-void color_string2array(const char * rgb, unsigned int * array) {
+void _color_string2array(const char * rgb, unsigned int * array) {
 
     char * p = (char *) rgb;
     if (strlen(p) == 0) return;
@@ -67,16 +68,25 @@ void color_string2array(const char * rgb, unsigned int * array) {
 
         ++p;
         unsigned long value = strtol(p, NULL, 16);
-        array[0] = (value >> 16) & 0xFF;
-        array[1] = (value >> 8) & 0xFF;
-        array[2] = (value) & 0xFF;
+
+        // RGBA values are interpreted like RGB + brightness
+        if (strlen(p) > 7) {
+            array[0] = (value >> 24) & 0xFF;
+            array[1] = (value >> 16) & 0xFF;
+            array[2] = (value >> 8) & 0xFF;
+            brightness =float(value & 0xFF) / 255;
+        } else {
+            array[0] = (value >> 16) & 0xFF;
+            array[1] = (value >> 8) & 0xFF;
+            array[2] = (value) & 0xFF;
+        }
 
     // it's a temperature
     } else if (p[strlen(p)-1] == 'K') {
 
         p[strlen(p)-1] = 0;
         unsigned int temperature = atoi(p);
-        color_temperature2array(temperature, array);
+        _color_temperature2array(temperature, array);
 
     // otherwise assume decimal values separated by commas
     } else {
@@ -105,16 +115,16 @@ void color_string2array(const char * rgb, unsigned int * array) {
 
 }
 
-void color_array2rgb(unsigned int * array, char * rgb) {
-    unsigned long value = array[0];
-    value = (value << 8) + array[1];
-    value = (value << 8) + array[2];
+void _color_array2rgb(unsigned int * array, float brightness, char * rgb) {
+    unsigned long value = array[0] * brightness;
+    value = (value << 8) + array[1] * brightness;
+    value = (value << 8) + array[2] * brightness;
     sprintf(rgb, "#%06X", value);
 }
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
-void color_temperature2array(unsigned int temperature, unsigned int * array) {
+void _color_temperature2array(unsigned int temperature, unsigned int * array) {
 
     // Force boundaries and conversion
     temperature = constrain(temperature, 1000, 40000) / 100;
@@ -136,19 +146,19 @@ void color_temperature2array(unsigned int temperature, unsigned int * array) {
     array[0] = constrain(red, 0, LIGHT_MAX_VALUE);
     array[1] = constrain(green, 0, LIGHT_MAX_VALUE);
     array[2] = constrain(blue, 0, LIGHT_MAX_VALUE);
+
 }
 
 // Converts a color intensity value (0..255) to a pwm value
-// This takes care of positive or negative logic
-unsigned int _intensity2pwm(unsigned int intensity) {
-    unsigned int pwm;
+// This takes care of positive or negative logic and brightness
+unsigned int _intensity2pwm(unsigned int intensity, float brightness) {
+
+    intensity = brightness * intensity;
 
     #if ENABLE_GAMMA_CORRECTION
-        pwm = (intensity < GAMMA_TABLE_SIZE) ? gamma_table[intensity] : LIGHT_PWM_RANGE;
+        unsigned int pwm = (intensity < GAMMA_TABLE_SIZE) ? gamma_table[intensity] : LIGHT_PWM_RANGE;
     #else
-        // Support integer multiples of 256 (-1) for the LIGHT_PWM_RANGE
-        // The divide should happen at compile time
-        pwm = intensity * ( (LIGHT_PWM_RANGE+1) / (LIGHT_MAX_VALUE+1) );
+        unsigned int pwm = intensity;
     #endif
 
     #if RGBW_INVERSE_LOGIC != 1
@@ -156,13 +166,19 @@ unsigned int _intensity2pwm(unsigned int intensity) {
     #endif
 
     return pwm;
+
 }
+
+unsigned int _intensity2pwm(unsigned int intensity) {
+    return _intensity2pwm(intensity, LIGHT_MAX_VALUE);
+}
+
 
 // -----------------------------------------------------------------------------
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigned int blue) {
+void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigned int blue, float brightness) {
 
     unsigned int white = 0;
 
@@ -176,7 +192,7 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
         _my9291->setState(state);
-        _my9291->setColor((my9291_color_t) { red, green, blue, white });
+        _my9291->setColor((my9291_color_t) { red * brightness, green * brightness, blue * brightness, white * brightness });
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
@@ -184,16 +200,17 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         // Check state
         if (!state) red = green = blue = white = 0;
 
-        analogWrite(RGBW_RED_PIN, _intensity2pwm(red));
-        analogWrite(RGBW_GREEN_PIN, _intensity2pwm(green));
-        analogWrite(RGBW_BLUE_PIN, _intensity2pwm(blue));
+        analogWrite(RGBW_RED_PIN, _intensity2pwm(red, brightness));
+        analogWrite(RGBW_GREEN_PIN, _intensity2pwm(green, brightness));
+        analogWrite(RGBW_BLUE_PIN, _intensity2pwm(blue, brightness));
         #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white));
+            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white, brightness));
         #endif
         #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
-            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white));
-            analogWrite(RGBW_WHITE2_PIN, _intensity2pwm(white));
+            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white, brightness));
+            analogWrite(RGBW_WHITE2_PIN, _intensity2pwm(white,brightness));
         #endif
+
     #endif
 
 }
@@ -204,38 +221,48 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
 
 void lightState(bool state) {
     _lightState = state;
-    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2]);
+    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2], brightness);
 }
 
 bool lightState() {
     return _lightState;
 }
 
-void lightColor(const char * color, bool save, bool forward) {
+void parseColor(const char * color) {
+    brightness = 1.0;
+    _color_string2array(color, _lightColor);
+}
 
-    color_string2array(color, _lightColor);
-    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2]);
+void lightColor(bool save, bool forward) {
+
+    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2], brightness);
 
     char rgb[8];
-    color_array2rgb(_lightColor, rgb);
+    _color_array2rgb(_lightColor, brightness, rgb);
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
 
     // Report color to MQTT broker
-    if (forward) mqttSend(MQTT_TOPIC_COLOR, rgb);
+    if (forward) {
+        mqttSend(MQTT_TOPIC_COLOR, rgb);
+    }
 
     // Report color to WS clients
-    char message[20];
-    sprintf(message, "{\"color\": \"%s\"}", rgb);
+    char message[64];
+    sprintf(message, "{\"color\": \"%s\", \"brightness\": %d}", rgb, (int) (brightness * LIGHT_MAX_BRIGHTNESS));
     wsSend(message);
 
 }
 
-String lightColor() {
+String lightColor(float b) {
     char rgb[8];
-    color_array2rgb(_lightColor, rgb);
+    _color_array2rgb(_lightColor, b, rgb);
     return String(rgb);
+}
+
+String lightColor() {
+    return lightColor(brightness);
 }
 
 // -----------------------------------------------------------------------------
@@ -243,13 +270,15 @@ String lightColor() {
 // -----------------------------------------------------------------------------
 
 void _lightColorSave() {
-    setSetting("color", lightColor());
+    setSetting("color", lightColor(1.0));
+    setSetting("brightness", brightness * LIGHT_MAX_BRIGHTNESS);
     saveSettings();
 }
 
 void _lightColorRestore() {
     String color = getSetting("color", LIGHT_DEFAULT_COLOR);
-    color_string2array(color.c_str(), _lightColor);
+    _color_string2array(color.c_str(), _lightColor);
+    brightness = getSetting("brightness", 1).toFloat() / LIGHT_MAX_BRIGHTNESS;
 }
 
 // -----------------------------------------------------------------------------
@@ -260,6 +289,8 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
 
     if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
+        mqttSubscribe(MQTT_TOPIC_COLORTEMP);
         mqttSubscribe(MQTT_TOPIC_COLOR);
     }
 
@@ -267,9 +298,27 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         // Match topic
         String t = mqttSubtopic((char *) topic);
-        if (!t.equals(MQTT_TOPIC_COLOR)) return;
 
-        lightColor(payload, true, mqttForward());
+        // Color temperature
+        if (t.equals(MQTT_TOPIC_COLORTEMP)) {
+            char buffer[10];
+            sprintf(buffer, "%sK", payload);
+            parseColor(buffer);
+            lightColor(true, mqttForward());
+        }
+
+        // Color
+        if (t.equals(MQTT_TOPIC_COLOR)) {
+            parseColor(payload);
+            lightColor(true, mqttForward());
+        }
+
+        // Brightness
+        if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
+            brightness = (float) atoi(payload) / LIGHT_MAX_BRIGHTNESS;
+            lightColor(true, mqttForward());
+        }
+
 
     }
 
@@ -308,7 +357,15 @@ void lightSetup() {
 			snprintf(buffer, len, "%s", lightColor().c_str());
         },
         [](const char * payload) {
-            lightColor(payload, true, mqttForward());
+            parseColor(payload);
+            lightColor(true, mqttForward());
+        }
+    );
+
+    apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
+        NULL,
+        [](const char * payload) {
+            lightColor(true, mqttForward());
         }
     );
 

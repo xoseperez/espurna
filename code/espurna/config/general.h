@@ -20,8 +20,8 @@
 // To receive the message son the destination computer use nc:
 // nc -ul 8111
 
-//#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
-//#define DEBUG_UDP_PORT          8111
+#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+#define DEBUG_UDP_PORT          8113
 
 //--------------------------------------------------------------------------------
 // EEPROM
@@ -205,6 +205,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RELAY        "relay"
 #define MQTT_TOPIC_LED          "led"
 #define MQTT_TOPIC_COLOR        "color"
+#define MQTT_TOPIC_BRIGHTNESS   "brightness"
+#define MQTT_TOPIC_COLORTEMP    "color/temperature"
 #define MQTT_TOPIC_BUTTON       "button"
 #define MQTT_TOPIC_IP           "ip"
 #define MQTT_TOPIC_VERSION      "version"
@@ -274,6 +276,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_DEFAULT_COLOR     "#000080"
 #define LIGHT_SAVE_DELAY        5
 #define LIGHT_MAX_VALUE         255
+#define LIGHT_MAX_BRIGHTNESS    LIGHT_MAX_VALUE
 
 #define MY9291_DI_PIN           13
 #define MY9291_DCKI_PIN         15

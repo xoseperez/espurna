@@ -143,7 +143,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (action.equals("color") && root.containsKey("data")) {
-                lightColor(root["data"], true, true);
+                parseColor(root["data"]);
+                lightColor(true, true);
             }
         #endif
 
@@ -780,7 +781,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            deferred.once_ms(100, []() { 
+            deferred.once_ms(100, []() {
                 customReset(CUSTOM_RESET_RPC);
                 ESP.restart();
             });
