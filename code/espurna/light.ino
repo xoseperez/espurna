@@ -237,21 +237,27 @@ void lightColor(bool save, bool forward) {
 
     _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2], brightness);
 
-    char rgb[8];
-    _color_array2rgb(_lightColor, brightness, rgb);
-
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
 
-    // Report color to MQTT broker
+    // Report color & brightness to MQTT broker
     if (forward) {
+        char rgb[8];
+        _color_array2rgb(_lightColor, 1.0, rgb);
         mqttSend(MQTT_TOPIC_COLOR, rgb);
+        char buffer[5];
+        sprintf(buffer, "%d", (int) (brightness * LIGHT_MAX_BRIGHTNESS));
+        mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
     }
 
     // Report color to WS clients
-    char message[64];
-    sprintf(message, "{\"color\": \"%s\", \"brightness\": %d}", rgb, (int) (brightness * LIGHT_MAX_BRIGHTNESS));
-    wsSend(message);
+    {
+        char rgb[8];
+        _color_array2rgb(_lightColor, brightness, rgb);
+        char message[64];
+        sprintf(message, "{\"color\": \"%s\"}", rgb);
+        wsSend(message);
+    }
 
 }
 
@@ -358,14 +364,17 @@ void lightSetup() {
         },
         [](const char * payload) {
             parseColor(payload);
-            lightColor(true, mqttForward());
+            lightColor(true, true);
         }
     );
 
     apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
-        NULL,
+        [](char * buffer, size_t len) {
+			snprintf(buffer, len, "%d", (int) (brightness * LIGHT_MAX_BRIGHTNESS));
+        },
         [](const char * payload) {
-            lightColor(true, mqttForward());
+            brightness = (float) atoi(payload) / LIGHT_MAX_BRIGHTNESS;
+            lightColor(true, true);
         }
     );
 
