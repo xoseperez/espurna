@@ -59,7 +59,7 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define ENABLE_POW          1
+    #define ENABLE_HLW8012      1
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
@@ -148,7 +148,7 @@
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            15
     #define LED1_PIN_INVERSE    0
-    #define ENABLE_POW          1
+    #define ENABLE_HLW8012      1
 
 #elif defined(SONOFF_DUAL)
 

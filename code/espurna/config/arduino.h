@@ -28,6 +28,7 @@
 //#define WIFI_RELAYS_BOARD_KIT
 //#define AI_LIGHT
 //#define LED_CONTROLLER
+//#define H801_LED_CONTROLLER
 //#define ESPURNA_H
 
 //--------------------------------------------------------------------------------
@@ -37,7 +38,7 @@
 //#define ENABLE_DHT            1
 //#define ENABLE_DS18B20        1
 //#define ENABLE_EMON           1
-//#define ENABLE_HLW8018        1
+//#define ENABLE_HLW8012        1
 //#define ENABLE_RF             1
 //#define ENABLE_FAUXMO         0
 //#define ENABLE_NOFUSS         1
