@@ -163,6 +163,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool changedNTP = false;
         bool apiEnabled = false;
         bool dstEnabled = false;
+        bool mqttUseJson = false;
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
@@ -256,6 +257,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 dstEnabled = true;
                 continue;
             }
+            if (key == "mqttUseJson") {
+                mqttUseJson = true;
+                continue;
+            }
             #if ENABLE_FAUXMO
                 if (key == "fauxmoEnabled") {
                     fauxmoEnabled = true;
@@ -303,6 +308,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (dstEnabled != (getSetting("ntpDST").toInt() == 1)) {
                 setSetting("ntpDST", dstEnabled);
                 save = changed = changedNTP = true;
+            }
+            if (mqttUseJson != (getSetting("mqttUseJson").toInt() == 1)) {
+                setSetting("mqttUseJson", mqttUseJson);
+                save = changed = true;
             }
             #if ENABLE_FAUXMO
                 if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
@@ -432,6 +441,7 @@ void _wsStart(uint32_t client_id) {
         root["mqttUser"] = getSetting("mqttUser");
         root["mqttPassword"] = getSetting("mqttPassword");
         root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
+        root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 
         JsonArray& relay = root.createNestedArray("relayStatus");
         for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
@@ -780,7 +790,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            deferred.once_ms(100, []() { 
+            deferred.once_ms(100, []() {
                 customReset(CUSTOM_RESET_RPC);
                 ESP.restart();
             });
