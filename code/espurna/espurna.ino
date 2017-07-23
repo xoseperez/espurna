@@ -226,8 +226,8 @@ void setup() {
     #if ENABLE_INFLUXDB
         influxDBSetup();
     #endif
-    #if ENABLE_POW
-        powSetup();
+    #if ENABLE_HLW8012
+        hlw8012Setup();
     #endif
     #if ENABLE_DS18B20
         dsSetup();
@@ -270,8 +270,8 @@ void loop() {
     #if ENABLE_NOFUSS
         nofussLoop();
     #endif
-    #if ENABLE_POW
-        powLoop();
+    #if ENABLE_HLW8012
+        hlw8012Loop();
     #endif
     #if ENABLE_DS18B20
         dsLoop();
