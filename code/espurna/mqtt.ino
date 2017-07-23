@@ -28,6 +28,7 @@ String mqttTopic;
 bool _mqttForward;
 char *_mqttUser = 0;
 char *_mqttPass = 0;
+char *_mqttWill;
 std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
     unsigned long mqttConnectedAt = 0;
@@ -264,7 +265,8 @@ void mqttConnect() {
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
         _mqttUser = strdup(getSetting("mqttUser").c_str());
         _mqttPass = strdup(getSetting("mqttPassword").c_str());
-        char * will = strdup((mqttTopic + MQTT_TOPIC_STATUS).c_str());
+        if (_mqttWill) free(_mqttWill);
+        _mqttWill = strdup((mqttTopic + MQTT_TOPIC_STATUS).c_str());
 
         DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d"), host, port);
         mqtt.setServer(host, port);
@@ -272,7 +274,7 @@ void mqttConnect() {
         #if MQTT_USE_ASYNC
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-            mqtt.setWill(will, MQTT_QOS, MQTT_RETAIN, "0");
+            mqtt.setWill(_mqttWill, MQTT_QOS, MQTT_RETAIN, "0");
             if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
                 DEBUG_MSG_P(PSTR(" as user '%s'."), _mqttUser);
                 mqtt.setCredentials(_mqttUser, _mqttPass);
@@ -286,10 +288,10 @@ void mqttConnect() {
 
             if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
                 DEBUG_MSG_P(PSTR(" as user '%s'\n"), _mqttUser);
-                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, will, MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, _mqttWill, MQTT_QOS, MQTT_RETAIN, "0");
             } else {
                 DEBUG_MSG_P(PSTR("\n"));
-				response = mqtt.connect(getIdentifier().c_str(), will, MQTT_QOS, MQTT_RETAIN, "0");
+				response = mqtt.connect(getIdentifier().c_str(), _mqttWill, MQTT_QOS, MQTT_RETAIN, "0");
             }
 
             if (response) {
@@ -302,7 +304,6 @@ void mqttConnect() {
         #endif
 
         free(host);
-        free(will);
 
         String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
