@@ -320,15 +320,27 @@
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Pulse time in seconds (maximum value is 60s, accepts decimals).</div>
                                 </div>
 
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="btnDelay">Double click delay</label>
+                                    <input name="btnDelay" class="pure-u-1 pure-u-md-3-4" type="number" min="0" step="100" max="1000" tabindex="6" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
+                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
+                                        Increase this number if you are having trouble to double click the button.
+                                        Set this value to 0 to disable double click. You won't be able to set the device in AP mode manually but your device will respond immediately to button clicks.<br />
+                                        You will have to <strong>reset the device</strong> after updating for this setting to apply.
+                                    </div>
+                                </div>
+
                                 <div class="pure-g module module-fauxmo">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Alexa integration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="6" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="7" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="7" value="0"> Celsius (ºC)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="1"> Fahrenheit (ºF)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="0"> Celsius (ºC)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="9" value="1"> Fahrenheit (ºF)</input></div>
                                 </div>
 
                                 <div class="pure-g">

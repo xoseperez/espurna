@@ -461,6 +461,8 @@ void _wsStart(uint32_t client_id) {
             root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
         }
 
+        root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+
         root["webPort"] = getSetting("webPort", WEBSERVER_PORT).toInt();
 
         root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
