@@ -69,8 +69,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // BUTTON
 //--------------------------------------------------------------------------------
 
-#define BUTTON_LNGCLICK_LENGTH      1000
-#define BUTTON_LNGLNGCLICK_LENGTH   10000
+#define BUTTON_DEBOUNCE_DELAY       50
+#define BUTTON_DBLCLICK_DELAY       500
+#define BUTTON_LNGCLICK_DELAY       1000
+#define BUTTON_LNGLNGCLICK_DELAY    10000
 
 #define BUTTON_EVENT_NONE           0
 #define BUTTON_EVENT_PRESSED        1
