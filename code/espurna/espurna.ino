@@ -42,7 +42,7 @@ void heartbeat() {
     unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
     unsigned int free_heap = ESP.getFreeHeap();
 
-    DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) NTP.getTimeDateString().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
     if (!mqttConnected()) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
@@ -62,7 +62,7 @@ void heartbeat() {
         mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
     #endif
     #if (MQTT_REPORT_HOSTNAME)
-        //mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+        mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
     #endif
     #if (MQTT_REPORT_IP)
         mqttSend(MQTT_TOPIC_IP, getIP().c_str());

@@ -221,7 +221,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RSSI         "rssi"
 #define MQTT_TOPIC_APP          "app"
 #define MQTT_TOPIC_INTERVAL     "interval"
-#define MQTT_TOPIC_HOSTNAME     "hostname"
+#define MQTT_TOPIC_HOSTNAME     "host"
+#define MQTT_TOPIC_TIME         "time"
 #define MQTT_TOPIC_ANALOG       "analog"
 
 // Periodic reports
