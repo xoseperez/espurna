@@ -53,34 +53,34 @@ void heartbeat() {
 
 
     #if (MQTT_REPORT_INTERVAL)
-        mqttAppend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
+        mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
     #endif
     #if (MQTT_REPORT_APP)
-        mqttAppend(MQTT_TOPIC_APP, APP_NAME);
+        mqttSend(MQTT_TOPIC_APP, APP_NAME);
     #endif
     #if (MQTT_REPORT_VERSION)
-        mqttAppend(MQTT_TOPIC_VERSION, APP_VERSION);
+        mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
     #endif
     #if (MQTT_REPORT_HOSTNAME)
-        //mqttAppend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+        //mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
     #endif
     #if (MQTT_REPORT_IP)
-        mqttAppend(MQTT_TOPIC_IP, getIP().c_str());
+        mqttSend(MQTT_TOPIC_IP, getIP().c_str());
     #endif
     #if (MQTT_REPORT_MAC)
-        mqttAppend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
+        mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
     #endif
     #if (MQTT_REPORT_RSSI)
-        mqttAppend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+        mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
     #endif
     #if (MQTT_REPORT_UPTIME)
-        mqttAppend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #if ENABLE_INFLUXDB
         influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #endif
     #endif
     #if (MQTT_REPORT_FREEHEAP)
-        mqttAppend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #if ENABLE_INFLUXDB
         influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
@@ -90,19 +90,17 @@ void heartbeat() {
     #endif
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     #if (MQTT_REPORT_COLOR)
-        mqttAppend(MQTT_TOPIC_COLOR, lightColor().c_str());
+        mqttSend(MQTT_TOPIC_COLOR, lightColor().c_str());
     #endif
     #endif
     #if (MQTT_REPORT_VCC)
     #if ENABLE_ADC_VCC
-        mqttAppend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+        mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
     #endif
     #endif
     #if (MQTT_REPORT_STATUS)
-        mqttAppend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE);
+        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
     #endif
-
-    mqttSend();
 
 }
 

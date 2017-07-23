@@ -9,6 +9,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <vector>
+#include <Ticker.h>
 
 const char *mqtt_user = 0;
 const char *mqtt_pass = 0;
@@ -34,10 +35,10 @@ std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 
 typedef struct {
     char * topic;
-    unsigned char index;
     char * message;
 } mqtt_message_t;
 std::vector<mqtt_message_t> _mqtt_queue;
+Ticker mqttFlushTicker;
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -88,40 +89,23 @@ void mqttSendRaw(const char * topic, const char * message) {
     }
 }
 
-void mqttSend() {
+void _mqttFlush() {
 
-    #if MQTT_USE_JSON
+    if (_mqtt_queue.size() == 0) return;
 
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
-        for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
-            mqtt_message_t element = _mqtt_queue[i];
-            if (element.index < 255) {
-                String topic = String(element.topic) + String("/") + String(element.index);
-                root[topic] = element.message;
-            } else {
-                root[element.topic] = element.message;
-            }
-        }
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        root[element.topic] = element.message;
+    }
+    root["time"] = NTP.getTimeDateString();
+    root["hostname"] = getSetting("hostname", HOSTNAME);
 
-        root["time"] = NTP.getTimeDateString();
-        root["hostname"] = getSetting("hostname", HOSTNAME);
-
-        String output;
-        root.printTo(output);
-        String path = mqttTopic + String(MQTT_TOPIC_JSON);
-        mqttSendRaw(path.c_str(), output.c_str());
-
-    #else
-        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-        for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
-            mqtt_message_t element = _mqtt_queue[i];
-            String path = mqttTopic + String(element.topic);
-            if (element.index < 255) path += String ("/") + String(element.index);
-            path += mqttGetter;
-            mqttSendRaw(path.c_str(), element.message);
-        }
-    #endif
+    String output;
+    root.printTo(output);
+    String path = mqttTopic + String(MQTT_TOPIC_JSON);
+    mqttSendRaw(path.c_str(), output.c_str());
 
     for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
         mqtt_message_t element = _mqtt_queue[i];
@@ -132,29 +116,33 @@ void mqttSend() {
 
 }
 
+void mqttSend(const char * topic, const char * message, bool force) {
+    bool useJson = force ? false : getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    if (useJson) {
+        mqtt_message_t element;
+        element.topic = strdup(topic);
+        element.message = strdup(message);
+        _mqtt_queue.push_back(element);
+        mqttFlushTicker.once_ms(100, _mqttFlush);
+    } else {
+        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+        String path = mqttTopic + String(topic) + mqttGetter;
+        mqttSendRaw(path.c_str(), message);
+    }
+}
+
 void mqttSend(const char * topic, const char * message) {
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    String path = mqttTopic + String(topic) + mqttGetter;
-    mqttSendRaw(path.c_str(), message);
+    mqttSend(topic, message, false);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
+    char buffer[strlen(topic)+5];
+    sprintf(buffer, "%s/%d", topic, index);
+    mqttSend(buffer, message, force);
 }
 
 void mqttSend(const char * topic, unsigned int index, const char * message) {
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    String path = mqttTopic + String(topic) + String ("/") + String(index) + mqttGetter;;
-    mqttSendRaw(path.c_str(), message);
-}
-
-unsigned int mqttAppend(const char * topic, unsigned int index, const char * message) {
-    mqtt_message_t element;
-    element.topic = strdup(topic);
-    element.index = index;
-    element.message = strdup(message);
-    _mqtt_queue.push_back(element);
-    return _mqtt_queue.size();
-}
-
-unsigned int mqttAppend(const char * topic, const char * message) {
-    return mqttAppend(topic, 255, message);
+    mqttSend(topic, index, message, false);
 }
 
 void mqttSubscribeRaw(const char * topic) {
