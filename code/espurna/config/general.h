@@ -152,6 +152,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #define WIFI_RECONNECT_INTERVAL 120000
+#define WIFI_CONNECT_TIMEOUT    30000
 #define WIFI_MAX_NETWORKS       5
 #define ADMIN_PASS              "fibonacci"
 #define FORCE_CHANGE_PASS       1
