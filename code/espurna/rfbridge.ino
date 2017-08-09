@@ -107,7 +107,26 @@ void _rfbDecode() {
     }
 
     if (action == RF_CODE_RFIN) {
+
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Forward message '%s'\n"), buffer);
+
+        // Look for the code
+        unsigned char id, state;
+        bool found = false;
+        for (id=0; id<relayCount(); id++) {
+            for (state=0; state<2; state++) {
+                String code = _rfbRetrieve(id, state == 1);
+                if (code.length()) {
+                    if (code.endsWith(&buffer[12])) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (found) break;
+        }
+        if (found) relayStatus(id, state == 1);
+
     }
 
 }
