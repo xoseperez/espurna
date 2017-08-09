@@ -45,13 +45,11 @@ char _last_modified[50];
 
 bool wsSend(const char * payload) {
     if (ws.count() > 0) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Broadcasting '%s'\n"), payload);
         ws.textAll(payload);
     }
 }
 
 bool wsSend(uint32_t client_id, const char * payload) {
-    DEBUG_MSG_P(PSTR("[WEBSOCKET] Sending '%s' to #%ld\n"), payload, client_id);
     ws.text(client_id, payload);
 }
 
