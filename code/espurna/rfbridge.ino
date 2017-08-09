@@ -9,7 +9,6 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 #ifdef SONOFF_RFBRIDGE
 
 #define RF_MESSAGE_SIZE     9
-#define RF_BUFFER_SIZE      12
 #define RF_SEND_TIMES       3
 #define RF_SEND_DELAY       50
 #define RF_CODE_START       0xAA
@@ -21,7 +20,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 #define RF_CODE_RFOUT       0xA5
 #define RF_CODE_STOP        0x55
 
-unsigned char _uartbuf[RF_BUFFER_SIZE] = {0};
+unsigned char _uartbuf[RF_MESSAGE_SIZE+3] = {0};
 unsigned char _uartpos = 0;
 unsigned char _learnId = 0;
 bool _learnState = true;
