@@ -125,7 +125,7 @@ void mqttSend(const char * topic, const char * message, bool force) {
         element.topic = strdup(topic);
         element.message = strdup(message);
         _mqtt_queue.push_back(element);
-        mqttFlushTicker.once_ms(100, _mqttFlush);
+        mqttFlushTicker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
     } else {
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
         String path = mqttTopic + String(topic) + mqttGetter;
