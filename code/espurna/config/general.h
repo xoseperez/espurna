@@ -20,8 +20,8 @@
 // To receive the message son the destination computer use nc:
 // nc -ul 8111
 
-//#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
-//#define DEBUG_UDP_PORT          8111
+#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+#define DEBUG_UDP_PORT          8113
 
 //--------------------------------------------------------------------------------
 // EEPROM
@@ -111,6 +111,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_PROVIDER_RELAY    0
 #define RELAY_PROVIDER_DUAL     1
 #define RELAY_PROVIDER_LIGHT    2
+#define RELAY_PROVIDER_RFBRIDGE 3
 
 // Pulse time in milliseconds
 #define RELAY_PULSE_TIME        1.0
@@ -225,6 +226,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_HOSTNAME     "host"
 #define MQTT_TOPIC_TIME         "time"
 #define MQTT_TOPIC_ANALOG       "analog"
+#define MQTT_TOPIC_RFOUT        "rfout"
+#define MQTT_TOPIC_RFIN         "rfin"
+#define MQTT_TOPIC_RFLEARN      "rflearn"
 
 // Periodic reports
 #define MQTT_REPORT_STATUS      1

@@ -30,6 +30,7 @@
 //#define LED_CONTROLLER
 //#define H801_LED_CONTROLLER
 //#define ESPURNA_H
+//#define SONOFF_RFBRIDGE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

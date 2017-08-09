@@ -120,19 +120,22 @@ unsigned char customReset() {
 }
 
 void hardwareSetup() {
+
     EEPROM.begin(4096);
+
     #ifdef DEBUG_PORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
         if (customReset() == CUSTOM_RESET_HARDWARE) {
             DEBUG_PORT.setDebugOutput(true);
         }
-    #endif
-    #ifdef SONOFF_DUAL
+    #elif defined(SERIAL_BAUDRATE)
         Serial.begin(SERIAL_BAUDRATE);
     #endif
+
     #if not EMBEDDED_WEB
         SPIFFS.begin();
     #endif
+
 }
 
 void hardwareLoop() {
@@ -214,6 +217,9 @@ void setup() {
     mqttSetup();
     ntpSetup();
 
+    #ifdef SONOFF_RFBRIDGE
+        rfbSetup();
+    #endif
     #if ENABLE_I2C
         i2cSetup();
     #endif
@@ -264,8 +270,11 @@ void loop() {
     #if ENABLE_FAUXMO
         fauxmoLoop();
     #endif
-    #ifndef SONOFF_DUAL
+    #if !defined(SONOFF_DUAL) & !defined(SONOFF_RFBRIDGE)
         settingsLoop();
+    #endif
+    #ifdef SONOFF_RFBRIDGE
+        rfbLoop();
     #endif
     #if ENABLE_NOFUSS
         nofussLoop();

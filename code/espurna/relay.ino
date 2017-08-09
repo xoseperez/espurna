@@ -18,6 +18,7 @@ typedef struct {
     unsigned char led;
     unsigned int floodWindowStart;
     unsigned char floodWindowChanges;
+    bool scheduled;
     unsigned int scheduledStatusTime;
     bool scheduledStatus;
     bool scheduledReport;
@@ -37,6 +38,10 @@ unsigned char _dual_status = 0;
 void relayProviderStatus(unsigned char id, bool status) {
 
     if (id >= _relays.size()) return;
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_RFBRIDGE
+        rfbState(id, status);
+    #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         _dual_status ^= (1 << id);
@@ -61,6 +66,10 @@ void relayProviderStatus(unsigned char id, bool status) {
 bool relayProviderStatus(unsigned char id) {
 
     if (id >= _relays.size()) return false;
+
+    #if RELAY_PROVIDER == RELAY_PROVIDER_RFBRIDGE
+        return _relays[id].scheduledStatus;
+    #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         return ((_dual_status & (1 << id)) > 0);
@@ -156,7 +165,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
     bool changed = false;
 
-    if (relayStatus(id) != status) {
+    //if (relayStatus(id) != status) {
 
         unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
         unsigned int currentTime = millis();
@@ -171,6 +180,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
             _relays[id].scheduledStatusTime = floodWindowEnd;
         }
 
+        _relays[id].scheduled = true;
         _relays[id].scheduledStatus = status;
         _relays[id].scheduledReport = (report ? true : _relays[id].scheduledReport);
 
@@ -180,7 +190,7 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
         changed = true;
 
-    }
+    //}
 
     return changed;
 }
@@ -456,16 +466,14 @@ void relaySetupMQTT() {
 
 void relaySetup() {
 
-    #if defined(SONOFF_DUAL)
+    // Dummy relays for AI Light, Magic Home LED Controller, H801,
+    // Sonoff Dual and Sonoff RF Bridge
+    #ifdef DUMMY_RELAY_COUNT
 
-        // Two dummy relays for the dual
-        _relays.push_back((relay_t) {0, 0});
-        _relays.push_back((relay_t) {0, 0});
-
-    #elif defined(AI_LIGHT) | defined(LED_CONTROLLER) | defined(H801_LED_CONTROLLER)
-
-        // One dummy relay for the AI Thinker Light & Magic Home and H801 led controllers
-        _relays.push_back((relay_t) {0, 0});
+        for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
+            _relays.push_back((relay_t) {0, 0});
+            _relays[i].scheduled = false;
+        }
 
     #else
 
@@ -513,7 +521,8 @@ void relayLoop(void) {
         unsigned int currentTime = millis();
         bool status = _relays[id].scheduledStatus;
 
-        if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
+        //if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
+        if (_relays[id].scheduled && currentTime >= _relays[id].scheduledStatusTime) {
 
             DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
 
@@ -541,6 +550,7 @@ void relayLoop(void) {
                 relayInfluxDB(id);
             #endif
 
+            _relays[id].scheduled = false;
             _relays[id].scheduledReport = false;
 
         }
