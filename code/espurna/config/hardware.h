@@ -235,7 +235,7 @@
     #define SERIAL_BAUDRATE     19200
     #undef RELAY_PROVIDER
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
-    #define DUMMY_RELAY_COUNT   4
+    #define DUMMY_RELAY_COUNT   6
     #define TRACK_RELAY_STATUS  0
 
 // -----------------------------------------------------------------------------
