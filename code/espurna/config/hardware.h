@@ -236,6 +236,7 @@
     #undef RELAY_PROVIDER
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
     #define DUMMY_RELAY_COUNT   4
+    #define TRACK_RELAY_STATUS  0
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
@@ -518,6 +519,11 @@
 #define BUTTON_SWITCH       1
 #define BUTTON_DEFAULT_HIGH 2
 #define BUTTON_SET_PULLUP   4
+#endif
+
+// Does the board track the relay status?
+#ifndef TRACK_RELAY_STATUS
+#define TRACK_RELAY_STATUS  1
 #endif
 
 // Relay providers

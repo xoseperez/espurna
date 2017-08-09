@@ -1,6 +1,6 @@
 #define DEBUG_MESSAGE_MAX_LENGTH    80
 
-#if defined(SONOFF_DUAL) | defined(SONOFF_RFBRIDGE)
+#if defined(SONOFF_DUAL)
 #undef DEBUG_PORT
 #endif
 

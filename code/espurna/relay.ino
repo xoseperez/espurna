@@ -165,7 +165,9 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
     bool changed = false;
 
-    //if (relayStatus(id) != status) {
+    #if TRACK_RELAY_STATUS
+    if (relayStatus(id) != status) {
+    #endif
 
         unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
         unsigned int currentTime = millis();
@@ -190,7 +192,9 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
         changed = true;
 
-    //}
+    #if TRACK_RELAY_STATUS
+    }
+    #endif
 
     return changed;
 }
@@ -521,8 +525,11 @@ void relayLoop(void) {
         unsigned int currentTime = millis();
         bool status = _relays[id].scheduledStatus;
 
-        //if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
+        #if TRACK_RELAY_STATUS
+        if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
+        #else
         if (_relays[id].scheduled && currentTime >= _relays[id].scheduledStatusTime) {
+        #endif
 
             DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
 

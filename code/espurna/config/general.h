@@ -23,8 +23,8 @@
 // To receive the message son the destination computer use nc:
 // nc -ul 8111
 
-#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
-#define DEBUG_UDP_PORT          8113
+//#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+//#define DEBUG_UDP_PORT          8113
 
 //--------------------------------------------------------------------------------
 // EEPROM
@@ -346,3 +346,11 @@ PROGMEM const char* const custom_reset_string[] = {
 // this device should be discoberable and respond to Alexa commands.
 // Both ENABLE_FAUXMO and fauxmoEnabled should be 1 for Alexa support to work.
 #define FAUXMO_ENABLED          1
+
+
+// -----------------------------------------------------------------------------
+// RFBRIDGE
+// -----------------------------------------------------------------------------
+
+#define RF_SEND_TIMES           4               // How many times to send the message
+#define RF_SEND_DELAY           250             // Interval between sendings in ms

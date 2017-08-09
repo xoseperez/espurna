@@ -8,9 +8,11 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #ifdef SONOFF_RFBRIDGE
 
+// -----------------------------------------------------------------------------
+// DEFINITIONS
+// -----------------------------------------------------------------------------
+
 #define RF_MESSAGE_SIZE     9
-#define RF_SEND_TIMES       3
-#define RF_SEND_DELAY       50
 #define RF_CODE_START       0xAA
 #define RF_CODE_ACK         0xA0
 #define RF_CODE_LEARN       0xA1
@@ -19,6 +21,10 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 #define RF_CODE_RFIN        0xA4
 #define RF_CODE_RFOUT       0xA5
 #define RF_CODE_STOP        0x55
+
+// -----------------------------------------------------------------------------
+// GLOBALS TO THE MODULE
+// -----------------------------------------------------------------------------
 
 unsigned char _uartbuf[RF_MESSAGE_SIZE+3] = {0};
 unsigned char _uartpos = 0;
@@ -31,21 +37,26 @@ bool _learnState = true;
 
 void _rfbAck() {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending ACK\n"));
+    Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_ACK);
     Serial.write(RF_CODE_STOP);
     Serial.flush();
+    Serial.println();
 }
 
 void _rfbLearn() {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending LEARN\n"));
+    Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_LEARN);
     Serial.write(RF_CODE_STOP);
     Serial.flush();
+    Serial.println();
 }
 
 void _rfbSend(byte * message) {
+    Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_RFOUT);
     for (unsigned char j=0; j<RF_MESSAGE_SIZE; j++) {
@@ -53,6 +64,7 @@ void _rfbSend(byte * message) {
     }
     Serial.write(RF_CODE_STOP);
     Serial.flush();
+    Serial.println();
 }
 
 void _rfbSend(byte * message, int times) {
