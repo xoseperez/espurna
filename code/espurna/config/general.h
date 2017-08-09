@@ -9,7 +9,6 @@
 
 #define SERIAL_BAUDRATE         115200          // Debugging console boud rate
 #define HOSTNAME                DEVICE          // Hostname
-#define HEARTBEAT_INTERVAL      300000          // Report status every 5 minutes
 #define UPTIME_OVERFLOW         4294967295      // Uptime overflow value
 
 //--------------------------------------------------------------------------------
@@ -35,6 +34,27 @@
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
 #define EEPROM_DATA_END         6               // End of custom EEPROM data block
+
+//--------------------------------------------------------------------------------
+// HEARTBEAT
+//--------------------------------------------------------------------------------
+
+#define HEARTBEAT_INTERVAL          300000      // Interval between heartbeat messages (in ms)
+
+// Topics that will be reported in heartbeat
+#define HEARTBEAT_REPORT_STATUS     1
+#define HEARTBEAT_REPORT_IP         1
+#define HEARTBEAT_REPORT_MAC        1
+#define HEARTBEAT_REPORT_RSSI       1
+#define HEARTBEAT_REPORT_UPTIME     1
+#define HEARTBEAT_REPORT_FREEHEAP   1
+#define HEARTBEAT_REPORT_VCC        1
+#define HEARTBEAT_REPORT_RELAY      1
+#define HEARTBEAT_REPORT_COLOR      1
+#define HEARTBEAT_REPORT_HOSTNAME   1
+#define HEARTBEAT_REPORT_APP        1
+#define HEARTBEAT_REPORT_VERSION    1
+#define HEARTBEAT_REPORT_INTERVAL   0
 
 //--------------------------------------------------------------------------------
 // RESET
@@ -227,21 +247,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_TIME         "time"
 #define MQTT_TOPIC_ANALOG       "analog"
 
-// These massages will be reported on heartbeat
-#define MQTT_REPORT_STATUS      1
-#define MQTT_REPORT_IP          1
-#define MQTT_REPORT_MAC         1
-#define MQTT_REPORT_RSSI        1
-#define MQTT_REPORT_UPTIME      1
-#define MQTT_REPORT_FREEHEAP    1
-#define MQTT_REPORT_VCC         1
-#define MQTT_REPORT_RELAY       1
-#define MQTT_REPORT_COLOR       1
-#define MQTT_REPORT_HOSTNAME    1
-#define MQTT_REPORT_APP         1
-#define MQTT_REPORT_VERSION     1
-#define MQTT_REPORT_INTERVAL    0
-
 #define MQTT_STATUS_ONLINE      "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE     "0"         // Value for the device OFF message (will)
 
@@ -255,7 +260,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
 #define MQTT_USE_GETTER         ""
-#define MQTT_USE_SETTER         ""
+#define MQTT_USE_SETTER         "/set"
 
 // -----------------------------------------------------------------------------
 // I2C
