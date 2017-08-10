@@ -29,7 +29,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 unsigned char _uartbuf[RF_MESSAGE_SIZE+3] = {0};
 unsigned char _uartpos = 0;
 unsigned char _learnId = 0;
-bool _learnState = true;
+bool _learnStatus = true;
 
 // -----------------------------------------------------------------------------
 // PRIVATES
@@ -46,6 +46,7 @@ void _rfbAck() {
 }
 
 void _rfbLearn() {
+
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending LEARN\n"));
     Serial.println();
     Serial.write(RF_CODE_START);
@@ -53,6 +54,11 @@ void _rfbLearn() {
     Serial.write(RF_CODE_STOP);
     Serial.flush();
     Serial.println();
+
+    char wsb[100];
+    sprintf_P(wsb, PSTR("{\"action\": \"rfbLearn\", \"data\":{\"id\": %d, \"status\": %d}}"), _learnId, _learnStatus ? 1 : 0);
+    wsSend(wsb);
+
 }
 
 void _rfbSend(byte * message) {
@@ -92,6 +98,7 @@ void _rfbDecode() {
     if (action == RF_CODE_LEARN_KO) {
         _rfbAck();
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn timeout\n"));
+        wsSend("{\"action\": \"rfbTimeout\"}");
     }
 
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
@@ -101,9 +108,15 @@ void _rfbDecode() {
     }
 
     if (action == RF_CODE_LEARN_OK) {
-        // TODO: notify websocket
-        _rfbStore(_learnId, _learnState, buffer);
-        DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn success. Storing %d-%s => '%s'\n"), _learnId, _learnState ? "ON" : "OFF", buffer);
+
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn success\n");
+        rfbStore(_learnId, _learnStatus, buffer);
+
+        // Websocket update
+        char wsb[100];
+        sprintf_P(wsb, PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), _learnId, _learnStatus ? 1 : 0, buffer);
+        wsSend(wsb);
+
     }
 
     if (action == RF_CODE_RFIN) {
@@ -111,11 +124,11 @@ void _rfbDecode() {
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Forward message '%s'\n"), buffer);
 
         // Look for the code
-        unsigned char id, state;
+        unsigned char id, status;
         bool found = false;
         for (id=0; id<relayCount(); id++) {
-            for (state=0; state<2; state++) {
-                String code = _rfbRetrieve(id, state == 1);
+            for (status=0; status<2; status++) {
+                String code = rfbRetrieve(id, status == 1);
                 if (code.length()) {
                     if (code.endsWith(&buffer[12])) {
                         found = true;
@@ -125,7 +138,7 @@ void _rfbDecode() {
             }
             if (found) break;
         }
-        if (found) relayStatus(id, state == 1);
+        if (found) relayStatus(id, status == 1);
 
     }
 
@@ -203,7 +216,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
                 DEBUG_MSG_P(PSTR("[RFBRIDGE] Wrong learnID (%d)\n"), _learnId);
                 return;
             }
-            _learnState = (char)payload[0] != '0';
+            _learnStatus = (char)payload[0] != '0';
             _rfbLearn();
 
         }
@@ -219,25 +232,25 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
 }
 
-void _rfbStore(unsigned char id, bool status, char * code) {
+// -----------------------------------------------------------------------------
+// PUBLIC
+// -----------------------------------------------------------------------------
+
+void rfbStore(unsigned char id, bool status, const char * code) {
+    DEBUG_MSG_P(PSTR("[RFBRIDGE] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
     char key[8] = {0};
     sprintf(key, "rfb%d%s", id, status ? "on" : "off");
     setSetting(key, code);
 }
 
-String _rfbRetrieve(unsigned char id, bool status) {
+String rfbRetrieve(unsigned char id, bool status) {
     char key[8] = {0};
     sprintf(key, "rfb%d%s", id, status ? "on" : "off");
     return getSetting(key);
 }
 
-// -----------------------------------------------------------------------------
-// PUBLIC
-// -----------------------------------------------------------------------------
-
-void rfbState(unsigned char id, bool status) {
-    String value = _rfbRetrieve(id, status);
-    DEBUG_MSG_P(PSTR("[RFBRIDGE] Retrieving value for %d-%s => %s\n"), id, status ? "ON" : "OFF", value.c_str());
+void rfbStatus(unsigned char id, bool status) {
+    String value = rfbRetrieve(id, status);
     if (value.length() > 0) {
         byte message[RF_MESSAGE_SIZE];
         _rfbToArray(value.c_str(), message);
@@ -247,14 +260,21 @@ void rfbState(unsigned char id, bool status) {
 
 void rfbLearn(unsigned char id, bool status) {
     _learnId = id;
-    _learnState = status;
+    _learnStatus = status;
     _rfbLearn();
 }
 
 void rfbForget(unsigned char id, bool status) {
+
     char key[8] = {0};
     sprintf(key, "rfb%d%s", id, status ? "on" : "off");
     delSetting(key);
+
+    // Websocket update
+    char wsb[100];
+    sprintf_P(wsb, PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"\"}]}"), id, status ? 1 : 0);
+    wsSend(wsb);
+
 }
 
 // -----------------------------------------------------------------------------

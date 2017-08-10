@@ -40,7 +40,7 @@ void relayProviderStatus(unsigned char id, bool status) {
     if (id >= _relays.size()) return;
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RFBRIDGE
-        rfbState(id, status);
+        rfbStatus(id, status);
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL

@@ -114,6 +114,10 @@
                             <a href="#" class="pure-menu-link" data="panel-power">POWER</a>
                         </li>
 
+                        <li class="pure-menu-item module module-rfb">
+                            <a href="#" class="pure-menu-link" data="panel-rfb">RFBRIDGE</a>
+                        </li>
+
                         <li class="pure-menu-item">
                             <a href="#" class="pure-menu-link" data="panel-admin">ADMIN</a>
                         </li>
@@ -707,11 +711,51 @@
                     </div>
                 </form>
 
+                <div class="panel" id="panel-rfb">
+
+                    <div class="header">
+                        <h1>RFBRIDGE</h1>
+                        <h2>Sonoff 433 RF Bridge Configuration</h2>
+                    </div>
+
+                    <div class="page">
+
+                        <div id="rfbNodes" />
+
+                    </div>
+                </div>
+
             </div> <!-- content -->
 
         </div> <!-- layout -->
 
         <!-- Templates -->
+
+        <div id="rfbNodeTemplate" class="template">
+
+            <fieldset>
+
+                <legend>&nbsp;Switch <span></span>&nbsp;</legend>
+
+                <div class="pure-g">
+                    <label class="pure-u-1-2 pure-u-sm-1-4">Switch ON</label>
+                    <input class="pure-u-1-2 pure-u-sm-1-3" type="text" maxlength="18" name="rfbcode" data_id="1" data_status="1" />
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button></div>
+                </div>
+
+                <div class="pure-g">
+                    <label class="pure-u-1-2 pure-u-sm-1-4">Switch OFF</label>
+                    <input class="pure-u-1-2 pure-u-sm-1-3" type="text" maxlength="18" name="rfbcode" data_id="1" data_status="0" />
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button></div>
+                </div>
+
+            </fieldset>
+
+        </div>
 
         <div id="networkTemplate" class="template">
 
