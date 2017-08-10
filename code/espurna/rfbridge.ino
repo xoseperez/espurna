@@ -30,6 +30,7 @@ unsigned char _uartbuf[RF_MESSAGE_SIZE+3] = {0};
 unsigned char _uartpos = 0;
 unsigned char _learnId = 0;
 bool _learnStatus = true;
+bool _rfbin = false;
 
 // -----------------------------------------------------------------------------
 // PRIVATES
@@ -109,7 +110,7 @@ void _rfbDecode() {
 
     if (action == RF_CODE_LEARN_OK) {
 
-        DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn success\n");
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn success\n"));
         rfbStore(_learnId, _learnStatus, buffer);
 
         // Websocket update
@@ -138,7 +139,10 @@ void _rfbDecode() {
             }
             if (found) break;
         }
-        if (found) relayStatus(id, status == 1);
+        if (found) {
+            _rfbin = true;
+            relayStatus(id, status == 1);
+        }
 
     }
 
@@ -169,6 +173,14 @@ void _rfbReceive() {
     }
 
 
+}
+
+bool _rfbCompare(const char * code1, const char * code2) {
+    return strcmp(&code1[12], &code2[12]) == 0;
+}
+
+bool _rfbSameOnOff(unsigned char id) {
+    return _rfbCompare(rfbRetrieve(id, true).c_str(), rfbRetrieve(id, false).c_str());
 }
 
 /*
@@ -224,7 +236,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         if (t.equals(MQTT_TOPIC_RFOUT)) {
             byte message[RF_MESSAGE_SIZE];
             if (_rfbToArray(payload, message)) {
-                _rfbSend(message, RF_SEND_TIMES);
+                _rfbSend(message, 1);
             }
         }
 
@@ -252,9 +264,12 @@ String rfbRetrieve(unsigned char id, bool status) {
 void rfbStatus(unsigned char id, bool status) {
     String value = rfbRetrieve(id, status);
     if (value.length() > 0) {
+        bool same = _rfbSameOnOff(id);
         byte message[RF_MESSAGE_SIZE];
         _rfbToArray(value.c_str(), message);
-        _rfbSend(message, RF_SEND_TIMES);
+        unsigned char times = RF_SEND_TIMES;
+        if (same) times = _rfbin ? 0 : 1;
+        _rfbSend(message, times);
     }
 }
 
