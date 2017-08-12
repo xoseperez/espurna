@@ -477,6 +477,32 @@
 #define BUTTON4_RELAY       0
 #endif
 
+#ifndef RELAY1_DELAY_ON
+#define RELAY1_DELAY_ON       0
+#endif
+#ifndef RELAY2_DELAY_ON
+#define RELAY2_DELAY_ON       0
+#endif
+#ifndef RELAY3_DELAY_ON
+#define RELAY3_DELAY_ON       0
+#endif
+#ifndef RELAY4_DELAY_ON
+#define RELAY4_DELAY_ON       0
+#endif
+
+#ifndef RELAY1_DELAY_OFF
+#define RELAY1_DELAY_OFF      0
+#endif
+#ifndef RELAY2_DELAY_OFF
+#define RELAY2_DELAY_OFF      0
+#endif
+#ifndef RELAY3_DELAY_OFF
+#define RELAY3_DELAY_OFF      0
+#endif
+#ifndef RELAY4_DELAY_OFF
+#define RELAY4_DELAY_OFF      0
+#endif
+
 #ifndef RELAY1_LED
 #define RELAY1_LED          0
 #endif
