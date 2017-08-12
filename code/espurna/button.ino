@@ -174,7 +174,7 @@ void buttonLoop() {
                         }
 
                         // Otherwise check if any of the other two BUTTONs
-                        // (in the header) has been pressent, but we should
+                        // (in the header) has been pressed, but we should
                         // ensure that we only toggle one of them to avoid
                         // the synchronization going mad
                         // This loop is generic for any PSB-04 module
