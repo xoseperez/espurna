@@ -468,9 +468,10 @@
                                     <input class="pure-u-1 pure-u-md-3-4" name="mqttFP" type="text" size="59" tabindex="26" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        This is the fingerprint for the SSL certificate of the server. If using CloudMQTT you can get it using (use your server and port):<br />
-                                        $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem<br />
-                                        $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
+                                        This is the fingerprint for the SSL certificate of the server.<br />
+                                        You can get it using <a href="https://www.grc.com/fingerprints.htm" target="_blank">https://www.grc.com/fingerprints.htm</a><br />
+                                        or using openssl from a linux box by typing:<br />
+                                        <pre>$ openssl s_client -connect &lt;host&gt;:&lt;port&gt; &lt; /dev/null 2&gt;/dev/null | openssl x509 -fingerprint -noout -in /dev/stdin</pre>
                                     </div>
                                 </div>
 
