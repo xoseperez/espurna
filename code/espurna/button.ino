@@ -68,8 +68,8 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
     if (event == EVENT_CHANGED) return BUTTON_EVENT_CLICK;
     if (event == EVENT_RELEASED) {
         if (count == 1) {
-            if (length > BUTTON_LNGLNGCLICK_LENGTH) return BUTTON_EVENT_LNGLNGCLICK;
-            if (length > BUTTON_LNGCLICK_LENGTH) return BUTTON_EVENT_LNGCLICK;
+            if (length > BUTTON_LNGLNGCLICK_DELAY) return BUTTON_EVENT_LNGLNGCLICK;
+            if (length > BUTTON_LNGCLICK_DELAY) return BUTTON_EVENT_LNGCLICK;
             return BUTTON_EVENT_CLICK;
         }
         if (count == 2) return BUTTON_EVENT_DBLCLICK;
@@ -90,6 +90,16 @@ void buttonEvent(unsigned int id, unsigned char event) {
     if (action == BUTTON_MODE_TOGGLE) {
         if (_buttons[id].relayID > 0) {
             relayToggle(_buttons[id].relayID - 1);
+        }
+    }
+    if (action == BUTTON_MODE_ON) {
+        if (_buttons[id].relayID > 0) {
+            relayStatus(_buttons[id].relayID - 1, true);
+        }
+    }
+    if (action == BUTTON_MODE_OFF) {
+        if (_buttons[id].relayID > 0) {
+            relayStatus(_buttons[id].relayID - 1, false);
         }
     }
     if (action == BUTTON_MODE_AP) createAP();
@@ -118,28 +128,30 @@ void buttonSetup() {
 
     #else
 
+        unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+
         #ifdef BUTTON1_PIN
         {
             unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE), actions, BUTTON1_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON1_RELAY});
         }
         #endif
         #ifdef BUTTON2_PIN
         {
             unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE), actions, BUTTON2_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON2_RELAY});
         }
         #endif
         #ifdef BUTTON3_PIN
         {
             unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE), actions, BUTTON3_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON3_RELAY});
         }
         #endif
         #ifdef BUTTON4_PIN
         {
             unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK);
-            _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE), actions, BUTTON4_RELAY});
+            _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON4_RELAY});
         }
         #endif
 
@@ -172,7 +184,7 @@ void buttonLoop() {
                         }
 
                         // Otherwise check if any of the other two BUTTONs
-                        // (in the header) has been pressent, but we should
+                        // (in the header) has been pressed, but we should
                         // ensure that we only toggle one of them to avoid
                         // the synchronization going mad
                         // This loop is generic for any PSB-04 module

@@ -25,8 +25,10 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #define ADC121_REG_CONVH        0x07
 
 EmonLiteESP emon;
-double _current = 0;
-unsigned int _power = 0;
+bool _emonReady = false;
+double _emonCurrent = 0;
+unsigned int _emonPower = 0;
+unsigned int _emonVoltage = 0;
 
 // -----------------------------------------------------------------------------
 // Provider
@@ -54,28 +56,40 @@ unsigned int currentCallback() {
 }
 
 // -----------------------------------------------------------------------------
-// EMON
+// HAL
 // -----------------------------------------------------------------------------
 
 void setCurrentRatio(float value) {
     emon.setCurrentRatio(value);
 }
 
-unsigned int getPower() {
-    return _power;
+unsigned int getApparentPower() {
+    return int(getCurrent() * getVoltage());
 }
 
 double getCurrent() {
-    return _current;
+    double current = emon.getCurrent(EMON_SAMPLES);
+    current -= EMON_CURRENT_OFFSET;
+    if (current < 0) current = 0;
+    return current;
 }
+
+unsigned int getVoltage() {
+    return getSetting("emonVoltage", EMON_MAINS_VOLTAGE).toInt();
+}
+
+// -----------------------------------------------------------------------------
 
 void powerMonitorSetup() {
 
     // backwards compatibility
     String tmp;
     tmp = getSetting("pwMainsVoltage", EMON_MAINS_VOLTAGE);
-    setSetting("emonMains", tmp);
+    setSetting("emonVoltage", tmp);
     delSetting("pwMainsVoltage");
+    tmp = getSetting("emonMains", EMON_MAINS_VOLTAGE);
+    setSetting("emonVoltage", tmp);
+    delSetting("emonMains");
     tmp = getSetting("pwCurrentRatio", EMON_CURRENT_RATIO);
     setSetting("emonRatio", tmp);
     delSetting("pwCurrentRatio");
@@ -98,7 +112,19 @@ void powerMonitorSetup() {
     #endif
 
     apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
-        snprintf(buffer, len, "%d", _power);
+        if (_emonReady) {
+            snprintf(buffer, len, "%d", _emonPower);
+        } else {
+            buffer = NULL;
+        }
+    });
+
+    apiRegister(EMON_CURRENT_TOPIC, EMON_CURRENT_TOPIC, [](char * buffer, size_t len) {
+        if (_emonReady) {
+            dtostrf(_emonCurrent, len-1, 3, buffer);
+        } else {
+            buffer = NULL;
+        }
     });
 
 }
@@ -119,80 +145,65 @@ void powerMonitorLoop() {
 
     if (millis() > next_measurement) {
 
-        // Safety check: do not read current if relay is OFF
-        // You could be monitoring another line with the current clamp...
-        //if (!relayStatus(0)) {
-        //    _current = 0;
-        //} else {
-            _current = emon.getCurrent(EMON_SAMPLES);
-            _current -= EMON_CURRENT_OFFSET;
-            if (_current < 0) _current = 0;
-        //}
+        int voltage = getVoltage();
 
-        if (measurements == 0) {
-            max = min = _current;
-        } else {
-            if (_current > max) max = _current;
-            if (_current < min) min = _current;
+        {
+
+            double current = getCurrent();
+            if (measurements == 0) {
+                max = min = current;
+            } else {
+                if (_emonCurrent > max) max = current;
+                if (_emonCurrent < min) min = current;
+            }
+            sum += current;
+            ++measurements;
+
+            DEBUG_MSG_P(PSTR("[ENERGY] Current: %sA\n"), String(current, 3).c_str());
+            DEBUG_MSG_P(PSTR("[ENERGY] Power: %dW\n"), int(current * voltage));
+
+            // Update websocket clients
+            if (wsConnected()) {
+                char text[100];
+                sprintf_P(text, PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
+                wsSend(text);
+            }
+
         }
-        sum += _current;
-        ++measurements;
-
-        float mainsVoltage = getSetting("emonMains", EMON_MAINS_VOLTAGE).toFloat();
-
-        char current[6];
-        dtostrf(_current, 5, 2, current);
-        DEBUG_MSG_P(PSTR("[ENERGY] Current: %sA\n"), current);
-        DEBUG_MSG_P(PSTR("[ENERGY] Power: %dW\n"), int(_current * mainsVoltage));
-
-        // Update websocket clients
-        char text[64];
-        sprintf_P(text, PSTR("{\"emonVisible\": 1, \"powApparentPower\": %d}"), int(_current * mainsVoltage));
-        wsSend(text);
 
         // Send MQTT messages averaged every EMON_MEASUREMENTS
         if (measurements == EMON_MEASUREMENTS) {
 
-            // Calculate average current (removing max and min values) and create C-string
-            double average = (sum - max - min) / (measurements - 2);
-            dtostrf(average, 5, 2, current);
-            char *c = current;
-            while ((unsigned char) *c == ' ') ++c;
+            // Calculate average current (removing max and min values)
+            _emonCurrent = (sum - max - min) / (measurements - 2);
+            _emonPower = (int) (_emonCurrent * voltage);
+            _emonReady = true;
 
-            // Calculate average apparent power from current and create C-string
-            _power = (int) (average * mainsVoltage);
-            char power[6];
-            snprintf(power, 6, "%d", _power);
-
-            // Calculate energy increment (ppower times time) and create C-string
-            double energy_inc = (double) _power * EMON_INTERVAL * EMON_MEASUREMENTS / 1000.0 / 3600.0;
-            char energy_buf[11];
-            dtostrf(energy_inc, 10, 3, energy_buf);
-            char *e = energy_buf;
-            while ((unsigned char) *e == ' ') ++e;
+            // Calculate energy increment (ppower times time)
+            double energy_delta = (double) _emonPower * EMON_INTERVAL * EMON_MEASUREMENTS / 1000.0 / 3600.0;
 
             // Report values to MQTT broker
-            mqttSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), power);
-            mqttSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), c);
-            mqttSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), e);
+            mqttSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), String(_emonPower).c_str());
+            mqttSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), String(_emonCurrent, 3).c_str());
+            mqttSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());
 
             // Report values to Domoticz
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
-                snprintf(buffer, 20, "%s;%s", power, e);
+                snprintf(buffer, 20, "%d;%s", _emonPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", e);
+                snprintf(buffer, 20, "%s", String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", c);
+                snprintf(buffer, 20, "%s", String(_emonCurrent, 3).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
             #if ENABLE_INFLUXDB
-            influxDBSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), power);
-            //influxDBSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), c);
-            //influxDBSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), e);
+            influxDBSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), _emonPower);
+            influxDBSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), String(_emonCurrent, 3).c_str());
+            influxDBSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());
             #endif
 
             // Reset counters

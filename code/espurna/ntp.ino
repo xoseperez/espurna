@@ -29,8 +29,21 @@ bool ntpConnected() {
     return (timeStatus() == timeSet);
 }
 
-void ntpSetup() {
+String ntpDateTime() {
+    if (!ntpConnected()) return String("Not set");
+    String value = NTP.getTimeDateString();
+    int hour = value.substring(0, 2).toInt();
+    int minute = value.substring(3, 5).toInt();
+    int second = value.substring(6, 8).toInt();
+    int day = value.substring(9, 11).toInt();
+    int month = value.substring(12, 14).toInt();
+    int year = value.substring(15, 19).toInt();
+    char buffer[20];
+    sprintf(buffer, "%04d/%02d/%02dT%02d:%02d:%02d", year, month, day, hour, minute, second);
+    return String(buffer);
+}
 
+void ntpSetup() {
     NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
             if (error == noResponse) {
@@ -40,11 +53,10 @@ void ntpSetup() {
             }
             wsSend("{\"ntpStatus\": false}");
         } else {
-            DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) NTP.getTimeDateString(NTP.getLastNTPSync()).c_str());
+            DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
             wsSend("{\"ntpStatus\": true}");
         }
     });
-
 }
 
 void ntpLoop() {

@@ -59,7 +59,7 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define ENABLE_POW          1
+    #define ENABLE_HLW8012      1
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
@@ -148,7 +148,7 @@
     #define RELAY1_PIN_INVERSE  0
     #define LED1_PIN            15
     #define LED1_PIN_INVERSE    0
-    #define ENABLE_POW          1
+    #define ENABLE_HLW8012      1
 
 #elif defined(SONOFF_DUAL)
 
@@ -475,6 +475,32 @@
 #endif
 #ifndef BUTTON4_RELAY
 #define BUTTON4_RELAY       0
+#endif
+
+#ifndef RELAY1_DELAY_ON
+#define RELAY1_DELAY_ON       0
+#endif
+#ifndef RELAY2_DELAY_ON
+#define RELAY2_DELAY_ON       0
+#endif
+#ifndef RELAY3_DELAY_ON
+#define RELAY3_DELAY_ON       0
+#endif
+#ifndef RELAY4_DELAY_ON
+#define RELAY4_DELAY_ON       0
+#endif
+
+#ifndef RELAY1_DELAY_OFF
+#define RELAY1_DELAY_OFF      0
+#endif
+#ifndef RELAY2_DELAY_OFF
+#define RELAY2_DELAY_OFF      0
+#endif
+#ifndef RELAY3_DELAY_OFF
+#define RELAY3_DELAY_OFF      0
+#endif
+#ifndef RELAY4_DELAY_OFF
+#define RELAY4_DELAY_OFF      0
 #endif
 
 #ifndef RELAY1_LED

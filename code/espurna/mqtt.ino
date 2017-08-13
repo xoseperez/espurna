@@ -7,7 +7,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 #include <vector>
+#include <Ticker.h>
 
 const char *mqtt_user = 0;
 const char *mqtt_pass = 0;
@@ -26,10 +28,18 @@ String mqttTopic;
 bool _mqttForward;
 char *_mqttUser = 0;
 char *_mqttPass = 0;
+char *_mqttWill;
 std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
     unsigned long mqttConnectedAt = 0;
 #endif
+
+typedef struct {
+    char * topic;
+    char * message;
+} mqtt_message_t;
+std::vector<mqtt_message_t> _mqtt_queue;
+Ticker mqttFlushTicker;
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -71,31 +81,82 @@ String mqttSubtopic(char * topic) {
 
 void mqttSendRaw(const char * topic, const char * message) {
     if (mqtt.connected()) {
-        DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #if MQTT_USE_ASYNC
-            mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
+            unsigned int packetId = mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
+            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
         #else
             mqtt.publish(topic, message, MQTT_RETAIN);
+            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
     }
 }
 
+void _mqttFlush() {
+
+    if (_mqtt_queue.size() == 0) return;
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        root[element.topic] = element.message;
+    }
+    if (ntpConnected()) root[MQTT_TOPIC_TIME] = ntpDateTime();
+    root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname", HOSTNAME);
+    root[MQTT_TOPIC_IP] = getIP();
+
+    String output;
+    root.printTo(output);
+    String path = mqttTopic + String(MQTT_TOPIC_JSON);
+    mqttSendRaw(path.c_str(), output.c_str());
+
+    for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        free(element.topic);
+        free(element.message);
+    }
+    _mqtt_queue.clear();
+
+}
+
+void mqttSend(const char * topic, const char * message, bool force) {
+    bool useJson = force ? false : getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    if (useJson) {
+        mqtt_message_t element;
+        element.topic = strdup(topic);
+        element.message = strdup(message);
+        _mqtt_queue.push_back(element);
+        mqttFlushTicker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
+    } else {
+        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+        String path = mqttTopic + String(topic) + mqttGetter;
+        mqttSendRaw(path.c_str(), message);
+    }
+}
+
 void mqttSend(const char * topic, const char * message) {
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    String path = mqttTopic + String(topic) + mqttGetter;
-    mqttSendRaw(path.c_str(), message);
+    mqttSend(topic, message, false);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
+    char buffer[strlen(topic)+5];
+    sprintf(buffer, "%s/%d", topic, index);
+    mqttSend(buffer, message, force);
 }
 
 void mqttSend(const char * topic, unsigned int index, const char * message) {
-    String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-    String path = mqttTopic + String(topic) + String ("/") + String(index) + mqttGetter;;
-    mqttSendRaw(path.c_str(), message);
+    mqttSend(topic, index, message, false);
 }
 
 void mqttSubscribeRaw(const char * topic) {
     if (mqtt.connected() && (strlen(topic) > 0)) {
-        DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
-        mqtt.subscribe(topic, MQTT_QOS);
+        #if MQTT_USE_ASYNC
+            unsigned int packetId = mqtt.subscribe(topic, MQTT_QOS);
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
+        #else
+            mqtt.subscribe(topic, MQTT_QOS);
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
+        #endif
     }
 }
 
@@ -226,7 +287,8 @@ void mqttConnect() {
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
         _mqttUser = strdup(getSetting("mqttUser").c_str());
         _mqttPass = strdup(getSetting("mqttPassword").c_str());
-        char * will = strdup((mqttTopic + MQTT_TOPIC_STATUS).c_str());
+        if (_mqttWill) free(_mqttWill);
+        _mqttWill = strdup((mqttTopic + MQTT_TOPIC_STATUS).c_str());
 
         DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d"), host, port);
         mqtt.setServer(host, port);
@@ -234,7 +296,7 @@ void mqttConnect() {
         #if MQTT_USE_ASYNC
 
             mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-            mqtt.setWill(will, MQTT_QOS, MQTT_RETAIN, "0");
+            mqtt.setWill(_mqttWill, MQTT_QOS, MQTT_RETAIN, "0");
             if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
                 DEBUG_MSG_P(PSTR(" as user '%s'."), _mqttUser);
                 mqtt.setCredentials(_mqttUser, _mqttPass);
@@ -261,10 +323,10 @@ void mqttConnect() {
 
             if ((strlen(_mqttUser) > 0) && (strlen(_mqttPass) > 0)) {
                 DEBUG_MSG_P(PSTR(" as user '%s'\n"), _mqttUser);
-                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, will, MQTT_QOS, MQTT_RETAIN, "0");
+                response = mqtt.connect(getIdentifier().c_str(), _mqttUser, _mqttPass, _mqttWill, MQTT_QOS, MQTT_RETAIN, "0");
             } else {
                 DEBUG_MSG_P(PSTR("\n"));
-				response = mqtt.connect(getIdentifier().c_str(), will, MQTT_QOS, MQTT_RETAIN, "0");
+				response = mqtt.connect(getIdentifier().c_str(), _mqttWill, MQTT_QOS, MQTT_RETAIN, "0");
             }
 
             if (response) {
@@ -277,7 +339,6 @@ void mqttConnect() {
         #endif
 
         free(host);
-        free(will);
 
         String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
         String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
@@ -315,6 +376,12 @@ void mqttSetup() {
         });
         mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
             _mqttOnMessage(topic, payload, len);
+        });
+        mqtt.onSubscribe([](uint16_t packetId, uint8_t qos) {
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribe ACK for PID %d\n"), packetId);
+        });
+        mqtt.onPublish([](uint16_t packetId) {
+            DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %d\n"), packetId);
         });
     #else
         mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {

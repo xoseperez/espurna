@@ -43,15 +43,17 @@ char _last_modified[50];
 // WEBSOCKETS
 // -----------------------------------------------------------------------------
 
+bool wsConnected() {
+    return (ws.count() > 0);
+}
+
 bool wsSend(const char * payload) {
     if (ws.count() > 0) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Broadcasting '%s'\n"), payload);
         ws.textAll(payload);
     }
 }
 
 bool wsSend(uint32_t client_id, const char * payload) {
-    DEBUG_MSG_P(PSTR("[WEBSOCKET] Sending '%s' to #%ld\n"), payload, client_id);
     ws.text(client_id, payload);
 }
 
@@ -163,6 +165,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool changedNTP = false;
         bool apiEnabled = false;
         bool dstEnabled = false;
+        bool mqttUseJson = false;
         #if ASYNC_TCP_SSL_ENABLED
             bool mqttUseSSL = false;
         #endif
@@ -181,25 +184,25 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             // Skip firmware filename
             if (key.equals("filename")) continue;
 
-            #if ENABLE_POW
+            #if ENABLE_HLW8012
 
                 if (key == "powExpectedPower") {
-                    powSetExpectedActivePower(value.toInt());
+                    hlw8012SetExpectedActivePower(value.toInt());
                     changed = true;
                 }
 
                 if (key == "powExpectedVoltage") {
-                    powSetExpectedVoltage(value.toInt());
+                    hlw8012SetExpectedVoltage(value.toInt());
                     changed = true;
                 }
 
                 if (key == "powExpectedCurrent") {
-                    powSetExpectedCurrent(value.toFloat());
+                    hlw8012SetExpectedCurrent(value.toFloat());
                     changed = true;
                 }
 
                 if (key == "powExpectedReset") {
-                    powReset();
+                    hlw8012Reset();
                     changed = true;
                 }
 
@@ -259,6 +262,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 dstEnabled = true;
                 continue;
             }
+            if (key == "mqttUseJson") {
+                mqttUseJson = true;
+                continue;
+            }
             #if ASYNC_TCP_SSL_ENABLED
                 if (key == "mqttUseSSL") {
                     mqttUseSSL = true;
@@ -312,6 +319,10 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (dstEnabled != (getSetting("ntpDST").toInt() == 1)) {
                 setSetting("ntpDST", dstEnabled);
                 save = changed = changedNTP = true;
+            }
+            if (mqttUseJson != (getSetting("mqttUseJson").toInt() == 1)) {
+                setSetting("mqttUseJson", mqttUseJson);
+                save = changed = true;
             }
             #if ASYNC_TCP_SSL_ENABLED
                 if (mqttUseSSL != (getSetting("mqttUseSSL", 0). toInt() == 1)) {
@@ -452,6 +463,7 @@ void _wsStart(uint32_t client_id) {
             root["mqttFP"] = getSetting("mqttFP");
         #endif
         root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
+        root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 
         JsonArray& relay = root.createNestedArray("relayStatus");
         for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
@@ -470,6 +482,8 @@ void _wsStart(uint32_t client_id) {
             root["multirelayVisible"] = 1;
             root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
         }
+
+        root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
 
         root["webPort"] = getSetting("webPort", WEBSERVER_PORT).toInt();
 
@@ -508,7 +522,7 @@ void _wsStart(uint32_t client_id) {
                 root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
             #endif
 
-            #if ENABLE_POW
+            #if ENABLE_HLW8012
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
                 root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
@@ -550,8 +564,9 @@ void _wsStart(uint32_t client_id) {
 
         #if ENABLE_EMON
             root["emonVisible"] = 1;
-            root["emonPower"] = getPower();
-            root["emonMains"] = getSetting("emonMains", EMON_MAINS_VOLTAGE);
+            root["emonApparentPower"] = getApparentPower();
+            root["emonCurrent"] = getCurrent();
+            root["emonVoltage"] = getVoltage();
             root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
         #endif
 
@@ -560,7 +575,7 @@ void _wsStart(uint32_t client_id) {
             root["analogValue"] = getAnalog();
         #endif
 
-        #if ENABLE_POW
+        #if ENABLE_HLW8012
             root["powVisible"] = 1;
             root["powActivePower"] = getActivePower();
             root["powApparentPower"] = getApparentPower();
@@ -704,13 +719,13 @@ bool _asJson(AsyncWebServerRequest *request) {
 ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
 
     return [apiID](AsyncWebServerRequest *request) {
-        webLogRequest(request);
 
+        webLogRequest(request);
         if (!_authAPI(request)) return;
 
-        bool asJson = _asJson(request);
-
         web_api_t api = _apis[apiID];
+
+        // Check if its a PUT
         if (api.putFn != NULL) {
             if (request->hasParam("value", request->method() == HTTP_PUT)) {
                 AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
@@ -718,14 +733,21 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
             }
         }
 
+        // Get response from callback
         char value[10];
         (api.getFn)(value, 10);
+        char *p = ltrim(value);
 
-        // jump over leading spaces
-        char *p = value;
-        while ((unsigned char) *p == ' ') ++p;
+        // The response will be a 404 NOT FOUND if the resource is not available
+        if (*value == NULL) {
+            DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
+            request->send(404);
+            return;
+        }
+        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), p);
 
-        if (asJson) {
+        // Format response according to the Accept header
+        if (_asJson(request)) {
             char buffer[64];
             sprintf_P(buffer, PSTR("{ \"%s\": %s }"), api.key, p);
             request->send(200, "application/json", buffer);
