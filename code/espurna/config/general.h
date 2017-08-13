@@ -100,6 +100,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define BUTTON_EVENT_NONE           0
 #define BUTTON_EVENT_PRESSED        1
+#define BUTTON_EVENT_RELEASED       2
 #define BUTTON_EVENT_CLICK          2
 #define BUTTON_EVENT_DBLCLICK       3
 #define BUTTON_EVENT_LNGCLICK       4
@@ -107,10 +108,12 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define BUTTON_MODE_NONE            0
 #define BUTTON_MODE_TOGGLE          1
-#define BUTTON_MODE_AP              2
-#define BUTTON_MODE_RESET           3
-#define BUTTON_MODE_PULSE           4
-#define BUTTON_MODE_FACTORY         5
+#define BUTTON_MODE_ON              2
+#define BUTTON_MODE_OFF             3
+#define BUTTON_MODE_AP              4
+#define BUTTON_MODE_RESET           5
+#define BUTTON_MODE_PULSE           6
+#define BUTTON_MODE_FACTORY         7
 
 //--------------------------------------------------------------------------------
 // RELAY

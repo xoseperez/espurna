@@ -92,6 +92,16 @@ void buttonEvent(unsigned int id, unsigned char event) {
             relayToggle(_buttons[id].relayID - 1);
         }
     }
+    if (action == BUTTON_MODE_ON) {
+        if (_buttons[id].relayID > 0) {
+            relayStatus(_buttons[id].relayID - 1, true);
+        }
+    }
+    if (action == BUTTON_MODE_OFF) {
+        if (_buttons[id].relayID > 0) {
+            relayStatus(_buttons[id].relayID - 1, false);
+        }
+    }
     if (action == BUTTON_MODE_AP) createAP();
     if (action == BUTTON_MODE_RESET) {
         customReset(CUSTOM_RESET_HARDWARE);
