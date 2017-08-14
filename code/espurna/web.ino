@@ -910,7 +910,10 @@ void _onHome(AsyncWebServerRequest *request) {
 #endif
 
 #if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
+
 int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
+
+#if EMBEDDED_WEB
 
     if (strcmp(filename, "server.cer") == 0) {
         uint8_t * nbuf = (uint8_t*) malloc(server_cer_len);
@@ -932,7 +935,29 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
     *buf = 0;
     return 0;
 
+#else
+
+    File file = SPIFFS.open(filename, "r");
+    if (file) {
+        size_t size = file.size();
+        uint8_t * nbuf = (uint8_t*) malloc(size);
+        if (nbuf) {
+            size = file.read(nbuf, size);
+            file.close();
+            *buf = nbuf;
+            DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+            return size;
+        }
+        file.close();
+    }
+    DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
+    *buf = 0;
+    return 0;
+
+#endif
+
 }
+
 #endif
 
 void _onUpgrade(AsyncWebServerRequest *request) {
