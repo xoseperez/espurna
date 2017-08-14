@@ -45,7 +45,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -54,7 +54,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" autocomplete="false" />
                                 </div>
 
                                 <button class="pure-button button-update-password">Update</button>
@@ -376,7 +376,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -385,7 +385,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -472,12 +472,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttUser">MQTT User</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user/pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttPassword">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -657,12 +657,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="idbUsername">Username</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="idbPassword">Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="false" />
                                 </div>
 
                             </fieldset>
@@ -728,7 +728,7 @@
             <div class="pure-g">
 
                 <label class="pure-u-md-1-6 pure-u-1-4" for="ssid">Network SSID</label>
-                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required /></div>
+                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-md-1-12 pure-u-1-8"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <div class="more">
@@ -736,27 +736,27 @@
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="pass">Password</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" autocomplete="false" />
 
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="ip">Static IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Leave empty for DNS negotiation</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="gw">Gateway IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set when using a static IP</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="mask">Network Mask</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Usually 255.255.255.0 for /24 networks</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="dns">DNS IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set the Domain Name Server IP to use when using a static IP</div>
 
