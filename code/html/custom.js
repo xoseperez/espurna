@@ -1,6 +1,7 @@
 var websock;
 var password = false;
 var maxNetworks;
+var protocol;
 var host;
 var port;
 
@@ -66,7 +67,7 @@ function doUpgrade() {
     $.ajax({
 
         // Your server script to process the upload
-        url: 'http://' + host + ':' + port + '/upgrade',
+        url: protocol + '//' + host + ':' + port + '/upgrade',
         type: 'POST',
 
         // Form data
@@ -141,7 +142,7 @@ function doToggle(element, value) {
 }
 
 function backupSettings() {
-    document.getElementById('downloader').src = 'http://' + host + ':' + port + '/config';
+    document.getElementById('downloader').src = protocol + '//' + host + ':' + port + '/config';
     return false;
 }
 
@@ -494,9 +495,11 @@ function connect(h, p) {
     }
     host = h;
     port = p;
+    protocol = location.protocol;
+    wsproto = (protocol == 'https:') ? 'wss:' : 'ws:';
 
     if (websock) websock.close();
-    websock = new WebSocket('ws://' + host + ':' + port + '/ws');
+    websock = new WebSocket(wsproto + '//' + host + ':' + port + '/ws');
     websock.onopen = function(evt) {
         console.log("Connected");
     };
@@ -541,12 +544,13 @@ function init() {
         sliders: 'wsvp'
     }).on('sliderup', doColor);
 
+    var protocol = location.protocol;
     var host = window.location.hostname;
     var port = location.port;
 
     $.ajax({
         'method': 'GET',
-        'url': 'http://' + host + ':' + port + '/auth'
+        'url': protocol + '//' + host + ':' + port + '/auth'
     }).done(function(data) {
         connect();
     }).fail(function(){

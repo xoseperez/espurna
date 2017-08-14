@@ -29,22 +29,23 @@ const htmlmin = require('gulp-htmlmin');
 const cleancss = require('gulp-clean-css');
 const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
-const del = require('del');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 
-const dataFolder = 'espurna/static/';
+const dataFolder = 'espurna/data/';
+const staticFolder = 'espurna/static/';
 
-gulp.task('clean', function() {
-    del([ dataFolder + '*']);
-    return true;
-});
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.split(search).join(replacement);
+};
 
-gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
+var toHeader = function(filename) {
 
-    var source = dataFolder + 'index.html.gz';
-    var destination = dataFolder + 'index.html.gz.h';
+    var source = dataFolder + filename;
+    var destination = staticFolder + filename + '.h';
+    var safename = filename.replaceAll('.', '_');
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
@@ -53,8 +54,8 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
     var data = fs.readFileSync(source);
 
-    wstream.write('#define index_html_gz_len ' + data.length + '\n');
-    wstream.write('const uint8_t index_html_gz[] PROGMEM = {')
+    wstream.write('#define ' + safename + '_len ' + data.length + '\n');
+    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {')
 
     for (i=0; i<data.length; i++) {
         if (i % 20 == 0) wstream.write("\n");
@@ -65,11 +66,22 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
     wstream.write('\n};')
     wstream.end();
 
-    del([source]);
+}
 
+gulp.task('build_certs', function() {
+    // Create the certificates following the instructions in
+    // https://www.akadia.com/services/ssh_test_certificate.html
+    // and place the key and crt files in the espurna/data/ folder
+    // Then tun this task to create the .h files from those
+    toHeader('espurna.crt');
+    toHeader('espurna.key');
 });
 
-gulp.task('buildfs_inline', ['clean'], function() {
+gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
+    toHeader('index.html.gz');
+});
+
+gulp.task('buildfs_inline', function() {
     return gulp.src('html/*.html')
         .pipe(favicon())
         .pipe(inline({

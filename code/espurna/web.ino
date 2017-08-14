@@ -20,6 +20,11 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/index.html.gz.h"
 #endif
 
+#if ASYNC_TCP_SSL_ENABLED
+#include "static/espurna.crt.h"
+#include "static/espurna.key.h"
+#endif
+
 AsyncWebServer * _server;
 AsyncWebSocket ws("/ws");
 Ticker deferred;
@@ -904,6 +909,33 @@ void _onHome(AsyncWebServerRequest *request) {
 }
 #endif
 
+#if ASYNC_TCP_SSL_ENABLED
+int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
+
+
+    if (strcmp(filename, "espurna.crt") == 0) {
+        uint8_t * nbuf = (uint8_t*) malloc(espurna_crt_len);
+        memcpy_P(nbuf, espurna_crt, espurna_crt_len);
+        *buf = nbuf;
+        DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+        return espurna_crt_len;
+    }
+
+    if (strcmp(filename, "espurna.key") == 0) {
+        uint8_t * nbuf = (uint8_t*) malloc(espurna_key_len);
+        memcpy_P(nbuf, espurna_key, espurna_key_len);
+        *buf = nbuf;
+        DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+        return espurna_key_len;
+    }
+
+    DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
+    *buf = 0;
+    return 0;
+
+}
+#endif
+
 void _onUpgrade(AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
     response->addHeader("Connection", "close");
@@ -949,7 +981,12 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 void webSetup() {
 
     // Create server
-    _server = new AsyncWebServer(getSetting("webPort", WEBSERVER_PORT).toInt());
+    #if ASYNC_TCP_SSL_ENABLED
+    unsigned int port = 443;
+    #else
+    unsigned int port = getSetting("webPort", WEBSERVER_PORT).toInt();
+    #endif
+    _server = new AsyncWebServer(port);
 
     // Setup websocket
     ws.onEvent(_wsEvent);
@@ -990,7 +1027,12 @@ void webSetup() {
     });
 
     // Run server
+    #if ASYNC_TCP_SSL_ENABLED
+    _server->onSslFileRequest(_onCertificate, NULL);
+    _server->beginSecure("espurna.crt", "espurna.key", NULL);
+    #else
     _server->begin();
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %d\n"), getSetting("webPort", WEBSERVER_PORT).toInt());
+    #endif
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %d\n"), port);
 
 }
