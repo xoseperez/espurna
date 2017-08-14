@@ -899,7 +899,35 @@ void _onHome(AsyncWebServerRequest *request) {
 
     } else {
 
-        AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+        #if ASYNC_TCP_SSL_ENABLED
+
+            // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
+            // This is necessary when a TLS connection is open since it sucks too much memory
+            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), ESP.getFreeHeap());
+            size_t max = (ESP.getFreeHeap() / 3) & 0xFFE0;
+
+            AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+
+                // Get the chunk based on the index and maxLen
+                size_t len = index_html_gz_len - index;
+                if (len > maxLen) len = maxLen;
+                if (len > max) len = max;
+                if (len > 0) memcpy_P(buffer, index_html_gz + index, len);
+
+                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / index_html_gz_len), max);
+                if (len == 0) DEBUG_MSG_P(PSTR("\n"));
+
+                // Return the actual length of the chunk (0 for end of file)
+                return len;
+
+            });
+
+        #else
+
+            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+
+        #endif
+
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Last-Modified", _last_modified);
         request->send(response);
