@@ -188,6 +188,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DNS_PORT                53          // MDNS port
 #define ENABLE_MDNS             1           // Enabled MDNS
 
+// This is not working at the moment
+// Requires ASYNC_TCP_SSL_ENABLED to 1
+#define WEB_USE_SSL             0           // Use HTTPS web interface
+
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
 

@@ -69,12 +69,8 @@ var toHeader = function(filename) {
 }
 
 gulp.task('build_certs', function() {
-    // Create the certificates following the instructions in
-    // https://www.akadia.com/services/ssh_test_certificate.html
-    // and place the key and crt files in the espurna/data/ folder
-    // Then tun this task to create the .h files from those
-    toHeader('espurna.crt');
-    toHeader('espurna.key');
+    toHeader('server.cer');
+    toHeader('server.key');
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {

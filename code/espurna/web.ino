@@ -20,9 +20,9 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/index.html.gz.h"
 #endif
 
-#if ASYNC_TCP_SSL_ENABLED
-#include "static/espurna.crt.h"
-#include "static/espurna.key.h"
+#if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
+#include "static/server.cer.h"
+#include "static/server.key.h"
 #endif
 
 AsyncWebServer * _server;
@@ -909,24 +909,23 @@ void _onHome(AsyncWebServerRequest *request) {
 }
 #endif
 
-#if ASYNC_TCP_SSL_ENABLED
+#if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
 int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
-
-    if (strcmp(filename, "espurna.crt") == 0) {
-        uint8_t * nbuf = (uint8_t*) malloc(espurna_crt_len);
-        memcpy_P(nbuf, espurna_crt, espurna_crt_len);
+    if (strcmp(filename, "server.cer") == 0) {
+        uint8_t * nbuf = (uint8_t*) malloc(server_cer_len);
+        memcpy_P(nbuf, server_cer, server_cer_len);
         *buf = nbuf;
         DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
-        return espurna_crt_len;
+        return server_cer_len;
     }
 
-    if (strcmp(filename, "espurna.key") == 0) {
-        uint8_t * nbuf = (uint8_t*) malloc(espurna_key_len);
-        memcpy_P(nbuf, espurna_key, espurna_key_len);
+    if (strcmp(filename, "server.key") == 0) {
+        uint8_t * nbuf = (uint8_t*) malloc(server_key_len);
+        memcpy_P(nbuf, server_key, server_key_len);
         *buf = nbuf;
         DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - OK\n"), filename);
-        return espurna_key_len;
+        return server_key_len;
     }
 
     DEBUG_MSG_P(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
@@ -981,7 +980,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 void webSetup() {
 
     // Create server
-    #if ASYNC_TCP_SSL_ENABLED
+    #if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
     unsigned int port = 443;
     #else
     unsigned int port = getSetting("webPort", WEBSERVER_PORT).toInt();
@@ -1027,9 +1026,9 @@ void webSetup() {
     });
 
     // Run server
-    #if ASYNC_TCP_SSL_ENABLED
+    #if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
     _server->onSslFileRequest(_onCertificate, NULL);
-    _server->beginSecure("espurna.crt", "espurna.key", NULL);
+    _server->beginSecure("server.cer", "server.key", NULL);
     #else
     _server->begin();
     #endif
