@@ -211,6 +211,8 @@ void _mqttOnDisconnect() {
 
 void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
+    if (len == 0) return;
+
     char message[len + 1];
     strlcpy(message, (char *) payload, len + 1);
 
