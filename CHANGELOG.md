@@ -3,6 +3,20 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.8.3] 2017-07-23
+### Added
+- Issue #85 and #90. Option to report MQTT messages with JSON payloads
+- Issue #170. Updated DebouceEvent library to allow disabling double click and get faster click responses
+- Using memory layout with no SPIFFS for 1Mb devices
+
+### Changed
+- Rename settings s/POW/HLW8012/
+- Return times in ISO8601 format
+
+### Fix
+- Issue #168. Added H801 to arduino.h file
+- Issue #171. Fix corrupted will message
+
 ## [1.8.2] 2017-07-16
 ### Added
 - InfluxDB support via HTTP API

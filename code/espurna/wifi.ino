@@ -27,8 +27,8 @@ String getNetwork() {
 }
 
 void wifiDisconnect() {
-    #if ENABLE_POW
-        powEnable(false);
+    #if ENABLE_HLW8012
+        hlw8012Enable(false);
     #endif
     jw.disconnect();
 }
@@ -51,6 +51,7 @@ void wifiConfigure() {
 
     jw.setHostname(getSetting("hostname", HOSTNAME).c_str());
     jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+    jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     jw.setReconnectTimeout(WIFI_RECONNECT_INTERVAL);
     jw.setAPMode(AP_MODE);
     jw.cleanNetworks();
@@ -196,12 +197,12 @@ void wifiSetup() {
         }
 
         // Manage POW
-        #if ENABLE_POW
+        #if ENABLE_HLW8012
             if (code == MESSAGE_CONNECTED) {
-                powEnable(true);
+                hlw8012Enable(true);
             }
             if (code == MESSAGE_DISCONNECTED) {
-                powEnable(false);
+                hlw8012Enable(false);
             }
         #endif
 

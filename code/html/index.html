@@ -45,7 +45,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -54,7 +54,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" autocomplete="false" />
                                 </div>
 
                                 <button class="pure-button button-update-password">Update</button>
@@ -179,12 +179,22 @@
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="dhtHum" readonly />
                                 </div>
 
+                                <div class="pure-g module module-emon">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="emonApparentPower">Apparent Power (VA)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="emonApparentPower" readonly />
+                                </div>
+
+                                <div class="pure-g module module-emon">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="emonCurrent">Current (A)</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="emonCurrent" readonly />
+                                </div>
+
                                 <div class="pure-g module module-pow">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="powActivePower">Active Power (W)</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powActivePower" readonly />
                                 </div>
 
-                                <div class="pure-g module module-pow module-emon">
+                                <div class="pure-g module module-pow">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="powApparentPower">Apparent Power (VA)</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="powApparentPower" readonly />
                                 </div>
@@ -292,7 +302,7 @@
                                         <select name="relaySync" class="pure-u-3-4" tabindex="3">
                                             <option value="0">No synchonisation</a>
                                             <option value="1">Zero or one switches active</a>
-                                            <option value="2">One and just one switches active</a>
+                                            <option value="2">One and just one switch active</a>
                                             <option value="3">All synchonised</a>
                                         </select>
                                     </div>
@@ -320,15 +330,27 @@
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Pulse time in seconds (maximum value is 60s, accepts decimals).</div>
                                 </div>
 
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="btnDelay">Double click delay</label>
+                                    <input name="btnDelay" class="pure-u-1 pure-u-md-3-4" type="number" min="0" step="100" max="1000" tabindex="6" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
+                                        The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
+                                        Increase this number if you are having trouble to double click the button.
+                                        Set this value to 0 to disable double click. You won't be able to set the device in AP mode manually but your device will respond immediately to button clicks.<br />
+                                        You will have to <strong>reset the device</strong> after updating for this setting to apply.
+                                    </div>
+                                </div>
+
                                 <div class="pure-g module module-fauxmo">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Alexa integration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="6" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="7" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="7" value="0"> Celsius (ºC)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="1"> Fahrenheit (ºF)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="0"> Celsius (ºC)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="9" value="1"> Fahrenheit (ºF)</input></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -354,7 +376,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -363,7 +385,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -450,12 +472,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttUser">MQTT User</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user/pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttPassword">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -464,12 +486,24 @@
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaces by the device hostname.<br />
-                                        - <strong>&lt;root/&gt;relay/#</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
-                                        <span class="module module-color">- <strong>&lt;root&gt;color</strong> The device will report the current color in #RRGGBB format to this topic. You can also set the color using this same topic.<br /></span>
-                                        - <strong>&lt;root/&gt;led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
-                                        - <strong>&lt;root/&gt;button/#</strong> For each button in the board subscribe to this topic to know when it is pressed (payload 1) or released (payload 0).<br />
-                                        - <strong>&lt;root/&gt;status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.<br />
+                                        - <strong>&lt;root&gt;/relay/#</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
+                                        <span class="module module-color">- <strong>&lt;root&gt;/color</strong> The device will report the current color in #RRGGBB format to this topic. You can also set the color using this same topic.<br /></span>
+                                        - <strong>&lt;root&gt;/led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
+                                        - <strong>&lt;root&gt;/button/#</strong> For each button in the board subscribe to this topic to know when it is pressed (payload 1) or released (payload 0).<br />
+                                        - <strong>&lt;root&gt;/status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.<br />
                                         - Other values reported (depending on the build) are: <strong>firmware</strong> and <strong>version</strong>, <strong>hostname</strong>, <strong>IP</strong>, <strong>MAC</strong>, signal strenth (<strong>RSSI</strong>), <strong>uptime</strong> (in seconds), <strong>free heap</strong> and <strong>power supply</strong>.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g module module-fauxmo">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="mqttUseJson">Use JSON payload</label></div>
+                                    <div class="pure-u-1 pure-u-sm-3-4"><input type="checkbox" name="mqttUseJson" tabindex="26" /></div>
+                                    <div class="pure-u-1 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        All messages (except the device status) will be included in a JSON payload along with the timestamp and hostname
+                                        and sent under the <strong>&lt;root&gt;/data</strong> topic.<br />
+                                        Messages will be queued and sent after 100ms, so different messages could be merged into a single payload.<br />
+                                        Subscribtions will still be done to single topics.
                                     </div>
                                 </div>
 
@@ -623,12 +657,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="idbUsername">Username</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="idbPassword">Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="false" />
                                 </div>
 
                             </fieldset>
@@ -694,7 +728,7 @@
             <div class="pure-g">
 
                 <label class="pure-u-md-1-6 pure-u-1-4" for="ssid">Network SSID</label>
-                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required /></div>
+                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-md-1-12 pure-u-1-8"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <div class="more">
@@ -702,27 +736,27 @@
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="pass">Password</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" autocomplete="false" />
 
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="ip">Static IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Leave empty for DNS negotiation</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="gw">Gateway IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set when using a static IP</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="mask">Network Mask</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Usually 255.255.255.0 for /24 networks</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="dns">DNS IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set the Domain Name Server IP to use when using a static IP</div>
 

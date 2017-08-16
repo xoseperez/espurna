@@ -94,6 +94,12 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
+    Embedis::command( F("RESTART"), [](Embedis* e) {
+        e->response(Embedis::OK);
+        customReset(CUSTOM_RESET_TERMINAL);
+        ESP.restart();
+    });
+
     Embedis::command( F("RESET"), [](Embedis* e) {
         e->response(Embedis::OK);
         customReset(CUSTOM_RESET_TERMINAL);

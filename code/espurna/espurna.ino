@@ -42,7 +42,7 @@ void heartbeat() {
     unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
     unsigned int free_heap = ESP.getFreeHeap();
 
-    DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) NTP.getTimeDateString().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
     if (!mqttConnected()) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
@@ -52,54 +52,54 @@ void heartbeat() {
     }
 
 
-    #if (MQTT_REPORT_INTERVAL)
+    #if (HEARTBEAT_REPORT_INTERVAL)
         mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
     #endif
-    #if (MQTT_REPORT_APP)
+    #if (HEARTBEAT_REPORT_APP)
         mqttSend(MQTT_TOPIC_APP, APP_NAME);
     #endif
-    #if (MQTT_REPORT_VERSION)
+    #if (HEARTBEAT_REPORT_VERSION)
         mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
     #endif
-    #if (MQTT_REPORT_HOSTNAME)
+    #if (HEARTBEAT_REPORT_HOSTNAME)
         mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
     #endif
-    #if (MQTT_REPORT_IP)
+    #if (HEARTBEAT_REPORT_IP)
         mqttSend(MQTT_TOPIC_IP, getIP().c_str());
     #endif
-    #if (MQTT_REPORT_MAC)
+    #if (HEARTBEAT_REPORT_MAC)
         mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
     #endif
-    #if (MQTT_REPORT_RSSI)
+    #if (HEARTBEAT_REPORT_RSSI)
         mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
     #endif
-    #if (MQTT_REPORT_UPTIME)
+    #if (HEARTBEAT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #if ENABLE_INFLUXDB
         influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #endif
     #endif
-    #if (MQTT_REPORT_FREEHEAP)
+    #if (HEARTBEAT_REPORT_FREEHEAP)
         mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #if ENABLE_INFLUXDB
         influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
     #endif
-    #if (MQTT_REPORT_RELAY)
+    #if (HEARTBEAT_REPORT_RELAY)
         relayMQTT();
     #endif
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    #if (MQTT_REPORT_COLOR)
+    #if (HEARTBEAT_REPORT_COLOR)
         mqttSend(MQTT_TOPIC_COLOR, lightColor().c_str());
     #endif
     #endif
-    #if (MQTT_REPORT_VCC)
+    #if (HEARTBEAT_REPORT_VCC)
     #if ENABLE_ADC_VCC
         mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
     #endif
     #endif
-    #if (MQTT_REPORT_STATUS)
-        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE);
+    #if (HEARTBEAT_REPORT_STATUS)
+        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
     #endif
 
 }
@@ -226,8 +226,8 @@ void setup() {
     #if ENABLE_INFLUXDB
         influxDBSetup();
     #endif
-    #if ENABLE_POW
-        powSetup();
+    #if ENABLE_HLW8012
+        hlw8012Setup();
     #endif
     #if ENABLE_DS18B20
         dsSetup();
@@ -243,6 +243,9 @@ void setup() {
     #endif
     #if ENABLE_EMON
         powerMonitorSetup();
+    #endif
+    #if ENABLE_DOMOTICZ
+        domoticzSetup();
     #endif
 
     // Prepare configuration for version 2.0
@@ -270,8 +273,8 @@ void loop() {
     #if ENABLE_NOFUSS
         nofussLoop();
     #endif
-    #if ENABLE_POW
-        powLoop();
+    #if ENABLE_HLW8012
+        hlw8012Loop();
     #endif
     #if ENABLE_DS18B20
         dsLoop();

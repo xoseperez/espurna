@@ -16,6 +16,8 @@ typedef struct {
     unsigned char pin;
     bool reverse;
     unsigned char led;
+    unsigned long delay_on;
+    unsigned long delay_off;
     unsigned int floodWindowStart;
     unsigned char floodWindowChanges;
     unsigned int scheduledStatusTime;
@@ -81,22 +83,6 @@ bool relayProviderStatus(unsigned char id) {
 // RELAY
 // -----------------------------------------------------------------------------
 
-String relayString() {
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-    JsonArray& relay = root.createNestedArray("relayStatus");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        relay.add(relayStatus(i));
-    }
-    String output;
-    root.printTo(output);
-    return output;
-}
-
-bool relayStatus(unsigned char id) {
-    return relayProviderStatus(id);
-}
-
 void relayPulse(unsigned char id) {
 
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
@@ -158,23 +144,35 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
     if (relayStatus(id) != status) {
 
-        unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
         unsigned int currentTime = millis();
+        unsigned int floodWindowEnd = _relays[id].floodWindowStart + 1000 * RELAY_FLOOD_WINDOW;
+        unsigned long delay = status ? _relays[id].delay_on : _relays[id].delay_off;
 
         _relays[id].floodWindowChanges++;
-        _relays[id].scheduledStatusTime = currentTime;
+        _relays[id].scheduledStatusTime = currentTime + delay;
 
-        if (currentTime >= floodWindowEnd || currentTime < _relays[id].floodWindowStart) {
+        // If currentTime is off-limits the floodWindow...
+        if (currentTime < _relays[id].floodWindowStart || floodWindowEnd <= currentTime) {
+
+            // We reset the floodWindow
             _relays[id].floodWindowStart = currentTime;
             _relays[id].floodWindowChanges = 1;
+
+        // If currentTime is in the floodWindow and there have been too many requests...
         } else if (_relays[id].floodWindowChanges >= RELAY_FLOOD_CHANGES) {
-            _relays[id].scheduledStatusTime = floodWindowEnd;
+
+            // We schedule the changes to the end of the floodWindow
+            // unless it's already delayed beyond that point
+            if (floodWindowEnd - delay > currentTime) {
+                _relays[id].scheduledStatusTime = floodWindowEnd;
+            }
+
         }
 
         _relays[id].scheduledStatus = status;
-        _relays[id].scheduledReport = (report ? true : _relays[id].scheduledReport);
+        if (report) _relays[id].scheduledReport = true;
 
-        DEBUG_MSG_P(PSTR("[RELAY] Scheduled %d => %s in %u ms\n"),
+        DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled %s in %u ms\n"),
                 id, status ? "ON" : "OFF",
                 (_relays[id].scheduledStatusTime - currentTime));
 
@@ -187,6 +185,10 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
 bool relayStatus(unsigned char id, bool status) {
     return relayStatus(id, status, true);
+}
+
+bool relayStatus(unsigned char id) {
+    return relayProviderStatus(id);
 }
 
 void relaySync(unsigned char id) {
@@ -302,78 +304,16 @@ void relaySetupAPI() {
 //------------------------------------------------------------------------------
 
 void relayWS() {
-    String output = relayString();
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    JsonArray& relay = root.createNestedArray("relayStatus");
+    for (unsigned char i=0; i<relayCount(); i++) {
+        relay.add(relayStatus(i));
+    }
+    String output;
+    root.printTo(output);
     wsSend(output.c_str());
 }
-
-
-//------------------------------------------------------------------------------
-// Domoticz
-//------------------------------------------------------------------------------
-
-#if ENABLE_DOMOTICZ
-
-void relayDomoticzSend(unsigned int relayID) {
-    char buffer[15];
-    sprintf(buffer, "dczRelayIdx%d", relayID);
-    domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
-}
-
-int relayFromIdx(unsigned int idx) {
-    for (int relayID=0; relayID<relayCount(); relayID++) {
-        if (relayToIdx(relayID) == idx) {
-            return relayID;
-        }
-    }
-    return -1;
-}
-
-int relayToIdx(unsigned int relayID) {
-    char buffer[15];
-    sprintf(buffer, "dczRelayIdx%d", relayID);
-    return getSetting(buffer).toInt();
-}
-
-void relayDomoticzSetup() {
-
-    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-
-        String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
-
-        if (type == MQTT_CONNECT_EVENT) {
-            mqttSubscribeRaw(dczTopicOut.c_str());
-        }
-
-        if (type == MQTT_MESSAGE_EVENT) {
-
-            // Check topic
-            if (dczTopicOut.equals(topic)) {
-
-                // Parse response
-                DynamicJsonBuffer jsonBuffer;
-                JsonObject& root = jsonBuffer.parseObject((char *) payload);
-                if (!root.success()) {
-                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
-                    return;
-                }
-
-                // IDX
-                unsigned long idx = root["idx"];
-                int relayID = relayFromIdx(idx);
-                if (relayID >= 0) {
-                    unsigned long value = root["nvalue"];
-                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %d for IDX %d\n"), value, idx);
-                    relayStatus(relayID, value == 1);
-                }
-
-            }
-
-        }
-
-    });
-}
-
-#endif
 
 //------------------------------------------------------------------------------
 // MQTT
@@ -383,15 +323,6 @@ void relayMQTT(unsigned char id) {
     if (id >= _relays.size()) return;
     mqttSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
-
-#if ENABLE_INFLUXDB
-void relayInfluxDB(unsigned char id) {
-    if (id >= _relays.size()) return;
-    char buffer[10];
-    sprintf(buffer, "%s,id=%d", MQTT_TOPIC_RELAY, id);
-    influxDBSend(buffer, relayStatus(id) ? "1" : "0");
-}
-#endif
 
 void relayMQTT() {
     for (unsigned int i=0; i < _relays.size(); i++) {
@@ -403,7 +334,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     if (type == MQTT_CONNECT_EVENT) {
 
-        #if not MQTT_REPORT_RELAY
+        #if not HEARTBEAT_REPORT_RELAY
             relayMQTT();
         #endif
 
@@ -451,6 +382,19 @@ void relaySetupMQTT() {
 }
 
 //------------------------------------------------------------------------------
+// InfluxDB
+//------------------------------------------------------------------------------
+
+#if ENABLE_INFLUXDB
+void relayInfluxDB(unsigned char id) {
+    if (id >= _relays.size()) return;
+    char buffer[10];
+    sprintf(buffer, "%s,id=%d", MQTT_TOPIC_RELAY, id);
+    influxDBSend(buffer, relayStatus(id) ? "1" : "0");
+}
+#endif
+
+//------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
 
@@ -459,27 +403,27 @@ void relaySetup() {
     #if defined(SONOFF_DUAL)
 
         // Two dummy relays for the dual
-        _relays.push_back((relay_t) {0, 0});
-        _relays.push_back((relay_t) {0, 0});
+        _relays.push_back((relay_t) {0, 0, 0, RELAY1_DELAY_ON, RELAY1_DELAY_OFF});
+        _relays.push_back((relay_t) {0, 0, 0, RELAY2_DELAY_ON, RELAY2_DELAY_OFF});
 
     #elif defined(AI_LIGHT) | defined(LED_CONTROLLER) | defined(H801_LED_CONTROLLER)
 
         // One dummy relay for the AI Thinker Light & Magic Home and H801 led controllers
-        _relays.push_back((relay_t) {0, 0});
+        _relays.push_back((relay_t) {0, 0, 0, RELAY1_DELAY_ON, RELAY1_DELAY_OFF});
 
     #else
 
         #ifdef RELAY1_PIN
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_PIN_INVERSE, RELAY1_LED });
+            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_PIN_INVERSE, RELAY1_LED, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
         #endif
         #ifdef RELAY2_PIN
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_PIN_INVERSE, RELAY2_LED });
+            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_PIN_INVERSE, RELAY2_LED, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
         #endif
         #ifdef RELAY3_PIN
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_PIN_INVERSE, RELAY3_LED });
+            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_PIN_INVERSE, RELAY3_LED, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
         #endif
         #ifdef RELAY4_PIN
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_PIN_INVERSE, RELAY4_LED });
+            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_PIN_INVERSE, RELAY4_LED, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
         #endif
 
     #endif
@@ -496,9 +440,6 @@ void relaySetup() {
 
     relaySetupAPI();
     relaySetupMQTT();
-    #if ENABLE_DOMOTICZ
-        relayDomoticzSetup();
-    #endif
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
@@ -515,15 +456,21 @@ void relayLoop(void) {
 
         if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
 
-            DEBUG_MSG_P(PSTR("[RELAY] %d => %s\n"), id, status ? "ON" : "OFF");
+            DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, status ? "ON" : "OFF");
 
+            // Call the provider to perform the action
             relayProviderStatus(id, status);
 
+            // Change the binded LED if any
             if (_relays[id].led > 0) {
                 ledStatus(_relays[id].led - 1, status);
             }
 
-            if (_relays[id].scheduledReport) relayMQTT(id);
+            // Send MQTT report if requested
+            if (_relays[id].scheduledReport) {
+                relayMQTT(id);
+            }
+
             if (!recursive) {
                 relayPulse(id);
                 relaySync(id);

@@ -37,6 +37,7 @@ void debugSend(const char * format, ...) {
             udpDebug.write(" (...)\n");
         }
         udpDebug.endPacket();
+        delay(1);
     #endif
 
 }

@@ -2,7 +2,7 @@
 
 ESP8266 file system builder
 
-Copyright (C) 2016 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,14 +41,6 @@ gulp.task('clean', function() {
     return true;
 });
 
-gulp.task('files', ['clean'], function() {
-    return gulp.src([
-            'html/**/*.{jpg,jpeg,png,ico,gif}',
-            'html/fsversion'
-        ])
-        .pipe(gulp.dest(dataFolder));
-});
-
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
     var source = dataFolder + 'index.html.gz';
@@ -65,7 +57,7 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
     wstream.write('const uint8_t index_html_gz[] PROGMEM = {')
 
     for (i=0; i<data.length; i++) {
-        if (i % 1000 == 0) wstream.write("\n");
+        if (i % 20 == 0) wstream.write("\n");
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
         if (i<data.length-1) wstream.write(',');
     }
