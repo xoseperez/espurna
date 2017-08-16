@@ -235,6 +235,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RELAY        "relay"
 #define MQTT_TOPIC_LED          "led"
 #define MQTT_TOPIC_COLOR        "color"
+#define MQTT_TOPIC_WHITE        "white"
 #define MQTT_TOPIC_BRIGHTNESS   "brightness"
 #define MQTT_TOPIC_COLORTEMP    "color/temperature"
 #define MQTT_TOPIC_BUTTON       "button"

@@ -247,12 +247,29 @@ void lightColor(bool save, bool forward) {
 
     // Report color & brightness to MQTT broker
     if (forward) {
+
+        // Color
         char rgb[8];
         _color_array2rgb(_lightColor, 1.0, rgb);
         mqttSend(MQTT_TOPIC_COLOR, rgb);
-        char buffer[5];
-        sprintf(buffer, "%d", (int) (brightness * LIGHT_MAX_BRIGHTNESS));
-        mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
+
+        if ((_lightColor[0] == _lightColor[1]) & (_lightColor[1] == _lightColor[2])) {
+
+            // White
+            char buffer[5];
+            sprintf(buffer, "%d", (int) _lightColor[0]);
+            mqttSend(MQTT_TOPIC_WHITE, buffer);
+
+
+        } else {
+
+            // Brightness
+            char buffer[5];
+            sprintf(buffer, "%d", (int) (brightness * LIGHT_MAX_BRIGHTNESS));
+            mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
+
+        }
+
     }
 
     // Report color to WS clients
@@ -303,6 +320,7 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
         mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
         mqttSubscribe(MQTT_TOPIC_COLORTEMP);
         mqttSubscribe(MQTT_TOPIC_COLOR);
+        mqttSubscribe(MQTT_TOPIC_WHITE);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -320,6 +338,12 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         // Color
         if (t.equals(MQTT_TOPIC_COLOR)) {
+            parseColor(payload);
+            lightColor(true, mqttForward());
+        }
+
+        // White
+        if (t.equals(MQTT_TOPIC_WHITE)) {
             parseColor(payload);
             lightColor(true, mqttForward());
         }
