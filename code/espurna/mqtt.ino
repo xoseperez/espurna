@@ -342,9 +342,11 @@ void mqttSetup() {
             if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
                 DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
             }
+            #if ASYNC_TCP_SSL_ENABLED
             if (reason == AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT) {
                 DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
             }
+            #endif
             _mqttOnDisconnect();
         });
         mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
