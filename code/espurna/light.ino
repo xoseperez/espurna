@@ -85,7 +85,7 @@ void _color_string2array(const char * rgb, unsigned int * array) {
     } else if (p[strlen(p)-1] == 'K') {
 
         p[strlen(p)-1] = 0;
-        unsigned int temperature = atoi(p);
+        unsigned long temperature = atol(p);
         _color_temperature2array(temperature, array);
 
     // otherwise assume decimal values separated by commas
@@ -123,24 +123,25 @@ void _color_array2rgb(unsigned int * array, float brightness, char * rgb) {
 }
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
+// Color temperature is measured in mireds (kelvin = 1e6/mired)
 // https://github.com/stelgenhof/AiLight
-void _color_temperature2array(unsigned int temperature, unsigned int * array) {
+void _color_temperature2array(unsigned long mireds, unsigned int * array) {
 
     // Force boundaries and conversion
-    temperature = constrain(temperature, 1000, 40000) / 100;
+    kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
 
     // Calculate colors
-    unsigned int red = (temperature <= 66)
+    unsigned int red = (kelvin <= 66)
         ? LIGHT_MAX_VALUE
-        : 329.698727446 * pow((temperature - 60), -0.1332047592);
-    unsigned int green = (temperature <= 66)
-        ? 99.4708025861 * log(temperature) - 161.1195681661
-        : 288.1221695283 * pow(temperature, -0.0755148492);
-    unsigned int blue = (temperature >= 66)
+        : 329.698727446 * pow((kelvin - 60), -0.1332047592);
+    unsigned int green = (kelvin <= 66)
+        ? 99.4708025861 * log(kelvin) - 161.1195681661
+        : 288.1221695283 * pow(kelvin, -0.0755148492);
+    unsigned int blue = (kelvin >= 66)
         ? LIGHT_MAX_VALUE
-        : ((temperature <= 19)
+        : ((kelvin <= 19)
             ? 0
-            : 138.5177312231 * log(temperature - 10) - 305.0447927307);
+            : 138.5177312231 * log(kelvin - 10) - 305.0447927307);
 
     // Save values
     array[0] = constrain(red, 0, LIGHT_MAX_VALUE);
