@@ -128,7 +128,8 @@ void _color_array2rgb(unsigned int * array, float brightness, char * rgb) {
 void _color_temperature2array(unsigned long mireds, unsigned int * array) {
 
     // Force boundaries and conversion
-    kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
+    if (mireds == 0) mireds = 1;
+    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
 
     // Calculate colors
     unsigned int red = (kelvin <= 66)
@@ -174,7 +175,6 @@ unsigned int _intensity2pwm(unsigned int intensity) {
     return _intensity2pwm(intensity, LIGHT_MAX_VALUE);
 }
 
-
 // -----------------------------------------------------------------------------
 // PROVIDER
 // -----------------------------------------------------------------------------
@@ -193,7 +193,11 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
         _my9291->setState(state);
-        _my9291->setColor((my9291_color_t) { red * brightness, green * brightness, blue * brightness, white * brightness });
+        red *= brightness;
+        green *= brightness;
+        blue *= brightness;
+        white *= brightness;
+        _my9291->setColor((my9291_color_t) { red, green, blue, white });
     #endif
 
     #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
@@ -209,7 +213,7 @@ void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigne
         #endif
         #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
             analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white, brightness));
-            analogWrite(RGBW_WHITE2_PIN, _intensity2pwm(white,brightness));
+            analogWrite(RGBW_WHITE2_PIN, _intensity2pwm(white, brightness));
         #endif
 
     #endif
