@@ -52,6 +52,7 @@ void relayProviderStatus(unsigned char id, bool status) {
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
         lightState(status);
+        lightUpdate(true, true);
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY

@@ -50,7 +50,7 @@
 #define HEARTBEAT_REPORT_FREEHEAP   1
 #define HEARTBEAT_REPORT_VCC        1
 #define HEARTBEAT_REPORT_RELAY      1
-#define HEARTBEAT_REPORT_COLOR      1
+#define HEARTBEAT_REPORT_LIGHT      1
 #define HEARTBEAT_REPORT_HOSTNAME   1
 #define HEARTBEAT_REPORT_APP        1
 #define HEARTBEAT_REPORT_VERSION    1
@@ -187,6 +187,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WEBSERVER_PORT          80          // HTTP port
 #define DNS_PORT                53          // MDNS port
 #define ENABLE_MDNS             1           // Enabled MDNS
+#define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
 
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
@@ -234,10 +235,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_ACTION       "action"
 #define MQTT_TOPIC_RELAY        "relay"
 #define MQTT_TOPIC_LED          "led"
-#define MQTT_TOPIC_COLOR        "color"
-#define MQTT_TOPIC_WHITE        "white"
-#define MQTT_TOPIC_BRIGHTNESS   "brightness"
-#define MQTT_TOPIC_COLORTEMP    "color/temperature"
 #define MQTT_TOPIC_BUTTON       "button"
 #define MQTT_TOPIC_IP           "ip"
 #define MQTT_TOPIC_VERSION      "version"
@@ -252,6 +249,13 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_HOSTNAME     "host"
 #define MQTT_TOPIC_TIME         "time"
 #define MQTT_TOPIC_ANALOG       "analog"
+
+// Lights
+#define MQTT_TOPIC_CHANNEL      "channel"
+#define MQTT_TOPIC_COLOR        "color"
+#define MQTT_TOPIC_BRIGHTNESS   "brightness"
+#define MQTT_TOPIC_MIRED        "mired"
+#define MQTT_TOPIC_KELVIN       "kelvin"
 
 #define MQTT_STATUS_ONLINE      "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE     "0"         // Value for the device OFF message (will)
@@ -282,31 +286,28 @@ PROGMEM const char* const custom_reset_string[] = {
 // LIGHT
 // -----------------------------------------------------------------------------
 
-#define ENABLE_GAMMA_CORRECTION 0
-
 #define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_WS2812   1
-#define LIGHT_PROVIDER_RGB      2
-#define LIGHT_PROVIDER_RGBW     3
-#define LIGHT_PROVIDER_MY9192   4
-#define LIGHT_PROVIDER_RGB2W    5
+#define LIGHT_PROVIDER_MY9192   1
+#define LIGHT_PROVIDER_DIMMER   2
 
-#define LIGHT_DEFAULT_COLOR     "#000080"
-#define LIGHT_SAVE_DELAY        5
-#define LIGHT_MAX_VALUE         255
-#define LIGHT_MAX_BRIGHTNESS    LIGHT_MAX_VALUE
+// LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
+// They have to be defined for each device in the hardware.h file.
+// If 3 or more channels first 3 will be considered RGB.
+// Usual configurations are:
+// 1 channels => W
+// 2 channels => WW
+// 3 channels => RGB
+// 4 channels => RGBW
+// 5 channels => RGBWW
 
-// Settings for MY9291 bulbs (AI Light)
-#define MY9291_DI_PIN           13
-#define MY9291_DCKI_PIN         15
-#define MY9291_COMMAND          MY9291_COMMAND_DEFAULT
-
-// Shared settings between RGB and RGBW lights
-#define RGBW_INVERSE_LOGIC      1
-#define RGBW_RED_PIN            14
-#define RGBW_GREEN_PIN          5
-#define RGBW_BLUE_PIN           12
-#define RGBW_WHITE_PIN          13
+#define LIGHT_DEFAULT_COLOR     "#000080"   // Default start color
+#define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+#define LIGHT_PWM_FREQUENCY     1000        // PWM frequency
+#define LIGHT_MAX_PWM           4095        // Maximum PWM value
+#define LIGHT_MAX_VALUE         255         // Maximum light value
+#define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
+#define LIGHT_ENABLE_GAMMA      0           // Enable gamma correction
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

@@ -13,7 +13,11 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #define AUTO_SAVE 1
 
+#ifdef DEBUG_PORT
+Embedis embedis(DEBUG_PORT);
+#else
 Embedis embedis(Serial);
+#endif
 
 // -----------------------------------------------------------------------------
 // Settings
@@ -134,15 +138,60 @@ void settingsSetup() {
     });
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    Embedis::command( F("COLOR"), [](Embedis* e) {
-        if (e->argc > 1) {
-            String color = String(e->argv[1]);
-            parseColor(color.c_str());
-            lightColor(true, true);
-        }
-        e->stream->printf("Color: %s\n", lightColor().c_str());
-        e->response(Embedis::OK);
-    });
+
+        Embedis::command( F("COLOR"), [](Embedis* e) {
+            if (e->argc > 1) {
+                String color = String(e->argv[1]);
+                lightColor(color.c_str());
+                lightUpdate(true, true);
+            }
+            e->stream->printf("Color: %s\n", lightColor().c_str());
+            e->response(Embedis::OK);
+        });
+
+        Embedis::command( F("MIRED"), [](Embedis* e) {
+            if (e->argc > 1) {
+                String color = String("M") + String(e->argv[1]);
+                lightColor(color.c_str());
+                lightUpdate(true, true);
+            }
+            e->stream->printf("Color: %s\n", lightColor().c_str());
+            e->response(Embedis::OK);
+        });
+
+        Embedis::command( F("KELVIN"), [](Embedis* e) {
+            if (e->argc > 1) {
+                String color = String("K") + String(e->argv[1]);
+                lightColor(color.c_str());
+                lightUpdate(true, true);
+            }
+            e->stream->printf("Color: %s\n", lightColor().c_str());
+            e->response(Embedis::OK);
+        });
+
+        Embedis::command( F("BRIGHTNESS"), [](Embedis* e) {
+            if (e->argc > 1) {
+                lightBrightness(String(e->argv[1]).toInt());
+                lightUpdate(true, true);
+            }
+            e->stream->printf("Brightness: %d\n", lightBrightness());
+            e->response(Embedis::OK);
+        });
+
+        Embedis::command( F("CHANNEL"), [](Embedis* e) {
+            if (e->argc < 2) {
+                return e->response(Embedis::ARGS_ERROR);
+            }
+            int id = String(e->argv[1]).toInt();
+            if (e->argc > 2) {
+                int value = String(e->argv[2]).toInt();
+                lightChannel(id, value);
+                lightUpdate(true, true);
+            }
+            e->stream->printf("Channel #%d: %d\n", id, lightChannel(id));
+            e->response(Embedis::OK);
+        });
+
     #endif
 
     Embedis::command( F("EEPROM"), [](Embedis* e) {
@@ -174,6 +223,15 @@ void settingsSetup() {
     DEBUG_MSG_P(PSTR("[SETTINGS] EEPROM size: %d bytes\n"), SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings size: %d bytes\n"), settingsSize());
 
+}
+
+void settingsDump() {
+    unsigned int size = settingsKeyCount();
+    for (unsigned int i=0; i<size; i++) {
+        String key = settingsKeyName(i);
+        String value = getSetting(key);
+        DEBUG_MSG_P(PSTR("%s => %s\n"), key.c_str(), value.c_str());
+    }
 }
 
 void settingsLoop() {

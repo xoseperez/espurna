@@ -145,8 +145,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             if (action.equals("color") && root.containsKey("data")) {
-                parseColor(root["data"]);
-                lightColor(true, true);
+                lightColor(root["data"]);
+                lightUpdate(true, true);
             }
         #endif
 
@@ -364,7 +364,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_INFLUXDB
                 influxDBConfigure();
             #endif
-            buildTopics();
+            mqttConfigure();
 
             #if ENABLE_RF
                 rfBuildCodes();
@@ -454,6 +454,11 @@ void _wsStart(uint32_t client_id) {
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             root["colorVisible"] = 1;
             root["color"] = lightColor();
+            JsonArray& channels = root.createNestedArray("channels");
+            for (unsigned char id=0; id < lightChannels(); id++) {
+                channels.add(lightChannel(id));
+            }
+            root["brightness"] = lightBrightness();
         #endif
 
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);
@@ -715,8 +720,8 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         }
 
         // Get response from callback
-        char value[10];
-        (api.getFn)(value, 10);
+        char value[API_BUFFER_SIZE];
+        (api.getFn)(value, API_BUFFER_SIZE);
         char *p = ltrim(value);
 
         // The response will be a 404 NOT FOUND if the resource is not available
@@ -779,7 +784,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
 
     } else {
         for (unsigned int i=0; i < _apis.size(); i++) {
-            output += _apis[i].key + String(" -> ") + _apis[i].url + String("\n<br />");
+            output += _apis[i].key + String(" -> ") + _apis[i].url + String("\n");
         }
         request->send(200, "text/plain", output);
     }

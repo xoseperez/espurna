@@ -24,7 +24,10 @@ PubSubClient mqtt(mqttWiFiClient);
 bool _mqttConnected = false;
 #endif
 
-String mqttTopic;
+String _mqttTopic;
+String _mqttSetter;
+String _mqttGetter;
+
 bool _mqttForward;
 char *_mqttUser = 0;
 char *_mqttPass = 0;
@@ -53,30 +56,17 @@ void mqttDisconnect() {
     mqtt.disconnect();
 }
 
-void buildTopics() {
-    // Replace identifier
-    mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
-    mqttTopic.replace("{identifier}", getSetting("hostname"));
-    if (!mqttTopic.endsWith("/")) mqttTopic = mqttTopic + "/";
-}
-
 bool mqttForward() {
     return _mqttForward;
 }
 
 String mqttSubtopic(char * topic) {
-
     String response;
-
     String t = String(topic);
-    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
-
-    if (t.startsWith(mqttTopic) && t.endsWith(mqttSetter)) {
-        response = t.substring(mqttTopic.length(), t.length() - mqttSetter.length());
+    if (t.startsWith(_mqttTopic) && t.endsWith(_mqttSetter)) {
+        response = t.substring(_mqttTopic.length(), t.length() - _mqttSetter.length());
     }
-
     return response;
-
 }
 
 void mqttSendRaw(const char * topic, const char * message) {
@@ -107,7 +97,7 @@ void _mqttFlush() {
 
     String output;
     root.printTo(output);
-    String path = mqttTopic + String(MQTT_TOPIC_JSON);
+    String path = _mqttTopic + String(MQTT_TOPIC_JSON);
     mqttSendRaw(path.c_str(), output.c_str());
 
     for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
@@ -128,8 +118,7 @@ void mqttSend(const char * topic, const char * message, bool force) {
         _mqtt_queue.push_back(element);
         mqttFlushTicker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
     } else {
-        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-        String path = mqttTopic + String(topic) + mqttGetter;
+        String path = _mqttTopic + String(topic) + _mqttGetter;
         mqttSendRaw(path.c_str(), message);
     }
 }
@@ -161,17 +150,42 @@ void mqttSubscribeRaw(const char * topic) {
 }
 
 void mqttSubscribe(const char * topic) {
-    String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
-    String path = mqttTopic + String(topic) + mqttSetter;
+    String path = _mqttTopic + String(topic) + _mqttSetter;
     mqttSubscribeRaw(path.c_str());
+}
+
+void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
+    _mqtt_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------
 // Callbacks
 // -----------------------------------------------------------------------------
 
-void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
-    _mqtt_callbacks.push_back(callback);
+void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
+
+
+    if (type == MQTT_CONNECT_EVENT) {
+
+        mqttSubscribe(MQTT_TOPIC_ACTION);
+
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+
+        // Match topic
+        String t = mqttSubtopic((char *) topic);
+
+        // Actions
+        if (t.equals(MQTT_TOPIC_ACTION)) {
+            if (strcmp(payload, MQTT_ACTION_RESET) == 0) {
+                customReset(CUSTOM_RESET_MQTT);
+                ESP.restart();
+            }
+        }
+
+    }
+
 }
 
 void _mqttOnConnect() {
@@ -183,13 +197,10 @@ void _mqttOnConnect() {
     #endif
 
     // Build MQTT topics
-    buildTopics();
+    mqttConfigure();
 
     // Send first Heartbeat
     heartbeat();
-
-    // Subscribe to system topics
-    mqttSubscribe(MQTT_TOPIC_ACTION);
 
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
@@ -224,15 +235,6 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 		}
     #endif
 	DEBUG_MSG_P(PSTR("\n"));
-
-    // Check system topics
-    String t = mqttSubtopic((char *) topic);
-    if (t.equals(MQTT_TOPIC_ACTION)) {
-        if (strcmp(message, MQTT_ACTION_RESET) == 0) {
-            customReset(CUSTOM_RESET_MQTT);
-            ESP.restart();
-        }
-    }
 
     // Send message event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
@@ -274,7 +276,7 @@ void mqttConnect() {
         _mqttUser = strdup(getSetting("mqttUser").c_str());
         _mqttPass = strdup(getSetting("mqttPassword").c_str());
         if (_mqttWill) free(_mqttWill);
-        _mqttWill = strdup((mqttTopic + MQTT_TOPIC_STATUS).c_str());
+        _mqttWill = strdup((_mqttTopic + MQTT_TOPIC_STATUS).c_str());
 
         DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d"), host, port);
         mqtt.setServer(host, port);
@@ -313,12 +315,18 @@ void mqttConnect() {
 
         free(host);
 
-        String mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
-        String mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
-        _mqttForward = !mqttGetter.equals(mqttSetter);
-
     }
 
+}
+
+void mqttConfigure() {
+    // Replace identifier
+    _mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
+    _mqttTopic.replace("{identifier}", getSetting("hostname"));
+    if (!_mqttTopic.endsWith("/")) _mqttTopic = _mqttTopic + "/";
+    _mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
+    _mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    _mqttForward = !_mqttGetter.equals(_mqttSetter);
 }
 
 void mqttSetup() {
@@ -363,7 +371,9 @@ void mqttSetup() {
             _mqttOnMessage(topic, (char *) payload, length);
         });
     #endif
-    buildTopics();
+
+    mqttRegister(_mqttCallback);
+
 }
 
 void mqttLoop() {

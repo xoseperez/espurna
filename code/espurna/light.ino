@@ -9,56 +9,55 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 #include <Ticker.h>
+#include <ArduinoJson.h>
+#include <vector>
+
+typedef struct {
+    unsigned char pin;
+    bool reverse;
+    unsigned char value;
+    unsigned char shadow;
+} channel_t;
+std::vector<channel_t> _channels;
+
 Ticker colorTicker;
 bool _lightState = false;
-float brightness = 1.0;
-unsigned int _lightColor[3] = {0};
+unsigned int _brightness = LIGHT_MAX_BRIGHTNESS;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 #include <my9291.h>
 my9291 * _my9291;
 #endif
 
-#if ENABLE_GAMMA_CORRECTION
+#if LIGHT_ENABLE_GAMMA
 
-    #define GAMMA_TABLE_SIZE (256)
-    #undef LIGHT_PWM_RANGE
-    #define LIGHT_PWM_RANGE (4095)
+// Gamma Correction lookup table for gamma=2.8 and 12 bit (4095) full scale
+// TODO: move to PROGMEM
+const unsigned short gamma_table[LIGHT_MAX_VALUE+1] = {
+   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,
+   2,   2,   2,   3,   3,   4,   4,   5,   5,   6,   7,   8,   8,   9,  10,  11,
+  12,  13,  15,  16,  17,  18,  20,  21,  23,  25,  26,  28,  30,  32,  34,  36,
+  38,  40,  43,  45,  48,  50,  53,  56,  59,  62,  65,  68,  71,  75,  78,  82,
+  85,  89,  93,  97, 101, 105, 110, 114, 119, 123, 128, 133, 138, 143, 149, 154,
+ 159, 165, 171, 177, 183, 189, 195, 202, 208, 215, 222, 229, 236, 243, 250, 258,
+ 266, 273, 281, 290, 298, 306, 315, 324, 332, 341, 351, 360, 369, 379, 389, 399,
+ 409, 419, 430, 440, 451, 462, 473, 485, 496, 508, 520, 532, 544, 556, 569, 582,
+ 594, 608, 621, 634, 648, 662, 676, 690, 704, 719, 734, 749, 764, 779, 795, 811,
+ 827, 843, 859, 876, 893, 910, 927, 944, 962, 980, 998,1016,1034,1053,1072,1091,
+1110,1130,1150,1170,1190,1210,1231,1252,1273,1294,1316,1338,1360,1382,1404,1427,
+1450,1473,1497,1520,1544,1568,1593,1617,1642,1667,1693,1718,1744,1770,1797,1823,
+1850,1877,1905,1932,1960,1988,2017,2045,2074,2103,2133,2162,2192,2223,2253,2284,
+2315,2346,2378,2410,2442,2474,2507,2540,2573,2606,2640,2674,2708,2743,2778,2813,
+2849,2884,2920,2957,2993,3030,3067,3105,3143,3181,3219,3258,3297,3336,3376,3416,
+3456,3496,3537,3578,3619,3661,3703,3745,3788,3831,3874,3918,3962,4006,4050,4095 };
 
-    // Gamma Correction lookup table for gamma=2.8 and 12 bit (4095) full scale
-    const unsigned short gamma_table[GAMMA_TABLE_SIZE] = {
-       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,
-       2,   2,   2,   3,   3,   4,   4,   5,   5,   6,   7,   8,   8,   9,  10,  11,
-      12,  13,  15,  16,  17,  18,  20,  21,  23,  25,  26,  28,  30,  32,  34,  36,
-      38,  40,  43,  45,  48,  50,  53,  56,  59,  62,  65,  68,  71,  75,  78,  82,
-      85,  89,  93,  97, 101, 105, 110, 114, 119, 123, 128, 133, 138, 143, 149, 154,
-     159, 165, 171, 177, 183, 189, 195, 202, 208, 215, 222, 229, 236, 243, 250, 258,
-     266, 273, 281, 290, 298, 306, 315, 324, 332, 341, 351, 360, 369, 379, 389, 399,
-     409, 419, 430, 440, 451, 462, 473, 485, 496, 508, 520, 532, 544, 556, 569, 582,
-     594, 608, 621, 634, 648, 662, 676, 690, 704, 719, 734, 749, 764, 779, 795, 811,
-     827, 843, 859, 876, 893, 910, 927, 944, 962, 980, 998,1016,1034,1053,1072,1091,
-    1110,1130,1150,1170,1190,1210,1231,1252,1273,1294,1316,1338,1360,1382,1404,1427,
-    1450,1473,1497,1520,1544,1568,1593,1617,1642,1667,1693,1718,1744,1770,1797,1823,
-    1850,1877,1905,1932,1960,1988,2017,2045,2074,2103,2133,2162,2192,2223,2253,2284,
-    2315,2346,2378,2410,2442,2474,2507,2540,2573,2606,2640,2674,2708,2743,2778,2813,
-    2849,2884,2920,2957,2993,3030,3067,3105,3143,3181,3219,3258,3297,3336,3376,3416,
-    3456,3496,3537,3578,3619,3661,3703,3745,3788,3831,3874,3918,3962,4006,4050,4095 };
-
-#endif
-
-#ifndef LIGHT_PWM_FREQUENCY
-    #define LIGHT_PWM_FREQUENCY (1000)
-#endif
-
-#ifndef LIGHT_PWM_RANGE
-    #define LIGHT_PWM_RANGE (255)
 #endif
 
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
 
-void _color_string2array(const char * rgb, unsigned int * array) {
+void _fromRGB(const char * rgb) {
 
     char * p = (char *) rgb;
     if (strlen(p) == 0) return;
@@ -66,70 +65,87 @@ void _color_string2array(const char * rgb, unsigned int * array) {
     // if color begins with a # then assume HEX RGB
     if (p[0] == '#') {
 
+        if (!lightHasColor()) return;
+
         ++p;
-        unsigned long value = strtol(p, NULL, 16);
+        unsigned long value = strtoul(p, NULL, 16);
 
         // RGBA values are interpreted like RGB + brightness
         if (strlen(p) > 7) {
-            array[0] = (value >> 24) & 0xFF;
-            array[1] = (value >> 16) & 0xFF;
-            array[2] = (value >> 8) & 0xFF;
-            brightness =float(value & 0xFF) / 255;
+            _channels[0].value = (value >> 24) & 0xFF;
+            _channels[1].value = (value >> 16) & 0xFF;
+            _channels[2].value = (value >> 8) & 0xFF;
+            _brightness = (value & 0xFF) * LIGHT_MAX_BRIGHTNESS / 255;
         } else {
-            array[0] = (value >> 16) & 0xFF;
-            array[1] = (value >> 8) & 0xFF;
-            array[2] = (value) & 0xFF;
+            _channels[0].value = (value >> 16) & 0xFF;
+            _channels[1].value = (value >> 8) & 0xFF;
+            _channels[2].value = (value) & 0xFF;
         }
 
-    // it's a temperature
-    } else if (p[strlen(p)-1] == 'K') {
+    // it's a temperature in mireds
+    } else if (p[0] == 'M') {
 
-        p[strlen(p)-1] = 0;
-        unsigned long temperature = atol(p);
-        _color_temperature2array(temperature, array);
+        unsigned long mireds = atol(p + 1);
+        _fromMireds(mireds);
+
+    // it's a temperature in kelvin
+    } else if (p[0] == 'K') {
+
+        unsigned long kelvin = atol(p + 1);
+        _fromKelvin(kelvin);
 
     // otherwise assume decimal values separated by commas
     } else {
 
         char * tok;
+        unsigned char count = 0;
+        unsigned char channels = _channels.size();
+
         tok = strtok(p, ",");
-        array[0] = atoi(tok);
-        tok = strtok(NULL, ",");
-
-        // if there are more than one value assume R,G,B
-        if (tok != NULL) {
-            array[1] = atoi(tok);
+        while (tok != NULL) {
+            _channels[count].value = atoi(tok);
+            if (++count == channels) break;
             tok = strtok(NULL, ",");
-            if (tok != NULL) {
-                array[2] = atoi(tok);
-            } else {
-                array[2] = 0;
-            }
+        }
 
-        // only one value set red, green and blue to the same value
-        } else {
-            array[2] = array[1] = array[0];
+        // RGB but less than 3 values received
+        if (channels > 2 & count < 3) {
+            _channels[1].value = _channels[0].value;
+            _channels[2].value = _channels[0].value;
         }
 
     }
 
 }
 
-void _color_array2rgb(unsigned int * array, float brightness, char * rgb) {
-    unsigned long value = array[0] * brightness;
-    value = (value << 8) + array[1] * brightness;
-    value = (value << 8) + array[2] * brightness;
-    sprintf(rgb, "#%06X", value);
+void _toRGB(char * rgb, size_t len, bool applyBrightness) {
+
+    if (!lightHasColor()) return;
+
+    float b = applyBrightness ? (float) _brightness / LIGHT_MAX_BRIGHTNESS : 1;
+
+    unsigned long value = 0;
+
+    value += _channels[0].value * b;
+    value <<= 8;
+    value += _channels[1].value * b;
+    value <<= 8;
+    value += _channels[2].value * b;
+
+    snprintf(rgb, len, "#%06X", value);
+
+}
+
+void _toRGB(char * rgb, size_t len) {
+    _toRGB(rgb, len, false);
 }
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
-// Color temperature is measured in mireds (kelvin = 1e6/mired)
 // https://github.com/stelgenhof/AiLight
-void _color_temperature2array(unsigned long mireds, unsigned int * array) {
+void _fromKelvin(unsigned long kelvin) {
 
-    // Force boundaries and conversion
-    if (mireds == 0) mireds = 1;
-    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
+    // Check we have RGB channels
+    if (!lightHasColor()) return;
 
     // Calculate colors
     unsigned int red = (kelvin <= 66)
@@ -145,152 +161,100 @@ void _color_temperature2array(unsigned long mireds, unsigned int * array) {
             : 138.5177312231 * log(kelvin - 10) - 305.0447927307);
 
     // Save values
-    array[0] = constrain(red, 0, LIGHT_MAX_VALUE);
-    array[1] = constrain(green, 0, LIGHT_MAX_VALUE);
-    array[2] = constrain(blue, 0, LIGHT_MAX_VALUE);
+    _channels[0].value = constrain(red, 0, LIGHT_MAX_VALUE);
+    _channels[1].value = constrain(green, 0, LIGHT_MAX_VALUE);
+    _channels[2].value = constrain(blue, 0, LIGHT_MAX_VALUE);
 
 }
 
-// Converts a color intensity value (0..255) to a pwm value
-// This takes care of positive or negative logic and brightness
-unsigned int _intensity2pwm(unsigned int intensity, float brightness) {
+// Color temperature is measured in mireds (kelvin = 1e6/mired)
+void _fromMireds(unsigned long mireds) {
+    if (mireds == 0) mireds = 1;
+    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
+    _fromKelvin(kelvin);
+}
 
-    intensity = brightness * intensity;
-
-    #if ENABLE_GAMMA_CORRECTION
-        unsigned int pwm = (intensity < GAMMA_TABLE_SIZE) ? gamma_table[intensity] : LIGHT_PWM_RANGE;
+unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
+    value = constrain(value, 0, LIGHT_MAX_VALUE);
+    value *= ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
+    #if LIGHT_ENABLE_GAMMA
+        unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
     #else
-        unsigned int pwm = intensity;
+        unsigned int pwm = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
     #endif
-
-    #if RGBW_INVERSE_LOGIC != 1
-        pwm = LIGHT_PWM_RANGE - pwm;
-    #endif
-
+    if (reverse) pwm = LIGHT_MAX_PWM - pwm;
     return pwm;
-
 }
 
-unsigned int _intensity2pwm(unsigned int intensity) {
-    return _intensity2pwm(intensity, LIGHT_MAX_VALUE);
+// Returns a PWM valule for the given channel ID
+unsigned int _toPWM(unsigned char id) {
+    if (id < _channels.size()) {
+        #if LIGHT_ENABLE_GAMMA
+            bool gamma = (lightHasColor() && id < 3);
+        #else
+            bool gamma = false;
+        #endif
+        return _toPWM(_channels[id].shadow, gamma, _channels[id].reverse);
+    }
+    return 0;
 }
 
 // -----------------------------------------------------------------------------
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-void _lightProviderSet(bool state, unsigned int red, unsigned int green, unsigned int blue, float brightness) {
+void _shadow() {
 
-    unsigned int white = 0;
+    bool useWhite = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
 
-    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
-		// If all set to the same value use white instead
-		if ((red == green) && (green == blue)) {
-		    white = red;
-		    red = green = blue = 0;
-		}
-	#endif
+    for (unsigned int i=0; i < _channels.size(); i++) {
+        _channels[i].shadow = _lightState ? _channels[i].value : 0;
+    }
+
+    if (_lightState && useWhite && _channels.size() > 3) {
+        if (_channels[0].shadow == _channels[1].shadow  && _channels[1].shadow == _channels[2].shadow ) {
+            _channels[3].shadow = _channels[0].shadow;
+            _channels[2].shadow = 0;
+            _channels[1].shadow = 0;
+            _channels[0].shadow = 0;
+        }
+    }
+
+
+}
+void _lightProviderUpdate() {
+
+    _shadow();
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-        _my9291->setState(state);
-        red *= brightness;
-        green *= brightness;
-        blue *= brightness;
-        white *= brightness;
-        _my9291->setColor((my9291_color_t) { red, green, blue, white });
-    #endif
 
-    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
+        if (_lightState) {
 
-        // Check state
-        if (!state) red = green = blue = white = 0;
+            float ratio = (float) LIGHT_MAX_VALUE / LIGHT_MAX_PWM;
 
-        analogWrite(RGBW_RED_PIN, _intensity2pwm(red, brightness));
-        analogWrite(RGBW_GREEN_PIN, _intensity2pwm(green, brightness));
-        analogWrite(RGBW_BLUE_PIN, _intensity2pwm(blue, brightness));
-        #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white, brightness));
-        #endif
-        #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W)
-            analogWrite(RGBW_WHITE_PIN, _intensity2pwm(white, brightness));
-            analogWrite(RGBW_WHITE2_PIN, _intensity2pwm(white, brightness));
-        #endif
-
-    #endif
-
-}
-
-// -----------------------------------------------------------------------------
-// LIGHT MANAGEMENT
-// -----------------------------------------------------------------------------
-
-void lightState(bool state) {
-    _lightState = state;
-    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2], brightness);
-}
-
-bool lightState() {
-    return _lightState;
-}
-
-void parseColor(const char * color) {
-    brightness = 1.0;
-    _color_string2array(color, _lightColor);
-}
-
-void lightColor(bool save, bool forward) {
-
-    _lightProviderSet(_lightState, _lightColor[0], _lightColor[1], _lightColor[2], brightness);
-
-    // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-    if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
-
-    // Report color & brightness to MQTT broker
-    if (forward) {
-
-        // Color
-        char rgb[8];
-        _color_array2rgb(_lightColor, 1.0, rgb);
-        mqttSend(MQTT_TOPIC_COLOR, rgb);
-
-        if ((_lightColor[0] == _lightColor[1]) & (_lightColor[1] == _lightColor[2])) {
-
-            // White
-            char buffer[5];
-            sprintf(buffer, "%d", (int) _lightColor[0]);
-            mqttSend(MQTT_TOPIC_WHITE, buffer);
-
+            unsigned int red = _toPWM(0) * ratio;
+            unsigned int green = _toPWM(1) * ratio;
+            unsigned int blue = _toPWM(2) * ratio;
+            unsigned int white = _toPWM(3) * ratio;
+            _my9291->setColor((my9291_color_t) { red, green, blue, white });
+            _my9291->setState(true);
 
         } else {
 
-            // Brightness
-            char buffer[5];
-            sprintf(buffer, "%d", (int) (brightness * LIGHT_MAX_BRIGHTNESS));
-            mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
+            _my9291->setState(false);
 
         }
 
-    }
+    #endif
 
-    // Report color to WS clients
-    {
-        char rgb[8];
-        _color_array2rgb(_lightColor, brightness, rgb);
-        char message[64];
-        sprintf(message, "{\"color\": \"%s\"}", rgb);
-        wsSend(message);
-    }
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
-}
+        for (unsigned int i=0; i < _channels.size(); i++) {
+            analogWrite(_channels[i].pin, _toPWM(i));
+        }
 
-String lightColor(float b) {
-    char rgb[8];
-    _color_array2rgb(_lightColor, b, rgb);
-    return String(rgb);
-}
+    #endif
 
-String lightColor() {
-    return lightColor(brightness);
 }
 
 // -----------------------------------------------------------------------------
@@ -298,29 +262,39 @@ String lightColor() {
 // -----------------------------------------------------------------------------
 
 void _lightColorSave() {
-    setSetting("color", lightColor(1.0));
-    setSetting("brightness", brightness * LIGHT_MAX_BRIGHTNESS);
+    for (unsigned int i=0; i < _channels.size(); i++) {
+        setSetting("ch", i, _channels[i].value);
+    }
+    setSetting("brightness", _brightness);
     saveSettings();
 }
 
 void _lightColorRestore() {
-    String color = getSetting("color", LIGHT_DEFAULT_COLOR);
-    _color_string2array(color.c_str(), _lightColor);
-    brightness = getSetting("brightness", 1).toFloat() / LIGHT_MAX_BRIGHTNESS;
+    for (unsigned int i=0; i < _channels.size(); i++) {
+        _channels[i].value = getSetting("ch", i, 0).toInt();
+    }
+    _brightness = getSetting("brightness", LIGHT_MAX_BRIGHTNESS).toInt();
+    lightUpdate(false, false);
 }
 
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
 
-void lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+void _lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
 
     if (type == MQTT_CONNECT_EVENT) {
+
         mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
-        mqttSubscribe(MQTT_TOPIC_COLORTEMP);
+        mqttSubscribe(MQTT_TOPIC_MIRED);
+        mqttSubscribe(MQTT_TOPIC_KELVIN);
         mqttSubscribe(MQTT_TOPIC_COLOR);
-        mqttSubscribe(MQTT_TOPIC_WHITE);
+
+        char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
+        sprintf(buffer, "%s/+", MQTT_TOPIC_CHANNEL);
+        mqttSubscribe(buffer);
+
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -328,86 +302,260 @@ void lightMQTTCallback(unsigned int type, const char * topic, const char * paylo
         // Match topic
         String t = mqttSubtopic((char *) topic);
 
-        // Color temperature
-        if (t.equals(MQTT_TOPIC_COLORTEMP)) {
-            char buffer[10];
-            sprintf(buffer, "%sK", payload);
-            parseColor(buffer);
-            lightColor(true, mqttForward());
+        // Color temperature in mireds
+        if (t.equals(MQTT_TOPIC_MIRED)) {
+            _fromMireds(atol(payload));
+            lightUpdate(true, mqttForward());
+        }
+
+        // Color temperature in kelvins
+        if (t.equals(MQTT_TOPIC_KELVIN)) {
+            _fromKelvin(atol(payload));
+            lightUpdate(true, mqttForward());
         }
 
         // Color
         if (t.equals(MQTT_TOPIC_COLOR)) {
-            parseColor(payload);
-            lightColor(true, mqttForward());
-        }
-
-        // White
-        if (t.equals(MQTT_TOPIC_WHITE)) {
-            parseColor(payload);
-            lightColor(true, mqttForward());
+            lightColor(payload);
+            lightUpdate(true, mqttForward());
         }
 
         // Brightness
         if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
-            brightness = (float) atoi(payload) / LIGHT_MAX_BRIGHTNESS;
-            lightColor(true, mqttForward());
+            _brightness = constrain(atoi(payload), 0, LIGHT_MAX_BRIGHTNESS);
+            lightUpdate(true, mqttForward());
         }
 
+        // Channel
+        if (t.startsWith(MQTT_TOPIC_CHANNEL)) {
+            unsigned int channelID = t.substring(strlen(MQTT_TOPIC_CHANNEL)+1).toInt();
+            if (channelID >= _channels.size()) {
+                DEBUG_MSG_P(PSTR("[LIGHT] Wrong channelID (%d)\n"), channelID);
+                return;
+            }
+            lightChannel(channelID, atoi(payload));
+            lightUpdate(true, mqttForward());
+        }
 
     }
 
 }
 
 // -----------------------------------------------------------------------------
+// API
+// -----------------------------------------------------------------------------
+
+unsigned char lightChannels() {
+    return _channels.size();
+}
+
+bool lightHasColor() {
+    return _channels.size() > 2;
+}
+
+unsigned char lightWhiteChannels() {
+    return _channels.size() % 3;
+}
+
+void lightMQTT() {
+
+    char buffer[8];
+
+    // Color
+    if (lightHasColor()) {
+        _toRGB(buffer, 8, false);
+        mqttSend(MQTT_TOPIC_COLOR, buffer);
+    }
+
+    // Channels
+    for (unsigned int i=0; i < _channels.size(); i++) {
+        sprintf(buffer, "%d", _channels[i].value);
+        mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
+    }
+
+    // Brightness
+    sprintf(buffer, "%d", _brightness);
+    mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
+
+}
+
+void lightUpdate(bool save, bool forward) {
+
+    _lightProviderUpdate();
+
+    // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
+    if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
+
+    // Report color & brightness to MQTT broker
+    if (forward) lightMQTT();
+
+    // Report color to WS clients (using current brightness setting)
+    {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        root["colorVisible"] = 1;
+        root["color"] = lightColor();
+        JsonArray& channels = root.createNestedArray("channels");
+        for (unsigned char id=0; id < lightChannels(); id++) {
+            channels.add(lightChannel(id));
+        }
+        root["brightness"] = lightBrightness();
+        String output;
+        root.printTo(output);
+        wsSend(output.c_str());
+    }
+
+};
+
+void lightState(bool state) {
+    _lightState = state;
+}
+
+bool lightState() {
+    return _lightState;
+}
+
+void lightColor(const char * color) {
+    _fromRGB(color);
+}
+
+String lightColor() {
+    char rgb[8];
+    _toRGB(rgb, 8, false);
+    return String(rgb);
+}
+
+unsigned int lightChannel(unsigned char id) {
+    if (id <= _channels.size()) {
+        return _channels[id].value;
+    }
+    return 0;
+}
+
+void lightChannel(unsigned char id, unsigned int value) {
+    if (id <= _channels.size()) {
+        _channels[id].value = constrain(value, 0, LIGHT_MAX_VALUE);
+    }
+}
+
+unsigned int lightBrightness() {
+    return _brightness;
+}
+
+void lightBrightness(unsigned int b) {
+    _brightness = constrain(b, 0, LIGHT_MAX_BRIGHTNESS);
+}
+
+// -----------------------------------------------------------------------------
 // SETUP
 // -----------------------------------------------------------------------------
 
-void lightSetup() {
-
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-        _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
-    #endif
-
-    #if (LIGHT_PROVIDER == LIGHT_PROVIDER_RGB) || (LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW)
-        analogWriteRange(LIGHT_PWM_RANGE);
-        analogWriteFreq(LIGHT_PWM_FREQUENCY);
-        pinMode(RGBW_RED_PIN, OUTPUT);
-        pinMode(RGBW_GREEN_PIN, OUTPUT);
-        pinMode(RGBW_BLUE_PIN, OUTPUT);
-		#if LIGHT_PROVIDER == LIGHT_PROVIDER_RGBW
-	        pinMode(RGBW_WHITE_PIN, OUTPUT);
-		#endif
-        #if LIGHT_PROVIDER == LIGHT_PROVIDER_RGB2W
-	        pinMode(RGBW_WHITE_PIN, OUTPUT);
-            pinMode(RGBW_WHITE2_PIN, OUTPUT);
-		#endif
-    #endif
-
-    _lightColorRestore();
+void _lightAPISetup() {
 
     // API entry points (protected with apikey)
-    apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
-        [](char * buffer, size_t len) {
-			snprintf(buffer, len, "%s", lightColor().c_str());
-        },
+    if (_channels.size() > 2) {
+        apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
+            [](char * buffer, size_t len) {
+                _toRGB(buffer, len, false);
+            },
+            [](const char * payload) {
+                lightColor(payload);
+                lightUpdate(true, true);
+            }
+        );
+    }
+
+    apiRegister(MQTT_TOPIC_KELVIN, MQTT_TOPIC_KELVIN,
+        [](char * buffer, size_t len) {},
         [](const char * payload) {
-            parseColor(payload);
-            lightColor(true, true);
+            _fromKelvin(atol(payload));
+            lightUpdate(true, true);
+        }
+    );
+
+    apiRegister(MQTT_TOPIC_MIRED, MQTT_TOPIC_MIRED,
+        [](char * buffer, size_t len) {},
+        [](const char * payload) {
+            _fromMireds(atol(payload));
+            lightUpdate(true, true);
         }
     );
 
     apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
         [](char * buffer, size_t len) {
-			snprintf(buffer, len, "%d", (int) (brightness * LIGHT_MAX_BRIGHTNESS));
+			snprintf(buffer, len, "%d", _brightness);
         },
         [](const char * payload) {
-            brightness = (float) atoi(payload) / LIGHT_MAX_BRIGHTNESS;
-            lightColor(true, true);
+            lightBrightness(atoi(payload));
+            lightUpdate(true, true);
         }
     );
 
-    mqttRegister(lightMQTTCallback);
+    for (unsigned int id=0; id<lightChannels(); id++) {
+
+        char url[15];
+        sprintf(url, "%s/%d", MQTT_TOPIC_CHANNEL, id);
+
+        char key[10];
+        sprintf(key, "%s%d", MQTT_TOPIC_CHANNEL, id);
+
+        apiRegister(url, key,
+            [id](char * buffer, size_t len) {
+				snprintf(buffer, len, "%d", lightChannel(id));
+            },
+            [id](const char * payload) {
+                lightChannel(id, atoi(payload));
+                lightUpdate(true, true);
+            }
+        );
+
+    }
+
+}
+
+void lightSetup() {
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+        _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
+        _channels.push_back((channel_t) {0, false, 0});
+        _channels.push_back((channel_t) {0, false, 0});
+        _channels.push_back((channel_t) {0, false, 0});
+        _channels.push_back((channel_t) {0, false, 0});
+    #endif
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+
+        #ifdef LIGHT_CH1_PIN
+            _channels.push_back((channel_t) {LIGHT_CH1_PIN, LIGHT_CH1_INVERSE, 0});
+        #endif
+
+        #ifdef LIGHT_CH2_PIN
+            _channels.push_back((channel_t) {LIGHT_CH2_PIN, LIGHT_CH2_INVERSE, 0});
+        #endif
+
+        #ifdef LIGHT_CH3_PIN
+            _channels.push_back((channel_t) {LIGHT_CH3_PIN, LIGHT_CH3_INVERSE, 0});
+        #endif
+
+        #ifdef LIGHT_CH4_PIN
+            _channels.push_back((channel_t) {LIGHT_CH4_PIN, LIGHT_CH4_INVERSE, 0});
+        #endif
+
+        #ifdef LIGHT_CH5_PIN
+            _channels.push_back((channel_t) {LIGHT_CH5_PIN, LIGHT_CH5_INVERSE, 0});
+        #endif
+
+        analogWriteRange(LIGHT_MAX_PWM+1);
+        analogWriteFreq(LIGHT_PWM_FREQUENCY);
+        for (unsigned int i=0; i < _channels.size(); i++) {
+            pinMode(_channels[i].pin, OUTPUT);
+        }
+
+    #endif
+
+    _lightColorRestore();
+    _lightAPISetup();
+    mqttRegister(_lightMQTTCallback);
 
 }
 

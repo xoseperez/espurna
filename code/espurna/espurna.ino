@@ -88,10 +88,8 @@ void heartbeat() {
     #if (HEARTBEAT_REPORT_RELAY)
         relayMQTT();
     #endif
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    #if (HEARTBEAT_REPORT_COLOR)
-        mqttSend(MQTT_TOPIC_COLOR, lightColor().c_str());
-    #endif
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
+        lightMQTT();
     #endif
     #if (HEARTBEAT_REPORT_VCC)
     #if ENABLE_ADC_VCC
@@ -250,6 +248,7 @@ void setup() {
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();
+    //settingsDump();
 
 }
 
