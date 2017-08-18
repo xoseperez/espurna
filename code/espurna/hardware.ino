@@ -292,6 +292,28 @@ void hwUpwardsCompatibility() {
         setSetting("relayProvider", RELAY_PROVIDER_RFBRIDGE);
     #endif
 
+    #ifdef SONOFF_4CH_PRO
+        setSetting("board", 27);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnGPIO", 2, 9);
+        setSetting("btnGPIO", 3, 10);
+        setSetting("btnGPIO", 4, 14);
+        setSetting("btnRelay", 1, 2);
+        setSetting("btnRelay", 2, 3);
+        setSetting("btnRelay", 3, 4);
+        setSetting("btnRelay", 4, 0);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 5);
+        setSetting("relayGPIO", 3, 4);
+        setSetting("relayGPIO", 4, 15);
+        setSetting("relayLogic", 1, 0);
+        setSetting("relayLogic", 2, 0);
+        setSetting("relayLogic", 3, 0);
+        setSetting("relayLogic", 4, 0);
+    #endif
+
     saveSettings();
 
 }
