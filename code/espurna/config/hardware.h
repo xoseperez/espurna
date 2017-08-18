@@ -292,10 +292,10 @@
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE
 
-    #define LIGHT_CH1_INVERSE   1
-    #define LIGHT_CH2_INVERSE   1
-    #define LIGHT_CH3_INVERSE   1
-    #define LIGHT_CH4_INVERSE   1
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801
