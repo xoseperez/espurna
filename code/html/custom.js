@@ -361,6 +361,7 @@ function initChannels(num) {
         line.appendTo("#channels");
 
     }
+}
 
 function addRfbNode() {
 
