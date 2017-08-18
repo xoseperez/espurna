@@ -301,6 +301,11 @@ function initColor() {
     noUiSlider.create($("#brightness").get(0), {
 		start: 255,
 		connect: [true, false],
+        tooltips: true,
+        format: {
+            to: function (value) { return parseInt(value); },
+            from: function (value) { return value; }
+        },
 		orientation: "horizontal",
 		range: { 'min': 0, 'max': 255}
 	}).on("change", function() {
@@ -335,6 +340,11 @@ function initChannels(num) {
         noUiSlider.create($(".slider", line).get(0), {
     		start: 0,
     		connect: [true, false],
+            tooltips: true,
+            format: {
+                to: function (value) { return parseInt(value); },
+                from: function (value) { return value; }
+            },
     		orientation: "horizontal",
     		range: { 'min': 0, 'max': 255 }
     	}).on("change", function() {

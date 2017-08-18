@@ -151,11 +151,17 @@ div.state {
 }
 
 .slider {
-    margin-top: 12px;
+    margin-top: 10px;
 }
 .slider .noUi-target {
     background: #D2D2D2;
 }
 .slider .noUi-connect {
 	background: #FFFFFF;
+}
+.slider .noUi-tooltip {
+    font-size: 10px;
+    border: 0px;
+    padding: 0px;
+    margin-bottom: -4px;
 }
