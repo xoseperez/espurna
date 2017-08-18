@@ -277,6 +277,18 @@
     #define DUMMY_RELAY_COUNT   6
     #define TRACK_RELAY_STATUS  0
 
+#elif defined(SONOFF_B1)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_B1"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define DUMMY_RELAY_COUNT   1
+
+    #define MY9291_DI_PIN       13
+    #define MY9291_DCKI_PIN     15
+    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------

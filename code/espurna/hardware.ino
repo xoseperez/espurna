@@ -314,6 +314,14 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 4, 0);
     #endif
 
+    #ifdef SONOFF_B1
+        setSetting("board", 28);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
+        setSetting("myDIGPIO", 12);
+        setSetting("myDCKIGPIO", 14);
+    #endif
+
     saveSettings();
 
 }
