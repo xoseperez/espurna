@@ -280,7 +280,7 @@ void hwUpwardsCompatibility() {
     #endif
 
     #ifdef SONOFF_RFBRIDGE
-        setSetting("board", 25);
+        setSetting("board", 26);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
         setSetting("btnGPIO", 1, 0);
