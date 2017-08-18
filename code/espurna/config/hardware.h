@@ -305,6 +305,57 @@
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
 
+#elif defined(SONOFF_T1_1CH)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_T1_1CH"
+    #define BUTTON1_PIN         9
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define RELAY1_PIN          5
+    #define RELAY1_PIN_INVERSE  0
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(SONOFF_T1_2CH)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_T1_2CH"
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PIN         10
+    #define BUTTON2_RELAY       2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN          4
+    #define RELAY2_PIN_INVERSE  0
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(SONOFF_T1_3CH)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_T1_3CH"
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PIN         9
+    #define BUTTON2_RELAY       2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PIN         10
+    #define BUTTON3_RELAY       3
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN          5
+    #define RELAY2_PIN_INVERSE  0
+    #define RELAY3_PIN          4
+    #define RELAY3_PIN_INVERSE  0
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------

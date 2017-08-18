@@ -342,6 +342,48 @@ void hwUpwardsCompatibility() {
         setSetting("relays", 1);
     #endif
 
+    #ifdef SONOFF_T1_1CH
+        setSetting("board", 30);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 9);
+        setSetting("btnRelay", 1, 1);
+        setSetting("relayGPIO", 1, 5);
+        setSetting("relayLogic", 1, 0);
+    #endif
+
+    #ifdef SONOFF_T1_2CH
+        setSetting("board", 31);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnGPIO", 2, 10);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 4);
+        setSetting("relayLogic", 1, 0);
+        setSetting("relayLogic", 2, 0);
+    #endif
+
+    #ifdef SONOFF_T1_3CH
+        setSetting("board", 32);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnGPIO", 2, 9);
+        setSetting("btnGPIO", 3, 10);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("btnRelay", 3, 3);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 5);
+        setSetting("relayGPIO", 3, 4);
+        setSetting("relayLogic", 1, 0);
+        setSetting("relayLogic", 2, 0);
+        setSetting("relayLogic", 3, 0);
+    #endif
+
     saveSettings();
 
 }
