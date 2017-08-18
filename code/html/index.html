@@ -344,15 +344,39 @@
                                     </div>
                                 </div>
 
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useColor">Use colorpicker</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useColor" tabindex="8" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use color picker for the first 3 channels as RGB.<br />Will only work if the device has at least 3 dimmable channels.</div>
+                                </div>
+
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useWhite">Use white channel</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" tabindex="9" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.</div>
+                                </div>
+
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useGamma">Use gamma correction</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useGamma" tabindex="10" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
+                                </div>
+
                                 <div class="pure-g module module-fauxmo">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Alexa integration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="7" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="11" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="0"> Celsius (ºC)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="9" value="1"> Fahrenheit (ºF)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (ºC)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (ºF)</input></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -801,7 +825,7 @@
         <div id="channelTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-sm-1-4">Channel #</label>
-                <div class="slider channels pure-u-1 pure-u-sm-1-4" data="0"></div>
+                <div class="slider channels pure-u-1 pure-u-sm-1-4" data="99"></div>
             </div>
         </div>
 

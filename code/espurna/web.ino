@@ -186,6 +186,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool apiEnabled = false;
         bool dstEnabled = false;
         bool mqttUseJson = false;
+        bool useColor = false;
+        bool useWhite = false;
+        bool useGamma = false;
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
@@ -271,23 +274,14 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
 
             // Checkboxes
-            if (key == "apiEnabled") {
-                apiEnabled = true;
-                continue;
-            }
-            if (key == "ntpDST") {
-                dstEnabled = true;
-                continue;
-            }
-            if (key == "mqttUseJson") {
-                mqttUseJson = true;
-                continue;
-            }
+            if (key == "apiEnabled") { apiEnabled = true; continue; }
+            if (key == "ntpDST") { dstEnabled = true; continue; }
+            if (key == "mqttUseJson") { mqttUseJson = true; continue; }
+            if (key == "useColor") { useColor = true; continue; }
+            if (key == "useWhite") { useWhite = true; continue; }
+            if (key == "useGamma") { useGamma = true; continue; }
             #if ENABLE_FAUXMO
-                if (key == "fauxmoEnabled") {
-                    fauxmoEnabled = true;
-                    continue;
-                }
+                if (key == "fauxmoEnabled") { fauxmoEnabled = true; continue; }
             #endif
 
             if (key == "ssid") {
@@ -323,23 +317,14 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         if (webMode == WEB_MODE_NORMAL) {
 
             // Checkboxes
-            if (apiEnabled != (getSetting("apiEnabled").toInt() == 1)) {
-                setSetting("apiEnabled", apiEnabled);
-                save = changed = true;
-            }
-            if (dstEnabled != (getSetting("ntpDST").toInt() == 1)) {
-                setSetting("ntpDST", dstEnabled);
-                save = changed = changedNTP = true;
-            }
-            if (mqttUseJson != (getSetting("mqttUseJson").toInt() == 1)) {
-                setSetting("mqttUseJson", mqttUseJson);
-                save = changed = true;
-            }
+            setBoolSetting("apiEnabled", apiEnabled, ENABLE_API);
+            setBoolSetting("ntpDST", dstEnabled, NTP_DAY_LIGHT);
+            setBoolSetting("mqttUseJson", mqttUseJson, MQTT_USE_JSON);
+            setBoolSetting("useColor", useColor, LIGHT_USE_COLOR);
+            setBoolSetting("useWhite", useWhite, LIGHT_USE_WHITE);
+            setBoolSetting("useGamma", useGamma, LIGHT_USE_GAMMA);
             #if ENABLE_FAUXMO
-                if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
-                    setSetting("fauxmoEnabled", fauxmoEnabled);
-                    save = changed = true;
-                }
+                setBoolSetting("fauxmoEnabled", fauxmoEnabled, FAUXMO_ENABLED);
             #endif
 
             // Clean wifi networks
@@ -472,6 +457,9 @@ void _wsStart(uint32_t client_id) {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             root["colorVisible"] = 1;
+            root["useColor"] = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+            root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
+            root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
             if (lightHasColor()) {
                 root["color"] = lightColor();
                 root["brightness"] = lightBrightness();
@@ -494,7 +482,7 @@ void _wsStart(uint32_t client_id) {
 
         root["webPort"] = getSetting("webPort", WEBSERVER_PORT).toInt();
 
-        root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
+        root["apiEnabled"] = getSetting("apiEnabled", ENABLE_API).toInt() == 1;
         root["apiKey"] = getSetting("apiKey");
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
@@ -691,7 +679,7 @@ bool _authenticate(AsyncWebServerRequest *request) {
 
 bool _authAPI(AsyncWebServerRequest *request) {
 
-    if (getSetting("apiEnabled").toInt() == 0) {
+    if (getSetting("apiEnabled", ENABLE_API).toInt() == 0) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;

@@ -414,7 +414,7 @@ function processData(data) {
 
         if (key == "brightness") {
             var slider = $("#brightness");
-            if (slider) slider.get(0).noUiSlider.set(data[key]);
+            if (slider.length) slider.get(0).noUiSlider.set(data[key]);
             return;
         }
 
@@ -422,8 +422,8 @@ function processData(data) {
             var len = data[key].length;
             initChannels(len);
             for (var i=0; i<len; i++) {
-                var slider = $(".channels[data=" + i + "]");
-                if (slider) slider.get(0).noUiSlider.set(data[key][i]);
+                var slider = $("div.channels[data=" + i + "]");
+                if (slider.length) slider.get(0).noUiSlider.set(data[key][i]);
             }
             return;
         }

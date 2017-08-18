@@ -186,7 +186,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
 #define WEBSERVER_PORT          80          // HTTP port
 #define DNS_PORT                53          // MDNS port
-#define ENABLE_MDNS             1           // Enabled MDNS
+#define ENABLE_MDNS             1           // Enable MDNS by default
+#define ENABLE_API              0           // Do not enable API by default
 #define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
 
 #define WEB_MODE_NORMAL         0
@@ -307,7 +308,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
-#define LIGHT_ENABLE_GAMMA      0           // Enable gamma correction
+#define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

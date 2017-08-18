@@ -28,8 +28,6 @@ unsigned int _brightness = LIGHT_MAX_BRIGHTNESS;
 my9291 * _my9291;
 #endif
 
-#if LIGHT_ENABLE_GAMMA
-
 // Gamma Correction lookup table for gamma=2.8 and 12 bit (4095) full scale
 // TODO: move to PROGMEM
 const unsigned short gamma_table[LIGHT_MAX_VALUE+1] = {
@@ -49,8 +47,6 @@ const unsigned short gamma_table[LIGHT_MAX_VALUE+1] = {
 2315,2346,2378,2410,2442,2474,2507,2540,2573,2606,2640,2674,2708,2743,2778,2813,
 2849,2884,2920,2957,2993,3030,3067,3105,3143,3181,3219,3258,3297,3336,3376,3416,
 3456,3496,3537,3578,3619,3661,3703,3745,3788,3831,3874,3918,3962,4006,4050,4095 };
-
-#endif
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -182,11 +178,7 @@ void _fromMireds(unsigned long mireds) {
 unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (bright) value *= ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
-    #if LIGHT_ENABLE_GAMMA
-        unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
-    #else
-        unsigned int pwm = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
-    #endif
+    unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
     if (reverse) pwm = LIGHT_MAX_PWM - pwm;
     return pwm;
 }
@@ -196,11 +188,7 @@ unsigned int _toPWM(unsigned char id) {
     if (id < _channels.size()) {
         bool isColor = (lightHasColor() && id < 3);
         bool bright = isColor;
-        #if LIGHT_ENABLE_GAMMA
-            bool gamma = isColor;
-        #else
-            bool gamma = false;
-        #endif
+        bool gamma = isColor & (getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1);
         return _toPWM(_channels[id].shadow, bright, gamma, _channels[id].reverse);
     }
     return 0;
@@ -363,11 +351,8 @@ unsigned char lightChannels() {
 }
 
 bool lightHasColor() {
-    #if LIGHT_USE_COLOR
-        return _channels.size() > 2;
-    #else
-        return false;
-    #endif
+    bool useColor = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+    return useColor && (_channels.size() > 2);
 }
 
 unsigned char lightWhiteChannels() {
@@ -410,6 +395,9 @@ void lightUpdate(bool save, bool forward) {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
         root["colorVisible"] = 1;
+        root["useColor"] = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+        root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
+        root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
         if (lightHasColor()) {
             root["color"] = lightColor();
             root["brightness"] = lightBrightness();
