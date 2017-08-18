@@ -92,6 +92,7 @@ void hwUpwardsCompatibility() {
         setSetting("ledLogic", 1, 1);
         setSetting("btnRelay", 3, 1);
         setSetting("relayProvider", RELAY_PROVIDER_DUAL);
+        setSetting("relays", 2);
     #endif
 
     #ifdef ITEAD_1CH_INCHING
@@ -218,6 +219,7 @@ void hwUpwardsCompatibility() {
         setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
+        setSetting("relays", 1);
     #endif
 
     #ifdef LED_CONTROLLER
@@ -234,6 +236,7 @@ void hwUpwardsCompatibility() {
         setSetting("ch2Logic", 0);
         setSetting("ch3Logic", 0);
         setSetting("ch4Logic", 0);
+        setSetting("relays", 1);
     #endif
 
     #ifdef ITEAD_MOTOR
@@ -272,6 +275,7 @@ void hwUpwardsCompatibility() {
         setSetting("ch3Logic", 0);
         setSetting("ch4Logic", 0);
         setSetting("ch5Logic", 0);
+        setSetting("relays", 1);
     #endif
 
     #ifdef ITEAD_BNSZ01
@@ -282,6 +286,7 @@ void hwUpwardsCompatibility() {
         setSetting("ledLogic", 1, 1);
         setSetting("ch1GPIO", 12);
         setSetting("ch1Logic", 0);
+        setSetting("relays", 1);
     #endif
 
     #ifdef SONOFF_RFBRIDGE
@@ -290,6 +295,7 @@ void hwUpwardsCompatibility() {
         setSetting("ledLogic", 1, 1);
         setSetting("btnGPIO", 1, 0);
         setSetting("relayProvider", RELAY_PROVIDER_RFBRIDGE);
+        setSetting("relays", 6);
     #endif
 
     #ifdef SONOFF_4CH_PRO
@@ -320,6 +326,7 @@ void hwUpwardsCompatibility() {
         setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
         setSetting("myDIGPIO", 12);
         setSetting("myDCKIGPIO", 14);
+        setSetting("relays", 1);
     #endif
 
     #ifdef SONOFF_LED
@@ -332,6 +339,7 @@ void hwUpwardsCompatibility() {
         setSetting("ch1Logic", 0);
         setSetting("ch2GPIO", 14);
         setSetting("ch2Logic", 0);
+        setSetting("relays", 1);
     #endif
 
     saveSettings();
