@@ -210,7 +210,7 @@ void _shadow() {
 
         if (_lightState && useWhite && _channels.size() > 3) {
             if (_channels[0].shadow == _channels[1].shadow  && _channels[1].shadow == _channels[2].shadow ) {
-                _channels[3].shadow = _channels[0].shadow;
+                _channels[3].shadow = _channels[0].shadow * ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
                 _channels[2].shadow = 0;
                 _channels[1].shadow = 0;
                 _channels[0].shadow = 0;
