@@ -14,6 +14,7 @@
         <link rel="stylesheet" href="checkboxes.css" />
         <link rel="stylesheet" href="custom.css" />
         <link rel="stylesheet" href="wheelcolorpicker.css" />
+        <link rel="stylesheet" href="nouislider.min.css" />
         <!-- endbuild -->
 
     </head>
@@ -45,7 +46,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -54,7 +55,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" autocomplete="false" />
                                 </div>
 
                                 <button class="pure-button button-update-password">Update</button>
@@ -114,6 +115,10 @@
                             <a href="#" class="pure-menu-link" data="panel-power">POWER</a>
                         </li>
 
+                        <li class="pure-menu-item module module-rfb">
+                            <a href="#" class="pure-menu-link" data="panel-rfb">RFBRIDGE</a>
+                        </li>
+
                         <li class="pure-menu-item">
                             <a href="#" class="pure-menu-link" data="panel-admin">ADMIN</a>
                         </li>
@@ -154,9 +159,10 @@
                                 <div id="relays">
                                 </div>
 
-                                <div class="pure-g module module-color">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Color</label>
-                                    <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />
+                                <div id="colors">
+                                </div>
+
+                                <div id="channels">
                                 </div>
 
                                 <div class="pure-g module module-analog">
@@ -342,15 +348,39 @@
                                     </div>
                                 </div>
 
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useColor">Use colorpicker</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useColor" tabindex="8" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use color picker for the first 3 channels as RGB.<br />Will only work if the device has at least 3 dimmable channels.<br />Reload the page to update the web interface.</div>
+                                </div>
+
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useWhite">Use white channel</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" tabindex="9" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Reload the page to update the web interface.</div>
+                                </div>
+
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useGamma">Use gamma correction</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useGamma" tabindex="10" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
+                                </div>
+
                                 <div class="pure-g module module-fauxmo">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="fauxmoEnabled">Alexa integration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="7" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="fauxmoEnabled" tabindex="11" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="8" value="0"> Celsius (ºC)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="9" value="1"> Fahrenheit (ºF)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (ºC)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (ºF)</input></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -376,7 +406,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -385,7 +415,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -472,12 +502,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttUser">MQTT User</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user/pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="mqttPassword">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no user/pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g module module-mqttssl">
@@ -674,12 +704,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="idbUsername">Username</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="idbPassword">Password</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="false" />
                                 </div>
 
                             </fieldset>
@@ -734,18 +764,63 @@
                     </div>
                 </form>
 
+                <div class="panel" id="panel-rfb">
+
+                    <div class="header">
+                        <h1>RFBRIDGE</h1>
+                        <h2>
+                            Sonoff 433 RF Bridge Configuration<br /><br />
+                            To learn a new code click <strong>LEARN</strong>, the Sonoff RFBridge will beep, then press a button on the remote, the RFBridge will then double beep and the new code should show up. If the device double beeps but the code does not update it has not been properly learnt. Keep trying.<br /><br />
+                            Modify or create new codes manually (all codes must be 18 characters long) and then click <strong>SAVE</strong> to store them in the device memory. If your controlled device uses the same code to switch ON and OFF, learn the code with the ON button and copy paste it to the OFF input box, then click SAVE on the last one to store the value.<br /><br />
+                            Delete any code clicking the <strong>FORGET</strong> button.
+                        </h2>
+                    </div>
+
+                    <div class="page">
+
+                        <div id="rfbNodes" />
+
+                    </div>
+                </div>
+
             </div> <!-- content -->
 
         </div> <!-- layout -->
 
         <!-- Templates -->
 
+        <div id="rfbNodeTemplate" class="template">
+
+            <fieldset>
+
+                <legend>&nbsp;Switch <span></span>&nbsp;</legend>
+
+                <div class="pure-g">
+                    <label class="pure-u-1-2 pure-u-sm-1-4">Switch ON</label>
+                    <input class="pure-u-1-2 pure-u-sm-1-3" type="text" maxlength="18" name="rfbcode" data_id="1" data_status="1" />
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button></div>
+                </div>
+
+                <div class="pure-g">
+                    <label class="pure-u-1-2 pure-u-sm-1-4">Switch OFF</label>
+                    <input class="pure-u-1-2 pure-u-sm-1-3" type="text" maxlength="18" name="rfbcode" data_id="1" data_status="0" />
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-learn">LEARN</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-send">SAVE</button></div>
+                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-rfb-forget">FORGET</button></div>
+                </div>
+
+            </fieldset>
+
+        </div>
+
         <div id="networkTemplate" class="template">
 
             <div class="pure-g">
 
                 <label class="pure-u-md-1-6 pure-u-1-4" for="ssid">Network SSID</label>
-                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required /></div>
+                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-md-1-12 pure-u-1-8"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <div class="more">
@@ -753,27 +828,27 @@
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="pass">Password</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" autocomplete="false" />
 
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="ip">Static IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Leave empty for DNS negotiation</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="gw">Gateway IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set when using a static IP</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="mask">Network Mask</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Usually 255.255.255.0 for /24 networks</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="dns">DNS IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set the Domain Name Server IP to use when using a static IP</div>
 
@@ -801,6 +876,25 @@
             </div>
         </div>
 
+        <div id="colorTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-sm-1-4">Color</label>
+                <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />
+            </div>
+
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-sm-1-4">Brightness</label>
+                <div class="slider pure-u-1 pure-u-sm-1-4" id="brightness"></div>
+            </div>
+        </div>
+
+        <div id="channelTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-sm-1-4">Channel #</label>
+                <div class="slider channels pure-u-1 pure-u-sm-1-4" data="99"></div>
+            </div>
+        </div>
+
         <iframe id="downloader" style="display:none;"></iframe>
         <input id="uploader" type="file" style="display:none;" />
 
@@ -811,6 +905,7 @@
     <script src="checkboxes.js"></script>
     <script src="custom.js"></script>
     <script src="jquery.wheelcolorpicker-3.0.2.min.js"></script>
+    <script src="nouislider.min.js"></script>
     <!-- endbuild -->
 
 </html>

@@ -161,6 +161,7 @@
     #define SERIAL_BAUDRATE     19230
     #undef RELAY_PROVIDER
     #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
+    #define DUMMY_RELAY_COUNT   2
 
 #elif defined(SONOFF_4CH)
 
@@ -222,6 +223,33 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(ITEAD_BNSZ01)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "BN-SZ01"
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_CH1_PIN       12
+    #define LIGHT_CH1_INVERSE   0
+
+#elif defined(SONOFF_RFBRIDGE)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "RFBRIDGE"
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+    #undef SERIAL_BAUDRATE
+    #define SERIAL_BAUDRATE     19200
+    #undef RELAY_PROVIDER
+    #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
+    #define DUMMY_RELAY_COUNT   6
+    #define TRACK_RELAY_STATUS  0
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------
@@ -269,6 +297,11 @@
     #define DEVICE              "AI_LIGHT"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define DUMMY_RELAY_COUNT   1
+
+    #define MY9291_DI_PIN       13
+    #define MY9291_DCKI_PIN     15
+    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
 
 // -----------------------------------------------------------------------------
 // LED Controller
@@ -281,19 +314,18 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGB
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
 
-    #undef RGBW_INVERSE_LOGIC
-    #undef RGBW_RED_PIN
-    #undef RGBW_GREEN_PIN
-    #undef RGBW_BLUE_PIN
-    #undef RGBW_WHITE_PIN
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH4_PIN       13      // WHITE
 
-    #define RGBW_INVERSE_LOGIC      1
-    #define RGBW_RED_PIN            14
-    #define RGBW_GREEN_PIN          5
-    #define RGBW_BLUE_PIN           12
-    #define RGBW_WHITE_PIN          13
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801
@@ -306,20 +338,20 @@
     #define LED1_PIN            5
     #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGB2W
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
 
-    #undef RGBW_INVERSE_LOGIC
-    #undef RGBW_RED_PIN
-    #undef RGBW_GREEN_PIN
-    #undef RGBW_BLUE_PIN
-    #undef RGBW_WHITE_PIN
+    #define LIGHT_CH1_PIN       15      // RED
+    #define LIGHT_CH2_PIN       13      // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH4_PIN       14      // WHITE1
+    #define LIGHT_CH5_PIN       4       // WHITE2
 
-    #define RGBW_INVERSE_LOGIC      1
-    #define RGBW_RED_PIN            15
-    #define RGBW_GREEN_PIN          13
-    #define RGBW_BLUE_PIN           12
-    #define RGBW_WHITE_PIN          14
-    #define RGBW_WHITE2_PIN         4
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // Jan Goedeke Wifi Relay
@@ -526,6 +558,11 @@
 #define BUTTON_SWITCH       1
 #define BUTTON_DEFAULT_HIGH 2
 #define BUTTON_SET_PULLUP   4
+#endif
+
+// Does the board track the relay status?
+#ifndef TRACK_RELAY_STATUS
+#define TRACK_RELAY_STATUS  1
 #endif
 
 // Relay providers

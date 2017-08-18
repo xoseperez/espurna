@@ -97,6 +97,21 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             ESP.restart();
         }
 
+        #ifdef SONOFF_RFBRIDGE
+        if (action.equals("rfblearn") && root.containsKey("data")) {
+            JsonObject& data = root["data"];
+            rfbLearn(data["id"], data["status"]);
+        }
+        if (action.equals("rfbforget") && root.containsKey("data")) {
+            JsonObject& data = root["data"];
+            rfbForget(data["id"], data["status"]);
+        }
+        if (action.equals("rfbsend") && root.containsKey("data")) {
+            JsonObject& data = root["data"];
+            rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+        }
+        #endif
+
         if (action.equals("restore") && root.containsKey("data")) {
 
             JsonObject& data = root["data"];
@@ -134,7 +149,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             if (data.containsKey("status")) {
 
-                bool state = (strcmp(data["status"], "1") == 0);
+                bool status = (strcmp(data["status"], "1") == 0);
 
                 unsigned int relayID = 0;
                 if (data.containsKey("id")) {
@@ -142,16 +157,36 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                     relayID = value.toInt();
                 }
 
-                relayStatus(relayID, state);
+                relayStatus(relayID, status);
 
             }
 
         }
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-            if (action.equals("color") && root.containsKey("data")) {
-                lightColor(root["data"], true, true);
+
+            if (lightHasColor()) {
+
+                if (action.equals("color") && root.containsKey("data")) {
+                    lightColor(root["data"]);
+                    lightUpdate(true, true);
+                }
+
+                if (action.equals("brightness") && root.containsKey("data")) {
+                    lightBrightness(root["data"]);
+                    lightUpdate(true, true);
+                }
+
             }
+
+            if (action.equals("channel") && root.containsKey("data")) {
+                JsonObject& data = root["data"];
+                if (data.containsKey("id") && data.containsKey("value")) {
+                    lightChannel(data["id"], data["value"]);
+                    lightUpdate(true, true);
+                }
+            }
+
         #endif
 
     };
@@ -171,6 +206,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool apiEnabled = false;
         bool dstEnabled = false;
         bool mqttUseJson = false;
+        bool useColor = false;
+        bool useWhite = false;
+        bool useGamma = false;
         #if ASYNC_TCP_SSL_ENABLED
             bool mqttUseSSL = false;
         #endif
@@ -259,29 +297,17 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
 
             // Checkboxes
-            if (key == "apiEnabled") {
-                apiEnabled = true;
-                continue;
-            }
-            if (key == "ntpDST") {
-                dstEnabled = true;
-                continue;
-            }
-            if (key == "mqttUseJson") {
-                mqttUseJson = true;
-                continue;
-            }
+            if (key == "apiEnabled") { apiEnabled = true; continue; }
+            if (key == "ntpDST") { dstEnabled = true; continue; }
+            if (key == "mqttUseJson") { mqttUseJson = true; continue; }
+            if (key == "useColor") { useColor = true; continue; }
+            if (key == "useWhite") { useWhite = true; continue; }
+            if (key == "useGamma") { useGamma = true; continue; }
             #if ASYNC_TCP_SSL_ENABLED
-                if (key == "mqttUseSSL") {
-                    mqttUseSSL = true;
-                    continue;
-                }
+                if (key == "mqttUseSSL") { mqttUseSSL = true; continue; }
             #endif
             #if ENABLE_FAUXMO
-                if (key == "fauxmoEnabled") {
-                    fauxmoEnabled = true;
-                    continue;
-                }
+                if (key == "fauxmoEnabled") { fauxmoEnabled = true; continue; }
             #endif
 
             if (key == "ssid") {
@@ -317,29 +343,17 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         if (webMode == WEB_MODE_NORMAL) {
 
             // Checkboxes
-            if (apiEnabled != (getSetting("apiEnabled").toInt() == 1)) {
-                setSetting("apiEnabled", apiEnabled);
-                save = changed = true;
-            }
-            if (dstEnabled != (getSetting("ntpDST").toInt() == 1)) {
-                setSetting("ntpDST", dstEnabled);
-                save = changed = changedNTP = true;
-            }
-            if (mqttUseJson != (getSetting("mqttUseJson").toInt() == 1)) {
-                setSetting("mqttUseJson", mqttUseJson);
-                save = changed = true;
-            }
+            setBoolSetting("apiEnabled", apiEnabled, ENABLE_API);
+            setBoolSetting("ntpDST", dstEnabled, NTP_DAY_LIGHT);
+            setBoolSetting("mqttUseJson", mqttUseJson, MQTT_USE_JSON);
+            setBoolSetting("useColor", useColor, LIGHT_USE_COLOR);
+            setBoolSetting("useWhite", useWhite, LIGHT_USE_WHITE);
+            setBoolSetting("useGamma", useGamma, LIGHT_USE_GAMMA);
             #if ASYNC_TCP_SSL_ENABLED
-                if (mqttUseSSL != (getSetting("mqttUseSSL", 0). toInt() == 1)) {
-                    setSetting("mqttUseSSL", mqttUseSSL);
-                    save = changed = changedMQTT = true;
-                }
+                setBoolSetting("mqttUseSSL", mqttUseSSL, MQTT_USE_SSL);
             #endif
             #if ENABLE_FAUXMO
-                if (fauxmoEnabled != (getSetting("fauxmoEnabled").toInt() == 1)) {
-                    setSetting("fauxmoEnabled", fauxmoEnabled);
-                    save = changed = true;
-                }
+                setBoolSetting("fauxmoEnabled", fauxmoEnabled, FAUXMO_ENABLED);
             #endif
 
             // Clean wifi networks
@@ -383,7 +397,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_INFLUXDB
                 influxDBConfigure();
             #endif
-            buildTopics();
+            mqttConfigure();
 
             #if ENABLE_RF
                 rfBuildCodes();
@@ -477,7 +491,17 @@ void _wsStart(uint32_t client_id) {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             root["colorVisible"] = 1;
-            root["color"] = lightColor();
+            root["useColor"] = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+            root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
+            root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
+            if (lightHasColor()) {
+                root["color"] = lightColor();
+                root["brightness"] = lightBrightness();
+            }
+            JsonArray& channels = root.createNestedArray("channels");
+            for (unsigned char id=0; id < lightChannels(); id++) {
+                channels.add(lightChannel(id));
+            }
         #endif
 
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);
@@ -492,7 +516,7 @@ void _wsStart(uint32_t client_id) {
 
         root["webPort"] = getSetting("webPort", WEBSERVER_PORT).toInt();
 
-        root["apiEnabled"] = getSetting("apiEnabled").toInt() == 1;
+        root["apiEnabled"] = getSetting("apiEnabled", ENABLE_API).toInt() == 1;
         root["apiKey"] = getSetting("apiKey");
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
@@ -588,6 +612,20 @@ void _wsStart(uint32_t client_id) {
             root["powVoltage"] = getVoltage();
             root["powCurrent"] = String(getCurrent(), 3);
             root["powPowerFactor"] = String(getPowerFactor(), 2);
+        #endif
+
+        #ifdef SONOFF_RFBRIDGE
+        root["rfbVisible"] = 1;
+        root["rfbCount"] = relayCount();
+        JsonArray& rfb = root.createNestedArray("rfb");
+        for (byte id=0; id<relayCount(); id++) {
+            for (byte status=0; status<2; status++) {
+                JsonObject& node = rfb.createNestedObject();
+                node["id"] = id;
+                node["status"] = status;
+                node["data"] = rfbRetrieve(id, status == 1);
+            }
+        }
         #endif
 
         root["maxNetworks"] = WIFI_MAX_NETWORKS;
@@ -689,7 +727,7 @@ bool _authenticate(AsyncWebServerRequest *request) {
 
 bool _authAPI(AsyncWebServerRequest *request) {
 
-    if (getSetting("apiEnabled").toInt() == 0) {
+    if (getSetting("apiEnabled", ENABLE_API).toInt() == 0) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;
@@ -739,8 +777,8 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         }
 
         // Get response from callback
-        char value[10];
-        (api.getFn)(value, 10);
+        char value[API_BUFFER_SIZE];
+        (api.getFn)(value, API_BUFFER_SIZE);
         char *p = ltrim(value);
 
         // The response will be a 404 NOT FOUND if the resource is not available
@@ -803,7 +841,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
 
     } else {
         for (unsigned int i=0; i < _apis.size(); i++) {
-            output += _apis[i].key + String(" -> ") + _apis[i].url + String("\n<br />");
+            output += _apis[i].key + String(" -> ") + _apis[i].url + String("\n");
         }
         request->send(200, "text/plain", output);
     }

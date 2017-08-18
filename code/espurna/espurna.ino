@@ -88,10 +88,8 @@ void heartbeat() {
     #if (HEARTBEAT_REPORT_RELAY)
         relayMQTT();
     #endif
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    #if (HEARTBEAT_REPORT_COLOR)
-        mqttSend(MQTT_TOPIC_COLOR, lightColor().c_str());
-    #endif
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
+        lightMQTT();
     #endif
     #if (HEARTBEAT_REPORT_VCC)
     #if ENABLE_ADC_VCC
@@ -120,19 +118,22 @@ unsigned char customReset() {
 }
 
 void hardwareSetup() {
+
     EEPROM.begin(4096);
+
     #ifdef DEBUG_PORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
         if (customReset() == CUSTOM_RESET_HARDWARE) {
             DEBUG_PORT.setDebugOutput(true);
         }
-    #endif
-    #ifdef SONOFF_DUAL
+    #elif defined(SERIAL_BAUDRATE)
         Serial.begin(SERIAL_BAUDRATE);
     #endif
+
     #if not EMBEDDED_WEB
         SPIFFS.begin();
     #endif
+
 }
 
 void hardwareLoop() {
@@ -214,6 +215,9 @@ void setup() {
     mqttSetup();
     ntpSetup();
 
+    #ifdef SONOFF_RFBRIDGE
+        rfbSetup();
+    #endif
     #if ENABLE_I2C
         i2cSetup();
     #endif
@@ -250,6 +254,7 @@ void setup() {
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();
+    //settingsDump();
 
 }
 
@@ -267,8 +272,11 @@ void loop() {
     #if ENABLE_FAUXMO
         fauxmoLoop();
     #endif
-    #ifndef SONOFF_DUAL
+    #if !defined(SONOFF_DUAL) & !defined(SONOFF_RFBRIDGE)
         settingsLoop();
+    #endif
+    #ifdef SONOFF_RFBRIDGE
+        rfbLoop();
     #endif
     #if ENABLE_NOFUSS
         nofussLoop();

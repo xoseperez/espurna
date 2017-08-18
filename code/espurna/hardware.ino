@@ -13,17 +13,6 @@ the migration to future version 2 will be straigh forward.
 
 */
 
-
-#define RELAY_PROVIDER_RELAY    0
-#define RELAY_PROVIDER_DUAL     1
-#define RELAY_PROVIDER_LIGHT    2
-
-#define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_WS2812   1
-#define LIGHT_PROVIDER_RGB      2
-#define LIGHT_PROVIDER_RGBW     3
-#define LIGHT_PROVIDER_MY9192   4
-
 void hwUpwardsCompatibility() {
 
     unsigned int board = getSetting("board", 0).toInt();
@@ -234,14 +223,17 @@ void hwUpwardsCompatibility() {
     #ifdef LED_CONTROLLER
         setSetting("board", 21);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("lightProvider", LIGHT_PROVIDER_RGB);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
-        setSetting("redGPIO", 14);
-        setSetting("greenGPIO", 5);
-        setSetting("blueGPIO", 12);
-        setSetting("whiteGPIO", 13);
-        setSetting("lightLogic", 1);
+        setSetting("ch1GPIO", 14);
+        setSetting("ch2GPIO", 5);
+        setSetting("ch3GPIO", 12);
+        setSetting("ch4GPIO", 13);
+        setSetting("ch1Logic", 0);
+        setSetting("ch2Logic", 0);
+        setSetting("ch3Logic", 0);
+        setSetting("ch4Logic", 0);
     #endif
 
     #ifdef ITEAD_MOTOR
@@ -267,15 +259,37 @@ void hwUpwardsCompatibility() {
     #ifdef H801_LED_CONTROLLER
         setSetting("board", 24);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("lightProvider", LIGHT_PROVIDER_RGB2W);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("ledGPIO", 5, 1);
         setSetting("ledLogic", 1, 1);
-        setSetting("redGPIO", 15);
-        setSetting("greenGPIO", 13);
-        setSetting("blueGPIO", 12);
-        setSetting("whiteGPIO", 14);
-        setSetting("white2GPIO", 4);
-        setSetting("lightLogic", 1);
+        setSetting("ch1GPIO", 15);
+        setSetting("ch2GPIO", 13);
+        setSetting("ch3GPIO", 12);
+        setSetting("ch4GPIO", 14);
+        setSetting("ch5GPIO", 4);
+        setSetting("ch1Logic", 0);
+        setSetting("ch2Logic", 0);
+        setSetting("ch3Logic", 0);
+        setSetting("ch4Logic", 0);
+        setSetting("ch5Logic", 0);
+    #endif
+
+    #ifdef ITEAD_BNSZ01
+        setSetting("board", 25);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("ledGPIO", 13, 1);
+        setSetting("ledLogic", 1, 1);
+        setSetting("ch1GPIO", 12);
+        setSetting("ch1Logic", 0);
+    #endif
+
+    #ifdef SONOFF_RFBRIDGE
+        setSetting("board", 26);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("relayProvider", RELAY_PROVIDER_RFBRIDGE);
     #endif
 
     saveSettings();

@@ -4,6 +4,7 @@ var maxNetworks;
 var protocol;
 var host;
 var port;
+var useWhite = false;
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
@@ -31,12 +32,6 @@ function validateForm(form) {
     return true;
 
 }
-
-function doColor() {
-    var color = $(this).wheelColorPicker('getValue', 'css');
-    websock.send(JSON.stringify({'action': 'color', 'data' : color}));
-}
-
 
 function doUpdate() {
     var form = $("#formSave");
@@ -285,6 +280,130 @@ function addNetwork() {
 
 }
 
+function initColor() {
+
+    // check if already initialized
+    var done = $("#colors > div").length;
+    if (done > 0) return;
+
+    // add template
+    var template = $("#colorTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#colors");
+
+    // init color wheel
+    $('input[name="color"]').wheelColorPicker({
+        sliders: 'wrgbp'
+    }).on('sliderup', function() {
+        var value = $(this).wheelColorPicker('getValue', 'css');
+        websock.send(JSON.stringify({'action': 'color', 'data' : value}));
+    });
+
+    // init bright slider
+    noUiSlider.create($("#brightness").get(0), {
+		start: 255,
+		connect: [true, false],
+        tooltips: true,
+        format: {
+            to: function (value) { return parseInt(value); },
+            from: function (value) { return value; }
+        },
+		orientation: "horizontal",
+		range: { 'min': 0, 'max': 255}
+	}).on("change", function() {
+        var value = parseInt(this.get());
+        websock.send(JSON.stringify({'action': 'brightness', 'data' : value}));
+    });
+
+}
+
+function initChannels(num) {
+
+    // check if already initialized
+    var done = $("#channels > div").length > 0;
+    if (done) return;
+
+    // does it have color channels?
+    var colors = $("#colors > div").length > 0;
+
+    // calculate channels to create
+    var max = num;
+    if (colors) {
+        max = num % 3;
+        if ((max > 0) & useWhite) max--;
+    }
+    var start = num - max;
+
+    // add templates
+    var template = $("#channelTemplate").children();
+    for (var i=0; i<max; i++) {
+
+        var channel_id = start + i;
+        var line = $(template).clone();
+        $(".slider", line).attr("data", channel_id);
+        $("label", line).html("Channel " + (channel_id + 1));
+
+        noUiSlider.create($(".slider", line).get(0), {
+    		start: 0,
+    		connect: [true, false],
+            tooltips: true,
+            format: {
+                to: function (value) { return parseInt(value); },
+                from: function (value) { return value; }
+            },
+    		orientation: "horizontal",
+    		range: { 'min': 0, 'max': 255 }
+    	}).on("change", function() {
+            var id = $(this.target).attr("data");
+            var value = parseInt(this.get());
+            websock.send(JSON.stringify({'action': 'channel', 'data': { 'id': id, 'value': value }}));
+        });
+
+        line.appendTo("#channels");
+
+    }
+
+}
+
+function addRfbNode() {
+
+    var numNodes = $("#rfbNodes > fieldset").length;
+
+    var template = $("#rfbNodeTemplate").children();
+    var line = $(template).clone();
+    var status = true;
+    $("span", line).html(numNodes+1);
+    $(line).find("input").each(function() {
+        $(this).attr("data_id", numNodes);
+        $(this).attr("data_status", status ? 1 : 0);
+        status = !status;
+    });
+    $(line).find(".button-rfb-learn").on('click', rfbLearn);
+    $(line).find(".button-rfb-forget").on('click', rfbForget);
+    $(line).find(".button-rfb-send").on('click', rfbSend);
+    line.appendTo("#rfbNodes");
+
+    return line;
+}
+
+function rfbLearn() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({'action': 'rfblearn', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status")}}));
+}
+
+function rfbForget() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({'action': 'rfbforget', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status")}}));
+}
+
+function rfbSend() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({'action': 'rfbsend', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status"), 'data': input.val()}}));
+}
+
 function forgetCredentials() {
     $.ajax({
         'method': 'GET',
@@ -338,13 +457,57 @@ function processData(data) {
                 }, 1000);
             }
 
+            if (data.action == "rfbLearn") {
+                // Nothing to do?
+            }
+
+            if (data.action == "rfbTimeout") {
+                // Nothing to do?
+            }
+
             return;
 
         }
 
+        if (key == "rfbCount") {
+            for (var i=0; i<data.rfbCount; i++) addRfbNode();
+            return;
+        }
+
+        if (key == "rfb") {
+            var nodes = data.rfb;
+            for (var i in nodes) {
+                var node = nodes[i];
+                var element = $("input[name=rfbcode][data_id=" + node["id"] + "][data_status=" + node["status"] + "]");
+                if (element.length) element.val(node["data"]);
+            }
+            return;
+        }
+
         if (key == "color") {
+            initColor();
             $("input[name='color']").wheelColorPicker('setValue', data[key], true);
             return;
+        }
+
+        if (key == "brightness") {
+            var slider = $("#brightness");
+            if (slider.length) slider.get(0).noUiSlider.set(data[key]);
+            return;
+        }
+
+        if (key == "channels") {
+            var len = data[key].length;
+            initChannels(len);
+            for (var i=0; i<len; i++) {
+                var slider = $("div.channels[data=" + i + "]");
+                if (slider.length) slider.get(0).noUiSlider.set(data[key][i]);
+            }
+            return;
+        }
+
+        if (key == "useWhite") {
+            useWhite = data[key];
         }
 
         if (key == "maxNetworks") {
@@ -540,9 +703,6 @@ function init() {
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
-    $('input[name="color"]').wheelColorPicker({
-        sliders: 'wsvp'
-    }).on('sliderup', doColor);
 
     var protocol = location.protocol;
     var host = window.location.hostname;
