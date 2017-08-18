@@ -17,6 +17,7 @@ the migration to future version 2 will be straigh forward.
 #define RELAY_PROVIDER_RELAY    0
 #define RELAY_PROVIDER_DUAL     1
 #define RELAY_PROVIDER_LIGHT    2
+#define RELAY_PROVIDER_RFBRIDGE 3
 
 #define LIGHT_PROVIDER_NONE     0
 #define LIGHT_PROVIDER_WS2812   1
@@ -276,6 +277,14 @@ void hwUpwardsCompatibility() {
         setSetting("whiteGPIO", 14);
         setSetting("white2GPIO", 4);
         setSetting("lightLogic", 1);
+    #endif
+
+    #ifdef SONOFF_RFBRIDGE
+        setSetting("board", 26);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("relayProvider", RELAY_PROVIDER_RFBRIDGE);
     #endif
 
     saveSettings();

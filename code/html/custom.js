@@ -284,6 +284,45 @@ function addNetwork() {
 
 }
 
+function addRfbNode() {
+
+    var numNodes = $("#rfbNodes > fieldset").length;
+
+    var template = $("#rfbNodeTemplate").children();
+    var line = $(template).clone();
+    var status = true;
+    $("span", line).html(numNodes+1);
+    $(line).find("input").each(function() {
+        $(this).attr("data_id", numNodes);
+        $(this).attr("data_status", status ? 1 : 0);
+        status = !status;
+    });
+    $(line).find(".button-rfb-learn").on('click', rfbLearn);
+    $(line).find(".button-rfb-forget").on('click', rfbForget);
+    $(line).find(".button-rfb-send").on('click', rfbSend);
+    line.appendTo("#rfbNodes");
+
+    return line;
+}
+
+function rfbLearn() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({'action': 'rfblearn', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status")}}));
+}
+
+function rfbForget() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({'action': 'rfbforget', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status")}}));
+}
+
+function rfbSend() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({'action': 'rfbsend', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status"), 'data': input.val()}}));
+}
+
 function forgetCredentials() {
     $.ajax({
         'method': 'GET',
@@ -337,8 +376,31 @@ function processData(data) {
                 }, 1000);
             }
 
+            if (data.action == "rfbLearn") {
+                // Nothing to do?
+            }
+
+            if (data.action == "rfbTimeout") {
+                // Nothing to do?
+            }
+
             return;
 
+        }
+
+        if (key == "rfbCount") {
+            for (var i=0; i<data.rfbCount; i++) addRfbNode();
+            return;
+        }
+
+        if (key == "rfb") {
+            var nodes = data.rfb;
+            for (var i in nodes) {
+                var node = nodes[i];
+                var element = $("input[name=rfbcode][data_id=" + node["id"] + "][data_status=" + node["status"] + "]");
+                if (element.length) element.val(node["data"]);
+            }
+            return;
         }
 
         if (key == "color") {

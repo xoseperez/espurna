@@ -216,14 +216,13 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     char message[len + 1];
     strlcpy(message, (char *) payload, len + 1);
 
-    DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s"), topic, message);
     #if MQTT_SKIP_RETAINED
         if (millis() - mqttConnectedAt < MQTT_SKIP_TIME) {
-			DEBUG_MSG_P(PSTR(" - SKIPPED\n"));
+            DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
 			return;
 		}
     #endif
-	DEBUG_MSG_P(PSTR("\n"));
+    DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s\n"), topic, message);
 
     // Check system topics
     String t = mqttSubtopic((char *) topic);

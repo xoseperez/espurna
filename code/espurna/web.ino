@@ -92,6 +92,21 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             ESP.restart();
         }
 
+        #ifdef SONOFF_RFBRIDGE
+        if (action.equals("rfblearn") && root.containsKey("data")) {
+            JsonObject& data = root["data"];
+            rfbLearn(data["id"], data["status"]);
+        }
+        if (action.equals("rfbforget") && root.containsKey("data")) {
+            JsonObject& data = root["data"];
+            rfbForget(data["id"], data["status"]);
+        }
+        if (action.equals("rfbsend") && root.containsKey("data")) {
+            JsonObject& data = root["data"];
+            rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+        }
+        #endif
+
         if (action.equals("restore") && root.containsKey("data")) {
 
             JsonObject& data = root["data"];
@@ -129,7 +144,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             if (data.containsKey("status")) {
 
-                bool state = (strcmp(data["status"], "1") == 0);
+                bool status = (strcmp(data["status"], "1") == 0);
 
                 unsigned int relayID = 0;
                 if (data.containsKey("id")) {
@@ -137,7 +152,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                     relayID = value.toInt();
                 }
 
-                relayStatus(relayID, state);
+                relayStatus(relayID, status);
 
             }
 
@@ -563,6 +578,20 @@ void _wsStart(uint32_t client_id) {
             root["powVoltage"] = getVoltage();
             root["powCurrent"] = String(getCurrent(), 3);
             root["powPowerFactor"] = String(getPowerFactor(), 2);
+        #endif
+
+        #ifdef SONOFF_RFBRIDGE
+        root["rfbVisible"] = 1;
+        root["rfbCount"] = relayCount();
+        JsonArray& rfb = root.createNestedArray("rfb");
+        for (byte id=0; id<relayCount(); id++) {
+            for (byte status=0; status<2; status++) {
+                JsonObject& node = rfb.createNestedObject();
+                node["id"] = id;
+                node["status"] = status;
+                node["data"] = rfbRetrieve(id, status == 1);
+            }
+        }
         #endif
 
         root["maxNetworks"] = WIFI_MAX_NETWORKS;

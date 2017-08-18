@@ -161,6 +161,7 @@
     #define SERIAL_BAUDRATE     19230
     #undef RELAY_PROVIDER
     #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
+    #define DUMMY_RELAY_COUNT   2
 
 #elif defined(SONOFF_4CH)
 
@@ -222,6 +223,21 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(SONOFF_RFBRIDGE)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "RFBRIDGE"
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+    #undef SERIAL_BAUDRATE
+    #define SERIAL_BAUDRATE     19200
+    #undef RELAY_PROVIDER
+    #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
+    #define DUMMY_RELAY_COUNT   6
+    #define TRACK_RELAY_STATUS  0
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------
@@ -269,6 +285,7 @@
     #define DEVICE              "AI_LIGHT"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define DUMMY_RELAY_COUNT   1
 
 // -----------------------------------------------------------------------------
 // LED Controller
@@ -282,6 +299,7 @@
     #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGB
+    #define DUMMY_RELAY_COUNT   1
 
     #undef RGBW_INVERSE_LOGIC
     #undef RGBW_RED_PIN
@@ -307,6 +325,7 @@
     #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_RGB2W
+    #define DUMMY_RELAY_COUNT   1
 
     #undef RGBW_INVERSE_LOGIC
     #undef RGBW_RED_PIN
@@ -526,6 +545,11 @@
 #define BUTTON_SWITCH       1
 #define BUTTON_DEFAULT_HIGH 2
 #define BUTTON_SET_PULLUP   4
+#endif
+
+// Does the board track the relay status?
+#ifndef TRACK_RELAY_STATUS
+#define TRACK_RELAY_STATUS  1
 #endif
 
 // Relay providers
