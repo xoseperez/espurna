@@ -322,6 +322,18 @@ void hwUpwardsCompatibility() {
         setSetting("myDCKIGPIO", 14);
     #endif
 
+    #ifdef SONOFF_LED
+        setSetting("board", 29);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("ledGPIO", 13, 1);
+        setSetting("ledLogic", 1, 1);
+        setSetting("ch1GPIO", 12);
+        setSetting("ch1Logic", 0);
+        setSetting("ch2GPIO", 14);
+        setSetting("ch2Logic", 0);
+    #endif
+
     saveSettings();
 
 }

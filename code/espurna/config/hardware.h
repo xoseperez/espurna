@@ -289,6 +289,22 @@
     #define MY9291_DCKI_PIN     15
     #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
 
+#elif defined(SONOFF_LED)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_LED"
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    #define LIGHT_CH1_PIN       12  // Cold white
+    #define LIGHT_CH2_PIN       14  // Warm white
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------
