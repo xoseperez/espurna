@@ -230,10 +230,10 @@ void hwUpwardsCompatibility() {
         setSetting("ch2GPIO", 5);
         setSetting("ch3GPIO", 12);
         setSetting("ch4GPIO", 13);
-        setSetting("ch1Logic", 1);
-        setSetting("ch2Logic", 1);
-        setSetting("ch3Logic", 1);
-        setSetting("ch4Logic", 1);
+        setSetting("ch1Logic", 0);
+        setSetting("ch2Logic", 0);
+        setSetting("ch3Logic", 0);
+        setSetting("ch4Logic", 0);
     #endif
 
     #ifdef ITEAD_MOTOR
@@ -267,11 +267,21 @@ void hwUpwardsCompatibility() {
         setSetting("ch3GPIO", 12);
         setSetting("ch4GPIO", 14);
         setSetting("ch5GPIO", 4);
-        setSetting("ch1Logic", 1);
-        setSetting("ch2Logic", 1);
-        setSetting("ch3Logic", 1);
-        setSetting("ch4Logic", 1);
-        setSetting("ch5Logic", 1);
+        setSetting("ch1Logic", 0);
+        setSetting("ch2Logic", 0);
+        setSetting("ch3Logic", 0);
+        setSetting("ch4Logic", 0);
+        setSetting("ch5Logic", 0);
+    #endif
+
+    #ifdef ITEAD_BNSZ01
+        setSetting("board", 25);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("ledGPIO", 13, 1);
+        setSetting("ledLogic", 1, 1);
+        setSetting("ch1GPIO", 12);
+        setSetting("ch1Logic", 0);
     #endif
 
     saveSettings();

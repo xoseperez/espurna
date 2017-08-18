@@ -222,6 +222,17 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(ITEAD_BNSZ01)
+
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "BN-SZ01"
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define LIGHT_CH1_PIN       12
+    #define LIGHT_CH1_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------
