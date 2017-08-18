@@ -46,7 +46,8 @@
     background: #1f8dd6;
 }
 .button-reset,
-.button-reconnect {
+.button-reconnect,
+.button-rfb-forget {
     background: rgb(202, 60, 60);
 }
 .button-upgrade {
@@ -58,13 +59,15 @@
     background: rgb(0, 202, 0);
     margin-left: 5px;
 }
-.button-add-network {
+.button-add-network,
+.button-rfb-learn {
     background: rgb(28, 184, 65);
 }
 .button-del-network {
     background: rgb(202, 60, 60);
 }
-.button-more-network {
+.button-more-network,
+.button-rfb-send {
     background: rgb(223, 117, 20);
 }
 .button-settings-backup,
@@ -164,4 +167,19 @@ div.state {
     border: 0px;
     padding: 0px;
     margin-bottom: -4px;
+#panel-rfb fieldset {
+    margin: 10px 2px;
+    padding: 20px;
+}
+
+#panel-rfb input {
+    margin-right: 5px;
+}
+
+#panel-rfb label {
+    padding-top: 5px;
+}
+
+#panel-rfb input {
+    text-align: center;
 }

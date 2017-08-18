@@ -284,6 +284,14 @@ void hwUpwardsCompatibility() {
         setSetting("ch1Logic", 0);
     #endif
 
+    #ifdef SONOFF_RFBRIDGE
+        setSetting("board", 26);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("relayProvider", RELAY_PROVIDER_RFBRIDGE);
+    #endif
+
     saveSettings();
 
 }

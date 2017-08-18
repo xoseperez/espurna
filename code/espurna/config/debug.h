@@ -1,6 +1,6 @@
 #define DEBUG_MESSAGE_MAX_LENGTH    80
 
-#ifdef SONOFF_DUAL
+#if defined(SONOFF_DUAL)
 #undef DEBUG_PORT
 #endif
 
