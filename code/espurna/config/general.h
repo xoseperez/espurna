@@ -300,12 +300,12 @@ PROGMEM const char* const custom_reset_string[] = {
 // 4 channels => RGBW
 // 5 channels => RGBWW
 
-#define LIGHT_DEFAULT_COLOR     "#000080"   // Default start color
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #define LIGHT_PWM_FREQUENCY     1000        // PWM frequency
 #define LIGHT_MAX_PWM           4095        // Maximum PWM value
 #define LIGHT_MAX_VALUE         255         // Maximum light value
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
 #define LIGHT_ENABLE_GAMMA      0           // Enable gamma correction
 

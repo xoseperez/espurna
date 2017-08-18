@@ -144,10 +144,29 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-            if (action.equals("color") && root.containsKey("data")) {
-                lightColor(root["data"]);
-                lightUpdate(true, true);
+
+            if (lightHasColor()) {
+
+                if (action.equals("color") && root.containsKey("data")) {
+                    lightColor(root["data"]);
+                    lightUpdate(true, true);
+                }
+
+                if (action.equals("brightness") && root.containsKey("data")) {
+                    lightBrightness(root["data"]);
+                    lightUpdate(true, true);
+                }
+
             }
+
+            if (action.equals("channel") && root.containsKey("data")) {
+                JsonObject& data = root["data"];
+                if (data.containsKey("id") && data.containsKey("value")) {
+                    lightChannel(data["id"], data["value"]);
+                    lightUpdate(true, true);
+                }
+            }
+
         #endif
 
     };
@@ -453,12 +472,14 @@ void _wsStart(uint32_t client_id) {
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
             root["colorVisible"] = 1;
-            root["color"] = lightColor();
+            if (lightHasColor()) {
+                root["color"] = lightColor();
+                root["brightness"] = lightBrightness();
+            }
             JsonArray& channels = root.createNestedArray("channels");
             for (unsigned char id=0; id < lightChannels(); id++) {
                 channels.add(lightChannel(id));
             }
-            root["brightness"] = lightBrightness();
         #endif
 
         root["relayMode"] = getSetting("relayMode", RELAY_MODE);

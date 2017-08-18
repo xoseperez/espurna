@@ -139,44 +139,48 @@ void settingsSetup() {
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
-        Embedis::command( F("COLOR"), [](Embedis* e) {
-            if (e->argc > 1) {
-                String color = String(e->argv[1]);
-                lightColor(color.c_str());
-                lightUpdate(true, true);
-            }
-            e->stream->printf("Color: %s\n", lightColor().c_str());
-            e->response(Embedis::OK);
-        });
+        if (lightHasColor()) {
 
-        Embedis::command( F("MIRED"), [](Embedis* e) {
-            if (e->argc > 1) {
-                String color = String("M") + String(e->argv[1]);
-                lightColor(color.c_str());
-                lightUpdate(true, true);
-            }
-            e->stream->printf("Color: %s\n", lightColor().c_str());
-            e->response(Embedis::OK);
-        });
+            Embedis::command( F("COLOR"), [](Embedis* e) {
+                if (e->argc > 1) {
+                    String color = String(e->argv[1]);
+                    lightColor(color.c_str());
+                    lightUpdate(true, true);
+                }
+                e->stream->printf("Color: %s\n", lightColor().c_str());
+                e->response(Embedis::OK);
+            });
 
-        Embedis::command( F("KELVIN"), [](Embedis* e) {
-            if (e->argc > 1) {
-                String color = String("K") + String(e->argv[1]);
-                lightColor(color.c_str());
-                lightUpdate(true, true);
-            }
-            e->stream->printf("Color: %s\n", lightColor().c_str());
-            e->response(Embedis::OK);
-        });
+            Embedis::command( F("BRIGHTNESS"), [](Embedis* e) {
+                if (e->argc > 1) {
+                    lightBrightness(String(e->argv[1]).toInt());
+                    lightUpdate(true, true);
+                }
+                e->stream->printf("Brightness: %d\n", lightBrightness());
+                e->response(Embedis::OK);
+            });
 
-        Embedis::command( F("BRIGHTNESS"), [](Embedis* e) {
-            if (e->argc > 1) {
-                lightBrightness(String(e->argv[1]).toInt());
-                lightUpdate(true, true);
-            }
-            e->stream->printf("Brightness: %d\n", lightBrightness());
-            e->response(Embedis::OK);
-        });
+            Embedis::command( F("MIRED"), [](Embedis* e) {
+                if (e->argc > 1) {
+                    String color = String("M") + String(e->argv[1]);
+                    lightColor(color.c_str());
+                    lightUpdate(true, true);
+                }
+                e->stream->printf("Color: %s\n", lightColor().c_str());
+                e->response(Embedis::OK);
+            });
+
+            Embedis::command( F("KELVIN"), [](Embedis* e) {
+                if (e->argc > 1) {
+                    String color = String("K") + String(e->argv[1]);
+                    lightColor(color.c_str());
+                    lightUpdate(true, true);
+                }
+                e->stream->printf("Color: %s\n", lightColor().c_str());
+                e->response(Embedis::OK);
+            });
+
+        }
 
         Embedis::command( F("CHANNEL"), [](Embedis* e) {
             if (e->argc < 2) {

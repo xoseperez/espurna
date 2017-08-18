@@ -31,12 +31,6 @@ function validateForm(form) {
 
 }
 
-function doColor() {
-    var color = $(this).wheelColorPicker('getValue', 'css');
-    websock.send(JSON.stringify({'action': 'color', 'data' : color}));
-}
-
-
 function doUpdate() {
     var form = $("#formSave");
     if (validateForm(form)) {
@@ -284,6 +278,77 @@ function addNetwork() {
 
 }
 
+function initColor() {
+
+    // check if already initialized
+    var done = $("#colors > div").length;
+    if (done > 0) return;
+
+    // add template
+    var template = $("#colorTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#colors");
+
+    // init color wheel
+    $('input[name="color"]').wheelColorPicker({
+        sliders: 'wrgbp'
+    }).on('sliderup', function() {
+        var value = $(this).wheelColorPicker('getValue', 'css');
+        websock.send(JSON.stringify({'action': 'color', 'data' : value}));
+    });
+
+    // init bright slider
+    noUiSlider.create($("#brightness").get(0), {
+		start: 255,
+		connect: [true, false],
+		orientation: "horizontal",
+		range: { 'min': 0, 'max': 255}
+	}).on("change", function() {
+        var value = parseInt(this.get());
+        websock.send(JSON.stringify({'action': 'brightness', 'data' : value}));
+    });
+
+}
+
+function initChannels(num) {
+
+    // check if already initialized
+    var done = $("#channels > div").length > 0;
+    if (done) return;
+
+    // does it have color channels?
+    var colors = $("#colors > div").length > 0;
+
+    // calculate channels to create
+    var max = colors ? num % 3 : num;
+    var start = num - max;
+
+    // add templates
+    var template = $("#channelTemplate").children();
+    for (var i=0; i<max; i++) {
+
+        var channel_id = start + i;
+        var line = $(template).clone();
+        $(".slider", line).attr("data", channel_id);
+        $("label", line).html("Channel " + (channel_id + 1));
+
+        noUiSlider.create($(".slider", line).get(0), {
+    		start: 0,
+    		connect: [true, false],
+    		orientation: "horizontal",
+    		range: { 'min': 0, 'max': 255 }
+    	}).on("change", function() {
+            var id = $(this.target).attr("data");
+            var value = parseInt(this.get());
+            websock.send(JSON.stringify({'action': 'channel', 'data': { 'id': id, 'value': value }}));
+        });
+
+        line.appendTo("#channels");
+
+    }
+
+}
+
 function forgetCredentials() {
     $.ajax({
         'method': 'GET',
@@ -342,7 +407,24 @@ function processData(data) {
         }
 
         if (key == "color") {
+            initColor();
             $("input[name='color']").wheelColorPicker('setValue', data[key], true);
+            return;
+        }
+
+        if (key == "brightness") {
+            var slider = $("#brightness");
+            if (slider) slider.get(0).noUiSlider.set(data[key]);
+            return;
+        }
+
+        if (key == "channels") {
+            var len = data[key].length;
+            initChannels(len);
+            for (var i=0; i<len; i++) {
+                var slider = $(".channels[data=" + i + "]");
+                if (slider) slider.get(0).noUiSlider.set(data[key][i]);
+            }
             return;
         }
 
@@ -537,9 +619,6 @@ function init() {
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
-    $('input[name="color"]').wheelColorPicker({
-        sliders: 'wsvp'
-    }).on('sliderup', doColor);
 
     var host = window.location.hostname;
     var port = location.port;

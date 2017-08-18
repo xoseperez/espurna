@@ -149,3 +149,13 @@ div.state {
 .right {
     text-align: right;
 }
+
+.slider {
+    margin-top: 12px;
+}
+.slider .noUi-target {
+    background: #D2D2D2;
+}
+.slider .noUi-connect {
+	background: #FFFFFF;
+}
