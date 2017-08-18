@@ -45,3 +45,5 @@
 //#define ENABLE_NOFUSS         1
 //#define ENABLE_DOMOTICZ       0
 //#define ENABLE_ANALOG         1
+//#define ENABLE_INFLUXDB       0
+//#define ENABLE_I2C            1

@@ -92,6 +92,16 @@ void buttonEvent(unsigned int id, unsigned char event) {
             relayToggle(_buttons[id].relayID - 1);
         }
     }
+    if (action == BUTTON_MODE_ON) {
+        if (_buttons[id].relayID > 0) {
+            relayStatus(_buttons[id].relayID - 1, true);
+        }
+    }
+    if (action == BUTTON_MODE_OFF) {
+        if (_buttons[id].relayID > 0) {
+            relayStatus(_buttons[id].relayID - 1, false);
+        }
+    }
     if (action == BUTTON_MODE_AP) createAP();
     if (action == BUTTON_MODE_RESET) {
         customReset(CUSTOM_RESET_HARDWARE);
@@ -174,7 +184,7 @@ void buttonLoop() {
                         }
 
                         // Otherwise check if any of the other two BUTTONs
-                        // (in the header) has been pressent, but we should
+                        // (in the header) has been pressed, but we should
                         // ensure that we only toggle one of them to avoid
                         // the synchronization going mad
                         // This loop is generic for any PSB-04 module

@@ -250,6 +250,9 @@ void setup() {
     #if ENABLE_EMON
         powerMonitorSetup();
     #endif
+    #if ENABLE_DOMOTICZ
+        domoticzSetup();
+    #endif
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();

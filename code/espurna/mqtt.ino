@@ -81,11 +81,12 @@ String mqttSubtopic(char * topic) {
 
 void mqttSendRaw(const char * topic, const char * message) {
     if (mqtt.connected()) {
-        DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #if MQTT_USE_ASYNC
-            mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
+            unsigned int packetId = mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
+            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
         #else
             mqtt.publish(topic, message, MQTT_RETAIN);
+            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
     }
 }
@@ -149,8 +150,13 @@ void mqttSend(const char * topic, unsigned int index, const char * message) {
 
 void mqttSubscribeRaw(const char * topic) {
     if (mqtt.connected() && (strlen(topic) > 0)) {
-        DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
-        mqtt.subscribe(topic, MQTT_QOS);
+        #if MQTT_USE_ASYNC
+            unsigned int packetId = mqtt.subscribe(topic, MQTT_QOS);
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
+        #else
+            mqtt.subscribe(topic, MQTT_QOS);
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
+        #endif
     }
 }
 
@@ -204,6 +210,8 @@ void _mqttOnDisconnect() {
 }
 
 void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
+
+    if (len == 0) return;
 
     char message[len + 1];
     strlcpy(message, (char *) payload, len + 1);
@@ -318,10 +326,36 @@ void mqttSetup() {
             _mqttOnConnect();
         });
         mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
+            if (reason == AsyncMqttClientDisconnectReason::TCP_DISCONNECTED) {
+                DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED) {
+                DEBUG_MSG_P(PSTR("[MQTT] Identifier Rejected\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE) {
+                DEBUG_MSG_P(PSTR("[MQTT] Server unavailable\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS) {
+                DEBUG_MSG_P(PSTR("[MQTT] Malformed credentials\n"));
+            }
+            if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
+                DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
+            }
+            #if ASYNC_TCP_SSL_ENABLED
+            if (reason == AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT) {
+                DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
+            }
+            #endif
             _mqttOnDisconnect();
         });
         mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
             _mqttOnMessage(topic, payload, len);
+        });
+        mqtt.onSubscribe([](uint16_t packetId, uint8_t qos) {
+            DEBUG_MSG_P(PSTR("[MQTT] Subscribe ACK for PID %d\n"), packetId);
+        });
+        mqtt.onPublish([](uint16_t packetId) {
+            DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %d\n"), packetId);
         });
     #else
         mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {

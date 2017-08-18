@@ -12,10 +12,13 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <HLW8012.h>
 #include <Hash.h>
 #include <ArduinoJson.h>
-#include <EEPROM.h>
 
 HLW8012 hlw8012;
 bool _hlw8012Enabled = false;
+bool _hlwReady = false;
+int _hlwPower = 0;
+double _hlwCurrent = 0;
+int _hlwVoltage = 0;
 
 // -----------------------------------------------------------------------------
 // POW
@@ -93,6 +96,8 @@ void hlw8012Reset() {
 }
 
 // -----------------------------------------------------------------------------
+// HAL
+// -----------------------------------------------------------------------------
 
 unsigned int getActivePower() {
     unsigned int power = hlw8012.getActivePower();
@@ -154,13 +159,25 @@ void hlw8012Setup() {
 
     // API definitions
     apiRegister(HLW8012_POWER_TOPIC, HLW8012_POWER_TOPIC, [](char * buffer, size_t len) {
-        snprintf(buffer, len, "%d", getActivePower());
+        if (_hlwReady) {
+            snprintf(buffer, len, "%d", _hlwPower);
+        } else {
+            buffer = NULL;
+        }
     });
     apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        dtostrf(getCurrent(), len-1, 3, buffer);
+        if (_hlwReady) {
+            dtostrf(_hlwCurrent, len-1, 3, buffer);
+        } else {
+            buffer = NULL;
+        }
     });
     apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
-        snprintf(buffer, len, "%d", getVoltage());
+        if (_hlwReady) {
+            snprintf(buffer, len, "%d", _hlwVoltage);
+        } else {
+            buffer = NULL;
+        }
     });
 
 }
@@ -202,9 +219,6 @@ void hlw8012Loop() {
         unsigned int power = getActivePower();
         unsigned int voltage = getVoltage();
         double current = getCurrent();
-        unsigned int apparent = getApparentPower();
-        double factor = getPowerFactor();
-        unsigned int reactive = getReactivePower();
 
         if (power > 0) {
             power_spike = (power_previous == 0);
@@ -230,43 +244,49 @@ void hlw8012Loop() {
         }
         voltage_previous = voltage;
 
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
+        if (wsConnected()) {
 
-        root["powVisible"] = 1;
-        root["powActivePower"] = power;
-        root["powCurrent"] = String(current, 3);
-        root["powVoltage"] = voltage;
-        root["powApparentPower"] = apparent;
-        root["powReactivePower"] = reactive;
-        root["powPowerFactor"] = String(factor, 2);
+            unsigned int apparent = getApparentPower();
+            double factor = getPowerFactor();
+            unsigned int reactive = getReactivePower();
 
-        String output;
-        root.printTo(output);
-        wsSend(output.c_str());
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.createObject();
+
+            root["powVisible"] = 1;
+            root["powActivePower"] = power;
+            root["powCurrent"] = String(current, 3);
+            root["powVoltage"] = voltage;
+            root["powApparentPower"] = apparent;
+            root["powReactivePower"] = reactive;
+            root["powPowerFactor"] = String(factor, 2);
+
+            String output;
+            root.printTo(output);
+            wsSend(output.c_str());
+
+        }
 
         if (--report_count == 0) {
 
-            power = power_sum / HLW8012_REPORT_EVERY;
-            current = current_sum / HLW8012_REPORT_EVERY;
-            voltage = voltage_sum / HLW8012_REPORT_EVERY;
-            apparent = current * voltage;
-            reactive = (apparent > power) ? sqrt(apparent * apparent - power * power) : 0;
-            factor = (apparent > 0) ? (double) power / apparent : 1;
-            if (factor > 1) factor = 1;
+            // Update globals
+            _hlwPower = power_sum / HLW8012_REPORT_EVERY;
+            _hlwCurrent = current_sum / HLW8012_REPORT_EVERY;
+            _hlwVoltage = voltage_sum / HLW8012_REPORT_EVERY;
+            _hlwReady = true;
 
-            // Calculate energy increment (ppower times time) and create C-string
-            double energy_inc = (double) power * HLW8012_REPORT_EVERY * HLW8012_UPDATE_INTERVAL / 1000.0 / 3600.0;
-            char energy_buf[11];
-            dtostrf(energy_inc, 11, 3, energy_buf);
-            char *e = energy_buf;
-            while ((unsigned char) *e == ' ') ++e;
+            // Calculate subproducts (apparent and reactive power, power factor and delta energy)
+            unsigned int apparent = _hlwCurrent * _hlwVoltage;
+            unsigned int reactive = (apparent > _hlwPower) ? sqrt(apparent * apparent - _hlwPower * _hlwPower) : 0;
+            double factor = (apparent > 0) ? (double) _hlwPower / apparent : 1;
+            if (factor > 1) factor = 1;
+            double energy_delta = (double) _hlwPower * HLW8012_REPORT_EVERY * HLW8012_UPDATE_INTERVAL / 1000.0 / 3600.0;
 
             // Report values to MQTT broker
-            mqttSend(getSetting("powPowerTopic", HLW8012_POWER_TOPIC).c_str(), String(power).c_str());
-            mqttSend(getSetting("powEnergyTopic", HLW8012_ENERGY_TOPIC).c_str(), e);
-            mqttSend(getSetting("powCurrentTopic", HLW8012_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
-            mqttSend(getSetting("powVoltageTopic", HLW8012_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
+            mqttSend(getSetting("powPowerTopic", HLW8012_POWER_TOPIC).c_str(), String(_hlwPower).c_str());
+            mqttSend(getSetting("powCurrentTopic", HLW8012_CURRENT_TOPIC).c_str(), String(_hlwCurrent, 3).c_str());
+            mqttSend(getSetting("powVoltageTopic", HLW8012_VOLTAGE_TOPIC).c_str(), String(_hlwVoltage).c_str());
+            mqttSend(getSetting("powEnergyTopic", HLW8012_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());
             mqttSend(getSetting("powAPowerTopic", HLW8012_APOWER_TOPIC).c_str(), String(apparent).c_str());
             mqttSend(getSetting("powRPowerTopic", HLW8012_RPOWER_TOPIC).c_str(), String(reactive).c_str());
             mqttSend(getSetting("powPFactorTopic", HLW8012_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
@@ -275,25 +295,25 @@ void hlw8012Loop() {
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
-                snprintf(buffer, 20, "%d;%s", power, e);
+                snprintf(buffer, 20, "%d;%s", _hlwPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", e);
+                snprintf(buffer, 20, "%s", String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf(buffer, 20, "%d", voltage);
+                snprintf(buffer, 20, "%d", _hlwVoltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", String(current).c_str());
+                snprintf(buffer, 20, "%s", String(_hlwCurrent).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
             #if ENABLE_INFLUXDB
-            influxDBSend(getSetting("powPowerTopic", HLW8012_POWER_TOPIC).c_str(), String(power).c_str());
-            //influxDBSend(getSetting("powEnergyTopic", HLW8012_ENERGY_TOPIC).c_str(), e);
-            //influxDBSend(getSetting("powCurrentTopic", HLW8012_CURRENT_TOPIC).c_str(), String(current, 3).c_str());
-            //influxDBSend(getSetting("powVoltageTopic", HLW8012_VOLTAGE_TOPIC).c_str(), String(voltage).c_str());
-            //influxDBSend(getSetting("powAPowerTopic", HLW8012_APOWER_TOPIC).c_str(), String(apparent).c_str());
-            //influxDBSend(getSetting("powRPowerTopic", HLW8012_RPOWER_TOPIC).c_str(), String(reactive).c_str());
-            //influxDBSend(getSetting("powPFactorTopic", HLW8012_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
+            influxDBSend(getSetting("powPowerTopic", HLW8012_POWER_TOPIC).c_str(), String(_hlwPower).c_str());
+            influxDBSend(getSetting("powCurrentTopic", HLW8012_CURRENT_TOPIC).c_str(), String(_hlwCurrent, 3).c_str());
+            influxDBSend(getSetting("powVoltageTopic", HLW8012_VOLTAGE_TOPIC).c_str(), String(_hlwVoltage).c_str());
+            influxDBSend(getSetting("powEnergyTopic", HLW8012_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());
+            influxDBSend(getSetting("powAPowerTopic", HLW8012_APOWER_TOPIC).c_str(), String(apparent).c_str());
+            influxDBSend(getSetting("powRPowerTopic", HLW8012_RPOWER_TOPIC).c_str(), String(reactive).c_str());
+            influxDBSend(getSetting("powPFactorTopic", HLW8012_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
             #endif
 
             // Reset counters

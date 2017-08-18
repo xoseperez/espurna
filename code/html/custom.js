@@ -506,7 +506,9 @@ function processData(data) {
             } else if (element.attr('type') == 'radio') {
                 element.val([data[key]]);
             } else {
-                element.val(data[key]);
+                var pre = element.attr("pre") || "";
+                var post = element.attr("post") || "";
+                element.val(pre + data[key] + post);
             }
             return;
         }
@@ -514,7 +516,9 @@ function processData(data) {
         // Look for SPANs
         var element = $("span[name=" + key + "]");
         if (element.length > 0) {
-            element.html(data[key]);
+            var pre = element.attr("pre") || "";
+            var post = element.attr("post") || "";
+            element.html(pre + data[key] + post);
             return;
         }
 
