@@ -3,6 +3,7 @@ var password = false;
 var maxNetworks;
 var host;
 var port;
+var useWhite = false;
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
@@ -325,7 +326,11 @@ function initChannels(num) {
     var colors = $("#colors > div").length > 0;
 
     // calculate channels to create
-    var max = colors ? num % 3 : num;
+    var max = num;
+    if (colors) {
+        max = num % 3;
+        if ((max > 0) & useWhite) max--;
+    }
     var start = num - max;
 
     // add templates
@@ -436,6 +441,10 @@ function processData(data) {
                 if (slider.length) slider.get(0).noUiSlider.set(data[key][i]);
             }
             return;
+        }
+
+        if (key == "useWhite") {
+            useWhite = data[key];
         }
 
         if (key == "maxNetworks") {
