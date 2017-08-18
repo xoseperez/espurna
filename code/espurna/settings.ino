@@ -299,5 +299,5 @@ void saveSettings() {
     #if not AUTO_SAVE
         EEPROM.commit();
     #endif
-    settingsDump();
+    //settingsDump();
 }
