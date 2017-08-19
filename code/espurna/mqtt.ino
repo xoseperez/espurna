@@ -129,7 +129,7 @@ void mqttSend(const char * topic, const char * message) {
 
 void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
     char buffer[strlen(topic)+5];
-    sprintf(buffer, "%s/%d", topic, index);
+    sprintf_P(buffer, PSTR("%s/%d"), topic, index);
     mqttSend(buffer, message, force);
 }
 

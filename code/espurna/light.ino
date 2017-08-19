@@ -133,7 +133,7 @@ void _toRGB(char * rgb, size_t len, bool applyBrightness) {
     value <<= 8;
     value += _channels[2].value * b;
 
-    snprintf(rgb, len, "#%06X", value);
+    snprintf_P(rgb, len, PSTR("#%06X"), value);
 
 }
 
@@ -293,7 +293,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         }
 
         char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
-        sprintf(buffer, "%s/+", MQTT_TOPIC_CHANNEL);
+        sprintf_P(buffer, PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
         mqttSubscribe(buffer);
 
     }
@@ -370,14 +370,14 @@ void lightMQTT() {
         mqttSend(MQTT_TOPIC_COLOR, buffer);
 
         // Brightness
-        sprintf(buffer, "%d", _brightness);
+        sprintf_P(buffer, PSTR("%d"), _brightness);
         mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
 
     }
 
     // Channels
     for (unsigned int i=0; i < _channels.size(); i++) {
-        sprintf(buffer, "%d", _channels[i].value);
+        sprintf_P(buffer, PSTR("%d"), _channels[i].value);
         mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
     }
 
@@ -476,7 +476,7 @@ void _lightAPISetup() {
 
         apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
             [](char * buffer, size_t len) {
-    			snprintf(buffer, len, "%d", _brightness);
+    			snprintf_P(buffer, len, PSTR("%d"), _brightness);
             },
             [](const char * payload) {
                 lightBrightness(atoi(payload));
@@ -505,14 +505,14 @@ void _lightAPISetup() {
     for (unsigned int id=0; id<lightChannels(); id++) {
 
         char url[15];
-        sprintf(url, "%s/%d", MQTT_TOPIC_CHANNEL, id);
+        sprintf_P(url, PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
 
         char key[10];
-        sprintf(key, "%s%d", MQTT_TOPIC_CHANNEL, id);
+        sprintf_P(key, PSTR("%s%d"), MQTT_TOPIC_CHANNEL, id);
 
         apiRegister(url, key,
             [id](char * buffer, size_t len) {
-				snprintf(buffer, len, "%d", lightChannel(id));
+				snprintf_P(buffer, len, PSTR("%d"), lightChannel(id));
             },
             [id](const char * payload) {
                 lightChannel(id, atoi(payload));

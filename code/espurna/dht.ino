@@ -34,7 +34,7 @@ void dhtSetup() {
         dtostrf(_dhtTemperature, len-1, 1, buffer);
     });
     apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
-        snprintf(buffer, len, "%d", _dhtHumidity);
+        snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
     });
 }
 
@@ -88,7 +88,7 @@ void dhtLoop() {
                     status = HUMIDITY_DRY;
                 }
                 char buffer[2];
-                sprintf(buffer, "%d", status);
+                sprintf_P(buffer, PSTR("%d"), status);
                 domoticzSend("dczHumIdx", humidity, buffer);
             }
             #endif

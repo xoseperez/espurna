@@ -201,7 +201,7 @@ From a byte array to an hexa char array ("A220EE...", double the size)
  */
 bool _rfbToChar(byte * in, char * out) {
     for (unsigned char p = 0; p<RF_MESSAGE_SIZE; p++) {
-        sprintf(&out[p*2], "%02X", in[p]);
+        sprintf_P(&out[p*2], PSTR("%02X"), in[p]);
     }
     return true;
 }
@@ -210,7 +210,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
     if (type == MQTT_CONNECT_EVENT) {
         char buffer[strlen(MQTT_TOPIC_RFLEARN) + 3];
-        sprintf(buffer, "%s/+", MQTT_TOPIC_RFLEARN);
+        sprintf_P(buffer, PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
         mqttSubscribe(buffer);
         mqttSubscribe(MQTT_TOPIC_RFOUT);
     }
@@ -251,13 +251,13 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 void rfbStore(unsigned char id, bool status, const char * code) {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
     char key[8] = {0};
-    sprintf(key, "rfb%d%s", id, status ? "on" : "off");
+    sprintf_P(key, PSTR("rfb%d%s"), id, status ? "on" : "off");
     setSetting(key, code);
 }
 
 String rfbRetrieve(unsigned char id, bool status) {
     char key[8] = {0};
-    sprintf(key, "rfb%d%s", id, status ? "on" : "off");
+    sprintf_P(key, PSTR("rfb%d%s"), id, status ? "on" : "off");
     return getSetting(key);
 }
 
@@ -282,7 +282,7 @@ void rfbLearn(unsigned char id, bool status) {
 void rfbForget(unsigned char id, bool status) {
 
     char key[8] = {0};
-    sprintf(key, "rfb%d%s", id, status ? "on" : "off");
+    sprintf_P(key, PSTR("rfb%d%s"), id, status ? "on" : "off");
     delSetting(key);
 
     // Websocket update

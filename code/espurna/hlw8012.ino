@@ -160,7 +160,7 @@ void hlw8012Setup() {
     // API definitions
     apiRegister(HLW8012_POWER_TOPIC, HLW8012_POWER_TOPIC, [](char * buffer, size_t len) {
         if (_hlwReady) {
-            snprintf(buffer, len, "%d", _hlwPower);
+            snprintf_P(buffer, len, PSTR("%d"), _hlwPower);
         } else {
             buffer = NULL;
         }
@@ -174,7 +174,7 @@ void hlw8012Setup() {
     });
     apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
         if (_hlwReady) {
-            snprintf(buffer, len, "%d", _hlwVoltage);
+            snprintf_P(buffer, len, PSTR("%d"), _hlwVoltage);
         } else {
             buffer = NULL;
         }
@@ -295,13 +295,13 @@ void hlw8012Loop() {
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
-                snprintf(buffer, 20, "%d;%s", _hlwPower, String(energy_delta, 3).c_str());
+                snprintf_P(buffer, 20, PSTR("%d;%s"), _hlwPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", String(energy_delta, 3).c_str());
+                snprintf_P(buffer, 20, PSTR("%s"), String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf(buffer, 20, "%d", _hlwVoltage);
+                snprintf_P(buffer, 20, PSTR("%d"), _hlwVoltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", String(_hlwCurrent).c_str());
+                snprintf_P(buffer, 20, PSTR("%s"), String(_hlwCurrent).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif

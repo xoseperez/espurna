@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 String getIdentifier() {
     char identifier[20];
-    sprintf(identifier, "%s_%06X", DEVICE, ESP.getChipId());
+    sprintf_P(identifier, PSTR("%s_%06X"), DEVICE, ESP.getChipId());
     return String(identifier);
 }
 

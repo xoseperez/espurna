@@ -430,7 +430,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 void _wsStart(uint32_t client_id) {
 
     char chipid[6];
-    sprintf(chipid, "%06X", ESP.getChipId());
+    sprintf_P(chipid, PSTR("%06X"), ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -776,7 +776,7 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         char *p = ltrim(value);
 
         // The response will be a 404 NOT FOUND if the resource is not available
-        if (*value == NULL) {
+        if (!value) {
             DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
             request->send(404);
             return;
@@ -801,7 +801,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Store it
     web_api_t api;
     char buffer[40];
-    snprintf(buffer, 39, "/api/%s", url);
+    snprintf_P(buffer, 39, PSTR("/api/%s"), url);
     api.url = strdup(buffer);
     api.key = strdup(key);
     api.getFn = getFn;
@@ -913,7 +913,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     }
 
     char buffer[100];
-    sprintf(buffer, "attachment; filename=\"%s-backup.json\"", (char *) getSetting("hostname").c_str());
+    sprintf_P(buffer, PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
     response->setLength();
     request->send(response);
@@ -993,7 +993,7 @@ void webSetup() {
     mqttRegister(wsMQTTCallback);
 
     // Cache the Last-Modifier header value
-    sprintf(_last_modified, "%s %s GMT", __DATE__, __TIME__);
+    sprintf_P(_last_modified, PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Setup webserver
     _server->addHandler(&ws);

@@ -39,7 +39,7 @@ String ntpDateTime() {
     int month = value.substring(12, 14).toInt();
     int year = value.substring(15, 19).toInt();
     char buffer[20];
-    sprintf(buffer, "%04d/%02d/%02dT%02d:%02d:%02d", year, month, day, hour, minute, second);
+    sprintf_P(buffer, PSTR("%04d/%02d/%02dT%02d:%02d:%02d"), year, month, day, hour, minute, second);
     return String(buffer);
 }
 

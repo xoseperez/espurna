@@ -33,7 +33,7 @@
 // General debug options and macros
 #define DEBUG_MESSAGE_MAX_LENGTH    80
 
-#if ENABLE_SERIAL_DEBUG | ENABLE_UDP_DEBUG
+#if (ENABLE_SERIAL_DEBUG==1) || (ENABLE_UDP_DEBUG==1)
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
     #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
 #endif
@@ -321,7 +321,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // I2C
 // -----------------------------------------------------------------------------
 
+#ifndef ENABLE_I2C
 #define ENABLE_I2C              0           // I2C enabled
+#endif
 #define I2C_SDA_PIN             4           // SDA GPIO
 #define I2C_SCL_PIN             14          // SCL GPIO
 #define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time

@@ -64,7 +64,7 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
 
     if (type == MQTT_CONNECT_EVENT) {
         char buffer[strlen(MQTT_TOPIC_LED) + 3];
-        sprintf(buffer, "%s/+", MQTT_TOPIC_LED);
+        sprintf_P(buffer, PSTR("%s/+"), MQTT_TOPIC_LED);
         mqttSubscribe(buffer);
     }
 

@@ -19,17 +19,17 @@ template<typename T> bool influxDBSend(const char * topic, T payload) {
     if (!influxDBEnabled) return true;
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return true;
 
-    DEBUG_MSG_P(("[INFLUXDB] Sending\n"));
+    DEBUG_MSG("[INFLUXDB] Sending\n");
 
     _influxClient.setTimeout(2);
     if (!_influxClient.connect(getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt())) {
-        DEBUG_MSG_P(("[INFLUXDB] Connection failed\n"));
+        DEBUG_MSG("[INFLUXDB] Connection failed\n");
         return false;
     }
 
     char data[128];
     sprintf(data, "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
-    DEBUG_MSG_P(("[INFLUXDB] Data: %s\n"), data);
+    DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
 
     char request[256];
     sprintf(request, "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
@@ -45,7 +45,7 @@ template<typename T> bool influxDBSend(const char * topic, T payload) {
     }
 
     _influxClient.stop();
-    DEBUG_MSG_P(("[INFLUXDB] Sent failed\n"));
+    DEBUG_MSG("[INFLUXDB] Sent failed\n");
     while (_influxClient.connected()) delay(0);
     return false;
 

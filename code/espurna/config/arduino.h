@@ -49,7 +49,6 @@
 //#define ENABLE_DOMOTICZ       0
 //#define ENABLE_DS18B20        1
 //#define ENABLE_EMON           1
-//#define ENABLE_HLW8012        1
 //#define ENABLE_I2C            1
 //#define ENABLE_INFLUXDB       0
 //#define ENABLE_FAUXMO         0

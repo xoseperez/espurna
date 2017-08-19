@@ -84,6 +84,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
+    #define ENABLE_HLW8012      1
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -246,6 +247,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
+    #define ENABLE_HLW8012      1
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14

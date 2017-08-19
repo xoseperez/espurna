@@ -84,13 +84,13 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
 void domoticzSendRelay(unsigned int relayID) {
     if (!_dczEnabled) return;
     char buffer[15];
-    sprintf(buffer, "dczRelayIdx%d", relayID);
+    sprintf_P(buffer, PSTR("dczRelayIdx%d"), relayID);
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
 }
 
 int domoticzIdx(unsigned int relayID) {
     char buffer[15];
-    sprintf(buffer, "dczRelayIdx%d", relayID);
+    sprintf_P(buffer, PSTR("dczRelayIdx%d"), relayID);
     return getSetting(buffer).toInt();
 }
 
