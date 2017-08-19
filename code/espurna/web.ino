@@ -92,7 +92,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             ESP.restart();
         }
 
-        #ifdef SONOFF_RFBRIDGE
+        #ifdef ITEAD_SONOFF_RFBRIDGE
         if (action.equals("rfblearn") && root.containsKey("data")) {
             JsonObject& data = root["data"];
             rfbLearn(data["id"], data["status"]);
@@ -446,7 +446,7 @@ void _wsStart(uint32_t client_id) {
         root["chipid"] = chipid;
         root["mac"] = WiFi.macAddress();
         root["device"] = String(DEVICE);
-        root["hostname"] = getSetting("hostname", HOSTNAME);
+        root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
 
@@ -595,7 +595,7 @@ void _wsStart(uint32_t client_id) {
             root["powPowerFactor"] = String(getPowerFactor(), 2);
         #endif
 
-        #ifdef SONOFF_RFBRIDGE
+        #ifdef ITEAD_SONOFF_RFBRIDGE
         root["rfbVisible"] = 1;
         root["rfbCount"] = relayCount();
         JsonArray& rfb = root.createNestedArray("rfb");

@@ -93,16 +93,9 @@
 //--------------------------------------------------------------------------------
 // HLW8012 power sensor (Sonoff POW, Espurna H)
 // Enable support by passing ENABLE_HLW8012=1 build flag
-// Enabled by default when selecting SONOFF_POW hardware
 //--------------------------------------------------------------------------------
 
-#ifdef ESPURNA_H
-    #define HLW8012_SEL_PIN     2
-#else
-    #define HLW8012_SEL_PIN     5
-#endif
-#define HLW8012_CF1_PIN         13
-#define HLW8012_CF_PIN          14
+// GPIOs defined in the hardware.h file
 
 #define HLW8012_USE_INTERRUPTS  1
 #define HLW8012_SEL_CURRENT     HIGH

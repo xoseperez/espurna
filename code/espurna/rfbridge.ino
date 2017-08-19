@@ -6,7 +6,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#ifdef SONOFF_RFBRIDGE
+#ifdef ITEAD_SONOFF_RFBRIDGE
 
 // -----------------------------------------------------------------------------
 // DEFINITIONS

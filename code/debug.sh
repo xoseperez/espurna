@@ -4,7 +4,7 @@
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-ENVIRONMENT="d1-debug"
+ENVIRONMENT="nodemcu-lolin"
 ADDR2LINE=$HOME/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-addr2line
 DECODER=utils/EspStackTraceDecoder.jar
 DECODER_ORIGIN=https://github.com/littleyoda/EspStackTraceDecoder/releases/download/untagged-83b6db3208da17a0f1fd/EspStackTraceDecoder.jar

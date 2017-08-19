@@ -92,7 +92,7 @@ void _mqttFlush() {
         root[element.topic] = element.message;
     }
     if (ntpConnected()) root[MQTT_TOPIC_TIME] = ntpDateTime();
-    root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname", HOSTNAME);
+    root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname");
     root[MQTT_TOPIC_IP] = getIP();
 
     String output;

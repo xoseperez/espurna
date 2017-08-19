@@ -49,8 +49,8 @@ bool createAP() {
 
 void wifiConfigure() {
 
-    jw.setHostname(getSetting("hostname", HOSTNAME).c_str());
-    jw.setSoftAP(getSetting("hostname", HOSTNAME).c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+    jw.setHostname(getSetting("hostname").c_str());
+    jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     jw.setReconnectTimeout(WIFI_RECONNECT_INTERVAL);
     jw.setAPMode(AP_MODE);

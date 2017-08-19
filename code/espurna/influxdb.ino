@@ -28,7 +28,7 @@ template<typename T> bool influxDBSend(const char * topic, T payload) {
     }
 
     char data[128];
-    sprintf(data, "%s,device=%s value=%s", topic, getSetting("hostname", HOSTNAME).c_str(), String(payload).c_str());
+    sprintf(data, "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
     DEBUG_MSG_P(("[INFLUXDB] Data: %s\n"), data);
 
     char request[256];

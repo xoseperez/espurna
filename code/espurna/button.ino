@@ -119,7 +119,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
 void buttonSetup() {
 
-    #ifdef SONOFF_DUAL
+    #ifdef ITEAD_SONOFF_DUAL
 
         unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
@@ -163,7 +163,7 @@ void buttonSetup() {
 
 void buttonLoop() {
 
-    #ifdef SONOFF_DUAL
+    #ifdef ITEAD_SONOFF_DUAL
 
         if (Serial.available() >= 4) {
 

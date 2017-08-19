@@ -1,16 +1,47 @@
 #!/bin/bash
 
+environments=$@
+
 # Environments to build
-ENVIRONMENTS="espurna-debug sonoff-debug sonoff-dht22-debug sonoff-ds18b20-debug sonoff-pow-debug sonoff-dual-debug sonoff-4ch-debug 1ch-inching-debug electrodragon-debug ecoplug-debug jangoe-debug ai-light-debug led-controller-debug h801-debug sonoff-touch-debug"
+ALL_ENVIRONMENTS="
+    tinkerman-espurna-h
+    itead-sonoff-basic itead-sonoff-rf itead-sonoff-basic-dht22 itead-sonoff-basic-ds18b20
+    itead-sonoff-pow itead-sonoff-dual itead-sonoff-4ch itead-sonoff-4ch-pro
+    itead-sonoff-touch itead-sonoff-b1 itead-sonoff-led itead-sonoff-rfbridge
+    itead-sonoff-t1-1ch itead-sonoff-t1-2ch itead-sonoff-t1-3ch
+    itead-slampher itead-s20 itead-1ch-inching itead-motor itead-bnsz01
+    electrodragon-wifi-iot
+    workchoice-ecoplug
+    jangoe-wifi-relay
+    openenergymonitor-mqtt-relay
+    jorgegarcia-wifi-relays
+    aithinker-ai-light
+    magichome-led-controller
+    huacanxing-h801
+"
+if [ $# -eq 0 ]; then
+    environments=$ALL_ENVIRONMENTS
+fi
 
 # Get current version
 version=`cat espurna/config/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
+echo "--------------------------------------------------------------"
+echo "ESPURNA FIRMWARE BUILDER"
+echo "Building for version $version"
 
 # Create output folder
 mkdir -p firmware
 
+# Recreate web interface
+echo "--------------------------------------------------------------"
+echo "Building web interface..."
+node -S node_modules/gulp/bin/gulp.js || exit
+
 # Build all the required firmwares
-for environment in $ENVIRONMENTS; do
-    platformio run -e $environment
+for environment in $environments; do
+    echo "--------------------------------------------------------------"
+    echo "Building espurna-$version-$environment.bin..."
+    platformio run -s -e $environment || exit
     mv .pioenvs/$environment/firmware.bin firmware/espurna-$version-$environment.bin
 done
+echo "--------------------------------------------------------------"

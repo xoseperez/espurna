@@ -215,9 +215,10 @@ void setup() {
     mqttSetup();
     ntpSetup();
 
-    #ifdef SONOFF_RFBRIDGE
+    #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif
+
     #if ENABLE_I2C
         i2cSetup();
     #endif
@@ -268,14 +269,15 @@ void loop() {
     mqttLoop();
     ntpLoop();
 
-    #if ENABLE_FAUXMO
-        fauxmoLoop();
+    #ifdef ITEAD_SONOFF_RFBRIDGE
+        rfbLoop();
     #endif
-    #if !defined(SONOFF_DUAL) & !defined(SONOFF_RFBRIDGE)
+
+    #if ENABLE_TERMINAL
         settingsLoop();
     #endif
-    #ifdef SONOFF_RFBRIDGE
-        rfbLoop();
+    #if ENABLE_FAUXMO
+        fauxmoLoop();
     #endif
     #if ENABLE_NOFUSS
         nofussLoop();

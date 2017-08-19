@@ -18,7 +18,8 @@ void hwUpwardsCompatibility() {
     unsigned int board = getSetting("board", 0).toInt();
     if (board > 0) return;
 
-    #ifdef NODEMCUV2
+    #if defined(NODEMCU_LOLIN)
+
         setSetting("board", 2);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
@@ -26,17 +27,17 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef D1_RELAYSHIELD
+    #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
+
         setSetting("board", 3);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
         setSetting("relayGPIO", 1, 5);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF
+    #elif defined(ITEAD_SONOFF_BASIC)
+
         setSetting("board", 4);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -44,9 +45,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF_TH
+    #elif defined(ITEAD_SONOFF_TH)
+
         setSetting("board", 5);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -54,9 +55,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF_SV
+    #elif defined(ITEAD_SONOFF_SV)
+
         setSetting("board", 6);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -64,9 +65,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF_TOUCH
+    #elif defined(ITEAD_SONOFF_TOUCH)
+
         setSetting("board", 7);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -74,9 +75,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF_POW
+    #elif defined(ITEAD_SONOFF_POW)
+
         setSetting("board", 8);
         setSetting("ledGPIO", 1, 15);
         setSetting("ledLogic", 1, 1);
@@ -84,18 +85,21 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
+        setSetting("selGPIO", 5);
+        setSetting("cf1GPIO", 13);
+        setSetting("cfGPIO", 14);
 
-    #ifdef SONOFF_DUAL
+    #elif defined(ITEAD_SONOFF_DUAL)
+
         setSetting("board", 9);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
         setSetting("btnRelay", 3, 1);
         setSetting("relayProvider", RELAY_PROVIDER_DUAL);
         setSetting("relays", 2);
-    #endif
 
-    #ifdef ITEAD_1CH_INCHING
+    #elif defined(ITEAD_1CH_INCHING)
+
         setSetting("board", 10);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -103,9 +107,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF_4CH
+    #elif defined(ITEAD_SONOFF_4CH)
+
         setSetting("board", 11);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -113,10 +117,10 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 2, 9);
         setSetting("btnGPIO", 3, 10);
         setSetting("btnGPIO", 4, 14);
-        setSetting("btnRelay", 1, 2);
-        setSetting("btnRelay", 2, 3);
-        setSetting("btnRelay", 3, 4);
-        setSetting("btnRelay", 4, 0);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("btnRelay", 3, 3);
+        setSetting("btnRelay", 4, 4);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayGPIO", 2, 5);
         setSetting("relayGPIO", 3, 4);
@@ -125,9 +129,9 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 2, 0);
         setSetting("relayLogic", 3, 0);
         setSetting("relayLogic", 4, 0);
-    #endif
 
-    #ifdef SLAMPHER
+    #elif defined(ITEAD_SLAMPHER)
+
         setSetting("board", 12);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -135,9 +139,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef S20
+    #elif defined(ITEAD_S20)
+
         setSetting("board", 13);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -145,9 +149,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef ESP_RELAY_BOARD
+    #elif defined(ELECTRODRAGON_WIFI_IOT)
+
         setSetting("board", 14);
         setSetting("ledGPIO", 1, 16);
         setSetting("ledLogic", 1, 0);
@@ -159,9 +163,9 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 2, 13);
         setSetting("relayLogic", 1, 0);
         setSetting("relayLogic", 2, 0);
-    #endif
 
-    #ifdef ECOPLUG
+    #elif defined(WORKCHOICE_ECOPLUG)
+
         setSetting("board", 15);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 0);
@@ -169,9 +173,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 15);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef WIFI_RELAY_NC
+    #elif defined(JANGOE_WIFI_RELAY_NC)
+
         setSetting("board", 16);
         setSetting("btnGPIO", 1, 12);
         setSetting("btnGPIO", 2, 13);
@@ -181,9 +185,9 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 2, 14);
         setSetting("relayLogic", 1, 1);
         setSetting("relayLogic", 2, 1);
-    #endif
 
-    #ifdef WIFI_RELAY_NO
+    #elif defined(JANGOE_WIFI_RELAY_NO)
+
         setSetting("board", 17);
         setSetting("btnGPIO", 1, 12);
         setSetting("btnGPIO", 2, 13);
@@ -193,9 +197,9 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 2, 14);
         setSetting("relayLogic", 1, 0);
         setSetting("relayLogic", 2, 0);
-    #endif
 
-    #ifdef MQTT_RELAY
+    #elif defined(OPENENERGYMONITOR_MQTT_RELAY)
+
         setSetting("board", 18);
         setSetting("ledGPIO", 1, 16);
         setSetting("ledLogic", 1, 1);
@@ -203,43 +207,43 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef WIFI_RELAYS_BOARD_KIT
+    #elif defined(JORGEGARCIA_WIFI_RELAYS)
+
         setSetting("board", 19);
         setSetting("relayGPIO", 1, 0);
         setSetting("relayLogic", 1, 1);
         setSetting("relayGPIO", 2, 2);
         setSetting("relayLogic", 2, 1);
-    #endif
 
-    #ifdef AI_LIGHT
+    #elif defined(AITHINKER_AI_LIGHT)
+
         setSetting("board", 20);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
         setSetting("relays", 1);
-    #endif
 
-    #ifdef LED_CONTROLLER
+    #elif defined(MAGICHOME_LED_CONTROLLER)
+
         setSetting("board", 21);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
-        setSetting("ch1GPIO", 14);
-        setSetting("ch2GPIO", 5);
-        setSetting("ch3GPIO", 12);
-        setSetting("ch4GPIO", 13);
-        setSetting("ch1Logic", 0);
-        setSetting("ch2Logic", 0);
-        setSetting("ch3Logic", 0);
-        setSetting("ch4Logic", 0);
+        setSetting("chGPIO", 1, 14);
+        setSetting("chGPIO", 2, 5);
+        setSetting("chGPIO", 3, 12);
+        setSetting("chGPIO", 4, 13);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("chLogic", 3, 0);
+        setSetting("chLogic", 4, 0);
         setSetting("relays", 1);
-    #endif
 
-    #ifdef ITEAD_MOTOR
+    #elif defined(ITEAD_MOTOR)
+
         setSetting("board", 22);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -247,9 +251,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef ESPURNA_H
+    #elif defined(TINKERMAN_ESPURNA_H)
+
         setSetting("board", 23);
         setSetting("ledGPIO", 1, 5);
         setSetting("ledLogic", 1, 0);
@@ -257,48 +261,51 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 1);
-    #endif
+        setSetting("selGPIO", 2);
+        setSetting("cf1GPIO", 13);
+        setSetting("cfGPIO", 14);
 
-    #ifdef H801_LED_CONTROLLER
+    #elif defined(HUACANXING_H801)
+
         setSetting("board", 24);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
-        setSetting("ledGPIO", 5, 1);
+        setSetting("ledGPIO", 1, 5);
         setSetting("ledLogic", 1, 1);
-        setSetting("ch1GPIO", 15);
-        setSetting("ch2GPIO", 13);
-        setSetting("ch3GPIO", 12);
-        setSetting("ch4GPIO", 14);
-        setSetting("ch5GPIO", 4);
-        setSetting("ch1Logic", 0);
-        setSetting("ch2Logic", 0);
-        setSetting("ch3Logic", 0);
-        setSetting("ch4Logic", 0);
-        setSetting("ch5Logic", 0);
+        setSetting("chGPIO", 1, 15);
+        setSetting("chGPIO", 2, 13);
+        setSetting("chGPIO", 3, 12);
+        setSetting("chGPIO", 4, 14);
+        setSetting("chGPIO", 5, 4);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("chLogic", 3, 0);
+        setSetting("chLogic", 4, 0);
+        setSetting("chLogic", 5, 0);
         setSetting("relays", 1);
-    #endif
 
-    #ifdef ITEAD_BNSZ01
+    #elif defined(ITEAD_BN_SZ01)
+
         setSetting("board", 25);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
-        setSetting("ledGPIO", 13, 1);
+        setSetting("ledGPIO", 3, 13);
         setSetting("ledLogic", 1, 1);
-        setSetting("ch1GPIO", 12);
-        setSetting("ch1Logic", 0);
+        setSetting("chGPIO", 1, 12);
+        setSetting("chLogic", 1, 0);
         setSetting("relays", 1);
-    #endif
 
-    #ifdef SONOFF_RFBRIDGE
+    #elif defined(ITEAD_SONOFF_RFBRIDGE)
+
         setSetting("board", 26);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
         setSetting("btnGPIO", 1, 0);
         setSetting("relayProvider", RELAY_PROVIDER_RFBRIDGE);
         setSetting("relays", 6);
-    #endif
 
-    #ifdef SONOFF_4CH_PRO
+    #elif defined(ITEAD_SONOFF_4CH_PRO)
+
         setSetting("board", 27);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -306,10 +313,10 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 2, 9);
         setSetting("btnGPIO", 3, 10);
         setSetting("btnGPIO", 4, 14);
-        setSetting("btnRelay", 1, 2);
-        setSetting("btnRelay", 2, 3);
-        setSetting("btnRelay", 3, 4);
-        setSetting("btnRelay", 4, 0);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("btnRelay", 3, 3);
+        setSetting("btnRelay", 4, 4);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayGPIO", 2, 5);
         setSetting("relayGPIO", 3, 4);
@@ -318,31 +325,31 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 2, 0);
         setSetting("relayLogic", 3, 0);
         setSetting("relayLogic", 4, 0);
-    #endif
 
-    #ifdef SONOFF_B1
+    #elif defined(ITEAD_SONOFF_B1)
+
         setSetting("board", 28);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
         setSetting("myDIGPIO", 12);
         setSetting("myDCKIGPIO", 14);
         setSetting("relays", 1);
-    #endif
 
-    #ifdef SONOFF_LED
+    #elif defined(ITEAD_SONOFF_LED)
+
         setSetting("board", 29);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
         setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
-        setSetting("ledGPIO", 13, 1);
+        setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
-        setSetting("ch1GPIO", 12);
-        setSetting("ch1Logic", 0);
-        setSetting("ch2GPIO", 14);
-        setSetting("ch2Logic", 0);
+        setSetting("chGPIO", 1, 12);
+        setSetting("chLogic", 1, 0);
+        setSetting("chGPIO", 2, 14);
+        setSetting("chLogic", 2, 0);
         setSetting("relays", 1);
-    #endif
 
-    #ifdef SONOFF_T1_1CH
+    #elif defined(ITEAD_SONOFF_T1_1CH)
+
         setSetting("board", 30);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -350,9 +357,9 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 5);
         setSetting("relayLogic", 1, 0);
-    #endif
 
-    #ifdef SONOFF_T1_2CH
+    #elif defined(ITEAD_SONOFF_T1_2CH)
+
         setSetting("board", 31);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -364,9 +371,9 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 2, 4);
         setSetting("relayLogic", 1, 0);
         setSetting("relayLogic", 2, 0);
-    #endif
 
-    #ifdef SONOFF_T1_3CH
+    #elif defined(ITEAD_SONOFF_T1_3CH)
+
         setSetting("board", 32);
         setSetting("ledGPIO", 1, 13);
         setSetting("ledLogic", 1, 1);
@@ -382,6 +389,21 @@ void hwUpwardsCompatibility() {
         setSetting("relayLogic", 1, 0);
         setSetting("relayLogic", 2, 0);
         setSetting("relayLogic", 3, 0);
+
+    #elif defined(ITEAD_SONOFF_RF)
+
+        setSetting("board", 33);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnRelay", 1, 1);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayLogic", 1, 0);
+
+    #else
+
+        #error "UNSUPPORTED HARDWARE!"
+
     #endif
 
     saveSettings();
