@@ -119,9 +119,9 @@ unsigned char customReset() {
 
 void hardwareSetup() {
 
-    EEPROM.begin(4096);
+    EEPROM.begin(EEPROM_SIZE);
 
-    #ifdef DEBUG_PORT
+    #if ENABLE_SERIAL_DEBUG
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
         if (customReset() == CUSTOM_RESET_HARDWARE) {
             DEBUG_PORT.setDebugOutput(true);
@@ -151,13 +151,35 @@ void hardwareLoop() {
 // BOOTING
 // -----------------------------------------------------------------------------
 
+unsigned int sectors(size_t size) {
+    return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+}
+
 void welcome() {
 
+    DEBUG_MSG_P(PSTR("\n\n"));
     DEBUG_MSG_P(PSTR("%s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
     DEBUG_MSG_P(PSTR("%s\n%s\n\n"), (char *) APP_AUTHOR, (char *) APP_WEBSITE);
-    DEBUG_MSG_P(PSTR("ChipID: %06X\n"), ESP.getChipId());
+    DEBUG_MSG_P(PSTR("CPU chip ID: 0x%06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("CPU frequency: %d MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG_P(PSTR("SDK version: %s\n"), ESP.getSdkVersion());
+    DEBUG_MSG_P(PSTR("Core version: %s\n"), ESP.getCoreVersion().c_str());
 
+    DEBUG_MSG_P(PSTR("\n"));
+    FlashMode_t mode = ESP.getFlashChipMode();
+    DEBUG_MSG_P(PSTR("Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    DEBUG_MSG_P(PSTR("Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
+    DEBUG_MSG_P(PSTR("Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
+    DEBUG_MSG_P(PSTR("\n"));
+    DEBUG_MSG_P(PSTR("Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("Flash size (SDK):  %8u bytes\n"), ESP.getFlashChipSize());
+    DEBUG_MSG_P(PSTR("Flash size (CHIP): %8u bytes / %4d sectors\n"), ESP.getFlashChipRealSize(), sectors(ESP.getFlashChipRealSize()));
+    DEBUG_MSG_P(PSTR("Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
+    DEBUG_MSG_P(PSTR("OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
+    DEBUG_MSG_P(PSTR("EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
+    DEBUG_MSG_P(PSTR("Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+
+    DEBUG_MSG_P(PSTR("\n"));
     unsigned char custom_reset = customReset();
     if (custom_reset > 0) {
         char buffer[32];
@@ -166,16 +188,12 @@ void welcome() {
     } else {
         DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
-
-    DEBUG_MSG_P(PSTR("Memory size (SDK): %d bytes\n"), ESP.getFlashChipSize());
-    DEBUG_MSG_P(PSTR("Memory size (CHIP): %d bytes\n"), ESP.getFlashChipRealSize());
-    DEBUG_MSG_P(PSTR("Free heap: %d bytes\n"), ESP.getFreeHeap());
-    DEBUG_MSG_P(PSTR("Firmware size: %d bytes\n"), ESP.getSketchSize());
-    DEBUG_MSG_P(PSTR("Free firmware space: %d bytes\n"), ESP.getFreeSketchSpace());
+    DEBUG_MSG_P(PSTR("Free heap: %u bytes\n"), ESP.getFreeHeap());
 
     #if ENABLE_SPIFFS
         FSInfo fs_info;
         if (SPIFFS.info(fs_info)) {
+            DEBUG_MSG_P(PSTR("\n"));
             DEBUG_MSG_P(PSTR("File system total size: %d bytes\n"), fs_info.totalBytes);
             DEBUG_MSG_P(PSTR("            used size : %d bytes\n"), fs_info.usedBytes);
             DEBUG_MSG_P(PSTR("            block size: %d bytes\n"), fs_info.blockSize);

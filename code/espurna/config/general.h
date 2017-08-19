@@ -55,6 +55,7 @@
 // EEPROM
 //------------------------------------------------------------------------------
 
+#define EEPROM_SIZE             4096            // EEPROM size in bytes
 #define EEPROM_RELAY_STATUS     0               // Address for the relay status (1 byte)
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)

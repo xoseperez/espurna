@@ -39,8 +39,8 @@ void otaSetup() {
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
-        #if DEBUG_PORT
-            DEBUG_MSG_P(PSTR("\n[OTA] Error[%u]: "), error);
+        #if ENABLE_SERIAL_DEBUG || ENABLE_UDP_DEBUG
+            DEBUG_MSG_P(PSTR("\n[OTA] Error #%u: "), error);
             if (error == OTA_AUTH_ERROR) DEBUG_MSG_P(PSTR("Auth Failed\n"));
             else if (error == OTA_BEGIN_ERROR) DEBUG_MSG_P(PSTR("Begin Failed\n"));
             else if (error == OTA_CONNECT_ERROR) DEBUG_MSG_P(PSTR("Connect Failed\n"));

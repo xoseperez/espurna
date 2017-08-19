@@ -123,7 +123,7 @@ void wifiSetup() {
     // Message callbacks
     jw.onMessage([](justwifi_messages_t code, char * parameter) {
 
-		#ifdef DEBUG_PORT
+		#if ENABLE_SERIAL_DEBUG || ENABLE_UDP_DEBUG
 
 		    if (code == MESSAGE_SCANNING) {
 		        DEBUG_MSG_P(PSTR("[WIFI] Scanning\n"));
