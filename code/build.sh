@@ -18,6 +18,7 @@ ALL_ENVIRONMENTS="
     aithinker-ai-light
     magichome-led-controller
     huacanxing-h801
+    wion-50055
 "
 if [ $# -eq 0 ]; then
     environments=$ALL_ENVIRONMENTS

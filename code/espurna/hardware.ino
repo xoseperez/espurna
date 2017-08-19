@@ -400,6 +400,16 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 1, 12);
         setSetting("relayLogic", 1, 0);
 
+    #elif defined(WION_50055)
+
+        setSetting("board", 34);
+        setSetting("ledGPIO", 1, 2);
+        setSetting("ledLogic", 1, 0);
+        setSetting("btnGPIO", 1, 13);
+        setSetting("btnRelay", 1,1);
+        setSetting("relayGPIO", 1, 15);
+        setSetting("relayLogic", 1, 0);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"

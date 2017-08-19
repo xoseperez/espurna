@@ -759,6 +759,33 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
+// WiOn 50055 Indoor Wi-Fi Wall Outlet & Tap
+// https://rover.ebay.com/rover/1/711-53200-19255-0/1?icep_id=114&ipn=icep&toolid=20004&campid=5338044841&mpre=http%3A%2F%2Fwww.ebay.com%2Fitm%2FWiOn-50050-Indoor-Wi-Fi-Outlet-Wireless-Switch-Programmable-Timer-%2F263112281551
+// https://rover.ebay.com/rover/1/711-53200-19255-0/1?icep_id=114&ipn=icep&toolid=20004&campid=5338044841&mpre=http%3A%2F%2Fwww.ebay.com%2Fitm%2FWiOn-50055-Indoor-Wi-Fi-Wall-Tap-Monitor-Energy-Usage-Wireless-Smart-Switch-%2F263020837777
+// -----------------------------------------------------------------------------
+
+#elif defined(WION_50055)
+
+    // Currently untested, does not support energy monitoring
+
+    // Info
+    #define MANUFACTURER        "WION"
+    #define DEVICE              "50055"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          15
+    #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 
