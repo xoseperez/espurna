@@ -113,7 +113,7 @@ void powerMonitorSetup() {
 
     apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
         if (_emonReady) {
-            snprintf(buffer, len, "%d", _emonPower);
+            snprintf_P(buffer, len, PSTR("%d"), _emonPower);
         } else {
             buffer = NULL;
         }
@@ -191,11 +191,11 @@ void powerMonitorLoop() {
             #if ENABLE_DOMOTICZ
             {
                 char buffer[20];
-                snprintf(buffer, 20, "%d;%s", _emonPower, String(energy_delta, 3).c_str());
+                snprintf_P(buffer, 20, PSTR("%d;%s"), _emonPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", String(energy_delta, 3).c_str());
+                snprintf_P(buffer, 20, PSTR("%s"), String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf(buffer, 20, "%s", String(_emonCurrent, 3).c_str());
+                snprintf_P(buffer, 20, PSTR("%s"), String(_emonCurrent, 3).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif

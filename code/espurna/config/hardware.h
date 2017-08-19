@@ -16,177 +16,331 @@
 // RELAY#_LED: LED number that will be bind to the n-th relay (1-based)
 // LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
-// WIFI_LED: LED number that will used for WIFI notifications (1-based, defaults to 1)
+//
+// Besides, other hardware specific information should be stated here
 
 // -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
 
-#if defined(NODEMCUV2)
+#if defined(NODEMCU_LOLIN)
 
+    // Info
     #define MANUFACTURER        "NODEMCU"
     #define DEVICE              "LOLIN"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_LNGCLICK    BUTTON_MODE_PULSE
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
-	#define LED1_PIN            2
+
+    // LEDs
+    #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-#elif defined(D1_RELAYSHIELD)
+#elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
+    // Info
     #define MANUFACTURER        "WEMOS"
-    #define DEVICE              "D1_MINI"
+    #define DEVICE              "D1_MINI_RELAYSHIELD"
+
+    // Buttons
+    // No buttons on the D1 MINI
+
+    // Relays
     #define RELAY1_PIN          5
     #define RELAY1_PIN_INVERSE  0
-	#define LED1_PIN            2
+
+    // LEDs
+    #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // ESPurna
 // -----------------------------------------------------------------------------
 
-#elif defined(ESPURNA_H)
+#elif defined(TINKERMAN_ESPURNA_H)
 
+    // Info
     #define MANUFACTURER        "TINKERMAN"
     #define DEVICE              "ESPURNA_H"
+    #define ENABLE_HLW8012      1
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  1
+
+    // LEDs
     #define LED1_PIN            5
     #define LED1_PIN_INVERSE    0
-    #define BUTTON1_PIN         4
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // HLW8012
     #define ENABLE_HLW8012      1
+    #define HLW8012_SEL_PIN     2
+    #define HLW8012_CF1_PIN     13
+    #define HLW8012_CF_PIN      14
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
 // -----------------------------------------------------------------------------
 
-#elif defined(SONOFF)
+#elif defined(ITEAD_SONOFF_BASIC)
 
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "SONOFF"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_BASIC"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(SONOFF_TH)
+#elif defined(ITEAD_SONOFF_RF)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_RF"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(ITEAD_SONOFF_TH)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_TH"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(SONOFF_SV)
+#elif defined(ITEAD_SONOFF_SV)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_SV"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(SLAMPHER)
+#elif defined(ITEAD_SLAMPHER)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SLAMPHER"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(S20)
+#elif defined(ITEAD_S20)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "S20"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(SONOFF_TOUCH)
+#elif defined(ITEAD_SONOFF_TOUCH)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_TOUCH"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(SONOFF_POW)
+#elif defined(ITEAD_SONOFF_POW)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_POW"
-    #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
-    #define LED1_PIN            15
-    #define LED1_PIN_INVERSE    0
     #define ENABLE_HLW8012      1
 
-#elif defined(SONOFF_DUAL)
-
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "SONOFF_DUAL"
-    #define BUTTON3_RELAY       1
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
-    #undef SERIAL_BAUDRATE
-    #define SERIAL_BAUDRATE     19230
-    #undef RELAY_PROVIDER
-    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
-    #define DUMMY_RELAY_COUNT   2
-
-#elif defined(SONOFF_4CH)
-
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "SONOFF_4CH"
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PIN         9
-    #define BUTTON2_RELAY       2
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_PIN         10
-    #define BUTTON3_RELAY       3
-    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON4_PIN         14
-    #define BUTTON4_RELAY       4
-    #define BUTTON4_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    // HLW8012
+    #define ENABLE_HLW8012      1
+    #define HLW8012_SEL_PIN     5
+    #define HLW8012_CF1_PIN     13
+    #define HLW8012_CF_PIN      14
+
+#elif defined(ITEAD_SONOFF_DUAL)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_DUAL"
+    #define SERIAL_BAUDRATE     19230
+    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
+    #define DUMMY_RELAY_COUNT   2
+    #define ENABLE_SERIAL_DEBUG 0
+    #define ENABLE_TERMINAL     0
+
+    // Buttons
+    #define BUTTON3_RELAY       1
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(ITEAD_SONOFF_4CH)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_4CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
+    #define BUTTON3_PIN         10
+    #define BUTTON4_PIN         14
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON3_RELAY       3
+    #define BUTTON4_RELAY       4
+
+    // Relays
+    #define RELAY1_PIN          12
     #define RELAY2_PIN          5
-    #define RELAY2_PIN_INVERSE  0
     #define RELAY3_PIN          4
-    #define RELAY3_PIN_INVERSE  0
     #define RELAY4_PIN          15
+
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN_INVERSE  0
+    #define RELAY3_PIN_INVERSE  0
     #define RELAY4_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(ITEAD_SONOFF_4CH_PRO)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_4CH_PRO"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
+    #define BUTTON3_PIN         10
+    #define BUTTON4_PIN         14
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON3_RELAY       3
+    #define BUTTON4_RELAY       4
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          5
+    #define RELAY3_PIN          4
+    #define RELAY4_PIN          15
+
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN_INVERSE  0
+    #define RELAY3_PIN_INVERSE  0
+    #define RELAY4_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
@@ -201,73 +355,216 @@
     // You can still use the pulse options from the web interface
     // without problem.
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "1CH_INCHING"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
 #elif defined(ITEAD_MOTOR)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "MOTOR"
+
+    // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(ITEAD_BNSZ01)
+#elif defined(ITEAD_BN_SZ01)
 
-    #define MANUFACTURER        "ITEAD"
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "BN-SZ01"
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // Channels
     #define LIGHT_CH1_PIN       12
     #define LIGHT_CH1_INVERSE   0
 
-#elif defined(SONOFF_RFBRIDGE)
+#elif defined(ITEAD_SONOFF_RFBRIDGE)
 
-    #define MANUFACTURER        "ITEAD"
-    #define DEVICE              "RFBRIDGE"
-    #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
-    #undef SERIAL_BAUDRATE
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_RFBRIDGE"
     #define SERIAL_BAUDRATE     19200
-    #undef RELAY_PROVIDER
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
     #define DUMMY_RELAY_COUNT   6
     #define TRACK_RELAY_STATUS  0
+    #define ENABLE_TERMINAL     0
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(ITEAD_SONOFF_B1)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_B1"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define DUMMY_RELAY_COUNT   1
+    #define MY9291_DI_PIN       13
+    #define MY9291_DCKI_PIN     15
+    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
+
+#elif defined(ITEAD_SONOFF_LED)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_LED"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // Channels
+    #define LIGHT_CH1_PIN       12  // Cold white
+    #define LIGHT_CH2_PIN       14  // Warm white
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+
+#elif defined(ITEAD_SONOFF_T1_1CH)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_T1_1CH"
+
+    // Buttons
+    #define BUTTON1_PIN         9
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(ITEAD_SONOFF_T1_2CH)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_T1_2CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         10
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          4
+
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(ITEAD_SONOFF_T1_3CH)
+
+    // Info
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_T1_3CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
+    #define BUTTON3_PIN         10
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON3_RELAY       3
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          5
+    #define RELAY3_PIN          4
+
+    #define RELAY1_PIN_INVERSE  0
+    #define RELAY2_PIN_INVERSE  0
+    #define RELAY3_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------
 
-#elif defined(ESP_RELAY_BOARD)
+#elif defined(ELECTRODRAGON_WIFI_IOT)
 
+    // Info
     #define MANUFACTURER        "ELECTRODRAGON"
-    #define DEVICE              "ESP_RELAY_BOARD"
+    #define DEVICE              "WIFI_IOT"
+
+    // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_PIN         2
-    #define BUTTON2_RELAY       2
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN          13
+
+    #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            16
     #define LED1_PIN_INVERSE    0
 
@@ -275,15 +572,22 @@
 // WorkChoice ecoPlug
 // -----------------------------------------------------------------------------
 
-#elif defined(ECOPLUG)
+#elif defined(WORKCHOICE_ECOPLUG)
 
+    // Info
     #define MANUFACTURER        "WORKCHOICE"
     #define DEVICE              "ECOPLUG"
+
+    // Buttons
     #define BUTTON1_PIN         13
-    #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
     #define RELAY1_PIN          15
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    0
 
@@ -291,14 +595,14 @@
 // AI Thinker
 // -----------------------------------------------------------------------------
 
-#elif defined(AI_LIGHT)
+#elif defined(AITHINKER_AI_LIGHT)
 
+    // Info
     #define MANUFACTURER        "AI_THINKER"
     #define DEVICE              "AI_LIGHT"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
     #define DUMMY_RELAY_COUNT   1
-
     #define MY9291_DI_PIN       13
     #define MY9291_DCKI_PIN     15
     #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
@@ -307,16 +611,20 @@
 // LED Controller
 // -----------------------------------------------------------------------------
 
-#elif defined(LED_CONTROLLER)
+#elif defined(MAGICHOME_LED_CONTROLLER)
 
+    // Info
     #define MANUFACTURER        "MAGIC_HOME"
     #define DEVICE              "LED_CONTROLLER"
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // Channels
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -331,16 +639,20 @@
 // HUACANXING H801
 // -----------------------------------------------------------------------------
 
-#elif defined(H801_LED_CONTROLLER)
+#elif defined(HUACANXING_H801)
 
+    // Info
     #define MANUFACTURER        "HUACANXING"
     #define DEVICE              "H801"
-    #define LED1_PIN            5
-    #define LED1_PIN_INVERSE    1
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
+    // LEDs
+    #define LED1_PIN            5
+    #define LED1_PIN_INVERSE    1
+
+    // Channels
     #define LIGHT_CH1_PIN       15      // RED
     #define LIGHT_CH2_PIN       13      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
@@ -358,34 +670,50 @@
 // https://github.com/JanGoe/esp8266-wifi-relay
 // -----------------------------------------------------------------------------
 
-#elif defined(WIFI_RELAY_NC)
+#elif defined(JANGOE_WIFI_RELAY_NC)
 
+    // Info
     #define MANUFACTURER        "JAN_GOEDEKE"
     #define DEVICE              "WIFI_RELAY_NC"
+
+    // Buttons
     #define BUTTON1_PIN         12
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_PIN         13
-    #define BUTTON2_RELAY       2
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
     #define RELAY1_PIN          2
-    #define RELAY1_PIN_INVERSE  1
     #define RELAY2_PIN          14
+
+    #define RELAY1_PIN_INVERSE  1
     #define RELAY2_PIN_INVERSE  1
 
-#elif defined(WIFI_RELAY_NO)
+#elif defined(JANGOE_WIFI_RELAY_NO)
 
+    // Info
     #define MANUFACTURER        "JAN_GOEDEKE"
     #define DEVICE              "WIFI_RELAY_NO"
+
+    // Buttons
     #define BUTTON1_PIN         12
-    #define BUTTON1_RELAY       1
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_PIN         13
-    #define BUTTON2_RELAY       2
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
     #define RELAY1_PIN          2
-    #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN          14
+
+    #define RELAY1_PIN_INVERSE  0
     #define RELAY2_PIN_INVERSE  0
 
 // -----------------------------------------------------------------------------
@@ -394,29 +722,67 @@
 // https://github.com/jorgegarciadev/wifikit
 // -----------------------------------------------------------------------------
 
-#elif defined(WIFI_RELAYS_BOARD_KIT)
+#elif defined(JORGEGARCIA_WIFI_RELAYS)
 
+    // Info
     #define MANUFACTURER        "JORGE_GARCIA"
-    #define DEVICE              "WIFI_RELAYS_BOARD_KIT"
+    #define DEVICE              "WIFI_RELAYS"
+
+    // Relays
     #define RELAY1_PIN          0
-    #define RELAY1_PIN_INVERSE  1
     #define RELAY2_PIN          2
+
+    #define RELAY1_PIN_INVERSE  1
     #define RELAY2_PIN_INVERSE  1
 
 // -----------------------------------------------------------------------------
 // WiFi MQTT Relay / Thermostat
 // -----------------------------------------------------------------------------
 
-#elif defined(MQTT_RELAY)
+#elif defined(OPENENERGYMONITOR_MQTT_RELAY)
 
+    // Info
     #define MANUFACTURER        "OPENENERGYMONITOR"
     #define DEVICE              "MQTT_RELAY"
+
+    // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_RELAY       1
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
     #define RELAY1_PIN          12
     #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
     #define LED1_PIN            16
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// WiOn 50055 Indoor Wi-Fi Wall Outlet & Tap
+// https://rover.ebay.com/rover/1/711-53200-19255-0/1?icep_id=114&ipn=icep&toolid=20004&campid=5338044841&mpre=http%3A%2F%2Fwww.ebay.com%2Fitm%2FWiOn-50050-Indoor-Wi-Fi-Outlet-Wireless-Switch-Programmable-Timer-%2F263112281551
+// https://rover.ebay.com/rover/1/711-53200-19255-0/1?icep_id=114&ipn=icep&toolid=20004&campid=5338044841&mpre=http%3A%2F%2Fwww.ebay.com%2Fitm%2FWiOn-50055-Indoor-Wi-Fi-Wall-Tap-Monitor-Energy-Usage-Wireless-Smart-Switch-%2F263020837777
+// -----------------------------------------------------------------------------
+
+#elif defined(WION_50055)
+
+    // Currently untested, does not support energy monitoring
+
+    // Info
+    #define MANUFACTURER        "WION"
+    #define DEVICE              "50055"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          15
+    #define RELAY1_PIN_INVERSE  0
+
+    // LEDs
+    #define LED1_PIN            2
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
@@ -548,10 +914,6 @@
 #define RELAY4_LED          0
 #endif
 
-#ifndef WIFI_LED
-#define WIFI_LED            1
-#endif
-
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON
 #define BUTTON_PUSHBUTTON   0
@@ -563,6 +925,11 @@
 // Does the board track the relay status?
 #ifndef TRACK_RELAY_STATUS
 #define TRACK_RELAY_STATUS  1
+#endif
+
+// Serial baudrate
+#ifndef SERIAL_BAUDRATE
+#define SERIAL_BAUDRATE         115200
 #endif
 
 // Relay providers

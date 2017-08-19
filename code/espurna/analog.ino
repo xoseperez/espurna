@@ -21,7 +21,7 @@ void analogSetup() {
     pinMode(ANALOG_PIN, INPUT);
 
     apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
-        snprintf(buffer, len, "%d", getAnalog());
+        snprintf_P(buffer, len, PSTR("%d"), getAnalog());
     });
 
 }

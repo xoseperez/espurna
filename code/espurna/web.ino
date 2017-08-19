@@ -97,7 +97,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             ESP.restart();
         }
 
-        #ifdef SONOFF_RFBRIDGE
+        #ifdef ITEAD_SONOFF_RFBRIDGE
         if (action.equals("rfblearn") && root.containsKey("data")) {
             JsonObject& data = root["data"];
             rfbLearn(data["id"], data["status"]);
@@ -215,6 +215,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
+        #if ENABLE_DOMOTICZ
+            bool dczEnabled = false;
+        #endif
         unsigned int network = 0;
         unsigned int dczRelayIdx = 0;
         String adminPass;
@@ -309,6 +312,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_FAUXMO
                 if (key == "fauxmoEnabled") { fauxmoEnabled = true; continue; }
             #endif
+            #if ENABLE_DOMOTICZ
+                if (key == "dczEnabled") { dczEnabled = true; continue; }
+            #endif
 
             if (key == "ssid") {
                 key = key + String(network);
@@ -355,6 +361,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_FAUXMO
                 setBoolSetting("fauxmoEnabled", fauxmoEnabled, FAUXMO_ENABLED);
             #endif
+            #if ENABLE_DOMOTICZ
+                setBoolSetting("dczEnabled", dczEnabled, DOMOTICZ_ENABLED);
+            #endif
 
             // Clean wifi networks
             int i = 0;
@@ -397,6 +406,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_INFLUXDB
                 influxDBConfigure();
             #endif
+            #if ENABLE_DOMOTICZ
+                domoticzConfigure();
+            #endif
             mqttConfigure();
 
             #if ENABLE_RF
@@ -432,7 +444,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 void _wsStart(uint32_t client_id) {
 
     char chipid[6];
-    sprintf(chipid, "%06X", ESP.getChipId());
+    sprintf_P(chipid, PSTR("%06X"), ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -460,7 +472,7 @@ void _wsStart(uint32_t client_id) {
         root["chipid"] = chipid;
         root["mac"] = WiFi.macAddress();
         root["device"] = String(DEVICE);
-        root["hostname"] = getSetting("hostname", HOSTNAME);
+        root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
 
@@ -524,12 +536,13 @@ void _wsStart(uint32_t client_id) {
         #if ENABLE_DOMOTICZ
 
             root["dczVisible"] = 1;
+            root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
             root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
             root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
             JsonArray& dczRelayIdx = root.createNestedArray("dczRelayIdx");
             for (byte i=0; i<relayCount(); i++) {
-                dczRelayIdx.add(relayToIdx(i));
+                dczRelayIdx.add(domoticzIdx(i));
             }
 
             #if ENABLE_DHT
@@ -614,7 +627,7 @@ void _wsStart(uint32_t client_id) {
             root["powPowerFactor"] = String(getPowerFactor(), 2);
         #endif
 
-        #ifdef SONOFF_RFBRIDGE
+        #ifdef ITEAD_SONOFF_RFBRIDGE
         root["rfbVisible"] = 1;
         root["rfbCount"] = relayCount();
         JsonArray& rfb = root.createNestedArray("rfb");
@@ -782,7 +795,7 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         char *p = ltrim(value);
 
         // The response will be a 404 NOT FOUND if the resource is not available
-        if (*value == NULL) {
+        if (!value) {
             DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
             request->send(404);
             return;
@@ -807,7 +820,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Store it
     web_api_t api;
     char buffer[40];
-    snprintf(buffer, 39, "/api/%s", url);
+    snprintf_P(buffer, 39, PSTR("/api/%s"), url);
     api.url = strdup(buffer);
     api.key = strdup(key);
     api.getFn = getFn;
@@ -919,7 +932,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     }
 
     char buffer[100];
-    sprintf(buffer, "attachment; filename=\"%s-backup.json\"", (char *) getSetting("hostname").c_str());
+    sprintf_P(buffer, PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
     response->setLength();
     request->send(response);
@@ -1083,7 +1096,7 @@ void webSetup() {
     mqttRegister(wsMQTTCallback);
 
     // Cache the Last-Modifier header value
-    sprintf(_last_modified, "%s %s GMT", __DATE__, __TIME__);
+    sprintf_P(_last_modified, PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Setup webserver
     _server->addHandler(&ws);
@@ -1102,7 +1115,7 @@ void webSetup() {
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files
-    #if not EMBEDDED_WEB
+    #if ENABLE_SPIFFS
         _server->serveStatic("/", SPIFFS, "/")
             .setLastModified(_last_modified)
             .setFilter([](AsyncWebServerRequest *request) -> bool {

@@ -4,42 +4,69 @@
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-// GENERAL
+// DEBUG
 //------------------------------------------------------------------------------
 
-#define SERIAL_BAUDRATE         115200          // Debugging console boud rate
-#define HOSTNAME                DEVICE          // Hostname
-#define UPTIME_OVERFLOW         4294967295      // Uptime overflow value
+// Serial debug log
 
-//--------------------------------------------------------------------------------
-// DEBUG
-//--------------------------------------------------------------------------------
-
+#ifndef ENABLE_SERIAL_DEBUG
+#define ENABLE_SERIAL_DEBUG     1               // Enable serial debug log
+#endif
 #ifndef DEBUG_PORT
 #define DEBUG_PORT              Serial          // Default debugging port
 #endif
 
-// Uncomment and configure these lines to enable remote debug via udpDebug
+//------------------------------------------------------------------------------
+
+// UDP debug log
 // To receive the message son the destination computer use nc:
 // nc -ul 8111
 
-//#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
-//#define DEBUG_UDP_PORT          8113
+#ifndef ENABLE_UDP_DEBUG
+#define ENABLE_UDP_DEBUG        0               // Enable UDP debug log
+#endif
+#define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+#define DEBUG_UDP_PORT          8113
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+// General debug options and macros
+#define DEBUG_MESSAGE_MAX_LENGTH    80
+
+#if (ENABLE_SERIAL_DEBUG==1) || (ENABLE_UDP_DEBUG==1)
+    #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
+    #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
+#endif
+
+#ifndef DEBUG_MSG
+    #define DEBUG_MSG(...)
+    #define DEBUG_MSG_P(...)
+#endif
+
+//------------------------------------------------------------------------------
+// TERMINAL
+//------------------------------------------------------------------------------
+
+#ifndef ENABLE_TERMINAL
+#define ENABLE_TERMINAL         1               // Enable terminal commands
+#endif
+
+//------------------------------------------------------------------------------
 // EEPROM
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
+#define EEPROM_SIZE             4096            // EEPROM size in bytes
 #define EEPROM_RELAY_STATUS     0               // Address for the relay status (1 byte)
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
 #define EEPROM_DATA_END         6               // End of custom EEPROM data block
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // HEARTBEAT
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define HEARTBEAT_INTERVAL          300000      // Interval between heartbeat messages (in ms)
+#define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
 
 // Topics that will be reported in heartbeat
 #define HEARTBEAT_REPORT_STATUS     1
@@ -56,9 +83,9 @@
 #define HEARTBEAT_REPORT_VERSION    1
 #define HEARTBEAT_REPORT_INTERVAL   0
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // RESET
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define CUSTOM_RESET_HARDWARE   1               // Reset from hardware button
 #define CUSTOM_RESET_WEB        2               // Reset from web interface
@@ -89,9 +116,9 @@ PROGMEM const char* const custom_reset_string[] = {
     custom_reset_nofuss, custom_reset_upgrade, custom_reset_factory
 };
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // BUTTON
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
 #define BUTTON_DBLCLICK_DELAY       500         // Time in ms to wait for a second (or third...) click
@@ -115,9 +142,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define BUTTON_MODE_PULSE           6
 #define BUTTON_MODE_FACTORY         7
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // RELAY
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define RELAY_MODE_OFF          0
 #define RELAY_MODE_ON           1
@@ -156,22 +183,27 @@ PROGMEM const char* const custom_reset_string[] = {
 // Allowed actual relay changes inside requests flood protection window
 #define RELAY_FLOOD_CHANGES     5
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // I18N
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define TMP_CELSIUS             0
 #define TMP_FAHRENHEIT          1
 #define TMP_UNITS               TMP_CELSIUS // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // LED
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 // All defined LEDs in the board can be managed through MQTT
 // except the first one when LED_AUTO is set to 1.
-// If LED_AUTO is set to 1 the board will use first defined LED to show wifi status.
+// If LED_AUTO is set to 1 the board will a defined LED to show wifi status.
 #define LED_AUTO                1
+
+// LED # to use as WIFI status indicator
+#ifndef WIFI_LED
+#define WIFI_LED                1
+#endif
 
 // -----------------------------------------------------------------------------
 // WIFI & WEB
@@ -203,6 +235,15 @@ PROGMEM const char* const custom_reset_string[] = {
 // This option builds the firmware with the web interface embedded.
 #ifndef EMBEDDED_WEB
 #define EMBEDDED_WEB            1
+#endif
+
+// -----------------------------------------------------------------------------
+// SPIFFS
+// -----------------------------------------------------------------------------
+
+// Do not add support for SPIFFS by default
+#ifndef ENABLE_SPIFFS
+#define ENABLE_SPIFFS           0
 #endif
 
 // -----------------------------------------------------------------------------
@@ -290,7 +331,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // I2C
 // -----------------------------------------------------------------------------
 
+#ifndef ENABLE_I2C
 #define ENABLE_I2C              0           // I2C enabled
+#endif
 #define I2C_SDA_PIN             4           // SDA GPIO
 #define I2C_SCL_PIN             14          // SCL GPIO
 #define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time
@@ -328,8 +371,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef ENABLE_DOMOTICZ
-#define ENABLE_DOMOTICZ         1               // Enable Domoticz support by default
+#define ENABLE_DOMOTICZ         1               // Build with domoticz support
 #endif
+#define DOMOTICZ_ENABLED        1               // Enable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
 

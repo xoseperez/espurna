@@ -23,6 +23,13 @@ Embedis embedis(Serial);
 // Settings
 // -----------------------------------------------------------------------------
 
+size_t settingsMaxSize() {
+    size_t size = EEPROM_SIZE;
+    if (size > SPI_FLASH_SEC_SIZE) size = SPI_FLASH_SEC_SIZE;
+    size = (size + 3) & (~3);
+    return size;
+}
+
 unsigned long settingsSize() {
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROM.read(pos)) {
@@ -299,5 +306,5 @@ void saveSettings() {
     #if not AUTO_SAVE
         EEPROM.commit();
     #endif
-    settingsDump();
+    //settingsDump();
 }

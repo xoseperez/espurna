@@ -23,7 +23,7 @@ void fauxmoConfigure() {
 void fauxmoSetup() {
     fauxmoConfigure();
     unsigned int relays = relayCount();
-    String hostname = getSetting("hostname", HOSTNAME);
+    String hostname = getSetting("hostname");
     if (relays == 1) {
         fauxmo.addDevice(hostname.c_str());
     } else {

@@ -25,7 +25,7 @@ std::vector<button_t> _buttons;
 void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
-    sprintf(payload, "%d", event);
+    sprintf_P(payload, PSTR("%d"), event);
     mqttSend(MQTT_TOPIC_BUTTON, id, payload);
 }
 #endif
@@ -119,7 +119,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
 void buttonSetup() {
 
-    #ifdef SONOFF_DUAL
+    #ifdef ITEAD_SONOFF_DUAL
 
         unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
@@ -163,7 +163,7 @@ void buttonSetup() {
 
 void buttonLoop() {
 
-    #ifdef SONOFF_DUAL
+    #ifdef ITEAD_SONOFF_DUAL
 
         if (Serial.available() >= 4) {
 

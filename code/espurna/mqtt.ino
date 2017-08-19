@@ -92,7 +92,7 @@ void _mqttFlush() {
         root[element.topic] = element.message;
     }
     if (ntpConnected()) root[MQTT_TOPIC_TIME] = ntpDateTime();
-    root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname", HOSTNAME);
+    root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname");
     root[MQTT_TOPIC_IP] = getIP();
 
     String output;
@@ -129,7 +129,7 @@ void mqttSend(const char * topic, const char * message) {
 
 void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
     char buffer[strlen(topic)+5];
-    sprintf(buffer, "%s/%d", topic, index);
+    sprintf_P(buffer, PSTR("%s/%d"), topic, index);
     mqttSend(buffer, message, force);
 }
 

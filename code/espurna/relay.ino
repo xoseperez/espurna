@@ -123,15 +123,15 @@ void relayPulseMode(unsigned int value, bool report) {
     /*
     if (report) {
         char topic[strlen(MQTT_TOPIC_RELAY) + 10];
-        sprintf(topic, "%s/pulse", MQTT_TOPIC_RELAY);
+        sprintf_P(topic, PSTR("%s/pulse"), MQTT_TOPIC_RELAY);
         char value[2];
-        sprintf(value, "%d", value);
+        sprintf_P(value, PSTR("%d"), value);
         mqttSend(topic, value);
     }
     */
 
     char message[20];
-    sprintf(message, "{\"relayPulseMode\": %d}", value);
+    sprintf_P(message, PSTR("{\"relayPulseMode\": %d}"), value);
     wsSend(message);
 
 }
@@ -153,7 +153,15 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     bool changed = false;
 
     #if TRACK_RELAY_STATUS
-    if (relayStatus(id) != status) {
+    if (relayStatus(id) == status) {
+        if (_relays[id].scheduled) {
+            DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled change cancelled\n"), id);
+            _relays[id].scheduled = false;
+            _relays[id].scheduledStatus = status;
+            _relays[id].scheduledReport = false;
+            changed = true;
+        }
+    } else {
     #endif
 
         unsigned int currentTime = millis();
@@ -291,14 +299,14 @@ void relaySetupAPI() {
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
 
         char url[15];
-        sprintf(url, "%s/%d", MQTT_TOPIC_RELAY, relayID);
+        sprintf_P(url, PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
 
         char key[10];
-        sprintf(key, "%s%d", MQTT_TOPIC_RELAY, relayID);
+        sprintf_P(key, PSTR("%s%d"), MQTT_TOPIC_RELAY, relayID);
 
         apiRegister(url, key,
             [relayID](char * buffer, size_t len) {
-				snprintf(buffer, len, "%d", relayStatus(relayID) ? 1 : 0);
+				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
             },
             [relayID](const char * payload) {
                 unsigned int value = payload[0] - '0';
@@ -354,7 +362,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         #endif
 
         char buffer[strlen(MQTT_TOPIC_RELAY) + 3];
-        sprintf(buffer, "%s/+", MQTT_TOPIC_RELAY);
+        sprintf_P(buffer, PSTR("%s/+"), MQTT_TOPIC_RELAY);
         mqttSubscribe(buffer);
 
     }
@@ -404,7 +412,7 @@ void relaySetupMQTT() {
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
     char buffer[10];
-    sprintf(buffer, "%s,id=%d", MQTT_TOPIC_RELAY, id);
+    sprintf_P(buffer, PSTR("%s,id=%d"), MQTT_TOPIC_RELAY, id);
     influxDBSend(buffer, relayStatus(id) ? "1" : "0");
 }
 #endif
@@ -467,11 +475,7 @@ void relayLoop(void) {
         unsigned int currentTime = millis();
         bool status = _relays[id].scheduledStatus;
 
-        #if TRACK_RELAY_STATUS
-        if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
-        #else
         if (_relays[id].scheduled && currentTime >= _relays[id].scheduledStatusTime) {
-        #endif
 
             DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, status ? "ON" : "OFF");
 
@@ -496,7 +500,7 @@ void relayLoop(void) {
             }
 
             #if ENABLE_DOMOTICZ
-                relayDomoticzSend(id);
+                domoticzSendRelay(id);
             #endif
 
             #if ENABLE_INFLUXDB
