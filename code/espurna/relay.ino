@@ -500,7 +500,7 @@ void relayLoop(void) {
             }
 
             #if ENABLE_DOMOTICZ
-                relayDomoticzSend(id);
+                domoticzSendRelay(id);
             #endif
 
             #if ENABLE_INFLUXDB

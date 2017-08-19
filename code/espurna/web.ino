@@ -207,6 +207,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         #if ENABLE_FAUXMO
             bool fauxmoEnabled = false;
         #endif
+        #if ENABLE_DOMOTICZ
+            bool dczEnabled = false;
+        #endif
         unsigned int network = 0;
         unsigned int dczRelayIdx = 0;
         String adminPass;
@@ -298,6 +301,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_FAUXMO
                 if (key == "fauxmoEnabled") { fauxmoEnabled = true; continue; }
             #endif
+            #if ENABLE_DOMOTICZ
+                if (key == "dczEnabled") { dczEnabled = true; continue; }
+            #endif
 
             if (key == "ssid") {
                 key = key + String(network);
@@ -341,6 +347,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if ENABLE_FAUXMO
                 setBoolSetting("fauxmoEnabled", fauxmoEnabled, FAUXMO_ENABLED);
             #endif
+            #if ENABLE_DOMOTICZ
+                setBoolSetting("dczEnabled", dczEnabled, DOMOTICZ_ENABLED);
+            #endif
 
             // Clean wifi networks
             int i = 0;
@@ -382,6 +391,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #endif
             #if ENABLE_INFLUXDB
                 influxDBConfigure();
+            #endif
+            #if ENABLE_DOMOTICZ
+                domoticzConfigure();
             #endif
             mqttConfigure();
 
@@ -505,12 +517,13 @@ void _wsStart(uint32_t client_id) {
         #if ENABLE_DOMOTICZ
 
             root["dczVisible"] = 1;
+            root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
             root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
             root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
             JsonArray& dczRelayIdx = root.createNestedArray("dczRelayIdx");
             for (byte i=0; i<relayCount(); i++) {
-                dczRelayIdx.add(relayToIdx(i));
+                dczRelayIdx.add(domoticzIdx(i));
             }
 
             #if ENABLE_DHT
