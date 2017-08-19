@@ -130,7 +130,7 @@ void hardwareSetup() {
         Serial.begin(SERIAL_BAUDRATE);
     #endif
 
-    #if not EMBEDDED_WEB
+    #if ENABLE_SPIFFS
         SPIFFS.begin();
     #endif
 
@@ -173,7 +173,7 @@ void welcome() {
     DEBUG_MSG_P(PSTR("Firmware size: %d bytes\n"), ESP.getSketchSize());
     DEBUG_MSG_P(PSTR("Free firmware space: %d bytes\n"), ESP.getFreeSketchSpace());
 
-    #if not EMBEDDED_WEB
+    #if ENABLE_SPIFFS
         FSInfo fs_info;
         if (SPIFFS.info(fs_info)) {
             DEBUG_MSG_P(PSTR("File system total size: %d bytes\n"), fs_info.totalBytes);

@@ -999,7 +999,7 @@ void webSetup() {
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files
-    #if not EMBEDDED_WEB
+    #if ENABLE_SPIFFS
         _server->serveStatic("/", SPIFFS, "/")
             .setLastModified(_last_modified)
             .setFilter([](AsyncWebServerRequest *request) -> bool {

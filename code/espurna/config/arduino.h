@@ -57,5 +57,6 @@
 //#define ENABLE_NOFUSS         1
 //#define ENABLE_RF             1
 //#define ENABLE_SERIAL_DEBUG   0
+//#define ENABLE_SPIFFS         1
 //#define ENABLE_TERMINAL       0
 //#define ENABLE_UDP_DEBUG      1
