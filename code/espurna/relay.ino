@@ -153,7 +153,15 @@ bool relayStatus(unsigned char id, bool status, bool report) {
     bool changed = false;
 
     #if TRACK_RELAY_STATUS
-    if (relayStatus(id) != status) {
+    if (relayStatus(id) == status) {
+        if (_relays[id].scheduled) {
+            DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled change cancelled\n"), id);
+            _relays[id].scheduled = false;
+            _relays[id].scheduledStatus = status;
+            _relays[id].scheduledReport = false;
+            changed = true;
+        }
+    } else {
     #endif
 
         unsigned int currentTime = millis();
@@ -467,11 +475,7 @@ void relayLoop(void) {
         unsigned int currentTime = millis();
         bool status = _relays[id].scheduledStatus;
 
-        #if TRACK_RELAY_STATUS
-        if (relayStatus(id) != status && currentTime >= _relays[id].scheduledStatusTime) {
-        #else
         if (_relays[id].scheduled && currentTime >= _relays[id].scheduledStatusTime) {
-        #endif
 
             DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, status ? "ON" : "OFF");
 
