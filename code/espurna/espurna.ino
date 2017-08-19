@@ -176,8 +176,29 @@ void welcome() {
     DEBUG_MSG_P(PSTR("Flash size (CHIP): %8u bytes / %4d sectors\n"), ESP.getFlashChipRealSize(), sectors(ESP.getFlashChipRealSize()));
     DEBUG_MSG_P(PSTR("Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
     DEBUG_MSG_P(PSTR("OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
+    #if ENABLE_SPIFFS
+        FSInfo fs_info;
+        bool fs = SPIFFS.info(fs_info);
+        if (fs) {
+            DEBUG_MSG_P(PSTR("SPIFFS size:       %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
+        }
+    #else
+        DEBUG_MSG_P(PSTR("SPIFFS size:       %8u bytes / %4d sectors\n"), 0, 0);
+    #endif
     DEBUG_MSG_P(PSTR("EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
     DEBUG_MSG_P(PSTR("Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+
+    #if ENABLE_SPIFFS
+        if (fs) {
+            DEBUG_MSG_P(PSTR("\n"));
+            DEBUG_MSG_P(PSTR("SPIFFS total size: %8u bytes\n"), fs_info.totalBytes);
+            DEBUG_MSG_P(PSTR("       used size:  %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("       block size: %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("       page size:  %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("       max files:  %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("       max length: %8u\n"), fs_info.maxPathLength);
+        }
+    #endif
 
     DEBUG_MSG_P(PSTR("\n"));
     unsigned char custom_reset = customReset();
@@ -189,19 +210,6 @@ void welcome() {
         DEBUG_MSG_P(PSTR("Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
     DEBUG_MSG_P(PSTR("Free heap: %u bytes\n"), ESP.getFreeHeap());
-
-    #if ENABLE_SPIFFS
-        FSInfo fs_info;
-        if (SPIFFS.info(fs_info)) {
-            DEBUG_MSG_P(PSTR("\n"));
-            DEBUG_MSG_P(PSTR("File system total size: %d bytes\n"), fs_info.totalBytes);
-            DEBUG_MSG_P(PSTR("            used size : %d bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("            block size: %d bytes\n"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("            page size : %d bytes\n"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("            max files : %d\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("            max length: %d\n"), fs_info.maxPathLength);
-        }
-    #endif
 
     DEBUG_MSG_P(PSTR("\n\n"));
 
