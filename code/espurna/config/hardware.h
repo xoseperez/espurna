@@ -786,6 +786,29 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
+// EX-Store Wifi Relay v3.1
+// https://ex-store.de/ESP8266-WiFi-Relay-V31
+// -----------------------------------------------------------------------------
+
+#elif defined(EXS_WIFI_RELAY_V31)
+
+    // Untested
+
+    // Info
+    #define MANUFACTURER        "EXS"
+    #define DEVICE              "WIFI_RELAY_V31"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          13
+    #define RELAY1_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY1_RESET_PIN    12
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 

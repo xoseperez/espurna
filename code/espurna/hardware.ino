@@ -26,7 +26,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
@@ -34,7 +34,7 @@ void hwUpwardsCompatibility() {
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
         setSetting("relayGPIO", 1, 5);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_BASIC)
 
@@ -44,7 +44,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_TH)
 
@@ -54,7 +54,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_SV)
 
@@ -64,7 +64,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_TOUCH)
 
@@ -74,7 +74,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_POW)
 
@@ -84,7 +84,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
         setSetting("selGPIO", 5);
         setSetting("cf1GPIO", 13);
         setSetting("cfGPIO", 14);
@@ -106,7 +106,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_4CH)
 
@@ -125,10 +125,10 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 2, 5);
         setSetting("relayGPIO", 3, 4);
         setSetting("relayGPIO", 4, 15);
-        setSetting("relayLogic", 1, 0);
-        setSetting("relayLogic", 2, 0);
-        setSetting("relayLogic", 3, 0);
-        setSetting("relayLogic", 4, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 4, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SLAMPHER)
 
@@ -138,7 +138,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_S20)
 
@@ -148,7 +148,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ELECTRODRAGON_WIFI_IOT)
 
@@ -161,8 +161,8 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 2, 2);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayGPIO", 2, 13);
-        setSetting("relayLogic", 1, 0);
-        setSetting("relayLogic", 2, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
     #elif defined(WORKCHOICE_ECOPLUG)
 
@@ -172,7 +172,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 13);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 15);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(JANGOE_WIFI_RELAY_NC)
 
@@ -183,8 +183,8 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 2, 2);
         setSetting("relayGPIO", 1, 2);
         setSetting("relayGPIO", 2, 14);
-        setSetting("relayLogic", 1, 1);
-        setSetting("relayLogic", 2, 1);
+        setSetting("relayType", 1, RELAY_TYPE_INVERSE);
+        setSetting("relayType", 2, RELAY_TYPE_INVERSE);
 
     #elif defined(JANGOE_WIFI_RELAY_NO)
 
@@ -195,8 +195,8 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 2, 2);
         setSetting("relayGPIO", 1, 2);
         setSetting("relayGPIO", 2, 14);
-        setSetting("relayLogic", 1, 0);
-        setSetting("relayLogic", 2, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
     #elif defined(OPENENERGYMONITOR_MQTT_RELAY)
 
@@ -206,15 +206,15 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(JORGEGARCIA_WIFI_RELAYS)
 
         setSetting("board", 19);
         setSetting("relayGPIO", 1, 0);
-        setSetting("relayLogic", 1, 1);
         setSetting("relayGPIO", 2, 2);
-        setSetting("relayLogic", 2, 1);
+        setSetting("relayType", 1, RELAY_TYPE_INVERSE);
+        setSetting("relayType", 2, RELAY_TYPE_INVERSE);
 
     #elif defined(AITHINKER_AI_LIGHT)
 
@@ -250,7 +250,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(TINKERMAN_ESPURNA_H)
 
@@ -260,7 +260,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 4);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 1);
+        setSetting("relayType", 1, RELAY_TYPE_INVERSE);
         setSetting("selGPIO", 2);
         setSetting("cf1GPIO", 13);
         setSetting("cfGPIO", 14);
@@ -321,10 +321,10 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 2, 5);
         setSetting("relayGPIO", 3, 4);
         setSetting("relayGPIO", 4, 15);
-        setSetting("relayLogic", 1, 0);
-        setSetting("relayLogic", 2, 0);
-        setSetting("relayLogic", 3, 0);
-        setSetting("relayLogic", 4, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 4, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_B1)
 
@@ -356,7 +356,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 9);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 5);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_T1_2CH)
 
@@ -369,8 +369,8 @@ void hwUpwardsCompatibility() {
         setSetting("btnRelay", 2, 2);
         setSetting("relayGPIO", 1, 12);
         setSetting("relayGPIO", 2, 4);
-        setSetting("relayLogic", 1, 0);
-        setSetting("relayLogic", 2, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_T1_3CH)
 
@@ -386,9 +386,9 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 1, 12);
         setSetting("relayGPIO", 2, 5);
         setSetting("relayGPIO", 3, 4);
-        setSetting("relayLogic", 1, 0);
-        setSetting("relayLogic", 2, 0);
-        setSetting("relayLogic", 3, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 3, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_RF)
 
@@ -398,7 +398,7 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 12);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #elif defined(WION_50055)
 
@@ -408,7 +408,16 @@ void hwUpwardsCompatibility() {
         setSetting("btnGPIO", 1, 13);
         setSetting("btnRelay", 1,1);
         setSetting("relayGPIO", 1, 15);
-        setSetting("relayLogic", 1, 0);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+    #elif defined(EXS_WIFI_RELAY_V31)
+
+        setSetting("board", 35);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnRelay", 1, 1);
+        setSetting("relayGPIO", 1, 13);
+        setSetting("relayResetGPIO", 1, 12);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
     #else
 

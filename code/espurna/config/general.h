@@ -188,7 +188,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_FLOOD_CHANGES     5
 
 // Pulse with in milliseconds for a latched relay
-#define RELAY_LATCHING_PULSE    50
+#define RELAY_LATCHING_PULSE    10
 
 //------------------------------------------------------------------------------
 // I18N

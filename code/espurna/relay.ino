@@ -67,15 +67,16 @@ void relayProviderStatus(unsigned char id, bool status) {
         } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
             digitalWrite(_relays[id].pin, !status);
         } else if (_relays[id].type == RELAY_TYPE_LATCHED) {
+            digitalWrite(_relays[id].pin, LOW);
+            digitalWrite(_relays[id].reset_pin, LOW);
             if (status) {
                 digitalWrite(_relays[id].pin, HIGH);
-                delay(RELAY_LATCHING_PULSE);
-                digitalWrite(_relays[id].pin, LOW);
             } else {
                 digitalWrite(_relays[id].reset_pin, HIGH);
-                delay(RELAY_LATCHING_PULSE);
-                digitalWrite(_relays[id].reset_pin, LOW);
             }
+            delay(RELAY_LATCHING_PULSE);
+            digitalWrite(_relays[id].pin, LOW);
+            digitalWrite(_relays[id].reset_pin, LOW);
         }
     #endif
 
