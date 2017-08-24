@@ -117,7 +117,6 @@ void wifiStatus() {
 
 void wifiSetup() {
 
-    WiFi.persistent(false);
     wifiConfigure();
 
     // Message callbacks
