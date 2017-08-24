@@ -762,7 +762,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Store it
     web_api_t api;
     char buffer[40];
-    snprintf_P(buffer, 39, PSTR("/api/%s"), url);
+    snprintf_P(buffer, strlen(buffer), PSTR("/api/%s"), url);
     api.url = strdup(buffer);
     api.key = strdup(key);
     api.getFn = getFn;

@@ -72,7 +72,7 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
     unsigned int idx = getSetting(key).toInt();
     if (idx > 0) {
         char payload[128];
-        snprintf(payload, 128, "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
+        snprintf(payload, strlen(payload), "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
         mqttSendRaw(getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
     }
 }
