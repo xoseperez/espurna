@@ -14,7 +14,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 typedef struct {
     unsigned char pin;
-    bool reverse;
+    unsigned char type;
+    unsigned char reset_pin;
     unsigned char led;
     unsigned long delay_on;
     unsigned long delay_off;
@@ -61,7 +62,21 @@ void relayProviderStatus(unsigned char id, bool status) {
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
-        digitalWrite(_relays[id].pin, _relays[id].reverse ? !status : status);
+        if (_relays[id].type == RELAY_TYPE_NORMAL) {
+            digitalWrite(_relays[id].pin, status);
+        } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
+            digitalWrite(_relays[id].pin, !status);
+        } else if (_relays[id].type == RELAY_TYPE_LATCHED) {
+            if (status) {
+                digitalWrite(_relays[id].pin, HIGH);
+                delay(RELAY_LATCHING_PULSE);
+                digitalWrite(_relays[id].pin, LOW);
+            } else {
+                digitalWrite(_relays[id].reset_pin, HIGH);
+                delay(RELAY_LATCHING_PULSE);
+                digitalWrite(_relays[id].reset_pin, LOW);
+            }
+        }
     #endif
 
 }
@@ -83,8 +98,13 @@ bool relayProviderStatus(unsigned char id) {
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
-        bool status = (digitalRead(_relays[id].pin) == HIGH);
-        return _relays[id].reverse ? !status : status;
+        if (_relays[id].type == RELAY_TYPE_NORMAL) {
+            return (digitalRead(_relays[id].pin) == HIGH);
+        } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
+            return (digitalRead(_relays[id].pin) == LOW);
+        } else if (_relays[id].type == RELAY_TYPE_LATCHED) {
+            return _relays[id].scheduledStatus;
+        }
     #endif
 
 }
@@ -428,23 +448,23 @@ void relaySetup() {
     #ifdef DUMMY_RELAY_COUNT
 
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-            _relays.push_back((relay_t) {0, 0});
+            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL});
             _relays[i].scheduled = false;
         }
 
     #else
 
         #ifdef RELAY1_PIN
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_PIN_INVERSE, RELAY1_LED, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_LED, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
         #endif
         #ifdef RELAY2_PIN
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_PIN_INVERSE, RELAY2_LED, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_LED, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
         #endif
         #ifdef RELAY3_PIN
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_PIN_INVERSE, RELAY3_LED, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_LED, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
         #endif
         #ifdef RELAY4_PIN
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_PIN_INVERSE, RELAY4_LED, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_LED, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
         #endif
 
     #endif

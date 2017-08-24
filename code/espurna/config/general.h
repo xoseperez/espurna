@@ -151,6 +151,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_MODE_SAME         2
 #define RELAY_MODE_TOOGLE       3
 
+#define RELAY_TYPE_NORMAL       0
+#define RELAY_TYPE_INVERSE      1
+#define RELAY_TYPE_LATCHED      2
+
 #define RELAY_SYNC_ANY          0
 #define RELAY_SYNC_NONE_OR_ONE  1
 #define RELAY_SYNC_ONE          2
@@ -182,6 +186,9 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Allowed actual relay changes inside requests flood protection window
 #define RELAY_FLOOD_CHANGES     5
+
+// Pulse with in milliseconds for a latched relay
+#define RELAY_LATCHING_PULSE    50
 
 //------------------------------------------------------------------------------
 // I18N
