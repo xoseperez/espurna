@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_DHT
+#if DHT_SUPPORT
 
 #include <DHT.h>
 #include <Adafruit_Sensor.h>
@@ -74,7 +74,7 @@ void dhtLoop() {
             mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
 
             // Send to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
             {
                 domoticzSend("dczTmpIdx", 0, temperature);
                 int status;
@@ -93,7 +93,7 @@ void dhtLoop() {
             }
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
                 influxDBSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
                 influxDBSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
             #endif

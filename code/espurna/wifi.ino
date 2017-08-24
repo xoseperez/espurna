@@ -27,7 +27,7 @@ String getNetwork() {
 }
 
 void wifiDisconnect() {
-    #if ENABLE_HLW8012
+    #if HLW8012_SUPPORT
         hlw8012Enable(false);
     #endif
     jw.disconnect();
@@ -122,7 +122,7 @@ void wifiSetup() {
     // Message callbacks
     jw.onMessage([](justwifi_messages_t code, char * parameter) {
 
-		#if ENABLE_SERIAL_DEBUG || ENABLE_UDP_DEBUG
+		#if DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT
 
 		    if (code == MESSAGE_SCANNING) {
 		        DEBUG_MSG_P(PSTR("[WIFI] Scanning\n"));
@@ -179,7 +179,7 @@ void wifiSetup() {
 		#endif
 
         // Configure mDNS
-        #if ENABLE_MDNS
+        #if MDNS_SUPPORT
     	    if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
                 if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
                     MDNS.addService("http", "tcp", getSetting("webPort", WEBSERVER_PORT).toInt());
@@ -196,7 +196,7 @@ void wifiSetup() {
         }
 
         // Manage POW
-        #if ENABLE_HLW8012
+        #if HLW8012_SUPPORT
             if (code == MESSAGE_CONNECTED) {
                 hlw8012Enable(true);
             }

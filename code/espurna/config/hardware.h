@@ -68,7 +68,7 @@
     // Info
     #define MANUFACTURER        "TINKERMAN"
     #define DEVICE              "ESPURNA_H"
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
 
     // Buttons
     #define BUTTON1_PIN         4
@@ -84,7 +84,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -231,7 +231,7 @@
     // Info
     #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_POW"
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -247,7 +247,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -260,8 +260,8 @@
     #define SERIAL_BAUDRATE     19230
     #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT   2
-    #define ENABLE_SERIAL_DEBUG 0
-    #define ENABLE_TERMINAL     0
+    #define DEBUG_SERIAL_SUPPORT 0
+    #define TERMINAL_SUPPORT     0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -417,7 +417,7 @@
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
     #define DUMMY_RELAY_COUNT   6
     #define TRACK_RELAY_STATUS  0
-    #define ENABLE_TERMINAL     0
+    #define TERMINAL_SUPPORT     0
 
     // Buttons
     #define BUTTON1_PIN         0

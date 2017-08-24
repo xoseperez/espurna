@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_EMON
+#if EMON_SUPPORT
 
 #include <EmonLiteESP.h>
 #include <EEPROM.h>
@@ -188,7 +188,7 @@ void powerMonitorLoop() {
             mqttSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());
 
             // Report values to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
             {
                 char buffer[20];
                 snprintf_P(buffer, strlen(buffer), PSTR("%d;%s"), _emonPower, String(energy_delta, 3).c_str());
@@ -200,7 +200,7 @@ void powerMonitorLoop() {
             }
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
             influxDBSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), _emonPower);
             influxDBSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), String(_emonCurrent, 3).c_str());
             influxDBSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());

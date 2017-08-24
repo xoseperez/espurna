@@ -44,18 +44,18 @@
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
-//#define ENABLE_ANALOG         1
-//#define ENABLE_DHT            1
-//#define ENABLE_DOMOTICZ       0
-//#define ENABLE_DS18B20        1
-//#define ENABLE_EMON           1
-//#define ENABLE_I2C            1
-//#define ENABLE_INFLUXDB       0
-//#define ENABLE_FAUXMO         0
-//#define ENABLE_MDNS           0
-//#define ENABLE_NOFUSS         1
-//#define ENABLE_RF             1
-//#define ENABLE_SERIAL_DEBUG   0
-//#define ENABLE_SPIFFS         1
-//#define ENABLE_TERMINAL       0
-//#define ENABLE_UDP_DEBUG      1
+//#define ALEXA_SUPPORT          0
+//#define ANALOG_SUPPORT         1
+//#define DHT_SUPPORT            1
+//#define DOMOTICZ_SUPPORT       0
+//#define DS18B20_SUPPORT        1
+//#define EMON_SUPPORT           1
+//#define I2C_SUPPORT            1
+//#define INFLUXDB_SUPPORT       0
+//#define MDNS_SUPPORT           0
+//#define NOFUSS_SUPPORT         1
+//#define RF_SUPPORT             1
+//#define DEBUG_SERIAL_SUPPORT   0
+//#define SPIFFS_SUPPORT         1
+//#define TERMINAL_SUPPORT       0
+//#define DEBUG_UDP_SUPPORT      1

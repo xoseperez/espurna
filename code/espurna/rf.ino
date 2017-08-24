@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_RF
+#if RF_SUPPORT
 
 #include <RemoteReceiver.h>
 

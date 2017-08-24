@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_DS18B20
+#if DS18B20_SUPPORT
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -95,11 +95,11 @@ void dsLoop() {
             mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
 
             // Send to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
                 domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
                 influxDBSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
             #endif
 

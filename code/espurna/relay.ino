@@ -429,7 +429,7 @@ void relaySetupMQTT() {
 // InfluxDB
 //------------------------------------------------------------------------------
 
-#if ENABLE_INFLUXDB
+#if INFLUXDB_SUPPORT
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
     char buffer[10];
@@ -520,11 +520,11 @@ void relayLoop(void) {
                 relayWS();
             }
 
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
                 domoticzSendRelay(id);
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
                 relayInfluxDB(id);
             #endif
 

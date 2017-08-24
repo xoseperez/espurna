@@ -7,7 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_HLW8012
+#if HLW8012_SUPPORT
 
 #include <HLW8012.h>
 #include <Hash.h>
@@ -292,7 +292,7 @@ void hlw8012Loop() {
             mqttSend(getSetting("powPFactorTopic", HLW8012_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
 
             // Report values to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
             {
                 char buffer[20];
                 snprintf_P(buffer, strlen(buffer), PSTR("%d;%s"), _hlwPower, String(energy_delta, 3).c_str());
@@ -306,7 +306,7 @@ void hlw8012Loop() {
             }
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
             influxDBSend(getSetting("powPowerTopic", HLW8012_POWER_TOPIC).c_str(), String(_hlwPower).c_str());
             influxDBSend(getSetting("powCurrentTopic", HLW8012_CURRENT_TOPIC).c_str(), String(_hlwCurrent, 3).c_str());
             influxDBSend(getSetting("powVoltageTopic", HLW8012_VOLTAGE_TOPIC).c_str(), String(_hlwVoltage).c_str());

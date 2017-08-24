@@ -6,7 +6,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_INFLUXDB
+#if INFLUXDB_SUPPORT
 
 #include "ESPAsyncTCP.h"
 #include "SyncClient.h"

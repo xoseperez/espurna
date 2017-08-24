@@ -1,7 +1,7 @@
 //--------------------------------------------------------------------------------
 // Custom RF module
 // Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
-// Enable support by passing ENABLE_RF=1 build flag
+// Enable support by passing RF_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #define RF_PIN                  14
@@ -10,7 +10,7 @@
 
 //--------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor
-// Enable support by passing ENABLE_DHT=1 build flag
+// Enable support by passing DHT_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #define DHT_PIN                 14
@@ -27,21 +27,21 @@
 
 //--------------------------------------------------------------------------------
 // Analog sensor
-// Enable support by passing ENABLE_ANALOG=1 build flag
+// Enable support by passing ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #define ANALOG_PIN              0
 #define ANALOG_UPDATE_INTERVAL  60000
 #define ANALOG_TOPIC            "analog"
 
-#if ENABLE_ANALOG
+#if ANALOG_SUPPORT
     #undef ENABLE_ADC_VCC
     #define ENABLE_ADC_VCC      0
 #endif
 
 //--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
-// Enable support by passing ENABLE_DS18B20=1 build flag
+// Enable support by passing DS18B20_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #define DS_PIN                  14
@@ -52,7 +52,7 @@
 // Custom current sensor
 // Check http://tinkerman.cat/your-laundry-is-done/
 // Check http://tinkerman.cat/power-monitoring-sonoff-th-adc121/
-// Enable support by passing ENABLE_EMON=1 build flag
+// Enable support by passing EMON_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #define EMON_ANALOG_PROVIDER    0
@@ -67,7 +67,7 @@
 	#define EMON_REFERENCE_VOLTAGE  1.0
     #define EMON_CURRENT_PRECISION  1
     #define EMON_CURRENT_OFFSET     0.25
-    #if ENABLE_EMON
+    #if EMON_SUPPORT
         #undef ENABLE_ADC_VCC
 		#define ENABLE_ADC_VCC      0
     #endif
@@ -92,7 +92,7 @@
 
 //--------------------------------------------------------------------------------
 // HLW8012 power sensor (Sonoff POW, Espurna H)
-// Enable support by passing ENABLE_HLW8012=1 build flag
+// Enable support by passing HLW8012_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 // GPIOs defined in the hardware.h file

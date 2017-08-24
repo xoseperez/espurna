@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_ANALOG
+#if ANALOG_SUPPORT
 
 // -----------------------------------------------------------------------------
 // ANALOG
@@ -41,12 +41,12 @@ void analogLoop() {
         mqttSend(getSetting("analogTopic", ANALOG_TOPIC).c_str(), String(analog).c_str());
 
         // Send to Domoticz
-        #if ENABLE_DOMOTICZ
+        #if DOMOTICZ_SUPPORT
             domoticzSend("dczAnaIdx", 0, String(analog).c_str());
         #endif
 
         // Send to InfluxDB
-        #if ENABLE_INFLUXDB
+        #if INFLUXDB_SUPPORT
             influxDBSend(MQTT_TOPIC_ANALOG, analog);
         #endif
 

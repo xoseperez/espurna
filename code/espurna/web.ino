@@ -211,7 +211,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             // Skip firmware filename
             if (key.equals("filename")) continue;
 
-            #if ENABLE_HLW8012
+            #if HLW8012_SUPPORT
 
                 if (key == "powExpectedPower") {
                     hlw8012SetExpectedActivePower(value.toInt());
@@ -237,7 +237,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             if (key.startsWith("pow")) continue;
 
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
 
                 if (key == "dczRelayIdx") {
                     if (dczRelayIdx >= relayCount()) continue;
@@ -347,22 +347,22 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             saveSettings();
             wifiConfigure();
             otaConfigure();
-            #if ENABLE_FAUXMO
-                fauxmoConfigure();
+            #if ALEXA_SUPPORT
+                alexaConfigure();
             #endif
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
                 influxDBConfigure();
             #endif
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
                 domoticzConfigure();
             #endif
             mqttConfigure();
 
-            #if ENABLE_RF
+            #if RF_SUPPORT
                 rfBuildCodes();
             #endif
 
-            #if ENABLE_EMON
+            #if EMON_SUPPORT
                 setCurrentRatio(getSetting("emonRatio").toFloat());
             #endif
 
@@ -475,7 +475,7 @@ void _wsStart(uint32_t client_id) {
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 
-        #if ENABLE_DOMOTICZ
+        #if DOMOTICZ_SUPPORT
 
             root["dczVisible"] = 1;
             root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
@@ -487,26 +487,26 @@ void _wsStart(uint32_t client_id) {
                 dczRelayIdx.add(domoticzIdx(i));
             }
 
-            #if ENABLE_DHT
+            #if DHT_SUPPORT
                 root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
                 root["dczHumIdx"] = getSetting("dczHumIdx").toInt();
             #endif
 
-            #if ENABLE_DS18B20
+            #if DS18B20_SUPPORT
                 root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
             #endif
 
-            #if ENABLE_EMON
+            #if EMON_SUPPORT
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
             #endif
 
-            #if ENABLE_ANALOG
+            #if ANALOG_SUPPORT
                 root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
             #endif
 
-            #if ENABLE_HLW8012
+            #if HLW8012_SUPPORT
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
                 root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
@@ -515,7 +515,7 @@ void _wsStart(uint32_t client_id) {
 
         #endif
 
-        #if ENABLE_INFLUXDB
+        #if INFLUXDB_SUPPORT
             root["idbVisible"] = 1;
             root["idbHost"] = getSetting("idbHost");
             root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
@@ -524,29 +524,29 @@ void _wsStart(uint32_t client_id) {
             root["idbPassword"] = getSetting("idbPassword");
         #endif
 
-        #if ENABLE_FAUXMO
-            root["fauxmoVisible"] = 1;
-            root["fauxmoEnabled"] = getSetting("fauxmoEnabled", FAUXMO_ENABLED).toInt() == 1;
+        #if ALEXA_SUPPORT
+            root["alexaVisible"] = 1;
+            root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
         #endif
 
-        #if ENABLE_DS18B20
+        #if DS18B20_SUPPORT
             root["dsVisible"] = 1;
             root["dsTmp"] = getDSTemperatureStr();
         #endif
 
-        #if ENABLE_DHT
+        #if DHT_SUPPORT
             root["dhtVisible"] = 1;
             root["dhtTmp"] = getDHTTemperature();
             root["dhtHum"] = getDHTHumidity();
         #endif
 
-        #if ENABLE_RF
+        #if RF_SUPPORT
             root["rfVisible"] = 1;
             root["rfChannel"] = getSetting("rfChannel", RF_CHANNEL);
             root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
         #endif
 
-        #if ENABLE_EMON
+        #if EMON_SUPPORT
             root["emonVisible"] = 1;
             root["emonApparentPower"] = getApparentPower();
             root["emonCurrent"] = getCurrent();
@@ -554,12 +554,12 @@ void _wsStart(uint32_t client_id) {
             root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
         #endif
 
-        #if ENABLE_ANALOG
+        #if ANALOG_SUPPORT
             root["analogVisible"] = 1;
             root["analogValue"] = getAnalog();
         #endif
 
-        #if ENABLE_HLW8012
+        #if HLW8012_SUPPORT
             root["powVisible"] = 1;
             root["powActivePower"] = getActivePower();
             root["powApparentPower"] = getApparentPower();
@@ -973,7 +973,7 @@ void webSetup() {
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files
-    #if ENABLE_SPIFFS
+    #if SPIFFS_SUPPORT
         _server->serveStatic("/", SPIFFS, "/")
             .setLastModified(_last_modified)
             .setFilter([](AsyncWebServerRequest *request) -> bool {
