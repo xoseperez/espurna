@@ -198,18 +198,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         bool changed = false;
         bool changedMQTT = false;
         bool changedNTP = false;
-        bool apiEnabled = false;
-        bool dstEnabled = false;
-        bool mqttUseJson = false;
-        bool useColor = false;
-        bool useWhite = false;
-        bool useGamma = false;
-        #if ENABLE_FAUXMO
-            bool fauxmoEnabled = false;
-        #endif
-        #if ENABLE_DOMOTICZ
-            bool dczEnabled = false;
-        #endif
+
         unsigned int network = 0;
         unsigned int dczRelayIdx = 0;
         String adminPass;
@@ -291,20 +280,6 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 key = String("adminPass");
             }
 
-            // Checkboxes
-            if (key == "apiEnabled") { apiEnabled = true; continue; }
-            if (key == "ntpDST") { dstEnabled = true; continue; }
-            if (key == "mqttUseJson") { mqttUseJson = true; continue; }
-            if (key == "useColor") { useColor = true; continue; }
-            if (key == "useWhite") { useWhite = true; continue; }
-            if (key == "useGamma") { useGamma = true; continue; }
-            #if ENABLE_FAUXMO
-                if (key == "fauxmoEnabled") { fauxmoEnabled = true; continue; }
-            #endif
-            #if ENABLE_DOMOTICZ
-                if (key == "dczEnabled") { dczEnabled = true; continue; }
-            #endif
-
             if (key == "ssid") {
                 key = key + String(network);
             }
@@ -336,20 +311,6 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
 
         if (webMode == WEB_MODE_NORMAL) {
-
-            // Checkboxes
-            setBoolSetting("apiEnabled", apiEnabled, ENABLE_API);
-            setBoolSetting("ntpDST", dstEnabled, NTP_DAY_LIGHT);
-            setBoolSetting("mqttUseJson", mqttUseJson, MQTT_USE_JSON);
-            setBoolSetting("useColor", useColor, LIGHT_USE_COLOR);
-            setBoolSetting("useWhite", useWhite, LIGHT_USE_WHITE);
-            setBoolSetting("useGamma", useGamma, LIGHT_USE_GAMMA);
-            #if ENABLE_FAUXMO
-                setBoolSetting("fauxmoEnabled", fauxmoEnabled, FAUXMO_ENABLED);
-            #endif
-            #if ENABLE_DOMOTICZ
-                setBoolSetting("dczEnabled", dczEnabled, DOMOTICZ_ENABLED);
-            #endif
 
             // Clean wifi networks
             int i = 0;
