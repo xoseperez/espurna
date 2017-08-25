@@ -19,6 +19,7 @@ ALL_ENVIRONMENTS="
     magichome-led-controller
     huacanxing-h801
     wion-50055
+    exs-wifi-relay-v31
 "
 if [ $# -eq 0 ]; then
     environments=$ALL_ENVIRONMENTS
