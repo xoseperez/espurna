@@ -242,16 +242,16 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef WEB_SUPPORT
-#define WEB_SUPPORT             1           // This enables web support (http, api)
+#define WEB_SUPPORT             1           // Enable web support (http, api)
 #endif
 
 #ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED            1           // This option builds the firmware with the web interface embedded.
+#define WEB_EMBEDDED            1           // Build the firmware with the web interface embedded in
 #endif
 
-// This is not working at the moment
-// Requires ASYNC_TCP_SSL_ENABLED to 1
-#define WEB_USE_SSL             0           // Use HTTPS web interface
+// This is not working at the moment!!
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+#define WEB_SSL_ENABLED         0           // Use HTTPS web interface
 
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
@@ -314,6 +314,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
 #endif
 
+// MQTT OVER SSL
+// Using MQTT over SSL works pretty well but generates problems with the web interface.
+// It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Right now only available when MQTT_USE_ASYNC=1 (default value).
 // You will need the fingerprint for your MQTT server, example for CloudMQTT:
 // $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
 // $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
