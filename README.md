@@ -21,7 +21,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
-    * SSL/TLS support
+    * SSL/TLS support (not on regular builds, requires staging version of Arduino Core for ESP8266)
     * Switch on/off and toggle relays
     * Report button event notifications
     * Enable/disable pulse mode
