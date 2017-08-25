@@ -27,9 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 String getIdentifier() {
-    char identifier[20];
-    sprintf_P(identifier, PSTR("%s_%06X"), DEVICE, ESP.getChipId());
-    return String(identifier);
+    char buffer[20];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), DEVICE, ESP.getChipId());
+    return String(buffer);
 }
 
 void heartbeat() {
@@ -46,7 +46,7 @@ void heartbeat() {
     if (!mqttConnected()) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
-        #if ENABLE_ADC_VCC
+        #if ADC_VCC_ENABLED
             DEBUG_MSG_P(PSTR("[MAIN] Power: %d mV\n"), ESP.getVcc());
         #endif
     }
@@ -75,13 +75,13 @@ void heartbeat() {
     #endif
     #if (HEARTBEAT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
-        #if ENABLE_INFLUXDB
+        #if INFLUXDB_SUPPORT
         influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #endif
     #endif
     #if (HEARTBEAT_REPORT_FREEHEAP)
         mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-        #if ENABLE_INFLUXDB
+        #if INFLUXDB_SUPPORT
         influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
     #endif
@@ -92,7 +92,7 @@ void heartbeat() {
         lightMQTT();
     #endif
     #if (HEARTBEAT_REPORT_VCC)
-    #if ENABLE_ADC_VCC
+    #if ADC_VCC_ENABLED
         mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
     #endif
     #endif
@@ -121,7 +121,7 @@ void hardwareSetup() {
 
     EEPROM.begin(EEPROM_SIZE);
 
-    #if ENABLE_SERIAL_DEBUG
+    #if DEBUG_SERIAL_SUPPORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
         if (customReset() == CUSTOM_RESET_HARDWARE) {
             DEBUG_PORT.setDebugOutput(true);
@@ -130,7 +130,7 @@ void hardwareSetup() {
         Serial.begin(SERIAL_BAUDRATE);
     #endif
 
-    #if ENABLE_SPIFFS
+    #if SPIFFS_SUPPORT
         SPIFFS.begin();
     #endif
 
@@ -172,11 +172,11 @@ void welcome() {
     DEBUG_MSG_P(PSTR("Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
     DEBUG_MSG_P(PSTR("Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("Flash size (SDK):  %8u bytes\n"), ESP.getFlashChipSize());
-    DEBUG_MSG_P(PSTR("Flash size (CHIP): %8u bytes / %4d sectors\n"), ESP.getFlashChipRealSize(), sectors(ESP.getFlashChipRealSize()));
+    DEBUG_MSG_P(PSTR("Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
+    DEBUG_MSG_P(PSTR("Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
     DEBUG_MSG_P(PSTR("Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
     DEBUG_MSG_P(PSTR("OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
-    #if ENABLE_SPIFFS
+    #if SPIFFS_SUPPORT
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
@@ -188,7 +188,7 @@ void welcome() {
     DEBUG_MSG_P(PSTR("EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
     DEBUG_MSG_P(PSTR("Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
 
-    #if ENABLE_SPIFFS
+    #if SPIFFS_SUPPORT
         if (fs) {
             DEBUG_MSG_P(PSTR("\n"));
             DEBUG_MSG_P(PSTR("SPIFFS total size: %8u bytes\n"), fs_info.totalBytes);
@@ -226,7 +226,10 @@ void setup() {
         saveSettings();
     }
 
-    webSetup();
+    #if WEB_SUPPORT
+        webSetup();
+    #endif
+
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
@@ -245,37 +248,37 @@ void setup() {
         rfbSetup();
     #endif
 
-    #if ENABLE_I2C
+    #if I2C_SUPPORT
         i2cSetup();
     #endif
-    #if ENABLE_FAUXMO
-        fauxmoSetup();
+    #if ALEXA_SUPPORT
+        alexaSetup();
     #endif
-    #if ENABLE_NOFUSS
+    #if NOFUSS_SUPPORT
         nofussSetup();
     #endif
-    #if ENABLE_INFLUXDB
+    #if INFLUXDB_SUPPORT
         influxDBSetup();
     #endif
-    #if ENABLE_HLW8012
+    #if HLW8012_SUPPORT
         hlw8012Setup();
     #endif
-    #if ENABLE_DS18B20
+    #if DS18B20_SUPPORT
         dsSetup();
     #endif
-    #if ENABLE_ANALOG
+    #if ANALOG_SUPPORT
         analogSetup();
     #endif
-    #if ENABLE_DHT
+    #if DHT_SUPPORT
         dhtSetup();
     #endif
-    #if ENABLE_RF
+    #if RF_SUPPORT
         rfSetup();
     #endif
-    #if ENABLE_EMON
+    #if EMON_SUPPORT
         powerMonitorSetup();
     #endif
-    #if ENABLE_DOMOTICZ
+    #if DOMOTICZ_SUPPORT
         domoticzSetup();
     #endif
 
@@ -299,31 +302,31 @@ void loop() {
         rfbLoop();
     #endif
 
-    #if ENABLE_TERMINAL
+    #if TERMINAL_SUPPORT
         settingsLoop();
     #endif
-    #if ENABLE_FAUXMO
-        fauxmoLoop();
+    #if ALEXA_SUPPORT
+        alexaLoop();
     #endif
-    #if ENABLE_NOFUSS
+    #if NOFUSS_SUPPORT
         nofussLoop();
     #endif
-    #if ENABLE_HLW8012
+    #if HLW8012_SUPPORT
         hlw8012Loop();
     #endif
-    #if ENABLE_DS18B20
+    #if DS18B20_SUPPORT
         dsLoop();
     #endif
-    #if ENABLE_ANALOG
+    #if ANALOG_SUPPORT
         analogLoop();
     #endif
-    #if ENABLE_DHT
+    #if DHT_SUPPORT
         dhtLoop();
     #endif
-    #if ENABLE_RF
+    #if RF_SUPPORT
         rfLoop();
     #endif
-    #if ENABLE_EMON
+    #if EMON_SUPPORT
         powerMonitorLoop();
     #endif
 

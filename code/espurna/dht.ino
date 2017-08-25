@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_DHT
+#if DHT_SUPPORT
 
 #include <DHT.h>
 #include <Adafruit_Sensor.h>
@@ -29,13 +29,18 @@ unsigned int getDHTHumidity() {
 }
 
 void dhtSetup() {
+
     dht.begin();
-    apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-        dtostrf(_dhtTemperature, len-1, 1, buffer);
-    });
-    apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
-        snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
-    });
+
+    #if WEB_SUPPORT
+        apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
+            dtostrf(_dhtTemperature, len-1, 1, buffer);
+        });
+        apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
+        });
+    #endif
+
 }
 
 void dhtLoop() {
@@ -74,7 +79,7 @@ void dhtLoop() {
             mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
 
             // Send to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
             {
                 domoticzSend("dczTmpIdx", 0, temperature);
                 int status;
@@ -88,20 +93,22 @@ void dhtLoop() {
                     status = HUMIDITY_DRY;
                 }
                 char buffer[2];
-                sprintf_P(buffer, PSTR("%d"), status);
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d"), status);
                 domoticzSend("dczHumIdx", humidity, buffer);
             }
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
                 influxDBSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
                 influxDBSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
             #endif
 
             // Update websocket clients
-            char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
-            wsSend(buffer);
+            #if WEB_SUPPORT
+                char buffer[100];
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
+                wsSend(buffer);
+            #endif
 
         }
 

@@ -6,7 +6,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_I2C
+#if I2C_SUPPORT
 
 #include "brzo_i2c.h"
 

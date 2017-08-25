@@ -4,13 +4,19 @@
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+// GENERAL
+//------------------------------------------------------------------------------
+
+#define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
+
+//------------------------------------------------------------------------------
 // DEBUG
 //------------------------------------------------------------------------------
 
 // Serial debug log
 
-#ifndef ENABLE_SERIAL_DEBUG
-#define ENABLE_SERIAL_DEBUG     1               // Enable serial debug log
+#ifndef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT     1               // Enable serial debug log
 #endif
 #ifndef DEBUG_PORT
 #define DEBUG_PORT              Serial          // Default debugging port
@@ -22,8 +28,8 @@
 // To receive the message son the destination computer use nc:
 // nc -ul 8111
 
-#ifndef ENABLE_UDP_DEBUG
-#define ENABLE_UDP_DEBUG        0               // Enable UDP debug log
+#ifndef DEBUG_UDP_SUPPORT
+#define DEBUG_UDP_SUPPORT        0               // Enable UDP debug log
 #endif
 #define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
 #define DEBUG_UDP_PORT          8113
@@ -33,7 +39,7 @@
 // General debug options and macros
 #define DEBUG_MESSAGE_MAX_LENGTH    80
 
-#if (ENABLE_SERIAL_DEBUG==1) || (ENABLE_UDP_DEBUG==1)
+#if (DEBUG_SERIAL_SUPPORT==1) || (DEBUG_UDP_SUPPORT==1)
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
     #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
 #endif
@@ -47,8 +53,8 @@
 // TERMINAL
 //------------------------------------------------------------------------------
 
-#ifndef ENABLE_TERMINAL
-#define ENABLE_TERMINAL         1               // Enable terminal commands
+#ifndef TERMINAL_SUPPORT
+#define TERMINAL_SUPPORT         1               // Enable terminal commands
 #endif
 
 //------------------------------------------------------------------------------
@@ -151,6 +157,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_MODE_SAME         2
 #define RELAY_MODE_TOOGLE       3
 
+#define RELAY_TYPE_NORMAL       0
+#define RELAY_TYPE_INVERSE      1
+#define RELAY_TYPE_LATCHED      2
+
 #define RELAY_SYNC_ANY          0
 #define RELAY_SYNC_NONE_OR_ONE  1
 #define RELAY_SYNC_ONE          2
@@ -183,6 +193,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // Allowed actual relay changes inside requests flood protection window
 #define RELAY_FLOOD_CHANGES     5
 
+// Pulse with in milliseconds for a latched relay
+#define RELAY_LATCHING_PULSE    10
+
 //------------------------------------------------------------------------------
 // I18N
 //------------------------------------------------------------------------------
@@ -201,27 +214,40 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LED_AUTO                1
 
 // LED # to use as WIFI status indicator
-#ifndef WIFI_LED
-#define WIFI_LED                1
+#ifndef LED_WIFI
+#define LED_WIFI                1
 #endif
 
 // -----------------------------------------------------------------------------
-// WIFI & WEB
+// WIFI
 // -----------------------------------------------------------------------------
 
 #define WIFI_CONNECT_TIMEOUT    30000       // Connecting timeout for WIFI in ms
 #define WIFI_RECONNECT_INTERVAL 120000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
-#define HTTP_USERNAME           "admin"     // HTTP username
-#define ADMIN_PASS              "fibonacci" // Default password
-#define FORCE_CHANGE_PASS       1           // Force the user to change the password if default one
-#define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
-#define WS_TIMEOUT              1800000     // Timeout for secured websocket
-#define WEBSERVER_PORT          80          // HTTP port
-#define DNS_PORT                53          // MDNS port
-#define ENABLE_MDNS             1           // Enable MDNS by default
-#define ENABLE_API              0           // Do not enable API by default
-#define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+#define WIFI_AP_MODE            AP_MODE_ALONE
+
+// Optional hardcoded configuration (up to 2 different networks)
+//#define WIFI1_SSID              "..."
+//#define WIFI1_PASS              "..."
+//#define WIFI1_IP                "192.168.1.201"
+//#define WIFI1_GW                "192.168.1.1"
+//#define WIFI1_MASK              "255.255.255.0"
+//#define WIFI1_DNS               "8.8.8.8"
+//#define WIFI2_SSID              "..."
+//#define WIFI2_PASS              "..."
+
+// -----------------------------------------------------------------------------
+// WEB
+// -----------------------------------------------------------------------------
+
+#ifndef WEB_SUPPORT
+#define WEB_SUPPORT             1           // This enables web support (http, api)
+#endif
+
+#ifndef WEB_EMBEDDED
+#define WEB_EMBEDDED            1           // This option builds the firmware with the web interface embedded.
+#endif
 
 // This is not working at the moment
 // Requires ASYNC_TCP_SSL_ENABLED to 1
@@ -230,27 +256,53 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
 
-#define AP_MODE                 AP_MODE_ALONE
+#define WEB_USERNAME            "admin"     // HTTP username
+#define WEB_FORCE_PASS_CHANGE   1           // Force the user to change the password if default one
+#define WEB_PORT                80          // HTTP port
 
-// This option builds the firmware with the web interface embedded.
-#ifndef EMBEDDED_WEB
-#define EMBEDDED_WEB            1
-#endif
+// -----------------------------------------------------------------------------
+// WEBSOCKETS
+// -----------------------------------------------------------------------------
+
+// This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
+
+#define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
+#define WS_TIMEOUT              1800000     // Timeout for secured websocket
+
+// -----------------------------------------------------------------------------
+// API
+// -----------------------------------------------------------------------------
+
+// This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
+
+#define API_ENABLED              0          // Do not enable API by default
+#define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+
+// -----------------------------------------------------------------------------
+// MDNS
+// -----------------------------------------------------------------------------
+
+#define MDNS_SUPPORT            1           // Enable MDNS by default
 
 // -----------------------------------------------------------------------------
 // SPIFFS
 // -----------------------------------------------------------------------------
 
 // Do not add support for SPIFFS by default
-#ifndef ENABLE_SPIFFS
-#define ENABLE_SPIFFS           0
+#ifndef SPIFFS_SUPPORT
+#define SPIFFS_SUPPORT           0
 #endif
 
 // -----------------------------------------------------------------------------
-// OTA & NOFUSS
+// OTA
 // -----------------------------------------------------------------------------
 
 #define OTA_PORT                8266        // OTA port
+
+// -----------------------------------------------------------------------------
+// NOFUSS
+// -----------------------------------------------------------------------------
+
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
 
@@ -324,6 +376,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
+// Since 1.9.0 the default value is "" for getter and "/set" for setter
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         "/set"
 
@@ -331,9 +384,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // I2C
 // -----------------------------------------------------------------------------
 
-#ifndef ENABLE_I2C
-#define ENABLE_I2C              0           // I2C enabled
+#ifndef I2C_SUPPORT
+#define I2C_SUPPORT              0           // I2C enabled
 #endif
+
 #define I2C_SDA_PIN             4           // SDA GPIO
 #define I2C_SCL_PIN             14          // SCL GPIO
 #define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time
@@ -370,9 +424,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // DOMOTICZ
 // -----------------------------------------------------------------------------
 
-#ifndef ENABLE_DOMOTICZ
-#define ENABLE_DOMOTICZ         1               // Build with domoticz support
+#ifndef DOMOTICZ_SUPPORT
+#define DOMOTICZ_SUPPORT         1               // Build with domoticz support
 #endif
+
 #define DOMOTICZ_ENABLED        1               // Enable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
@@ -381,9 +436,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // INFLUXDB
 // -----------------------------------------------------------------------------
 
-#ifndef ENABLE_INFLUXDB
-#define ENABLE_INFLUXDB         1               // Enable InfluxDB support by default
+#ifndef INFLUXDB_SUPPORT
+#define INFLUXDB_SUPPORT         1               // Enable InfluxDB support by default
 #endif
+
 #define INFLUXDB_PORT           8086            // Default InfluxDB port
 
 // -----------------------------------------------------------------------------
@@ -400,14 +456,14 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 // This setting defines whether Alexa support should be built into the firmware
-#ifndef ENABLE_FAUXMO
-#define ENABLE_FAUXMO       1
+#ifndef ALEXA_SUPPORT
+#define ALEXA_SUPPORT           1
 #endif
 
-// This is default value for the fauxmoEnabled setting that defines whether
+// This is default value for the alexaEnabled setting that defines whether
 // this device should be discoberable and respond to Alexa commands.
-// Both ENABLE_FAUXMO and fauxmoEnabled should be 1 for Alexa support to work.
-#define FAUXMO_ENABLED          1
+// Both ALEXA_SUPPORT and alexaEnabled should be 1 for Alexa support to work.
+#define ALEXA_ENABLED           1
 
 
 // -----------------------------------------------------------------------------

@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_ANALOG
+#if ANALOG_SUPPORT
 
 // -----------------------------------------------------------------------------
 // ANALOG
@@ -20,9 +20,11 @@ void analogSetup() {
 
     pinMode(ANALOG_PIN, INPUT);
 
-    apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
-        snprintf_P(buffer, len, PSTR("%d"), getAnalog());
-    });
+    #if WEB_SUPPORT
+        apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), getAnalog());
+        });
+    #endif
 
 }
 
@@ -41,19 +43,21 @@ void analogLoop() {
         mqttSend(getSetting("analogTopic", ANALOG_TOPIC).c_str(), String(analog).c_str());
 
         // Send to Domoticz
-        #if ENABLE_DOMOTICZ
+        #if DOMOTICZ_SUPPORT
             domoticzSend("dczAnaIdx", 0, String(analog).c_str());
         #endif
 
         // Send to InfluxDB
-        #if ENABLE_INFLUXDB
+        #if INFLUXDB_SUPPORT
             influxDBSend(MQTT_TOPIC_ANALOG, analog);
         #endif
 
         // Update websocket clients
-        char buffer[100];
-        sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
-        wsSend(buffer);
+        #if WEB_SUPPORT
+            char buffer[100];
+            snprintf_P(buffer, sizeof(buffer), PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
+            wsSend(buffer);
+        #endif
 
     }
 

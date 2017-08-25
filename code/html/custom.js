@@ -33,18 +33,45 @@ function validateForm(form) {
 
 }
 
+function valueSet(data, name, value) {
+    for (var i in data) {
+        if (data[i]['name'] == name) {
+            data[i]['value'] = value;
+            return;
+        }
+    }
+    data.push({'name': name, 'value': value});
+}
+
 function doUpdate() {
+
     var form = $("#formSave");
+
     if (validateForm(form)) {
+
+        // Get data
         var data = form.serializeArray();
+
+        // Post-process
         delete(data['filename']);
+        $("input[type='checkbox']").each(function() {
+            var name = $(this).attr("name");
+            if (name) {
+                valueSet(data, name, $(this).is(':checked') ? 1 : 0);
+            }
+        });
+
         websock.send(JSON.stringify({'config': data}));
+
         $(".powExpected").val(0);
         $("input[name='powExpectedReset']")
             .prop("checked", false)
             .iphoneStyle("refresh");
+
     }
+
     return false;
+
 }
 
 function doUpgrade() {

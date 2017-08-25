@@ -36,7 +36,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            2
@@ -53,7 +53,7 @@
 
     // Relays
     #define RELAY1_PIN          5
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            2
@@ -68,7 +68,7 @@
     // Info
     #define MANUFACTURER        "TINKERMAN"
     #define DEVICE              "ESPURNA_H"
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
 
     // Buttons
     #define BUTTON1_PIN         4
@@ -77,14 +77,14 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  1
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
 
     // LEDs
     #define LED1_PIN            5
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -106,7 +106,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -125,7 +125,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -144,7 +144,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -163,7 +163,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -182,7 +182,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -201,7 +201,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -220,7 +220,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -231,7 +231,7 @@
     // Info
     #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_POW"
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -240,14 +240,14 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            15
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define ENABLE_HLW8012      1
+    #define HLW8012_SUPPORT      1
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -260,8 +260,8 @@
     #define SERIAL_BAUDRATE     19230
     #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT   2
-    #define ENABLE_SERIAL_DEBUG 0
-    #define ENABLE_TERMINAL     0
+    #define DEBUG_SERIAL_SUPPORT 0
+    #define TERMINAL_SUPPORT     0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -298,10 +298,10 @@
     #define RELAY3_PIN          4
     #define RELAY4_PIN          15
 
-    #define RELAY1_PIN_INVERSE  0
-    #define RELAY2_PIN_INVERSE  0
-    #define RELAY3_PIN_INVERSE  0
-    #define RELAY4_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -335,10 +335,10 @@
     #define RELAY3_PIN          4
     #define RELAY4_PIN          15
 
-    #define RELAY1_PIN_INVERSE  0
-    #define RELAY2_PIN_INVERSE  0
-    #define RELAY3_PIN_INVERSE  0
-    #define RELAY4_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -366,7 +366,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -385,7 +385,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -417,7 +417,7 @@
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
     #define DUMMY_RELAY_COUNT   6
     #define TRACK_RELAY_STATUS  0
-    #define ENABLE_TERMINAL     0
+    #define TERMINAL_SUPPORT     0
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -472,7 +472,7 @@
 
     // Relays
     #define RELAY1_PIN          5
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -498,8 +498,8 @@
     #define RELAY1_PIN          12
     #define RELAY2_PIN          4
 
-    #define RELAY1_PIN_INVERSE  0
-    #define RELAY2_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -529,9 +529,9 @@
     #define RELAY2_PIN          5
     #define RELAY3_PIN          4
 
-    #define RELAY1_PIN_INVERSE  0
-    #define RELAY2_PIN_INVERSE  0
-    #define RELAY3_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            13
@@ -561,8 +561,8 @@
     #define RELAY1_PIN          12
     #define RELAY2_PIN          13
 
-    #define RELAY1_PIN_INVERSE  0
-    #define RELAY2_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            16
@@ -585,7 +585,7 @@
 
     // Relays
     #define RELAY1_PIN          15
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            2
@@ -690,8 +690,8 @@
     #define RELAY1_PIN          2
     #define RELAY2_PIN          14
 
-    #define RELAY1_PIN_INVERSE  1
-    #define RELAY2_PIN_INVERSE  1
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY2_TYPE         RELAY_TYPE_INVERSE
 
 #elif defined(JANGOE_WIFI_RELAY_NO)
 
@@ -713,8 +713,8 @@
     #define RELAY1_PIN          2
     #define RELAY2_PIN          14
 
-    #define RELAY1_PIN_INVERSE  0
-    #define RELAY2_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
 // Jorge García Wifi+Relays Board Kit
@@ -732,8 +732,8 @@
     #define RELAY1_PIN          0
     #define RELAY2_PIN          2
 
-    #define RELAY1_PIN_INVERSE  1
-    #define RELAY2_PIN_INVERSE  1
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY2_TYPE         RELAY_TYPE_INVERSE
 
 // -----------------------------------------------------------------------------
 // WiFi MQTT Relay / Thermostat
@@ -752,7 +752,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            16
@@ -779,11 +779,34 @@
 
     // Relays
     #define RELAY1_PIN          15
-    #define RELAY1_PIN_INVERSE  0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// EX-Store Wifi Relay v3.1
+// https://ex-store.de/ESP8266-WiFi-Relay-V31
+// -----------------------------------------------------------------------------
+
+#elif defined(EXS_WIFI_RELAY_V31)
+
+    // Untested
+
+    // Info
+    #define MANUFACTURER        "EXS"
+    #define DEVICE              "WIFI_RELAY_V31"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          13
+    #define RELAY1_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY1_RESET_PIN    12
 
 // -----------------------------------------------------------------------------
 // Unknown hardware
@@ -873,6 +896,19 @@
 #endif
 #ifndef BUTTON4_RELAY
 #define BUTTON4_RELAY       0
+#endif
+
+#ifndef RELAY1_RESET_PIN
+#define RELAY1_RESET_PIN      0
+#endif
+#ifndef RELAY2_RESET_PIN
+#define RELAY2_RESET_PIN      0
+#endif
+#ifndef RELAY3_RESET_PIN
+#define RELAY3_RESET_PIN      0
+#endif
+#ifndef RELAY4_RESET_PIN
+#define RELAY4_RESET_PIN      0
 #endif
 
 #ifndef RELAY1_DELAY_ON

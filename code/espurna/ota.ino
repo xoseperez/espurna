@@ -24,13 +24,17 @@ void otaSetup() {
 
     ArduinoOTA.onStart([]() {
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
-        wsSend("{\"message\": \"OTA update started\"}");
+        #if WEB_SUPPORT
+            wsSend_P(PSTR("{\"message\": \"OTA update started\"}"));
+        #endif
     });
 
     ArduinoOTA.onEnd([]() {
         customReset(CUSTOM_RESET_OTA);
         DEBUG_MSG_P(PSTR("\n[OTA] End\n"));
-        wsSend("{\"action\": \"reload\"}");
+        #if WEB_SUPPORT
+            wsSend_P(PSTR("{\"action\": \"reload\"}"));
+        #endif
         delay(100);
     });
 
@@ -39,7 +43,7 @@ void otaSetup() {
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
-        #if ENABLE_SERIAL_DEBUG || ENABLE_UDP_DEBUG
+        #if DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT
             DEBUG_MSG_P(PSTR("\n[OTA] Error #%u: "), error);
             if (error == OTA_AUTH_ERROR) DEBUG_MSG_P(PSTR("Auth Failed\n"));
             else if (error == OTA_BEGIN_ERROR) DEBUG_MSG_P(PSTR("Begin Failed\n"));

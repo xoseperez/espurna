@@ -7,7 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_HLW8012
+#if HLW8012_SUPPORT
 
 #include <HLW8012.h>
 #include <Hash.h>
@@ -158,27 +158,31 @@ void hlw8012Setup() {
     hlw8012RetrieveCalibration();
 
     // API definitions
-    apiRegister(HLW8012_POWER_TOPIC, HLW8012_POWER_TOPIC, [](char * buffer, size_t len) {
-        if (_hlwReady) {
-            snprintf_P(buffer, len, PSTR("%d"), _hlwPower);
-        } else {
-            buffer = NULL;
-        }
-    });
-    apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        if (_hlwReady) {
-            dtostrf(_hlwCurrent, len-1, 3, buffer);
-        } else {
-            buffer = NULL;
-        }
-    });
-    apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
-        if (_hlwReady) {
-            snprintf_P(buffer, len, PSTR("%d"), _hlwVoltage);
-        } else {
-            buffer = NULL;
-        }
-    });
+    #if WEB_SUPPORT
+
+        apiRegister(HLW8012_POWER_TOPIC, HLW8012_POWER_TOPIC, [](char * buffer, size_t len) {
+            if (_hlwReady) {
+                snprintf_P(buffer, len, PSTR("%d"), _hlwPower);
+            } else {
+                buffer = NULL;
+            }
+        });
+        apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
+            if (_hlwReady) {
+                dtostrf(_hlwCurrent, len-1, 3, buffer);
+            } else {
+                buffer = NULL;
+            }
+        });
+        apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
+            if (_hlwReady) {
+                snprintf_P(buffer, len, PSTR("%d"), _hlwVoltage);
+            } else {
+                buffer = NULL;
+            }
+        });
+
+    #endif // WEB_SUPPORT
 
 }
 
@@ -244,8 +248,8 @@ void hlw8012Loop() {
         }
         voltage_previous = voltage;
 
-        if (wsConnected()) {
-
+        #if WEB_SUPPORT
+        {
             unsigned int apparent = getApparentPower();
             double factor = getPowerFactor();
             unsigned int reactive = getReactivePower();
@@ -264,8 +268,8 @@ void hlw8012Loop() {
             String output;
             root.printTo(output);
             wsSend(output.c_str());
-
         }
+        #endif
 
         if (--report_count == 0) {
 
@@ -292,21 +296,21 @@ void hlw8012Loop() {
             mqttSend(getSetting("powPFactorTopic", HLW8012_PFACTOR_TOPIC).c_str(), String(factor, 2).c_str());
 
             // Report values to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
             {
                 char buffer[20];
-                snprintf_P(buffer, 20, PSTR("%d;%s"), _hlwPower, String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), _hlwPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf_P(buffer, 20, PSTR("%s"), String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf_P(buffer, 20, PSTR("%d"), _hlwVoltage);
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _hlwVoltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
-                snprintf_P(buffer, 20, PSTR("%s"), String(_hlwCurrent).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(_hlwCurrent).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
             influxDBSend(getSetting("powPowerTopic", HLW8012_POWER_TOPIC).c_str(), String(_hlwPower).c_str());
             influxDBSend(getSetting("powCurrentTopic", HLW8012_CURRENT_TOPIC).c_str(), String(_hlwCurrent, 3).c_str());
             influxDBSend(getSetting("powVoltageTopic", HLW8012_VOLTAGE_TOPIC).c_str(), String(_hlwVoltage).c_str());

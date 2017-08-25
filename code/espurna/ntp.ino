@@ -39,7 +39,7 @@ String ntpDateTime() {
     int month = value.substring(12, 14).toInt();
     int year = value.substring(15, 19).toInt();
     char buffer[20];
-    sprintf_P(buffer, PSTR("%04d/%02d/%02dT%02d:%02d:%02d"), year, month, day, hour, minute, second);
+    snprintf_P(buffer, sizeof(buffer), PSTR("%04d/%02d/%02dT%02d:%02d:%02d"), year, month, day, hour, minute, second);
     return String(buffer);
 }
 
@@ -51,10 +51,14 @@ void ntpSetup() {
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
-            wsSend("{\"ntpStatus\": false}");
+            #if WEB_SUPPORT
+                wsSend_P(PSTR("{\"ntpStatus\": false}"));
+            #endif
         } else {
             DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
-            wsSend("{\"ntpStatus\": true}");
+            #if WEB_SUPPORT
+                wsSend_P(PSTR("{\"ntpStatus\": true}"));
+            #endif
         }
     });
 }

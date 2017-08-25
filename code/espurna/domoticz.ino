@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_DOMOTICZ
+#if DOMOTICZ_SUPPORT
 
 #include <ArduinoJson.h>
 
@@ -72,7 +72,7 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
     unsigned int idx = getSetting(key).toInt();
     if (idx > 0) {
         char payload[128];
-        snprintf(payload, 128, "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
+        snprintf(payload, sizeof(payload), "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
         mqttSendRaw(getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
     }
 }
@@ -84,13 +84,13 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
 void domoticzSendRelay(unsigned int relayID) {
     if (!_dczEnabled) return;
     char buffer[15];
-    sprintf_P(buffer, PSTR("dczRelayIdx%d"), relayID);
+    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%d"), relayID);
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
 }
 
 int domoticzIdx(unsigned int relayID) {
     char buffer[15];
-    sprintf_P(buffer, PSTR("dczRelayIdx%d"), relayID);
+    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%d"), relayID);
     return getSetting(buffer).toInt();
 }
 

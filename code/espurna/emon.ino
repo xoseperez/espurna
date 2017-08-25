@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if ENABLE_EMON
+#if EMON_SUPPORT
 
 #include <EmonLiteESP.h>
 #include <EEPROM.h>
@@ -111,21 +111,25 @@ void powerMonitorSetup() {
         brzo_i2c_end_transaction();
     #endif
 
-    apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
-        if (_emonReady) {
-            snprintf_P(buffer, len, PSTR("%d"), _emonPower);
-        } else {
-            buffer = NULL;
-        }
-    });
+    #if WEB_SUPPORT
 
-    apiRegister(EMON_CURRENT_TOPIC, EMON_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        if (_emonReady) {
-            dtostrf(_emonCurrent, len-1, 3, buffer);
-        } else {
-            buffer = NULL;
-        }
-    });
+        apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
+            if (_emonReady) {
+                snprintf_P(buffer, len, PSTR("%d"), _emonPower);
+            } else {
+                buffer = NULL;
+            }
+        });
+
+        apiRegister(EMON_CURRENT_TOPIC, EMON_CURRENT_TOPIC, [](char * buffer, size_t len) {
+            if (_emonReady) {
+                dtostrf(_emonCurrent, len-1, 3, buffer);
+            } else {
+                buffer = NULL;
+            }
+        });
+
+    #endif // WEB_SUPPORT
 
 }
 
@@ -163,11 +167,11 @@ void powerMonitorLoop() {
             DEBUG_MSG_P(PSTR("[ENERGY] Power: %dW\n"), int(current * voltage));
 
             // Update websocket clients
-            if (wsConnected()) {
-                char text[100];
-                sprintf_P(text, PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
-                wsSend(text);
-            }
+            #if WEB_SUPPORT
+                char buffer[100];
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
+                wsSend(buffer);
+            #endif
 
         }
 
@@ -188,19 +192,19 @@ void powerMonitorLoop() {
             mqttSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());
 
             // Report values to Domoticz
-            #if ENABLE_DOMOTICZ
+            #if DOMOTICZ_SUPPORT
             {
                 char buffer[20];
-                snprintf_P(buffer, 20, PSTR("%d;%s"), _emonPower, String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), _emonPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf_P(buffer, 20, PSTR("%s"), String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf_P(buffer, 20, PSTR("%s"), String(_emonCurrent, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(_emonCurrent, 3).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif
 
-            #if ENABLE_INFLUXDB
+            #if INFLUXDB_SUPPORT
             influxDBSend(getSetting("emonPowerTopic", EMON_APOWER_TOPIC).c_str(), _emonPower);
             influxDBSend(getSetting("emonCurrTopic", EMON_CURRENT_TOPIC).c_str(), String(_emonCurrent, 3).c_str());
             influxDBSend(getSetting("emonEnergyTopic", EMON_ENERGY_TOPIC).c_str(), String(energy_delta, 3).c_str());

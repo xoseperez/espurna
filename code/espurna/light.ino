@@ -293,7 +293,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         }
 
         char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
-        sprintf_P(buffer, PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
         mqttSubscribe(buffer);
 
     }
@@ -370,14 +370,14 @@ void lightMQTT() {
         mqttSend(MQTT_TOPIC_COLOR, buffer);
 
         // Brightness
-        sprintf_P(buffer, PSTR("%d"), _brightness);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _brightness);
         mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
 
     }
 
     // Channels
     for (unsigned int i=0; i < _channels.size(); i++) {
-        sprintf_P(buffer, PSTR("%d"), _channels[i].value);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _channels[i].value);
         mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
     }
 
@@ -391,6 +391,7 @@ void lightUpdate(bool save, bool forward) {
     if (forward) lightMQTT();
 
     // Report color to WS clients (using current brightness setting)
+    #if WEB_SUPPORT
     {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
@@ -410,6 +411,7 @@ void lightUpdate(bool save, bool forward) {
         root.printTo(output);
         wsSend(output.c_str());
     }
+    #endif
 
     // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
     if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
@@ -461,66 +463,70 @@ void lightBrightness(unsigned int b) {
 
 void _lightAPISetup() {
 
-    // API entry points (protected with apikey)
-    if (lightHasColor()) {
+    #if WEB_SUPPORT
 
-        apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
-            [](char * buffer, size_t len) {
-                _toRGB(buffer, len, false);
-            },
-            [](const char * payload) {
-                lightColor(payload);
-                lightUpdate(true, true);
-            }
-        );
+        // API entry points (protected with apikey)
+        if (lightHasColor()) {
 
-        apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
-            [](char * buffer, size_t len) {
-    			snprintf_P(buffer, len, PSTR("%d"), _brightness);
-            },
-            [](const char * payload) {
-                lightBrightness(atoi(payload));
-                lightUpdate(true, true);
-            }
-        );
+            apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
+                [](char * buffer, size_t len) {
+                    _toRGB(buffer, len, false);
+                },
+                [](const char * payload) {
+                    lightColor(payload);
+                    lightUpdate(true, true);
+                }
+            );
 
-        apiRegister(MQTT_TOPIC_KELVIN, MQTT_TOPIC_KELVIN,
-            [](char * buffer, size_t len) {},
-            [](const char * payload) {
-                _fromKelvin(atol(payload));
-                lightUpdate(true, true);
-            }
-        );
+            apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
+                [](char * buffer, size_t len) {
+        			snprintf_P(buffer, len, PSTR("%d"), _brightness);
+                },
+                [](const char * payload) {
+                    lightBrightness(atoi(payload));
+                    lightUpdate(true, true);
+                }
+            );
 
-        apiRegister(MQTT_TOPIC_MIRED, MQTT_TOPIC_MIRED,
-            [](char * buffer, size_t len) {},
-            [](const char * payload) {
-                _fromMireds(atol(payload));
-                lightUpdate(true, true);
-            }
-        );
+            apiRegister(MQTT_TOPIC_KELVIN, MQTT_TOPIC_KELVIN,
+                [](char * buffer, size_t len) {},
+                [](const char * payload) {
+                    _fromKelvin(atol(payload));
+                    lightUpdate(true, true);
+                }
+            );
 
-    }
+            apiRegister(MQTT_TOPIC_MIRED, MQTT_TOPIC_MIRED,
+                [](char * buffer, size_t len) {},
+                [](const char * payload) {
+                    _fromMireds(atol(payload));
+                    lightUpdate(true, true);
+                }
+            );
 
-    for (unsigned int id=0; id<lightChannels(); id++) {
+        }
 
-        char url[15];
-        sprintf_P(url, PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
+        for (unsigned int id=0; id<lightChannels(); id++) {
 
-        char key[10];
-        sprintf_P(key, PSTR("%s%d"), MQTT_TOPIC_CHANNEL, id);
+            char url[15];
+            snprintf_P(url, sizeof(url), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
 
-        apiRegister(url, key,
-            [id](char * buffer, size_t len) {
-				snprintf_P(buffer, len, PSTR("%d"), lightChannel(id));
-            },
-            [id](const char * payload) {
-                lightChannel(id, atoi(payload));
-                lightUpdate(true, true);
-            }
-        );
+            char key[10];
+            snprintf_P(key, sizeof(key), PSTR("%s%d"), MQTT_TOPIC_CHANNEL, id);
 
-    }
+            apiRegister(url, key,
+                [id](char * buffer, size_t len) {
+    				snprintf_P(buffer, len, PSTR("%d"), lightChannel(id));
+                },
+                [id](const char * payload) {
+                    lightChannel(id, atoi(payload));
+                    lightUpdate(true, true);
+                }
+            );
+
+        }
+
+    #endif // WEB_SUPPORT
 
 }
 
