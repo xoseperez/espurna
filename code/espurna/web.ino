@@ -383,7 +383,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 void _wsStart(uint32_t client_id) {
 
     char chipid[6];
-    sprintf_P(chipid, PSTR("%06X"), ESP.getChipId());
+    snprintf_P(chipid, strlen(chipid), PSTR("%06X"), ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -764,7 +764,7 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         // Format response according to the Accept header
         if (_asJson(request)) {
             char buffer[64];
-            sprintf_P(buffer, PSTR("{ \"%s\": %s }"), api.key, p);
+            snprintf_P(buffer, strlen(buffer), PSTR("{ \"%s\": %s }"), api.key, p);
             request->send(200, "application/json", buffer);
         } else {
             request->send(200, "text/plain", p);
@@ -913,7 +913,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     }
 
     char buffer[100];
-    sprintf_P(buffer, PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
+    snprintf_P(buffer, strlen(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
     response->setLength();
     request->send(response);
@@ -988,7 +988,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 void webSetup() {
 
     // Cache the Last-Modifier header value
-    sprintf_P(_last_modified, PSTR("%s %s GMT"), __DATE__, __TIME__);
+    snprintf_P(_last_modified, strlen(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Create server
     _server = new AsyncWebServer(getSetting("webPort", WEB_PORT).toInt());

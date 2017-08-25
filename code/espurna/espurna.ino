@@ -27,9 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 String getIdentifier() {
-    char identifier[20];
-    sprintf_P(identifier, PSTR("%s_%06X"), DEVICE, ESP.getChipId());
-    return String(identifier);
+    char buffer[20];
+    snprintf_P(buffer, strlen(buffer), PSTR("%s_%06X"), DEVICE, ESP.getChipId());
+    return String(buffer);
 }
 
 void heartbeat() {
@@ -229,7 +229,7 @@ void setup() {
     #if WEB_SUPPORT
         webSetup();
     #endif
-    
+
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif

@@ -40,7 +40,7 @@ void dhtSetup() {
             snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
         });
     #endif
-    
+
 }
 
 void dhtLoop() {
@@ -93,7 +93,7 @@ void dhtLoop() {
                     status = HUMIDITY_DRY;
                 }
                 char buffer[2];
-                sprintf_P(buffer, PSTR("%d"), status);
+                snprintf_P(buffer, strlen(buffer), PSTR("%d"), status);
                 domoticzSend("dczHumIdx", humidity, buffer);
             }
             #endif
@@ -106,7 +106,7 @@ void dhtLoop() {
             // Update websocket clients
             #if WEB_SUPPORT
                 char buffer[100];
-                sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
+                snprintf_P(buffer, strlen(buffer), PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
                 wsSend(buffer);
             #endif
 

@@ -43,7 +43,7 @@ void dsSetup() {
             dtostrf(_dsTemperature, len-1, 1, buffer);
         });
     #endif
-    
+
 }
 
 void dsLoop() {
@@ -110,7 +110,7 @@ void dsLoop() {
             // Update websocket clients
             #if WEB_SUPPORT
                 char buffer[100];
-                sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
+                snprintf_P(buffer, strlen(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
                 wsSend(buffer);
             #endif
 

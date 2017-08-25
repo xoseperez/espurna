@@ -25,7 +25,7 @@ std::vector<button_t> _buttons;
 void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
-    sprintf_P(payload, PSTR("%d"), event);
+    snprintf_P(payload, strlen(payload), PSTR("%d"), event);
     mqttSend(MQTT_TOPIC_BUTTON, id, payload);
 }
 #endif

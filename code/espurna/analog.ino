@@ -19,7 +19,7 @@ unsigned int getAnalog() {
 void analogSetup() {
 
     pinMode(ANALOG_PIN, INPUT);
-    
+
     #if WEB_SUPPORT
         apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("%d"), getAnalog());
@@ -55,7 +55,7 @@ void analogLoop() {
         // Update websocket clients
         #if WEB_SUPPORT
             char buffer[100];
-            sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
+            snprintf_P(buffer, strlen(buffer), PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
             wsSend(buffer);
         #endif
 

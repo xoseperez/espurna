@@ -58,7 +58,7 @@ void _rfbLearn() {
 
     #if WEB_SUPPORT
         char buffer[100];
-        snprintf_P(wsb, strlen(buffer), PSTR("{\"action\": \"rfbLearn\", \"data\":{\"id\": %d, \"status\": %d}}"), _learnId, _learnStatus ? 1 : 0);
+        snprintf_P(buffer, strlen(buffer), PSTR("{\"action\": \"rfbLearn\", \"data\":{\"id\": %d, \"status\": %d}}"), _learnId, _learnStatus ? 1 : 0);
         wsSend(buffer);
     #endif
 
@@ -120,7 +120,7 @@ void _rfbDecode() {
         // Websocket update
         #if WEB_SUPPORT
             char wsb[100];
-            sprintf_P(wsb, strlen(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), _learnId, _learnStatus ? 1 : 0, buffer);
+            snprintf_P(wsb, strlen(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), _learnId, _learnStatus ? 1 : 0, buffer);
             wsSend(wsb);
         #endif
 
@@ -216,7 +216,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
     if (type == MQTT_CONNECT_EVENT) {
         char buffer[strlen(MQTT_TOPIC_RFLEARN) + 3];
-        sprintf_P(buffer, PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
+        snprintf_P(buffer, strlen(buffer), PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
         mqttSubscribe(buffer);
         mqttSubscribe(MQTT_TOPIC_RFOUT);
     }
@@ -257,13 +257,13 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 void rfbStore(unsigned char id, bool status, const char * code) {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
     char key[8] = {0};
-    sprintf_P(key, PSTR("rfb%d%s"), id, status ? "on" : "off");
+    snprintf_P(key, strlen(key), PSTR("rfb%d%s"), id, status ? "on" : "off");
     setSetting(key, code);
 }
 
 String rfbRetrieve(unsigned char id, bool status) {
     char key[8] = {0};
-    sprintf_P(key, PSTR("rfb%d%s"), id, status ? "on" : "off");
+    snprintf_P(key, strlen(key), PSTR("rfb%d%s"), id, status ? "on" : "off");
     return getSetting(key);
 }
 
@@ -288,7 +288,7 @@ void rfbLearn(unsigned char id, bool status) {
 void rfbForget(unsigned char id, bool status) {
 
     char key[8] = {0};
-    sprintf_P(key, PSTR("rfb%d%s"), id, status ? "on" : "off");
+    snprintf_P(key, strlen(key), PSTR("rfb%d%s"), id, status ? "on" : "off");
     delSetting(key);
 
     // Websocket update

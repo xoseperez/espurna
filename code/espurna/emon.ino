@@ -168,9 +168,9 @@ void powerMonitorLoop() {
 
             // Update websocket clients
             #if WEB_SUPPORT
-                char text[100];
-                sprintf_P(text, PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
-                wsSend(text);
+                char buffer[100];
+                snprintf_P(buffer, strlen(buffer), PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
+                wsSend(buffer);
             #endif
 
         }
