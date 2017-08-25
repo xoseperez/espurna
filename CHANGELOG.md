@@ -3,6 +3,37 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.0] 2017-08-25
+### Added
+- Support for IteadStudio BN-SZ01 Ceiling Light (#132)
+- Support for IteadStudio Sonoff RF Bridge (#173)
+- Support for IteadStudio Sonoff 4CH Pro (#174)
+- Support for IteadStudio Sonoff B1
+- Support for IteadStudio Sonoff LED
+- Support for IteadStudio Sonoff T1 wall switches (1, 2 and 4 channels)
+- Support for WiOn 50055 WiFi Wall Outlet & Tap
+- Support for EXS WiFi Relay v3.1 (and other future latching relay boards) (#152)
+- TLS/SSL support for MQTT (caution: eats a lot of memory, do not use with web interface) (#64)
+- Add support for delayed ON/OFF switches (#123, #161, #188)
+- Added ON and OFF actions for button events (previously only TOGGLE available) (#182)
+- Sliders in web interface to control dimmer channels independently (also for brightness)
+- Debug info about MQTT disconnect reason
+
+### Changed
+- MQTT setters ending with "/set" by default
+- Using DOUT flash mode on all devices (#167)
+- Longer timeout for WiFi connection (better chances for Sonoff Basic to connect)
+- Changed MQTT topics for light devices (COLOR, BRIGHTNESS, MIRED, KELVIN, CHANNEL) (#144)
+- Changed the way light devices are defined (see LIGHT_PROVIDER_DIMMER)
+- Allow to disable color picker in web interface
+- API returns processed values for HLW8012 sensor (not raw values anymore) (#176)
+- Major refactoring of settings
+
+### Fixed
+- Discard MQTT messages with empty payload (#185)
+- Wifi connection issue (https://github.com/esp8266/Arduino/issues/2186)
+- Alexa connection issue
+
 ## [1.8.3] 2017-07-23
 ### Added
 - Issue #85 and #90. Option to report MQTT messages with JSON payloads
@@ -13,7 +44,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Rename settings s/POW/HLW8012/
 - Return times in ISO8601 format
 
-### Fix
+### Fixed
 - Issue #168. Added H801 to arduino.h file
 - Issue #171. Fix corrupted will message
 
@@ -27,7 +58,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Issue #159. Allow decimals in relay pulse interval
 - Updated HLW8012 library
 
-### Fix
+### Fixed
 - Issue #148. Fix bug in conditional compilation check
 - Issue #149. Using different pulse counters for each relay (thanks to Lauris Ieviņš)
 - Issue #141. Limit relay pulse interval to 60s
@@ -35,7 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed mDNS setup when using custom HTTP port for web interface
 
 ## [1.8.1] 2017-05-22
-### Fix
+### Fixed
 - Issue #140. Fix no relay control bug in Sonoff Dual
 
 ## [1.8.0] 2017-05-21
@@ -51,7 +82,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for "#RRGGBB", "RRR,GGG,BBB" and "WWW" color formats.
 - Issue #117. Added build date & time to web interface.
 
-### Fix
+### Fixed
 - Fix MQTT_RELAY board conifugration. Thanks to Denis French.
 - Issue #125. Fix bug in relay status reading from EEPROM
 - Issue #127. Fix button action in DUAL.
@@ -60,7 +91,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix conditional flags in hardware.ino to support Arduino IDE.
 
 ## [1.7.1] 2017-03-28
-### Fix
+### Fixed
 - Issue #113. Fix restoring color from EEPROM upon reboot
 - Issue #113. Fix bug in API handlers
 
@@ -80,7 +111,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Changed topic constants in code
 - Prevent the SDK from saving WiFi configuration to flash
 
-### Fix
+### Fixed
 - Issue #113. Fix light bulb state to OFF in library prevented the bulb from turning on
 - Issue #58. Added code to handle spurious readings
 - Fix bug in HLW8012 calibration current parameter casting to int instead of float
@@ -96,7 +127,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Moved debug strings to PROGMEM. ~1.5KByes memory freed
 - Avoid broadcasting websocket messages if no clients connected
 
-### Fix
+### Fixed
 - Fixing use after free bug that leads to corrupted auth credentials. Thanks to David Guillen
 
 ## [1.6.8] 2017-03-01
@@ -108,7 +139,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Issue #92. Debug log enabled by default in Arduino IDE
 - Issue #91. Using AsyncMqttClient as default MQTT client again
 
-### Fix
+### Fixed
 - Report data from all sensors via websocket even if no MQTT connection
 - Issue #92. Fix unknown reference in Arduino IDE
 - Split data.h contents into 1k lines, otherwise Arduino IDE chokes on them
@@ -120,7 +151,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Issue #87. Factory reset when physical button pressed for >10 seconds
 
 ## [1.6.6] 2017-02-23
-### Fix
+### Fixed
 - Issue #82. Fix critical bug on Sonoff Dual
 
 ## [1.6.5] 2017-02-22
@@ -132,7 +163,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Using PubSubClient as MQTT client by default (please read the documentation)
 - Double & long clicks do nothing except for the first defined button
 
-### Fix
+### Fixed
 - Issue #79. Fix bug in WiFi led notification & MQTT connectivity (using PubSubClient)
 - Issue #73. Fix bug when building without Domoticz support
 - Fix Gulp tasks dependencies
@@ -152,7 +183,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Authentication challenge only in /auth request. All static contents are un-authenticated
 - HTTP response code when out of websocket slots changed from 423 to 429
 
-### Fix
+### Fixed
 - Memory leak in MQTT connection method
 - Wait 60 seconds before retrying to connect when in AP mode
 - Issue #24 & #74. Update ESPAsyncTCP and ESPAsyncWebServer to latest GIT version that supports MSS defragmenting
@@ -172,13 +203,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Update support for Itead Motor Clockwise/Anticlockwise board
 - Scan for strongest network only if more than 1 network configured
 
-### Fix
+### Fixed
 - Issue #71. Added default values for netmask and DNS in web configuration
 - Fixed Itead 1CH self-locking/inching board definition
 - Fixed PlatformIO environments for ESP8285 boards (4CH and Touch)
 
 ## [1.6.2] 2017-02-10
-### Fix
+### Fixed
 - Check if there is an MQTT broker defined before the MQTT_MAX_TRIES check
 
 ## [1.6.1] 2017-02-10

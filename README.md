@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.8.3**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.9.0**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 ## Features
 
@@ -19,7 +19,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Configurable **status on boot** (always ON, always OFF, same as before or toggle)
     * Support for **pulse mode** (normally ON or normally OFF) with configurable time
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
+    * Support for **delayed ON/OFF**
 * **MQTT** enabled
+    * SSL/TLS support
     * Switch on/off and toggle relays
     * Report button event notifications
     * Enable/disable pulse mode
@@ -68,24 +70,28 @@ Here is the list of supported hardware. For more information please refer to the
 
 ||||
 |-|-|-|
-|![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)|||
-|**Tinkerman ESPurna H**|||
-|![IteadStudio S20](images/devices/s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![IteadStudio Sonoff Touch](images/devices/sonoff-touch.jpg)|
-|**IteadStudio S20**|**WorkChoice EcoPlug**|**IteadStudio Sonoff Touch**|
-|![IteadStudio Slampher](images/devices/slampher.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ailight.jpg)|![Magic Home LED Controller](images/devices/magic-home-led-controller.jpg)|
-|**IteadStudio Slampher**|**AI-Thinker Wifi Light / Noduino OpenLight**|**Magic Home LED Controller**|
-|![Huacanxing H801](images/devices/h801.jpg)|||
-|**Huacanxing H801**|||
-|![IteadStudio Sonoff Basic](images/devices/sonoff-basic.jpg)|![IteadStudio Sonoff RF](images/devices/sonoff-rf.jpg)|![Electrodragon Relay Board](images/devices/electrodragon-relay-board.jpg)|
-|**IteadStudio Sonoff Basic**|**IteadStudio Sonoff RF**|**Electrodragon Relay Board**|
-|![IteadStudio Sonoff Dual](images/devices/sonoff-dual.jpg)|![IteadStudio Sonoff POW](images/devices/sonoff-pow.jpg)|![IteadStudio Sonoff TH10/TH16](images/devices/sonoff-th10-th16.jpg)|
+|![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)|![IteadStudio Sonoff RF Bridge](images/devices/itead-sonoff-rfbridge.jpg)||
+|**Tinkerman ESPurna H**|**IteadStudio Sonoff RF Bridge**||
+|![IteadStudio Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![IteadStudio Sonoff RF](images/devices/itead-sonoff-rf.jpg)|![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|
+|**IteadStudio Sonoff Basic**|**IteadStudio Sonoff RF**|**Electrodragon WiFi IOT**|
+|![IteadStudio Sonoff Dual](images/devices/itead-sonoff-dual.jpg)|![IteadStudio Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![IteadStudio Sonoff TH10/TH16](images/devices/itead-sonoff-th.jpg)|
 |**IteadStudio Sonoff Dual**|**IteadStudio Sonoff POW**|**IteadStudio Sonoff TH10/TH16**|
-|![IteadStudio Sonoff 4CH](images/devices/sonoff-4ch.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/mqtt-relay.jpg)||
-|**IteadStudio Sonoff 4CH**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
-|![IteadStudio Sonoff SV](images/devices/sonoff-sv.jpg)|![IteadStudio 1CH Inching](images/devices/1ch-inching.jpg)|![IteadStudio Motor Clockwise/Anticlockwise](images/devices/motor-switch.jpg)|
+|![IteadStudio Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![IteadStudio Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)|
+|**IteadStudio Sonoff 4CH**|**IteadStudio Sonoff 4CH Pro**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|
+|![IteadStudio S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)||
+|**IteadStudio S20**|**WorkChoice EcoPlug**||
+|![IteadStudio Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![IteadStudio Sonoff T1](images/devices/itead-sonoff-t1.jpg)||
+|**IteadStudio Sonoff Touch**|**IteadStudio Sonoff T1**||
+|![IteadStudio Slampher](images/devices/itead-slampher.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|
+|**IteadStudio Slampher**|**AI-Thinker Wifi Light / Noduino OpenLight**|**IteadStudio Sonoff B1**|
+|![MagicHome LED Controller](images/devices/magichome-led-controller.jpg)|![Huacanxing H801](images/devices/huacanxing-h801.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|
+|**MagicHome LED Controller**|**Huacanxing H801**|**Itead BN-SZ01**|
+|![IteadStudio Sonoff SV](images/devices/itead-sonoff-sv.jpg)|![IteadStudio 1CH Inching](images/devices/itead-1ch-inching.jpg)|![IteadStudio Motor Clockwise/Anticlockwise](images/devices/itead-motor.jpg)|
 |**IteadStudio Sonoff SV**|**IteadStudio 1CH Inching**|**IteadStudio Motor Clockwise/Anticlockwise**|
-|![Wemos D1 Mini Relay Shield](images/devices/d1mini.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays-board-kit.jpg)|
+|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
 |**Wemos D1 Mini Relay Shield**|**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|
+|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
+|**EXS Wifi Relay v3.1**|||
 
 ## License
 
