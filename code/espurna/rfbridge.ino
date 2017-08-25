@@ -102,7 +102,7 @@ void _rfbDecode() {
         _rfbAck();
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn timeout\n"));
         #if WEB_SUPPORT
-            wsSend("{\"action\": \"rfbTimeout\"}");
+            wsSend_P(PSTR("{\"action\": \"rfbTimeout\"}"));
         #endif
     }
 

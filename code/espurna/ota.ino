@@ -25,7 +25,7 @@ void otaSetup() {
     ArduinoOTA.onStart([]() {
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
         #if WEB_SUPPORT
-            wsSend("{\"message\": \"OTA update started\"}");
+            wsSend_P(PSTR("{\"message\": \"OTA update started\"}"));
         #endif
     });
 
@@ -33,7 +33,7 @@ void otaSetup() {
         customReset(CUSTOM_RESET_OTA);
         DEBUG_MSG_P(PSTR("\n[OTA] End\n"));
         #if WEB_SUPPORT
-            wsSend("{\"action\": \"reload\"}");
+            wsSend_P(PSTR("{\"action\": \"reload\"}"));
         #endif
         delay(100);
     });

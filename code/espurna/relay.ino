@@ -153,7 +153,7 @@ void relayPulseMode(unsigned int value, bool report) {
 
     #if WEB_SUPPORT
         char message[20];
-        sprintf_P(message, PSTR("{\"relayPulseMode\": %d}"), value);
+        snprintf_P(message, strlen(message), PSTR("{\"relayPulseMode\": %d}"), value);
         wsSend(message);
     #endif
 

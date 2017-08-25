@@ -52,11 +52,11 @@ std::vector<web_api_t> _apis;
 void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
-        wsSend("{\"mqttStatus\": true}");
+        wsSend_P(PSTR("{\"mqttStatus\": true}"));
     }
 
     if (type == MQTT_DISCONNECT_EVENT) {
-        wsSend("{\"mqttStatus\": false}");
+        wsSend_P(PSTR("{\"mqttStatus\": false}"));
     }
 
 }
@@ -68,7 +68,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Error parsing data\n"));
-        wsSend(client_id, "{\"message\": \"Error parsing data!\"}");
+        wsSend_P(client_id, PSTR("{\"message\": \"Error parsing data!\"}"));
         return;
     }
 
@@ -103,7 +103,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             JsonObject& data = root["data"];
             if (!data.containsKey("app") || (data["app"] != APP_NAME)) {
-                wsSend(client_id, "{\"message\": \"The file does not look like a valid configuration backup.\"}");
+                wsSend_P(client_id, PSTR("{\"message\": \"The file does not look like a valid configuration backup.\"}"));
                 return;
             }
 
@@ -119,7 +119,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             saveSettings();
 
-            wsSend(client_id, "{\"message\": \"Changes saved. You should reboot your board now.\"}");
+            wsSend_P(client_id, PSTR("{\"message\": \"Changes saved. You should reboot your board now.\"}"));
 
         }
 
@@ -264,11 +264,11 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
             if (key == "adminPass2") {
                 if (!value.equals(adminPass)) {
-                    wsSend(client_id, "{\"message\": \"Passwords do not match!\"}");
+                    wsSend_P(client_id, PSTR("{\"message\": \"Passwords do not match!\"}"));
                     return;
                 }
                 if (value.length() == 0) continue;
-                wsSend(client_id, "{\"action\": \"reload\"}");
+                wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
                 key = String("adminPass");
             }
 
@@ -371,9 +371,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
 
         if (changed) {
-            wsSend(client_id, "{\"message\": \"Changes saved\"}");
+            wsSend_P(client_id, PSTR("{\"message\": \"Changes saved\"}"));
         } else {
-            wsSend(client_id, "{\"message\": \"No changes detected\"}");
+            wsSend_P(client_id, PSTR("{\"message\": \"No changes detected\"}"));
         }
 
     }
@@ -608,7 +608,7 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
     if (index == WS_BUFFER_SIZE) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-        wsSend(client->id(), "{\"message\": \"Session expired, please reload page...\"}");
+        wsSend_P(client->id(), PSTR("{\"message\": \"Session expired, please reload page...\"}"));
         return false;
     }
 
@@ -663,14 +663,28 @@ bool wsConnected() {
     return (_ws.count() > 0);
 }
 
-bool wsSend(const char * payload) {
+void wsSend(const char * payload) {
     if (_ws.count() > 0) {
         _ws.textAll(payload);
     }
 }
 
-bool wsSend(uint32_t client_id, const char * payload) {
+void wsSend_P(PGM_P payload) {
+    if (_ws.count() > 0) {
+        char buffer[strlen_P(payload)];
+        strcpy_P(buffer, payload);
+        _ws.textAll(buffer);
+    }
+}
+
+void wsSend(uint32_t client_id, const char * payload) {
     _ws.text(client_id, payload);
+}
+
+void wsSend_P(uint32_t client_id, PGM_P payload) {
+    char buffer[strlen_P(payload)];
+    strcpy_P(buffer, payload);
+    _ws.text(client_id, buffer);
 }
 
 void wsSetup() {
