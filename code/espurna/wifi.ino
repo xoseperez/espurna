@@ -53,7 +53,7 @@ void wifiConfigure() {
     jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     jw.setReconnectTimeout(WIFI_RECONNECT_INTERVAL);
-    jw.setAPMode(AP_MODE);
+    jw.setAPMode(WIFI_AP_MODE);
     jw.cleanNetworks();
 
     int i;
@@ -182,7 +182,7 @@ void wifiSetup() {
         #if MDNS_SUPPORT
     	    if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
                 if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
-                    MDNS.addService("http", "tcp", getSetting("webPort", WEBSERVER_PORT).toInt());
+                    MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
     	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     	        } else {
     	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));

@@ -4,6 +4,12 @@
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
+// GENERAL
+//------------------------------------------------------------------------------
+
+#define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
+
+//------------------------------------------------------------------------------
 // DEBUG
 //------------------------------------------------------------------------------
 
@@ -208,37 +214,54 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LED_AUTO                1
 
 // LED # to use as WIFI status indicator
-#ifndef WIFI_LED
-#define WIFI_LED                1
+#ifndef LED_WIFI
+#define LED_WIFI                1
 #endif
 
 // -----------------------------------------------------------------------------
-// WIFI & WEB
+// WIFI
 // -----------------------------------------------------------------------------
 
 #define WIFI_CONNECT_TIMEOUT    30000       // Connecting timeout for WIFI in ms
 #define WIFI_RECONNECT_INTERVAL 120000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
-#define HTTP_USERNAME           "admin"     // HTTP username
-#define ADMIN_PASS              "fibonacci" // Default password
-#define FORCE_CHANGE_PASS       1           // Force the user to change the password if default one
-#define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
-#define WS_TIMEOUT              1800000     // Timeout for secured websocket
-#define WEBSERVER_PORT          80          // HTTP port
-#define DNS_PORT                53          // MDNS port
-#define MDNS_SUPPORT             1           // Enable MDNS by default
-#define ENABLE_API              0           // Do not enable API by default
-#define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+#define WIFI_AP_MODE            AP_MODE_ALONE
+
+// -----------------------------------------------------------------------------
+// WEB
+// -----------------------------------------------------------------------------
 
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
 
-#define AP_MODE                 AP_MODE_ALONE
+#define WEB_USERNAME            "admin"     // HTTP username
+#define WEB_FORCE_PASS_CHANGE   1           // Force the user to change the password if default one
+#define WEB_PORT                80          // HTTP port
 
 // This option builds the firmware with the web interface embedded.
-#ifndef EMBEDDED_WEB
-#define EMBEDDED_WEB            1
+#ifndef WEB_EMBEDDED
+#define WEB_EMBEDDED            1
 #endif
+
+// -----------------------------------------------------------------------------
+// WEBSOCKETS
+// -----------------------------------------------------------------------------
+
+#define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
+#define WS_TIMEOUT              1800000     // Timeout for secured websocket
+
+// -----------------------------------------------------------------------------
+// API
+// -----------------------------------------------------------------------------
+
+#define API_ENABLED              0           // Do not enable API by default
+#define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+
+// -----------------------------------------------------------------------------
+// MDNS
+// -----------------------------------------------------------------------------
+
+#define MDNS_SUPPORT            1           // Enable MDNS by default
 
 // -----------------------------------------------------------------------------
 // SPIFFS
@@ -250,10 +273,15 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // -----------------------------------------------------------------------------
-// OTA & NOFUSS
+// OTA
 // -----------------------------------------------------------------------------
 
 #define OTA_PORT                8266        // OTA port
+
+// -----------------------------------------------------------------------------
+// NOFUSS
+// -----------------------------------------------------------------------------
+
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
 
@@ -322,6 +350,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
+// Since 1.9.0 the default value is "" for getter and "/set" for setter
 #define MQTT_USE_GETTER         ""
 #define MQTT_USE_SETTER         "/set"
 

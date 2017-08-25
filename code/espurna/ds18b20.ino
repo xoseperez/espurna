@@ -11,7 +11,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-OneWire oneWire(DS_PIN);
+OneWire oneWire(DS18B20_PIN);
 DallasTemperature ds18b20(&oneWire);
 
 bool _dsIsConnected = false;
@@ -37,7 +37,7 @@ void dsSetup() {
     ds18b20.begin();
     ds18b20.setWaitForConversion(false);
 
-    apiRegister(DS_TEMPERATURE_TOPIC, DS_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
+    apiRegister(DS18B20_TEMPERATURE_TOPIC, DS18B20_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
         dtostrf(_dsTemperature, len-1, 1, buffer);
     });
 }
@@ -47,7 +47,7 @@ void dsLoop() {
     // Check if we should read new data
     static unsigned long last_update = 0;
     static bool requested = false;
-    if ((millis() - last_update > DS_UPDATE_INTERVAL) || (last_update == 0)) {
+    if ((millis() - last_update > DS18B20_UPDATE_INTERVAL) || (last_update == 0)) {
         if (!requested) {
             ds18b20.requestTemperatures();
             requested = true;
@@ -92,7 +92,7 @@ void dsLoop() {
 			    (_dsIsConnected ? ((tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF") : ""));
 
             // Send MQTT messages
-            mqttSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+            mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
 
             // Send to Domoticz
             #if DOMOTICZ_SUPPORT
@@ -100,7 +100,7 @@ void dsLoop() {
             #endif
 
             #if INFLUXDB_SUPPORT
-                influxDBSend(getSetting("dsTmpTopic", DS_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+                influxDBSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
             #endif
 
             // Update websocket clients

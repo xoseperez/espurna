@@ -16,7 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <vector>
 
-#if EMBEDDED_WEB
+#if WEB_EMBEDDED
 #include "static/index.html.gz.h"
 #endif
 
@@ -397,7 +397,7 @@ void _wsStart(uint32_t client_id) {
     JsonObject& root = jsonBuffer.createObject();
 
     bool changePassword = false;
-    #if FORCE_CHANGE_PASS == 1
+    #if WEB_PASS_CHANGE == 1
         String adminPass = getSetting("adminPass", ADMIN_PASS);
         if (adminPass.equals(ADMIN_PASS)) changePassword = true;
     #endif
@@ -468,9 +468,9 @@ void _wsStart(uint32_t client_id) {
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
 
-        root["webPort"] = getSetting("webPort", WEBSERVER_PORT).toInt();
+        root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
 
-        root["apiEnabled"] = getSetting("apiEnabled", ENABLE_API).toInt() == 1;
+        root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
         root["apiKey"] = getSetting("apiKey");
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
@@ -677,12 +677,12 @@ bool _authenticate(AsyncWebServerRequest *request) {
     String password = getSetting("adminPass", ADMIN_PASS);
     char httpPassword[password.length() + 1];
     password.toCharArray(httpPassword, password.length() + 1);
-    return request->authenticate(HTTP_USERNAME, httpPassword);
+    return request->authenticate(WEB_USERNAME, httpPassword);
 }
 
 bool _authAPI(AsyncWebServerRequest *request) {
 
-    if (getSetting("apiEnabled", ENABLE_API).toInt() == 0) {
+    if (getSetting("apiEnabled", API_ENABLED).toInt() == 0) {
         DEBUG_MSG_P(PSTR("[WEBSERVER] HTTP API is not enabled\n"));
         request->send(403);
         return false;
@@ -881,7 +881,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
 }
 
-#if EMBEDDED_WEB
+#if WEB_EMBEDDED
 void _onHome(AsyncWebServerRequest *request) {
 
     webLogRequest(request);
@@ -947,7 +947,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 void webSetup() {
 
     // Create server
-    _server = new AsyncWebServer(getSetting("webPort", WEBSERVER_PORT).toInt());
+    _server = new AsyncWebServer(getSetting("webPort", WEB_PORT).toInt());
 
     // Setup websocket
     ws.onEvent(_wsEvent);
@@ -963,7 +963,7 @@ void webSetup() {
     _server->rewrite("/", "/index.html");
 
     // Serve home (basic authentication protection)
-    #if EMBEDDED_WEB
+    #if WEB_EMBEDDED
         _server->on("/index.html", HTTP_GET, _onHome);
     #endif
     _server->on("/config", HTTP_GET, _onGetConfig);
@@ -989,6 +989,6 @@ void webSetup() {
 
     // Run server
     _server->begin();
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %d\n"), getSetting("webPort", WEBSERVER_PORT).toInt());
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %d\n"), getSetting("webPort", WEB_PORT).toInt());
 
 }

@@ -46,7 +46,7 @@ void heartbeat() {
     if (!mqttConnected()) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
-        #if ENABLE_ADC_VCC
+        #if ADC_VCC_ENABLED
             DEBUG_MSG_P(PSTR("[MAIN] Power: %d mV\n"), ESP.getVcc());
         #endif
     }
@@ -92,7 +92,7 @@ void heartbeat() {
         lightMQTT();
     #endif
     #if (HEARTBEAT_REPORT_VCC)
-    #if ENABLE_ADC_VCC
+    #if ADC_VCC_ENABLED
         mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
     #endif
     #endif
