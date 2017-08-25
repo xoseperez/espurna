@@ -196,6 +196,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // Pulse with in milliseconds for a latched relay
 #define RELAY_LATCHING_PULSE    10
 
+// Do not save relay state after these many milliseconds
+#define RELAY_SAVE_DELAY        1000
+
 //------------------------------------------------------------------------------
 // I18N
 //------------------------------------------------------------------------------

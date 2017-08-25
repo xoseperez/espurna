@@ -29,6 +29,7 @@ typedef struct {
 } relay_t;
 std::vector<relay_t> _relays;
 bool recursive = false;
+Ticker _relaySaveTicker;
 
 #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
 unsigned char _dual_status = 0;
@@ -528,7 +529,7 @@ void relayLoop(void) {
             if (!recursive) {
                 relayPulse(id);
                 relaySync(id);
-                relaySave();
+                _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
                 #if WEB_SUPPORT
                     relayWS();
                 #endif
