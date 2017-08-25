@@ -415,9 +415,11 @@
     #define DEVICE              "SONOFF_RFBRIDGE"
     #define SERIAL_BAUDRATE     19200
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
-    #define DUMMY_RELAY_COUNT   6
     #define TRACK_RELAY_STATUS  0
-    #define TERMINAL_SUPPORT     0
+    #define TERMINAL_SUPPORT    0
+    #ifndef DUMMY_RELAY_COUNT
+    #define DUMMY_RELAY_COUNT   6
+    #endif
 
     // Buttons
     #define BUTTON1_PIN         0
