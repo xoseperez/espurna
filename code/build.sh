@@ -1,28 +1,9 @@
 #!/bin/bash
 
-environments=$@
-
 # Environments to build
-ALL_ENVIRONMENTS="
-    tinkerman-espurna-h
-    itead-sonoff-basic itead-sonoff-rf itead-sonoff-basic-dht22 itead-sonoff-basic-ds18b20
-    itead-sonoff-pow itead-sonoff-dual itead-sonoff-4ch itead-sonoff-4ch-pro
-    itead-sonoff-touch itead-sonoff-b1 itead-sonoff-led itead-sonoff-rfbridge
-    itead-sonoff-t1-1ch itead-sonoff-t1-2ch itead-sonoff-t1-3ch
-    itead-slampher itead-s20 itead-1ch-inching itead-motor itead-bnsz01
-    electrodragon-wifi-iot
-    workchoice-ecoplug
-    jangoe-wifi-relay
-    openenergymonitor-mqtt-relay
-    jorgegarcia-wifi-relays
-    aithinker-ai-light
-    magichome-led-controller
-    huacanxing-h801
-    wion-50055
-    exs-wifi-relay-v31
-"
+environments=$@
 if [ $# -eq 0 ]; then
-    environments=$ALL_ENVIRONMENTS
+    environments=`cat platformio.ini | grep env: | grep -v ota  | sed 's/\[env://' | sed 's/\]/ /'`
 fi
 
 # Get current version
