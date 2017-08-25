@@ -172,8 +172,8 @@ void welcome() {
     DEBUG_MSG_P(PSTR("Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
     DEBUG_MSG_P(PSTR("Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("Flash size (SDK):  %8u bytes\n"), ESP.getFlashChipSize());
-    DEBUG_MSG_P(PSTR("Flash size (CHIP): %8u bytes / %4d sectors\n"), ESP.getFlashChipRealSize(), sectors(ESP.getFlashChipRealSize()));
+    DEBUG_MSG_P(PSTR("Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
+    DEBUG_MSG_P(PSTR("Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
     DEBUG_MSG_P(PSTR("Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
     DEBUG_MSG_P(PSTR("OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
     #if SPIFFS_SUPPORT
