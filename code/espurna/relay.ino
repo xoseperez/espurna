@@ -144,16 +144,16 @@ void relayPulseMode(unsigned int value, bool report) {
     /*
     if (report) {
         char topic[strlen(MQTT_TOPIC_RELAY) + 10];
-        snprintf_P(topic, strlen(topic), PSTR("%s/pulse"), MQTT_TOPIC_RELAY);
+        snprintf_P(topic, sizeof(topic), PSTR("%s/pulse"), MQTT_TOPIC_RELAY);
         char value[2];
-        snprintf_P(value, strlen(value), PSTR("%d"), value);
+        snprintf_P(value, sizeof(value), PSTR("%d"), value);
         mqttSend(topic, value);
     }
     */
 
     #if WEB_SUPPORT
         char message[20];
-        snprintf_P(message, strlen(message), PSTR("{\"relayPulseMode\": %d}"), value);
+        snprintf_P(message, sizeof(message), PSTR("{\"relayPulseMode\": %d}"), value);
         wsSend(message);
     #endif
 
@@ -324,10 +324,10 @@ void relaySetupAPI() {
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
 
         char url[15];
-        snprintf_P(url, strlen(url), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
+        snprintf_P(url, sizeof(url), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
 
         char key[10];
-        snprintf_P(key, strlen(key), PSTR("%s%d"), MQTT_TOPIC_RELAY, relayID);
+        snprintf_P(key, sizeof(key), PSTR("%s%d"), MQTT_TOPIC_RELAY, relayID);
 
         apiRegister(url, key,
             [relayID](char * buffer, size_t len) {
@@ -354,6 +354,7 @@ void relaySetupAPI() {
 //------------------------------------------------------------------------------
 
 #if WEB_SUPPORT
+
 void relayWS() {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -365,6 +366,7 @@ void relayWS() {
     root.printTo(output);
     wsSend(output.c_str());
 }
+
 #endif
 
 //------------------------------------------------------------------------------
@@ -391,7 +393,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         #endif
 
         char buffer[strlen(MQTT_TOPIC_RELAY) + 3];
-        snprintf_P(buffer, strlen(buffer), PSTR("%s/+"), MQTT_TOPIC_RELAY);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_RELAY);
         mqttSubscribe(buffer);
 
     }
@@ -441,7 +443,7 @@ void relaySetupMQTT() {
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
     char buffer[10];
-    snprintf_P(buffer, strlen(buffer), PSTR("%s,id=%d"), MQTT_TOPIC_RELAY, id);
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s,id=%d"), MQTT_TOPIC_RELAY, id);
     influxDBSend(buffer, relayStatus(id) ? "1" : "0");
 }
 #endif

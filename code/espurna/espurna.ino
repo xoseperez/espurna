@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 String getIdentifier() {
     char buffer[20];
-    snprintf_P(buffer, strlen(buffer), PSTR("%s_%06X"), DEVICE, ESP.getChipId());
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), DEVICE, ESP.getChipId());
     return String(buffer);
 }
 

@@ -28,11 +28,11 @@ template<typename T> bool influxDBSend(const char * topic, T payload) {
     }
 
     char data[128];
-    snprintf(data, strlen(data), "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
+    snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
     DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
 
     char request[256];
-    snprintf(request, strlen(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
+    snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
         getSetting("idbDatabase").c_str(), getSetting("idbUsername").c_str(), getSetting("idbPassword").c_str(),
         getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt(),
         strlen(data), data);

@@ -183,7 +183,7 @@ void hlw8012Setup() {
         });
 
     #endif // WEB_SUPPORT
-    
+
 }
 
 void hlw8012Loop() {
@@ -299,13 +299,13 @@ void hlw8012Loop() {
             #if DOMOTICZ_SUPPORT
             {
                 char buffer[20];
-                snprintf_P(buffer, strlen(buffer), PSTR("%d;%s"), _hlwPower, String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), _hlwPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf_P(buffer, strlen(buffer), PSTR("%s"), String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf_P(buffer, strlen(buffer), PSTR("%d"), _hlwVoltage);
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _hlwVoltage);
                 domoticzSend("dczVoltIdx", 0, buffer);
-                snprintf_P(buffer, strlen(buffer), PSTR("%s"), String(_hlwCurrent).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(_hlwCurrent).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif

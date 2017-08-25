@@ -383,7 +383,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 void _wsStart(uint32_t client_id) {
 
     char chipid[6];
-    snprintf_P(chipid, strlen(chipid), PSTR("%06X"), ESP.getChipId());
+    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -691,6 +691,7 @@ void wsSetup() {
     _ws.onEvent(_wsEvent);
     mqttRegister(_wsMQTTCallback);
     _server->addHandler(&_ws);
+    _server->on("/auth", HTTP_GET, _onAuth);
 }
 
 // -----------------------------------------------------------------------------
@@ -764,7 +765,7 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         // Format response according to the Accept header
         if (_asJson(request)) {
             char buffer[64];
-            snprintf_P(buffer, strlen(buffer), PSTR("{ \"%s\": %s }"), api.key, p);
+            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, p);
             request->send(200, "application/json", buffer);
         } else {
             request->send(200, "text/plain", p);
@@ -837,7 +838,7 @@ void apiRegister(const char * url, const char * key, apiGetCallbackFunction getF
     // Store it
     web_api_t api;
     char buffer[40];
-    snprintf_P(buffer, strlen(buffer), PSTR("/api/%s"), url);
+    snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), url);
     api.url = strdup(buffer);
     api.key = strdup(key);
     api.getFn = getFn;
@@ -913,7 +914,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     }
 
     char buffer[100];
-    snprintf_P(buffer, strlen(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
+    snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
     response->setLength();
     request->send(response);
@@ -988,7 +989,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 void webSetup() {
 
     // Cache the Last-Modifier header value
-    snprintf_P(_last_modified, strlen(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
+    snprintf_P(_last_modified, sizeof(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Create server
     _server = new AsyncWebServer(getSetting("webPort", WEB_PORT).toInt());
@@ -1007,7 +1008,6 @@ void webSetup() {
         _server->on("/index.html", HTTP_GET, _onHome);
     #endif
     _server->on("/config", HTTP_GET, _onGetConfig);
-    _server->on("/auth", HTTP_GET, _onAuth);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files

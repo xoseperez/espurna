@@ -169,7 +169,7 @@ void powerMonitorLoop() {
             // Update websocket clients
             #if WEB_SUPPORT
                 char buffer[100];
-                snprintf_P(buffer, strlen(buffer), PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
                 wsSend(buffer);
             #endif
 
@@ -195,11 +195,11 @@ void powerMonitorLoop() {
             #if DOMOTICZ_SUPPORT
             {
                 char buffer[20];
-                snprintf_P(buffer, strlen(buffer), PSTR("%d;%s"), _emonPower, String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), _emonPower, String(energy_delta, 3).c_str());
                 domoticzSend("dczPowIdx", 0, buffer);
-                snprintf_P(buffer, strlen(buffer), PSTR("%s"), String(energy_delta, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(energy_delta, 3).c_str());
                 domoticzSend("dczEnergyIdx", 0, buffer);
-                snprintf_P(buffer, strlen(buffer), PSTR("%s"), String(_emonCurrent, 3).c_str());
+                snprintf_P(buffer, sizeof(buffer), PSTR("%s"), String(_emonCurrent, 3).c_str());
                 domoticzSend("dczCurrentIdx", 0, buffer);
             }
             #endif

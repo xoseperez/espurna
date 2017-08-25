@@ -55,7 +55,7 @@ void analogLoop() {
         // Update websocket clients
         #if WEB_SUPPORT
             char buffer[100];
-            snprintf_P(buffer, strlen(buffer), PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
+            snprintf_P(buffer, sizeof(buffer), PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
             wsSend(buffer);
         #endif
 

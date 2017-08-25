@@ -293,7 +293,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         }
 
         char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
-        snprintf_P(buffer, strlen(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
         mqttSubscribe(buffer);
 
     }
@@ -370,14 +370,14 @@ void lightMQTT() {
         mqttSend(MQTT_TOPIC_COLOR, buffer);
 
         // Brightness
-        snprintf_P(buffer, strlen(buffer), PSTR("%d"), _brightness);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _brightness);
         mqttSend(MQTT_TOPIC_BRIGHTNESS, buffer);
 
     }
 
     // Channels
     for (unsigned int i=0; i < _channels.size(); i++) {
-        snprintf_P(buffer, strlen(buffer), PSTR("%d"), _channels[i].value);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _channels[i].value);
         mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
     }
 
@@ -509,10 +509,10 @@ void _lightAPISetup() {
         for (unsigned int id=0; id<lightChannels(); id++) {
 
             char url[15];
-            snprintf_P(url, strlen(url), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
+            snprintf_P(url, sizeof(url), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
 
             char key[10];
-            snprintf_P(key, strlen(key), PSTR("%s%d"), MQTT_TOPIC_CHANNEL, id);
+            snprintf_P(key, sizeof(key), PSTR("%s%d"), MQTT_TOPIC_CHANNEL, id);
 
             apiRegister(url, key,
                 [id](char * buffer, size_t len) {
