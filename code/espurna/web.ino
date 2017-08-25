@@ -387,7 +387,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
 void _wsStart(uint32_t client_id) {
 
-    char chipid[6];
+    char chipid[7];
     snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
 
     DynamicJsonBuffer jsonBuffer;
