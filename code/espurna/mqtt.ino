@@ -307,12 +307,12 @@ void mqttConnect() {
             DEBUG_MSG_P(PSTR("\n"));
 
             #if ASYNC_TCP_SSL_ENABLED
-                bool secure = getSetting("mqttUseSSL", MQTT_USE_SSL).toInt() == 1;
+                bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
                 mqtt.setSecure(secure);
                 if (secure) {
                     DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                     unsigned char fp[20];
-                    if (fp2array(getSetting("mqttFP").c_str(), fp)) {
+                    if (fp2array(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                         mqtt.addServerFingerprint(fp);
                     }
                 }

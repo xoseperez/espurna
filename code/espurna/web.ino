@@ -20,7 +20,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/index.html.gz.h"
 #endif
 
-#if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
+#if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
 #include "static/server.cer.h"
 #include "static/server.key.h"
 #endif
@@ -980,11 +980,11 @@ void _onHome(AsyncWebServerRequest *request) {
 }
 #endif
 
-#if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
+#if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
 
 int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
-#if EMBEDDED_WEB
+#if WEB_EMBEDDED
 
     if (strcmp(filename, "server.cer") == 0) {
         uint8_t * nbuf = (uint8_t*) malloc(server_cer_len);
@@ -1081,10 +1081,10 @@ void webSetup() {
     snprintf_P(_last_modified, sizeof(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Create server
-    #if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
+    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
     unsigned int port = 443;
     #else
-    unsigned int port = getSetting("webPort", WEBSERVER_PORT).toInt();
+    unsigned int port = getSetting("webPort", WEB_PORT).toInt();
     #endif
     _server = new AsyncWebServer(port);
 
@@ -1120,7 +1120,7 @@ void webSetup() {
     });
 
     // Run server
-    #if ASYNC_TCP_SSL_ENABLED & WEB_USE_SSL
+    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
     _server->onSslFileRequest(_onCertificate, NULL);
     _server->beginSecure("server.cer", "server.key", NULL);
     #else

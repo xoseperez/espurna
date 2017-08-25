@@ -317,7 +317,8 @@ PROGMEM const char* const custom_reset_string[] = {
 // You will need the fingerprint for your MQTT server, example for CloudMQTT:
 // $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
 // $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
-#define MQTT_USE_SSL            0
+#define MQTT_SSL_ENABLED        0
+#define MQTT_SSL_FINGERPRINT    ""
 
 #define MQTT_SERVER             ""          // Default MQTT broker address
 #define MQTT_PORT               1883        // MQTT broker port
