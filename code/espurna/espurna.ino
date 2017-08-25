@@ -226,7 +226,10 @@ void setup() {
         saveSettings();
     }
 
-    webSetup();
+    #if WEB_SUPPORT
+        webSetup();
+    #endif
+    
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif

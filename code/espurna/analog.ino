@@ -19,10 +19,12 @@ unsigned int getAnalog() {
 void analogSetup() {
 
     pinMode(ANALOG_PIN, INPUT);
-
-    apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
-        snprintf_P(buffer, len, PSTR("%d"), getAnalog());
-    });
+    
+    #if WEB_SUPPORT
+        apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), getAnalog());
+        });
+    #endif
 
 }
 
@@ -51,9 +53,11 @@ void analogLoop() {
         #endif
 
         // Update websocket clients
-        char buffer[100];
-        sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
-        wsSend(buffer);
+        #if WEB_SUPPORT
+            char buffer[100];
+            sprintf_P(buffer, PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
+            wsSend(buffer);
+        #endif
 
     }
 

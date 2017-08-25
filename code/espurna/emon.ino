@@ -111,21 +111,25 @@ void powerMonitorSetup() {
         brzo_i2c_end_transaction();
     #endif
 
-    apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
-        if (_emonReady) {
-            snprintf_P(buffer, len, PSTR("%d"), _emonPower);
-        } else {
-            buffer = NULL;
-        }
-    });
+    #if WEB_SUPPORT
 
-    apiRegister(EMON_CURRENT_TOPIC, EMON_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        if (_emonReady) {
-            dtostrf(_emonCurrent, len-1, 3, buffer);
-        } else {
-            buffer = NULL;
-        }
-    });
+        apiRegister(EMON_APOWER_TOPIC, EMON_APOWER_TOPIC, [](char * buffer, size_t len) {
+            if (_emonReady) {
+                snprintf_P(buffer, len, PSTR("%d"), _emonPower);
+            } else {
+                buffer = NULL;
+            }
+        });
+
+        apiRegister(EMON_CURRENT_TOPIC, EMON_CURRENT_TOPIC, [](char * buffer, size_t len) {
+            if (_emonReady) {
+                dtostrf(_emonCurrent, len-1, 3, buffer);
+            } else {
+                buffer = NULL;
+            }
+        });
+
+    #endif // WEB_SUPPORT
 
 }
 
@@ -163,11 +167,11 @@ void powerMonitorLoop() {
             DEBUG_MSG_P(PSTR("[ENERGY] Power: %dW\n"), int(current * voltage));
 
             // Update websocket clients
-            if (wsConnected()) {
+            #if WEB_SUPPORT
                 char text[100];
                 sprintf_P(text, PSTR("{\"emonVisible\": 1, \"emonApparentPower\": %d, \"emonCurrent\": %s}"), int(current * voltage), String(current, 3).c_str());
                 wsSend(text);
-            }
+            #endif
 
         }
 

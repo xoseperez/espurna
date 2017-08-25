@@ -51,10 +51,14 @@ void ntpSetup() {
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
-            wsSend("{\"ntpStatus\": false}");
+            #if WEB_SUPPORT
+                wsSend("{\"ntpStatus\": false}");
+            #endif
         } else {
             DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
-            wsSend("{\"ntpStatus\": true}");
+            #if WEB_SUPPORT
+                wsSend("{\"ntpStatus\": true}");
+            #endif
         }
     });
 }

@@ -227,9 +227,27 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
 
+// Optional hardcoded configuration (up to 2 different networks)
+//#define WIFI1_SSID              "..."
+//#define WIFI1_PASS              "..."
+//#define WIFI1_IP                "192.168.1.201"
+//#define WIFI1_GW                "192.168.1.1"
+//#define WIFI1_MASK              "255.255.255.0"
+//#define WIFI1_DNS               "8.8.8.8"
+//#define WIFI2_SSID              "..."
+//#define WIFI2_PASS              "..."
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
+
+#ifndef WEB_SUPPORT
+#define WEB_SUPPORT             1           // This enables web support (http, api)
+#endif
+
+#ifndef WEB_EMBEDDED
+#define WEB_EMBEDDED            1           // This option builds the firmware with the web interface embedded.
+#endif
 
 #define WEB_MODE_NORMAL         0
 #define WEB_MODE_PASSWORD       1
@@ -238,14 +256,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WEB_FORCE_PASS_CHANGE   1           // Force the user to change the password if default one
 #define WEB_PORT                80          // HTTP port
 
-// This option builds the firmware with the web interface embedded.
-#ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED            1
-#endif
-
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
 // -----------------------------------------------------------------------------
+
+// This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
 #define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
@@ -254,7 +269,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // API
 // -----------------------------------------------------------------------------
 
-#define API_ENABLED              0           // Do not enable API by default
+// This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
+
+#define API_ENABLED              0          // Do not enable API by default
 #define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
 
 // -----------------------------------------------------------------------------

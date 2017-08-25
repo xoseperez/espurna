@@ -34,12 +34,16 @@ const char* getDSTemperatureStr() {
 }
 
 void dsSetup() {
+
     ds18b20.begin();
     ds18b20.setWaitForConversion(false);
 
-    apiRegister(DS18B20_TEMPERATURE_TOPIC, DS18B20_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-        dtostrf(_dsTemperature, len-1, 1, buffer);
-    });
+    #if WEB_SUPPORT
+        apiRegister(DS18B20_TEMPERATURE_TOPIC, DS18B20_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
+            dtostrf(_dsTemperature, len-1, 1, buffer);
+        });
+    #endif
+    
 }
 
 void dsLoop() {
@@ -104,9 +108,11 @@ void dsLoop() {
             #endif
 
             // Update websocket clients
-            char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
-            wsSend(buffer);
+            #if WEB_SUPPORT
+                char buffer[100];
+                sprintf_P(buffer, PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
+                wsSend(buffer);
+            #endif
 
         }
 

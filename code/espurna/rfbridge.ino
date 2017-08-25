@@ -56,9 +56,11 @@ void _rfbLearn() {
     Serial.flush();
     Serial.println();
 
-    char wsb[100];
-    sprintf_P(wsb, PSTR("{\"action\": \"rfbLearn\", \"data\":{\"id\": %d, \"status\": %d}}"), _learnId, _learnStatus ? 1 : 0);
-    wsSend(wsb);
+    #if WEB_SUPPORT
+        char buffer[100];
+        snprintf_P(wsb, strlen(buffer), PSTR("{\"action\": \"rfbLearn\", \"data\":{\"id\": %d, \"status\": %d}}"), _learnId, _learnStatus ? 1 : 0);
+        wsSend(buffer);
+    #endif
 
 }
 
@@ -99,7 +101,9 @@ void _rfbDecode() {
     if (action == RF_CODE_LEARN_KO) {
         _rfbAck();
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Learn timeout\n"));
-        wsSend("{\"action\": \"rfbTimeout\"}");
+        #if WEB_SUPPORT
+            wsSend("{\"action\": \"rfbTimeout\"}");
+        #endif
     }
 
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
@@ -114,9 +118,11 @@ void _rfbDecode() {
         rfbStore(_learnId, _learnStatus, buffer);
 
         // Websocket update
-        char wsb[100];
-        sprintf_P(wsb, PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), _learnId, _learnStatus ? 1 : 0, buffer);
-        wsSend(wsb);
+        #if WEB_SUPPORT
+            char wsb[100];
+            sprintf_P(wsb, strlen(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), _learnId, _learnStatus ? 1 : 0, buffer);
+            wsSend(wsb);
+        #endif
 
     }
 
@@ -286,9 +292,11 @@ void rfbForget(unsigned char id, bool status) {
     delSetting(key);
 
     // Websocket update
-    char wsb[100];
-    sprintf_P(wsb, PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"\"}]}"), id, status ? 1 : 0);
-    wsSend(wsb);
+    #if WEB_SUPPORT
+        char wsb[100];
+        snprintf_P(wsb, strlen(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"\"}]}"), id, status ? 1 : 0);
+        wsSend(wsb);
+    #endif
 
 }
 

@@ -158,28 +158,32 @@ void hlw8012Setup() {
     hlw8012RetrieveCalibration();
 
     // API definitions
-    apiRegister(HLW8012_POWER_TOPIC, HLW8012_POWER_TOPIC, [](char * buffer, size_t len) {
-        if (_hlwReady) {
-            snprintf_P(buffer, len, PSTR("%d"), _hlwPower);
-        } else {
-            buffer = NULL;
-        }
-    });
-    apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
-        if (_hlwReady) {
-            dtostrf(_hlwCurrent, len-1, 3, buffer);
-        } else {
-            buffer = NULL;
-        }
-    });
-    apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
-        if (_hlwReady) {
-            snprintf_P(buffer, len, PSTR("%d"), _hlwVoltage);
-        } else {
-            buffer = NULL;
-        }
-    });
+    #if WEB_SUPPORT
 
+        apiRegister(HLW8012_POWER_TOPIC, HLW8012_POWER_TOPIC, [](char * buffer, size_t len) {
+            if (_hlwReady) {
+                snprintf_P(buffer, len, PSTR("%d"), _hlwPower);
+            } else {
+                buffer = NULL;
+            }
+        });
+        apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
+            if (_hlwReady) {
+                dtostrf(_hlwCurrent, len-1, 3, buffer);
+            } else {
+                buffer = NULL;
+            }
+        });
+        apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
+            if (_hlwReady) {
+                snprintf_P(buffer, len, PSTR("%d"), _hlwVoltage);
+            } else {
+                buffer = NULL;
+            }
+        });
+
+    #endif // WEB_SUPPORT
+    
 }
 
 void hlw8012Loop() {
@@ -244,8 +248,8 @@ void hlw8012Loop() {
         }
         voltage_previous = voltage;
 
-        if (wsConnected()) {
-
+        #if WEB_SUPPORT
+        {
             unsigned int apparent = getApparentPower();
             double factor = getPowerFactor();
             unsigned int reactive = getReactivePower();
@@ -264,8 +268,8 @@ void hlw8012Loop() {
             String output;
             root.printTo(output);
             wsSend(output.c_str());
-
         }
+        #endif
 
         if (--report_count == 0) {
 

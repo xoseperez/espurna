@@ -151,9 +151,11 @@ void relayPulseMode(unsigned int value, bool report) {
     }
     */
 
-    char message[20];
-    sprintf_P(message, PSTR("{\"relayPulseMode\": %d}"), value);
-    wsSend(message);
+    #if WEB_SUPPORT
+        char message[20];
+        sprintf_P(message, PSTR("{\"relayPulseMode\": %d}"), value);
+        wsSend(message);
+    #endif
 
 }
 
@@ -314,6 +316,8 @@ unsigned char relayCount() {
 // REST API
 //------------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
 void relaySetupAPI() {
 
     // API entry points (protected with apikey)
@@ -343,10 +347,13 @@ void relaySetupAPI() {
 
 }
 
+#endif // WEB_SUPPORT
+
 //------------------------------------------------------------------------------
 // WebSockets
 //------------------------------------------------------------------------------
 
+#if WEB_SUPPORT
 void relayWS() {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -358,6 +365,7 @@ void relayWS() {
     root.printTo(output);
     wsSend(output.c_str());
 }
+#endif
 
 //------------------------------------------------------------------------------
 // MQTT
@@ -480,7 +488,9 @@ void relaySetup() {
     if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);
     relayLoop();
 
-    relaySetupAPI();
+    #if WEB_SUPPORT
+        relaySetupAPI();
+    #endif
     relaySetupMQTT();
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
@@ -517,7 +527,9 @@ void relayLoop(void) {
                 relayPulse(id);
                 relaySync(id);
                 relaySave();
-                relayWS();
+                #if WEB_SUPPORT
+                    relayWS();
+                #endif
             }
 
             #if DOMOTICZ_SUPPORT

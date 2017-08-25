@@ -46,6 +46,8 @@
 
 //#define ALEXA_SUPPORT          0
 //#define ANALOG_SUPPORT         1
+//#define DEBUG_SERIAL_SUPPORT   0
+//#define DEBUG_UDP_SUPPORT      1
 //#define DHT_SUPPORT            1
 //#define DOMOTICZ_SUPPORT       0
 //#define DS18B20_SUPPORT        1
@@ -55,7 +57,6 @@
 //#define MDNS_SUPPORT           0
 //#define NOFUSS_SUPPORT         1
 //#define RF_SUPPORT             1
-//#define DEBUG_SERIAL_SUPPORT   0
 //#define SPIFFS_SUPPORT         1
 //#define TERMINAL_SUPPORT       0
-//#define DEBUG_UDP_SUPPORT      1
+//#define WEB_SUPPORT            0

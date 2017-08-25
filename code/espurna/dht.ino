@@ -29,13 +29,18 @@ unsigned int getDHTHumidity() {
 }
 
 void dhtSetup() {
+
     dht.begin();
-    apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-        dtostrf(_dhtTemperature, len-1, 1, buffer);
-    });
-    apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
-        snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
-    });
+
+    #if WEB_SUPPORT
+        apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
+            dtostrf(_dhtTemperature, len-1, 1, buffer);
+        });
+        apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
+        });
+    #endif
+    
 }
 
 void dhtLoop() {
@@ -99,9 +104,11 @@ void dhtLoop() {
             #endif
 
             // Update websocket clients
-            char buffer[100];
-            sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
-            wsSend(buffer);
+            #if WEB_SUPPORT
+                char buffer[100];
+                sprintf_P(buffer, PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
+                wsSend(buffer);
+            #endif
 
         }
 
