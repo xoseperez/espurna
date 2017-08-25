@@ -240,10 +240,17 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         }
 
         if (t.equals(MQTT_TOPIC_RFOUT)) {
+
+            // The payload may be a code in HEX format ([0-9A-Z]{18}) or
+            // the code comma the number of times to transmit it.
             byte message[RF_MESSAGE_SIZE];
-            if (_rfbToArray(payload, message)) {
-                _rfbSend(message, 1);
+            char * tok = strtok((char *) payload, ",");
+            if (_rfbToArray(tok, message)) {
+                tok = strtok(NULL, ",");
+                byte times = (tok != NULL) ? atoi(tok) : 1;
+                _rfbSend(message, times);
             }
+
         }
 
     }
