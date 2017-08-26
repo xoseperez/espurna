@@ -16,7 +16,7 @@
 // Serial debug log
 
 #ifndef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT     1               // Enable serial debug log
+#define DEBUG_SERIAL_SUPPORT    1               // Enable serial debug log
 #endif
 #ifndef DEBUG_PORT
 #define DEBUG_PORT              Serial          // Default debugging port
@@ -26,10 +26,10 @@
 
 // UDP debug log
 // To receive the message son the destination computer use nc:
-// nc -ul 8111
+// nc -ul 8113
 
 #ifndef DEBUG_UDP_SUPPORT
-#define DEBUG_UDP_SUPPORT        0               // Enable UDP debug log
+#define DEBUG_UDP_SUPPORT       0               // Enable UDP debug log
 #endif
 #define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
 #define DEBUG_UDP_PORT          8113

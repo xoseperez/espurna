@@ -435,9 +435,10 @@
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
     #define DUMMY_RELAY_COUNT   1
-    #define MY9291_DI_PIN       13
-    #define MY9291_DCKI_PIN     15
+    #define MY9291_DI_PIN       12
+    #define MY9291_DCKI_PIN     14
     #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
+    #define MY9291_CHANNELS     5
 
 #elif defined(ITEAD_SONOFF_LED)
 
@@ -606,6 +607,7 @@
     #define MY9291_DI_PIN       13
     #define MY9291_DCKI_PIN     15
     #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
+    #define MY9291_CHANNELS     4
 
 // -----------------------------------------------------------------------------
 // LED Controller

@@ -235,7 +235,8 @@ void _lightProviderUpdate() {
             unsigned int green = _toPWM(1) * ratio;
             unsigned int blue = _toPWM(2) * ratio;
             unsigned int white = _toPWM(3) * ratio;
-            _my9291->setColor((my9291_color_t) { red, green, blue, white });
+            unsigned int warm = _toPWM(4) * ratio;
+            _my9291->setColor((my9291_color_t) { red, green, blue, white, warm });
             _my9291->setState(true);
 
         } else {
@@ -533,11 +534,10 @@ void _lightAPISetup() {
 void lightSetup() {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-        _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND);
-        _channels.push_back((channel_t) {0, false, 0});
-        _channels.push_back((channel_t) {0, false, 0});
-        _channels.push_back((channel_t) {0, false, 0});
-        _channels.push_back((channel_t) {0, false, 0});
+        _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND, MY9291_CHANNELS);
+        for (unsigned char i=0; i<MY9291_CHANNELS; i++) {
+            _channels.push_back((channel_t) {0, false, 0});
+        }
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
