@@ -264,13 +264,13 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 void rfbStore(unsigned char id, bool status, const char * code) {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
     char key[8] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%d%s"), id, status ? "on" : "off");
+    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
     setSetting(key, code);
 }
 
 String rfbRetrieve(unsigned char id, bool status) {
     char key[8] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%d%s"), id, status ? "on" : "off");
+    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
     return getSetting(key);
 }
 
@@ -295,7 +295,7 @@ void rfbLearn(unsigned char id, bool status) {
 void rfbForget(unsigned char id, bool status) {
 
     char key[8] = {0};
-    snprintf_P(key, sizeof(key), PSTR("rfb%d%s"), id, status ? "on" : "off");
+    snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
     delSetting(key);
 
     // Websocket update
