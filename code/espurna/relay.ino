@@ -293,6 +293,7 @@ void relayRetrieve(bool invert) {
     unsigned char mask = invert ? ~EEPROM.read(EEPROM_RELAY_STATUS) : EEPROM.read(EEPROM_RELAY_STATUS);
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
     for (unsigned int id=0; id < _relays.size(); id++) {
+        _relays[id].scheduled = true;
         _relays[id].scheduledStatus = ((mask & bit) == bit);
         _relays[id].scheduledReport = true;
         bit += bit;
