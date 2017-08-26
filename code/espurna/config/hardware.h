@@ -68,7 +68,6 @@
     // Info
     #define MANUFACTURER        "TINKERMAN"
     #define DEVICE              "ESPURNA_H"
-    #define HLW8012_SUPPORT      1
 
     // Buttons
     #define BUTTON1_PIN         4
@@ -84,7 +83,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define HLW8012_SUPPORT      1
+    #define HLW8012_SUPPORT     1
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -231,7 +230,6 @@
     // Info
     #define MANUFACTURER        "ITEAD_STUDIO"
     #define DEVICE              "SONOFF_POW"
-    #define HLW8012_SUPPORT      1
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -247,7 +245,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define HLW8012_SUPPORT      1
+    #define HLW8012_SUPPORT     1
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14

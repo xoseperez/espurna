@@ -84,15 +84,9 @@ void powerMonitorSetup() {
 
     // backwards compatibility
     String tmp;
-    tmp = getSetting("pwMainsVoltage", EMON_MAINS_VOLTAGE);
-    setSetting("emonVoltage", tmp);
-    delSetting("pwMainsVoltage");
-    tmp = getSetting("emonMains", EMON_MAINS_VOLTAGE);
-    setSetting("emonVoltage", tmp);
-    delSetting("emonMains");
-    tmp = getSetting("pwCurrentRatio", EMON_CURRENT_RATIO);
-    setSetting("emonRatio", tmp);
-    delSetting("pwCurrentRatio");
+    moveSetting("pwMainsVoltage", "emonVoltage");
+    moveSetting("emonMains", "emonVoltage");
+    moveSetting("pwCurrentRatio", "emonRatio");
 
     emon.initCurrent(
         currentCallback,
