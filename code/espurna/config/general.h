@@ -437,7 +437,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_SUPPORT         1               // Build with domoticz support
 #endif
 
-#define DOMOTICZ_ENABLED        1               // Enable domoticz by default
+#define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
 
