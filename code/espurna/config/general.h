@@ -285,7 +285,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // MDNS
 // -----------------------------------------------------------------------------
 
+#ifndef MDNS_SUPPORT
 #define MDNS_SUPPORT            1           // Enable MDNS by default
+#endif
 
 // -----------------------------------------------------------------------------
 // SPIFFS
@@ -314,7 +316,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
+#define MQTT_USE_ASYNC          0           // Use AysncMQTTClient (1) or PubSubClient (0)
 #endif
 
 // MQTT OVER SSL
@@ -454,6 +456,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
+
+#ifndef NTP_SUPPORT
+#define NTP_SUPPORT             1               // Build with NTP support by default
+#endif
 
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
 #define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)

@@ -236,9 +236,11 @@ void wifiSetup() {
         #endif
 
         // NTP connection reset
-        if (code == MESSAGE_CONNECTED) {
-            ntpConnect();
-        }
+        #if NTP_SUPPORT
+            if (code == MESSAGE_CONNECTED) {
+                ntpConnect();
+            }
+        #endif
 
         // Manage POW
         #if HLW8012_SUPPORT

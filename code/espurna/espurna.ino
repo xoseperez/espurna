@@ -80,7 +80,10 @@ void heartbeat() {
     unsigned long uptime_seconds = getUptime();
     unsigned int free_heap = ESP.getFreeHeap();
 
-    DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+    #if NTP_SUPPORT
+        DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+    #endif
+    
     if (!mqttConnected()) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
@@ -161,9 +164,9 @@ void hardwareSetup() {
 
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
-        if (customReset() == CUSTOM_RESET_HARDWARE) {
+        #if DEBUG_ESP_WIFI
             DEBUG_PORT.setDebugOutput(true);
-        }
+        #endif
     #elif defined(SERIAL_BAUDRATE)
         Serial.begin(SERIAL_BAUDRATE);
     #endif
@@ -280,12 +283,14 @@ void setup() {
     wifiSetup();
     otaSetup();
     mqttSetup();
-    ntpSetup();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif
 
+    #if NTP_SUPPORT
+        ntpSetup();
+    #endif
     #if I2C_SUPPORT
         i2cSetup();
     #endif
@@ -334,12 +339,14 @@ void loop() {
     wifiLoop();
     otaLoop();
     mqttLoop();
-    ntpLoop();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();
     #endif
 
+    #if NTP_SUPPORT
+        ntpLoop();
+    #endif
     #if TERMINAL_SUPPORT
         settingsLoop();
     #endif

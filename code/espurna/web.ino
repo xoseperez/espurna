@@ -18,12 +18,12 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_EMBEDDED
 #include "static/index.html.gz.h"
-#endif
+#endif // WEB_EMBEDDED
 
 #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
 #include "static/server.cer.h"
 #include "static/server.key.h"
-#endif
+#endif // ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
 
 // -----------------------------------------------------------------------------
 
@@ -302,7 +302,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 setSetting(key, value);
                 save = changed = true;
                 if (key.startsWith("mqtt")) changedMQTT = true;
-                if (key.startsWith("ntp")) changedNTP = true;
+                #if NTP_SUPPORT
+                    if (key.startsWith("ntp")) changedNTP = true;
+                #endif
             }
 
         }
@@ -369,9 +371,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
 
             // Check if we should reconfigure NTP connection
-            if (changedNTP) {
-                ntpConnect();
-            }
+            #if NTP_SUPPORT
+                if (changedNTP) ntpConnect();
+            #endif
 
         }
 
@@ -424,12 +426,15 @@ void _wsStart(uint32_t client_id) {
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
 
-        root["ntpStatus"] = ntpConnected();
-        root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
-        root["ntpServer2"] = getSetting("ntpServer2");
-        root["ntpServer3"] = getSetting("ntpServer3");
-        root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-        root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+        #if NTP_SUPPORT
+            root["ntpVisible"] = 1;
+            root["ntpStatus"] = ntpConnected();
+            root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
+            root["ntpServer2"] = getSetting("ntpServer2");
+            root["ntpServer3"] = getSetting("ntpServer3");
+            root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+            root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+        #endif
 
         root["mqttStatus"] = mqttConnected();
         root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
