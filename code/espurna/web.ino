@@ -409,8 +409,7 @@ void _wsStart(uint32_t client_id) {
 
         root["app"] = APP_NAME;
         root["version"] = APP_VERSION;
-        root["buildDate"] = __DATE__;
-        root["buildTime"] = __TIME__;
+        root["build"] = buildTime();
 
         root["manufacturer"] = String(MANUFACTURER);
         root["chipid"] = chipid;
@@ -419,6 +418,11 @@ void _wsStart(uint32_t client_id) {
         root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
+        root["time"] = ntpDateTime();
+        root["uptime"] = getUptime();
+        root["heap"] = ESP.getFreeHeap();
+        root["sketch_size"] = ESP.getSketchSize();
+        root["free_size"] = ESP.getFreeSketchSpace();
 
         root["ntpStatus"] = ntpConnected();
         root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);

@@ -533,6 +533,21 @@ function processData(data) {
             return;
         }
 
+        if (key == "uptime") {
+            var uptime  = parseInt(data[key]);
+            var seconds = uptime % 60; uptime = parseInt(uptime / 60);
+            var minutes = uptime % 60; uptime = parseInt(uptime / 60);
+            var hours   = uptime % 24; uptime = parseInt(uptime / 24);
+            var days    = uptime;
+            data[key] = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
+        }
+
+        if (key == "time") data[key] = data[key].replace('T', ' ');
+
+        if (key == "heap") data[key] = data[key] + ' bytes';
+        if (key == "sketch_size") data[key] = data[key] + ' bytes';
+        if (key == "free_size") data[key] = data[key] + ' bytes';
+
         if (key == "useWhite") {
             useWhite = data[key];
         }
