@@ -316,7 +316,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          0           // Use AysncMQTTClient (1) or PubSubClient (0)
+#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
 #endif
 
 // MQTT OVER SSL
