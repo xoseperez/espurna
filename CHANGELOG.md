@@ -3,6 +3,21 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.1] 2017-08-27
+### Added
+- Support to build without NTP support
+- Added current time, uptime, free heap, firmware size and free space to web interface
+
+### Changed
+- Changed settings keys for Itead Sonoff RF Bridge
+- Disable Domoticz by default
+
+### Fixed
+- Fixed build flags for DHT and DS18B20 in platformio.ini file
+- Fixed Itead Sonoff B1 by updating the my9291 library
+- Fixed light status on boot (#157)
+- Fixed CSS bug cause by a bad merge
+
 ## [1.9.0] 2017-08-25
 ### Added
 - Support for IteadStudio BN-SZ01 Ceiling Light (#132)

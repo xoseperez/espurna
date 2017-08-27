@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.9.0**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.9.1**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 ## Features
 
@@ -21,7 +21,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
-    * SSL/TLS support (not on regular builds, requires staging version of Arduino Core for ESP8266)
+    * **SSL/TLS support** (not on regular builds, requires staging version of Arduino Core for ESP8266)
     * Switch on/off and toggle relays
     * Report button event notifications
     * Enable/disable pulse mode
@@ -36,11 +36,13 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * DS18B20 (supports celsius & fahrenheit reporting)
     * HLW8012 using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
     * Non-invasive current sensor using the [EmonLiteESP Library](https://bitbucket.org/xoseperez/emonliteesp) (requires some hacking)
+    * Raw analog sensor
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
     * Web-based configuration
     * Relay switching and sensor data from the web interface
+    * Handle color, brightness, and white/warm channels for lights
     * Websockets-based communication between the device and the browser
     * Backup and restore settings option
     * Upgrade firmware from the web interface
@@ -53,6 +55,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Over-The-Air** (OTA) updates even for 1Mb boards
     * Manually from PlatformIO or Arduino IDE
     * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
+    * Update from web interface using pre-built images
 * **Command line configuration**
 * Button interface
     * Click to toggle relays
