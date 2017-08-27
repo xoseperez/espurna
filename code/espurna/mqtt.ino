@@ -91,7 +91,9 @@ void _mqttFlush() {
         mqtt_message_t element = _mqtt_queue[i];
         root[element.topic] = element.message;
     }
-    if (ntpConnected()) root[MQTT_TOPIC_TIME] = ntpDateTime();
+    #if NTP_SUPPORT
+        if (ntpConnected()) root[MQTT_TOPIC_TIME] = ntpDateTime();
+    #endif
     root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname");
     root[MQTT_TOPIC_IP] = getIP();
 

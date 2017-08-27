@@ -1,9 +1,9 @@
 #include "version.h"
 #include "arduino.h"
-#include "prototypes.h"
 #include "hardware.h"
 #include "general.h"
 #include "sensors.h"
+#include "prototypes.h"
 
 /*
     If you want to modify the stock configuration but you don't want to touch

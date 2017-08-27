@@ -285,7 +285,9 @@ PROGMEM const char* const custom_reset_string[] = {
 // MDNS
 // -----------------------------------------------------------------------------
 
+#ifndef MDNS_SUPPORT
 #define MDNS_SUPPORT            1           // Enable MDNS by default
+#endif
 
 // -----------------------------------------------------------------------------
 // SPIFFS
@@ -454,6 +456,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
+
+#ifndef NTP_SUPPORT
+#define NTP_SUPPORT             1               // Build with NTP support by default
+#endif
 
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
 #define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
