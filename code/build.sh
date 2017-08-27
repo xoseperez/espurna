@@ -1,15 +1,28 @@
 #!/bin/bash
 
-# Environments to build
+# Welcome
+echo "--------------------------------------------------------------"
+echo "ESPURNA FIRMWARE BUILDER"
+
+# Available environments
+available=`cat platformio.ini | grep env: | grep -v ota  | sed 's/\[env://' | sed 's/\]/ /' | sort`
 environments=$@
+if [ "$environments" == "list" ]; then
+    echo "--------------------------------------------------------------"
+    echo "Available environments:"
+    for environment in $available; do
+        echo "* $environment"
+    done
+    exit
+fi
+
+# Environments to build
 if [ $# -eq 0 ]; then
-    environments=`cat platformio.ini | grep env: | grep -v ota  | sed 's/\[env://' | sed 's/\]/ /'`
+    environments=$available
 fi
 
 # Get current version
 version=`cat espurna/config/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
-echo "--------------------------------------------------------------"
-echo "ESPURNA FIRMWARE BUILDER"
 echo "Building for version $version"
 
 # Create output folder
