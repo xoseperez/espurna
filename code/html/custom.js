@@ -539,7 +539,7 @@ function processData(data) {
             var minutes = uptime % 60; uptime = parseInt(uptime / 60);
             var hours   = uptime % 24; uptime = parseInt(uptime / 24);
             var days    = uptime;
-            data[key] = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
+            data[key] = days + 'd ' + ("00" + hours).slice(-2) + 'h ' + ("00" + minutes).slice(-2) + 'm ' + ("00" + seconds).slice(-2) + 's';
         }
 
         if (key == "time") data[key] = data[key].replace('T', ' ');
