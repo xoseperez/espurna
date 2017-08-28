@@ -7,6 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <vector>
 #include <Ticker.h>
@@ -447,6 +448,27 @@ void mqttConfigure() {
     }
 
 }
+
+#ifdef MDNS_SUPPORT
+boolean mqttDiscover() {
+
+    int count = MDNS.queryService("mqtt", "tcp");
+    DEBUG_MSG_P("[MQTT] MQTT brokers found: %d\n", count);
+
+    for (int i=0; i<count; i++) {
+
+        DEBUG_MSG_P("[MQTT] Broker at %s:%d\n", MDNS.IP(i).toString().c_str(), MDNS.port(i));
+
+        if ((i==0) && (getSetting("mqttServer").length() == 0)) {
+            setSetting("mqttServer", MDNS.IP(i).toString());
+            setSetting("mqttPort", MDNS.port(i));
+            mqttEnabled(MQTT_AUTOCONNECT);
+        }
+
+    }
+
+}
+#endif  // MDNS_SUPPORT
 
 void mqttSetup() {
     #if MQTT_USE_ASYNC

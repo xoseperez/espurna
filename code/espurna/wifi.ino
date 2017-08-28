@@ -231,6 +231,7 @@ void wifiSetup() {
                 if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
                     MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
     	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
+                    if (code == MESSAGE_CONNECTED) mqttDiscover();
     	        } else {
     	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
     	        }
