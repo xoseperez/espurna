@@ -542,12 +542,6 @@ function processData(data) {
             data[key] = days + 'd ' + ("00" + hours).slice(-2) + 'h ' + ("00" + minutes).slice(-2) + 'm ' + ("00" + seconds).slice(-2) + 's';
         }
 
-        if (key == "time") data[key] = data[key].replace('T', ' ');
-
-        if (key == "heap") data[key] = data[key] + ' bytes';
-        if (key == "sketch_size") data[key] = data[key] + ' bytes';
-        if (key == "free_size") data[key] = data[key] + ' bytes';
-
         if (key == "useWhite") {
             useWhite = data[key];
         }
