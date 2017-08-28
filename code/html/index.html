@@ -133,7 +133,7 @@
 
                     <div class="footer">
                         &copy; 2016-2017<br />
-                        Xose PÃ©rez<br/>
+                        Xose Pérez<br/>
                         <a href="http://tinkerman.cat" target="_blank">http://tinkerman.cat</a><br/>
                         <a href="https://bitbucket.org/xoseperez/espurna" target="_blank">ESPurna @ Bitbucket</a><br/>
                         GPLv3 license<br/>
@@ -407,8 +407,8 @@
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (ÂºC)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (ÂºF)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (ºC)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (ºF)</input></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -561,7 +561,7 @@
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaces by the device hostname.<br />
-                                        - <strong>&lt;root&gt;/relay/#</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
+                                        - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
                                         <span class="module module-color">- <strong>&lt;root&gt;/color</strong> The device will report the current color in #RRGGBB format to this topic. You can also set the color using this same topic.<br /></span>
                                         - <strong>&lt;root&gt;/led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
                                         - <strong>&lt;root&gt;/button/#</strong> For each button in the board subscribe to this topic to know when it is pressed (payload 1) or released (payload 0).<br />
