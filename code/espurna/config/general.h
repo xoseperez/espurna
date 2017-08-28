@@ -229,6 +229,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_RECONNECT_INTERVAL 120000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
+#ifndef WIFI_GAIN
+#define WIFI_GAIN               0           // WiFi gain in dBm from 0 (normal) to 20.5 (max power and consumption)
+#endif
 
 // Optional hardcoded configuration (up to 2 different networks)
 //#define WIFI1_SSID              "..."
