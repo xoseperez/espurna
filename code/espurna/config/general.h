@@ -333,6 +333,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_SSL_ENABLED        0
 #define MQTT_SSL_FINGERPRINT    ""
 
+#define MQTT_ENABLED            0           // Do not enable MQTT connection by default
 #define MQTT_SERVER             ""          // Default MQTT broker address
 #define MQTT_PORT               1883        // MQTT broker port
 #define MQTT_TOPIC              "/test/switch/{identifier}"     // Default MQTT base topic
@@ -341,7 +342,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_KEEPALIVE          30          // MQTT keepalive value
 #define MQTT_RECONNECT_DELAY    10000       // Try to reconnect after 10s
 #define MQTT_TRY_INTERVAL       30000       // Timeframe for disconnect retries
-#define MQTT_MAX_TRIES          12          // After these many retries during the previous MQTT_TRY_INTERVAL the board will reset
+#define MQTT_MAX_TRIES          10          // After these many retries during the previous MQTT_TRY_INTERVAL the board will reset
 #define MQTT_SKIP_RETAINED      1           // Skip retained messages on connection
 #define MQTT_SKIP_TIME          1000        // Skip messages for 1 second anter connection
 

@@ -346,6 +346,11 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             saveSettings();
             wifiConfigure();
             otaConfigure();
+            if (changedMQTT) {
+                mqttConfigure();
+                mqttDisconnect();
+            }
+
             #if ALEXA_SUPPORT
                 alexaConfigure();
             #endif
@@ -355,22 +360,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if DOMOTICZ_SUPPORT
                 domoticzConfigure();
             #endif
-            mqttConfigure();
-
             #if RF_SUPPORT
                 rfBuildCodes();
             #endif
-
             #if EMON_SUPPORT
                 setCurrentRatio(getSetting("emonRatio").toFloat());
             #endif
-
-            // Check if we should reconfigure MQTT connection
-            if (changedMQTT) {
-                mqttDisconnect();
-            }
-
-            // Check if we should reconfigure NTP connection
             #if NTP_SUPPORT
                 if (changedNTP) ntpConnect();
             #endif
@@ -437,6 +432,7 @@ void _wsStart(uint32_t client_id) {
         #endif
 
         root["mqttStatus"] = mqttConnected();
+        root["mqttEnabled"] = mqttEnabled();
         root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
         root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
         root["mqttUser"] = getSetting("mqttUser");

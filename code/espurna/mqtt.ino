@@ -28,29 +28,30 @@ bool _mqttConnected = false;
 WiFiClient _mqttClient;
 #if ASYNC_TCP_SSL_ENABLED
 WiFiClientSecure _mqttClientSecure;
-#endif
+#endif // ASYNC_TCP_SSL_ENABLED
 
-#endif
+#endif // MQTT_USE_ASYNC
 
+bool _mqttEnabled = MQTT_ENABLED;
 String _mqttTopic;
 String _mqttSetter;
 String _mqttGetter;
-
 bool _mqttForward;
 char *_mqttUser = 0;
 char *_mqttPass = 0;
 char *_mqttWill;
-std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 #if MQTT_SKIP_RETAINED
-    unsigned long mqttConnectedAt = 0;
+unsigned long _mqttConnectedAt = 0;
 #endif
+
+std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
 
 typedef struct {
     char * topic;
     char * message;
 } mqtt_message_t;
 std::vector<mqtt_message_t> _mqtt_queue;
-Ticker mqttFlushTicker;
+Ticker _mqttFlushTicker;
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -126,7 +127,7 @@ void mqttSend(const char * topic, const char * message, bool force) {
         element.topic = strdup(topic);
         element.message = strdup(message);
         _mqtt_queue.push_back(element);
-        mqttFlushTicker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
+        _mqttFlushTicker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
     } else {
         String path = _mqttTopic + String(topic) + _mqttGetter;
         mqttSendRaw(path.c_str(), message);
@@ -203,11 +204,8 @@ void _mqttOnConnect() {
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
 
     #if MQTT_SKIP_RETAINED
-        mqttConnectedAt = millis();
+        _mqttConnectedAt = millis();
     #endif
-
-    // Build MQTT topics
-    mqttConfigure();
 
     // Send first Heartbeat
     heartbeat();
@@ -238,7 +236,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     strlcpy(message, (char *) payload, len + 1);
 
     #if MQTT_SKIP_RETAINED
-        if (millis() - mqttConnectedAt < MQTT_SKIP_TIME) {
+        if (millis() - _mqttConnectedAt < MQTT_SKIP_TIME) {
             DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
 			return;
 		}
@@ -293,21 +291,27 @@ bool mqttFormatFP(const char * fingerprint, char * destination) {
 
 #endif
 
+void mqttEnabled(bool status) {
+    _mqttEnabled = status;
+    setSetting("mqttEnabled", status ? 1 : 0);
+}
+
+bool mqttEnabled() {
+    return _mqttEnabled;
+}
 
 void mqttConnect() {
 
-    if (!mqtt.connected()) {
+    if (_mqttEnabled & !mqtt.connected()) {
 
-        if (getSetting("mqttServer", MQTT_SERVER).length() == 0) return;
-
-        // Last option: reconnect to wifi after MQTT_MAX_TRIES attemps in a row
+        // Disable MQTT after MQTT_MAX_TRIES attemps in a row
         #if MQTT_MAX_TRIES > 0
             static unsigned int tries = 0;
             static unsigned long last_try = millis();
             if (millis() - last_try < MQTT_TRY_INTERVAL) {
                 if (++tries > MQTT_MAX_TRIES) {
-                    DEBUG_MSG_P(PSTR("[MQTT] MQTT_MAX_TRIES met, disconnecting from WiFi\n"));
-                    wifiDisconnect();
+                    DEBUG_MSG_P(PSTR("[MQTT] MQTT_MAX_TRIES met, disabling MQTT\n"));
+                    mqttEnabled(false);
                     tries = 0;
                     return;
                 }
@@ -321,6 +325,7 @@ void mqttConnect() {
         if (_mqttPass) free(_mqttPass);
 
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
+        if (strlen(host) == 0) return;
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
         _mqttUser = strdup(getSetting("mqttUser").c_str());
         _mqttPass = strdup(getSetting("mqttPassword").c_str());
@@ -423,13 +428,24 @@ void mqttConnect() {
 }
 
 void mqttConfigure() {
+
     // Replace identifier
     _mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
     _mqttTopic.replace("{identifier}", getSetting("hostname"));
     if (!_mqttTopic.endsWith("/")) _mqttTopic = _mqttTopic + "/";
+
+    // Getters and setters
     _mqttSetter = getSetting("mqttSetter", MQTT_USE_SETTER);
     _mqttGetter = getSetting("mqttGetter", MQTT_USE_GETTER);
     _mqttForward = !_mqttGetter.equals(_mqttSetter);
+
+    // Enable
+    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
+        mqttEnabled(false);
+    } else {
+        _mqttEnabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
+    }
+
 }
 
 void mqttSetup() {
@@ -475,13 +491,14 @@ void mqttSetup() {
         });
     #endif
 
+    mqttConfigure();
     mqttRegister(_mqttCallback);
 
 }
 
 void mqttLoop() {
 
-    static unsigned long lastPeriod = 0;
+    if (!_mqttEnabled) return;
 
     if (WiFi.status() == WL_CONNECTED) {
 
@@ -494,9 +511,9 @@ void mqttLoop() {
                 }
             #endif
 
-        	unsigned long currPeriod = millis() / MQTT_RECONNECT_DELAY;
-        	if (currPeriod != lastPeriod) {
-        	    lastPeriod = currPeriod;
+            static unsigned long last = 0;
+            if (millis() - last > MQTT_RECONNECT_DELAY) {
+        	    last = millis();
                 mqttConnect();
             }
 

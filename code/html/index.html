@@ -519,7 +519,12 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttServer">MQTT Server</label>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="mqttEnabled">Enable MQTT</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="mqttEnabled" tabindex="30" /></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="mqttServer">MQTT Broker</label>
                                     <input class="pure-u-1 pure-u-md-3-4" name="mqttServer" type="text" size="20" tabindex="21" placeholder="IP or address of your broker" />
                                 </div>
 
