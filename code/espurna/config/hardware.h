@@ -253,13 +253,13 @@
 #elif defined(ITEAD_SONOFF_DUAL)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
-    #define DEVICE              "SONOFF_DUAL"
-    #define SERIAL_BAUDRATE     19230
-    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
-    #define DUMMY_RELAY_COUNT   2
-    #define DEBUG_SERIAL_SUPPORT 0
-    #define TERMINAL_SUPPORT     0
+    #define MANUFACTURER            "ITEAD_STUDIO"
+    #define DEVICE                  "SONOFF_DUAL"
+    #define SERIAL_BAUDRATE         19230
+    #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
+    #define DUMMY_RELAY_COUNT       2
+    #define DEBUG_SERIAL_SUPPORT    0
+    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -409,15 +409,16 @@
 #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
-    #define DEVICE              "SONOFF_RFBRIDGE"
-    #define SERIAL_BAUDRATE     19200
-    #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
-    #define TRACK_RELAY_STATUS  0
-    #define TERMINAL_SUPPORT    0
+    #define MANUFACTURER            "ITEAD_STUDIO"
+    #define DEVICE                  "SONOFF_RFBRIDGE"
+    #define SERIAL_BAUDRATE         19200
+    #define RELAY_PROVIDER          RELAY_PROVIDER_RFBRIDGE
     #ifndef DUMMY_RELAY_COUNT
-    #define DUMMY_RELAY_COUNT   6
+    #define DUMMY_RELAY_COUNT       6
     #endif
+    #define TRACK_RELAY_STATUS      0
+    #define DEBUG_SERIAL_SUPPORT    0
+    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON1_PIN         0
