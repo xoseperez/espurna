@@ -133,7 +133,7 @@
 
                     <div class="footer">
                         &copy; 2016-2017<br />
-                        Xose Pérez<br/>
+                        Xose Pï¿½rez<br/>
                         <a href="http://tinkerman.cat" target="_blank">http://tinkerman.cat</a><br/>
                         <a href="https://bitbucket.org/xoseperez/espurna" target="_blank">ESPurna @ Bitbucket</a><br/>
                         GPLv3 license<br/>
@@ -407,8 +407,8 @@
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (ºC)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (ºF)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (ï¿½C)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (ï¿½F)</input></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -565,11 +565,12 @@
                                     <input class="pure-u-1 pure-u-md-3-4" name="mqttTopic" type="text" size="20" tabindex="27" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaces by the device hostname.<br />
+                                        This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaced by the device hostname.<br />
                                         - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
-                                        <span class="module module-color">- <strong>&lt;root&gt;/color</strong> The device will report the current color in #RRGGBB format to this topic. You can also set the color using this same topic.<br /></span>
-                                        - <strong>&lt;root&gt;/led/#</strong> Send a 0 or a 1 as a payload to this topic to set the onboard LED to the given state, send a 3 to turn it back to WIFI indicator. Replace # with the LED ID (starting from 0). If the board has only one LED it will be 0.<br />
-                                        - <strong>&lt;root&gt;/button/#</strong> For each button in the board subscribe to this topic to know when it is pressed (payload 1) or released (payload 0).<br />
+                                        <span class="module module-color">- <strong>&lt;root&gt;/color/set</strong> Set the color using this topic, your can either send an "#RRGGBB" value or "RRR,GGG,BBB".<br /></span>
+                                        <span class="module module-color">- <strong>&lt;root&gt;/brightness/set</strong> Set the brighness using a value from 0 to 255.<br /></span>
+                                        <span class="module module-color">- <strong>&lt;root&gt;/channel/#/set</strong> Set the value for a single color channel (from 0 to 255). Replace # with the channel ID (starting from 0 and up to 4 for RGBWC lights).<br /></span>
+                                        <span class="module module-color">- <strong>&lt;root&gt;/mired/set</strong> Set the temperature color in mired.<br /></span>
                                         - <strong>&lt;root&gt;/status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.<br />
                                         - Other values reported (depending on the build) are: <strong>firmware</strong> and <strong>version</strong>, <strong>hostname</strong>, <strong>IP</strong>, <strong>MAC</strong>, signal strenth (<strong>RSSI</strong>), <strong>uptime</strong> (in seconds), <strong>free heap</strong> and <strong>power supply</strong>.
                                     </div>
