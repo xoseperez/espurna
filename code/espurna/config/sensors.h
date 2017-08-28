@@ -85,7 +85,6 @@
     #define EMON_CURRENT_PIN        0
 	#define EMON_ADC_BITS           10
 	#define EMON_REFERENCE_VOLTAGE  1.0
-    #define EMON_CURRENT_PRECISION  1
     #define EMON_CURRENT_OFFSET     0.25
     #if EMON_SUPPORT
         #undef ADC_VCC_ENABLED
@@ -97,7 +96,6 @@
     #define EMON_ADC121_ADDRESS     0x50
 	#define EMON_ADC_BITS           12
 	#define EMON_REFERENCE_VOLTAGE  3.3
-    #define EMON_CURRENT_PRECISION  2
     #define EMON_CURRENT_OFFSET     0.10
 #endif
 

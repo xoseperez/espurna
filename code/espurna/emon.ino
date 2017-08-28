@@ -94,7 +94,6 @@ void powerMonitorSetup() {
         EMON_REFERENCE_VOLTAGE,
         getSetting("emonRatio", EMON_CURRENT_RATIO).toFloat()
     );
-    emon.setPrecision(EMON_CURRENT_PRECISION);
 
     #if EMON_PROVIDER == EMON_ADC121_PROVIDER
         uint8_t buffer[2];
