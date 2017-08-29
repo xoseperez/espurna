@@ -403,11 +403,19 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USE_SETTER         "/set"
 
 // -----------------------------------------------------------------------------
+// SETTINGS
+// -----------------------------------------------------------------------------
+
+#ifndef SETTINGS_AUTOSAVE
+#define SETTINGS_AUTOSAVE       1           // Autosave settings o force manual commit
+#endif
+
+// -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
 
 #ifndef I2C_SUPPORT
-#define I2C_SUPPORT              0           // I2C enabled
+#define I2C_SUPPORT             0           // I2C enabled
 #endif
 
 #define I2C_SDA_PIN             4           // SDA GPIO

@@ -210,6 +210,7 @@ void loop() {
     wifiLoop();
     otaLoop();
     mqttLoop();
+    settingsLoop();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();
@@ -217,9 +218,6 @@ void loop() {
 
     #if NTP_SUPPORT
         ntpLoop();
-    #endif
-    #if TERMINAL_SUPPORT
-        settingsLoop();
     #endif
     #if ALEXA_SUPPORT
         alexaLoop();
