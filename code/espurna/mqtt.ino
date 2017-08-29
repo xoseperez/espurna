@@ -340,8 +340,8 @@ void mqttConnect() {
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
         if (strlen(host) == 0) return;
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
-        _mqttUser = strdup(getSetting("mqttUser").c_str());
-        _mqttPass = strdup(getSetting("mqttPassword").c_str());
+        _mqttUser = strdup(getSetting("mqttUser", MQTT_USER).c_str());
+        _mqttPass = strdup(getSetting("mqttPassword", MQTT_PASSWORD).c_str());
         if (_mqttWill) free(_mqttWill);
         _mqttWill = strdup((_mqttTopic + MQTT_TOPIC_STATUS).c_str());
 
