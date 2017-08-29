@@ -296,9 +296,8 @@ PROGMEM const char* const custom_reset_string[] = {
 // SPIFFS
 // -----------------------------------------------------------------------------
 
-// Do not add support for SPIFFS by default
 #ifndef SPIFFS_SUPPORT
-#define SPIFFS_SUPPORT           0
+#define SPIFFS_SUPPORT           0          // Do not add support for SPIFFS by default
 #endif
 
 // -----------------------------------------------------------------------------
@@ -310,6 +309,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 // NOFUSS
 // -----------------------------------------------------------------------------
+
+#ifndef NOFUSS_SUPPORT
+#define NOFUSS_SUPPORT           0          // Do not enable support for NoFuss by default
+#endif
 
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
