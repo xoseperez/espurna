@@ -739,6 +739,9 @@ function init() {
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
+    $(".button-ha-send").on('click', function() {
+        websock.send(JSON.stringify({'action': 'ha_send', 'data': $("input[name='haPrefix']").val()}));
+    });
 
     var protocol = location.protocol;
     var host = window.location.hostname;

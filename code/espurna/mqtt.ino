@@ -91,6 +91,18 @@ void mqttSendRaw(const char * topic, const char * message) {
     }
 }
 
+String getTopic(const char * topic, bool set) {
+    String output = _mqttTopic + String(topic);
+    if (set) output += _mqttSetter;
+    return output;
+}
+
+String getTopic(const char * topic, unsigned int index, bool set) {
+    char buffer[strlen(topic)+5];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
+    return getTopic(buffer, set);
+}
+
 void _mqttFlush() {
 
     if (_mqtt_queue.size() == 0) return;

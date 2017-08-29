@@ -442,12 +442,22 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef DOMOTICZ_SUPPORT
-#define DOMOTICZ_SUPPORT         1               // Build with domoticz support
+#define DOMOTICZ_SUPPORT        1               // Build with domoticz support
 #endif
 
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
+
+// -----------------------------------------------------------------------------
+// HOME ASSISTANT
+// -----------------------------------------------------------------------------
+
+#ifndef HOMEASSISTANT_SUPPORT
+#define HOMEASSISTANT_SUPPORT   1               // Build with home assistant support
+#endif
+
+#define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 
 // -----------------------------------------------------------------------------
 // INFLUXDB

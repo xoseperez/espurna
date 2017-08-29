@@ -155,6 +155,15 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
         }
 
+        #if HOMEASSISTANT_SUPPORT
+            if (action.equals("ha_send") && root.containsKey("data")) {
+                String value = root["data"];
+                setSetting("haPrefix", value);
+                haSend();
+                wsSend_P(client_id, PSTR("{\"message\": \"Home Assistant auto-discovery message sent.\"}"));
+            }
+        #endif
+
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
             if (lightHasColor()) {
@@ -481,6 +490,11 @@ void _wsStart(uint32_t client_id) {
         root["apiKey"] = getSetting("apiKey");
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
+
+        #if HOMEASSISTANT_SUPPORT
+            root["haVisible"] = 1;
+            root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
+        #endif // HOMEASSISTANT_SUPPORT
 
         #if DOMOTICZ_SUPPORT
 
