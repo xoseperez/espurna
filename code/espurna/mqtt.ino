@@ -63,7 +63,10 @@ bool mqttConnected() {
 }
 
 void mqttDisconnect() {
-    if (mqtt.connected()) mqtt.disconnect();
+    if (mqtt.connected()) {
+        DEBUG_MSG_P("[MQTT] Disconnecting\n");
+        mqtt.disconnect();
+    }
 }
 
 bool mqttForward() {
@@ -483,7 +486,11 @@ boolean mqttDiscover() {
 #endif  // MDNS_SUPPORT
 
 void mqttSetup() {
+
     #if MQTT_USE_ASYNC
+
+        DEBUG_MSG_P(PSTR("[MQTT] Using ASYNC MQTT library\n"));
+
         mqtt.onConnect([](bool sessionPresent) {
             _mqttOnConnect();
         });
@@ -519,11 +526,16 @@ void mqttSetup() {
         mqtt.onPublish([](uint16_t packetId) {
             DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %d\n"), packetId);
         });
-    #else
+
+    #else // not MQTT_USE_ASYNC
+
+        DEBUG_MSG_P(PSTR("[MQTT] Using SYNC MQTT library\n"));
+
         mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {
             _mqttOnMessage(topic, (char *) payload, length);
         });
-    #endif
+
+    #endif // MQTT_USE_ASYNC
 
     mqttConfigure();
     mqttRegister(_mqttCallback);
@@ -532,32 +544,43 @@ void mqttSetup() {
 
 void mqttLoop() {
 
-    if (!_mqttEnabled) return;
+    #if MQTT_USE_ASYNC
 
-    if (WiFi.status() == WL_CONNECTED) {
+        if (!_mqttEnabled) return;
+        if (WiFi.status() != WL_CONNECTED) return;
+        if (mqtt.connected) return;
 
-        if (!mqtt.connected()) {
+        static unsigned long last = 0;
+        if (millis() - last > MQTT_RECONNECT_DELAY) {
+    	    last = millis();
+            mqttConnect();
+        }
 
-            #if not MQTT_USE_ASYNC
-                if (_mqttConnected) {
-                    _mqttOnDisconnect();
-                    _mqttConnected = false;
-                }
-            #endif
+    #else // not MQTT_USE_ASYNC
 
-            static unsigned long last = 0;
-            if (millis() - last > MQTT_RECONNECT_DELAY) {
-        	    last = millis();
-                mqttConnect();
+        if (WiFi.status() != WL_CONNECTED) return;
+
+        if (mqtt.connected()) {
+
+            mqtt.loop();
+
+        } else {
+
+            if (_mqttConnected) {
+                _mqttOnDisconnect();
+                _mqttConnected = false;
             }
 
-        #if not MQTT_USE_ASYNC
-        } else {
-            mqtt.loop();
-        #endif
+            if (_mqttEnabled) {
+                static unsigned long last = 0;
+                if (millis() - last > MQTT_RECONNECT_DELAY) {
+                    last = millis();
+                    mqttConnect();
+                }
+            }
 
         }
 
-    }
+    #endif
 
 }
