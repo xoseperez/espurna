@@ -337,6 +337,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SUPPORT=1 will perform an autodiscover and
                                             // autoconnect to the first MQTT broker found if none defined
 #define MQTT_SERVER             ""          // Default MQTT broker address
+#define MQTT_USER               ""          // Default MQTT broker usename
+#define MQTT_PASS               ""          // Default MQTT broker password
 #define MQTT_PORT               1883        // MQTT broker port
 #define MQTT_TOPIC              "/test/switch/{identifier}"     // Default MQTT base topic
 #define MQTT_RETAIN             true        // MQTT retain flag
