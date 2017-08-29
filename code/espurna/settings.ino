@@ -99,16 +99,16 @@ void settingsSetup() {
         e->response(s);
     }, 0);
 
-    Embedis::command( F("RECONNECT"), [](Embedis* e) {
+    Embedis::command( F("RESET.WIFI"), [](Embedis* e) {
         wifiConfigure();
         wifiDisconnect();
         e->response(Embedis::OK);
     });
 
-    Embedis::command( F("RESTART"), [](Embedis* e) {
+    Embedis::command( F("RESET.MQTT"), [](Embedis* e) {
+        mqttConfigure();
+        mqttDisconnect();
         e->response(Embedis::OK);
-        customReset(CUSTOM_RESET_TERMINAL);
-        ESP.restart();
     });
 
     Embedis::command( F("RESET"), [](Embedis* e) {
