@@ -8,6 +8,8 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if HOMEASSISTANT_SUPPORT
 
+#include <ArduinoJson.h>
+
 void haSend() {
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
