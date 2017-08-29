@@ -52,6 +52,7 @@
 //#define DOMOTICZ_SUPPORT       0
 //#define DS18B20_SUPPORT        1
 //#define EMON_SUPPORT           1
+//#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       0
 //#define MDNS_SUPPORT           0
