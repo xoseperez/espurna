@@ -461,7 +461,7 @@ void mqttConfigure() {
 
 }
 
-#ifdef MDNS_SUPPORT
+#if MDNS_SUPPORT
 boolean mqttDiscover() {
 
     int count = MDNS.queryService("mqtt", "tcp");
