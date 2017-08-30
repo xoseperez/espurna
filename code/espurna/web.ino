@@ -369,6 +369,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if DOMOTICZ_SUPPORT
                 domoticzConfigure();
             #endif
+            #if NOFUSS_SUPPORT
+                nofussConfigure();
+            #endif
             #if RF_SUPPORT
                 rfBuildCodes();
             #endif
@@ -590,18 +593,24 @@ void _wsStart(uint32_t client_id) {
             root["powPowerFactor"] = String(getPowerFactor(), 2);
         #endif
 
+        #if NOFUSS_SUPPORT
+            root["nofussVisible"] = 1;
+            root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+            root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
+        #endif
+
         #ifdef ITEAD_SONOFF_RFBRIDGE
-        root["rfbVisible"] = 1;
-        root["rfbCount"] = relayCount();
-        JsonArray& rfb = root.createNestedArray("rfb");
-        for (byte id=0; id<relayCount(); id++) {
-            for (byte status=0; status<2; status++) {
-                JsonObject& node = rfb.createNestedObject();
-                node["id"] = id;
-                node["status"] = status;
-                node["data"] = rfbRetrieve(id, status == 1);
+            root["rfbVisible"] = 1;
+            root["rfbCount"] = relayCount();
+            JsonArray& rfb = root.createNestedArray("rfb");
+            for (byte id=0; id<relayCount(); id++) {
+                for (byte status=0; status<2; status++) {
+                    JsonObject& node = rfb.createNestedObject();
+                    node["id"] = id;
+                    node["status"] = status;
+                    node["data"] = rfbRetrieve(id, status == 1);
+                }
             }
-        }
         #endif
 
         root["wifiGain"] = getSetting("wifiGain", WIFI_GAIN).toFloat();

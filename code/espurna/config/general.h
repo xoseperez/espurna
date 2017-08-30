@@ -311,9 +311,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef NOFUSS_SUPPORT
-#define NOFUSS_SUPPORT           0          // Do not enable support for NoFuss by default
+#define NOFUSS_SUPPORT          0          // Do not enable support for NoFuss by default
 #endif
 
+#define NOFUSS_ENABLED          0           // Do not perform NoFUSS updates by default
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
 

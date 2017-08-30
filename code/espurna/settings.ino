@@ -117,6 +117,11 @@ void settingsSetup() {
         ESP.restart();
     });
 
+    Embedis::command( F("NOFUSS"), [](Embedis* e) {
+        e->response(Embedis::OK);
+        nofussRun();
+    });
+
     Embedis::command( F("FACTORY.RESET"), [](Embedis* e) {
         settingsFactoryReset();
         e->response(Embedis::OK);
