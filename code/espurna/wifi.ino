@@ -223,7 +223,7 @@ void wifiSetup() {
 		        DEBUG_MSG_P(PSTR("[WIFI] Could not create access point\n"));
 		    }
 
-		#endif
+		#endif // DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT
 
         // Configure mDNS
         #if MDNS_SUPPORT
