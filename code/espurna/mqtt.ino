@@ -483,7 +483,12 @@ boolean mqttDiscover() {
 #endif  // MDNS_SUPPORT
 
 void mqttSetup() {
+
+    DEBUG_MSG_P(PSTR("[MQTT] MQTT_USE_ASYNC = %d\n"), MQTT_USE_ASYNC);
+    DEBUG_MSG_P(PSTR("[MQTT] MQTT_AUTOCONNECT = %d\n"), MQTT_AUTOCONNECT);
+
     #if MQTT_USE_ASYNC
+
         mqtt.onConnect([](bool sessionPresent) {
             _mqttOnConnect();
         });

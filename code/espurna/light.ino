@@ -534,10 +534,12 @@ void _lightAPISetup() {
 void lightSetup() {
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+
         _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND, MY9291_CHANNELS);
         for (unsigned char i=0; i<MY9291_CHANNELS; i++) {
             _channels.push_back((channel_t) {0, false, 0});
         }
+
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
@@ -568,7 +570,11 @@ void lightSetup() {
             pinMode(_channels[i].pin, OUTPUT);
         }
 
+
     #endif
+
+    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
+    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _channels.size());
 
     _lightColorRestore();
     _lightAPISetup();

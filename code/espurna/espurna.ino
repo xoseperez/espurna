@@ -74,8 +74,10 @@ void welcome() {
     DEBUG_MSG_P(PSTR("[INIT] CPU frequency: %d MHz\n"), ESP.getCpuFreqMHz());
     DEBUG_MSG_P(PSTR("[INIT] SDK version: %s\n"), ESP.getSdkVersion());
     DEBUG_MSG_P(PSTR("[INIT] Core version: %s\n"), ESP.getCoreVersion().c_str());
-
     DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
+
     FlashMode_t mode = ESP.getFlashChipMode();
     DEBUG_MSG_P(PSTR("[INIT] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
@@ -97,20 +99,87 @@ void welcome() {
     #endif
     DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
     DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
 
     #if SPIFFS_SUPPORT
         if (fs) {
-            DEBUG_MSG_P(PSTR("\n"));
             DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes\n"), fs_info.totalBytes);
             DEBUG_MSG_P(PSTR("[INIT]        used size:  %8u bytes\n"), fs_info.usedBytes);
             DEBUG_MSG_P(PSTR("[INIT]        block size: %8u bytes\n"), fs_info.blockSize);
             DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
             DEBUG_MSG_P(PSTR("[INIT]        max files:  %8u\n"), fs_info.maxOpenFiles);
             DEBUG_MSG_P(PSTR("[INIT]        max length: %8u\n"), fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("\n"));
         }
     #endif
 
-    DEBUG_MSG_P(PSTR("\n"));
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[INIT] MANUFACTURER: %s\n"), MANUFACTURER);
+    DEBUG_MSG_P(PSTR("[INIT] DEVICE: %s\n"), DEVICE);
+    DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
+
+    #if ALEXA_SUPPORT
+        DEBUG_MSG_P(PSTR(" ALEXA"));
+    #endif
+    #if ANALOG_SUPPORT
+        DEBUG_MSG_P(PSTR(" ANALOG"));
+    #endif
+    #if DEBUG_SERIAL_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
+    #endif
+    #if DEBUG_UDP_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
+    #endif
+    #if DHT_SUPPORT
+        DEBUG_MSG_P(PSTR(" DHT"));
+    #endif
+    #if DOMOTICZ_SUPPORT
+        DEBUG_MSG_P(PSTR(" DOMOTICZ"));
+    #endif
+    #if DS18B20_SUPPORT
+        DEBUG_MSG_P(PSTR(" DS18B20"));
+    #endif
+    #if EMON_SUPPORT
+        DEBUG_MSG_P(PSTR(" EMON"));
+    #endif
+    #if HOMEASSISTANT_SUPPORT
+        DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
+    #endif
+    #if I2C_SUPPORT
+        DEBUG_MSG_P(PSTR(" I2C"));
+    #endif
+    #if INFLUXDB_SUPPORT
+        DEBUG_MSG_P(PSTR(" INFLUXDB"));
+    #endif
+    #if MDNS_SUPPORT
+        DEBUG_MSG_P(PSTR(" MDNS"));
+    #endif
+    #if NOFUSS_SUPPORT
+        DEBUG_MSG_P(PSTR(" NOFUSS"));
+    #endif
+    #if NTP_SUPPORT
+        DEBUG_MSG_P(PSTR(" NTP"));
+    #endif
+    #if RF_SUPPORT
+        DEBUG_MSG_P(PSTR(" RF"));
+    #endif
+    #if SPIFFS_SUPPORT
+        DEBUG_MSG_P(PSTR(" SPIFFS"));
+    #endif
+    #if TERMINAL_SUPPORT
+        DEBUG_MSG_P(PSTR(" TERMINAL"));
+    #endif
+    #if WEB_SUPPORT
+        DEBUG_MSG_P(PSTR(" WEB"));
+    #endif
+
+    DEBUG_MSG_P(PSTR("\n\n"));
+
+    // -------------------------------------------------------------------------
+
     unsigned char custom_reset = customReset();
     if (custom_reset > 0) {
         char buffer[32];
@@ -120,10 +189,7 @@ void welcome() {
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), ESP.getFreeHeap());
-
-    initDump();
-
-    DEBUG_MSG_P(PSTR("\n\n"));
+    DEBUG_MSG_P(PSTR("\n"));
 
 }
 
