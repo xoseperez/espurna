@@ -3,6 +3,25 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.2] 2017-08-31
+### Added
+- System stability check (turns off everything except WIFI AP, OTA and telnet if there is a boot crash loop) (#196)
+- Telnet support (enabled by default only on AP interface)
+- Option to set WiFi gain from web UI
+- Option to disable MQTT from web UI
+- MQTT autodiscover, with the option to autoconnect if no broker defined
+- Home Assistant MQTT autodiscover feature
+- List enabled modules in INIT debug info
+- Counter module (counts and reports transitions in a digital pin)
+
+### Changed
+- Updated NoFUSS support
+- Web UI documentation changes
+- Changes in terminal commands
+
+### Fixed
+- Crash in settings saving (#190) and fixed UDP debug conditional build clauses
+
 ## [1.9.1] 2017-08-27
 ### Added
 - Support to build without NTP support
