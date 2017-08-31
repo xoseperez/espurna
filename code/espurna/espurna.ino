@@ -127,6 +127,9 @@ void welcome() {
     #if ANALOG_SUPPORT
         DEBUG_MSG_P(PSTR(" ANALOG"));
     #endif
+    #if COUNTER_SUPPORT
+        DEBUG_MSG_P(PSTR(" COUNTER"));
+    #endif
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
     #endif

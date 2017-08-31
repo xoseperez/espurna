@@ -376,6 +376,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_HOSTNAME     "host"
 #define MQTT_TOPIC_TIME         "time"
 #define MQTT_TOPIC_ANALOG       "analog"
+#define MQTT_TOPIC_COUNTER      "counter"
 #define MQTT_TOPIC_RFOUT        "rfout"
 #define MQTT_TOPIC_RFIN         "rfin"
 #define MQTT_TOPIC_RFLEARN      "rflearn"
