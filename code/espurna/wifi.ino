@@ -59,6 +59,9 @@ void wifiConfigure() {
     jw.setAPMode(WIFI_AP_MODE);
     jw.cleanNetworks();
 
+    // If system is flagged unstable we do not init wifi networks
+    if (!systemCheck()) return;
+
     int i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
         if (getSetting("ssid" + String(i)).length() == 0) break;

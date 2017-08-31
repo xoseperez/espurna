@@ -47,6 +47,14 @@ void hardwareSetup() {
 
 void hardwareLoop() {
 
+    // System check
+    static bool checked = false;
+    if (!checked && (millis() > CRASH_SAFE_TIME)) {
+        // Check system as stable
+        systemCheck(true);
+        checked = true;
+    }
+
     // Heartbeat
     static unsigned long last_uptime = 0;
     if ((millis() - last_uptime > HEARTBEAT_INTERVAL) || (last_uptime == 0)) {
@@ -198,14 +206,28 @@ void welcome() {
 
 void setup() {
 
+    // Init EEPROM, Serial and SPIFFS
     hardwareSetup();
+
+    // Question system stability
+    systemCheck(false);
+
+    // Show welcome message and system configuration
     welcome();
 
+    // Init persistance and terminal features
     settingsSetup();
     if (getSetting("hostname").length() == 0) {
         setSetting("hostname", getIdentifier());
         saveSettings();
     }
+
+    delay(500);
+    wifiSetup();
+    otaSetup();
+
+    // Do not run the next services if system is flagged stable
+    if (!systemCheck()) return;
 
     #if WEB_SUPPORT
         webSetup();
@@ -217,11 +239,6 @@ void setup() {
     relaySetup();
     buttonSetup();
     ledSetup();
-
-    delay(500);
-
-    wifiSetup();
-    otaSetup();
     mqttSetup();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
@@ -276,13 +293,17 @@ void setup() {
 void loop() {
 
     hardwareLoop();
+    settingsLoop();
+    wifiLoop();
+    otaLoop();
+
+    // Do not run the next services if system is flagged stable
+    if (!systemCheck()) return;
+
     buttonLoop();
     relayLoop();
     ledLoop();
-    wifiLoop();
-    otaLoop();
     mqttLoop();
-    settingsLoop();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();

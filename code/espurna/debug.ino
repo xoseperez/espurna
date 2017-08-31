@@ -33,13 +33,15 @@ void debugSend(const char * format, ...) {
     #endif
 
     #if DEBUG_UDP_SUPPORT
-        udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-        udpDebug.write(buffer);
-        if (len > DEBUG_MESSAGE_MAX_LENGTH) {
-            udpDebug.write(" (...)\n");
+        if (systemCheck()) {
+            udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
+            udpDebug.write(buffer);
+            if (len > DEBUG_MESSAGE_MAX_LENGTH) {
+                udpDebug.write(" (...)\n");
+            }
+            udpDebug.endPacket();
+            delay(1);
         }
-        udpDebug.endPacket();
-        delay(1);
     #endif
 
 }
@@ -64,13 +66,15 @@ void debugSend_P(PGM_P format, ...) {
     #endif
 
     #if DEBUG_UDP_SUPPORT
-        udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-        udpDebug.write(buffer);
-        if (len > DEBUG_MESSAGE_MAX_LENGTH) {
-            udpDebug.write(" (...)\n");
+        if (systemCheck()) {
+            udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
+            udpDebug.write(buffer);
+            if (len > DEBUG_MESSAGE_MAX_LENGTH) {
+                udpDebug.write(" (...)\n");
+            }
+            udpDebug.endPacket();
+            delay(1);
         }
-        udpDebug.endPacket();
-        delay(1);
     #endif
 
 }
