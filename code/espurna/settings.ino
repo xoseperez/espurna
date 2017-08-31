@@ -11,10 +11,20 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "spi_flash.h"
 #include <StreamString.h>
 
-#ifdef DEBUG_PORT
-Embedis embedis(DEBUG_PORT);
+#if TELNET_SUPPORT
+    #include "settings.h"
+    #ifdef DEBUG_PORT
+        StreamInjector _serial = StreamInjector(DEBUG_PORT);
+    #else
+        StreamInjector _serial = StreamInjector(Serial);
+    #endif
+    Embedis embedis(_serial);
 #else
-Embedis embedis(Serial);
+    #ifdef DEBUG_PORT
+        Embedis embedis(DEBUG_PORT);
+    #else
+        Embedis embedis(_serial);
+    #endif
 #endif
 
 bool _settings_save = false;
@@ -22,6 +32,12 @@ bool _settings_save = false;
 // -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
+
+#if TELNET_SUPPORT
+    void settingsInject(void *data, size_t len) {
+        _serial.inject((char *) data, len);
+    }
+#endif
 
 size_t settingsMaxSize() {
     size_t size = EEPROM_SIZE;
@@ -81,6 +97,12 @@ void settingsFactoryReset() {
 void settingsSetup() {
 
     EEPROM.begin(SPI_FLASH_SEC_SIZE);
+
+    #if TELNET_SUPPORT
+        _serial.callback([](uint8_t ch) {
+            telnetWrite(ch);
+        });
+    #endif
 
     Embedis::dictionary( F("EEPROM"),
         SPI_FLASH_SEC_SIZE,

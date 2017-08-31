@@ -225,6 +225,9 @@ void setup() {
     delay(500);
     wifiSetup();
     otaSetup();
+    #if TELNET_SUPPORT
+        telnetSetup();
+    #endif
 
     // Do not run the next services if system is flagged stable
     if (!systemCheck()) return;

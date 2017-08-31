@@ -48,6 +48,7 @@
 //#define ANALOG_SUPPORT         1
 //#define COUNTER_SUPPORT        1
 //#define DEBUG_SERIAL_SUPPORT   0
+//#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
 //#define DHT_SUPPORT            1
 //#define DOMOTICZ_SUPPORT       0
@@ -61,5 +62,6 @@
 //#define NTP_SUPPORT            0
 //#define RF_SUPPORT             1
 //#define SPIFFS_SUPPORT         1
+//#define TELNET_SUPPORT         0
 //#define TERMINAL_SUPPORT       0
 //#define WEB_SUPPORT            0

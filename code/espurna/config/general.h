@@ -10,6 +10,18 @@
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
 
 //------------------------------------------------------------------------------
+// TELNET
+//------------------------------------------------------------------------------
+
+#ifndef TELNET_SUPPORT
+#define TELNET_SUPPORT          1               // Enable telnet support by default
+#endif
+
+#define TELNET_ONLY_AP          1               // By default, allow only connections via AP interface
+#define TELNET_PORT             23              // Port to listen to telnet clients
+#define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+
+//------------------------------------------------------------------------------
 // DEBUG
 //------------------------------------------------------------------------------
 
@@ -36,10 +48,18 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef DEBUG_TELNET_SUPPORT
+#define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
+#endif
+
+//------------------------------------------------------------------------------
+
 // General debug options and macros
 #define DEBUG_MESSAGE_MAX_LENGTH    80
+#define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
-#if (DEBUG_SERIAL_SUPPORT==1) || (DEBUG_UDP_SUPPORT==1)
+
+#if DEBUG_SUPPORT
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
     #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
 #endif

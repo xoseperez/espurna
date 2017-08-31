@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT
+#if DEBUG_SUPPORT
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -44,6 +44,10 @@ void debugSend(const char * format, ...) {
         }
     #endif
 
+    #if DEBUG_TELNET_SUPPORT
+        _telnetWrite(buffer, strlen(buffer));
+    #endif
+
 }
 
 void debugSend_P(PGM_P format, ...) {
@@ -77,6 +81,10 @@ void debugSend_P(PGM_P format, ...) {
         }
     #endif
 
+    #if DEBUG_TELNET_SUPPORT
+        _telnetWrite(buffer, strlen(buffer));
+    #endif
+
 }
 
-#endif // DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT
+#endif // DEBUG_SUPPORT
