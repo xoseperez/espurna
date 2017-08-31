@@ -6,6 +6,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 **Current Release Version is 1.9.2**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
+**NOTE**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
+
 ## Features
 
 * Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
