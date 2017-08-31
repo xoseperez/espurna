@@ -52,6 +52,23 @@
 #endif
 
 //--------------------------------------------------------------------------------
+// Counter sensor
+// Enable support by passing COUNTER_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef COUNTER_SUPPORT
+#define COUNTER_SUPPORT             0           // Do not build with counter support by default
+#endif
+
+#define COUNTER_PIN                 2           // GPIO to monitor
+#define COUNTER_PIN_MODE            INPUT       // INPUT, INPUT_PULLUP
+#define COUNTER_INTERRUPT_MODE      RISING      // RISING, FALLING, BOTH
+#define COUNTER_UPDATE_INTERVAL     5000        // Update counter every this millis
+#define COUNTER_REPORT_EVERY        12          // Report counter every this updates (1 minute)
+#define COUNTER_DEBOUNCE            10          // Do not register events within less than 10 millis
+#define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
+
+//--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
 // Enable support by passing DS18B20_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------

@@ -46,6 +46,7 @@
 
 //#define ALEXA_SUPPORT          0
 //#define ANALOG_SUPPORT         1
+//#define COUNTER_SUPPORT        1
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
 //#define DHT_SUPPORT            1

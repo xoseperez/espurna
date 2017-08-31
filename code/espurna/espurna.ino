@@ -249,6 +249,9 @@ void setup() {
     #if ANALOG_SUPPORT
         analogSetup();
     #endif
+    #if COUNTER_SUPPORT
+        counterSetup();
+    #endif
     #if DHT_SUPPORT
         dhtSetup();
     #endif
@@ -299,6 +302,9 @@ void loop() {
     #endif
     #if ANALOG_SUPPORT
         analogLoop();
+    #endif
+    #if COUNTER_SUPPORT
+        counterLoop();
     #endif
     #if DHT_SUPPORT
         dhtLoop();

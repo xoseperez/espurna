@@ -583,6 +583,11 @@ void _wsStart(uint32_t client_id) {
             root["analogValue"] = getAnalog();
         #endif
 
+        #if COUNTER_SUPPORT
+            root["counterVisible"] = 1;
+            root["counterValue"] = getCounter();
+        #endif
+
         #if HLW8012_SUPPORT
             root["powVisible"] = 1;
             root["powActivePower"] = getActivePower();
