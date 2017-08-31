@@ -99,6 +99,8 @@ void settingsSetup() {
         e->response(s);
     }, 0);
 
+    // -------------------------------------------------------------------------
+
     Embedis::command( F("RESET.WIFI"), [](Embedis* e) {
         wifiConfigure();
         wifiDisconnect();
@@ -117,10 +119,12 @@ void settingsSetup() {
         ESP.restart();
     });
 
-    Embedis::command( F("NOFUSS"), [](Embedis* e) {
-        e->response(Embedis::OK);
-        nofussRun();
-    });
+    #if NOFUSS_SUPPORT
+        Embedis::command( F("NOFUSS"), [](Embedis* e) {
+            e->response(Embedis::OK);
+            nofussRun();
+        });
+    #endif
 
     Embedis::command( F("FACTORY.RESET"), [](Embedis* e) {
         settingsFactoryReset();
