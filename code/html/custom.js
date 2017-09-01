@@ -113,7 +113,7 @@ function doUpgrade() {
                     window.location = "/";
                 }, 5000);
             } else {
-                alert("There was an error trying to upload the new image, please try again.");
+                alert("There was an error trying to upload the new image, please try again (" + data + ").");
             }
         },
 

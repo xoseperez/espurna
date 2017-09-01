@@ -1066,7 +1066,15 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 #endif
 
 void _onUpgrade(AsyncWebServerRequest *request) {
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
+
+    char buffer[10];
+    if (Update.hasError()) {
+        sprintf_P(buffer, PSTR("OK"));
+    } else {
+        sprintf_P(buffer, PSTR("ERROR %d"), Update.getError());
+    }
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
     if (!Update.hasError()) {
         _web_defer.once_ms(100, []() {
@@ -1075,6 +1083,7 @@ void _onUpgrade(AsyncWebServerRequest *request) {
         });
     }
     request->send(response);
+
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
