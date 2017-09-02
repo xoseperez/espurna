@@ -319,21 +319,20 @@ unsigned char _relayValueFromPayload(const char * payload) {
     // Payload could be "OFF", "ON", "TOGGLE"
     // or its number equivalents: 0, 1 or 2
 
-    unsigned int value;
-
     // trim payload
     char * p = ltrim((char *)payload);
 
-    if (strcmp(p, "ON") == 0) {
-        value = 1;
+    // to lower
+    for (unsigned char i=0; i<strlen(p); i++) {
+        p[i] = tolower(p[i]);
+    }
+
+    unsigned int value;
+
+    if (strcmp(p, "off") == 0) {
+        value = 0;
     } else if (strcmp(p, "on") == 0) {
         value = 1;
-    } else if (strcmp(p, "OFF") == 0) {
-        value = 0;
-    } else if (strcmp(p, "off") == 0) {
-        value = 0;
-    } else if (strcmp(p, "TOGGLE") == 0) {
-        value = 2;
     } else if (strcmp(p, "toggle") == 0) {
         value = 2;
     } else {
