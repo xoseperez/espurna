@@ -314,6 +314,36 @@ unsigned char relayCount() {
     return _relays.size();
 }
 
+unsigned char _relayValueFromPayload(const char * payload) {
+
+    // Payload could be "OFF", "ON", "TOGGLE"
+    // or its number equivalents: 0, 1 or 2
+
+    unsigned int value;
+
+    // trim payload
+    char * p = ltrim((char *)payload);
+
+    if (strcmp(p, "ON") == 0) {
+        value = 1;
+    } else if (strcmp(p, "on") == 0) {
+        value = 1;
+    } else if (strcmp(p, "OFF") == 0) {
+        value = 0;
+    } else if (strcmp(p, "off") == 0) {
+        value = 0;
+    } else if (strcmp(p, "TOGGLE") == 0) {
+        value = 2;
+    } else if (strcmp(p, "toggle") == 0) {
+        value = 2;
+    } else {
+        value = p[0] - '0';
+    }
+
+    if (0 <= value && value <=2) return value;
+    return 0x99;
+
+}
 //------------------------------------------------------------------------------
 // REST API
 //------------------------------------------------------------------------------
@@ -336,7 +366,11 @@ void relaySetupAPI() {
 				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
             },
             [relayID](const char * payload) {
-                unsigned int value = payload[0] - '0';
+                unsigned char value = _relayValueFromPayload(payload);
+                if (value == 0xFF) {
+                    DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
+                    return;
+                }
                 if (value == 2) {
                     relayToggle(relayID);
                 } else {
@@ -407,7 +441,11 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (!t.startsWith(MQTT_TOPIC_RELAY)) return;
 
         // Get value
-        unsigned int value = (char)payload[0] - '0';
+        unsigned char value = _relayValueFromPayload(payload);
+        if (value == 0xFF) {
+            DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
+            return;
+        }
 
         // Pulse topic
         if (t.endsWith("pulse")) {
