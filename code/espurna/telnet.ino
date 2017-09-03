@@ -21,8 +21,8 @@ AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
-    delete(_telnetClients[clientId]);
-    _telnetClients[clientId] = 0;
+    _telnetClients[clientId] = NULL;
+    delete _telnetClients[clientId];
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
 
@@ -57,14 +57,15 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 
 void _telnetNewClient(AsyncClient *client) {
 
-    client->onDisconnect([](void *s, AsyncClient *c) {
-        delete(c);
-    });
-
     #if TELNET_ONLY_AP
         if (client->localIP() != WiFi.softAPIP()) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
-            client->stop();
+            client->onDisconnect([](void *s, AsyncClient *c) {
+                c->free();
+                delete c;
+            });
+            client->close(true);
+            return;
         }
     #endif
 
@@ -97,10 +98,15 @@ void _telnetNewClient(AsyncClient *client) {
             return;
 
         }
+
     }
 
     DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections\n"));
-    client->stop();
+    client->onDisconnect([](void *s, AsyncClient *c) {
+        c->free();
+        delete c;
+    });
+    client->close(true);
 
 }
 
