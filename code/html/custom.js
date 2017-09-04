@@ -688,16 +688,16 @@ function getJson(str) {
 function connect(host) {
 
     if (typeof host === 'undefined') {
-        host = window.location.href;
+        host = window.location.href.replace('#', '');
     } else {
         if (!host.startsWith("http")) {
-            host = "http://" + host + "/";
+            host = 'http://' + host + '/';
         }
     }
-    wshost = host.replace("http", "ws");
+    wshost = host.replace('http', 'ws') + 'ws';
 
     if (websock) websock.close();
-    websock = new WebSocket(wshost + 'ws');
+    websock = new WebSocket(wshost);
     websock.onopen = function(evt) {
         console.log("Connected");
     };
