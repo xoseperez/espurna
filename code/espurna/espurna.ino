@@ -158,6 +158,9 @@ void welcome() {
     #if EMON_SUPPORT
         DEBUG_MSG_P(PSTR(" EMON"));
     #endif
+    #if HLW8012_SUPPORT
+        DEBUG_MSG_P(PSTR(" HLW8012"));
+    #endif
     #if HOMEASSISTANT_SUPPORT
         DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
     #endif

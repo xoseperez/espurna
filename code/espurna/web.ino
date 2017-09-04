@@ -246,13 +246,15 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 }
 
                 if (key == "powExpectedReset") {
-                    hlw8012Reset();
-                    changed = true;
+                    if (value.toInt() == 1) {
+                        hlw8012Reset();
+                        changed = true;
+                    }
                 }
 
-            #endif
+                if (key.startsWith("pow")) continue;
 
-            if (key.startsWith("pow")) continue;
+            #endif
 
             #if DOMOTICZ_SUPPORT
 

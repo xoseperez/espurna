@@ -314,14 +314,6 @@ String getSetting(const String& key) {
     return getSetting(key, "");
 }
 
-bool setBoolSetting(const String& key, bool value, bool defaultValue) {
-    if (value == defaultValue) {
-        return delSetting(key);
-    } else {
-        return setSetting(key, value ? 1 : 0);
-    }
-}
-
 template<typename T> bool setSetting(const String& key, T value) {
     return Embedis::set(key, String(value));
 }
