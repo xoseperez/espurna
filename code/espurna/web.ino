@@ -1081,7 +1081,7 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     char buffer[10];
-    if (Update.hasError()) {
+    if (!Update.hasError()) {
         sprintf_P(buffer, PSTR("OK"));
     } else {
         sprintf_P(buffer, PSTR("ERROR %d"), Update.getError());
