@@ -119,8 +119,10 @@ void welcome() {
             DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
             DEBUG_MSG_P(PSTR("[INIT]        max files:  %8u\n"), fs_info.maxOpenFiles);
             DEBUG_MSG_P(PSTR("[INIT]        max length: %8u\n"), fs_info.maxPathLength);
-            DEBUG_MSG_P(PSTR("\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("[INIT] No SPIFFS partition\n"));
         }
+        DEBUG_MSG_P(PSTR("\n"));
     #endif
 
     // -------------------------------------------------------------------------
