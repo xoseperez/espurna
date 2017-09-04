@@ -314,7 +314,7 @@ unsigned char relayCount() {
     return _relays.size();
 }
 
-unsigned char _relayValueFromPayload(const char * payload) {
+unsigned char relayParsePayload(const char * payload) {
 
     // Payload could be "OFF", "ON", "TOGGLE"
     // or its number equivalents: 0, 1 or 2
@@ -365,7 +365,7 @@ void relaySetupAPI() {
 				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
             },
             [relayID](const char * payload) {
-                unsigned char value = _relayValueFromPayload(payload);
+                unsigned char value = relayParsePayload(payload);
                 if (value == 0xFF) {
                     DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
                     return;
@@ -440,7 +440,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (!t.startsWith(MQTT_TOPIC_RELAY)) return;
 
         // Get value
-        unsigned char value = _relayValueFromPayload(payload);
+        unsigned char value = relayParsePayload(payload);
         if (value == 0xFF) {
             DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
             return;
@@ -463,7 +463,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         if (value == 2) {
             relayToggle(relayID);
         } else {
-            relayStatus(relayID, value > 0, mqttForward());
+            relayStatus(relayID, value == 1, mqttForward());
         }
 
     }

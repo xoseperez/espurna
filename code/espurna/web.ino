@@ -141,15 +141,26 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             if (data.containsKey("status")) {
 
-                bool status = (strcmp(data["status"], "1") == 0);
+                unsigned char value = relayParsePayload(data["status"]);
+                if (value == 0xFF) {
 
-                unsigned int relayID = 0;
-                if (data.containsKey("id")) {
-                    String value = data["id"];
-                    relayID = value.toInt();
+                    relayWS();
+
+                } else {
+
+                    unsigned int relayID = 0;
+                    if (data.containsKey("id")) {
+                        String value = data["id"];
+                        relayID = value.toInt();
+                    }
+
+                    if (value == 2) {
+                        relayToggle(relayID);
+                    } else {
+                        relayStatus(relayID, value == 1);
+                    }
+
                 }
-
-                relayStatus(relayID, status);
 
             }
 
