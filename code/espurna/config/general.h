@@ -362,12 +362,21 @@ PROGMEM const char* const custom_reset_string[] = {
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
 // Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
-// Right now only available when MQTT_USE_ASYNC=1 (default value).
+//
+// You can use it with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
+// but you might experience hiccups on the web interface, so my recommendation is:
+// WEB_SUPPORT=0
+//
+// If you use it with MQTT_USE_ASYNC=0 (PubSubClient library)
+// you will have to disable all the modules that use ESPAsyncTCP, that is:
+// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0 and WEB_SUPPORT=0
+//
 // You will need the fingerprint for your MQTT server, example for CloudMQTT:
 // $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
 // $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
-#define MQTT_SSL_ENABLED        0
-#define MQTT_SSL_FINGERPRINT    ""
+
+#define MQTT_SSL_ENABLED        0           // By default MQTT over SSL will not be enabled
+#define MQTT_SSL_FINGERPRINT    ""          // SSL fingerprint of the server
 
 #define MQTT_ENABLED            0           // Do not enable MQTT connection by default
 #define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SUPPORT=1 will perform an autodiscover and
@@ -461,6 +470,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // LIGHT
 // -----------------------------------------------------------------------------
 
+// Available light providers (do not change)
 #define LIGHT_PROVIDER_NONE     0
 #define LIGHT_PROVIDER_MY9192   1
 #define LIGHT_PROVIDER_DIMMER   2

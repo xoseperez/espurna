@@ -393,6 +393,8 @@ void mqttConnect() {
                                 DEBUG_MSG_P(PSTR("[MQTT] Invalid fingerprint\n"));
                                 response = false;
                             }
+                            _mqttClientSecure.stop();
+                            yield();
                         } else {
                             DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
                             response = false;
