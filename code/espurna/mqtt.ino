@@ -340,10 +340,10 @@ void mqttConnect() {
         char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
         if (strlen(host) == 0) return;
         unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
-        _mqttUser = strdup(getSetting("mqttUser", MQTT_USER).c_str());
-        _mqttPass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
-        if (_mqttWill) free(_mqttWill);
-        _mqttWill = strdup((_mqttTopic + MQTT_TOPIC_STATUS).c_str());
+        _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
+        _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
+        if (_mqtt_will) free(_mqtt_will);
+        _mqtt_will = strdup((_mqtt_topic + MQTT_TOPIC_STATUS).c_str());
 
         DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
 
@@ -393,7 +393,7 @@ void mqttConnect() {
                                 DEBUG_MSG_P(PSTR("[MQTT] Invalid fingerprint\n"));
                                 response = false;
                             }
-                            _mqttClientSecure.stop();
+                            _mqtt_client_secure.stop();
                             yield();
                         } else {
                             DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
@@ -492,7 +492,7 @@ void mqttSetup() {
 
     #if MQTT_USE_ASYNC
 
-        mqtt.onConnect([](bool sessionPresent) {
+        _mqtt.onConnect([](bool sessionPresent) {
             _mqttOnConnect();
         });
         _mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
@@ -549,7 +549,7 @@ void mqttLoop() {
 
         if (!_mqtt_enabled) return;
         if (WiFi.status() != WL_CONNECTED) return;
-        if (_mqtt.connected) return;
+        if (_mqtt.connected()) return;
 
         static unsigned long last = 0;
         if (millis() - last > MQTT_RECONNECT_DELAY) {
