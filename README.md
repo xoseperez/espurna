@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.9.2**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.9.3**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 **NOTE**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
 
@@ -23,13 +23,14 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
-    * **SSL/TLS support** (not on regular builds, requires staging version of Arduino Core for ESP8266)
+    * **SSL/TLS support** (not on regular builds, see #64)
     * Switch on/off and toggle relays
     * Report button event notifications
     * Enable/disable pulse mode
     * Change LED notification mode
     * Remote reset the board
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
+* [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
 * [**Home Assistant**](https://home-assistant.io/) integration via MQTT
     * Supports MQTT auto-discover feature
@@ -49,10 +50,12 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Websockets-based communication between the device and the browser
     * Backup and restore settings option
     * Upgrade firmware from the web interface
+    * Works great behind a [secured reverse proxy](http://tinkerman.cat/secure-remote-access-to-your-iot-devices/)
 * **REST API** (enable/disable from web interface)
     * GET and PUT relay status
     * Change light color (for supported hardware)
     * GET sensor data (power, current, voltage, temperature and humidity) depending on the available hardware
+    * Works great behind a secured reverse proxy
 * **RPC API** (enable/disable from web interface)
     * Remote reset the board
 * **Over-The-Air** (OTA) updates even for 1Mb boards

@@ -3,6 +3,21 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.3] 2017-09-04
+### Added
+- New "erase.config" option in terminal to delete SDK settings
+- Added error code to error message when updating from web UI
+- Fixed Web UI to be behind a proxy (http://tinkerman.cat/secure-remote-access-to-your-iot-devices/)
+- Support "ON", "OFF" and "TOGGLE" (also lowercase) as payload in relay MQTT, API and WS (http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/)
+
+### Changed
+- Updated fauxmoESP library to 2.2.0
+
+### Fixed
+- Fix HLW8012 calibration (#194)
+- Fix telnet dropping connection
+- Fix WiFiSecureClient connection with PubSubClient (#64)
+
 ## [1.9.2] 2017-08-31
 ### Added
 - System stability check (turns off everything except WIFI AP, OTA and telnet if there is a boot crash loop) (#196)
@@ -17,7 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Updated NoFUSS support
 - Web UI documentation changes
-- Changes in terminal commands
+- Changes in terminal commands ("reconnect" is now "reset.wifi", also new commands added)
 
 ### Fixed
 - Crash in settings saving (#190) and fixed UDP debug conditional build clauses
