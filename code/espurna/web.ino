@@ -73,7 +73,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Error parsing data\n"));
-        wsSend_P(client_id, PSTR("{\"message\": \"Error parsing data!\"}"));
+        wsSend_P(client_id, PSTR("{\"message\": 3}"));
         return;
     }
 
@@ -108,7 +108,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             JsonObject& data = root["data"];
             if (!data.containsKey("app") || (data["app"] != APP_NAME)) {
-                wsSend_P(client_id, PSTR("{\"message\": \"The file does not look like a valid configuration backup.\"}"));
+                wsSend_P(client_id, PSTR("{\"message\": 4}"));
                 return;
             }
 
@@ -124,7 +124,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             saveSettings();
 
-            wsSend_P(client_id, PSTR("{\"message\": \"Changes saved. You should reboot your board now.\"}"));
+            wsSend_P(client_id, PSTR("{\"message\": 5}"));
 
         }
 
@@ -171,7 +171,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                 String value = root["data"];
                 setSetting("haPrefix", value);
                 haSend();
-                wsSend_P(client_id, PSTR("{\"message\": \"Home Assistant auto-discovery message sent.\"}"));
+                wsSend_P(client_id, PSTR("{\"message\": 6}"));
             }
         #endif
 
@@ -289,7 +289,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             }
             if (key == "adminPass2") {
                 if (!value.equals(adminPass)) {
-                    wsSend_P(client_id, PSTR("{\"message\": \"Passwords do not match!\"}"));
+                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
                     return;
                 }
                 if (value.length() == 0) continue;
@@ -396,9 +396,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
         }
 
         if (changed) {
-            wsSend_P(client_id, PSTR("{\"message\": \"Changes saved\"}"));
+            wsSend_P(client_id, PSTR("{\"message\": 8}"));
         } else {
-            wsSend_P(client_id, PSTR("{\"message\": \"No changes detected\"}"));
+            wsSend_P(client_id, PSTR("{\"message\": 9}"));
         }
 
     }
@@ -663,7 +663,7 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
     if (index == WS_BUFFER_SIZE) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-        wsSend_P(client->id(), PSTR("{\"message\": \"Session expired, please reload page...\"}"));
+        wsSend_P(client->id(), PSTR("{\"message\": 10}"));
         return false;
     }
 

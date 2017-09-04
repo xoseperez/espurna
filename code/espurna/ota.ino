@@ -25,7 +25,7 @@ void otaSetup() {
     ArduinoOTA.onStart([]() {
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
         #if WEB_SUPPORT
-            wsSend_P(PSTR("{\"message\": \"OTA update started\"}"));
+            wsSend_P(PSTR("{\"message\": 2}"));
         #endif
     });
 

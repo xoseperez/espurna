@@ -85,7 +85,7 @@ void nofussSetup() {
         	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
         	DEBUG_MSG_P(PSTR("         File System: %s\n"), (char *) NoFUSSClient.getNewFileSystem().c_str());
             #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"message\": \"Remote update started\"}"));
+                wsSend_P(PSTR("{\"message\": 1}"));
             #endif
         }
 

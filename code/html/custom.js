@@ -2,6 +2,8 @@ var websock;
 var password = false;
 var maxNetworks;
 var useWhite = false;
+var messages = [];
+var webhost;
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
@@ -90,7 +92,7 @@ function doUpgrade() {
     $.ajax({
 
         // Your server script to process the upload
-        url: window.location.href + 'upgrade',
+        url: webhost + 'upgrade',
         type: 'POST',
 
         // Form data
@@ -165,7 +167,7 @@ function doToggle(element, value) {
 }
 
 function backupSettings() {
-    document.getElementById('downloader').src = window.location.href + 'config';
+    document.getElementById('downloader').src = webhost + 'config';
     return false;
 }
 
@@ -185,7 +187,7 @@ function onFileUpload(event) {
         if (data) {
             websock.send(JSON.stringify({'action': 'restore', 'data': data}));
         } else {
-            alert("The file is not a configuration backup or is corrupted");
+            alert(messages[4]);
         }
     };
     reader.readAsText(inputFile);
@@ -610,7 +612,7 @@ function processData(data) {
 
         // Messages
         if (key == "message") {
-            window.alert(data.message);
+            window.alert(messages[data.message]);
             return;
         }
 
@@ -694,6 +696,7 @@ function connect(host) {
             host = 'http://' + host + '/';
         }
     }
+    webhost = host;
     wshost = host.replace('http', 'ws') + 'ws';
 
     if (websock) websock.close();
@@ -713,7 +716,22 @@ function connect(host) {
     };
 }
 
+function initMessages() {
+    messages[01] = "Remote update started";
+    messages[02] = "OTA update started";
+    messages[03] = "Error parsing data!";
+    messages[04] = "The file does not look like a valid configuration backup or is corrupted";
+    messages[05] = "Changes saved. You should reboot your board now";
+    messages[06] = "Home Assistant auto-discovery message sent";
+    messages[07] = "Passwords do not match!";
+    messages[08] = "Changes saved";
+    messages[09] = "No changes detected";
+    messages[10] = "Session expired, please reload page...";
+}
+
 function init() {
+
+    initMessages();
 
     $("#menuLink").on('click', toggleMenu);
     $(".button-update").on('click', doUpdate);
