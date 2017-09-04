@@ -373,6 +373,10 @@ void mqttConnect() {
 
             #endif // ASYNC_TCP_SSL_ENABLED
 
+            DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+            DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
+            DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
+
             _mqtt.connect();
 
         #else // not MQTT_USE_ASYNC
@@ -424,6 +428,10 @@ void mqttConnect() {
                 } else {
     				response = _mqtt.connect(getIdentifier().c_str(), _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
                 }
+
+                DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+                DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
+                DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
 
             }
 
