@@ -59,6 +59,9 @@ void wifiConfigure() {
     jw.setAPMode(WIFI_AP_MODE);
     jw.cleanNetworks();
 
+    // If system is flagged unstable we do not init wifi networks
+    if (!systemCheck()) return;
+
     int i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
         if (getSetting("ssid" + String(i)).length() == 0) break;
@@ -169,7 +172,7 @@ void wifiSetup() {
     // Message callbacks
     jw.onMessage([](justwifi_messages_t code, char * parameter) {
 
-		#if DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT
+		#if DEBUG_SUPPORT
 
 		    if (code == MESSAGE_SCANNING) {
 		        DEBUG_MSG_P(PSTR("[WIFI] Scanning\n"));
@@ -223,19 +226,34 @@ void wifiSetup() {
 		        DEBUG_MSG_P(PSTR("[WIFI] Could not create access point\n"));
 		    }
 
-		#endif
+		#endif // DEBUG_SUPPORT
 
         // Configure mDNS
         #if MDNS_SUPPORT
+
     	    if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
+
                 if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
-                    MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
-    	            DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
+
+                    DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
+
+                    #if WEB_SUPPORT
+                        MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
+                    #endif
+                    #if TELNET_SUPPORT
+                        MDNS.addService("telnet", "tcp", TELNET_PORT);
+                    #endif
+
                     if (code == MESSAGE_CONNECTED) mqttDiscover();
+
     	        } else {
+
     	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
+
     	        }
+
     	    }
+
         #endif
 
         // NTP connection reset

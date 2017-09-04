@@ -11,17 +11,33 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "spi_flash.h"
 #include <StreamString.h>
 
-#define AUTO_SAVE 1
-
-#ifdef DEBUG_PORT
-Embedis embedis(DEBUG_PORT);
+#if TELNET_SUPPORT
+    #include "settings.h"
+    #ifdef DEBUG_PORT
+        StreamInjector _serial = StreamInjector(DEBUG_PORT);
+    #else
+        StreamInjector _serial = StreamInjector(Serial);
+    #endif
+    Embedis embedis(_serial);
 #else
-Embedis embedis(Serial);
+    #ifdef DEBUG_PORT
+        Embedis embedis(DEBUG_PORT);
+    #else
+        Embedis embedis(_serial);
+    #endif
 #endif
+
+bool _settings_save = false;
 
 // -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
+
+#if TELNET_SUPPORT
+    void settingsInject(void *data, size_t len) {
+        _serial.inject((char *) data, len);
+    }
+#endif
 
 size_t settingsMaxSize() {
     size_t size = EEPROM_SIZE;
@@ -82,12 +98,18 @@ void settingsSetup() {
 
     EEPROM.begin(SPI_FLASH_SEC_SIZE);
 
+    #if TELNET_SUPPORT
+        _serial.callback([](uint8_t ch) {
+            telnetWrite(ch);
+        });
+    #endif
+
     Embedis::dictionary( F("EEPROM"),
         SPI_FLASH_SEC_SIZE,
         [](size_t pos) -> char { return EEPROM.read(pos); },
         [](size_t pos, char value) { EEPROM.write(pos, value); },
-        #if AUTO_SAVE
-            []() { EEPROM.commit(); }
+        #if SETTINGS_AUTOSAVE
+            []() { _settings_save = true; }
         #else
             []() {}
         #endif
@@ -98,6 +120,8 @@ void settingsSetup() {
         WiFi.printDiag(s);
         e->response(s);
     }, 0);
+
+    // -------------------------------------------------------------------------
 
     Embedis::command( F("RESET.WIFI"), [](Embedis* e) {
         wifiConfigure();
@@ -116,6 +140,20 @@ void settingsSetup() {
         customReset(CUSTOM_RESET_TERMINAL);
         ESP.restart();
     });
+
+    Embedis::command( F("ERASE.CONFIG"), [](Embedis* e) {
+        e->response(Embedis::OK);
+        customReset(CUSTOM_RESET_TERMINAL);
+        ESP.eraseConfig();
+        *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
+    });
+
+    #if NOFUSS_SUPPORT
+        Embedis::command( F("NOFUSS"), [](Embedis* e) {
+            e->response(Embedis::OK);
+            nofussRun();
+        });
+    #endif
 
     Embedis::command( F("FACTORY.RESET"), [](Embedis* e) {
         settingsFactoryReset();
@@ -246,7 +284,14 @@ void settingsDump() {
 }
 
 void settingsLoop() {
-    embedis.process();
+    if (_settings_save) {
+        DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
+        EEPROM.commit();
+        _settings_save = false;
+    }
+    #if TERMINAL_SUPPORT
+        embedis.process();
+    #endif
 }
 
 void moveSetting(const char * from, const char * to) {
@@ -302,9 +347,8 @@ bool hasSetting(const String& key, unsigned int index) {
 }
 
 void saveSettings() {
-    DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
-    #if not AUTO_SAVE
-        EEPROM.commit();
+    #if not SETTINGS_AUTOSAVE
+        _settings_save = true;
     #endif
     //settingsDump();
 }

@@ -12,7 +12,7 @@
 //   - BUTTON_DEFAULT_HIGH: there is a pull up in place
 //   - BUTTON_SET_PULLUP: set pullup by software
 // RELAY#_PIN: GPIO for the n-th relay (1-based, up to 4 relays)
-// RELAY#_PIN_INVERSE: Relay has inversed logic (closed or ON when pulled down)
+// RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
 // RELAY#_LED: LED number that will be bind to the n-th relay (1-based)
 // LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
@@ -409,16 +409,14 @@
 #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
     // Info
-    #define MANUFACTURER            "ITEAD_STUDIO"
-    #define DEVICE                  "SONOFF_RFBRIDGE"
-    #define SERIAL_BAUDRATE         19200
-    #define RELAY_PROVIDER          RELAY_PROVIDER_RFBRIDGE
+    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define DEVICE              "SONOFF_RFBRIDGE"
+    #define SERIAL_BAUDRATE     19200
+    #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
     #ifndef DUMMY_RELAY_COUNT
-    #define DUMMY_RELAY_COUNT       6
+    #define DUMMY_RELAY_COUNT   6
     #endif
-    #define TRACK_RELAY_STATUS      0
-    #define DEBUG_SERIAL_SUPPORT    0
-    #define TERMINAL_SUPPORT        0
+    #define TRACK_RELAY_STATUS  0
 
     // Buttons
     #define BUTTON1_PIN         0

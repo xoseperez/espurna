@@ -10,6 +10,21 @@
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
 
 //------------------------------------------------------------------------------
+// TELNET
+//------------------------------------------------------------------------------
+
+#ifndef TELNET_SUPPORT
+#define TELNET_SUPPORT          1               // Enable telnet support by default
+#endif
+
+#ifndef TELNET_ONLY_AP
+#define TELNET_ONLY_AP          1               // By default, allow only connections via AP interface
+#endif
+
+#define TELNET_PORT             23              // Port to listen to telnet clients
+#define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+
+//------------------------------------------------------------------------------
 // DEBUG
 //------------------------------------------------------------------------------
 
@@ -36,10 +51,18 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef DEBUG_TELNET_SUPPORT
+#define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
+#endif
+
+//------------------------------------------------------------------------------
+
 // General debug options and macros
 #define DEBUG_MESSAGE_MAX_LENGTH    80
+#define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
-#if (DEBUG_SERIAL_SUPPORT==1) || (DEBUG_UDP_SUPPORT==1)
+
+#if DEBUG_SUPPORT
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
     #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
 #endif
@@ -58,6 +81,14 @@
 #endif
 
 //------------------------------------------------------------------------------
+// CRASH
+//------------------------------------------------------------------------------
+
+#define CRASH_SAFE_TIME         60000           // The system is considered stable after these many millis
+#define CRASH_COUNT_MAX         5               // After this many crashes on boot
+                                                // the system is flagged as unstable
+
+//------------------------------------------------------------------------------
 // EEPROM
 //------------------------------------------------------------------------------
 
@@ -65,7 +96,8 @@
 #define EEPROM_RELAY_STATUS     0               // Address for the relay status (1 byte)
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
-#define EEPROM_DATA_END         6               // End of custom EEPROM data block
+#define EEPROM_CRASH_COUNTER    6               // Address for the crash counter (1 byte)
+#define EEPROM_DATA_END         7               // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
 // HEARTBEAT
@@ -296,9 +328,8 @@ PROGMEM const char* const custom_reset_string[] = {
 // SPIFFS
 // -----------------------------------------------------------------------------
 
-// Do not add support for SPIFFS by default
 #ifndef SPIFFS_SUPPORT
-#define SPIFFS_SUPPORT           0
+#define SPIFFS_SUPPORT           0          // Do not add support for SPIFFS by default
 #endif
 
 // -----------------------------------------------------------------------------
@@ -311,6 +342,11 @@ PROGMEM const char* const custom_reset_string[] = {
 // NOFUSS
 // -----------------------------------------------------------------------------
 
+#ifndef NOFUSS_SUPPORT
+#define NOFUSS_SUPPORT          0          // Do not enable support for NoFuss by default
+#endif
+
+#define NOFUSS_ENABLED          0           // Do not perform NoFUSS updates by default
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
 
@@ -337,6 +373,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SUPPORT=1 will perform an autodiscover and
                                             // autoconnect to the first MQTT broker found if none defined
 #define MQTT_SERVER             ""          // Default MQTT broker address
+#define MQTT_USER               ""          // Default MQTT broker usename
+#define MQTT_PASS               ""          // Default MQTT broker password
 #define MQTT_PORT               1883        // MQTT broker port
 #define MQTT_TOPIC              "/test/switch/{identifier}"     // Default MQTT base topic
 #define MQTT_RETAIN             true        // MQTT retain flag
@@ -370,6 +408,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_HOSTNAME     "host"
 #define MQTT_TOPIC_TIME         "time"
 #define MQTT_TOPIC_ANALOG       "analog"
+#define MQTT_TOPIC_COUNTER      "counter"
 #define MQTT_TOPIC_RFOUT        "rfout"
 #define MQTT_TOPIC_RFIN         "rfin"
 #define MQTT_TOPIC_RFLEARN      "rflearn"
@@ -398,11 +437,19 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USE_SETTER         "/set"
 
 // -----------------------------------------------------------------------------
+// SETTINGS
+// -----------------------------------------------------------------------------
+
+#ifndef SETTINGS_AUTOSAVE
+#define SETTINGS_AUTOSAVE       1           // Autosave settings o force manual commit
+#endif
+
+// -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
 
 #ifndef I2C_SUPPORT
-#define I2C_SUPPORT              0           // I2C enabled
+#define I2C_SUPPORT             0           // I2C enabled
 #endif
 
 #define I2C_SDA_PIN             4           // SDA GPIO

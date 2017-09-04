@@ -4,7 +4,9 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.9.1**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.9.2**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+
+**NOTE**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
 
 ## Features
 
@@ -30,6 +32,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
 * [**Home Assistant**](https://home-assistant.io/) integration via MQTT
+    * Supports MQTT auto-discover feature
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * Support for different **sensors**
     * DHT11 / DHT22 / DHT21 / AM2301 (supports celsius & fahrenheit reporting)
@@ -57,6 +60,14 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Automatic updates through the [NoFUSS Library](https://bitbucket.org/xoseperez/nofuss)
     * Update from web interface using pre-built images
 * **Command line configuration**
+    * Change configuration
+    * Run special commands
+* **Telnet support**
+    * Available only if connected to the AP interface
+    * Show debug info and allows to run terminal commands
+* **Unstable system check**
+    * Detects unstable system (crashes on boot continuously) and defaults to a stable system
+    * Only WiFi AP, OTA and Telnet available if system is flagged as unstable
 * Button interface
     * Click to toggle relays
     * Double click to enter AP mode (only main button)
@@ -72,7 +83,7 @@ For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xo
 Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://bitbucket.org/xoseperez/espurna/wiki/Hardware).
 
 ||||
-|-|-|-|
+|---|---|---|
 |![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)|![IteadStudio Sonoff RF Bridge](images/devices/itead-sonoff-rfbridge.jpg)||
 |**Tinkerman ESPurna H**|**IteadStudio Sonoff RF Bridge**||
 |![IteadStudio Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![IteadStudio Sonoff RF](images/devices/itead-sonoff-rf.jpg)|![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|

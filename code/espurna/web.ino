@@ -369,6 +369,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if DOMOTICZ_SUPPORT
                 domoticzConfigure();
             #endif
+            #if NOFUSS_SUPPORT
+                nofussConfigure();
+            #endif
             #if RF_SUPPORT
                 rfBuildCodes();
             #endif
@@ -580,6 +583,11 @@ void _wsStart(uint32_t client_id) {
             root["analogValue"] = getAnalog();
         #endif
 
+        #if COUNTER_SUPPORT
+            root["counterVisible"] = 1;
+            root["counterValue"] = getCounter();
+        #endif
+
         #if HLW8012_SUPPORT
             root["powVisible"] = 1;
             root["powActivePower"] = getActivePower();
@@ -590,18 +598,24 @@ void _wsStart(uint32_t client_id) {
             root["powPowerFactor"] = String(getPowerFactor(), 2);
         #endif
 
+        #if NOFUSS_SUPPORT
+            root["nofussVisible"] = 1;
+            root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+            root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
+        #endif
+
         #ifdef ITEAD_SONOFF_RFBRIDGE
-        root["rfbVisible"] = 1;
-        root["rfbCount"] = relayCount();
-        JsonArray& rfb = root.createNestedArray("rfb");
-        for (byte id=0; id<relayCount(); id++) {
-            for (byte status=0; status<2; status++) {
-                JsonObject& node = rfb.createNestedObject();
-                node["id"] = id;
-                node["status"] = status;
-                node["data"] = rfbRetrieve(id, status == 1);
+            root["rfbVisible"] = 1;
+            root["rfbCount"] = relayCount();
+            JsonArray& rfb = root.createNestedArray("rfb");
+            for (byte id=0; id<relayCount(); id++) {
+                for (byte status=0; status<2; status++) {
+                    JsonObject& node = rfb.createNestedObject();
+                    node["id"] = id;
+                    node["status"] = status;
+                    node["data"] = rfbRetrieve(id, status == 1);
+                }
             }
-        }
         #endif
 
         root["wifiGain"] = getSetting("wifiGain", WIFI_GAIN).toFloat();
@@ -1052,7 +1066,15 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 #endif
 
 void _onUpgrade(AsyncWebServerRequest *request) {
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", Update.hasError() ? "FAIL" : "OK");
+
+    char buffer[10];
+    if (Update.hasError()) {
+        sprintf_P(buffer, PSTR("OK"));
+    } else {
+        sprintf_P(buffer, PSTR("ERROR %d"), Update.getError());
+    }
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
     if (!Update.hasError()) {
         _web_defer.once_ms(100, []() {
@@ -1061,6 +1083,7 @@ void _onUpgrade(AsyncWebServerRequest *request) {
         });
     }
     request->send(response);
+
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {

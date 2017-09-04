@@ -1,9 +1,6 @@
 var websock;
 var password = false;
 var maxNetworks;
-var protocol;
-var host;
-var port;
 var useWhite = false;
 
 // http://www.the-art-of-web.com/javascript/validate-password/
@@ -41,6 +38,10 @@ function valueSet(data, name, value) {
         }
     }
     data.push({'name': name, 'value': value});
+}
+
+function zeroPad(number, positions) {
+    return ("0".repeat(positions) + number).slice(-positions);
 }
 
 function doUpdate() {
@@ -89,7 +90,7 @@ function doUpgrade() {
     $.ajax({
 
         // Your server script to process the upload
-        url: protocol + '//' + host + ':' + port + '/upgrade',
+        url: window.location.href + 'upgrade',
         type: 'POST',
 
         // Form data
@@ -106,10 +107,10 @@ function doUpgrade() {
             if (data == 'OK') {
                 alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
                 setTimeout(function() {
-                    window.location = "/";
+                    window.location.reload();
                 }, 5000);
             } else {
-                alert("There was an error trying to upload the new image, please try again.");
+                alert("There was an error trying to upload the new image, please try again (" + data + ").");
             }
         },
 
@@ -164,7 +165,7 @@ function doToggle(element, value) {
 }
 
 function backupSettings() {
-    document.getElementById('downloader').src = protocol + '//' + host + ':' + port + '/config';
+    document.getElementById('downloader').src = window.location.href + 'config';
     return false;
 }
 
@@ -480,7 +481,7 @@ function processData(data) {
             if (data.action == "reload") {
                 if (password) forgetCredentials();
                 setTimeout(function() {
-                    window.location = "/";
+                    window.location.reload();
                 }, 1000);
             }
 
@@ -539,7 +540,7 @@ function processData(data) {
             var minutes = uptime % 60; uptime = parseInt(uptime / 60);
             var hours   = uptime % 24; uptime = parseInt(uptime / 24);
             var days    = uptime;
-            data[key] = days + 'd ' + ("00" + hours).slice(-2) + 'h ' + ("00" + minutes).slice(-2) + 'm ' + ("00" + seconds).slice(-2) + 's';
+            data[key] = days + 'd ' + zeroPad(hours, 2) + 'h ' + zeroPad(minutes, 2) + 'm ' + zeroPad(seconds, 2) + 's';
         }
 
         if (key == "useWhite") {
@@ -684,21 +685,19 @@ function getJson(str) {
     }
 }
 
-function connect(h, p) {
+function connect(host) {
 
-    if (typeof h === 'undefined') {
-        h = window.location.hostname;
+    if (typeof host === 'undefined') {
+        host = window.location.href;
+    } else {
+        if (!host.startsWith("http")) {
+            host = "http://" + host + "/";
+        }
     }
-    if (typeof p === 'undefined') {
-        p = location.port;
-    }
-    host = h;
-    port = p;
-    protocol = location.protocol;
-    wsproto = (protocol == 'https:') ? 'wss:' : 'ws:';
+    wshost = host.replace("http", "ws");
 
     if (websock) websock.close();
-    websock = new WebSocket(wsproto + '//' + host + ':' + port + '/ws');
+    websock = new WebSocket(wshost + 'ws');
     websock.onopen = function(evt) {
         console.log("Connected");
     };
@@ -743,13 +742,9 @@ function init() {
         websock.send(JSON.stringify({'action': 'ha_send', 'data': $("input[name='haPrefix']").val()}));
     });
 
-    var protocol = location.protocol;
-    var host = window.location.hostname;
-    var port = location.port;
-
     $.ajax({
         'method': 'GET',
-        'url': protocol + '//' + host + ':' + port + '/auth'
+        'url': window.location.href + 'auth'
     }).done(function(data) {
         connect();
     }).fail(function(){

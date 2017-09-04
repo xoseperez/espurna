@@ -133,7 +133,7 @@
 
                     <div class="footer">
                         &copy; 2016-2017<br />
-                        Xose P�rez<br/>
+                        Xose Pérez<br/>
                         <a href="http://tinkerman.cat" target="_blank">http://tinkerman.cat</a><br/>
                         <a href="https://bitbucket.org/xoseperez/espurna" target="_blank">ESPurna @ Bitbucket</a><br/>
                         GPLv3 license<br/>
@@ -168,6 +168,11 @@
                                 <div class="pure-g module module-analog">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="analogValue">Analog</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="analogValue" readonly />
+                                </div>
+
+                                <div class="pure-g module module-counter">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="counterValue">Counts / last minute</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="counterValue" readonly />
                                 </div>
 
                                 <div class="pure-g module module-ds">
@@ -415,8 +420,8 @@
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (�C)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (�F)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (&deg;C)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (&deg;F)</input></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -481,6 +486,18 @@
                                     </div>
                                 </div>
 
+                                <div class="pure-g module module-nofuss">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="nofussEnabled">Automatic remote updates (NoFUSS)</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="nofussEnabled" /></div>
+                                </div>
+
+                                <div class="pure-g module module-nofuss">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="nofussServer">NoFUSS server</label>
+                                    <input name="nofussServer" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="15" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">This name address of the NoFUSS server for automatic remote updates (see https://bitbucket.org/xoseperez/nofuss).</div>
+                                </div>
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-md-1-2" name="filename" type="text" readonly />
@@ -488,7 +505,7 @@
                                     <div class=" pure-u-1-8 pure-u-md-1-8"><button class="pure-button button-upgrade pure-u-23-24">Upgrade</button></div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4"><progress id="upgrade-progress"></progress></div>
-                                    <input name="upgrade" type="file" tabindex="15" />
+                                    <input name="upgrade" type="file" tabindex="16" />
                                 </div>
 
                             </fieldset>

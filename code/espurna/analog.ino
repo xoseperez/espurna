@@ -26,6 +26,8 @@ void analogSetup() {
         });
     #endif
 
+    DEBUG_MSG_P(PSTR("[ANALOG] Monitoring analog values\n"));
+
 }
 
 void analogLoop() {
