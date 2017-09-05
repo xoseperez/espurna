@@ -170,7 +170,7 @@ if [ "$auth" == "" ]; then
 fi
 
 if [ "$flags" == "" ]; then
-    read -p "Extra flags for the build: " flags
+    read -p "Extra flags for the build: " -e -i "-DTELNET_ONLY_AP=0" flags
 fi
 
 read -p "Environment to build: " -e -i "esp8266-1m-ota" env
