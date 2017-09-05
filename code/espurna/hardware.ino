@@ -419,6 +419,21 @@ void hwUpwardsCompatibility() {
         setSetting("relayResetGPIO", 1, 12);
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
+    #elif defined(HUACANXING_H802)
+
+        setSetting("board", 36);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("chGPIO", 1, 12);
+        setSetting("chGPIO", 2, 14);
+        setSetting("chGPIO", 3, 13);
+        setSetting("chGPIO", 4, 15);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("chLogic", 3, 0);
+        setSetting("chLogic", 4, 0);
+        setSetting("relays", 1);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
