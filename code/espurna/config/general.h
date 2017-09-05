@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
+#define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
 
 //------------------------------------------------------------------------------
 // TELNET
@@ -321,7 +322,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
-#define MDNS_SUPPORT            1           // Enable MDNS by default
+#define MDNS_SUPPORT            1           // Publish services using mDNS by default
 #endif
 
 // -----------------------------------------------------------------------------

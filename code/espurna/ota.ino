@@ -55,6 +55,11 @@ void otaSetup() {
 
     ArduinoOTA.begin();
 
+    // Public ESPurna related txt for OTA discovery
+    MDNS.addServiceTxt("arduino", "tcp", "firmware", APP_NAME);
+    MDNS.addServiceTxt("arduino", "tcp", "espurna_version", APP_VERSION);
+    MDNS.addServiceTxt("arduino", "tcp", "espurna_board", DEVICE_NAME);
+
 }
 
 void otaLoop() {
