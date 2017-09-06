@@ -95,7 +95,7 @@
 #elif defined(ITEAD_SONOFF_BASIC)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_BASIC"
 
     // Buttons
@@ -114,7 +114,7 @@
 #elif defined(ITEAD_SONOFF_RF)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_RF"
 
     // Buttons
@@ -133,7 +133,7 @@
 #elif defined(ITEAD_SONOFF_TH)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_TH"
 
     // Buttons
@@ -152,7 +152,7 @@
 #elif defined(ITEAD_SONOFF_SV)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_SV"
 
     // Buttons
@@ -171,7 +171,7 @@
 #elif defined(ITEAD_SLAMPHER)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SLAMPHER"
 
     // Buttons
@@ -190,7 +190,7 @@
 #elif defined(ITEAD_S20)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "S20"
 
     // Buttons
@@ -209,7 +209,7 @@
 #elif defined(ITEAD_SONOFF_TOUCH)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_TOUCH"
 
     // Buttons
@@ -228,7 +228,7 @@
 #elif defined(ITEAD_SONOFF_POW)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_POW"
 
     // Buttons
@@ -253,7 +253,7 @@
 #elif defined(ITEAD_SONOFF_DUAL)
 
     // Info
-    #define MANUFACTURER            "ITEAD_STUDIO"
+    #define MANUFACTURER            "ITEAD"
     #define DEVICE                  "SONOFF_DUAL"
     #define SERIAL_BAUDRATE         19230
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
@@ -271,7 +271,7 @@
 #elif defined(ITEAD_SONOFF_4CH)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_4CH"
 
     // Buttons
@@ -308,7 +308,7 @@
 #elif defined(ITEAD_SONOFF_4CH_PRO)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_4CH_PRO"
 
     // Buttons
@@ -354,7 +354,7 @@
     // without problem.
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "1CH_INCHING"
 
     // Buttons
@@ -373,7 +373,7 @@
 #elif defined(ITEAD_MOTOR)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "MOTOR"
 
     // Buttons
@@ -389,11 +389,11 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-#elif defined(ITEAD_BN_SZ01)
+#elif defined(ITEAD_BNSZ01)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
-    #define DEVICE              "BN-SZ01"
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "BNSZ01"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
@@ -409,7 +409,7 @@
 #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_RFBRIDGE"
     #define SERIAL_BAUDRATE     19200
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
@@ -429,7 +429,7 @@
 #elif defined(ITEAD_SONOFF_B1)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_B1"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
@@ -442,7 +442,7 @@
 #elif defined(ITEAD_SONOFF_LED)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_LED"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
@@ -462,7 +462,7 @@
 #elif defined(ITEAD_SONOFF_T1_1CH)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_T1_1CH"
 
     // Buttons
@@ -481,7 +481,7 @@
 #elif defined(ITEAD_SONOFF_T1_2CH)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_T1_2CH"
 
     // Buttons
@@ -508,7 +508,7 @@
 #elif defined(ITEAD_SONOFF_T1_3CH)
 
     // Info
-    #define MANUFACTURER        "ITEAD_STUDIO"
+    #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_T1_3CH"
 
     // Buttons
@@ -598,7 +598,7 @@
 #elif defined(AITHINKER_AI_LIGHT)
 
     // Info
-    #define MANUFACTURER        "AI_THINKER"
+    #define MANUFACTURER        "AITHINKER"
     #define DEVICE              "AI_LIGHT"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
@@ -615,7 +615,7 @@
 #elif defined(MAGICHOME_LED_CONTROLLER)
 
     // Info
-    #define MANUFACTURER        "MAGIC_HOME"
+    #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "LED_CONTROLLER"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
@@ -674,7 +674,7 @@
 #elif defined(JANGOE_WIFI_RELAY_NC)
 
     // Info
-    #define MANUFACTURER        "JAN_GOEDEKE"
+    #define MANUFACTURER        "JANGOE"
     #define DEVICE              "WIFI_RELAY_NC"
 
     // Buttons
@@ -697,7 +697,7 @@
 #elif defined(JANGOE_WIFI_RELAY_NO)
 
     // Info
-    #define MANUFACTURER        "JAN_GOEDEKE"
+    #define MANUFACTURER        "JANGOE"
     #define DEVICE              "WIFI_RELAY_NO"
 
     // Buttons
@@ -726,7 +726,7 @@
 #elif defined(JORGEGARCIA_WIFI_RELAYS)
 
     // Info
-    #define MANUFACTURER        "JORGE_GARCIA"
+    #define MANUFACTURER        "JORGEGARCIA"
     #define DEVICE              "WIFI_RELAYS"
 
     // Relays

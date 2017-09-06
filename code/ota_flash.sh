@@ -157,7 +157,7 @@ if [ "$board" == "" ]; then
 fi
 
 if [ "$ip" == "" ]; then
-    read -p "IP of the device to flash: " -e -i 192.168.1.4 ip
+    read -p "IP of the device to flash: " -e -i 192.168.4.1 ip
 fi
 
 if [ "$ip" == "" ]; then
@@ -176,11 +176,11 @@ fi
 read -p "Environment to build: " -e -i "esp8266-1m-ota" env
 
 echo
-echo "IP    = $ip"
-echo "BOARD = $board"
-echo "AUTH  = $auth"
-echo "FLAGS = $flags"
-echo "ENV   = $env"
+echo "ESPURNA_IP    = $ip"
+echo "ESPURNA_BOARD = $board"
+echo "ESPURNA_AUTH  = $auth"
+echo "ESPURNA_FLAGS = $flags"
+echo "ESPURNA_ENV   = $env"
 
 echo
 echo -n "Are these values corrent [y/N]: "
@@ -190,9 +190,9 @@ if [ "$response" != "y" ]; then
     exit
 fi
 
-export IP=$ip
-export BOARD=$board
-export AUTH=$auth
-export FLAGS=$flags
+export ESPURNA_IP=$ip
+export ESPURNA_BOARD=$board
+export ESPURNA_AUTH=$auth
+export ESPURNA_FLAGS=$flags
 
 pio run -e $env -t upload
