@@ -39,6 +39,7 @@
 //#define JANGOE_WIFI_RELAY_NO
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define OPENENERGYMONITOR_MQTT_RELAY
+//#define HUACANXING_H802
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
