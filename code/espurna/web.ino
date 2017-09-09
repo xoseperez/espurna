@@ -10,6 +10,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <Hash.h>
 #include <FS.h>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
@@ -228,26 +229,26 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             // Skip firmware filename
             if (key.equals("filename")) continue;
 
-            #if HLW8012_SUPPORT
+            #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
 
                 if (key == "powExpectedPower") {
-                    hlw8012SetExpectedActivePower(value.toInt());
+                    _hlwExpectedPower(value.toInt());
                     changed = true;
                 }
 
                 if (key == "powExpectedVoltage") {
-                    hlw8012SetExpectedVoltage(value.toInt());
+                    _hlwExpectedVoltage(value.toInt());
                     changed = true;
                 }
 
                 if (key == "powExpectedCurrent") {
-                    hlw8012SetExpectedCurrent(value.toFloat());
+                    _hlwExpectedCurrent(value.toFloat());
                     changed = true;
                 }
 
                 if (key == "powExpectedReset") {
                     if (value.toInt() == 1) {
-                        hlw8012Reset();
+                        _hlwResetCalibration();
                         changed = true;
                     }
                 }
@@ -388,8 +389,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if RF_SUPPORT
                 rfBuildCodes();
             #endif
-            #if EMON_SUPPORT
-                setCurrentRatio(getSetting("emonRatio").toFloat());
+            #if POWER_PROVIDER != POWER_PROVIDER_NONE
+                powerConfigure();
             #endif
             #if NTP_SUPPORT
                 if (changedNTP) ntpConnect();
@@ -533,21 +534,17 @@ void _wsStart(uint32_t client_id) {
                 root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
             #endif
 
-            #if EMON_SUPPORT
-                root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
-                root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
-                root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
-            #endif
-
             #if ANALOG_SUPPORT
                 root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
             #endif
 
-            #if HLW8012_SUPPORT
+            #if POWER_PROVIDER != POWER_PROVIDER_NONE
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
-                root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
+                #if POWER_HAS_ACTIVE
+                    root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
+                #endif
             #endif
 
         #endif
@@ -583,14 +580,6 @@ void _wsStart(uint32_t client_id) {
             root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
         #endif
 
-        #if EMON_SUPPORT
-            root["emonVisible"] = 1;
-            root["emonApparentPower"] = getApparentPower();
-            root["emonCurrent"] = getCurrent();
-            root["emonVoltage"] = getVoltage();
-            root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
-        #endif
-
         #if ANALOG_SUPPORT
             root["analogVisible"] = 1;
             root["analogValue"] = getAnalog();
@@ -601,14 +590,17 @@ void _wsStart(uint32_t client_id) {
             root["counterValue"] = getCounter();
         #endif
 
-        #if HLW8012_SUPPORT
-            root["powVisible"] = 1;
-            root["powActivePower"] = getActivePower();
-            root["powApparentPower"] = getApparentPower();
-            root["powReactivePower"] = getReactivePower();
-            root["powVoltage"] = getVoltage();
-            root["powCurrent"] = String(getCurrent(), 3);
-            root["powPowerFactor"] = String(getPowerFactor(), 2);
+        #if POWER_PROVIDER != POWER_PROVIDER_NONE
+            root["powerVisible"] = 1;
+            root["powerCurrent"] = getCurrent();
+            root["powerVoltage"] = getVoltage();
+            root["powerApparentPower"] = getApparentPower();
+            #if POWER_HAS_ACTIVE
+                root["powerActivePower"] = getActivePower();
+                root["powerReactivePower"] = getReactivePower();
+                root["powerPowerfactor"] = int(100 * getPowerFactor());
+            #endif
+            root["powerRatioC"] = getSetting("powerRatioC", POWER_CURRENT_RATIO);
         #endif
 
         #if NOFUSS_SUPPORT

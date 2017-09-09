@@ -423,7 +423,16 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFIN         "rfin"
 #define MQTT_TOPIC_RFLEARN      "rflearn"
 
-// Lights
+// Power module
+#define MQTT_TOPIC_POWER        "power"
+#define MQTT_TOPIC_CURRENT      "current"
+#define MQTT_TOPIC_VOLTAGE      "voltage"
+#define MQTT_TOPIC_APPARENT     "apower"
+#define MQTT_TOPIC_REACTIVE     "rpower"
+#define MQTT_TOPIC_POWER_FACTOR "pfactor"
+#define MQTT_TOPIC_ENERGY       "energy"
+
+// Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
 #define MQTT_TOPIC_COLOR        "color"
 #define MQTT_TOPIC_BRIGHTNESS   "brightness"
@@ -455,19 +464,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // -----------------------------------------------------------------------------
-// I2C
-// -----------------------------------------------------------------------------
-
-#ifndef I2C_SUPPORT
-#define I2C_SUPPORT             0           // I2C enabled
-#endif
-
-#define I2C_SDA_PIN             4           // SDA GPIO
-#define I2C_SCL_PIN             14          // SCL GPIO
-#define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time
-#define I2C_SCL_FREQUENCY       1000        // BRZO SCL frequency
-
-// -----------------------------------------------------------------------------
 // LIGHT
 // -----------------------------------------------------------------------------
 
@@ -494,6 +490,81 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
+
+// -----------------------------------------------------------------------------
+// POWER METERING
+// -----------------------------------------------------------------------------
+
+// Available power-metering providers
+#define POWER_PROVIDER_NONE             0x00
+#define POWER_PROVIDER_EMON             0x10
+#define POWER_PROVIDER_EMON_ANALOG      0x10
+#define POWER_PROVIDER_EMON_ADC121      0x11
+#define POWER_PROVIDER_HLW8012          0x20
+
+// Available magnitudes
+#define POWER_MAGNITUDE_CURRENT         1
+#define POWER_MAGNITUDE_VOLTAGE         2
+#define POWER_MAGNITUDE_ACTIVE          4
+#define POWER_MAGNITUDE_APPARENT        8
+
+// No power provider defined
+#ifndef POWER_PROVIDER
+#define POWER_PROVIDER                  POWER_PROVIDER_NONE
+#endif
+
+// Identify available magnitudes
+#if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+#define POWER_HAS_ACTIVE                1
+#else
+#define POWER_HAS_ACTIVE                0
+#endif
+
+#define POWER_CURRENT_PRECISION         3
+#define POWER_VOLTAGE                   230
+#define POWER_CURRENT_RATIO             30
+#define POWER_SAMPLES                   1000
+#define POWER_INTERVAL                  10000
+#define POWER_REPORT_EVERY              6
+#define POWER_ENERGY_FACTOR             (POWER_INTERVAL * POWER_REPORT_EVERY / 1000.0 / 3600.0)
+
+#if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
+	#define POWER_ADC_BITS              10
+	#define POWER_REFERENCE_VOLTAGE     1.0
+    #define POWER_CURRENT_OFFSET        0.25
+    #undef ADC_VCC_ENABLED
+    #define ADC_VCC_ENABLED             0
+#endif
+
+#if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
+    #define POWER_I2C_ADDRESS           0x50
+	#define POWER_ADC_BITS              12
+	#define POWER_REFERENCE_VOLTAGE     3.3
+    #define POWER_CURRENT_OFFSET        0.10
+    #undef I2C_SUPPORT
+    #define I2C_SUPPORT                 1
+#endif
+
+#if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+    #define HLW8012_USE_INTERRUPTS      1
+    #define HLW8012_SEL_CURRENT         HIGH
+    #define HLW8012_CURRENT_R           0.001
+    #define HLW8012_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
+    #define HLW8012_VOLTAGE_R_DOWN      ( 1000 ) // Real 1.009k
+#endif
+
+// -----------------------------------------------------------------------------
+// I2C
+// -----------------------------------------------------------------------------
+
+#ifndef I2C_SUPPORT
+#define I2C_SUPPORT             0           // I2C enabled
+#endif
+
+#define I2C_SDA_PIN             4           // SDA GPIO
+#define I2C_SCL_PIN             14          // SCL GPIO
+#define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time
+#define I2C_SCL_FREQUENCY       1000        // BRZO SCL frequency
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

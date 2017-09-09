@@ -7,6 +7,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+/*
+
 #if HLW8012_SUPPORT
 
 #include <HLW8012.h>
@@ -124,9 +126,9 @@ double getCurrent() {
     return current;
 }
 
-unsigned int getVoltage() {
-    return hlw8012.getVoltage();
-}
+//unsigned int getVoltage() {
+//    return hlw8012.getVoltage();
+//}
 
 double getPowerFactor() {
     return hlw8012.getPowerFactor();
@@ -342,3 +344,5 @@ void hlw8012Loop() {
 }
 
 #endif
+
+*/

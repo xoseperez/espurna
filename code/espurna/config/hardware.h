@@ -42,6 +42,12 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+    // HLW8012
+    #define POWER_PROVIDER      POWER_PROVIDER_EMON_ANALOG
+    #define HLW8012_SEL_PIN     2
+    #define HLW8012_CF1_PIN     13
+    #define HLW8012_CF_PIN      14
+
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
     // Info
@@ -83,7 +89,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define HLW8012_SUPPORT     1
+    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -245,7 +251,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define HLW8012_SUPPORT     1
+    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14

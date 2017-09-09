@@ -28,9 +28,6 @@ String getNetwork() {
 }
 
 void wifiDisconnect() {
-    #if HLW8012_SUPPORT
-        hlw8012Enable(false);
-    #endif
     jw.disconnect();
 }
 
@@ -262,17 +259,6 @@ void wifiSetup() {
                 ntpConnect();
             }
         #endif
-
-        // Manage POW
-        #if HLW8012_SUPPORT
-            if (code == MESSAGE_CONNECTED) {
-                hlw8012Enable(true);
-            }
-            if (code == MESSAGE_DISCONNECTED) {
-                hlw8012Enable(false);
-            }
-        #endif
-
 
     });
 

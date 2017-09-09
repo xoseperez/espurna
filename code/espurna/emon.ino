@@ -6,10 +6,10 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+/*
 #if EMON_SUPPORT
 
 #include <EmonLiteESP.h>
-#include <EEPROM.h>
 #if EMON_PROVIDER == EMON_ADC121_PROVIDER
 #include "brzo_i2c.h"
 #endif
@@ -83,7 +83,6 @@ unsigned int getVoltage() {
 void powerMonitorSetup() {
 
     // backwards compatibility
-    String tmp;
     moveSetting("pwMainsVoltage", "emonVoltage");
     moveSetting("emonMains", "emonVoltage");
     moveSetting("pwCurrentRatio", "emonRatio");
@@ -215,3 +214,4 @@ void powerMonitorLoop() {
 }
 
 #endif
+*/
