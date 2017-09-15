@@ -25,7 +25,7 @@ useAvahi() {
 
     counter=0
 
-    avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | while read line; do
+    avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | sort -t ';' -k 3 | while read line; do
 
         (( counter++ ))
 

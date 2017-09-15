@@ -40,7 +40,7 @@ useAvahi() {
     echo -n "" > $board_file
     echo -n "$counter" > $count_file
 
-    avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | while read line; do
+    avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | sort -t ';' -k 3 | while read line; do
 
         (( counter++ ))
         echo "$counter" > $count_file
