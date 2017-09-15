@@ -334,19 +334,19 @@ void mqttConnect() {
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    if (_mqtt_user) free(_mqtt_user);
-    if (_mqtt_pass) free(_mqtt_pass);
-
     char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
     if (strlen(host) == 0) return;
     unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
+
+    if (_mqtt_user) free(_mqtt_user);
+    if (_mqtt_pass) free(_mqtt_pass);
+    if (_mqtt_will) free(_mqtt_will);
+
     _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
     _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
-    if (_mqtt_will) free(_mqtt_will);
     _mqtt_will = strdup((_mqtt_topic + MQTT_TOPIC_STATUS).c_str());
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
-    Serial.println(millis() / 1000);
 
     #if MQTT_USE_ASYNC
 
