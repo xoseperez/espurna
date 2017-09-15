@@ -390,9 +390,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_RETAIN             true        // MQTT retain flag
 #define MQTT_QOS                0           // MQTT QoS value for all messages
 #define MQTT_KEEPALIVE          30          // MQTT keepalive value
-#define MQTT_RECONNECT_DELAY    10000       // Try to reconnect after 10s
-#define MQTT_TRY_INTERVAL       30000       // Timeframe for disconnect retries
-#define MQTT_MAX_TRIES          5           // After these many retries during the previous MQTT_TRY_INTERVAL the board will reset
+
+#define MQTT_RECONNECT_DELAY_MIN    5000    // Try to reconnect in 5 seconds upon disconnection
+#define MQTT_RECONNECT_DELAY_STEP   5000    // Increase the reconnect delay in 5 seconds after each failed attempt
+#define MQTT_RECONNECT_DELAY_MAX    120000  // Set reconnect time to 2 minutes at most
+
 #define MQTT_SKIP_RETAINED      1           // Skip retained messages on connection
 #define MQTT_SKIP_TIME          1000        // Skip messages for 1 second anter connection
 
