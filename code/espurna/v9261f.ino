@@ -75,13 +75,6 @@ void v9261fRead() {
 
     } else if (state == 3) {
 
-        /*
-        for (unsigned char i=0; i<index;i++) {
-            DEBUG_MSG("%02X ", _v9261f_data[i]);
-        }
-        DEBUG_MSG("\n");
-        */
-
         if (checksumOK()) {
 
             _v9261f_power = (double) (
@@ -113,13 +106,6 @@ void v9261fRead() {
             ) / V9261F_CURRENT_FACTOR;
 
             _v9261f_newdata = true;
-
-            /*
-            DEBUG_MSG_P(PSTR("[V9261F] W = %lu\n"), _v9261f_power);
-            DEBUG_MSG_P(PSTR("[V9261F] R = %lu\n"), _v9261f_rpower);
-            DEBUG_MSG_P(PSTR("[V9261F] V = %lu\n"), _v9261f_voltage);
-            DEBUG_MSG_P(PSTR("[V9261F] C = %lu\n"), _v9261f_current);
-            */
 
         }
 

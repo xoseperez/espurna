@@ -4,54 +4,6 @@
 
 #pragma once
 
-/*
-class SpikesFilter {
-
-    public:
-
-        SpikesFilter() {
-            reset();
-        }
-
-        virtual void reset() {
-            _sum = 0;
-            _spike = false;
-        }
-
-        virtual void add(double value) {
-
-            // add previous value
-            if (_last > 0) {
-                _sum += _last;
-            }
-
-            // flag new possible spike
-            if (value > 0) {
-                _spike = (_last == 0);
-
-            // delete previous spike
-            } else if (_spike) {
-                _sum -= _last;
-                _spike = false;
-            }
-
-            _last = value;
-
-        }
-
-        virtual double sum() {
-            return _sum;
-        }
-
-    private:
-
-        double _last = 0;
-        double _sum = 0;
-        bool _spike = false;
-
-};
-*/
-
 class MedianFilter {
 
     public:
@@ -78,23 +30,30 @@ class MedianFilter {
         virtual double average(bool do_reset = false) {
 
             double sum = 0;
-            for (unsigned char i = 1; i<_size; i++) {
 
-                double previous = _data[i-1];
-                double current = _data[i];
-                double next = _data[i+1];
+            if (_pointer > 2) {
 
-                if (previous > current) std::swap(previous, current);
-                if (current > next) std::swap(current, next);
-                if (previous > current) std::swap(previous, current);
+                for (unsigned char i = 1; i<_pointer-1; i++) {
 
-                sum += current;
+                    double previous = _data[i-1];
+                    double current = _data[i];
+                    double next = _data[i+1];
+
+                    if (previous > current) std::swap(previous, current);
+                    if (current > next) std::swap(current, next);
+                    if (previous > current) std::swap(previous, current);
+
+                    sum += current;
+
+                }
+
+                sum /= (_pointer - 1);
 
             }
 
             if (do_reset) reset();
 
-            return sum / (_size-1);
+            return sum;
 
         }
 

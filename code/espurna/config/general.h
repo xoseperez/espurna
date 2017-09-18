@@ -426,13 +426,13 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFLEARN      "rflearn"
 
 // Power module
-#define MQTT_TOPIC_POWER        "power"
-#define MQTT_TOPIC_CURRENT      "current"
-#define MQTT_TOPIC_VOLTAGE      "voltage"
-#define MQTT_TOPIC_APPARENT     "apower"
-#define MQTT_TOPIC_REACTIVE     "rpower"
-#define MQTT_TOPIC_POWER_FACTOR "pfactor"
-#define MQTT_TOPIC_ENERGY       "energy"
+#define MQTT_TOPIC_POWER_ACTIVE     "power"
+#define MQTT_TOPIC_CURRENT          "current"
+#define MQTT_TOPIC_VOLTAGE          "voltage"
+#define MQTT_TOPIC_POWER_APPARENT   "apparent"
+#define MQTT_TOPIC_POWER_REACTIVE   "reactive"
+#define MQTT_TOPIC_POWER_FACTOR     "factor"
+#define MQTT_TOPIC_ENERGY           "energy"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
@@ -510,6 +510,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_MAGNITUDE_VOLTAGE         2
 #define POWER_MAGNITUDE_ACTIVE          4
 #define POWER_MAGNITUDE_APPARENT        8
+#define POWER_MAGNITUDE_REACTIVE        16
+#define POWER_MAGNITUDE_POWER_FACTOR    32
+#define POWER_MAGNITUDE_ALL             63
 
 // No power provider defined
 #ifndef POWER_PROVIDER
@@ -527,12 +530,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_VOLTAGE                   230
 #define POWER_CURRENT_RATIO             30
 #define POWER_SAMPLES                   1000
-#define POWER_INTERVAL                  10000
-#define POWER_REPORT_EVERY              6
+#define POWER_READ_INTERVAL             10000
 #define POWER_REPORT_INTERVAL           60000
-#define POWER_ENERGY_FACTOR             (POWER_INTERVAL * POWER_REPORT_EVERY / 1000.0 / 3600.0)
+#define POWER_ENERGY_FACTOR             (POWER_REPORT_INTERVAL / 1000.0 / 3600.0)
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
+    #define POWER_REPORT_BUFFER         10
 	#define POWER_ADC_BITS              10
 	#define POWER_REFERENCE_VOLTAGE     1.0
     #define POWER_CURRENT_OFFSET        0.25
@@ -541,6 +544,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
+    #define POWER_REPORT_BUFFER         10
     #define POWER_I2C_ADDRESS           0x50
 	#define POWER_ADC_BITS              12
 	#define POWER_REFERENCE_VOLTAGE     3.3
@@ -550,6 +554,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+    #define POWER_REPORT_BUFFER         10
     #define HLW8012_USE_INTERRUPTS      1
     #define HLW8012_SEL_CURRENT         HIGH
     #define HLW8012_CURRENT_R           0.001
@@ -558,6 +563,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+    #define POWER_REPORT_BUFFER         60
     #define V9261F_SYNC_INTERVAL        600
     #define V9261F_BAUDRATE             4800
     #define V9261F_CURRENT_FACTOR       81156358
