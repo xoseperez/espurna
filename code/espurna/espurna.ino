@@ -220,7 +220,6 @@ void setup() {
         setSetting("hostname", getIdentifier());
     }
 
-    delay(500);
     wifiSetup();
     otaSetup();
     #if TELNET_SUPPORT

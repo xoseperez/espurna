@@ -390,9 +390,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_RETAIN             true        // MQTT retain flag
 #define MQTT_QOS                0           // MQTT QoS value for all messages
 #define MQTT_KEEPALIVE          30          // MQTT keepalive value
-#define MQTT_RECONNECT_DELAY    10000       // Try to reconnect after 10s
-#define MQTT_TRY_INTERVAL       30000       // Timeframe for disconnect retries
-#define MQTT_MAX_TRIES          5           // After these many retries during the previous MQTT_TRY_INTERVAL the board will reset
+
+#define MQTT_RECONNECT_DELAY_MIN    5000    // Try to reconnect in 5 seconds upon disconnection
+#define MQTT_RECONNECT_DELAY_STEP   5000    // Increase the reconnect delay in 5 seconds after each failed attempt
+#define MQTT_RECONNECT_DELAY_MAX    120000  // Set reconnect time to 2 minutes at most
+
 #define MQTT_SKIP_RETAINED      1           // Skip retained messages on connection
 #define MQTT_SKIP_TIME          1000        // Skip messages for 1 second anter connection
 
@@ -501,6 +503,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_PROVIDER_EMON_ANALOG      0x10
 #define POWER_PROVIDER_EMON_ADC121      0x11
 #define POWER_PROVIDER_HLW8012          0x20
+#define POWER_PROVIDER_V9261F           0x30
 
 // Available magnitudes
 #define POWER_MAGNITUDE_CURRENT         1
@@ -514,7 +517,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // Identify available magnitudes
-#if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+#if (POWER_PROVIDER == POWER_PROVIDER_HLW8012) || (POWER_PROVIDER == POWER_PROVIDER_V9261F)
 #define POWER_HAS_ACTIVE                1
 #else
 #define POWER_HAS_ACTIVE                0
@@ -526,6 +529,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_SAMPLES                   1000
 #define POWER_INTERVAL                  10000
 #define POWER_REPORT_EVERY              6
+#define POWER_REPORT_INTERVAL           60000
 #define POWER_ENERGY_FACTOR             (POWER_INTERVAL * POWER_REPORT_EVERY / 1000.0 / 3600.0)
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
@@ -551,6 +555,15 @@ PROGMEM const char* const custom_reset_string[] = {
     #define HLW8012_CURRENT_R           0.001
     #define HLW8012_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
     #define HLW8012_VOLTAGE_R_DOWN      ( 1000 ) // Real 1.009k
+#endif
+
+#if POWER_PROVIDER == POWER_PROVIDER_V9261F
+    #define V9261F_SYNC_INTERVAL        600
+    #define V9261F_BAUDRATE             4800
+    #define V9261F_CURRENT_FACTOR       81156358
+    #define V9261F_VOLTAGE_FACTOR       4178508
+    #define V9261F_POWER_FACTOR         157859
+    #define V9261F_RPOWER_FACTOR        V9261F_CURRENT_FACTOR
 #endif
 
 // -----------------------------------------------------------------------------

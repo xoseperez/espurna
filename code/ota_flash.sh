@@ -24,11 +24,12 @@ useAvahi() {
     echo_pad "#" 4
     echo_pad "HOSTNAME" 20
     echo_pad "IP" 20
+    echo_pad "APP" 15
+    echo_pad "VERSION" 15
     echo_pad "DEVICE" 30
-    echo_pad "VERSION" 10
     echo
 
-    printf -v line '%*s\n' 84
+    printf -v line '%*s\n' 104
     echo ${line// /-}
 
     counter=0
@@ -40,7 +41,7 @@ useAvahi() {
     echo -n "" > $board_file
     echo -n "$counter" > $count_file
 
-    avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | while read line; do
+    avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | sort -t ';' -k 3 | while read line; do
 
         (( counter++ ))
         echo "$counter" > $count_file
@@ -48,8 +49,9 @@ useAvahi() {
         hostname=`echo $line | cut -d ';' -f4`
         ip=`echo $line | cut -d ';' -f8`
         txt=`echo $line | cut -d ';' -f10`
-        board=`echo $txt | sed -n "s/.*espurna_board=\([^\"]*\).*/\1/p"`
-        version=`echo $txt | sed -n "s/.*espurna_version=\([^\"]*\).*/\1/p"`
+        app_name=`echo $txt | sed -n "s/.*app_name=\([^\"]*\).*/\1/p"`
+        app_version=`echo $txt | sed -n "s/.*app_version=\([^\"]*\).*/\1/p"`
+        board=`echo $txt | sed -n "s/.*target_board=\([^\"]*\).*/\1/p"`
 
         echo -n "$ip;" >> $ip_file
         echo -n "$board;" >> $board_file
@@ -57,8 +59,9 @@ useAvahi() {
         echo_pad "$counter" 4
         echo_pad "$hostname" 20
         echo_pad "$ip" 20
+        echo_pad "$app_name" 15
+        echo_pad "$app_version" 15
         echo_pad "$board" 30
-        echo_pad "$version" 10
         echo
 
 

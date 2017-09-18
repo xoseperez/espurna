@@ -434,6 +434,10 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 4, 0);
         setSetting("relays", 1);
 
+    #elif defined(GENERIC_V9261F)
+
+        setSetting("board", 37);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
