@@ -227,7 +227,6 @@ void setup() {
         saveSettings();
     }
 
-    delay(500);
     wifiSetup();
     otaSetup();
     #if TELNET_SUPPORT
