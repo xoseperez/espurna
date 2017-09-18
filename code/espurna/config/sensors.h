@@ -156,6 +156,25 @@
 #define HLW8012_MAX_CURRENT         10
 
 //--------------------------------------------------------------------------------
+// V9261F power sensor (Intertek)
+// Enable support by passing V9261F_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef V9261F_SUPPORT
+#define V9261F_SUPPORT              0
+#endif
+
+#define V9261F_SYNC_INTERVAL        600
+#define V9261F_REPORT_INTERVAL      60000
+
+#define V9261F_BAUDRATE             4800
+
+#define V9261F_CURRENT_FACTOR       81156358
+#define V9261F_VOLTAGE_FACTOR       4178508
+#define V9261F_POWER_FACTOR         157859
+#define V9261F_RPOWER_FACTOR        V9261F_CURRENT_FACTOR
+
+//--------------------------------------------------------------------------------
 // Internal power montior
 // Enable support by passing ADC_VCC_ENABLED=1 build flag
 // Do not enable this if using the analog GPIO for any other thing

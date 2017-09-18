@@ -271,6 +271,9 @@ void setup() {
     #if HLW8012_SUPPORT
         hlw8012Setup();
     #endif
+    #if V9261F_SUPPORT
+        v9261fSetup();
+    #endif
     #if DS18B20_SUPPORT
         dsSetup();
     #endif
@@ -328,6 +331,9 @@ void loop() {
     #endif
     #if HLW8012_SUPPORT
         hlw8012Loop();
+    #endif
+    #if V9261F_SUPPORT
+        v9261fLoop();
     #endif
     #if DS18B20_SUPPORT
         dsLoop();

@@ -71,8 +71,19 @@
 
     // Buttons
     #define BUTTON1_PIN         4
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
+
+    // Normal pushbutton
+    //#define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Touch button
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK           BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
 
     // Relays
     #define RELAY1_PIN          12
@@ -832,6 +843,21 @@
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// V9261F
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_V9261F)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "V9261F"
+
+    // V9261F
+    #define V9261F_SUPPORT      1
+    #define V9261F_PIN          2
+    #define V9261F_PIN_INVERSE  1
 
 // -----------------------------------------------------------------------------
 // Unknown hardware
