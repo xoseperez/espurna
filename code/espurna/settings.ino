@@ -260,6 +260,13 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
+    #if DEBUG_SUPPORT
+        Embedis::command( F("CRASH"), [](Embedis* e) {
+            debugDumpCrashInfo();
+            e->response(Embedis::OK);
+        });
+    #endif
+
     Embedis::command( F("DUMP.RAW"), [](Embedis* e) {
         for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
             if (i % 16 == 0) e->stream->printf("\n[%04X] ", i);
