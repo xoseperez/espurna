@@ -89,57 +89,7 @@ void _powerReset() {
     #endif
 }
 
-// -----------------------------------------------------------------------------
-// MAGNITUDE API
-// -----------------------------------------------------------------------------
-
-bool hasActivePower() {
-    return POWER_HAS_ACTIVE;
-}
-
-double getCurrent() {
-    return _power_current;
-}
-
-double getVoltage() {
-    return _power_voltage;
-}
-
-double getApparentPower() {
-    return _power_apparent;
-}
-
-double getActivePower() {
-    return _power_active;
-}
-
-double getReactivePower() {
-    return _power_reactive;
-}
-
-double getPowerFactor() {
-    return _power_factor;
-}
-
-// -----------------------------------------------------------------------------
-// PUBLIC API
-// -----------------------------------------------------------------------------
-
-bool powerEnabled() {
-    return _power_enabled;
-}
-
-void powerEnabled(bool enabled) {
-    if (enabled & !_power_enabled) _powerReset();
-    _power_enabled = enabled;
-    powerEnabledProvider();
-}
-
-void powerConfigure() {
-    powerConfigureProvider();
-}
-
-void powerRead() {
+void _powerRead() {
 
     // Get instantaneous values from HAL
     double current = _powerCurrent();
@@ -147,6 +97,8 @@ void powerRead() {
     double apparent = _powerApparentPower();
     #if POWER_HAS_ACTIVE
         double active = _powerActivePower();
+        double reactive = (apparent > active) ? sqrt(apparent * apparent - active * active) : 0;
+        double factor = (apparent > 0) ? active / apparent : 1;
     #endif
 
     // Filters
@@ -157,40 +109,43 @@ void powerRead() {
         _filter_active.add(active);
     #endif
 
+    /* THERE IS A BUG HERE SOMEWHERE :)
     char current_buffer[10];
     dtostrf(current, sizeof(current_buffer)-1, POWER_CURRENT_PRECISION, current_buffer);
     DEBUG_MSG_P(PSTR("[POWER] Current: %sA\n"), current_buffer);
-    DEBUG_MSG_P(PSTR("[POWER] Voltage: %sA\n"), voltage);
-    DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), apparent);
+    DEBUG_MSG_P(PSTR("[POWER] Voltage: %sA\n"), int(voltage));
+    DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), int(apparent));
     #if POWER_HAS_ACTIVE
-        DEBUG_MSG_P(PSTR("[POWER] Active Power: %dW\n"), active);
-        DEBUG_MSG_P(PSTR("[POWER] Reactive Power: %dW\n"), getReactivePower());
-        DEBUG_MSG_P(PSTR("[POWER] Power Factor: %d%%\n"), 100 * getPowerFactor());
+        DEBUG_MSG_P(PSTR("[POWER] Active Power: %dW\n"), int(active));
+        DEBUG_MSG_P(PSTR("[POWER] Reactive Power: %dW\n"), int(reactive));
+        DEBUG_MSG_P(PSTR("[POWER] Power Factor: %d%%\n"), int(100 * factor));
     #endif
+    */
 
     // Update websocket clients
     #if WEB_SUPPORT
-    {
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
-        root["powerVisible"] = 1;
-        root["powerCurrent"] = String(current_buffer);
-        root["powerVoltage"] = voltage;
-        root["powerApparentPower"] = apparent;
-        #if POWER_HAS_ACTIVE
-            root["powerActivePower"] = active;
-            root["powerReactivePower"] = getReactivePower();
-            root["powerPowerfactor"] = int(100 * getPowerFactor());
-        #endif
-        String output;
-        root.printTo(output);
-        wsSend(output.c_str());
-    }
+        if (wsConnected()) {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.createObject();
+            root["pwrVisible"] = 1;
+            root["pwrCurrent"] = roundTo(current, POWER_CURRENT_DECIMALS);
+            root["pwrVoltage"] = roundTo(voltage, POWER_VOLTAGE_DECIMALS);
+            root["pwrApparent"] = roundTo(apparent, POWER_POWER_DECIMALS);
+            #if POWER_HAS_ACTIVE
+                root["pwrFullVisible"] = 1;
+                root["pwrActive"] = roundTo(active, POWER_POWER_DECIMALS);
+                root["pwrReactive"] = roundTo(reactive, POWER_POWER_DECIMALS);
+                root["pwrFactor"] = int(100 * factor);
+            #endif
+            String output;
+            root.printTo(output);
+            wsSend(output.c_str());
+        }
     #endif
 
 }
 
-void powerReport() {
+void _powerReport() {
 
     // Get the fitered values
     _power_current = _filter_current.average(true);
@@ -255,6 +210,56 @@ void powerReport() {
 
 }
 
+// -----------------------------------------------------------------------------
+// MAGNITUDE API
+// -----------------------------------------------------------------------------
+
+bool hasActivePower() {
+    return POWER_HAS_ACTIVE;
+}
+
+double getCurrent() {
+    return roundTo(_power_current, POWER_CURRENT_DECIMALS);
+}
+
+double getVoltage() {
+    return roundTo(_power_voltage, POWER_VOLTAGE_DECIMALS);
+}
+
+double getApparentPower() {
+    return roundTo(_power_apparent, POWER_POWER_DECIMALS);
+}
+
+double getActivePower() {
+    return roundTo(_power_active, POWER_POWER_DECIMALS);
+}
+
+double getReactivePower() {
+    return roundTo(_power_reactive, POWER_POWER_DECIMALS);
+}
+
+double getPowerFactor() {
+    return roundTo(_power_factor, 2);
+}
+
+// -----------------------------------------------------------------------------
+// PUBLIC API
+// -----------------------------------------------------------------------------
+
+bool powerEnabled() {
+    return _power_enabled;
+}
+
+void powerEnabled(bool enabled) {
+    if (enabled & !_power_enabled) _powerReset();
+    _power_enabled = enabled;
+    _powerEnabledProvider();
+}
+
+void powerConfigure() {
+    _powerConfigureProvider();
+}
+
 void powerSetup() {
 
     // backwards compatibility
@@ -267,7 +272,7 @@ void powerSetup() {
     moveSetting("powCurrentMult", "powerRatioC");
     moveSetting("powVoltageMult", "powerRatioV");
 
-    powerSetupProvider();
+    _powerSetupProvider();
 
     // API
     #if WEB_SUPPORT
@@ -280,20 +285,20 @@ void powerSetup() {
 
 void powerLoop() {
 
-    powerLoopProvider(true);
+    _powerLoopProvider(true);
 
     if (_power_newdata) {
         _power_newdata = false;
-        powerRead();
+        _powerRead();
     }
 
     static unsigned long last = 0;
     if (millis() - last > POWER_REPORT_INTERVAL) {
         last = millis();
-        powerReport();
+        _powerReport();
     }
 
-    powerLoopProvider(false);
+    _powerLoopProvider(false);
 
 }
 

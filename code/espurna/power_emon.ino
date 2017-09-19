@@ -46,7 +46,7 @@ unsigned int currentCallback() {
     #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
 
         uint8_t buffer[2];
-        brzo_i2c_start_transaction(POWER_I2C_ADDRESS, I2C_SCL_FREQUENCY);
+        brzo_i2c_start_transaction(ADC121_I2C_ADDRESS, I2C_SCL_FREQUENCY);
         buffer[0] = ADC121_REG_RESULT;
         brzo_i2c_write(buffer, 1, false);
         brzo_i2c_read(buffer, 2, false);
@@ -61,14 +61,16 @@ unsigned int currentCallback() {
 }
 
 // -----------------------------------------------------------------------------
+// POWER API
+// -----------------------------------------------------------------------------
 
 double _powerCurrent() {
     static unsigned long last = 0;
     static double current = 0;
     if (millis() - last > 1000) {
         last = millis();
-        current = _emon.getCurrent(POWER_SAMPLES);
-        current -= POWER_CURRENT_OFFSET;
+        current = _emon.getCurrent(EMON_SAMPLES);
+        current -= EMON_CURRENT_OFFSET;
         if (current < 0) current = 0;
     }
     return current;
@@ -94,29 +96,24 @@ double _powerPowerFactor() {
     return 1;
 }
 
-
-// -----------------------------------------------------------------------------
-// PUBLIC API
-// -----------------------------------------------------------------------------
-
-void powerEnabledProvider() {
+void _powerEnabledProvider() {
     // Nothing to do
 }
 
-void powerConfigureProvider() {
-    _emon.setCurrentRatio(getSetting("powerRatioC", POWER_CURRENT_RATIO).toFloat());
+void _powerConfigureProvider() {
+    _emon.setCurrentRatio(getSetting("powerRatioC", EMON_CURRENT_RATIO).toFloat());
     _power_voltage = getSetting("powerVoltage", POWER_VOLTAGE).toFloat();
 }
 
-void powerSetupProvider() {
+void _powerSetupProvider() {
 
-    _emon.initCurrent(currentCallback, POWER_ADC_BITS, POWER_REFERENCE_VOLTAGE, POWER_CURRENT_RATIO);
+    _emon.initCurrent(currentCallback, EMON_ADC_BITS, EMON_REFERENCE_VOLTAGE, EMON_CURRENT_RATIO);
 
     #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
         uint8_t buffer[2];
         buffer[0] = ADC121_REG_CONFIG;
         buffer[1] = 0x00;
-        brzo_i2c_start_transaction(POWER_I2C_ADDRESS, I2C_SCL_FREQUENCY);
+        brzo_i2c_start_transaction(ADC121_I2C_ADDRESS, I2C_SCL_FREQUENCY);
         brzo_i2c_write(buffer, 2, false);
         brzo_i2c_end_transaction();
     #endif
@@ -127,7 +124,7 @@ void powerSetupProvider() {
 
 }
 
-void powerLoopProvider(bool before) {
+void _powerLoopProvider(bool before) {
 
     if (before) {
 

@@ -231,29 +231,29 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
             #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
 
-                if (key == "powExpectedPower") {
+                if (key == "hlwExpectedPower") {
                     _hlwExpectedPower(value.toInt());
                     changed = true;
                 }
 
-                if (key == "powExpectedVoltage") {
+                if (key == "hlwExpectedVoltage") {
                     _hlwExpectedVoltage(value.toInt());
                     changed = true;
                 }
 
-                if (key == "powExpectedCurrent") {
+                if (key == "hlwExpectedCurrent") {
                     _hlwExpectedCurrent(value.toFloat());
                     changed = true;
                 }
 
-                if (key == "powExpectedReset") {
+                if (key == "hlwExpectedReset") {
                     if (value.toInt() == 1) {
                         _hlwResetCalibration();
                         changed = true;
                     }
                 }
 
-                if (key.startsWith("pow")) continue;
+                if (key.startsWith("hlw")) continue;
 
             #endif
 
@@ -591,16 +591,23 @@ void _wsStart(uint32_t client_id) {
         #endif
 
         #if POWER_PROVIDER != POWER_PROVIDER_NONE
-            root["powerVisible"] = 1;
-            root["powerCurrent"] = getCurrent();
-            root["powerVoltage"] = getVoltage();
-            root["powerApparentPower"] = getApparentPower();
+            root["pwrVisible"] = 1;
+            root["pwrCurrent"] = getCurrent();
+            root["pwrVoltage"] = getVoltage();
+            root["pwrApparent"] = getApparentPower();
             #if POWER_HAS_ACTIVE
-                root["powerActivePower"] = getActivePower();
-                root["powerReactivePower"] = getReactivePower();
-                root["powerPowerfactor"] = int(100 * getPowerFactor());
+                root["pwrFullVisible"] = 1;
+                root["pwrActive"] = getActivePower();
+                root["pwrReactive"] = getReactivePower();
+                root["pwrFactor"] = int(100 * getPowerFactor());
             #endif
-            root["powerRatioC"] = getSetting("powerRatioC", POWER_CURRENT_RATIO);
+            #if POWER_PROVIDER & POWER_PROVIDER_EMON
+                root["emonVisible"] = 1;
+                root["pwrRatioC"] = getSetting("pwrRatioC", EMON_CURRENT_RATIO);
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+                root["hlwVisible"] = 1;
+            #endif
         #endif
 
         #if NOFUSS_SUPPORT

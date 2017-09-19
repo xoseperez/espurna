@@ -70,7 +70,7 @@ void _v9261fRead() {
 
     } else if (state == 3) {
 
-        if (checksumOK()) {
+        if (_v9261fChecksum()) {
 
             _v9261f_active = (double) (
                 (_v9261f_data[3]) +
@@ -100,6 +100,11 @@ void _v9261fRead() {
                 (_v9261f_data[18] << 24)
             ) / V9261F_CURRENT_FACTOR;
 
+            if (_v9261f_active < 0) _v9261f_active = 0;
+            if (_v9261f_reactive < 0) _v9261f_reactive = 0;
+            if (_v9261f_voltage < 0) _v9261f_voltage = 0;
+            if (_v9261f_current < 0) _v9261f_current = 0;
+
             _power_newdata = true;
 
         }
@@ -123,7 +128,7 @@ void _v9261fRead() {
 
 }
 
-boolean checksumOK() {
+bool _v9261fChecksum() {
     unsigned char checksum = 0;
     for (unsigned char i = 0; i < 19; i++) {
         checksum = checksum + _v9261f_data[i];
@@ -132,6 +137,8 @@ boolean checksumOK() {
     return checksum == _v9261f_data[19];
 }
 
+// -----------------------------------------------------------------------------
+// POWER API
 // -----------------------------------------------------------------------------
 
 double _powerCurrent() {
@@ -160,24 +167,20 @@ double _powerPowerFactor() {
     return 1;
 }
 
-// -----------------------------------------------------------------------------
-// PUBLIC API
-// -----------------------------------------------------------------------------
-
-void powerEnabledProvider() {
+void _powerEnabledProvider() {
     // Nothing to do
 }
 
-void powerConfigureProvider() {
+void _powerConfigureProvider() {
     // Nothing to do
 }
 
-void powerSetupProvider() {
+void _powerSetupProvider() {
     _v9261f_uart = new SoftwareSerial(V9261F_PIN, SW_SERIAL_UNUSED_PIN, V9261F_PIN_INVERSE, 256);
     _v9261f_uart->begin(V9261F_BAUDRATE);
 }
 
-void powerLoopProvider(bool before) {
+void _powerLoopProvider(bool before) {
 
     if (before) {
         _v9261fRead();

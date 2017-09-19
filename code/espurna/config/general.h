@@ -528,33 +528,36 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define POWER_CURRENT_PRECISION         3
 #define POWER_VOLTAGE                   230
-#define POWER_CURRENT_RATIO             30
-#define POWER_SAMPLES                   1000
 #define POWER_READ_INTERVAL             10000
 #define POWER_REPORT_INTERVAL           60000
+#define POWER_REPORT_BUFFER             10
 #define POWER_ENERGY_FACTOR             (POWER_REPORT_INTERVAL / 1000.0 / 3600.0)
+#define POWER_CURRENT_DECIMALS          2
+#define POWER_VOLTAGE_DECIMALS          0
+#define POWER_POWER_DECIMALS            0
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
-    #define POWER_REPORT_BUFFER         10
-	#define POWER_ADC_BITS              10
-	#define POWER_REFERENCE_VOLTAGE     1.0
-    #define POWER_CURRENT_OFFSET        0.25
+    #define EMON_CURRENT_RATIO          30
+    #define EMON_SAMPLES                1000
+	#define EMON_ADC_BITS               10
+	#define EMON_REFERENCE_VOLTAGE      1.0
+    #define EMON_CURRENT_OFFSET         0.25
     #undef ADC_VCC_ENABLED
     #define ADC_VCC_ENABLED             0
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
-    #define POWER_REPORT_BUFFER         10
-    #define POWER_I2C_ADDRESS           0x50
-	#define POWER_ADC_BITS              12
-	#define POWER_REFERENCE_VOLTAGE     3.3
-    #define POWER_CURRENT_OFFSET        0.10
+    #define EMON_CURRENT_RATIO          30
+    #define EMON_SAMPLES                1000
+    #define EMON_ADC_BITS               12
+	#define EMON_REFERENCE_VOLTAGE      3.3
+    #define EMON_CURRENT_OFFSET         0.10
+    #define ADC121_I2C_ADDRESS          0x50
     #undef I2C_SUPPORT
     #define I2C_SUPPORT                 1
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
-    #define POWER_REPORT_BUFFER         10
     #define HLW8012_USE_INTERRUPTS      1
     #define HLW8012_SEL_CURRENT         HIGH
     #define HLW8012_CURRENT_R           0.001
@@ -563,12 +566,13 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+    #undef POWER_REPORT_BUFFER
     #define POWER_REPORT_BUFFER         60
     #define V9261F_SYNC_INTERVAL        600
     #define V9261F_BAUDRATE             4800
-    #define V9261F_CURRENT_FACTOR       81156358
-    #define V9261F_VOLTAGE_FACTOR       4178508
-    #define V9261F_POWER_FACTOR         157859
+    #define V9261F_CURRENT_FACTOR       79371434.0
+    #define V9261F_VOLTAGE_FACTOR       4160651.0
+    #define V9261F_POWER_FACTOR         153699.0
     #define V9261F_RPOWER_FACTOR        V9261F_CURRENT_FACTOR
 #endif
 

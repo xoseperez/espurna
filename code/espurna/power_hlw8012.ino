@@ -74,6 +74,8 @@ void _hlwExpectedVoltage(unsigned int voltage) {
 }
 
 // -----------------------------------------------------------------------------
+// POWER API
+// -----------------------------------------------------------------------------
 
 double _powerCurrent() {
     return _hlw8012.getCurrent();
@@ -104,11 +106,7 @@ double _powerPowerFactor() {
     return 1;
 }
 
-// -----------------------------------------------------------------------------
-// PUBLIC API
-// -----------------------------------------------------------------------------
-
-void powerEnabledProvider() {
+void _powerEnabledProvider() {
     if (_power_enabled) {
         attachInterrupt(HLW8012_CF1_PIN, _hlw_cf1_isr, CHANGE);
         attachInterrupt(HLW8012_CF_PIN, _hlw_cf_isr, CHANGE);
@@ -118,12 +116,12 @@ void powerEnabledProvider() {
     }
 }
 
-void powerConfigureProvider() {
+void _powerConfigureProvider() {
     _hlwSetCalibration();
     _hlwGetCalibration();
 }
 
-void powerSetupProvider() {
+void _powerSetupProvider() {
 
     // Initialize HLW8012
     // void begin(unsigned char cf_pin, unsigned char cf1_pin, unsigned char sel_pin, unsigned char currentWhen = HIGH, bool use_interrupts = false, unsigned long pulse_timeout = PULSE_TIMEOUT);
@@ -155,7 +153,7 @@ void powerSetupProvider() {
 
 }
 
-void powerLoopProvider(bool before) {
+void _powerLoopProvider(bool before) {
 
     if (before) {
 
