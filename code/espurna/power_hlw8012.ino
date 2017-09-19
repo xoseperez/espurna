@@ -94,16 +94,11 @@ double _powerApparentPower() {
 }
 
 double _powerReactivePower() {
-    double active = _powerActivePower();
-    double apparent = _powerApparentPower();
-    if (apparent > active) return sqrt(apparent * apparent - active * active);
-    return 0;
+    return _hlw8012.getReactivePower();
 }
 
 double _powerPowerFactor() {
-    double apparent = _powerApparentPower();
-    if (apparent > 0) return _powerActivePower() / apparent;
-    return 1;
+    return _hlw8012.getPowerFactor();
 }
 
 void _powerEnabledProvider() {
@@ -142,7 +137,7 @@ void _powerSetupProvider() {
     // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
     _hlw8012.setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
 
-    powerConfigureProvider();
+    _powerConfigureProvider();
 
     _power_wifi_onconnect = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
         powerEnabled(true);

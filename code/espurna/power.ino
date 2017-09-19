@@ -153,12 +153,14 @@ void _powerReport() {
         _power_apparent = _filter_apparent.average(true);
         _power_voltage = _filter_voltage.average(true);
         _power_active = _filter_active.average(true);
+        if (_power_active > _power_apparent) _power_apparent = _power_active;
     #else
         _power_apparent = _power_current * _power_voltage;
         _power_active = _power_apparent;
     #endif
     _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
     _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
+    if (_power_factor > 1) _power_factor = 1;
     _power_ready = true;
 
     char buf_current[10];

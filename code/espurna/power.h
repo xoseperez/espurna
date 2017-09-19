@@ -15,9 +15,9 @@ class MedianFilter {
         }
 
         virtual void reset() {
-            _data[0] = _data[_size];
+            _data[0] = _data[_pointer-1];
             _pointer = 1;
-            for (unsigned char i=_pointer; i<=_size; i++) _data[i] = 0;
+            for (unsigned char i=1; i<=_size; i++) _data[i] = 0;
         }
 
         virtual void add(double value) {
@@ -47,7 +47,7 @@ class MedianFilter {
 
                 }
 
-                sum /= (_pointer - 1);
+                sum /= (_pointer - 2);
 
             }
 
