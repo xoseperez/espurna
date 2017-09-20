@@ -47,32 +47,6 @@ void _hlwGetCalibration() {
     saveSettings();
 }
 
-void _hlwResetCalibration() {
-    _hlw8012.resetMultipliers();
-    _hlwGetCalibration();
-}
-
-void _hlwExpectedPower(unsigned int power) {
-    if (power > 0) {
-        _hlw8012.expectedActivePower(power);
-        _hlwGetCalibration();
-    }
-}
-
-void _hlwExpectedCurrent(double current) {
-    if (current > 0) {
-        _hlw8012.expectedCurrent(current);
-        _hlwGetCalibration();
-    }
-}
-
-void _hlwExpectedVoltage(unsigned int voltage) {
-    if (voltage > 0) {
-        _hlw8012.expectedVoltage(voltage);
-        _hlwGetCalibration();
-    }
-}
-
 // -----------------------------------------------------------------------------
 // POWER API
 // -----------------------------------------------------------------------------
@@ -109,6 +83,19 @@ void _powerEnabledProvider() {
         detachInterrupt(HLW8012_CF1_PIN);
         detachInterrupt(HLW8012_CF_PIN);
     }
+}
+
+void _powerCalibrateProvider(unsigned char magnitude, double value) {
+    if (value <= 0) return;
+    if (magnitude == POWER_MAGNITUDE_ACTIVE)  _hlw8012.expectedActivePower(value);
+    if (magnitude == POWER_MAGNITUDE_CURRENT) _hlw8012.expectedCurrent(value);
+    if (magnitude == POWER_MAGNITUDE_VOLTAGE) _hlw8012.expectedVoltage(value);
+    _hlwGetCalibration();
+}
+
+void _powerResetCalibrationProvider() {
+    _hlw8012.resetMultipliers();
+    _hlwGetCalibration();
 }
 
 void _powerConfigureProvider() {

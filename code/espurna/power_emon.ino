@@ -100,6 +100,24 @@ void _powerEnabledProvider() {
     // Nothing to do
 }
 
+void _powerCalibrateProvider(unsigned char magnitude, double value) {
+    if (value <= 0) return;
+    if (magnitude == POWER_MAGNITUDE_ACTIVE) {
+        double power = _powerActivePower();
+        double ratio = getSetting("powerRatioC", EMON_CURRENT_RATIO).toFloat();
+        ratio = ratio * (value / power);
+        _emon.setCurrentRatio(ratio);
+        setSetting("powerRatioC", ratio);
+        saveSettings();
+    }
+}
+
+void _powerResetCalibrationProvider() {
+    delSetting("powerRatioC");
+    _powerConfigureProvider();
+    saveSettings();
+}
+
 void _powerConfigureProvider() {
     _emon.setCurrentRatio(getSetting("powerRatioC", EMON_CURRENT_RATIO).toFloat());
     _power_voltage = getSetting("powerVoltage", POWER_VOLTAGE).toFloat();

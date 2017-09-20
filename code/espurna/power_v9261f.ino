@@ -19,6 +19,12 @@ double _v9261f_active = 0;
 double _v9261f_reactive = 0;
 double _v9261f_voltage = 0;
 double _v9261f_current = 0;
+
+double _v9261f_ratioP = V9261F_POWER_FACTOR;
+double _v9261f_ratioC = V9261F_CURRENT_FACTOR;
+double _v9261f_ratioV = V9261F_VOLTAGE_FACTOR;
+double _v9261f_ratioR = V9261F_RPOWER_FACTOR;
+
 unsigned char _v9261f_data[24];
 
 // -----------------------------------------------------------------------------
@@ -77,28 +83,28 @@ void _v9261fRead() {
                 (_v9261f_data[4] << 8) +
                 (_v9261f_data[5] << 16) +
                 (_v9261f_data[6] << 24)
-            ) / V9261F_POWER_FACTOR;
+            ) / _v9261f_ratioP;
 
             _v9261f_reactive = (double) (
                 (_v9261f_data[7]) +
                 (_v9261f_data[8] <<  8) +
                 (_v9261f_data[9] << 16) +
                 (_v9261f_data[10] << 24)
-            ) / V9261F_RPOWER_FACTOR;
+            ) / _v9261f_ratioR;
 
             _v9261f_voltage = (double) (
                 (_v9261f_data[11]) +
                 (_v9261f_data[12] <<  8) +
                 (_v9261f_data[13] << 16) +
                 (_v9261f_data[14] << 24)
-            ) / V9261F_VOLTAGE_FACTOR;
+            ) / _v9261f_ratioV;
 
             _v9261f_current = (double) (
                 (_v9261f_data[15]) +
                 (_v9261f_data[16] <<  8) +
                 (_v9261f_data[17] << 16) +
                 (_v9261f_data[18] << 24)
-            ) / V9261F_CURRENT_FACTOR;
+            ) / _v9261f_ratioC;
 
             if (_v9261f_active < 0) _v9261f_active = 0;
             if (_v9261f_reactive < 0) _v9261f_reactive = 0;
@@ -172,7 +178,44 @@ void _powerEnabledProvider() {
 }
 
 void _powerConfigureProvider() {
-    // Nothing to do
+    _v9261f_ratioP = getSetting("pwrRatioP", V9261F_POWER_FACTOR).toFloat();
+    _v9261f_ratioV = getSetting("pwrRatioV", V9261F_VOLTAGE_FACTOR).toFloat();
+    _v9261f_ratioC = getSetting("pwrRatioC", V9261F_CURRENT_FACTOR).toFloat();
+    _v9261f_ratioR = getSetting("pwrRatioR", V9261F_RPOWER_FACTOR).toFloat();
+}
+
+void _powerCalibrateProvider(unsigned char magnitude, double value) {
+    if (value <= 0) return;
+    if (magnitude == POWER_MAGNITUDE_ACTIVE) {
+        _v9261f_ratioP = _v9261f_ratioP * (_v9261f_active / value);
+        setSetting("pwrRatioP", _v9261f_ratioP);
+    }
+    if (magnitude == POWER_MAGNITUDE_CURRENT) {
+        _v9261f_ratioC = _v9261f_ratioC * (_v9261f_current / value);
+        setSetting("pwrRatioC", _v9261f_ratioC);
+    }
+    if (magnitude == POWER_MAGNITUDE_VOLTAGE) {
+        _v9261f_ratioV = _v9261f_ratioV * (_v9261f_voltage / value);
+        setSetting("pwrRatioV", _v9261f_ratioV);
+    }
+    if (magnitude == POWER_MAGNITUDE_POWER_FACTOR) {
+        if (value < 100) {
+            double apparent = _v9261f_ratioP / (value / 100);
+            value = sqrt(apparent * apparent - _v9261f_ratioP * _v9261f_ratioP);
+            _v9261f_ratioR = _v9261f_ratioR * (_v9261f_reactive / value);
+            setSetting("pwrRatioR", _v9261f_ratioR);
+        }
+    }
+    saveSettings();
+}
+
+void _powerResetCalibrationProvider() {
+    delSetting("pwrRatioP");
+    delSetting("pwrRatioC");
+    delSetting("pwrRatioV");
+    delSetting("pwrRatioR");
+    _powerConfigureProvider();
+    saveSettings();
 }
 
 void _powerSetupProvider() {

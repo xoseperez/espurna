@@ -229,31 +229,39 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             // Skip firmware filename
             if (key.equals("filename")) continue;
 
-            #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+            #if POWER_PROVIDER != POWER_PROVIDER_NONE
 
-                if (key == "hlwExpectedPower") {
-                    _hlwExpectedPower(value.toInt());
+                if (key == "pwrExpectedP") {
+                    powerCalibrate(POWER_MAGNITUDE_ACTIVE, value.toFloat());
                     changed = true;
+                    continue;
                 }
 
-                if (key == "hlwExpectedVoltage") {
-                    _hlwExpectedVoltage(value.toInt());
+                if (key == "pwrExpectedV") {
+                    powerCalibrate(POWER_MAGNITUDE_VOLTAGE, value.toFloat());
                     changed = true;
+                    continue;
                 }
 
-                if (key == "hlwExpectedCurrent") {
-                    _hlwExpectedCurrent(value.toFloat());
+                if (key == "pwrExpectedC") {
+                    powerCalibrate(POWER_MAGNITUDE_CURRENT, value.toFloat());
                     changed = true;
+                    continue;
                 }
 
-                if (key == "hlwExpectedReset") {
+                if (key == "pwrExpectedF") {
+                    powerCalibrate(POWER_MAGNITUDE_POWER_FACTOR, value.toFloat());
+                    changed = true;
+                    continue;
+                }
+
+                if (key == "pwrResetCalibration") {
                     if (value.toInt() == 1) {
-                        _hlwResetCalibration();
+                        powerResetCalibration();
                         changed = true;
                     }
+                    continue;
                 }
-
-                if (key.startsWith("hlw")) continue;
 
             #endif
 
@@ -596,17 +604,18 @@ void _wsStart(uint32_t client_id) {
             root["pwrVoltage"] = getVoltage();
             root["pwrApparent"] = getApparentPower();
             #if POWER_HAS_ACTIVE
-                root["pwrFullVisible"] = 1;
                 root["pwrActive"] = getActivePower();
                 root["pwrReactive"] = getReactivePower();
                 root["pwrFactor"] = int(100 * getPowerFactor());
             #endif
             #if POWER_PROVIDER & POWER_PROVIDER_EMON
                 root["emonVisible"] = 1;
-                root["pwrRatioC"] = getSetting("pwrRatioC", EMON_CURRENT_RATIO);
             #endif
             #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
                 root["hlwVisible"] = 1;
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+                root["v9261fVisible"] = 1;
             #endif
         #endif
 

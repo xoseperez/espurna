@@ -132,10 +132,18 @@ void _powerRead() {
             root["pwrVoltage"] = roundTo(voltage, POWER_VOLTAGE_DECIMALS);
             root["pwrApparent"] = roundTo(apparent, POWER_POWER_DECIMALS);
             #if POWER_HAS_ACTIVE
-                root["pwrFullVisible"] = 1;
                 root["pwrActive"] = roundTo(active, POWER_POWER_DECIMALS);
                 root["pwrReactive"] = roundTo(reactive, POWER_POWER_DECIMALS);
                 root["pwrFactor"] = int(100 * factor);
+            #endif
+            #if POWER_PROVIDER & POWER_PROVIDER_EMON
+                root["emonVisible"] = 1;
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+                root["hlwVisible"] = 1;
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+                root["v9261fVisible"] = 1;
             #endif
             String output;
             root.printTo(output);
@@ -256,6 +264,14 @@ void powerEnabled(bool enabled) {
     if (enabled & !_power_enabled) _powerReset();
     _power_enabled = enabled;
     _powerEnabledProvider();
+}
+
+void powerCalibrate(unsigned char magnitude, double value) {
+    _powerCalibrateProvider(magnitude, value);
+}
+
+void powerResetCalibration() {
+    _powerResetCalibrationProvider();
 }
 
 void powerConfigure() {

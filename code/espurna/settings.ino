@@ -292,7 +292,7 @@ void settingsDump() {
 
 void settingsLoop() {
     if (_settings_save) {
-        DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
+        //DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
         EEPROM.commit();
         _settings_save = false;
     }

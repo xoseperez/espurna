@@ -66,8 +66,8 @@ function doUpdate() {
 
         websock.send(JSON.stringify({'config': data}));
 
-        $(".hlwExpected").val(0);
-        $("input[name='hlwExpectedReset']")
+        $(".pwrExpected").val(0);
+        $("input[name='pwrResetCalibration']")
             .prop("checked", false)
             .iphoneStyle("refresh");
 

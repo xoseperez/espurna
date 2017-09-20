@@ -528,9 +528,9 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define POWER_CURRENT_PRECISION         3
 #define POWER_VOLTAGE                   230
-#define POWER_READ_INTERVAL             10000
+#define POWER_READ_INTERVAL             6000
 #define POWER_REPORT_INTERVAL           60000
-#define POWER_REPORT_BUFFER             10
+#define POWER_REPORT_BUFFER             12
 #define POWER_ENERGY_FACTOR             (POWER_REPORT_INTERVAL / 1000.0 / 3600.0)
 #define POWER_CURRENT_DECIMALS          2
 #define POWER_VOLTAGE_DECIMALS          0
