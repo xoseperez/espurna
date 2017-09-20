@@ -141,16 +141,18 @@ void _powerLoopProvider(bool before) {
 
         static unsigned long last = 0;
         if (millis() - last > POWER_READ_INTERVAL) {
+
             last = millis();
             _power_newdata = true;
+
+            // Toggle between current and voltage monitoring
+            #if (HLW8012_USE_INTERRUPTS == 0)
+                _hlw8012.toggleMode();
+            #endif // (HLW8012_USE_INTERRUPTS == 0)
+
         }
 
     } else {
-
-        // Toggle between current and voltage monitoring
-        #if (HLW8012_USE_INTERRUPTS == 0)
-            _hlw8012.toggleMode();
-        #endif // (HLW8012_USE_INTERRUPTS == 0)
 
     }
 
