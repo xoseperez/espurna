@@ -32,18 +32,18 @@ void ICACHE_RAM_ATTR _hlw_cf_isr() {
 
 void _hlwSetCalibration() {
     double value;
-    value = getSetting("powerRatioP", 0).toFloat();
+    value = getSetting("pwrRatioP", 0).toFloat();
     if (value > 0) _hlw8012.setPowerMultiplier(value);
-    value = getSetting("powerRatioC", 0).toFloat();
+    value = getSetting("pwrRatioC", 0).toFloat();
     if (value > 0) _hlw8012.setCurrentMultiplier(value);
-    value = getSetting("powerRatioV", 0).toFloat();
+    value = getSetting("pwrRatioV", 0).toFloat();
     if (value > 0) _hlw8012.setVoltageMultiplier(value);
 }
 
 void _hlwGetCalibration() {
-    setSetting("powerRatioP", _hlw8012.getPowerMultiplier());
-    setSetting("powerRatioC", _hlw8012.getCurrentMultiplier());
-    setSetting("powerRatioV", _hlw8012.getVoltageMultiplier());
+    setSetting("pwrRatioP", _hlw8012.getPowerMultiplier());
+    setSetting("pwrRatioC", _hlw8012.getCurrentMultiplier());
+    setSetting("pwrRatioV", _hlw8012.getVoltageMultiplier());
     saveSettings();
 }
 

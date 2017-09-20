@@ -281,14 +281,18 @@ void powerConfigure() {
 void powerSetup() {
 
     // backwards compatibility
-    moveSetting("pwMainsVoltage", "powerVoltage");
-    moveSetting("emonMains", "powerVoltage");
-    moveSetting("emonVoltage", "powerVoltage");
-    moveSetting("pwCurrentRatio", "powerRatioC");
-    moveSetting("emonRatio", "powerRatioC");
-    moveSetting("powPowerMult", "powerRatioP");
-    moveSetting("powCurrentMult", "powerRatioC");
-    moveSetting("powVoltageMult", "powerRatioV");
+    moveSetting("pwMainsVoltage", "pwrVoltage");
+    moveSetting("emonMains", "pwrVoltage");
+    moveSetting("emonVoltage", "pwrVoltage");
+    moveSetting("pwCurrentRatio", "pwrRatioC");
+    moveSetting("emonRatio", "pwrRatioC");
+    moveSetting("powPowerMult", "pwrRatioP");
+    moveSetting("powCurrentMult", "pwrRatioC");
+    moveSetting("powVoltageMult", "pwrRatioV");
+    moveSetting("powerVoltage", "pwrVoltage");
+    moveSetting("powerRatioC", "pwrRatioC");
+    moveSetting("powerRatioV", "pwrRatioV");
+    moveSetting("powerRatioP", "pwrRatioP");
 
     _powerSetupProvider();
 
