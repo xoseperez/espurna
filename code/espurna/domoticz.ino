@@ -10,7 +10,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
-bool _dczEnabled = false;
+bool _dcz_enabled = false;
 
 //------------------------------------------------------------------------------
 // Private methods
@@ -35,7 +35,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
     if (type == MQTT_MESSAGE_EVENT) {
 
-        if (!_dczEnabled) return;
+        if (!_dcz_enabled) return;
 
         // Check topic
         if (dczTopicOut.equals(topic)) {
@@ -68,7 +68,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 //------------------------------------------------------------------------------
 
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue) {
-    if (!_dczEnabled) return;
+    if (!_dcz_enabled) return;
     unsigned int idx = getSetting(key).toInt();
     if (idx > 0) {
         char payload[128];
@@ -82,7 +82,7 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
 }
 
 void domoticzSendRelay(unsigned int relayID) {
-    if (!_dczEnabled) return;
+    if (!_dcz_enabled) return;
     char buffer[15];
     snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%d"), relayID);
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
@@ -95,12 +95,16 @@ int domoticzIdx(unsigned int relayID) {
 }
 
 void domoticzConfigure() {
-    _dczEnabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
 }
 
 void domoticzSetup() {
     domoticzConfigure();
     mqttRegister(_domoticzMqtt);
+}
+
+bool domoticzEnabled() {
+    return _dcz_enabled;
 }
 
 #endif
