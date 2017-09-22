@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.9.3**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+> **Current Release Version is 1.9.4**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 > **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
 
@@ -97,8 +97,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**IteadStudio Sonoff Dual**|**IteadStudio Sonoff POW**|**IteadStudio Sonoff TH10/TH16**|
 |![IteadStudio Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![IteadStudio Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)|
 |**IteadStudio Sonoff 4CH**|**IteadStudio Sonoff 4CH Pro**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|
-|![IteadStudio S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)||
-|**IteadStudio S20**|**WorkChoice EcoPlug**||
+|![IteadStudio S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Power meters based on V9261F and ECH1560](images/devices/generic-v9261f.jpg)|
+|**IteadStudio S20**|**WorkChoice EcoPlug**|**Power meters based on V9261F and ECH1560**|
 |![IteadStudio Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![IteadStudio Sonoff T1](images/devices/itead-sonoff-t1.jpg)||
 |**IteadStudio Sonoff Touch**|**IteadStudio Sonoff T1**||
 |![IteadStudio Slampher](images/devices/itead-slampher.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|
