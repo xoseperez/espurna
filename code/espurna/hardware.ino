@@ -284,7 +284,7 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 5, 0);
         setSetting("relays", 1);
 
-    #elif defined(ITEAD_BN_SZ01)
+    #elif defined(ITEAD_BNSZ01)
 
         setSetting("board", 25);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
