@@ -97,6 +97,12 @@ void _ech1560_sync() {
             }
         }
 
+        #if ECH1560_INVERTED
+            byte1 = 255 - byte1;
+            byte2 = 255 - byte2;
+            byte3 = 255 - byte3;
+        #endif
+
         // power = (Ba*255+Bb+Bc/255)/2
         _ech1560_apparent = ( (float) byte1 * 255 + (float) byte2 + (float) byte3 / 255.0) / 2;
         _ech1560_current = _ech1560_apparent / _ech1560_voltage;

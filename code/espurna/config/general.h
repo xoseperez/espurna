@@ -598,6 +598,9 @@ PROGMEM const char* const custom_reset_string[] = {
     #ifndef ECH1560_MISO_PIN
     #define ECH1560_MISO_PIN            5
     #endif
+    #ifndef ECH1560_INVERTED
+    #define ECH1560_INVERTED            0
+    #endif
 
     #define ECH1560_SYNC_INTERVAL       600
     #define ECH1560_BAUDRATE            4800

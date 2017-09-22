@@ -879,6 +879,7 @@
     #define POWER_PROVIDER      POWER_PROVIDER_ECH1560
     #define ECH1560_CLK_PIN     4
     #define ECH1560_MISO_PIN    5
+    #define ECH1560_INVERTED    0
 
 // -----------------------------------------------------------------------------
 // Unknown hardware
