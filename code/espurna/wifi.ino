@@ -47,8 +47,6 @@ bool createAP() {
 
 void wifiConfigure() {
 
-    WiFi.setOutputPower(getSetting("wifiGain", WIFI_GAIN).toFloat());
-
     jw.setHostname(getSetting("hostname").c_str());
     jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);

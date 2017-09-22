@@ -642,7 +642,6 @@ void _wsStart(uint32_t client_id) {
             }
         #endif
 
-        root["wifiGain"] = getSetting("wifiGain", WIFI_GAIN).toFloat();
         root["maxNetworks"] = WIFI_MAX_NETWORKS;
         JsonArray& wifi = root.createNestedArray("wifi");
         for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
@@ -820,7 +819,6 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         // Get response from callback
         char value[API_BUFFER_SIZE];
         (api.getFn)(value, API_BUFFER_SIZE);
-        char *p = ltrim(value);
 
         // The response will be a 404 NOT FOUND if the resource is not available
         if (!value) {
@@ -828,15 +826,15 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
             request->send(404);
             return;
         }
-        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), p);
+        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), value);
 
         // Format response according to the Accept header
         if (_asJson(request)) {
             char buffer[64];
-            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, p);
+            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
             request->send(200, "application/json", buffer);
         } else {
-            request->send(200, "text/plain", p);
+            request->send(200, "text/plain", value);
         }
 
     };
