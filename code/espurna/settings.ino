@@ -135,6 +135,16 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
+    Embedis::command( F("INFO"), [](Embedis* e) {
+        welcome();
+        e->response(Embedis::OK);
+    });
+
+    Embedis::command( F("UPTIME"), [](Embedis* e) {
+        e->stream->printf("Uptime: %d seconds\n", getUptime());
+        e->response(Embedis::OK);
+    });
+
     Embedis::command( F("RESET"), [](Embedis* e) {
         e->response(Embedis::OK);
         customReset(CUSTOM_RESET_TERMINAL);

@@ -31,6 +31,7 @@ WiFiClientSecure _mqtt_client_secure;
 #endif // MQTT_USE_ASYNC
 
 bool _mqtt_enabled = MQTT_ENABLED;
+bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 String _mqtt_topic;
 String _mqtt_setter;
@@ -135,7 +136,7 @@ void _mqttFlush() {
 }
 
 void mqttSend(const char * topic, const char * message, bool force) {
-    bool useJson = force ? false : getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    bool useJson = force ? false : _mqtt_use_json;
     if (useJson) {
         mqtt_message_t element;
         element.topic = strdup(topic);
@@ -466,6 +467,7 @@ void mqttConfigure() {
     } else {
         _mqtt_enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
     }
+    _mqtt_use_json = (getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
 
 }
 
