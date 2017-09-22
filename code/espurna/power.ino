@@ -146,6 +146,9 @@ void _powerRead() {
             #if POWER_PROVIDER == POWER_PROVIDER_V9261F
                 root["v9261fVisible"] = 1;
             #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
+                root["ech1560Visible"] = 1;
+            #endif
             String output;
             root.printTo(output);
             wsSend(output.c_str());
@@ -163,19 +166,20 @@ void _powerReport() {
         _power_voltage = _filter_voltage.average(true);
         _power_active = _filter_active.average(true);
         if (_power_active > _power_apparent) _power_apparent = _power_active;
+        _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
+        _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
+        if (_power_factor > 1) _power_factor = 1;
+        double power = _power_active;
     #else
         _power_apparent = _power_current * _power_voltage;
-        _power_active = _power_apparent;
+        double power = _power_apparent;
     #endif
-    _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
-    _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
-    if (_power_factor > 1) _power_factor = 1;
+    double energy_delta = power * POWER_ENERGY_FACTOR;
     _power_ready = true;
 
     char buf_current[10];
-    dtostrf(_power_current, -9, POWER_CURRENT_PRECISION, buf_current);
-    double energy_delta = _power_active * POWER_ENERGY_FACTOR;
     char buf_energy[10];
+    dtostrf(_power_current, -9, POWER_CURRENT_PRECISION, buf_current);
     dtostrf(energy_delta, -9, POWER_CURRENT_PRECISION, buf_energy);
 
     {
@@ -193,7 +197,7 @@ void _powerReport() {
     #if DOMOTICZ_SUPPORT
     if (domoticzEnabled()) {
         char buffer[20];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), _power_active, buf_energy);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), power, buf_energy);
         domoticzSend("dczPowIdx", 0, buffer);
         domoticzSend("dczCurrentIdx", 0, buf_current);
         domoticzSend("dczEnergyIdx", 0, buf_energy);
@@ -241,6 +245,7 @@ double getApparentPower() {
     return roundTo(_power_apparent, POWER_POWER_DECIMALS);
 }
 
+#if POWER_HAS_ACTIVE
 double getActivePower() {
     return roundTo(_power_active, POWER_POWER_DECIMALS);
 }
@@ -252,6 +257,7 @@ double getReactivePower() {
 double getPowerFactor() {
     return roundTo(_power_factor, 2);
 }
+#endif
 
 // -----------------------------------------------------------------------------
 // PUBLIC API

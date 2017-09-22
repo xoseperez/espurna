@@ -81,7 +81,7 @@ double _powerVoltage() {
 }
 
 double _powerActivePower() {
-    return _powerApparentPower();
+    return 0;
 }
 
 double _powerApparentPower() {
@@ -103,7 +103,7 @@ void _powerEnabledProvider() {
 void _powerCalibrateProvider(unsigned char magnitude, double value) {
     if (value <= 0) return;
     if (magnitude == POWER_MAGNITUDE_ACTIVE) {
-        double power = _powerActivePower();
+        double power = _powerApparentPower();
         double ratio = getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat();
         ratio = ratio * (value / power);
         _emon.setCurrentRatio(ratio);

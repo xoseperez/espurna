@@ -862,9 +862,23 @@
 
     // V9261F
     #define POWER_PROVIDER      POWER_PROVIDER_V9261F
-    #define V9261F_SUPPORT      1
     #define V9261F_PIN          2
     #define V9261F_PIN_INVERSE  1
+
+// -----------------------------------------------------------------------------
+// ECH1560
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ECH1560)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ECH1560"
+
+    // V9261F
+    #define POWER_PROVIDER      POWER_PROVIDER_ECH1560
+    #define ECH1560_CLK_PIN     4
+    #define ECH1560_MISO_PIN    5
 
 // -----------------------------------------------------------------------------
 // Unknown hardware

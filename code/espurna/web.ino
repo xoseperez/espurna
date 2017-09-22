@@ -617,6 +617,9 @@ void _wsStart(uint32_t client_id) {
             #if POWER_PROVIDER == POWER_PROVIDER_V9261F
                 root["v9261fVisible"] = 1;
             #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
+                root["ech1560fVisible"] = 1;
+            #endif
         #endif
 
         #if NOFUSS_SUPPORT

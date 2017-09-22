@@ -438,6 +438,10 @@ void hwUpwardsCompatibility() {
 
         setSetting("board", 37);
 
+    #elif defined(GENERIC_ECH1560)
+
+        setSetting("board", 38);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"

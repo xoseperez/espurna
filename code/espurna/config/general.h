@@ -504,6 +504,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_PROVIDER_EMON_ADC121      0x11
 #define POWER_PROVIDER_HLW8012          0x20
 #define POWER_PROVIDER_V9261F           0x30
+#define POWER_PROVIDER_ECH1560          0x40
 
 // Available magnitudes
 #define POWER_MAGNITUDE_CURRENT         1
@@ -566,14 +567,45 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+
     #undef POWER_REPORT_BUFFER
     #define POWER_REPORT_BUFFER         60
+
+    #ifndef V9261F_PIN
+    #define V9261F_PIN                  2
+    #endif
+    #ifndef V9261F_PIN_INVERSE
+    #define V9261F_PIN_INVERSE          1
+    #endif
+
     #define V9261F_SYNC_INTERVAL        600
     #define V9261F_BAUDRATE             4800
     #define V9261F_CURRENT_FACTOR       79371434.0
     #define V9261F_VOLTAGE_FACTOR       4160651.0
     #define V9261F_POWER_FACTOR         153699.0
     #define V9261F_RPOWER_FACTOR        V9261F_CURRENT_FACTOR
+
+#endif
+
+#if POWER_PROVIDER == POWER_PROVIDER_ECH1560
+
+    #undef POWER_REPORT_BUFFER
+    #define POWER_REPORT_BUFFER         60
+
+    #ifndef ECH1560_CLK_PIN
+    #define ECH1560_CLK_PIN             4
+    #endif
+    #ifndef ECH1560_MISO_PIN
+    #define ECH1560_MISO_PIN            5
+    #endif
+
+    #define ECH1560_SYNC_INTERVAL       600
+    #define ECH1560_BAUDRATE            4800
+    #define ECH1560_CURRENT_FACTOR      79371434.0
+    #define ECH1560_VOLTAGE_FACTOR      4160651.0
+    #define ECH1560_POWER_FACTOR        153699.0
+    #define ECH1560_RPOWER_FACTOR       ECH1560_CURRENT_FACTOR
+
 #endif
 
 // -----------------------------------------------------------------------------
