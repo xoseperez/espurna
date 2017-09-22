@@ -99,6 +99,7 @@ void _powerRead() {
         double active = _powerActivePower();
         double reactive = (apparent > active) ? sqrt(apparent * apparent - active * active) : 0;
         double factor = (apparent > 0) ? active / apparent : 1;
+        if (factor > 1) factor = 1;
     #endif
 
     // Filters
@@ -172,10 +173,10 @@ void _powerReport() {
     _power_ready = true;
 
     char buf_current[10];
-    dtostrf(_power_current, 6, POWER_CURRENT_PRECISION, buf_current);
+    dtostrf(_power_current, -9, POWER_CURRENT_PRECISION, buf_current);
     double energy_delta = _power_active * POWER_ENERGY_FACTOR;
     char buf_energy[10];
-    dtostrf(energy_delta, 6, POWER_CURRENT_PRECISION, buf_energy);
+    dtostrf(energy_delta, -9, POWER_CURRENT_PRECISION, buf_energy);
 
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);
@@ -190,7 +191,7 @@ void _powerReport() {
     }
 
     #if DOMOTICZ_SUPPORT
-    {
+    if (domoticzEnabled()) {
         char buffer[20];
         snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), _power_active, buf_energy);
         domoticzSend("dczPowIdx", 0, buffer);
@@ -205,7 +206,7 @@ void _powerReport() {
     #endif
 
     #if INFLUXDB_SUPPORT
-    {
+    if (influxdbEnabled()) {
         influxDBSend(MQTT_TOPIC_CURRENT, buf_current);
         influxDBSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
         influxDBSend(MQTT_TOPIC_ENERGY, buf_energy);

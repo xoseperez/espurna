@@ -30,7 +30,7 @@ void ICACHE_RAM_ATTR _hlw_cf_isr() {
     _hlw8012.cf_interrupt();
 }
 
-void _hlwSetCalibration() {
+void _hlwRestoreCalibration() {
     double value;
     value = getSetting("pwrRatioP", 0).toFloat();
     if (value > 0) _hlw8012.setPowerMultiplier(value);
@@ -40,7 +40,7 @@ void _hlwSetCalibration() {
     if (value > 0) _hlw8012.setVoltageMultiplier(value);
 }
 
-void _hlwGetCalibration() {
+void _hlwPersistCalibration() {
     setSetting("pwrRatioP", _hlw8012.getPowerMultiplier());
     setSetting("pwrRatioC", _hlw8012.getCurrentMultiplier());
     setSetting("pwrRatioV", _hlw8012.getVoltageMultiplier());
@@ -90,17 +90,19 @@ void _powerCalibrateProvider(unsigned char magnitude, double value) {
     if (magnitude == POWER_MAGNITUDE_ACTIVE)  _hlw8012.expectedActivePower(value);
     if (magnitude == POWER_MAGNITUDE_CURRENT) _hlw8012.expectedCurrent(value);
     if (magnitude == POWER_MAGNITUDE_VOLTAGE) _hlw8012.expectedVoltage(value);
-    _hlwGetCalibration();
+    _hlwPersistCalibration();
 }
 
 void _powerResetCalibrationProvider() {
     _hlw8012.resetMultipliers();
-    _hlwGetCalibration();
+    delSetting("pwrRatioC");
+    delSetting("pwrRatioV");
+    delSetting("pwrRatioP");
+    saveSettings();
 }
 
 void _powerConfigureProvider() {
-    _hlwSetCalibration();
-    _hlwGetCalibration();
+    // Nothing to do
 }
 
 void _powerSetupProvider() {
@@ -124,7 +126,7 @@ void _powerSetupProvider() {
     // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
     _hlw8012.setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
 
-    _powerConfigureProvider();
+    _hlwRestoreCalibration();
 
     _power_wifi_onconnect = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
         powerEnabled(true);
@@ -151,8 +153,6 @@ void _powerLoopProvider(bool before) {
             #endif // (HLW8012_USE_INTERRUPTS == 0)
 
         }
-
-    } else {
 
     }
 

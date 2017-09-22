@@ -15,7 +15,7 @@ class MedianFilter {
         }
 
         virtual void reset() {
-            _data[0] = _data[_pointer-1];
+            if (_pointer > 1) _data[0] = _data[_pointer-1];
             _pointer = 1;
             for (unsigned char i=1; i<=_size; i++) _data[i] = 0;
         }
