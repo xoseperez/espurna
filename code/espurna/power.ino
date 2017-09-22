@@ -44,7 +44,7 @@ void _powerAPISetup() {
 
     apiRegister(MQTT_TOPIC_CURRENT, MQTT_TOPIC_CURRENT, [](char * buffer, size_t len) {
         if (_power_ready) {
-            dtostrf(getCurrent(), len-1, POWER_CURRENT_PRECISION, buffer);
+            dtostrf(getCurrent(), len-1, POWER_CURRENT_DECIMALS, buffer);
         } else {
             buffer = NULL;
         }
@@ -112,7 +112,7 @@ void _powerRead() {
 
     /* THERE IS A BUG HERE SOMEWHERE :)
     char current_buffer[10];
-    dtostrf(current, sizeof(current_buffer)-1, POWER_CURRENT_PRECISION, current_buffer);
+    dtostrf(current, sizeof(current_buffer)-1, POWER_CURRENT_DECIMALS, current_buffer);
     DEBUG_MSG_P(PSTR("[POWER] Current: %sA\n"), current_buffer);
     DEBUG_MSG_P(PSTR("[POWER] Voltage: %sA\n"), int(voltage));
     DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), int(apparent));
@@ -137,7 +137,7 @@ void _powerRead() {
                 root["pwrReactive"] = roundTo(reactive, POWER_POWER_DECIMALS);
                 root["pwrFactor"] = int(100 * factor);
             #endif
-            #if POWER_PROVIDER & POWER_PROVIDER_EMON
+            #if (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
                 root["emonVisible"] = 1;
             #endif
             #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
@@ -179,8 +179,8 @@ void _powerReport() {
 
     char buf_current[10];
     char buf_energy[10];
-    dtostrf(_power_current, -9, POWER_CURRENT_PRECISION, buf_current);
-    dtostrf(energy_delta, -9, POWER_CURRENT_PRECISION, buf_energy);
+    dtostrf(_power_current, 1-sizeof(buf_current), POWER_CURRENT_DECIMALS, buf_current);
+    dtostrf(energy_delta, 1-sizeof(buf_energy), POWER_CURRENT_DECIMALS, buf_energy);
 
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);

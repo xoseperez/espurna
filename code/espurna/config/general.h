@@ -497,16 +497,15 @@ PROGMEM const char* const custom_reset_string[] = {
 // POWER METERING
 // -----------------------------------------------------------------------------
 
-// Available power-metering providers
+// Available power-metering providers (do not change this)
 #define POWER_PROVIDER_NONE             0x00
-#define POWER_PROVIDER_EMON             0x10
 #define POWER_PROVIDER_EMON_ANALOG      0x10
 #define POWER_PROVIDER_EMON_ADC121      0x11
 #define POWER_PROVIDER_HLW8012          0x20
 #define POWER_PROVIDER_V9261F           0x30
 #define POWER_PROVIDER_ECH1560          0x40
 
-// Available magnitudes
+// Available magnitudes (do not change this)
 #define POWER_MAGNITUDE_CURRENT         1
 #define POWER_MAGNITUDE_VOLTAGE         2
 #define POWER_MAGNITUDE_ACTIVE          4
@@ -515,71 +514,72 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_MAGNITUDE_POWER_FACTOR    32
 #define POWER_MAGNITUDE_ALL             63
 
-// No power provider defined
+// No power provider defined (do not change this)
 #ifndef POWER_PROVIDER
 #define POWER_PROVIDER                  POWER_PROVIDER_NONE
 #endif
 
-// Identify available magnitudes
+// Identify available magnitudes (do not change this)
 #if (POWER_PROVIDER == POWER_PROVIDER_HLW8012) || (POWER_PROVIDER == POWER_PROVIDER_V9261F)
 #define POWER_HAS_ACTIVE                1
 #else
 #define POWER_HAS_ACTIVE                0
 #endif
 
-#define POWER_CURRENT_PRECISION         3
-#define POWER_VOLTAGE                   230
-#define POWER_READ_INTERVAL             6000
-#define POWER_REPORT_INTERVAL           60000
-#define POWER_REPORT_BUFFER             12
+#define POWER_VOLTAGE                   230     // Default voltage
+#define POWER_READ_INTERVAL             6000    // Default reading interval (6 seconds)
+#define POWER_REPORT_INTERVAL           60000   // Default report interval (1 minute)
+#define POWER_REPORT_BUFFER             12      // Default buffer size ()
+#define POWER_CURRENT_DECIMALS          2       // Decimals for current values
+#define POWER_VOLTAGE_DECIMALS          0       // Decimals for voltage values
+#define POWER_POWER_DECIMALS            0       // Decimals for power values
 #define POWER_ENERGY_FACTOR             (POWER_REPORT_INTERVAL / 1000.0 / 3600.0)
-#define POWER_CURRENT_DECIMALS          2
-#define POWER_VOLTAGE_DECIMALS          0
-#define POWER_POWER_DECIMALS            0
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
-    #define EMON_CURRENT_RATIO          30
-    #define EMON_SAMPLES                1000
-	#define EMON_ADC_BITS               10
-	#define EMON_REFERENCE_VOLTAGE      1.0
-    #define EMON_CURRENT_OFFSET         0.25
+    #define EMON_CURRENT_RATIO          30      // Current ratio in the clamp (30V/1A)
+    #define EMON_SAMPLES                1000    // Number of samples to get for each reading
+	#define EMON_ADC_BITS               10      // ADC depth
+	#define EMON_REFERENCE_VOLTAGE      1.0     // Reference voltage of the ADC
+    #define EMON_CURRENT_OFFSET         0.25    // Current offset (error)
     #undef ADC_VCC_ENABLED
-    #define ADC_VCC_ENABLED             0
+    #define ADC_VCC_ENABLED             0       // Disable internal battery measurement
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
-    #define EMON_CURRENT_RATIO          30
-    #define EMON_SAMPLES                1000
-    #define EMON_ADC_BITS               12
-	#define EMON_REFERENCE_VOLTAGE      3.3
-    #define EMON_CURRENT_OFFSET         0.10
-    #define ADC121_I2C_ADDRESS          0x50
+    #define EMON_CURRENT_RATIO          30      // Current ratio in the clamp (30V/1A)
+    #define EMON_SAMPLES                1000    // Number of samples to get for each reading
+    #define EMON_ADC_BITS               12      // ADC depth
+	#define EMON_REFERENCE_VOLTAGE      3.3     // Reference voltage of the ADC
+    #define EMON_CURRENT_OFFSET         0.10    // Current offset (error)
+    #define ADC121_I2C_ADDRESS          0x50    // I2C address of the ADC121
     #undef I2C_SUPPORT
-    #define I2C_SUPPORT                 1
+    #define I2C_SUPPORT                 1       // Enabled I2C support
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
-    #define HLW8012_USE_INTERRUPTS      1
-    #define HLW8012_SEL_CURRENT         HIGH
-    #define HLW8012_CURRENT_R           0.001
-    #define HLW8012_VOLTAGE_R_UP        ( 5 * 470000 ) // Real: 2280k
-    #define HLW8012_VOLTAGE_R_DOWN      ( 1000 ) // Real 1.009k
+    #define HLW8012_USE_INTERRUPTS      1       // Use interrupts to trap HLW8012 signals
+    #define HLW8012_SEL_CURRENT         HIGH    // SEL pin to HIGH to measure current
+    #define HLW8012_CURRENT_R           0.001   // Current resistor
+    #define HLW8012_VOLTAGE_R_UP        ( 5 * 470000 )  // Upstream voltage resistor
+    #define HLW8012_VOLTAGE_R_DOWN      ( 1000 )        // Downstream voltage resistor
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
 
     #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60
+    #define POWER_REPORT_BUFFER         60      // Override median buffer size
 
     #ifndef V9261F_PIN
-    #define V9261F_PIN                  2
+    #define V9261F_PIN                  2       // TX pin from the V9261F
     #endif
     #ifndef V9261F_PIN_INVERSE
-    #define V9261F_PIN_INVERSE          1
+    #define V9261F_PIN_INVERSE          1       // Signal is inverted
     #endif
 
-    #define V9261F_SYNC_INTERVAL        600
-    #define V9261F_BAUDRATE             4800
+    #define V9261F_SYNC_INTERVAL        600     // Sync signal length (ms)
+    #define V9261F_BAUDRATE             4800    // UART baudrate
+
+    // Default ratios
     #define V9261F_CURRENT_FACTOR       79371434.0
     #define V9261F_VOLTAGE_FACTOR       4160651.0
     #define V9261F_POWER_FACTOR         153699.0
@@ -590,24 +590,17 @@ PROGMEM const char* const custom_reset_string[] = {
 #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
 
     #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60
+    #define POWER_REPORT_BUFFER         60      // Override median buffer size
 
     #ifndef ECH1560_CLK_PIN
-    #define ECH1560_CLK_PIN             4
+    #define ECH1560_CLK_PIN             4       // Default CLK pin
     #endif
     #ifndef ECH1560_MISO_PIN
-    #define ECH1560_MISO_PIN            5
+    #define ECH1560_MISO_PIN            5       // Default MISO pin
     #endif
     #ifndef ECH1560_INVERTED
-    #define ECH1560_INVERTED            0
+    #define ECH1560_INVERTED            0       // Power signal is inverted
     #endif
-
-    #define ECH1560_SYNC_INTERVAL       600
-    #define ECH1560_BAUDRATE            4800
-    #define ECH1560_CURRENT_FACTOR      79371434.0
-    #define ECH1560_VOLTAGE_FACTOR      4160651.0
-    #define ECH1560_POWER_FACTOR        153699.0
-    #define ECH1560_RPOWER_FACTOR       ECH1560_CURRENT_FACTOR
 
 #endif
 

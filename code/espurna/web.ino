@@ -608,7 +608,7 @@ void _wsStart(uint32_t client_id) {
                 root["pwrReactive"] = getReactivePower();
                 root["pwrFactor"] = int(100 * getPowerFactor());
             #endif
-            #if POWER_PROVIDER & POWER_PROVIDER_EMON
+            #if (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
                 root["emonVisible"] = 1;
             #endif
             #if POWER_PROVIDER == POWER_PROVIDER_HLW8012

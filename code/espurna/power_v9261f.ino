@@ -231,4 +231,4 @@ void _powerLoopProvider(bool before) {
 
 }
 
-#endif // POWER_PROVIDER & POWER_PROVIDER_EMON
+#endif // POWER_PROVIDER == POWER_PROVIDER_V9261F

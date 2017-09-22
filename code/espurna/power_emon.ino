@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if (POWER_PROVIDER & POWER_PROVIDER_EMON == POWER_PROVIDER_EMON)
+#if (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
 
 // -----------------------------------------------------------------------------
 // MODULE GLOBALS AND CACHE
@@ -39,7 +39,7 @@ unsigned int currentCallback() {
 
     #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
 
-        return analogRead(0);
+        return analogRead(A0);
 
     #endif // POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
 
@@ -141,7 +141,7 @@ void _powerSetupProvider() {
         brzo_i2c_end_transaction();
     #endif
 
-    powerConfigureProvider();
+    _powerConfigureProvider();
 
     _emon.warmup();
 
@@ -161,4 +161,4 @@ void _powerLoopProvider(bool before) {
 
 }
 
-#endif // (POWER_PROVIDER & POWER_PROVIDER_EMON == POWER_PROVIDER_EMON)
+#endif // (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
