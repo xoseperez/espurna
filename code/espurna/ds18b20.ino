@@ -40,7 +40,7 @@ void dsSetup() {
 
     #if WEB_SUPPORT
         apiRegister(DS18B20_TEMPERATURE_TOPIC, DS18B20_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-            dtostrf(_dsTemperature, len-1, 1, buffer);
+            dtostrf(_dsTemperature, 1-len, 1, buffer);
         });
     #endif
 
@@ -89,7 +89,7 @@ void dsLoop() {
             else
             	_dsIsConnected = true;
 
-            dtostrf(t, 5, 1, _dsTemperatureStr);
+            dtostrf(t, 1-sizeof(_dsTemperatureStr), 1, _dsTemperatureStr);
 
             DEBUG_MSG_P(PSTR("[DS18B20] Temperature: %s%s\n"),
                 getDSTemperatureStr(),

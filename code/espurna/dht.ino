@@ -34,7 +34,7 @@ void dhtSetup() {
 
     #if WEB_SUPPORT
         apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-            dtostrf(_dhtTemperature, len-1, 1, buffer);
+            dtostrf(_dhtTemperature, 1-len, 1, buffer);
         });
         apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
@@ -68,7 +68,7 @@ void dhtLoop() {
 
             char temperature[6];
             char humidity[6];
-            dtostrf(t, 4, 1, temperature);
+            dtostrf(t, 1-sizeof(temperature), 1, temperature);
             itoa((unsigned int) h, humidity, 10);
 
             DEBUG_MSG_P(PSTR("[DHT] Temperature: %s%s\n"), temperature, (tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF");

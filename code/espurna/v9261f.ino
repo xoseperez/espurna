@@ -193,7 +193,7 @@ void v9261fSetup() {
             snprintf_P(buffer, len, PSTR("%d"), _v9261f_power);
         });
         apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
-            dtostrf(_v9261f_current, len-1, 3, buffer);
+            dtostrf(_v9261f_current, 1-len, 3, buffer);
         });
         apiRegister(HLW8012_VOLTAGE_TOPIC, HLW8012_VOLTAGE_TOPIC, [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("%d"), _v9261f_voltage);
@@ -232,11 +232,11 @@ void v9261fLoop() {
             JsonObject& root = jsonBuffer.createObject();
 
             char buf_current[10];
-            dtostrf(getCurrent(), 6, 3, buf_current);
+            dtostrf(getCurrent(), 1-sizeof(buf_current), 3, buf_current);
 
             root["powVisible"] = 1;
             root["powActivePower"] = getActivePower();
-            root["powCurrent"] = String(ltrim(buf_current));
+            root["powCurrent"] = String(buf_current);
             root["powVoltage"] = getVoltage();
             root["powApparentPower"] = getApparentPower();
             root["powReactivePower"] = getReactivePower();
@@ -262,11 +262,11 @@ void v9261fLoop() {
         unsigned int voltage = sum_voltage / count;
         double current = sum_current / count;
         char buf_current[10];
-        dtostrf(current, 6, 3, buf_current);
+        dtostrf(current, 1-sizeof(buf_current), 3, buf_current);
         unsigned int apparent = sqrt(power * power + reactive * reactive);
         double energy_delta = (double) power * V9261F_REPORT_INTERVAL / 1000.0 / 3600.0;
         char buf_energy[10];
-        dtostrf(energy_delta, 6, 3, buf_energy);
+        dtostrf(energy_delta, 1-sizeof(buf_energy), 3, buf_energy);
         unsigned int factor = 100 * ((double) power / apparent);
 
         // Report values to MQTT broker

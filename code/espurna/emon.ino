@@ -116,7 +116,7 @@ void powerMonitorSetup() {
 
         apiRegister(EMON_CURRENT_TOPIC, EMON_CURRENT_TOPIC, [](char * buffer, size_t len) {
             if (_emonReady) {
-                dtostrf(_emonCurrent, len-1, 3, buffer);
+                dtostrf(_emonCurrent, 1-len, 3, buffer);
             } else {
                 buffer = NULL;
             }

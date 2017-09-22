@@ -170,7 +170,7 @@ void hlw8012Setup() {
         });
         apiRegister(HLW8012_CURRENT_TOPIC, HLW8012_CURRENT_TOPIC, [](char * buffer, size_t len) {
             if (_hlwReady) {
-                dtostrf(_hlwCurrent, len-1, 3, buffer);
+                dtostrf(_hlwCurrent, 1-len, 3, buffer);
             } else {
                 buffer = NULL;
             }
