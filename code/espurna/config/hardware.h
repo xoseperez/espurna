@@ -648,6 +648,35 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// LED Controller With IR
+// -----------------------------------------------------------------------------
+
+#elif defined(MAGICHOME_LED_CONTROLLER_IR)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "LED_CONTROLLER_IR"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // Channels
+    #define LIGHT_CH1_PIN       5     // RED
+    #define LIGHT_CH2_PIN       12    // GREEN
+    #define LIGHT_CH3_PIN       13    // BLUE
+    //#define LIGHT_CH4_PIN     13    // WHITE
+    #define LIGHT_IR_PIN        14    // IR LED ?
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
 // HUACANXING H801
 // -----------------------------------------------------------------------------
 
