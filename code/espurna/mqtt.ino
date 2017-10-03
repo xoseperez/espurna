@@ -31,7 +31,8 @@ WiFiClientSecure _mqtt_client_secure;
 #endif // MQTT_USE_ASYNC
 
 bool _mqtt_enabled = MQTT_ENABLED;
-unsigned char _mqtt_connection_tries = 0;
+bool _mqtt_use_json = false;
+unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 String _mqtt_topic;
 String _mqtt_setter;
 String _mqtt_getter;
@@ -135,7 +136,7 @@ void _mqttFlush() {
 }
 
 void mqttSend(const char * topic, const char * message, bool force) {
-    bool useJson = force ? false : getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    bool useJson = force ? false : _mqtt_use_json;
     if (useJson) {
         mqtt_message_t element;
         element.topic = strdup(topic);
@@ -216,6 +217,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
 void _mqttOnConnect() {
 
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
+    _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
     #if MQTT_SKIP_RETAINED
         _mqtt_connected_at = millis();
@@ -316,137 +318,134 @@ bool mqttEnabled() {
 
 void mqttConnect() {
 
-    if (_mqtt_enabled & !_mqtt.connected()) {
+    // Do not connect if disabled
+    if (!_mqtt_enabled) return;
 
-        // Disable MQTT after MQTT_MAX_TRIES attemps in a row
-        #if MQTT_MAX_TRIES > 0
-            static unsigned long last_try = millis();
-            if (millis() - last_try < MQTT_TRY_INTERVAL) {
-                if (++_mqtt_connection_tries > MQTT_MAX_TRIES) {
-                    DEBUG_MSG_P(PSTR("[MQTT] MQTT_MAX_TRIES met, disabling MQTT\n"));
-                    mqttEnabled(false);
-                    _mqtt_connection_tries = 0;
-                    return;
+    // Do not connect if already connected
+    if (_mqtt.connected()) return;
+
+    // Check reconnect interval
+    static unsigned long last = 0;
+    if (millis() - last < _mqtt_reconnect_delay) return;
+    last = millis();
+
+    // Increase the reconnect delay
+    _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
+    if (_mqtt_reconnect_delay > MQTT_RECONNECT_DELAY_MAX) {
+        _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
+    }
+
+    char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
+    if (strlen(host) == 0) return;
+    unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
+
+    if (_mqtt_user) free(_mqtt_user);
+    if (_mqtt_pass) free(_mqtt_pass);
+    if (_mqtt_will) free(_mqtt_will);
+
+    _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
+    _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
+    _mqtt_will = strdup((_mqtt_topic + MQTT_TOPIC_STATUS).c_str());
+
+    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
+
+    #if MQTT_USE_ASYNC
+
+        _mqtt.setServer(host, port);
+        _mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
+        _mqtt.setWill(_mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
+        if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
+            DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
+            _mqtt.setCredentials(_mqtt_user, _mqtt_pass);
+        }
+
+        #if ASYNC_TCP_SSL_ENABLED
+
+            bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+            _mqtt.setSecure(secure);
+            if (secure) {
+                DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
+                unsigned char fp[20] = {0};
+                if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                    _mqtt.addServerFingerprint(fp);
+                } else {
+                    DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
                 }
-            } else {
-                _mqtt_connection_tries = 0;
-            }
-            last_try = millis();
-        #endif
-
-        if (_mqtt_user) free(_mqtt_user);
-        if (_mqtt_pass) free(_mqtt_pass);
-
-        char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
-        if (strlen(host) == 0) return;
-        unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
-        _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
-        _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
-        if (_mqtt_will) free(_mqtt_will);
-        _mqtt_will = strdup((_mqtt_topic + MQTT_TOPIC_STATUS).c_str());
-
-        DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
-
-        #if MQTT_USE_ASYNC
-
-            _mqtt.setServer(host, port);
-            _mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-            _mqtt.setWill(_mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
-            if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
-                DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
-                _mqtt.setCredentials(_mqtt_user, _mqtt_pass);
             }
 
-            #if ASYNC_TCP_SSL_ENABLED
+        #endif // ASYNC_TCP_SSL_ENABLED
 
-                bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
-                _mqtt.setSecure(secure);
-                if (secure) {
-                    DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
-                    unsigned char fp[20] = {0};
+        DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+        DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
+        DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
+
+        _mqtt.connect();
+
+    #else // not MQTT_USE_ASYNC
+
+        bool response = true;
+
+        #if ASYNC_TCP_SSL_ENABLED
+
+            bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+            if (secure) {
+                DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
+                if (_mqtt_client_secure.connect(host, port)) {
+                    char fp[60] = {0};
                     if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
-                        _mqtt.addServerFingerprint(fp);
+                        if (_mqtt_client_secure.verify(fp, host)) {
+                            _mqtt.setClient(_mqtt_client_secure);
+                        } else {
+                            DEBUG_MSG_P(PSTR("[MQTT] Invalid fingerprint\n"));
+                            response = false;
+                        }
+                        _mqtt_client_secure.stop();
+                        yield();
                     } else {
                         DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
+                        response = false;
                     }
+                } else {
+                    DEBUG_MSG_P(PSTR("[MQTT] Client connection failed\n"));
+                    response = false;
                 }
 
-            #endif // ASYNC_TCP_SSL_ENABLED
+            } else {
+                _mqtt.setClient(_mqtt_client);
+            }
+
+        #else // not ASYNC_TCP_SSL_ENABLED
+
+            _mqtt.setClient(_mqtt_client);
+
+        #endif // ASYNC_TCP_SSL_ENABLED
+
+        if (response) {
+
+            _mqtt.setServer(host, port);
+
+            if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
+                DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
+                response = _mqtt.connect(getIdentifier().c_str(), _mqtt_user, _mqtt_pass, _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
+            } else {
+				response = _mqtt.connect(getIdentifier().c_str(), _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
+            }
 
             DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
             DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
             DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
 
-            _mqtt.connect();
+        }
 
-        #else // not MQTT_USE_ASYNC
+        if (response) {
+            _mqttOnConnect();
+        } else {
+            DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
+        }
 
-            bool response = true;
+    #endif // MQTT_USE_ASYNC
 
-            #if ASYNC_TCP_SSL_ENABLED
-
-                bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
-                if (secure) {
-                    DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
-                    if (_mqtt_client_secure.connect(host, port)) {
-                        char fp[60] = {0};
-                        if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
-                            if (_mqtt_client_secure.verify(fp, host)) {
-                                _mqtt.setClient(_mqtt_client_secure);
-                            } else {
-                                DEBUG_MSG_P(PSTR("[MQTT] Invalid fingerprint\n"));
-                                response = false;
-                            }
-                            _mqtt_client_secure.stop();
-                            yield();
-                        } else {
-                            DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
-                            response = false;
-                        }
-                    } else {
-                        DEBUG_MSG_P(PSTR("[MQTT] Client connection failed\n"));
-                        response = false;
-                    }
-
-                } else {
-                    _mqtt.setClient(_mqtt_client);
-                }
-
-            #else // not ASYNC_TCP_SSL_ENABLED
-
-                _mqtt.setClient(_mqtt_client);
-
-            #endif // ASYNC_TCP_SSL_ENABLED
-
-            if (response) {
-
-                _mqtt.setServer(host, port);
-
-                if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
-                    DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
-                    response = _mqtt.connect(getIdentifier().c_str(), _mqtt_user, _mqtt_pass, _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
-                } else {
-    				response = _mqtt.connect(getIdentifier().c_str(), _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
-                }
-
-                DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
-                DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
-                DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
-
-            }
-
-            if (response) {
-                _mqttOnConnect();
-                _mqtt_connected = true;
-            } else {
-                DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
-            }
-
-        #endif // MQTT_USE_ASYNC
-
-        free(host);
-
-    }
+    free(host);
 
 }
 
@@ -463,12 +462,14 @@ void mqttConfigure() {
     _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter);
 
     // Enable
-    _mqtt_connection_tries = 0;
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
         mqttEnabled(false);
     } else {
         _mqtt_enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
     }
+    _mqtt_use_json = (getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
+
+    _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
 }
 
@@ -553,21 +554,13 @@ void mqttSetup() {
 
 void mqttLoop() {
 
+    if (WiFi.status() != WL_CONNECTED) return;
+
     #if MQTT_USE_ASYNC
 
-        if (!_mqtt_enabled) return;
-        if (WiFi.status() != WL_CONNECTED) return;
-        if (_mqtt.connected()) return;
-
-        static unsigned long last = 0;
-        if (millis() - last > MQTT_RECONNECT_DELAY) {
-    	    last = millis();
-            mqttConnect();
-        }
+        mqttConnect();
 
     #else // not MQTT_USE_ASYNC
-
-        if (WiFi.status() != WL_CONNECTED) return;
 
         if (_mqtt.connected()) {
 
@@ -580,13 +573,7 @@ void mqttLoop() {
                 _mqtt_connected = false;
             }
 
-            if (_mqtt_enabled) {
-                static unsigned long last = 0;
-                if (millis() - last > MQTT_RECONNECT_DELAY) {
-                    last = millis();
-                    mqttConnect();
-                }
-            }
+            mqttConnect();
 
         }
 

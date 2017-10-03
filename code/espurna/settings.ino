@@ -135,6 +135,16 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
+    Embedis::command( F("INFO"), [](Embedis* e) {
+        welcome();
+        e->response(Embedis::OK);
+    });
+
+    Embedis::command( F("UPTIME"), [](Embedis* e) {
+        e->stream->printf("Uptime: %d seconds\n", getUptime());
+        e->response(Embedis::OK);
+    });
+
     Embedis::command( F("RESET"), [](Embedis* e) {
         e->response(Embedis::OK);
         customReset(CUSTOM_RESET_TERMINAL);
@@ -260,6 +270,13 @@ void settingsSetup() {
         e->response(Embedis::OK);
     });
 
+    #if DEBUG_SUPPORT
+        Embedis::command( F("CRASH"), [](Embedis* e) {
+            debugDumpCrashInfo();
+            e->response(Embedis::OK);
+        });
+    #endif
+
     Embedis::command( F("DUMP.RAW"), [](Embedis* e) {
         for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
             if (i % 16 == 0) e->stream->printf("\n[%04X] ", i);
@@ -285,7 +302,7 @@ void settingsDump() {
 
 void settingsLoop() {
     if (_settings_save) {
-        DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
+        //DEBUG_MSG_P(PSTR("[SETTINGS] Saving\n"));
         EEPROM.commit();
         _settings_save = false;
     }

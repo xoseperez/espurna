@@ -11,18 +11,18 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ESPAsyncTCP.h"
 #include "SyncClient.h"
 
-bool influxDBEnabled = false;
-SyncClient _influxClient;
+bool _influxdb_enabled = false;
+SyncClient _influx_client;
 
 template<typename T> bool influxDBSend(const char * topic, T payload) {
 
-    if (!influxDBEnabled) return true;
+    if (!_influxdb_enabled) return true;
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return true;
 
     DEBUG_MSG("[INFLUXDB] Sending\n");
 
-    _influxClient.setTimeout(2);
-    if (!_influxClient.connect(getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt())) {
+    _influx_client.setTimeout(2);
+    if (!_influx_client.connect(getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt())) {
         DEBUG_MSG("[INFLUXDB] Connection failed\n");
         return false;
     }
@@ -37,22 +37,25 @@ template<typename T> bool influxDBSend(const char * topic, T payload) {
         getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt(),
         strlen(data), data);
 
-    if (_influxClient.printf(request) > 0) {
-        while (_influxClient.connected() && _influxClient.available() == 0) delay(1);
-        while (_influxClient.available()) _influxClient.read();
-        if (_influxClient.connected()) _influxClient.stop();
+    if (_influx_client.printf(request) > 0) {
+        while (_influx_client.connected() && _influx_client.available() == 0) delay(1);
+        while (_influx_client.available()) _influx_client.read();
+        if (_influx_client.connected()) _influx_client.stop();
         return true;
     }
 
-    _influxClient.stop();
+    _influx_client.stop();
     DEBUG_MSG("[INFLUXDB] Sent failed\n");
-    while (_influxClient.connected()) delay(0);
+    while (_influx_client.connected()) delay(0);
     return false;
 
 }
+bool influxdbEnabled() {
+    return _influxdb_enabled;
+}
 
 void influxDBConfigure() {
-    influxDBEnabled = getSetting("idbHost").length() > 0;
+    _influxdb_enabled = getSetting("idbHost").length() > 0;
 }
 
 void influxDBSetup() {

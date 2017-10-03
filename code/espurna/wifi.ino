@@ -28,9 +28,6 @@ String getNetwork() {
 }
 
 void wifiDisconnect() {
-    #if HLW8012_SUPPORT
-        hlw8012Enable(false);
-    #endif
     jw.disconnect();
 }
 
@@ -49,8 +46,6 @@ bool createAP() {
 }
 
 void wifiConfigure() {
-
-    WiFi.setOutputPower(getSetting("wifiGain", WIFI_GAIN).toFloat());
 
     jw.setHostname(getSetting("hostname").c_str());
     jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
@@ -262,17 +257,6 @@ void wifiSetup() {
                 ntpConnect();
             }
         #endif
-
-        // Manage POW
-        #if HLW8012_SUPPORT
-            if (code == MESSAGE_CONNECTED) {
-                hlw8012Enable(true);
-            }
-            if (code == MESSAGE_DISCONNECTED) {
-                hlw8012Enable(false);
-            }
-        #endif
-
 
     });
 

@@ -155,12 +155,6 @@ void welcome() {
     #if DS18B20_SUPPORT
         DEBUG_MSG_P(PSTR(" DS18B20"));
     #endif
-    #if EMON_SUPPORT
-        DEBUG_MSG_P(PSTR(" EMON"));
-    #endif
-    #if HLW8012_SUPPORT
-        DEBUG_MSG_P(PSTR(" HLW8012"));
-    #endif
     #if HOMEASSISTANT_SUPPORT
         DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
     #endif
@@ -204,7 +198,11 @@ void welcome() {
     } else {
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
+
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), ESP.getFreeHeap());
+    #if ADC_VCC_ENABLED
+        DEBUG_MSG_P(PSTR("[INIT] Power: %d mV\n"), ESP.getVcc());
+    #endif
     DEBUG_MSG_P(PSTR("\n"));
 
 }
@@ -224,10 +222,8 @@ void setup() {
     settingsSetup();
     if (getSetting("hostname").length() == 0) {
         setSetting("hostname", getIdentifier());
-        saveSettings();
     }
 
-    delay(500);
     wifiSetup();
     otaSetup();
     #if TELNET_SUPPORT
@@ -253,6 +249,9 @@ void setup() {
         rfbSetup();
     #endif
 
+    #if POWER_PROVIDER != POWER_PROVIDER_NONE
+        powerSetup();
+    #endif
     #if NTP_SUPPORT
         ntpSetup();
     #endif
@@ -267,9 +266,6 @@ void setup() {
     #endif
     #if INFLUXDB_SUPPORT
         influxDBSetup();
-    #endif
-    #if HLW8012_SUPPORT
-        hlw8012Setup();
     #endif
     #if DS18B20_SUPPORT
         dsSetup();
@@ -286,15 +282,14 @@ void setup() {
     #if RF_SUPPORT
         rfSetup();
     #endif
-    #if EMON_SUPPORT
-        powerMonitorSetup();
-    #endif
     #if DOMOTICZ_SUPPORT
         domoticzSetup();
     #endif
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();
+
+    saveSettings();
 
 }
 
@@ -317,6 +312,9 @@ void loop() {
         rfbLoop();
     #endif
 
+    #if POWER_PROVIDER != POWER_PROVIDER_NONE
+        powerLoop();
+    #endif
     #if NTP_SUPPORT
         ntpLoop();
     #endif
@@ -325,9 +323,6 @@ void loop() {
     #endif
     #if NOFUSS_SUPPORT
         nofussLoop();
-    #endif
-    #if HLW8012_SUPPORT
-        hlw8012Loop();
     #endif
     #if DS18B20_SUPPORT
         dsLoop();
@@ -343,9 +338,6 @@ void loop() {
     #endif
     #if RF_SUPPORT
         rfLoop();
-    #endif
-    #if EMON_SUPPORT
-        powerMonitorLoop();
     #endif
 
 }

@@ -3,6 +3,28 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.5] 2017-09-28
+### Fixed
+- Revert to JustWifi 1.1.4 (#228)
+
+## [1.9.4] 2017-09-22
+### Added
+- Added ESPurna specific mDNS text registers (app_name, app_version, device_name)
+- Crash dump info is stored in EEPROM and retrieved via terminal ("crash" command)
+- Support for Huacanxing H802
+- Support for powermeters based on V9261F IC
+- Support for powermeters based on ECH1560 IC (beta, untested)
+
+### Changed
+- Changed behaviour on MQTT connection failure (#215)
+- Removed boot delay
+- Refactor power modules
+- Updated JustWifi library
+
+### Fixed
+- Set all esp8285 devices to use esp01_1m (#210, #225)
+- Removed wifi gain option since it prevents some devices to connect (#204)
+
 ## [1.9.3] 2017-09-04
 ### Added
 - New "erase.config" option in terminal to delete SDK settings

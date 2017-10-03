@@ -177,3 +177,9 @@ char * ltrim(char * s) {
     while ((unsigned char) *p == ' ') ++p;
     return p;
 }
+
+double roundTo(double num, unsigned char positions) {
+    double multiplier = 1;
+    while (positions-- > 0) multiplier *= 10;
+    return round(num * multiplier) / multiplier;
+}

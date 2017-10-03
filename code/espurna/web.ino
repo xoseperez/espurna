@@ -10,6 +10,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <Hash.h>
 #include <FS.h>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
@@ -228,31 +229,39 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             // Skip firmware filename
             if (key.equals("filename")) continue;
 
-            #if HLW8012_SUPPORT
+            #if POWER_PROVIDER != POWER_PROVIDER_NONE
 
-                if (key == "powExpectedPower") {
-                    hlw8012SetExpectedActivePower(value.toInt());
+                if (key == "pwrExpectedP") {
+                    powerCalibrate(POWER_MAGNITUDE_ACTIVE, value.toFloat());
                     changed = true;
+                    continue;
                 }
 
-                if (key == "powExpectedVoltage") {
-                    hlw8012SetExpectedVoltage(value.toInt());
+                if (key == "pwrExpectedV") {
+                    powerCalibrate(POWER_MAGNITUDE_VOLTAGE, value.toFloat());
                     changed = true;
+                    continue;
                 }
 
-                if (key == "powExpectedCurrent") {
-                    hlw8012SetExpectedCurrent(value.toFloat());
+                if (key == "pwrExpectedC") {
+                    powerCalibrate(POWER_MAGNITUDE_CURRENT, value.toFloat());
                     changed = true;
+                    continue;
                 }
 
-                if (key == "powExpectedReset") {
+                if (key == "pwrExpectedF") {
+                    powerCalibrate(POWER_MAGNITUDE_POWER_FACTOR, value.toFloat());
+                    changed = true;
+                    continue;
+                }
+
+                if (key == "pwrResetCalibration") {
                     if (value.toInt() == 1) {
-                        hlw8012Reset();
+                        powerResetCalibration();
                         changed = true;
                     }
+                    continue;
                 }
-
-                if (key.startsWith("pow")) continue;
 
             #endif
 
@@ -388,8 +397,8 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             #if RF_SUPPORT
                 rfBuildCodes();
             #endif
-            #if EMON_SUPPORT
-                setCurrentRatio(getSetting("emonRatio").toFloat());
+            #if POWER_PROVIDER != POWER_PROVIDER_NONE
+                powerConfigure();
             #endif
             #if NTP_SUPPORT
                 if (changedNTP) ntpConnect();
@@ -533,21 +542,17 @@ void _wsStart(uint32_t client_id) {
                 root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
             #endif
 
-            #if EMON_SUPPORT
-                root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
-                root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
-                root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
-            #endif
-
             #if ANALOG_SUPPORT
                 root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
             #endif
 
-            #if HLW8012_SUPPORT
+            #if POWER_PROVIDER != POWER_PROVIDER_NONE
                 root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
                 root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
-                root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
                 root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
+                #if POWER_HAS_ACTIVE
+                    root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
+                #endif
             #endif
 
         #endif
@@ -583,14 +588,6 @@ void _wsStart(uint32_t client_id) {
             root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
         #endif
 
-        #if EMON_SUPPORT
-            root["emonVisible"] = 1;
-            root["emonApparentPower"] = getApparentPower();
-            root["emonCurrent"] = getCurrent();
-            root["emonVoltage"] = getVoltage();
-            root["emonRatio"] = getSetting("emonRatio", EMON_CURRENT_RATIO);
-        #endif
-
         #if ANALOG_SUPPORT
             root["analogVisible"] = 1;
             root["analogValue"] = getAnalog();
@@ -601,14 +598,28 @@ void _wsStart(uint32_t client_id) {
             root["counterValue"] = getCounter();
         #endif
 
-        #if HLW8012_SUPPORT
-            root["powVisible"] = 1;
-            root["powActivePower"] = getActivePower();
-            root["powApparentPower"] = getApparentPower();
-            root["powReactivePower"] = getReactivePower();
-            root["powVoltage"] = getVoltage();
-            root["powCurrent"] = String(getCurrent(), 3);
-            root["powPowerFactor"] = String(getPowerFactor(), 2);
+        #if POWER_PROVIDER != POWER_PROVIDER_NONE
+            root["pwrVisible"] = 1;
+            root["pwrCurrent"] = getCurrent();
+            root["pwrVoltage"] = getVoltage();
+            root["pwrApparent"] = getApparentPower();
+            #if POWER_HAS_ACTIVE
+                root["pwrActive"] = getActivePower();
+                root["pwrReactive"] = getReactivePower();
+                root["pwrFactor"] = int(100 * getPowerFactor());
+            #endif
+            #if (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
+                root["emonVisible"] = 1;
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+                root["hlwVisible"] = 1;
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+                root["v9261fVisible"] = 1;
+            #endif
+            #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
+                root["ech1560fVisible"] = 1;
+            #endif
         #endif
 
         #if NOFUSS_SUPPORT
@@ -631,7 +642,6 @@ void _wsStart(uint32_t client_id) {
             }
         #endif
 
-        root["wifiGain"] = getSetting("wifiGain", WIFI_GAIN).toFloat();
         root["maxNetworks"] = WIFI_MAX_NETWORKS;
         JsonArray& wifi = root.createNestedArray("wifi");
         for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
@@ -809,7 +819,6 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         // Get response from callback
         char value[API_BUFFER_SIZE];
         (api.getFn)(value, API_BUFFER_SIZE);
-        char *p = ltrim(value);
 
         // The response will be a 404 NOT FOUND if the resource is not available
         if (!value) {
@@ -817,15 +826,15 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
             request->send(404);
             return;
         }
-        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), p);
+        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), value);
 
         // Format response according to the Accept header
         if (_asJson(request)) {
             char buffer[64];
-            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, p);
+            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
             request->send(200, "application/json", buffer);
         } else {
-            request->send(200, "text/plain", p);
+            request->send(200, "text/plain", value);
         }
 
     };

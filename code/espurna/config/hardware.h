@@ -71,8 +71,19 @@
 
     // Buttons
     #define BUTTON1_PIN         4
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
+
+    // Normal pushbutton
+    //#define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Touch button
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK           BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
 
     // Relays
     #define RELAY1_PIN          12
@@ -83,7 +94,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define HLW8012_SUPPORT     1
+    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -245,7 +256,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define HLW8012_SUPPORT     1
+    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -416,6 +427,7 @@
     #ifndef DUMMY_RELAY_COUNT
     #define DUMMY_RELAY_COUNT   6
     #endif
+    #define TERMINAL_SUPPORT    0
     #define TRACK_RELAY_STATUS  0
 
     // Buttons
@@ -832,6 +844,37 @@
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// V9261F
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_V9261F)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "V9261F"
+
+    // V9261F
+    #define POWER_PROVIDER      POWER_PROVIDER_V9261F
+    #define V9261F_PIN          2
+    #define V9261F_PIN_INVERSE  1
+
+// -----------------------------------------------------------------------------
+// ECH1560
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ECH1560)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ECH1560"
+
+    // ECH1560
+    #define POWER_PROVIDER      POWER_PROVIDER_ECH1560
+    #define ECH1560_CLK_PIN     4
+    #define ECH1560_MISO_PIN    5
+    #define ECH1560_INVERTED    0
 
 // -----------------------------------------------------------------------------
 // Unknown hardware
