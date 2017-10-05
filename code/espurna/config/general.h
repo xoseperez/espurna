@@ -434,6 +434,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
 #define MQTT_TOPIC_COLOR        "color"
+#define MQTT_TOPIC_COLOR_RGB    "color_rgb"
+#define MQTT_TOPIC_COLOR_HSV    "color_hsv"
+#define MQTT_TOPIC_ANIM_MODE    "anim_mode"
+#define MQTT_TOPIC_ANIM_SPEED   "anim_speed"
 #define MQTT_TOPIC_BRIGHTNESS   "brightness"
 #define MQTT_TOPIC_MIRED        "mired"
 #define MQTT_TOPIC_KELVIN       "kelvin"
