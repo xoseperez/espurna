@@ -347,6 +347,67 @@ function initColor() {
 
 }
 
+function initColorHsv() {
+
+    // check if already initialized
+    var done = $("#colors > div").length;
+    if (done > 0) return;
+
+    // add template
+    var template = $("#colorHsvTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#colors");
+
+    // init color wheel
+    $('input[name="color"]').wheelColorPicker({
+        sliders: 'whsvp'
+    }).on('sliderup', function() {
+        var color_all = $(this).wheelColorPicker('getColor');
+        var color_hsv ={};
+        color_hsv.h	  =Math.floor(color_all.h * 255);
+        color_hsv.s	  =Math.floor(color_all.s * 255);
+        color_hsv.v	  =Math.floor(color_all.v * 255);
+        websock.send(JSON.stringify({'action': 'color_hsv', 'data' : color_hsv}));
+    });
+
+}
+
+function initColorsExtras() {
+    // check if already initialized
+    var done = $("#colorsExtras > div").length;
+    if (done > 0) return;
+
+    // add template
+    var template = $("#colorsExtrasTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#colorsExtras");
+
+	// init anim mode
+    $("#animMode").on('change', function() {
+        var select = this.value;
+        websock.send(JSON.stringify( {'action': 'anim_mode', 'data'  : select }));
+    });
+
+    // init anim speed slider
+    noUiSlider.create($("#animSpeed").get(0), {
+		start: 500,
+		connect: [true, false],
+        tooltips: true,
+        format: {
+            to: function (value) { return parseInt(value); },
+            from: function (value) { return value; }
+        },
+		orientation: "horizontal",
+		range: { 'min': 0, 'max': 1000}
+	}).on("change", function() {
+        var value = parseInt(this.get());
+        websock.send(JSON.stringify({'action': 'anim_speed', 'data' : value}));
+    });
+}
+
+
+
+
 function initChannels(num) {
 
     // check if already initialized
@@ -517,6 +578,28 @@ function processData(data) {
         if (key == "color") {
             initColor();
             $("input[name='color']").wheelColorPicker('setValue', data[key], true);
+            return;
+        }
+
+        if (key == "color_hsv") {
+            initColorHsv();
+            var color_hsv ={};
+            color_hsv.h = data[key]['h'] / 255;
+            color_hsv.s = data[key]['s'] / 255;
+            color_hsv.v = data[key]['v'] / 255;
+            $("input[name='color']").wheelColorPicker('setColor', color_hsv);
+            return;
+        }
+
+        if (key == "anim_mode") {
+            initColorsExtras();
+            $("[name='animation']").val(data[key]);
+            return;
+        }
+        if (key == "anim_speed") {
+            initColorsExtras();
+            var slider = $("#animSpeed");
+            if (slider.length) slider.get(0).noUiSlider.set(data[key]);
             return;
         }
 
