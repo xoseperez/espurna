@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.5] 2017-09-28
+### Fixed
+- Revert to JustWifi 1.1.4 (#228)
+
 ## [1.9.4] 2017-09-22
 ### Added
 - Added ESPurna specific mDNS text registers (app_name, app_version, device_name)

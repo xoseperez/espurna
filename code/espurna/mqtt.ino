@@ -469,6 +469,8 @@ void mqttConfigure() {
     }
     _mqtt_use_json = (getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
 
+    _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
+
 }
 
 #if MDNS_SUPPORT

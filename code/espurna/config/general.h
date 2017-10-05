@@ -468,7 +468,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Available light providers (do not change)
 #define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_MY9192   1
+#define LIGHT_PROVIDER_MY9192   1 // works with MY9231 also (Sonoff B1)
 #define LIGHT_PROVIDER_DIMMER   2
 
 // LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
