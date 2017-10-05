@@ -664,7 +664,7 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Channels (for board version 2.0)
     #define LIGHT_CH1_PIN       5     // RED
     #define LIGHT_CH2_PIN       12    // GREEN
     #define LIGHT_CH3_PIN       13    // BLUE
