@@ -877,6 +877,34 @@
     #define ECH1560_INVERTED    0
 
 // -----------------------------------------------------------------------------
+// ESPLive
+// https://github.com/ManCaveMade/ESP-Live
+// -----------------------------------------------------------------------------
+
+#elif defined(ESPLIVE)
+
+    // Info
+    #define MANUFACTURER        "ManCave Made"
+    #define DEVICE              "ESPLIVE"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON2_PIN         5
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          13
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 
