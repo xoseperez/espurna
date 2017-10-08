@@ -51,6 +51,10 @@ void dsLoop() {
     // Check if we should read new data
     static unsigned long last_update = 0;
     static bool requested = false;
+
+    static double last_temperature = 0.0;
+    bool send_update = false;
+
     if ((millis() - last_update > DS18B20_UPDATE_INTERVAL) || (last_update == 0)) {
         if (!requested) {
             ds18b20.requestTemperatures();
@@ -80,6 +84,12 @@ void dsLoop() {
             DEBUG_MSG_P(PSTR("[DS18B20] Error reading sensor\n"));
 
         } else {
+            
+            //If the new temperature is different from the last
+            if (fabs(t - last_temperature) >= DS18B20_UPDATE_ON_CHANGE) {
+                last_temperature = t;
+                send_update = true;
+            }
 
             _dsTemperature = t;
 
@@ -95,25 +105,26 @@ void dsLoop() {
                 getDSTemperatureStr(),
 			    (_dsIsConnected ? ((tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF") : ""));
 
-            // Send MQTT messages
-            mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+            if (send_update) {
+                // Send MQTT messages
+                mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
 
-            // Send to Domoticz
-            #if DOMOTICZ_SUPPORT
-                domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
-            #endif
+                // Send to Domoticz
+                #if DOMOTICZ_SUPPORT
+                    domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
+                #endif
 
-            #if INFLUXDB_SUPPORT
-                influxDBSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
-            #endif
+                #if INFLUXDB_SUPPORT
+                    influxDBSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+                #endif
 
-            // Update websocket clients
-            #if WEB_SUPPORT
-                char buffer[100];
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
-                wsSend(buffer);
-            #endif
-
+                // Update websocket clients
+                #if WEB_SUPPORT
+                    char buffer[100];
+                    snprintf_P(buffer, sizeof(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
+                    wsSend(buffer);
+                #endif
+            }
         }
 
     }
