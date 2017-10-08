@@ -117,14 +117,15 @@ void dsLoop() {
                 #if INFLUXDB_SUPPORT
                     influxDBSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
                 #endif
-
-                // Update websocket clients
-                #if WEB_SUPPORT
-                    char buffer[100];
-                    snprintf_P(buffer, sizeof(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
-                    wsSend(buffer);
-                #endif
             }
+
+            // Update websocket clients
+            #if WEB_SUPPORT
+                char buffer[100];
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
+                wsSend(buffer);
+            #endif
+            
         }
 
     }
