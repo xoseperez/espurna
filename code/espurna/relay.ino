@@ -335,13 +335,14 @@ unsigned char relayParsePayload(const char * payload) {
         value = 1;
     } else if (strcmp(p, "toggle") == 0) {
         value = 2;
+    } else if (strcmp(p, "query") == 0) {
+        value = 3;
     } else {
         value = p[0] - '0';
     }
 
-    if (0 <= value && value <=2) return value;
-    return 0x99;
-
+    if (0 <= value && value <=3) return value;
+    return 0xFF;
 }
 //------------------------------------------------------------------------------
 // REST API

@@ -143,7 +143,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (data.containsKey("status")) {
 
                 unsigned char value = relayParsePayload(data["status"]);
-                if (value == 0xFF) {
+                if (value == 3) {
 
                     relayWS();
 
