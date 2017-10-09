@@ -343,6 +343,7 @@ unsigned char relayParsePayload(const char * payload) {
 
     if (0 <= value && value <=3) return value;
     return 0xFF;
+
 }
 //------------------------------------------------------------------------------
 // REST API
@@ -366,16 +367,22 @@ void relaySetupAPI() {
 				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
             },
             [relayID](const char * payload) {
+
                 unsigned char value = relayParsePayload(payload);
+
                 if (value == 0xFF) {
                     DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
                     return;
                 }
-                if (value == 2) {
+
+                if (value == 0) {
+                    relayStatus(relayID, false);
+                } elseif (value == 1) {
+                    relayStatus(relayID, true);
+                } elseif (value == 2) {
                     relayToggle(relayID);
-                } else {
-                    relayStatus(relayID, value == 1);
                 }
+
             }
         );
 
@@ -461,10 +468,12 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         }
 
         // Action to perform
-        if (value == 2) {
+        if (value == 0) {
+            relayStatus(relayID, false, mqttForward());
+        } elseif (value == 1) {
+            relayStatus(relayID, true, mqttForward());
+        } elseif (value == 2) {
             relayToggle(relayID);
-        } else {
-            relayStatus(relayID, value == 1, mqttForward());
         }
 
     }
