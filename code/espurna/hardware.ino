@@ -455,6 +455,18 @@ void hwUpwardsCompatibility() {
         setSetting("cf1GPIO", 13);
         setSetting("cfGPIO", 14);
 
+    #elif defined(MANCAVEMADE_ESPLIVE)
+
+        setSetting("board", 40);
+        setSetting("btnGPIO", 1, 4);
+        setSetting("btnGPIO", 2, 5);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 13);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"

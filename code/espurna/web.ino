@@ -148,7 +148,7 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
 
                     relayWS();
 
-                } elseif (value < 3) {
+                } else if (value < 3) {
 
                     unsigned int relayID = 0;
                     if (data.containsKey("id")) {
@@ -159,9 +159,9 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                     // Action to perform
                     if (value == 0) {
                         relayStatus(relayID, false);
-                    } elseif (value == 1) {
+                    } else if (value == 1) {
                         relayStatus(relayID, true);
-                    } elseif (value == 2) {
+                    } else if (value == 2) {
                         relayToggle(relayID);
                     }
 

@@ -377,9 +377,9 @@ void relaySetupAPI() {
 
                 if (value == 0) {
                     relayStatus(relayID, false);
-                } elseif (value == 1) {
+                } else if (value == 1) {
                     relayStatus(relayID, true);
-                } elseif (value == 2) {
+                } else if (value == 2) {
                     relayToggle(relayID);
                 }
 
@@ -470,9 +470,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         // Action to perform
         if (value == 0) {
             relayStatus(relayID, false, mqttForward());
-        } elseif (value == 1) {
+        } else if (value == 1) {
             relayStatus(relayID, true, mqttForward());
-        } elseif (value == 2) {
+        } else if (value == 2) {
             relayToggle(relayID);
         }
 
