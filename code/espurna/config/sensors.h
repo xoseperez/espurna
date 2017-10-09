@@ -74,12 +74,14 @@
 //--------------------------------------------------------------------------------
 
 #ifndef DS18B20_SUPPORT
-#define DS18B20_SUPPORT             0
+#define DS18B20_SUPPORT             1
 #endif
 
-#define DS18B20_PIN                 14
-#define DS18B20_UPDATE_INTERVAL     60000
+#define DS18B20_PIN                 2
+#define DS18B20_UPDATE_INTERVAL     5000
 #define DS18B20_TEMPERATURE_TOPIC   "temperature"
+//Will only send MQTT update if the value has changed by this amount (0.0 sends every interval)
+#define DS18B20_UPDATE_ON_CHANGE    1.0 
 
 //--------------------------------------------------------------------------------
 // Internal power montior
