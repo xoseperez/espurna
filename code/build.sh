@@ -28,6 +28,12 @@ echo "Building for version $version"
 # Create output folder
 mkdir -p firmware
 
+if [ ! -e node_modules/gulp/bin/gulp.js ]; then
+    echo "--------------------------------------------------------------"
+    echo "Installing dependencies..."
+    npm install --only=dev
+fi
+
 # Recreate web interface
 echo "--------------------------------------------------------------"
 echo "Building web interface..."
