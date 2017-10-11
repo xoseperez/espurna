@@ -8,7 +8,10 @@
 #define RF_SUPPORT                  0
 #endif
 
+#ifndef RF_PIN
 #define RF_PIN                      14
+#endif
+
 #define RF_CHANNEL                  31
 #define RF_DEVICE                   1
 
@@ -21,9 +24,18 @@
 #define DHT_SUPPORT                 0
 #endif
 
+#ifndef DHT_PIN
 #define DHT_PIN                     14
-#define DHT_UPDATE_INTERVAL         60000
+#endif
+
+#ifndef DHT_TYPE
 #define DHT_TYPE                    DHT22
+#endif
+
+#ifndef DHT_UPDATE_INTERVAL
+#define DHT_UPDATE_INTERVAL         60000
+#endif
+
 #define DHT_TIMING                  11
 #define DHT_TEMPERATURE_TOPIC       "temperature"
 #define DHT_HUMIDITY_TOPIC          "humidity"
@@ -42,8 +54,14 @@
 #define ANALOG_SUPPORT              0
 #endif
 
+#ifndef ANALOG_PIN
 #define ANALOG_PIN                  0
+#endif
+
+#ifndef ANALOG_UPDATE_INTERVAL
 #define ANALOG_UPDATE_INTERVAL      60000
+#endif
+
 #define ANALOG_TOPIC                "analog"
 
 #if ANALOG_SUPPORT
@@ -60,10 +78,22 @@
 #define COUNTER_SUPPORT             0           // Do not build with counter support by default
 #endif
 
+#ifndef COUNTER_PIN
 #define COUNTER_PIN                 2           // GPIO to monitor
+#endif
+
+#ifndef COUNTER_PIN_MODE
 #define COUNTER_PIN_MODE            INPUT       // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef COUNTER_INTERRUPT_MODE
 #define COUNTER_INTERRUPT_MODE      RISING      // RISING, FALLING, BOTH
+#endif
+
+#ifndef COUNTER_UPDATE_INTERVAL
 #define COUNTER_UPDATE_INTERVAL     5000        // Update counter every this millis
+#endif
+
 #define COUNTER_REPORT_EVERY        12          // Report counter every this updates (1 minute)
 #define COUNTER_DEBOUNCE            10          // Do not register events within less than 10 millis
 #define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
