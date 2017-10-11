@@ -269,7 +269,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 1, 12);
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-    #elif defined(TINKERMAN_ESPURNA_H)
+    #elif defined(TINKERMAN_ESPURNA_H06)
 
         setSetting("board", 23);
         setSetting("ledGPIO", 1, 5);
@@ -458,6 +458,31 @@ void hwUpwardsCompatibility() {
     #elif defined(GENERIC_ECH1560)
 
         setSetting("board", 38);
+
+    #elif defined(TINKERMAN_ESPURNA_H07)
+
+        setSetting("board", 39);
+        setSetting("ledGPIO", 1, 2);
+        setSetting("ledLogic", 1, 0);
+        setSetting("btnGPIO", 1, 4);
+        setSetting("btnRelay", 1, 1);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("selGPIO", 5);
+        setSetting("cf1GPIO", 13);
+        setSetting("cfGPIO", 14);
+
+    #elif defined(MANCAVEMADE_ESPLIVE)
+
+        setSetting("board", 40);
+        setSetting("btnGPIO", 1, 4);
+        setSetting("btnGPIO", 2, 5);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 13);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
     #else
 

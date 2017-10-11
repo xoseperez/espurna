@@ -143,11 +143,12 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
             if (data.containsKey("status")) {
 
                 unsigned char value = relayParsePayload(data["status"]);
-                if (value == 0xFF) {
+
+                if (value == 3) {
 
                     relayWS();
 
-                } else {
+                } else if (value < 3) {
 
                     unsigned int relayID = 0;
                     if (data.containsKey("id")) {
@@ -155,10 +156,13 @@ void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
                         relayID = value.toInt();
                     }
 
-                    if (value == 2) {
+                    // Action to perform
+                    if (value == 0) {
+                        relayStatus(relayID, false);
+                    } else if (value == 1) {
+                        relayStatus(relayID, true);
+                    } else if (value == 2) {
                         relayToggle(relayID);
-                    } else {
-                        relayStatus(relayID, value == 1);
                     }
 
                 }

@@ -77,9 +77,21 @@
 #define DS18B20_SUPPORT             0
 #endif
 
+#ifndef DS18B20_PIN
 #define DS18B20_PIN                 14
+#endif
+
+#ifndef DS18B20_UPDATE_INTERVAL
 #define DS18B20_UPDATE_INTERVAL     60000
+#endif
+
+#ifndef DS18B20_TEMPERATURE_TOPIC
 #define DS18B20_TEMPERATURE_TOPIC   "temperature"
+#endif
+
+#ifndef DS18B20_UPDATE_ON_CHANGE
+#define DS18B20_UPDATE_ON_CHANGE    0.0
+#endif
 
 //--------------------------------------------------------------------------------
 // Internal power montior

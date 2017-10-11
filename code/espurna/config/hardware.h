@@ -63,26 +63,32 @@
 // ESPurna
 // -----------------------------------------------------------------------------
 
-#elif defined(TINKERMAN_ESPURNA_H)
+#elif defined(TINKERMAN_ESPURNA_H06)
 
     // Info
     #define MANUFACTURER        "TINKERMAN"
-    #define DEVICE              "ESPURNA_H"
+    #define DEVICE              "ESPURNA_H06"
 
     // Buttons
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
 
-    // Normal pushbutton
-    //#define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #ifdef USE_TOUCH_BUTTON
 
-    // Touch button
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK           BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+        // Touch button
+        #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+        #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+        #define BUTTON1_CLICK           BUTTON_MODE_NONE
+        #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+        #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+        #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #else
+
+        // Normal pushbutton
+        #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #endif
 
 
     // Relays
@@ -96,6 +102,47 @@
     // HLW8012
     #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
     #define HLW8012_SEL_PIN     2
+    #define HLW8012_CF1_PIN     13
+    #define HLW8012_CF_PIN      14
+
+#elif defined(TINKERMAN_ESPURNA_H07)
+
+    // Info
+    #define MANUFACTURER        "TINKERMAN"
+    #define DEVICE              "ESPURNA_H07"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_RELAY       1
+
+    #ifdef USE_TOUCH_BUTTON
+
+        // Touch button
+        #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+        #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+        #define BUTTON1_CLICK           BUTTON_MODE_NONE
+        #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+        #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+        #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #else
+
+        // Normal pushbutton
+        #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #endif
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+    // HLW8012
+    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
+    #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
@@ -979,6 +1026,40 @@
     #define ECH1560_CLK_PIN     4
     #define ECH1560_MISO_PIN    5
     #define ECH1560_INVERTED    0
+
+// -----------------------------------------------------------------------------
+// ESPLive
+// https://github.com/ManCaveMade/ESP-Live
+// -----------------------------------------------------------------------------
+
+#elif defined(MANCAVEMADE_ESPLIVE)
+
+    // Info
+    #define MANUFACTURER        "MANCAVEMADE"
+    #define DEVICE              "ESPLIVE"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON2_PIN         5
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          13
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // DB18B20
+    #define DS18B20_SUPPORT             1
+    #define DS18B20_PIN                 2
+    #define DS18B20_UPDATE_INTERVAL     5000
+    #define DS18B20_UPDATE_ON_CHANGE    1.0
 
 // -----------------------------------------------------------------------------
 // Unknown hardware

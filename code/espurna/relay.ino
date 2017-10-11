@@ -335,12 +335,14 @@ unsigned char relayParsePayload(const char * payload) {
         value = 1;
     } else if (strcmp(p, "toggle") == 0) {
         value = 2;
+    } else if (strcmp(p, "query") == 0) {
+        value = 3;
     } else {
         value = p[0] - '0';
     }
 
-    if (0 <= value && value <=2) return value;
-    return 0x99;
+    if (0 <= value && value <=3) return value;
+    return 0xFF;
 
 }
 //------------------------------------------------------------------------------
@@ -365,16 +367,22 @@ void relaySetupAPI() {
 				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
             },
             [relayID](const char * payload) {
+
                 unsigned char value = relayParsePayload(payload);
+
                 if (value == 0xFF) {
                     DEBUG_MSG_P(PSTR("[RELAY] Wrong payload (%s)\n"), payload);
                     return;
                 }
-                if (value == 2) {
+
+                if (value == 0) {
+                    relayStatus(relayID, false);
+                } else if (value == 1) {
+                    relayStatus(relayID, true);
+                } else if (value == 2) {
                     relayToggle(relayID);
-                } else {
-                    relayStatus(relayID, value == 1);
                 }
+
             }
         );
 
@@ -460,10 +468,12 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         }
 
         // Action to perform
-        if (value == 2) {
+        if (value == 0) {
+            relayStatus(relayID, false, mqttForward());
+        } else if (value == 1) {
+            relayStatus(relayID, true, mqttForward());
+        } else if (value == 2) {
             relayToggle(relayID);
-        } else {
-            relayStatus(relayID, value == 1, mqttForward());
         }
 
     }

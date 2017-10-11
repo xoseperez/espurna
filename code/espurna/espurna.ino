@@ -44,6 +44,11 @@ void hardwareSetup() {
         SPIFFS.begin();
     #endif
 
+    #if defined(ESPLIVE)
+        //The ESPLive has an ADC MUX which needs to be configured.
+        pinMode(16, OUTPUT);
+        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
+    #endif
 }
 
 void hardwareLoop() {
