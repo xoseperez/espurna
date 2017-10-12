@@ -16,6 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <Ticker.h>
 #include <vector>
+#include "web.h"
 
 #if WEB_EMBEDDED
 #include "static/index.html.gz.h"
@@ -67,7 +68,10 @@ void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload
 
 }
 
-void _wsParse(uint32_t client_id, uint8_t * payload, size_t length) {
+void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
+
+    // Get client ID
+    uint32_t client_id = client->id();
 
     // Parse JSON input
     DynamicJsonBuffer jsonBuffer;
@@ -689,8 +693,6 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
-    static uint8_t * message;
-
     // Authorize
     #ifndef NOWSAUTH
         if (!_wsAuth(client)) return;
@@ -700,31 +702,27 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsStart(client->id());
+        client->_tempObject = new WebSocketIncommingBuffer(&_wsParse, true);
+
     } else if(type == WS_EVT_DISCONNECT) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
+        if (client->_tempObject) {
+            delete (WebSocketIncommingBuffer *) client->_tempObject;
+        }
+
     } else if(type == WS_EVT_ERROR) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);
+
     } else if(type == WS_EVT_PONG) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u pong(%u): %s\n"), client->id(), len, len ? (char*) data : "");
+
     } else if(type == WS_EVT_DATA) {
-
+        WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *)client->_tempObject;
         AwsFrameInfo * info = (AwsFrameInfo*)arg;
-
-        // First packet
-        if (info->index == 0) {
-            message = (uint8_t*) malloc(info->len);
-        }
-
-        // Store data
-        memcpy(message + info->index, data, len);
-
-        // Last packet
-        if (info->index + len == info->len) {
-            _wsParse(client->id(), message, info->len);
-            free(message);
-        }
+        buffer->data_event(client, info, data, len);
 
     }
+
 
 }
 
