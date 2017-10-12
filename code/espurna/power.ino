@@ -201,7 +201,7 @@ void _powerReport() {
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);
         mqttSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        mqttSend(MQTT_TOPIC_ENERGY, buf_energy);
+        mqttSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy);
         mqttSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
             mqttSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
@@ -230,7 +230,7 @@ void _powerReport() {
     if (influxdbEnabled()) {
         influxDBSend(MQTT_TOPIC_CURRENT, buf_current);
         influxDBSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        influxDBSend(MQTT_TOPIC_ENERGY, buf_energy);
+        influxDBSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy);
         influxDBSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
             influxDBSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
