@@ -140,7 +140,7 @@ void _powerRead() {
             root["pwrCurrent"] = roundTo(current, POWER_CURRENT_DECIMALS);
             root["pwrVoltage"] = roundTo(voltage, POWER_VOLTAGE_DECIMALS);
             root["pwrApparent"] = roundTo(apparent, POWER_POWER_DECIMALS);
-            root["pwrEnergy"] = roundTo(_power_energy * POWER_ENERGY_FACTOR, POWER_ENERGY_DECIMALS);
+            root["pwrEnergy"] = roundTo(_power_energy * POWER_ENERGY_FACTOR_WEB, POWER_ENERGY_DECIMALS_WEB);
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = roundTo(active, POWER_POWER_DECIMALS);
                 root["pwrReactive"] = roundTo(reactive, POWER_POWER_DECIMALS);

@@ -538,7 +538,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_VOLTAGE_DECIMALS          0       // Decimals for voltage values
 #define POWER_POWER_DECIMALS            0       // Decimals for power values
 #define POWER_ENERGY_DECIMALS           3       // Decimals for energy values
-#define POWER_ENERGY_FACTOR             (1. / 3600.0) // Ws => Wh
+#define POWER_ENERGY_DECIMALS_WEB       5       // Decimals for energy values
+#define POWER_ENERGY_FACTOR             1       // Watt seconds / Joule
+#define POWER_ENERGY_FACTOR_WEB         (1. / 3600. / 1000.) // kWh
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
     #define EMON_CURRENT_RATIO          30      // Current ratio in the clamp (30V/1A)
