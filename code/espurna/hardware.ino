@@ -467,6 +467,19 @@ void hwUpwardsCompatibility() {
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
         setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
+    #elif defined(QUINLED)
+
+        setSetting("board", 41);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("ledGPIO", 1, 1);
+        setSetting("ledLogic", 1, 1);
+        setSetting("chGPIO", 1, 0);
+        setSetting("chGPIO", 2, 2);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("relays", 1);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"

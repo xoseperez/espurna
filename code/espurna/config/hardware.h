@@ -957,6 +957,30 @@
     #define DS18B20_UPDATE_INTERVAL     5000
     #define DS18B20_UPDATE_ON_CHANGE    1.0
 
+// QuinLED
+// - http://blog.quindorian.org/2017/02/esp8266-led-lighting-quinled-v2-6-pcb.html/
+// -----------------------------------------------------------------------------
+
+#elif defined(QUINLED)
+
+    // Info
+    #define MANUFACTURER        "INTERMIT.TECH"
+    #define DEVICE              "QUINLED"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            5
+    #define LED1_PIN_INVERSE    1
+
+    // Channels
+    #define LIGHT_CH1_PIN       0
+    #define LIGHT_CH2_PIN       2
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------

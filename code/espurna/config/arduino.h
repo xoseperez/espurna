@@ -40,6 +40,7 @@
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define OPENENERGYMONITOR_MQTT_RELAY
 //#define HUACANXING_H802
+//#define QUINLED
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
