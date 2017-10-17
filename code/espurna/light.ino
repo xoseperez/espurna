@@ -272,7 +272,7 @@ void _lightColorSave() {
 
 void _lightColorRestore() {
     for (unsigned int i=0; i < _channels.size(); i++) {
-        _channels[i].value = getSetting("ch", i, 0).toInt();
+        _channels[i].value = getSetting("ch", i, i==0 ? 255 : 0).toInt();
     }
     _brightness = getSetting("brightness", LIGHT_MAX_BRIGHTNESS).toInt();
     lightUpdate(false, false);
@@ -415,10 +415,18 @@ void lightUpdate(bool save, bool forward) {
     }
     #endif
 
-    // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-    if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
+    #if LIGHT_SAVE_ENABLED
+        // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
+        if (save) colorTicker.once(LIGHT_SAVE_DELAY, _lightColorSave);
+    #endif
 
 };
+
+#if LIGHT_SAVE_ENABLED == 0
+void lightSave() {
+    _lightColorSave();
+}
+#endif
 
 void lightState(bool state) {
     _lightState = state;

@@ -486,6 +486,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // 4 channels => RGBW
 // 5 channels => RGBWW
 
+#ifndef LIGHT_SAVE_ENABLED
+#define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
+#endif
+
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #define LIGHT_PWM_FREQUENCY     1000        // PWM frequency
 #define LIGHT_MAX_PWM           4095        // Maximum PWM value

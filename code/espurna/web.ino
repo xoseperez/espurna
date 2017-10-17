@@ -428,6 +428,13 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             #if POWER_PROVIDER != POWER_PROVIDER_NONE
                 powerConfigure();
             #endif
+
+            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+                #if LIGHT_SAVE_ENABLED == 0
+                    lightSave();
+                #endif
+            #endif
+
             #if NTP_SUPPORT
                 if (changedNTP) ntpConnect();
             #endif
