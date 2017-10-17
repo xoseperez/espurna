@@ -214,12 +214,12 @@ void _powerReport() {
     #if DOMOTICZ_SUPPORT
     if (domoticzEnabled()) {
         char buffer[20];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), power, buf_energy);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), (int) power, buf_energy);
         domoticzSend("dczPowIdx", 0, buffer);
         domoticzSend("dczCurrentIdx", 0, buf_current);
         domoticzSend("dczEnergyIdx", 0, buf_energy);
         #if POWER_HAS_ACTIVE
-            snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _power_voltage);
+            snprintf_P(buffer, sizeof(buffer), PSTR("%d"), (int) _power_voltage);
             domoticzSend("dczVoltIdx", 0, buffer);
         #endif
 
