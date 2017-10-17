@@ -611,6 +611,7 @@ void _wsStart(uint32_t client_id) {
             root["pwrCurrent"] = getCurrent();
             root["pwrVoltage"] = getVoltage();
             root["pwrApparent"] = getApparentPower();
+            root["pwrEnergy"] = getPowerEnergy();
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = getActivePower();
                 root["pwrReactive"] = getReactivePower();

@@ -107,7 +107,7 @@ void _powerRead() {
         if (factor > 1) factor = 1;
     #endif
     #if POWER_HAS_ENERGY
-        _power_energy = _powerEnergy(); //Due to its nature this value doesn't have to be filtered
+        _power_energy = _powerEnergy(); // Due to its nature this value doesn't have to be filtered
     #endif
 
     // Filters
@@ -140,7 +140,7 @@ void _powerRead() {
             root["pwrCurrent"] = roundTo(current, POWER_CURRENT_DECIMALS);
             root["pwrVoltage"] = roundTo(voltage, POWER_VOLTAGE_DECIMALS);
             root["pwrApparent"] = roundTo(apparent, POWER_POWER_DECIMALS);
-            root["pwrEnergy"] = roundTo(_power_energy * POWER_ENERGY_FACTOR_WEB, POWER_ENERGY_DECIMALS_WEB);
+            root["pwrEnergy"] = roundTo(_power_energy, POWER_ENERGY_DECIMALS);
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = roundTo(active, POWER_POWER_DECIMALS);
                 root["pwrReactive"] = roundTo(reactive, POWER_POWER_DECIMALS);
@@ -274,6 +274,10 @@ double getReactivePower() {
 
 double getPowerFactor() {
     return roundTo(_power_factor, 2);
+}
+
+double getPowerEnergy() {
+    roundTo(_power_energy, POWER_ENERGY_DECIMALS);
 }
 #endif
 
