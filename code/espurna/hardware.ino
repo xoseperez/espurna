@@ -469,7 +469,7 @@ void hwUpwardsCompatibility() {
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
         setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
-    #elif defined(QUINLED)
+    #elif defined(INTERMITTECH_QUINLED)
 
         setSetting("board", 41);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);

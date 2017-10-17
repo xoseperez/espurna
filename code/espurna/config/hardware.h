@@ -972,10 +972,10 @@
 // - http://blog.quindorian.org/2017/02/esp8266-led-lighting-quinled-v2-6-pcb.html/
 // -----------------------------------------------------------------------------
 
-#elif defined(QUINLED)
+#elif defined(INTERMITTECH_QUINLED)
 
     // Info
-    #define MANUFACTURER        "INTERMIT.TECH"
+    #define MANUFACTURER        "INTERMITTECH"
     #define DEVICE              "QUINLED"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
