@@ -514,6 +514,23 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 4, 0);
         setSetting("relays", 1);
 
+    #elif defined(ARILUX_AL_LC06)
+
+        setSetting("board", 43);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("chGPIO", 1, 12);
+        setSetting("chGPIO", 2, 14);
+        setSetting("chGPIO", 3, 13);
+        setSetting("chGPIO", 4, 15);
+        setSetting("chGPIO", 5, 5);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("chLogic", 3, 0);
+        setSetting("chLogic", 4, 0);
+        setSetting("chLogic", 5, 0);
+        setSetting("relays", 1);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
