@@ -75,6 +75,10 @@ double _powerPowerFactor() {
     return _hlw8012.getPowerFactor();
 }
 
+double _powerEnergy() {
+    return _hlw8012.getEnergy();
+}
+
 void _powerEnabledProvider() {
     if (_power_enabled) {
         attachInterrupt(HLW8012_CF1_PIN, _hlw_cf1_isr, CHANGE);
@@ -128,13 +132,16 @@ void _powerSetupProvider() {
 
     _hlwRestoreCalibration();
 
-    _power_wifi_onconnect = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
-        powerEnabled(true);
-    });
-    _power_wifi_ondisconnect = WiFi.onStationModeDisconnected([](WiFiEventStationModeDisconnected ipInfo) {
-        powerEnabled(false);
-    });
-
+    #if HLW8012_USE_INTERRUPTS
+        powerEnabled(true); //Always keep measurement active to keep track of energy used
+    #else
+        _power_wifi_onconnect = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
+            powerEnabled(true);
+        });
+        _power_wifi_ondisconnect = WiFi.onStationModeDisconnected([](WiFiEventStationModeDisconnected ipInfo) {
+            powerEnabled(false);
+        });
+    #endif
 }
 
 void _powerLoopProvider(bool before) {

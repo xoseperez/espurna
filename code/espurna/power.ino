@@ -23,6 +23,7 @@ bool _power_newdata = false;
 double _power_current = 0;
 double _power_voltage = 0;
 double _power_apparent = 0;
+double _power_energy = 0;
 MedianFilter _filter_current = MedianFilter(POWER_REPORT_BUFFER);
 
 #if POWER_HAS_ACTIVE
@@ -32,6 +33,10 @@ MedianFilter _filter_current = MedianFilter(POWER_REPORT_BUFFER);
     MedianFilter _filter_voltage = MedianFilter(POWER_REPORT_BUFFER);
     MedianFilter _filter_active = MedianFilter(POWER_REPORT_BUFFER);
     MedianFilter _filter_apparent = MedianFilter(POWER_REPORT_BUFFER);
+#endif
+
+#if POWER_HAS_ENERGY
+    double _power_last_energy = 0;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -101,6 +106,9 @@ void _powerRead() {
         double factor = (apparent > 0) ? active / apparent : 1;
         if (factor > 1) factor = 1;
     #endif
+    #if POWER_HAS_ENERGY
+        _power_energy = _powerEnergy(); //Due to its nature this value doesn't have to be filtered
+    #endif
 
     // Filters
     _filter_current.add(current);
@@ -132,6 +140,7 @@ void _powerRead() {
             root["pwrCurrent"] = roundTo(current, POWER_CURRENT_DECIMALS);
             root["pwrVoltage"] = roundTo(voltage, POWER_VOLTAGE_DECIMALS);
             root["pwrApparent"] = roundTo(apparent, POWER_POWER_DECIMALS);
+            root["pwrEnergy"] = roundTo(_power_energy * POWER_ENERGY_FACTOR_WEB, POWER_ENERGY_DECIMALS_WEB);
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = roundTo(active, POWER_POWER_DECIMALS);
                 root["pwrReactive"] = roundTo(reactive, POWER_POWER_DECIMALS);
@@ -174,18 +183,26 @@ void _powerReport() {
         _power_apparent = _power_current * _power_voltage;
         double power = _power_apparent;
     #endif
-    double energy_delta = power * POWER_ENERGY_FACTOR;
+    #if POWER_HAS_ENERGY
+        double energy_delta = _power_energy - _power_last_energy;
+        _power_last_energy = _power_energy;
+    #else
+        double energy_delta = power * (POWER_REPORT_INTERVAL / 1000.);
+        _power_energy += energy_delta;
+    #endif
     _power_ready = true;
 
     char buf_current[10];
     char buf_energy[10];
+    char buf_energy_total[10];
     dtostrf(_power_current, 1-sizeof(buf_current), POWER_CURRENT_DECIMALS, buf_current);
-    dtostrf(energy_delta, 1-sizeof(buf_energy), POWER_CURRENT_DECIMALS, buf_energy);
-
+    dtostrf(energy_delta * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy), POWER_ENERGY_DECIMALS, buf_energy);
+    dtostrf(_power_energy * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_total), POWER_ENERGY_DECIMALS, buf_energy_total);
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);
         mqttSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        mqttSend(MQTT_TOPIC_ENERGY, buf_energy);
+        mqttSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy);
+        mqttSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
             mqttSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
             mqttSend(MQTT_TOPIC_POWER_REACTIVE, String((int) _power_reactive).c_str());
@@ -213,7 +230,8 @@ void _powerReport() {
     if (influxdbEnabled()) {
         influxDBSend(MQTT_TOPIC_CURRENT, buf_current);
         influxDBSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        influxDBSend(MQTT_TOPIC_ENERGY, buf_energy);
+        influxDBSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy);
+        influxDBSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
             influxDBSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
             influxDBSend(MQTT_TOPIC_POWER_REACTIVE, String((int) _power_reactive).c_str());

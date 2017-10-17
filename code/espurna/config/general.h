@@ -429,7 +429,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_POWER_APPARENT   "apparent"
 #define MQTT_TOPIC_POWER_REACTIVE   "reactive"
 #define MQTT_TOPIC_POWER_FACTOR     "factor"
-#define MQTT_TOPIC_ENERGY           "energy"
+#define MQTT_TOPIC_ENERGY_DELTA     "energy_delta"
+#define MQTT_TOPIC_ENERGY_TOTAL     "energy_total"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
@@ -523,6 +524,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_HAS_ACTIVE                0
 #endif
 
+#if (POWER_PROVIDER == POWER_PROVIDER_HLW8012)
+#define POWER_HAS_ENERGY                1
+#else
+#define POWER_HAS_ENERGY                0
+#endif
+
 #define POWER_VOLTAGE                   230     // Default voltage
 #define POWER_READ_INTERVAL             6000    // Default reading interval (6 seconds)
 #define POWER_REPORT_INTERVAL           60000   // Default report interval (1 minute)
@@ -530,7 +537,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_CURRENT_DECIMALS          2       // Decimals for current values
 #define POWER_VOLTAGE_DECIMALS          0       // Decimals for voltage values
 #define POWER_POWER_DECIMALS            0       // Decimals for power values
-#define POWER_ENERGY_FACTOR             (POWER_REPORT_INTERVAL / 1000.0 / 3600.0)
+#define POWER_ENERGY_DECIMALS           3       // Decimals for energy values
+#define POWER_ENERGY_DECIMALS_WEB       5       // Decimals for energy values
+#define POWER_ENERGY_FACTOR             1       // Watt seconds / Joule
+#define POWER_ENERGY_FACTOR_WEB         (1. / 3600. / 1000.) // kWh
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG
     #define EMON_CURRENT_RATIO          30      // Current ratio in the clamp (30V/1A)
