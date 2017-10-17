@@ -731,7 +731,7 @@
     #define LIGHT_CH4_INVERSE   0
 
     #define LIGHT_IR_PIN        4    // IR LED
-    #define LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR  1
+    #define LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR  0
 
     // 24 Buttons Set of the IR Remote
     #ifndef IR_BUTTONS_SET
