@@ -33,6 +33,8 @@ void hwUpwardsCompatibility() {
         setSetting("board", 3);
         setSetting("ledGPIO", 1, 2);
         setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnRelay", 1, 1);
         setSetting("relayGPIO", 1, 5);
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
