@@ -193,15 +193,15 @@ void _powerReport() {
     _power_ready = true;
 
     char buf_current[10];
-    char buf_energy[10];
+    char buf_energy_delta[10];
     char buf_energy_total[10];
     dtostrf(_power_current, 1-sizeof(buf_current), POWER_CURRENT_DECIMALS, buf_current);
-    dtostrf(energy_delta * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy), POWER_ENERGY_DECIMALS, buf_energy);
+    dtostrf(energy_delta * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_delta), POWER_ENERGY_DECIMALS, buf_energy_delta);
     dtostrf(_power_energy * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_total), POWER_ENERGY_DECIMALS, buf_energy_total);
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);
         mqttSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        mqttSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy);
+        mqttSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy_delta);
         mqttSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
             mqttSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
@@ -213,11 +213,16 @@ void _powerReport() {
 
     #if DOMOTICZ_SUPPORT
     if (domoticzEnabled()) {
+
+        // Domoticz expects energy in kWh
+        char buf_energy_kwh[10];
+        dtostrf(energy_delta * POWER_ENERGY_FACTOR_KWH, 1-sizeof(buf_energy_kwh), POWER_ENERGY_DECIMALS_KWH, buf_energy_kwh);
+
         char buffer[20];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), (int) power, buf_energy);
+        snprintf_P(buffer, sizeof(buffer), PSTR("%d;%s"), (int) power, buf_energy_kwh);
         domoticzSend("dczPowIdx", 0, buffer);
         domoticzSend("dczCurrentIdx", 0, buf_current);
-        domoticzSend("dczEnergyIdx", 0, buf_energy);
+        domoticzSend("dczEnergyIdx", 0, buf_energy_kwh);
         #if POWER_HAS_ACTIVE
             snprintf_P(buffer, sizeof(buffer), PSTR("%d"), (int) _power_voltage);
             domoticzSend("dczVoltIdx", 0, buffer);
@@ -230,7 +235,7 @@ void _powerReport() {
     if (influxdbEnabled()) {
         influxDBSend(MQTT_TOPIC_CURRENT, buf_current);
         influxDBSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        influxDBSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy);
+        influxDBSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy_delta);
         influxDBSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
             influxDBSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
