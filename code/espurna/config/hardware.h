@@ -706,6 +706,26 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
+#elif defined(MAGICHOME_LED_CONTROLLER_2_0)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "LED_CONTROLLER_2_0"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Channels
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       15      // WHITE
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // HUACANXING H801
 // -----------------------------------------------------------------------------
