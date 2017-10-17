@@ -165,6 +165,10 @@
                                 <div id="channels">
                                 </div>
 
+                                <div id="colorsExtras">
+                                </div>
+
+
                                 <div class="pure-g module module-analog">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="analogValue">Analog</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="analogValue" readonly />
@@ -939,6 +943,32 @@
                 <label class="pure-u-1 pure-u-sm-1-4">Brightness</label>
                 <div class="slider pure-u-1 pure-u-sm-1-4" id="brightness"></div>
             </div>
+        </div>
+
+        <div id="colorHsvTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-sm-1-4">Color</label>
+                <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />
+            </div>
+        </div>
+
+        <div id="colorsExtrasTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-sm-1-4">Mode</label>
+                <select class="pure-u-1 pure-u-sm-1-4" name="animation"  id="animMode">
+                	<option value=0>Single Color</option>
+                	<option value=1>1 - Flash</option>
+                	<option value=2>2 - Strobe</option>
+                	<option value=3>3 - Fade</option>
+                	<option value=4>4 - Smooth</option>
+                	<option value=5>5 - Party</option>
+                </select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-sm-1-4">Speed</label>
+                <div class="slider pure-u-1 pure-u-sm-1-4" id="animSpeed"></div>
+            </div>
+
         </div>
 
         <div id="channelTemplate" class="template">

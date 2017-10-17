@@ -185,7 +185,27 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         #endif
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
+            if (lightHasColor()) {
 
+                if (action.equals("color_hsv") && root.containsKey("data")) {
+                   JsonObject& data = root["data"];
+                   setLightColor(data["h"],data["s"],data["v"]);
+                   lightUpdate(true, true);
+                }
+
+            }
+            if (action.equals("anim_mode") && root.containsKey("data")) {
+                lightAnimMode(root["data"]);
+                lightUpdate(true, true);
+            }
+            if (action.equals("anim_speed") && root.containsKey("data")) {
+                lightAnimSpeed(root["data"]);
+                lightUpdate(true, true);
+            }
+
+
+        #else
             if (lightHasColor()) {
 
                 if (action.equals("color") && root.containsKey("data")) {
@@ -207,8 +227,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     lightUpdate(true, true);
                 }
             }
-
-        #endif
+        #endif //LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
+        #endif //LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
     };
 
@@ -498,8 +518,18 @@ void _wsStart(uint32_t client_id) {
             root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
             root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
             if (lightHasColor()) {
-                root["color"] = lightColor();
-                root["brightness"] = lightBrightness();
+
+            #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
+                    root["anim_mode"] = lightAnimMode();
+                    root["anim_speed"] = lightAnimSpeed();
+                    JsonObject& color_hsv = root.createNestedObject("color_hsv");
+                    color_hsv["h"] = lightColorH();
+                    color_hsv["s"] = lightColorS();
+                    color_hsv["v"] = lightColorV();
+                #else
+                    root["color"] = lightColor();
+                    root["brightness"] = lightBrightness();
+                #endif
             }
             JsonArray& channels = root.createNestedArray("channels");
             for (unsigned char id=0; id < lightChannels(); id++) {

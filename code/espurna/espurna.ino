@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/all.h"
 #include <EEPROM.h>
+#include <FastLED.h>    // W.T.H. is this include ALSO needed here ?!?!!
 
 // -----------------------------------------------------------------------------
 // METHODS
@@ -307,6 +308,11 @@ void loop() {
 
     // Do not run the next services if system is flagged stable
     if (!systemCheck()) return;
+
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+        lightLoop();
+    #endif
+
 
     buttonLoop();
     relayLoop();

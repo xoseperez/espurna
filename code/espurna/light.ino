@@ -7,6 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+#ifndef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
 
 #include <Ticker.h>
 #include <ArduinoJson.h>
@@ -582,4 +583,9 @@ void lightSetup() {
 
 }
 
+void lightLoop(){
+}
+
+
+#endif // LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
 #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

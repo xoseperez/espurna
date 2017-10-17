@@ -244,6 +244,23 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 4, 0);
         setSetting("relays", 1);
 
+    #elif defined(MAGICHOME_LED_CONTROLLER_IR)
+
+        setSetting("board", 21);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("ledGPIO", 1, 2);
+        setSetting("ledLogic", 1, 1);
+        setSetting("chGPIO", 1, 5);
+        setSetting("chGPIO", 2, 12);
+        setSetting("chGPIO", 3, 13);
+        setSetting("chGPIO", 4, 14);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("chLogic", 3, 0);
+        setSetting("chLogic", 4, 0);
+        setSetting("relays", 1);
+
     #elif defined(ITEAD_MOTOR)
 
         setSetting("board", 22);
