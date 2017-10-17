@@ -499,7 +499,7 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 2, 0);
         setSetting("relays", 1);
 
-    #elif defined(MAGICHOME_LED_CONTROLLER_2_0)
+    #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
         setSetting("board", 42);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
