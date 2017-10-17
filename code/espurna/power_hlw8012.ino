@@ -80,13 +80,15 @@ double _powerEnergy() {
 }
 
 void _powerEnabledProvider() {
-    if (_power_enabled) {
-        attachInterrupt(HLW8012_CF1_PIN, _hlw_cf1_isr, CHANGE);
-        attachInterrupt(HLW8012_CF_PIN, _hlw_cf_isr, CHANGE);
-    } else {
-        detachInterrupt(HLW8012_CF1_PIN);
-        detachInterrupt(HLW8012_CF_PIN);
-    }
+    #if HLW8012_USE_INTERRUPTS
+        if (_power_enabled) {
+            attachInterrupt(HLW8012_CF1_PIN, _hlw_cf1_isr, CHANGE);
+            attachInterrupt(HLW8012_CF_PIN, _hlw_cf_isr, CHANGE);
+        } else {
+            detachInterrupt(HLW8012_CF1_PIN);
+            detachInterrupt(HLW8012_CF_PIN);
+        }
+    #endif
 }
 
 void _powerCalibrateProvider(unsigned char magnitude, double value) {
