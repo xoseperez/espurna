@@ -63,12 +63,10 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-    // Buttons
-    // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
-    #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
-                                    // it's the same as using a Wemos one button shield
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
+    // IR
+    #define IR_SUPPORT          1
+    #define IR_PIN              4
+    #define IR_BUTTON_SET       1
 
 // -----------------------------------------------------------------------------
 // ESPurna
@@ -713,7 +711,10 @@
     #define DEVICE              "LED_CONTROLLER_20"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
+
+    //#define LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
 
     // LEDs
     #define LED1_PIN            2
@@ -730,79 +731,10 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
-    #define LIGHT_IR_PIN        4    // IR LED
-    #define LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR  0
-
-    // 24 Buttons Set of the IR Remote
-    #ifndef IR_BUTTONS_SET
-    #define IR_BUTTONS_SET      1
-    #endif
-
-    //Remote Buttons SET 1 (for the original Remote shipped with the controller)
-    #if IR_BUTTONS_SET == 1
-        #define IR_BUTTON_0  0xFF906F // Brightness +
-        #define IR_BUTTON_1  0xFFB847 // Brightness -
-        #define IR_BUTTON_2  0xFFF807 // OFF
-        #define IR_BUTTON_3  0xFFB04F // ON
-
-        #define IR_BUTTON_4  0xFF9867 // RED
-        #define IR_BUTTON_5  0xFFD827 // GREEN
-        #define IR_BUTTON_6  0xFF8877 // BLUE
-        #define IR_BUTTON_7  0xFFA857 // WHITE
-
-        #define IR_BUTTON_8  0xFFE817 // "Red" 1
-        #define IR_BUTTON_9  0xFF48B7 // "Green" 1
-        #define IR_BUTTON_10 0xFF6897 // "Blue" 1
-        #define IR_BUTTON_11 0xFFB24D // FLASH Mode
-
-        #define IR_BUTTON_12 0xFF02FD // "Red" 2
-        #define IR_BUTTON_13 0xFF32CD // "Green" 2
-        #define IR_BUTTON_14 0xFF20DF // "Blue" 2
-        #define IR_BUTTON_15 0xFF00FF // STROBE Mode
-
-        #define IR_BUTTON_16 0xFF50AF // "Red" 3
-        #define IR_BUTTON_17 0xFF7887 // "Green" 3
-        #define IR_BUTTON_18 0xFF708F // "Blue" 3
-        #define IR_BUTTON_19 0xFF58A7 // FADE Mode
-
-        #define IR_BUTTON_20 0xFF38C7 // "Red" 4
-        #define IR_BUTTON_21 0xFF28D7 // "Green" 4
-        #define IR_BUTTON_22 0xFFF00F // "Blue" 4
-        #define IR_BUTTON_23 0xFF30CF // SMOOTH Mode
-    #endif
-
-    //Remote Buttons SET 2 (another identical IR Remote shipped with another controller)
-    #if IR_BUTTONS_SET == 2
-        #define IR_BUTTON_0  0xFF00FF // Brightness +
-        #define IR_BUTTON_1  0xFF807F // Brightness -
-        #define IR_BUTTON_2  0xFF40BF // OFF
-        #define IR_BUTTON_3  0xFFC03F // ON
-
-        #define IR_BUTTON_4  0xFF20DF // RED
-        #define IR_BUTTON_5  0xFFA05F // GREEN
-        #define IR_BUTTON_6  0xFF609F // BLUE
-        #define IR_BUTTON_7  0xFFE01F // WHITE
-
-        #define IR_BUTTON_8  0xFF10EF // "Red" 1
-        #define IR_BUTTON_9  0xFF906F // "Green" 1
-        #define IR_BUTTON_10 0xFF50AF // "Blue" 1
-        #define IR_BUTTON_11 0xFFD02F // FLASH Mode
-
-        #define IR_BUTTON_12 0xFF30CF // "Red" 2
-        #define IR_BUTTON_13 0xFFB04F // "Green" 2
-        #define IR_BUTTON_14 0xFF708F // "Blue" 2
-        #define IR_BUTTON_15 0xFFF00F // STROBE Mode
-
-        #define IR_BUTTON_16 0xFF08F7 // "Red" 3
-        #define IR_BUTTON_17 0xFF8877 // "Green" 3
-        #define IR_BUTTON_18 0xFF48B7 // "Blue" 3
-        #define IR_BUTTON_19 0xFFC837 // FADE Mode
-
-        #define IR_BUTTON_20 0xFF28D7 // "Red" 4
-        #define IR_BUTTON_21 0xFFA857 // "Green" 4
-        #define IR_BUTTON_22 0xFF6897 // "Blue" 4
-        #define IR_BUTTON_23 0xFFE817 // SMOOTH Mode
-    #endif
+    // IR
+    #define IR_SUPPORT          1
+    #define IR_PIN              4
+    #define IR_BUTTON_SET       1
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802

@@ -53,6 +53,21 @@ const unsigned short gamma_table[LIGHT_MAX_VALUE+1] = {
 // UTILS
 // -----------------------------------------------------------------------------
 
+void _fromLong(unsigned long value, bool brightness) {
+
+    if (brightness) {
+        _channels[0].value = (value >> 24) & 0xFF;
+        _channels[1].value = (value >> 16) & 0xFF;
+        _channels[2].value = (value >> 8) & 0xFF;
+        _brightness = (value & 0xFF) * LIGHT_MAX_BRIGHTNESS / 255;
+    } else {
+        _channels[0].value = (value >> 16) & 0xFF;
+        _channels[1].value = (value >> 8) & 0xFF;
+        _channels[2].value = (value) & 0xFF;
+    }
+
+}
+
 void _fromRGB(const char * rgb) {
 
     char * p = (char *) rgb;
@@ -67,16 +82,7 @@ void _fromRGB(const char * rgb) {
             unsigned long value = strtoul(p, NULL, 16);
 
             // RGBA values are interpreted like RGB + brightness
-            if (strlen(p) > 7) {
-                _channels[0].value = (value >> 24) & 0xFF;
-                _channels[1].value = (value >> 16) & 0xFF;
-                _channels[2].value = (value >> 8) & 0xFF;
-                _brightness = (value & 0xFF) * LIGHT_MAX_BRIGHTNESS / 255;
-            } else {
-                _channels[0].value = (value >> 16) & 0xFF;
-                _channels[1].value = (value >> 8) & 0xFF;
-                _channels[2].value = (value) & 0xFF;
-            }
+            _fromLong(value, strlen(p) > 7);
 
         }
 
@@ -440,6 +446,10 @@ void lightColor(const char * color) {
     _fromRGB(color);
 }
 
+void lightColor(unsigned long color) {
+    _fromLong(color, false);
+}
+
 String lightColor() {
     char rgb[8];
     _toRGB(rgb, 8, false);
@@ -465,6 +475,10 @@ unsigned int lightBrightness() {
 
 void lightBrightness(unsigned int b) {
     _brightness = constrain(b, 0, LIGHT_MAX_BRIGHTNESS);
+}
+
+void lightBrightnessStep(int steps) {
+    lightBrightness(_brightness + steps * LIGHT_STEP);
 }
 
 // -----------------------------------------------------------------------------
