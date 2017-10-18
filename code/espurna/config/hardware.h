@@ -1114,6 +1114,29 @@
     #define LIGHT_CH5_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// XENON SM-PW701U
+// -----------------------------------------------------------------------------
+
+#elif defined(SM_PW702U)
+
+    // Info
+    #define MANUFACTURER        "XENON"
+    #define DEVICE              "SM-PW702U"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 
