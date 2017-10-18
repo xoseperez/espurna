@@ -9,7 +9,8 @@
 
 //#define NODEMCU_LOLIN
 //#define WEMOS_D1_MINI_RELAYSHIELD
-//#define TINKERMAN_ESPURNA_H
+//#define TINKERMAN_ESPURNA_H06
+//#define TINKERMAN_ESPURNA_H07
 //#define ITEAD_SONOFF_BASIC
 //#define ITEAD_SONOFF_RF
 //#define ITEAD_SONOFF_TH
@@ -34,14 +35,20 @@
 //#define WORKCHOICE_ECOPLUG
 //#define AITHINKER_AI_LIGHT
 //#define MAGICHOME_LED_CONTROLLER
-//#define MAGICHOME_LED_CONTROLLER_IR
+//#define MAGICHOME_LED_CONTROLLER_20
 //#define HUACANXING_H801
+//#define HUACANXING_H802
 //#define JANGOE_WIFI_RELAY_NC
 //#define JANGOE_WIFI_RELAY_NO
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define OPENENERGYMONITOR_MQTT_RELAY
-//#define HUACANXING_H802
-//#define QUINLED
+//#define WION_50055
+//#define EXS_WIFI_RELAY_V31
+//#define GENERIC_V9261F
+//#define GENERIC_ECH1560
+//#define MANCAVEMADE_ESPLIVE
+//#define INTERMITTECH_QUINLED
+//#define ARILUX_AL_LC06
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
