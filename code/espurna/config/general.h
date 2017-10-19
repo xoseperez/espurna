@@ -258,8 +258,8 @@ PROGMEM const char* const custom_reset_string[] = {
 // WIFI
 // -----------------------------------------------------------------------------
 
-#define WIFI_CONNECT_TIMEOUT    30000       // Connecting timeout for WIFI in ms
-#define WIFI_RECONNECT_INTERVAL 120000      // If could not connect to WIFI, retry after this time in ms
+#define WIFI_CONNECT_TIMEOUT    60000       // Connecting timeout for WIFI in ms
+#define WIFI_RECONNECT_INTERVAL 180000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
 
