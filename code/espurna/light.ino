@@ -226,6 +226,10 @@ void _lightProviderUpdate() {
 
     _shadow();
 
+    #ifdef LIGHT_ENABLE_PIN
+        digitalWrite(LIGHT_ENABLE_PIN, _lightState);
+    #endif
+
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 
         if (_lightState) {
@@ -541,6 +545,10 @@ void _lightAPISetup() {
 }
 
 void lightSetup() {
+
+    #ifdef LIGHT_ENABLE_PIN
+        pinMode(LIGHT_ENABLE_PIN, OUTPUT);
+    #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 

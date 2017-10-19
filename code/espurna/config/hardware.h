@@ -1137,6 +1137,33 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// AUTHOMETION LYT8266
+// https://authometion.com/shop/en/home/13-lyt8266.html
+// -----------------------------------------------------------------------------
+
+#elif defined(AUTHOMETION_LYT8266)
+
+    // Info
+    #define MANUFACTURER        "AUTHOMETION"
+    #define DEVICE              "LYT8266"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Channels
+    #define LIGHT_CH1_PIN       13      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       2       // WHITE
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+    #define LIGHT_ENABLE_PIN    15
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 

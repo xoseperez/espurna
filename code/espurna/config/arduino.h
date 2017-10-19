@@ -50,6 +50,7 @@
 //#define INTERMITTECH_QUINLED
 //#define ARILUX_AL_LC06
 //#define XENON_SM_PW702U
+//#define AUTHOMETION_LYT8266
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

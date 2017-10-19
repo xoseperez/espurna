@@ -541,6 +541,22 @@ void hwUpwardsCompatibility() {
         setSetting("relayGPIO", 1, 12);
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
+    #elif defined(AUTHOMETION_LYT8266)
+
+        setSetting("board", 45);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("chGPIO", 1, 13);
+        setSetting("chGPIO", 2, 12);
+        setSetting("chGPIO", 3, 14);
+        setSetting("chGPIO", 4, 2);
+        setSetting("chLogic", 1, 0);
+        setSetting("chLogic", 2, 0);
+        setSetting("chLogic", 3, 0);
+        setSetting("chLogic", 4, 0);
+        setSetting("relays", 1);
+        setSetting("enGPIO", 15);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
