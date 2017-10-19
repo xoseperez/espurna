@@ -16,7 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // NTP
 // -----------------------------------------------------------------------------
 
-void ntpConnect() {
+void ntpConfigure() {
     NTP.begin(
         getSetting("ntpServer1", NTP_SERVER),
         getSetting("ntpOffset", NTP_TIME_OFFSET).toInt(),

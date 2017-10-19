@@ -436,7 +436,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             #endif
 
             #if NTP_SUPPORT
-                if (changedNTP) ntpConnect();
+                if (changedNTP) ntpConfigure();
             #endif
 
         }

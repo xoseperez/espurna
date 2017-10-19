@@ -265,7 +265,7 @@ void wifiSetup() {
         // NTP connection reset
         #if NTP_SUPPORT
             if (code == MESSAGE_CONNECTED) {
-                ntpConnect();
+                ntpConfigure();
             }
         #endif
 
