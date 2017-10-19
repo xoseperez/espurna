@@ -126,7 +126,7 @@
                     </ul>
 
                     <div class="main-buttons">
-                        <button class="pure-button button-update">Update</button>
+                        <button class="pure-button button-update">Save</button>
                         <button class="pure-button button-reconnect">Reconnect</button>
                         <button class="pure-button button-reset">Reset</button>
                     </div>
@@ -302,7 +302,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="hostname">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-md-3-4" type="text" action="reconnect" tabindex="1" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface clicking the "Reconnect" button.</div>
                                 </div>
@@ -357,7 +357,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="btnDelay">Double click delay</label>
-                                    <input name="btnDelay" class="pure-u-1 pure-u-md-3-4" type="number" min="0" step="100" max="1000" tabindex="6" />
+                                    <input name="btnDelay" class="pure-u-1 pure-u-md-3-4" type="number" action="reset" min="0" step="100" max="1000" tabindex="6" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
                                         The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
@@ -369,7 +369,7 @@
 
                                 <div class="pure-g module module-color">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="useColor">Use colorpicker</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useColor" tabindex="8" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Use color picker for the first 3 channels as RGB.<br />Will only work if the device has at least 3 dimmable channels.<br />Reload the page to update the web interface.</div>
@@ -377,7 +377,7 @@
 
                                 <div class="pure-g module module-color">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="useWhite">Use white channel</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" tabindex="9" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Reload the page to update the web interface.</div>
@@ -427,7 +427,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" autocomplete="false" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" action="reset" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -436,12 +436,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Repeat password</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" autocomplete="false" />
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" action="reset" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="webPort">HTTP port</label>
-                                    <input name="webPort" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="13" />
+                                    <input name="webPort" class="pure-u-1 pure-u-md-3-4" type="text" action="reset" tabindex="13" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         This is the port for the web interface and API requests.<br />
@@ -680,7 +680,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="dczTopicOut">Domoticz OUT Topic</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="dczTopicOut" type="text" tabindex="32" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="dczTopicOut" type="text" action="reconnect" tabindex="32" />
                                 </div>
 
                                 <div class="pure-g module module-dht module-ds">
@@ -886,7 +886,7 @@
             <div class="pure-g">
 
                 <label class="pure-u-md-1-6 pure-u-1-4" for="ssid">Network SSID</label>
-                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
+                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" action="reconnect" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-md-1-12 pure-u-1-8"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <div class="more">
@@ -894,27 +894,27 @@
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="pass">Password</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" action="reconnect" value="" tabindex="0" autocomplete="false" />
 
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="ip">Static IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" action="reconnect" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Leave empty for DNS negotiation</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="gw">Gateway IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" action="reconnect" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set when using a static IP</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="mask">Network Mask</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" action="reconnect" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Usually 255.255.255.0 for /24 networks</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="dns">DNS IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" action="reconnect" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set the Domain Name Server IP to use when using a static IP</div>
 
