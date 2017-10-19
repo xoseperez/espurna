@@ -383,7 +383,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USER               ""          // Default MQTT broker usename
 #define MQTT_PASS               ""          // Default MQTT broker password
 #define MQTT_PORT               1883        // MQTT broker port
-#define MQTT_TOPIC              "/test/switch/{identifier}"     // Default MQTT base topic
+#define MQTT_TOPIC              "{identifier}"     // Default MQTT base topic
 #define MQTT_RETAIN             true        // MQTT retain flag
 #define MQTT_QOS                0           // MQTT QoS value for all messages
 #define MQTT_KEEPALIVE          30          // MQTT keepalive value
