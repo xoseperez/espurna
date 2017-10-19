@@ -746,12 +746,14 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsStart(client->id());
         client->_tempObject = new WebSocketIncommingBuffer(&_wsParse, true);
+        wifiReconnectCheck();
 
     } else if(type == WS_EVT_DISCONNECT) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
         }
+        wifiReconnectCheck();
 
     } else if(type == WS_EVT_ERROR) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);

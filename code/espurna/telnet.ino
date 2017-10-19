@@ -23,6 +23,7 @@ void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
     _telnetClients[clientId] = NULL;
     delete _telnetClients[clientId];
+    wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
 
@@ -96,6 +97,7 @@ void _telnetNewClient(AsyncClient *client) {
             }, 0);
 
             DEBUG_MSG_P(PSTR("[TELNET] Client #%d connected\n"), i);
+            wifiReconnectCheck();
             return;
 
         }
@@ -114,6 +116,13 @@ void _telnetNewClient(AsyncClient *client) {
 // -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
+
+bool telnetConnected() {
+    for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
+        if (_telnetClients[i] && _telnetClients[i]->connected()) return true;
+    }
+    return false;
+}
 
 unsigned char telnetWrite(unsigned char ch) {
     char data[1] = {ch};
