@@ -531,6 +531,16 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 5, 0);
         setSetting("relays", 1);
 
+        #elif defined(SM_PW702U)
+        
+        setSetting("board", 39);
+        setSetting("ledGPIO", 1, 4);
+        setSetting("ledLogic", 1, 0);
+        setSetting("btnGPIO", 1, 13);
+        setSetting("btnRelay", 1, 1);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
