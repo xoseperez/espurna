@@ -57,8 +57,9 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 
 void _telnetNewClient(AsyncClient *client) {
 
-    #if TELNET_ONLY_AP
-        if (client->localIP() != WiFi.softAPIP()) {
+    if (client->localIP() != WiFi.softAPIP()) {
+        bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+        if (!telnetSTA) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
             client->onDisconnect([](void *s, AsyncClient *c) {
                 c->free();
@@ -67,7 +68,7 @@ void _telnetNewClient(AsyncClient *client) {
             client->close(true);
             return;
         }
-    #endif
+    }
 
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
         if (!_telnetClients[i] || !_telnetClients[i]->connected()) {

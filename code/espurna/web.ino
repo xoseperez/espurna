@@ -688,6 +688,11 @@ void _wsStart(uint32_t client_id) {
             }
         #endif
 
+        #if TELNET_SUPPORT
+            root["telnetVisible"] = 1;
+            root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+        #endif
+
         root["maxNetworks"] = WIFI_MAX_NETWORKS;
         JsonArray& wifi = root.createNestedArray("wifi");
         for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
