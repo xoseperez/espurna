@@ -1117,11 +1117,11 @@
 // XENON SM-PW701U
 // -----------------------------------------------------------------------------
 
-#elif defined(SM_PW702U)
+#elif defined(XENON_SM_PW702U)
 
     // Info
     #define MANUFACTURER        "XENON"
-    #define DEVICE              "SM-PW702U"
+    #define DEVICE              "SM_PW702U"
 
     // Buttons
     #define BUTTON1_PIN         13

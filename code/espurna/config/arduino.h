@@ -49,7 +49,7 @@
 //#define MANCAVEMADE_ESPLIVE
 //#define INTERMITTECH_QUINLED
 //#define ARILUX_AL_LC06
-//#define SM_PW702U
+//#define XENON_SM_PW702U
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
