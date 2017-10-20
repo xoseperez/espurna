@@ -47,6 +47,7 @@
 }
 .button-reset,
 .button-reconnect,
+.button-ha-del,
 .button-rfb-forget {
     background: rgb(202, 60, 60);
 }
@@ -55,7 +56,7 @@
     margin-left: 5px;
 }
 .button-upgrade-browse,
-.button-ha-send,
+.button-ha-add,
 .button-apikey {
     background: rgb(0, 202, 0);
     margin-left: 5px;

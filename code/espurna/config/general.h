@@ -498,6 +498,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
+#define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
 
 // -----------------------------------------------------------------------------
 // POWER METERING

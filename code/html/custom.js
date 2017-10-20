@@ -952,8 +952,11 @@ function init() {
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
-    $(".button-ha-send").on('click', function() {
-        websock.send(JSON.stringify({'action': 'ha_send', 'data': $("input[name='haPrefix']").val()}));
+    $(".button-ha-add").on('click', function() {
+        websock.send(JSON.stringify({'action': 'ha_add', 'data': $("input[name='haPrefix']").val()}));
+    });
+    $(".button-ha-del").on('click', function() {
+        websock.send(JSON.stringify({'action': 'ha_del', 'data': $("input[name='haPrefix']").val()}));
     });
 
     $(document).on('change', 'input', hasChanged);

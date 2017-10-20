@@ -391,23 +391,37 @@
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
                                 </div>
 
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useCSS">Use CSS style</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useCSS" tabindex="11" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"</div>
+                                </div>
+
                                 <div class="pure-g module module-alexa">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="alexaEnabled">Alexa integration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="alexaEnabled" tabindex="11" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="alexaEnabled" tabindex="12" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ha">
                                     <label class="pure-u-1 pure-u-md-1-4" for="haPrefix">Home Assistant Prefix</label>
-                                    <input class="pure-u-1 pure-u-md-1-2" name="haPrefix" type="text" tabindex="31" />
-                                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-ha-send">Send</button></div>
+                                    <input class="pure-u-1 pure-u-md-1-4" name="haPrefix" type="text" tabindex="13" />
+                                    <div class="pure-u-1-2 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-ha-add">Add</button></div>
+                                    <div class="pure-u-1-2 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-ha-del">Delete</button></div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Home Assistant auto-discovery feature.</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Home Assistant auto-discovery feature.<br />
+                                        Add should immediately add the device to your HA console. Messages are retained so the device should be there even after a HA reboot<br />
+                                        To remove the device click on the Del button (retained message will be deleted) and reboot HA.
+                                    </div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (&deg;C)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (&deg;F)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="14" value="0"> Celsius (&deg;C)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="15" value="1"> Fahrenheit (&deg;F)</input></div>
                                 </div>
 
                             </fieldset>

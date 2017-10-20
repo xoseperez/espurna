@@ -142,6 +142,24 @@ void _toRGB(char * rgb, size_t len) {
     _toRGB(rgb, len, false);
 }
 
+void _toLong(char * color, size_t len, bool applyBrightness) {
+
+    if (!lightHasColor()) return;
+
+    float b = applyBrightness ? (float) _brightness / LIGHT_MAX_BRIGHTNESS : 1;
+
+    snprintf_P(color, len, PSTR("%d,%d,%d"),
+        (int) (_channels[0].value * b),
+        (int) (_channels[1].value * b),
+        (int) (_channels[2].value * b)
+    );
+
+}
+
+void _toLong(char * color, size_t len) {
+    _toLong(color, len, false);
+}
+
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin) {
@@ -367,12 +385,16 @@ unsigned char lightWhiteChannels() {
 
 void lightMQTT() {
 
-    char buffer[8];
+    char buffer[12];
 
     if (lightHasColor()) {
 
         // Color
-        _toRGB(buffer, 8, false);
+        if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+            _toRGB(buffer, 12, false);
+        } else {
+            _toLong(buffer, 12, false);
+        }
         mqttSend(MQTT_TOPIC_COLOR, buffer);
 
         // Brightness
@@ -484,7 +506,11 @@ void _lightAPISetup() {
 
             apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
                 [](char * buffer, size_t len) {
-                    _toRGB(buffer, len, false);
+                    if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+                        _toRGB(buffer, len, false);
+                    } else {
+                        _toLong(buffer, len, false);
+                    }
                 },
                 [](const char * payload) {
                     lightColor(payload);

@@ -176,10 +176,16 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         #if HOMEASSISTANT_SUPPORT
-            if (action.equals("ha_send") && root.containsKey("data")) {
+            if (action.equals("ha_add") && root.containsKey("data")) {
                 String value = root["data"];
                 setSetting("haPrefix", value);
-                haSend();
+                haSend(true);
+                wsSend_P(client_id, PSTR("{\"message\": 6}"));
+            }
+            if (action.equals("ha_del") && root.containsKey("data")) {
+                String value = root["data"];
+                setSetting("haPrefix", value);
+                haSend(false);
                 wsSend_P(client_id, PSTR("{\"message\": 6}"));
             }
         #endif
@@ -524,6 +530,7 @@ void _wsStart(uint32_t client_id) {
             root["useColor"] = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
             root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
             root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
+            root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
             if (lightHasColor()) {
 
             #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
