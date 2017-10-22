@@ -264,6 +264,7 @@ void _lightProviderUpdate() {
 
         } else {
 
+            _my9291->setColor((my9291_color_t) { 0, 0, 0, 0, 0 });
             _my9291->setState(false);
 
         }
