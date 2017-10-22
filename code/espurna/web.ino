@@ -743,12 +743,13 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
-    // Authorize
-    #ifndef NOWSAUTH
-        if (!_wsAuth(client)) return;
-    #endif
-
     if (type == WS_EVT_CONNECT) {
+
+        // Authorize
+        #ifndef NOWSAUTH
+            if (!_wsAuth(client)) return;
+        #endif
+
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsStart(client->id());
