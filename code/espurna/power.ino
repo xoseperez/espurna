@@ -118,16 +118,18 @@ void _powerRead() {
         _filter_active.add(active);
     #endif
 
-    /* THERE IS A BUG HERE SOMEWHERE :)
+    // Debug
+    /*
     char current_buffer[10];
-    dtostrf(current, sizeof(current_buffer)-1, POWER_CURRENT_DECIMALS, current_buffer);
+    dtostrf(current, 1-sizeof(current_buffer), POWER_CURRENT_DECIMALS, current_buffer);
     DEBUG_MSG_P(PSTR("[POWER] Current: %sA\n"), current_buffer);
-    DEBUG_MSG_P(PSTR("[POWER] Voltage: %sA\n"), int(voltage));
-    DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), int(apparent));
+    DEBUG_MSG_P(PSTR("[POWER] Voltage: %dV\n"), (int) voltage);
+    DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), (int) apparent);
+    DEBUG_MSG_P(PSTR("[POWER] Energy: %dJ\n"), (int) _power_energy);
     #if POWER_HAS_ACTIVE
-        DEBUG_MSG_P(PSTR("[POWER] Active Power: %dW\n"), int(active));
-        DEBUG_MSG_P(PSTR("[POWER] Reactive Power: %dW\n"), int(reactive));
-        DEBUG_MSG_P(PSTR("[POWER] Power Factor: %d%%\n"), int(100 * factor));
+        DEBUG_MSG_P(PSTR("[POWER] Active Power: %dW\n"), (int) active);
+        DEBUG_MSG_P(PSTR("[POWER] Reactive Power: %dW\n"), (int) reactive);
+        DEBUG_MSG_P(PSTR("[POWER] Power Factor: %d%%\n"), (int) (100 * factor));
     #endif
     */
 
