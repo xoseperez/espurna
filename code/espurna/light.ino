@@ -205,7 +205,7 @@ unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) 
 // Returns a PWM valule for the given channel ID
 unsigned int _toPWM(unsigned char id) {
     if (id < _channels.size()) {
-        bool isColor = (lightHasColor() && id < 3);
+        bool isColor = lightHasColor() && (id < 3);
         bool bright = isColor;
         bool gamma = isColor & (getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1);
         return _toPWM(_channels[id].shadow, bright, gamma, _channels[id].reverse);
@@ -227,7 +227,7 @@ void _shadow() {
 
         bool useWhite = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
 
-        if (_lightState && useWhite && _channels.size() > 3) {
+        if (_lightState && useWhite && (_channels.size() > 3)) {
             if (_channels[0].shadow == _channels[1].shadow  && _channels[1].shadow == _channels[2].shadow ) {
                 _channels[3].shadow = _channels[0].shadow * ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
                 _channels[2].shadow = 0;
