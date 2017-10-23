@@ -270,6 +270,10 @@ double getApparentPower() {
     return roundTo(_power_apparent, POWER_POWER_DECIMALS);
 }
 
+double getPowerEnergy() {
+    roundTo(_power_energy, POWER_ENERGY_DECIMALS);
+}
+
 #if POWER_HAS_ACTIVE
 double getActivePower() {
     return roundTo(_power_active, POWER_POWER_DECIMALS);
@@ -283,9 +287,6 @@ double getPowerFactor() {
     return roundTo(_power_factor, 2);
 }
 
-double getPowerEnergy() {
-    roundTo(_power_energy, POWER_ENERGY_DECIMALS);
-}
 #endif
 
 // -----------------------------------------------------------------------------
