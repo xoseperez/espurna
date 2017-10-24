@@ -12,6 +12,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Features
 
+* *KRACK* vulnerability free
 * Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
 * Wifi **AP Mode** or **STA mode**
     * Up to 5 different networks can be defined
@@ -35,7 +36,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
 * [**Home Assistant**](https://home-assistant.io/) integration via MQTT
-    * Supports MQTT auto-discover feature
+    * Supports MQTT auto-discover feature (switches and lights)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * Support for different **sensors**
     * DHT11 / DHT22 / DHT21 / AM2301 (supports celsius & fahrenheit reporting)
@@ -68,7 +69,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Change configuration
     * Run special commands
 * **Telnet support**
-    * Available only if connected to the AP interface
+    * Enable/disable via the web UI
     * Show debug info and allows to run terminal commands
 * **Unstable system check**
     * Detects unstable system (crashes on boot continuously) and defaults to a stable system
@@ -103,14 +104,16 @@ Here is the list of supported hardware. For more information please refer to the
 |**IteadStudio Sonoff Touch**|**IteadStudio Sonoff T1**||
 |![IteadStudio Slampher](images/devices/itead-slampher.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|
 |**IteadStudio Slampher**|**AI-Thinker Wifi Light / Noduino OpenLight**|**IteadStudio Sonoff B1**|
-|![MagicHome LED Controller](images/devices/magichome-led-controller.jpg)|![Huacanxing H801](images/devices/huacanxing-h801.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|
-|**MagicHome LED Controller**|**Huacanxing H801**|**Itead BN-SZ01**|
+|![MagicHome LED Controller (1.0 and 2.0)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801](images/devices/huacanxing-h801.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|
+|**MagicHome LED Controller (1.0 and 2.0)**|**Huacanxing H801**|**Itead BN-SZ01**|
 |![IteadStudio Sonoff SV](images/devices/itead-sonoff-sv.jpg)|![IteadStudio 1CH Inching](images/devices/itead-1ch-inching.jpg)|![IteadStudio Motor Clockwise/Anticlockwise](images/devices/itead-motor.jpg)|
 |**IteadStudio Sonoff SV**|**IteadStudio 1CH Inching**|**IteadStudio Motor Clockwise/Anticlockwise**|
 |![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
 |**Wemos D1 Mini Relay Shield**|**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
+
+Other supported boards: Itead Sonoff LED, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Xenon SM-PW702U, Authometion LYT8266.
 
 ## License
 
