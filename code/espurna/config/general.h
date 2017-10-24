@@ -491,9 +491,23 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+
+#ifndef LIGHT_PWM_FREQUENCY
 #define LIGHT_PWM_FREQUENCY     1000        // PWM frequency
+#endif
+
+#ifndef LIGHT_MAX_PWM
 #define LIGHT_MAX_PWM           4095        // Maximum PWM value
+#endif
+
+#ifndef LIGHT_LIMIT_PWM
+#define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
+#endif
+
+#ifndef LIGHT_MAX_VALUE
 #define LIGHT_MAX_VALUE         255         // Maximum light value
+#endif
+
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value

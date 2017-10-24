@@ -112,6 +112,8 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
+**Other supported boards:** Itead Sonoff LED, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Xenon SM-PW702U, Authometion LYT8266.
+
 ## License
 
 Copyright (C) 2016-2017 by Xose Pérez (@xoseperez)
