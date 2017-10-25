@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.7] 2017-10-25
+### Fixed
+- Fix Alexa interface switching on all lights (#256)
+
 ## [1.9.6] 2017-10-23
 ### Fixed
 - Fix power report in Domoticz (#236)
