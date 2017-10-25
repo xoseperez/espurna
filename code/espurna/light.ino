@@ -197,8 +197,8 @@ void _fromMireds(unsigned long mireds) {
 unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (bright) value *= ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
-    unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
-    if (reverse) pwm = LIGHT_MAX_PWM - pwm;
+    unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
+    if (reverse) pwm = LIGHT_LIMIT_PWM - pwm;
     return pwm;
 }
 
