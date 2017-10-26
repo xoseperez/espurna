@@ -8,36 +8,41 @@ class MedianFilter {
 
     public:
 
-        MedianFilter(unsigned char size) {
-            _size = size;
-            _data = new double[_size+1];
-            reset();
+        MedianFilter() {
+            _data = new std::vector<double>();
+        }
+
+        ~MedianFilter() {
+            if (_data) delete _data;
         }
 
         virtual void reset() {
-            if (_pointer > 1) _data[0] = _data[_pointer-1];
-            _pointer = 1;
-            for (unsigned char i=1; i<=_size; i++) _data[i] = 0;
+            double last = _data->empty() ? 0 : _data->back();
+            _data->clear();
+            add(last);
         }
 
         virtual void add(double value) {
-            if (_pointer <= _size) {
-                _data[_pointer] = value;
-                ++_pointer;
-            }
+            _data->push_back(value);
         }
 
-        virtual double average(bool do_reset = false) {
+        virtual double median(bool do_reset = false) {
 
             double sum = 0;
 
-            if (_pointer > 2) {
+            if (_data->size() == 1) {
+                sum = _data->back();
 
-                for (unsigned char i = 1; i<_pointer-1; i++) {
+            } else if (_data->size() == 2) {
+                sum = _data->front();
 
-                    double previous = _data[i-1];
-                    double current = _data[i];
-                    double next = _data[i+1];
+            } else if (_data->size() > 2) {
+
+                for (unsigned char i = 1; i <= _data->size() - 2; i++) {
+
+                    double previous = _data->at(i-1);
+                    double current = _data->at(i);
+                    double next = _data->at(i+1);
 
                     if (previous > current) std::swap(previous, current);
                     if (current > next) std::swap(current, next);
@@ -47,7 +52,7 @@ class MedianFilter {
 
                 }
 
-                sum /= (_pointer - 2);
+                sum /= (_data->size() - 2);
 
             }
 
@@ -58,13 +63,11 @@ class MedianFilter {
         }
 
         virtual unsigned char count() {
-            return _pointer - 1;
+            return _data->size();
         }
 
     private:
 
-        double *_data;
-        unsigned char _size = 0;
-        unsigned char _pointer = 0;
+        std::vector<double> *_data;
 
 };

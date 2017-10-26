@@ -556,7 +556,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define POWER_VOLTAGE                   230     // Default voltage
 #define POWER_READ_INTERVAL             6000    // Default reading interval (6 seconds)
 #define POWER_REPORT_INTERVAL           60000   // Default report interval (1 minute)
-#define POWER_REPORT_BUFFER             12      // Default buffer size ()
 #define POWER_CURRENT_DECIMALS          2       // Decimals for current values
 #define POWER_VOLTAGE_DECIMALS          0       // Decimals for voltage values
 #define POWER_POWER_DECIMALS            0       // Decimals for power values
@@ -596,9 +595,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
 
-    #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60      // Override median buffer size
-
     #ifndef V9261F_PIN
     #define V9261F_PIN                  2       // TX pin from the V9261F
     #endif
@@ -618,9 +614,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
-
-    #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60      // Override median buffer size
 
     #ifndef ECH1560_CLK_PIN
     #define ECH1560_CLK_PIN             4       // Default CLK pin

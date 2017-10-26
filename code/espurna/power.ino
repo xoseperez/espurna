@@ -24,15 +24,15 @@ double _power_current = 0;
 double _power_voltage = 0;
 double _power_apparent = 0;
 double _power_energy = 0;
-MedianFilter _filter_current = MedianFilter(POWER_REPORT_BUFFER);
+MedianFilter _filter_current = MedianFilter();
 
 #if POWER_HAS_ACTIVE
     double _power_active = 0;
     double _power_reactive = 0;
     double _power_factor = 0;
-    MedianFilter _filter_voltage = MedianFilter(POWER_REPORT_BUFFER);
-    MedianFilter _filter_active = MedianFilter(POWER_REPORT_BUFFER);
-    MedianFilter _filter_apparent = MedianFilter(POWER_REPORT_BUFFER);
+    MedianFilter _filter_voltage = MedianFilter();
+    MedianFilter _filter_active = MedianFilter();
+    MedianFilter _filter_apparent = MedianFilter();
 #endif
 
 #if POWER_HAS_ENERGY
