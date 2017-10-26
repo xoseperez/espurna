@@ -796,13 +796,49 @@
                         <div class="header">
                             <h1>POWER CALIBRATION</h1>
                             <h2>
-                                Calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Set any field to 0 to leave the calibration value untouched.
+                                Configure and calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Set any field to 0 to leave the calibration value untouched.
                             </h2>
                         </div>
 
                         <div class="page">
 
                             <fieldset>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="pwrReadEvery">Read interval</label>
+                                    <select class="pure-u-1 pure-u-sm-1-4" name="pwrReadEvery">
+                                    	<option value=2000>2 seconds</option>
+                                    	<option value=6000>6 seconds</option>
+                                    	<option value=10000>10 seconds</option>
+                                    	<option value=15000>15 seconds</option>
+                                    	<option value=30000>30 seconds</option>
+                                    	<option value=60000>60 seconds</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Select the interval between readings. These will be filtered and averaged for the report.<br />
+                                        The default and recommended value is 6 seconds.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="pwrReportEvery">Report interval</label>
+                                    <select class="pure-u-1 pure-u-sm-1-4" name="pwrReportEvery">
+                                    	<option value=6000>6 seconds</option>
+                                    	<option value=10000>10 seconds</option>
+                                    	<option value=30000>30 seconds</option>
+                                    	<option value=60000>1 minute</option>
+                                    	<option value=300000>5 minutes</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Select the interval between reports via MQTT.<br />
+                                        This can't be less than the reading interval above.<br />
+                                        The default and recommended value is 1 minute.
+                                    </div>
+                                </div>
 
                                 <div class="pure-g module module-hlw module-emon module-v9261f">
                                     <label class="pure-u-1 pure-u-md-1-4" for="pwrExpectedP">AC RMS Active Power</label>

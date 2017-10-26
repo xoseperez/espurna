@@ -656,6 +656,8 @@ void _wsStart(uint32_t client_id) {
             root["pwrVoltage"] = getVoltage();
             root["pwrApparent"] = getApparentPower();
             root["pwrEnergy"] = getPowerEnergy();
+            root["pwrReadEvery"] = powerReadInterval();
+            root["pwrReportEvery"] = powerReportInterval();
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = getActivePower();
                 root["pwrReactive"] = getReactivePower();

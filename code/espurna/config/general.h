@@ -554,6 +554,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define POWER_VOLTAGE                   230     // Default voltage
+#define POWER_MIN_READ_INTERVAL         2000    // Minimum read interval
 #define POWER_READ_INTERVAL             6000    // Default reading interval (6 seconds)
 #define POWER_REPORT_INTERVAL           60000   // Default report interval (1 minute)
 #define POWER_CURRENT_DECIMALS          2       // Decimals for current values

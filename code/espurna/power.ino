@@ -20,6 +20,9 @@ bool _power_enabled = false;
 bool _power_ready = false;
 bool _power_newdata = false;
 
+unsigned long _power_read_interval = POWER_READ_INTERVAL;
+unsigned long _power_report_interval = POWER_REPORT_INTERVAL;
+
 double _power_current = 0;
 double _power_voltage = 0;
 double _power_apparent = 0;
@@ -171,11 +174,11 @@ void _powerRead() {
 void _powerReport() {
 
     // Get the fitered values
-    _power_current = _filter_current.average(true);
+    _power_current = _filter_current.median(true);
     #if POWER_HAS_ACTIVE
-        _power_apparent = _filter_apparent.average(true);
-        _power_voltage = _filter_voltage.average(true);
-        _power_active = _filter_active.average(true);
+        _power_apparent = _filter_apparent.median(true);
+        _power_voltage = _filter_voltage.median(true);
+        _power_active = _filter_active.median(true);
         if (_power_active > _power_apparent) _power_apparent = _power_active;
         _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
         _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
@@ -189,7 +192,7 @@ void _powerReport() {
         double energy_delta = _power_energy - _power_last_energy;
         _power_last_energy = _power_energy;
     #else
-        double energy_delta = power * (POWER_REPORT_INTERVAL / 1000.);
+        double energy_delta = power * (_power_report_interval / 1000.);
         _power_energy += energy_delta;
     #endif
     _power_ready = true;
@@ -293,6 +296,14 @@ double getPowerFactor() {
 // PUBLIC API
 // -----------------------------------------------------------------------------
 
+unsigned long powerReadInterval() {
+    return _power_read_interval;
+}
+
+unsigned long powerReportInterval() {
+    return _power_report_interval;
+}
+
 bool powerEnabled() {
     return _power_enabled;
 }
@@ -312,6 +323,16 @@ void powerResetCalibration() {
 }
 
 void powerConfigure() {
+    _power_read_interval = atol(getSetting("pwrReadEvery", POWER_READ_INTERVAL).c_str());
+    _power_report_interval = atol(getSetting("pwrReportEvery", POWER_REPORT_INTERVAL).c_str());
+    if (_power_read_interval < POWER_MIN_READ_INTERVAL) {
+        _power_read_interval = POWER_MIN_READ_INTERVAL;
+        setSetting("pwrReadEvery", _power_read_interval);
+    }
+    if (_power_report_interval < _power_read_interval) {
+        _power_report_interval = _power_read_interval;
+        setSetting("pwrReportEvery", _power_report_interval);
+    }
     _powerConfigureProvider();
 }
 
@@ -332,6 +353,7 @@ void powerSetup() {
     moveSetting("powerRatioP", "pwrRatioP");
 
     _powerSetupProvider();
+    powerConfigure();
 
     // API
     #if WEB_SUPPORT
@@ -352,7 +374,7 @@ void powerLoop() {
     }
 
     static unsigned long last = 0;
-    if (millis() - last > POWER_REPORT_INTERVAL) {
+    if (millis() - last > _power_report_interval) {
         last = millis();
         _powerReport();
     }
