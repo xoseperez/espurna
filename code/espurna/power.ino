@@ -17,8 +17,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 bool _power_enabled = false;
-bool _power_ready = false;
 bool _power_newdata = false;
+bool _power_realtime = API_REAL_TIME_VALUES;
 
 unsigned long _power_read_interval = POWER_READ_INTERVAL;
 unsigned long _power_report_interval = POWER_REPORT_INTERVAL;
@@ -51,37 +51,35 @@ MedianFilter _filter_current = MedianFilter();
 void _powerAPISetup() {
 
     apiRegister(MQTT_TOPIC_CURRENT, MQTT_TOPIC_CURRENT, [](char * buffer, size_t len) {
-        if (_power_ready) {
-            dtostrf(getCurrent(), len-1, POWER_CURRENT_DECIMALS, buffer);
-        } else {
-            buffer = NULL;
-        }
+        dtostrf(_power_realtime ? _powerCurrent() : getCurrent(), 1-len, POWER_CURRENT_DECIMALS, buffer);
     });
 
     apiRegister(MQTT_TOPIC_VOLTAGE, MQTT_TOPIC_VOLTAGE, [](char * buffer, size_t len) {
-        if (_power_ready) {
-            snprintf_P(buffer, len, PSTR("%d"), getVoltage());
-        } else {
-            buffer = NULL;
-        }
+        snprintf_P(buffer, len, PSTR("%d"), (int) (_power_realtime ? _powerVoltage() : getVoltage()));
     });
 
     apiRegister(MQTT_TOPIC_POWER_APPARENT, MQTT_TOPIC_POWER_APPARENT, [](char * buffer, size_t len) {
-        if (_power_ready) {
-            snprintf_P(buffer, len, PSTR("%d"), getApparentPower());
-        } else {
-            buffer = NULL;
-        }
+        snprintf_P(buffer, len, PSTR("%d"), (int) (_power_realtime ? _powerApparentPower() : getApparentPower()));
     });
 
-    #if POWER_HAS_ACTIVE
-        apiRegister(MQTT_TOPIC_POWER_ACTIVE, MQTT_TOPIC_POWER_ACTIVE, [](char * buffer, size_t len) {
-            if (_power_ready) {
-                snprintf_P(buffer, len, PSTR("%d"), getActivePower());
-            } else {
-                buffer = NULL;
-            }
+    #if POWER_HAS_ENERGY
+
+        apiRegister(MQTT_TOPIC_ENERGY_TOTAL, MQTT_TOPIC_ENERGY_TOTAL, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%lu"), (int) (_power_realtime ? _powerEnergy() : getPowerEnergy()));
         });
+
+    #endif
+
+    #if POWER_HAS_ACTIVE
+
+        apiRegister(MQTT_TOPIC_POWER_ACTIVE, MQTT_TOPIC_POWER_ACTIVE, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), (int) (_power_realtime ? _powerActivePower() : getActivePower()));
+        });
+
+        apiRegister(MQTT_TOPIC_POWER_FACTOR, MQTT_TOPIC_POWER_FACTOR, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), (int) (100 * (_power_realtime ? _powerPowerFactor() : getPowerFactor())));
+        });
+
     #endif
 
 }
@@ -195,7 +193,6 @@ void _powerReport() {
         double energy_delta = power * (_power_report_interval / 1000.);
         _power_energy += energy_delta;
     #endif
-    _power_ready = true;
 
     char buf_current[10];
     char buf_energy_delta[10];
@@ -323,6 +320,7 @@ void powerResetCalibration() {
 }
 
 void powerConfigure() {
+    _power_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
     _power_read_interval = atol(getSetting("pwrReadEvery", POWER_READ_INTERVAL).c_str());
     _power_report_interval = atol(getSetting("pwrReportEvery", POWER_REPORT_INTERVAL).c_str());
     if (_power_read_interval < POWER_MIN_READ_INTERVAL) {

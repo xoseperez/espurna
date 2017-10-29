@@ -311,8 +311,9 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
-#define API_ENABLED              0          // Do not enable API by default
+#define API_ENABLED             0           // Do not enable API by default
 #define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+#define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
 // MDNS

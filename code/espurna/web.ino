@@ -565,6 +565,7 @@ void _wsStart(uint32_t client_id) {
 
         root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
         root["apiKey"] = getSetting("apiKey");
+        root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 
