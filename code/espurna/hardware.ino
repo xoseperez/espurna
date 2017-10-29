@@ -461,7 +461,7 @@ void hwUpwardsCompatibility() {
 
         setSetting("board", 38);
 
-    #elif defined(TINKERMAN_ESPURNA_H07)
+    #elif defined(TINKERMAN_ESPURNA_H08)
 
         setSetting("board", 39);
         setSetting("ledGPIO", 1, 2);

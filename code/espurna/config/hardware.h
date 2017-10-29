@@ -109,11 +109,11 @@
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
-#elif defined(TINKERMAN_ESPURNA_H07)
+#elif defined(TINKERMAN_ESPURNA_H08)
 
     // Info
     #define MANUFACTURER        "TINKERMAN"
-    #define DEVICE              "ESPURNA_H07"
+    #define DEVICE              "ESPURNA_H08"
 
     // Buttons
     #define BUTTON1_PIN         4
@@ -142,7 +142,7 @@
 
     // LEDs
     #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
     // HLW8012
     #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
