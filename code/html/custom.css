@@ -135,7 +135,6 @@ input[name=upgrade] {
     margin-top: -50px;
     margin-left: -200px;
 }
-
 div.state {
     border-top: 1px solid #eee;
     margin-top: 20px;
@@ -150,7 +149,6 @@ div.state {
     font-size: 80%;
     font-weight: bold;
 }
-
 .right {
     text-align: right;
 }
@@ -174,15 +172,12 @@ div.state {
     margin: 10px 2px;
     padding: 20px;
 }
-
 #panel-rfb input {
     margin-right: 5px;
 }
-
 #panel-rfb label {
     padding-top: 5px;
 }
-
 #panel-rfb input {
     text-align: center;
 }

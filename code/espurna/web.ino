@@ -479,9 +479,9 @@ void _wsStart(uint32_t client_id) {
 
         root["webMode"] = WEB_MODE_NORMAL;
 
-        root["app"] = APP_NAME;
-        root["version"] = APP_VERSION;
-        root["build"] = buildTime();
+        root["app_name"] = APP_NAME;
+        root["app_version"] = APP_VERSION;
+        root["app_build"] = buildTime();
 
         root["manufacturer"] = String(MANUFACTURER);
         root["chipid"] = chipid;
