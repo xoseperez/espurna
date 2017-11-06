@@ -465,6 +465,7 @@
     #define LED1_PIN_INVERSE    1
 
     // Channels
+    #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       12
     #define LIGHT_CH1_INVERSE   0
 
@@ -516,9 +517,9 @@
     #define LED1_PIN_INVERSE    1
 
     // Channels
+    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       12  // Cold white
     #define LIGHT_CH2_PIN       14  // Warm white
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
 
@@ -689,11 +690,11 @@
     #define LED1_PIN_INVERSE    1
 
     // Channels
+    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       13      // WHITE
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
@@ -713,11 +714,11 @@
     #define LED1_PIN_INVERSE    1
 
     // Channels
+    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
@@ -815,12 +816,12 @@
     #define LED1_PIN_INVERSE    1
 
     // Channels
+    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       15      // RED
     #define LIGHT_CH2_PIN       13      // GREEN
     #define LIGHT_CH3_PIN       12      // BLUE
     #define LIGHT_CH4_PIN       14      // WHITE1
     #define LIGHT_CH5_PIN       4       // WHITE2
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
@@ -837,11 +838,11 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Channels
+    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
@@ -1074,9 +1075,9 @@
     #define LED1_PIN_INVERSE    1
 
     // Channels
+    #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       0
     #define LIGHT_CH2_PIN       2
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
 
@@ -1094,12 +1095,12 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Channels
+    #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       14      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE1
     #define LIGHT_CH5_PIN       5       // WHITE2
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
@@ -1144,11 +1145,11 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Channels
+    #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       13      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
     #define LIGHT_CH4_PIN       2       // WHITE
-
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0

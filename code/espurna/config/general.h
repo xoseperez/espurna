@@ -498,8 +498,16 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #ifndef LIGHT_MAX_PWM
-#define LIGHT_MAX_PWM           4095        // Maximum PWM value
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+#define LIGHT_MAX_PWM           256
 #endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#define LIGHT_MAX_PWM           1000
+#endif
+
+#endif // LIGHT_MAX_PWM
 
 #ifndef LIGHT_LIMIT_PWM
 #define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
