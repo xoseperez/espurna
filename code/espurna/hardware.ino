@@ -566,6 +566,21 @@ void hwUpwardsCompatibility() {
         setSetting("myDCKIGPIO", 15);
         setSetting("relays", 1);
 
+    #elif defined(YJZK_SWITCH_2CH)
+
+        setSetting("board", 47);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 0);
+        setSetting("ledWifi", 0);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnGPIO", 2, 9);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 5);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
