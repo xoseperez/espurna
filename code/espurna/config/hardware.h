@@ -602,6 +602,40 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+
+// -----------------------------------------------------------------------------
+// YJZK
+// -----------------------------------------------------------------------------
+
+#elif defined(YJZK_SWITCH_2CH)
+
+    // Info
+    #define MANUFACTURER        "YJZK"
+    #define DEVICE              "SWITCH_2CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          5
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+    #define LED_WIFI            0
+
+
 // -----------------------------------------------------------------------------
 // Electrodragon boards
 // -----------------------------------------------------------------------------

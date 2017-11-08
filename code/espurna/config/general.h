@@ -246,7 +246,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // All defined LEDs in the board can be managed through MQTT
 // except the first one when LED_AUTO is set to 1.
-// If LED_AUTO is set to 1 the board will a defined LED to show wifi status.
+// If LED_AUTO is set to 1 the board will use a defined LED to show wifi status.
 #define LED_AUTO                1
 
 // LED # to use as WIFI status indicator
