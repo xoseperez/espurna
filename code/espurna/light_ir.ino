@@ -834,7 +834,7 @@ unsigned int lightBrightness() {
 
 // ---------------------------------------------------------------------------------------
 // Set Brightness
-void lightBrightness(unsigned int b) {
+void lightBrightness(int b) {
 	b=constrain(b, 0, 255);
 	DEBUG_MSG_P(PSTR("[WEB|API] Set Brightness to : %d\n"), b);
 	_cur_color.v=b;

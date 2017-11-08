@@ -508,7 +508,7 @@ unsigned int lightBrightness() {
     return _brightness;
 }
 
-void lightBrightness(unsigned int b) {
+void lightBrightness(int b) {
     _brightness = constrain(b, 0, LIGHT_MAX_BRIGHTNESS);
 }
 
