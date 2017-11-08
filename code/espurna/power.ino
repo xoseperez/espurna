@@ -17,22 +17,25 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 bool _power_enabled = false;
-bool _power_ready = false;
 bool _power_newdata = false;
+bool _power_realtime = API_REAL_TIME_VALUES;
+
+unsigned long _power_read_interval = POWER_READ_INTERVAL;
+unsigned long _power_report_interval = POWER_REPORT_INTERVAL;
 
 double _power_current = 0;
 double _power_voltage = 0;
 double _power_apparent = 0;
 double _power_energy = 0;
-MedianFilter _filter_current = MedianFilter(POWER_REPORT_BUFFER);
+MedianFilter _filter_current = MedianFilter();
 
 #if POWER_HAS_ACTIVE
     double _power_active = 0;
     double _power_reactive = 0;
     double _power_factor = 0;
-    MedianFilter _filter_voltage = MedianFilter(POWER_REPORT_BUFFER);
-    MedianFilter _filter_active = MedianFilter(POWER_REPORT_BUFFER);
-    MedianFilter _filter_apparent = MedianFilter(POWER_REPORT_BUFFER);
+    MedianFilter _filter_voltage = MedianFilter();
+    MedianFilter _filter_active = MedianFilter();
+    MedianFilter _filter_apparent = MedianFilter();
 #endif
 
 #if POWER_HAS_ENERGY
@@ -48,37 +51,35 @@ MedianFilter _filter_current = MedianFilter(POWER_REPORT_BUFFER);
 void _powerAPISetup() {
 
     apiRegister(MQTT_TOPIC_CURRENT, MQTT_TOPIC_CURRENT, [](char * buffer, size_t len) {
-        if (_power_ready) {
-            dtostrf(getCurrent(), len-1, POWER_CURRENT_DECIMALS, buffer);
-        } else {
-            buffer = NULL;
-        }
+        dtostrf(_power_realtime ? _powerCurrent() : getCurrent(), 1-len, POWER_CURRENT_DECIMALS, buffer);
     });
 
     apiRegister(MQTT_TOPIC_VOLTAGE, MQTT_TOPIC_VOLTAGE, [](char * buffer, size_t len) {
-        if (_power_ready) {
-            snprintf_P(buffer, len, PSTR("%d"), getVoltage());
-        } else {
-            buffer = NULL;
-        }
+        snprintf_P(buffer, len, PSTR("%d"), (int) (_power_realtime ? _powerVoltage() : getVoltage()));
     });
 
     apiRegister(MQTT_TOPIC_POWER_APPARENT, MQTT_TOPIC_POWER_APPARENT, [](char * buffer, size_t len) {
-        if (_power_ready) {
-            snprintf_P(buffer, len, PSTR("%d"), getApparentPower());
-        } else {
-            buffer = NULL;
-        }
+        snprintf_P(buffer, len, PSTR("%d"), (int) (_power_realtime ? _powerApparentPower() : getApparentPower()));
     });
 
-    #if POWER_HAS_ACTIVE
-        apiRegister(MQTT_TOPIC_POWER_ACTIVE, MQTT_TOPIC_POWER_ACTIVE, [](char * buffer, size_t len) {
-            if (_power_ready) {
-                snprintf_P(buffer, len, PSTR("%d"), getActivePower());
-            } else {
-                buffer = NULL;
-            }
+    #if POWER_HAS_ENERGY
+
+        apiRegister(MQTT_TOPIC_ENERGY_TOTAL, MQTT_TOPIC_ENERGY_TOTAL, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%lu"), (int) (_power_realtime ? _powerEnergy() : getPowerEnergy()));
         });
+
+    #endif
+
+    #if POWER_HAS_ACTIVE
+
+        apiRegister(MQTT_TOPIC_POWER_ACTIVE, MQTT_TOPIC_POWER_ACTIVE, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), (int) (_power_realtime ? _powerActivePower() : getActivePower()));
+        });
+
+        apiRegister(MQTT_TOPIC_POWER_FACTOR, MQTT_TOPIC_POWER_FACTOR, [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), (int) (100 * (_power_realtime ? _powerPowerFactor() : getPowerFactor())));
+        });
+
     #endif
 
 }
@@ -118,16 +119,18 @@ void _powerRead() {
         _filter_active.add(active);
     #endif
 
-    /* THERE IS A BUG HERE SOMEWHERE :)
+    // Debug
+    /*
     char current_buffer[10];
-    dtostrf(current, sizeof(current_buffer)-1, POWER_CURRENT_DECIMALS, current_buffer);
+    dtostrf(current, 1-sizeof(current_buffer), POWER_CURRENT_DECIMALS, current_buffer);
     DEBUG_MSG_P(PSTR("[POWER] Current: %sA\n"), current_buffer);
-    DEBUG_MSG_P(PSTR("[POWER] Voltage: %sA\n"), int(voltage));
-    DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), int(apparent));
+    DEBUG_MSG_P(PSTR("[POWER] Voltage: %dV\n"), (int) voltage);
+    DEBUG_MSG_P(PSTR("[POWER] Apparent Power: %dW\n"), (int) apparent);
+    DEBUG_MSG_P(PSTR("[POWER] Energy: %dJ\n"), (int) _power_energy);
     #if POWER_HAS_ACTIVE
-        DEBUG_MSG_P(PSTR("[POWER] Active Power: %dW\n"), int(active));
-        DEBUG_MSG_P(PSTR("[POWER] Reactive Power: %dW\n"), int(reactive));
-        DEBUG_MSG_P(PSTR("[POWER] Power Factor: %d%%\n"), int(100 * factor));
+        DEBUG_MSG_P(PSTR("[POWER] Active Power: %dW\n"), (int) active);
+        DEBUG_MSG_P(PSTR("[POWER] Reactive Power: %dW\n"), (int) reactive);
+        DEBUG_MSG_P(PSTR("[POWER] Power Factor: %d%%\n"), (int) (100 * factor));
     #endif
     */
 
@@ -169,11 +172,11 @@ void _powerRead() {
 void _powerReport() {
 
     // Get the fitered values
-    _power_current = _filter_current.average(true);
+    _power_current = _filter_current.median(true);
     #if POWER_HAS_ACTIVE
-        _power_apparent = _filter_apparent.average(true);
-        _power_voltage = _filter_voltage.average(true);
-        _power_active = _filter_active.average(true);
+        _power_apparent = _filter_apparent.median(true);
+        _power_voltage = _filter_voltage.median(true);
+        _power_active = _filter_active.median(true);
         if (_power_active > _power_apparent) _power_apparent = _power_active;
         _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
         _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
@@ -187,10 +190,9 @@ void _powerReport() {
         double energy_delta = _power_energy - _power_last_energy;
         _power_last_energy = _power_energy;
     #else
-        double energy_delta = power * (POWER_REPORT_INTERVAL / 1000.);
+        double energy_delta = power * (_power_report_interval / 1000.);
         _power_energy += energy_delta;
     #endif
-    _power_ready = true;
 
     char buf_current[10];
     char buf_energy_delta[10];
@@ -268,6 +270,10 @@ double getApparentPower() {
     return roundTo(_power_apparent, POWER_POWER_DECIMALS);
 }
 
+double getPowerEnergy() {
+    roundTo(_power_energy, POWER_ENERGY_DECIMALS);
+}
+
 #if POWER_HAS_ACTIVE
 double getActivePower() {
     return roundTo(_power_active, POWER_POWER_DECIMALS);
@@ -281,14 +287,19 @@ double getPowerFactor() {
     return roundTo(_power_factor, 2);
 }
 
-double getPowerEnergy() {
-    roundTo(_power_energy, POWER_ENERGY_DECIMALS);
-}
 #endif
 
 // -----------------------------------------------------------------------------
 // PUBLIC API
 // -----------------------------------------------------------------------------
+
+unsigned long powerReadInterval() {
+    return _power_read_interval;
+}
+
+unsigned long powerReportInterval() {
+    return _power_report_interval;
+}
 
 bool powerEnabled() {
     return _power_enabled;
@@ -309,6 +320,17 @@ void powerResetCalibration() {
 }
 
 void powerConfigure() {
+    _power_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    _power_read_interval = atol(getSetting("pwrReadEvery", POWER_READ_INTERVAL).c_str());
+    _power_report_interval = atol(getSetting("pwrReportEvery", POWER_REPORT_INTERVAL).c_str());
+    if (_power_read_interval < POWER_MIN_READ_INTERVAL) {
+        _power_read_interval = POWER_MIN_READ_INTERVAL;
+        setSetting("pwrReadEvery", _power_read_interval);
+    }
+    if (_power_report_interval < _power_read_interval) {
+        _power_report_interval = _power_read_interval;
+        setSetting("pwrReportEvery", _power_report_interval);
+    }
     _powerConfigureProvider();
 }
 
@@ -329,6 +351,7 @@ void powerSetup() {
     moveSetting("powerRatioP", "pwrRatioP");
 
     _powerSetupProvider();
+    powerConfigure();
 
     // API
     #if WEB_SUPPORT
@@ -349,7 +372,7 @@ void powerLoop() {
     }
 
     static unsigned long last = 0;
-    if (millis() - last > POWER_REPORT_INTERVAL) {
+    if (millis() - last > _power_report_interval) {
         last = millis();
         _powerReport();
     }

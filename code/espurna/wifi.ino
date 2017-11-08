@@ -45,12 +45,23 @@ bool createAP() {
     return jw.createAP();
 }
 
+void wifiReconnectCheck() {
+    bool connected = false;
+    #if WEB_SUPPORT
+        if (wsConnected()) connected = true;
+    #endif
+    #if TELNET_SUPPORT
+        if (telnetConnected()) connected = true;
+    #endif
+    jw.setReconnectTimeout(connected ? 0 : WIFI_RECONNECT_INTERVAL);
+}
+
 void wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
     jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
-    jw.setReconnectTimeout(WIFI_RECONNECT_INTERVAL);
+    wifiReconnectCheck();
     jw.setAPMode(WIFI_AP_MODE);
     jw.cleanNetworks();
 
@@ -254,7 +265,7 @@ void wifiSetup() {
         // NTP connection reset
         #if NTP_SUPPORT
             if (code == MESSAGE_CONNECTED) {
-                ntpConnect();
+                ntpConfigure();
             }
         #endif
 

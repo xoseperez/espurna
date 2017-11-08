@@ -1,9 +1,36 @@
 var websock;
 var password = false;
 var maxNetworks;
-var useWhite = false;
 var messages = [];
 var webhost;
+
+var numChanged = 0;
+var numReset = 0;
+var numReconnect = 0;
+var numReload = 0;
+
+var useWhite = false;
+
+// -----------------------------------------------------------------------------
+// Messages
+// -----------------------------------------------------------------------------
+
+function initMessages() {
+    messages[01] = "Remote update started";
+    messages[02] = "OTA update started";
+    messages[03] = "Error parsing data!";
+    messages[04] = "The file does not look like a valid configuration backup or is corrupted";
+    messages[05] = "Changes saved. You should reboot your board now";
+    messages[06] = "Home Assistant auto-discovery message sent";
+    messages[07] = "Passwords do not match!";
+    messages[08] = "Changes saved";
+    messages[09] = "No changes detected";
+    messages[10] = "Session expired, please reload page...";
+}
+
+// -----------------------------------------------------------------------------
+// Utils
+// -----------------------------------------------------------------------------
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
@@ -11,6 +38,10 @@ function checkPassword(str) {
     // at least eight characters that are letters, numbers or the underscore
     var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
     return re.test(str);
+}
+
+function zeroPad(number, positions) {
+    return ("0".repeat(positions) + number).slice(-positions);
 }
 
 function validateForm(form) {
@@ -42,8 +73,59 @@ function valueSet(data, name, value) {
     data.push({'name': name, 'value': value});
 }
 
-function zeroPad(number, positions) {
-    return ("0".repeat(positions) + number).slice(-positions);
+function randomString(length, chars) {
+    var mask = '';
+    if (chars.indexOf('a') > -1) mask += 'abcdefghijklmnopqrstuvwxyz';
+    if (chars.indexOf('A') > -1) mask += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (chars.indexOf('#') > -1) mask += '0123456789';
+    if (chars.indexOf('@') > -1) mask += 'ABCDEF';
+    if (chars.indexOf('!') > -1) mask += '~`!@#$%^&*()_+-={}[]:";\'<>?,./|\\';
+    var result = '';
+    for (var i = length; i > 0; --i) result += mask[Math.round(Math.random() * (mask.length - 1))];
+    return result;
+}
+
+function generateAPIKey() {
+    var apikey = randomString(16, '@#');
+    $("input[name=\"apiKey\"]").val(apikey);
+    return false;
+}
+
+function forgetCredentials() {
+    $.ajax({
+        'method': 'GET',
+        'url': '/',
+        'async': false,
+        'username': "logmeout",
+        'password': "123456",
+        'headers': { "Authorization": "Basic xxx" }
+    }).done(function(data) {
+        return false;
+        // If we don't get an error, we actually got an error as we expect an 401!
+    }).fail(function(){
+        // We expect to get an 401 Unauthorized error! In this case we are successfully
+        // logged out and we redirect the user.
+        return true;
+    });
+}
+
+function getJson(str) {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Actions
+// -----------------------------------------------------------------------------
+
+function doReload(milliseconds) {
+    milliseconds = (typeof milliseconds == 'undefined') ? 0 : parseInt(milliseconds);
+    setTimeout(function() {
+        window.location.reload();
+    }, milliseconds);
 }
 
 function doUpdate() {
@@ -70,6 +152,21 @@ function doUpdate() {
         $("input[name='pwrResetCalibration']")
             .prop("checked", false)
             .iphoneStyle("refresh");
+
+        numChanged = 0;
+        setTimeout(function() {
+            if (numReset > 0) {
+                var response = window.confirm("You have to reset the board for the changes to take effect, do you want to do it now?");
+                if (response == true) doReset(false);
+            } else if (numReconnect > 0) {
+                var response = window.confirm("You have to reset the wifi connection for the changes to take effect, do you want to do it now?");
+                if (response == true) doReconnect(false);
+            } else if (numReload > 0) {
+                var response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
+                if (response == true) doReload();
+            }
+            numReset = numReconnect = numReload = 0;
+        }, 1000);
 
     }
 
@@ -108,9 +205,7 @@ function doUpgrade() {
             $("#upgrade-progress").hide();
             if (data == 'OK') {
                 alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
-                setTimeout(function() {
-                    window.location.reload();
-                }, 5000);
+                doReload(5000);
             } else {
                 alert("There was an error trying to upload the new image, please try again (" + data + ").");
             }
@@ -146,27 +241,47 @@ function doUpdatePassword() {
     return false;
 }
 
-function doReset() {
-    var response = window.confirm("Are you sure you want to reset the device?");
-    if (response == false) return false;
+function doReset(ask) {
+
+    ask = (typeof ask == 'undefined') ? true : ask;
+
+    if (numChanged > 0) {
+        var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
+        if (response == true) return doUpdate();
+    }
+
+    if (ask) {
+        var response = window.confirm("Are you sure you want to reset the device?");
+        if (response == false) return false;
+    }
+
     websock.send(JSON.stringify({'action': 'reset'}));
+    doReload(5000);
     return false;
+
 }
 
-function doReconnect() {
-    var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
-    if (response == false) return false;
+function doReconnect(ask) {
+
+    ask = (typeof ask == 'undefined') ? true : ask;
+
+    if (numChanged > 0) {
+        var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
+        if (response == true) return doUpdate();
+    }
+
+    if (ask) {
+        var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
+        if (response == false) return false;
+    }
+
     websock.send(JSON.stringify({'action': 'reconnect'}));
+    doReload(5000);
     return false;
+
 }
 
-function doToggle(element, value) {
-    var relayID = parseInt(element.attr("data"));
-    websock.send(JSON.stringify({'action': 'relay', 'data': { 'id': relayID, 'status': value ? 1 : 0 }}));
-    return false;
-}
-
-function backupSettings() {
+function doBackup() {
     document.getElementById('downloader').src = webhost + 'config';
     return false;
 }
@@ -196,7 +311,7 @@ function onFileUpload(event) {
 
 }
 
-function restoreSettings() {
+function doRestore() {
     if (typeof window.FileReader !== 'function') {
         alert("The file API isn't supported on this browser yet.");
     } else {
@@ -205,23 +320,15 @@ function restoreSettings() {
     return false;
 }
 
-function randomString(length, chars) {
-    var mask = '';
-    if (chars.indexOf('a') > -1) mask += 'abcdefghijklmnopqrstuvwxyz';
-    if (chars.indexOf('A') > -1) mask += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    if (chars.indexOf('#') > -1) mask += '0123456789';
-    if (chars.indexOf('@') > -1) mask += 'ABCDEF';
-    if (chars.indexOf('!') > -1) mask += '~`!@#$%^&*()_+-={}[]:";\'<>?,./|\\';
-    var result = '';
-    for (var i = length; i > 0; --i) result += mask[Math.round(Math.random() * (mask.length - 1))];
-    return result;
-}
-
-function doGenerateAPIKey() {
-    var apikey = randomString(16, '@#');
-    $("input[name=\"apiKey\"]").val(apikey);
+function doToggle(element, value) {
+    var relayID = parseInt(element.attr("data"));
+    websock.send(JSON.stringify({'action': 'relay', 'data': { 'id': relayID, 'status': value ? 1 : 0 }}));
     return false;
 }
+
+// -----------------------------------------------------------------------------
+// Visualization
+// -----------------------------------------------------------------------------
 
 function showPanel() {
     $(".panel").hide();
@@ -235,6 +342,10 @@ function toggleMenu() {
     $("#menu").toggleClass('active');
     $("#menuLink").toggleClass('active');
 }
+
+// -----------------------------------------------------------------------------
+// Templates
+// -----------------------------------------------------------------------------
 
 function createRelays(count) {
 
@@ -270,7 +381,7 @@ function createIdxs(count) {
     for (var id=0; id<count; id++) {
         var line = $(template).clone();
         $(line).find("input").each(function() {
-            $(this).attr("data", id).attr("tabindex", 40+id);
+            $(this).attr("data", id).attr("tabindex", 40+id).attr("original", "");
         });
         if (count > 1) $(".id", line).html(" " + id);
         line.appendTo("#idxs");
@@ -300,7 +411,7 @@ function addNetwork() {
     var template = $("#networkTemplate").children();
     var line = $(template).clone();
     $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex++);
+        $(this).attr("tabindex", tabindex++).attr("original", "");
     });
     $(line).find(".button-del-network").on('click', delNetwork);
     $(line).find(".button-more-network").on('click', moreNetwork);
@@ -405,9 +516,6 @@ function initColorsExtras() {
     });
 }
 
-
-
-
 function initChannels(num) {
 
     // check if already initialized
@@ -495,31 +603,17 @@ function rfbSend() {
     websock.send(JSON.stringify({'action': 'rfbsend', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status"), 'data': input.val()}}));
 }
 
-function forgetCredentials() {
-    $.ajax({
-        'method': 'GET',
-        'url': '/',
-        'async': false,
-        'username': "logmeout",
-        'password': "123456",
-        'headers': { "Authorization": "Basic xxx" }
-    }).done(function(data) {
-        return false;
-        // If we don't get an error, we actually got an error as we expect an 401!
-    }).fail(function(){
-        // We expect to get an 401 Unauthorized error! In this case we are successfully
-        // logged out and we redirect the user.
-        return true;
-    });
-}
+// -----------------------------------------------------------------------------
+// Processing
+// -----------------------------------------------------------------------------
 
 function processData(data) {
 
     // title
-    if ("app" in data) {
-        var title = data.app;
-		if ("version" in data) {
-			title = title + " " + data.version;
+    if ("app_name" in data) {
+        var title = data.app_name;
+		if ("app_version" in data) {
+			title = title + " " + data.app_version;
 		}
         $(".pure-menu-heading").html(title);
         if ("hostname" in data) {
@@ -543,9 +637,7 @@ function processData(data) {
 
             if (data.action == "reload") {
                 if (password) forgetCredentials();
-                setTimeout(function() {
-                    window.location.reload();
-                }, 1000);
+                doReload(1000);
             }
 
             if (data.action == "rfbLearn") {
@@ -570,7 +662,7 @@ function processData(data) {
             for (var i in nodes) {
                 var node = nodes[i];
                 var element = $("input[name=rfbcode][data_id=" + node["id"] + "][data_status=" + node["status"] + "]");
-                if (element.length) element.val(node["data"]);
+                if (element.length) element.val(node["data"]).attr("original", node["data"]);
             }
             return;
         }
@@ -596,6 +688,7 @@ function processData(data) {
             $("[name='animation']").val(data[key]);
             return;
         }
+
         if (key == "anim_speed") {
             initColorsExtras();
             var slider = $("#animSpeed");
@@ -651,7 +744,7 @@ function processData(data) {
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
                     var element = $("input[name=" + key + "]", line);
-                    if (element.length) element.val(wifi[key]);
+                    if (element.length) element.val(wifi[key]).attr("original", wifi[key]);
                 });
 
             }
@@ -686,7 +779,7 @@ function processData(data) {
 
             for (var i in idxs) {
                 var element = $(".dczRelayIdx[data=" + i + "]");
-                if (element.length > 0) element.val(idxs[i]);
+                if (element.length > 0) element.val(idxs[i]).attr("original", idxs[i]);
             }
 
             return;
@@ -732,7 +825,7 @@ function processData(data) {
             } else {
                 var pre = element.attr("pre") || "";
                 var post = element.attr("post") || "";
-                element.val(pre + data[key] + post);
+                element.val(pre + data[key] + post).attr("original", data[key]);
             }
             return;
         }
@@ -749,7 +842,7 @@ function processData(data) {
         // Look for SELECTs
         var element = $("select[name=" + key + "]");
         if (element.length > 0) {
-            element.val(data[key]);
+            element.val(data[key]).attr("original", data[key]);
             return;
         }
 
@@ -757,18 +850,50 @@ function processData(data) {
 
     // Auto generate an APIKey if none defined yet
     if ($("input[name='apiKey']").val() == "") {
-        doGenerateAPIKey();
+        generateAPIKey();
     }
 
 }
 
-function getJson(str) {
-    try {
-        return JSON.parse(str);
-    } catch (e) {
-        return false;
+function hasChanged() {
+
+    var newValue, originalValue;
+    if ($(this).attr('type') == 'checkbox') {
+        newValue = $(this).prop("checked")
+        originalValue = $(this).attr("original") == "true";
+    } else {
+        newValue = $(this).val();
+        originalValue = $(this).attr("original");
     }
+    var hasChanged = $(this).attr("hasChanged") || 0;
+    var action = $(this).attr("action");
+
+    if (typeof originalValue == 'undefined') return;
+    if (action == 'none') return;
+
+    if (newValue != originalValue) {
+        if (hasChanged == 0) {
+            ++numChanged;
+            if (action == "reconnect") ++numReconnect;
+            if (action == "reset") ++numReset;
+            if (action == "reload") ++numReload;
+            $(this).attr("hasChanged", 1);
+        }
+    } else {
+        if (hasChanged == 1) {
+            --numChanged;
+            if (action == "reconnect") --numReconnect;
+            if (action == "reset") --numReset;
+            if (action == "reload") --numReload;
+            $(this).attr("hasChanged", 0);
+        }
+    }
+
 }
+
+// -----------------------------------------------------------------------------
+// Init & connect
+// -----------------------------------------------------------------------------
 
 function connect(host) {
 
@@ -799,33 +924,24 @@ function connect(host) {
     };
 }
 
-function initMessages() {
-    messages[01] = "Remote update started";
-    messages[02] = "OTA update started";
-    messages[03] = "Error parsing data!";
-    messages[04] = "The file does not look like a valid configuration backup or is corrupted";
-    messages[05] = "Changes saved. You should reboot your board now";
-    messages[06] = "Home Assistant auto-discovery message sent";
-    messages[07] = "Passwords do not match!";
-    messages[08] = "Changes saved";
-    messages[09] = "No changes detected";
-    messages[10] = "Session expired, please reload page...";
-}
-
 function init() {
 
     initMessages();
 
     $("#menuLink").on('click', toggleMenu);
+    $(".pure-menu-link").on('click', showPanel);
+    $('progress').attr({ value: 0, max: 100 });
+
     $(".button-update").on('click', doUpdate);
     $(".button-update-password").on('click', doUpdatePassword);
     $(".button-reset").on('click', doReset);
     $(".button-reconnect").on('click', doReconnect);
-    $(".button-settings-backup").on('click', backupSettings);
-    $(".button-settings-restore").on('click', restoreSettings);
+    $(".button-settings-backup").on('click', doBackup);
+    $(".button-settings-restore").on('click', doRestore);
     $('#uploader').on('change', onFileUpload);
-    $(".button-apikey").on('click', doGenerateAPIKey);
     $(".button-upgrade").on('click', doUpgrade);
+
+    $(".button-apikey").on('click', generateAPIKey);
     $(".button-upgrade-browse").on('click', function() {
         $("input[name='upgrade']")[0].click();
         return false;
@@ -834,14 +950,18 @@ function init() {
         var fileName = $(this).val();
         $("input[name='filename']").val(fileName.replace(/^.*[\\\/]/, ''));
     });
-    $('progress').attr({ value: 0, max: 100 });
-    $(".pure-menu-link").on('click', showPanel);
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
-    $(".button-ha-send").on('click', function() {
-        websock.send(JSON.stringify({'action': 'ha_send', 'data': $("input[name='haPrefix']").val()}));
+    $(".button-ha-add").on('click', function() {
+        websock.send(JSON.stringify({'action': 'ha_add', 'data': $("input[name='haPrefix']").val()}));
     });
+    $(".button-ha-del").on('click', function() {
+        websock.send(JSON.stringify({'action': 'ha_del', 'data': $("input[name='haPrefix']").val()}));
+    });
+
+    $(document).on('change', 'input', hasChanged);
+    $(document).on('change', 'select', hasChanged);
 
     $.ajax({
         'method': 'GET',

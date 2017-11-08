@@ -148,6 +148,24 @@ void _toRGB(char * rgb, size_t len) {
     _toRGB(rgb, len, false);
 }
 
+void _toLong(char * color, size_t len, bool applyBrightness) {
+
+    if (!lightHasColor()) return;
+
+    float b = applyBrightness ? (float) _brightness / LIGHT_MAX_BRIGHTNESS : 1;
+
+    snprintf_P(color, len, PSTR("%d,%d,%d"),
+        (int) (_channels[0].value * b),
+        (int) (_channels[1].value * b),
+        (int) (_channels[2].value * b)
+    );
+
+}
+
+void _toLong(char * color, size_t len) {
+    _toLong(color, len, false);
+}
+
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin) {
@@ -185,15 +203,15 @@ void _fromMireds(unsigned long mireds) {
 unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (bright) value *= ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
-    unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_MAX_PWM);
-    if (reverse) pwm = LIGHT_MAX_PWM - pwm;
+    unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
+    if (reverse) pwm = LIGHT_LIMIT_PWM - pwm;
     return pwm;
 }
 
 // Returns a PWM valule for the given channel ID
 unsigned int _toPWM(unsigned char id) {
     if (id < _channels.size()) {
-        bool isColor = (lightHasColor() && id < 3);
+        bool isColor = lightHasColor() && (id < 3);
         bool bright = isColor;
         bool gamma = isColor & (getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1);
         return _toPWM(_channels[id].shadow, bright, gamma, _channels[id].reverse);
@@ -215,7 +233,7 @@ void _shadow() {
 
         bool useWhite = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
 
-        if (_lightState && useWhite && _channels.size() > 3) {
+        if (_lightState && useWhite && (_channels.size() > 3)) {
             if (_channels[0].shadow == _channels[1].shadow  && _channels[1].shadow == _channels[2].shadow ) {
                 _channels[3].shadow = _channels[0].shadow * ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
                 _channels[2].shadow = 0;
@@ -231,6 +249,10 @@ void _shadow() {
 void _lightProviderUpdate() {
 
     _shadow();
+
+    #ifdef LIGHT_ENABLE_PIN
+        digitalWrite(LIGHT_ENABLE_PIN, _lightState);
+    #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 
@@ -248,6 +270,7 @@ void _lightProviderUpdate() {
 
         } else {
 
+            _my9291->setColor((my9291_color_t) { 0, 0, 0, 0, 0 });
             _my9291->setState(false);
 
         }
@@ -369,12 +392,16 @@ unsigned char lightWhiteChannels() {
 
 void lightMQTT() {
 
-    char buffer[8];
+    char buffer[12];
 
     if (lightHasColor()) {
 
         // Color
-        _toRGB(buffer, 8, false);
+        if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+            _toRGB(buffer, 12, false);
+        } else {
+            _toLong(buffer, 12, false);
+        }
         mqttSend(MQTT_TOPIC_COLOR, buffer);
 
         // Brightness
@@ -494,7 +521,11 @@ void _lightAPISetup() {
 
             apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
                 [](char * buffer, size_t len) {
-                    _toRGB(buffer, len, false);
+                    if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+                        _toRGB(buffer, len, false);
+                    } else {
+                        _toLong(buffer, len, false);
+                    }
                 },
                 [](const char * payload) {
                     lightColor(payload);
@@ -555,6 +586,10 @@ void _lightAPISetup() {
 }
 
 void lightSetup() {
+
+    #ifdef LIGHT_ENABLE_PIN
+        pinMode(LIGHT_ENABLE_PIN, OUTPUT);
+    #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
 

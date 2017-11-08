@@ -149,6 +149,9 @@ void welcome() {
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
     #endif
+    #if DEBUG_TELNET_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_TELNET"));
+    #endif
     #if DEBUG_UDP_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
     #endif
@@ -184,6 +187,9 @@ void welcome() {
     #endif
     #if SPIFFS_SUPPORT
         DEBUG_MSG_P(PSTR(" SPIFFS"));
+    #endif
+    #if TELNET_SUPPORT
+        DEBUG_MSG_P(PSTR(" TELNET"));
     #endif
     #if TERMINAL_SUPPORT
         DEBUG_MSG_P(PSTR(" TERMINAL"));

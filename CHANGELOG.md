@@ -3,6 +3,41 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.7] 2017-10-25
+### Fixed
+- Fix Alexa interface switching on all lights (#256)
+
+## [1.9.6] 2017-10-23
+### Fixed
+- Fix power report in Domoticz (#236)
+- Fix Sonoff POW in AP mode (#241)
+- Fix Home Automation auto-discovery (support for single relay switches and RGB lights, #235)
+- Check WS authentication only on start event
+
+### Added
+- Support for 2.4.0 RC2 Arduino Core that fixes KRACK vulnerablity (pre-built images are compiled against this, #242)
+- Support for ManCaveMade ESPLive board (thanks to Michael A. Cox)
+- Support for InterMIT Tech QuinLED 2.6 (thanks to Colin Shorts)
+- Support for Magic Home LED Controller 2.0 (thanks to users @gimi87 and @soif, #231)
+- Support for Arilux AL-LC06 (thanks to Martijn Kruissen)
+- Support for Xenon SM-PW702U Wifi boards (thanks to Joshua Harden, #212)
+- Support for Authometion LYT8266 (testing, thanks to Joe Blellik, #213)
+- Support for an external button for D1 Mini boards (thanks to user @PieBru, #239)
+- Option to query relay status via MQTT or WS (thanks to Wesley Tuzza)
+- Automatically install dependencies for web interface builder (thanks to Hermann Kraus)
+- Support for HSV and IR for Magic Home LED Controller (optional, disabled by default, thanks to Wesley Tuzza)
+- Added option to report DS18B20 temperatures based on changes (thanks to Michael A. Cox)
+- Safer buffer handling for websocket data (thanks to Hermann Kraus & Björn Bergman)
+- Updates HL8012 library with energy counting support (thanks to Hermann Kraus)
+- Added option to disable light color persistence to avoid flickering (#191)
+- Option to enable TELNET in STA mode from web UI (#203)
+
+### Changed
+- Changed default MQTT base topic to "{identifier}" (no leading slashes, #208)
+- Prevent reconnecting when in AP mode if a web session or a telnet session is active (#244)
+- Web UI checks for pending changes before reset/reconnect options (#226)
+- Increase WIFI connect timeout and reconnect interval
+
 ## [1.9.5] 2017-09-28
 ### Fixed
 - Revert to JustWifi 1.1.4 (#228)

@@ -18,8 +18,8 @@
 #define TELNET_SUPPORT          1               // Enable telnet support by default
 #endif
 
-#ifndef TELNET_ONLY_AP
-#define TELNET_ONLY_AP          1               // By default, allow only connections via AP interface
+#ifndef TELNET_STA
+#define TELNET_STA              0               // By default, disallow connections via STA interface
 #endif
 
 #define TELNET_PORT             23              // Port to listen to telnet clients
@@ -258,8 +258,8 @@ PROGMEM const char* const custom_reset_string[] = {
 // WIFI
 // -----------------------------------------------------------------------------
 
-#define WIFI_CONNECT_TIMEOUT    30000       // Connecting timeout for WIFI in ms
-#define WIFI_RECONNECT_INTERVAL 120000      // If could not connect to WIFI, retry after this time in ms
+#define WIFI_CONNECT_TIMEOUT    60000       // Connecting timeout for WIFI in ms
+#define WIFI_RECONNECT_INTERVAL 180000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
 
@@ -311,8 +311,9 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
-#define API_ENABLED              0          // Do not enable API by default
+#define API_ENABLED             0           // Do not enable API by default
 #define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+#define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
 // MDNS
@@ -383,7 +384,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USER               ""          // Default MQTT broker usename
 #define MQTT_PASS               ""          // Default MQTT broker password
 #define MQTT_PORT               1883        // MQTT broker port
-#define MQTT_TOPIC              "/test/switch/{identifier}"     // Default MQTT base topic
+#define MQTT_TOPIC              "{identifier}"     // Default MQTT base topic
 #define MQTT_RETAIN             true        // MQTT retain flag
 #define MQTT_QOS                0           // MQTT QoS value for all messages
 #define MQTT_KEEPALIVE          30          // MQTT keepalive value
@@ -491,14 +492,29 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+
+#ifndef LIGHT_PWM_FREQUENCY
 #define LIGHT_PWM_FREQUENCY     1000        // PWM frequency
+#endif
+
+#ifndef LIGHT_MAX_PWM
 #define LIGHT_MAX_PWM           4095        // Maximum PWM value
+#endif
+
+#ifndef LIGHT_LIMIT_PWM
+#define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
+#endif
+
+#ifndef LIGHT_MAX_VALUE
 #define LIGHT_MAX_VALUE         255         // Maximum light value
+#endif
+
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #define LIGHT_STEP              32          // Step size
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
+#define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
 
 // -----------------------------------------------------------------------------
 // POWER METERING
@@ -540,9 +556,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define POWER_VOLTAGE                   230     // Default voltage
+#define POWER_MIN_READ_INTERVAL         2000    // Minimum read interval
 #define POWER_READ_INTERVAL             6000    // Default reading interval (6 seconds)
 #define POWER_REPORT_INTERVAL           60000   // Default report interval (1 minute)
-#define POWER_REPORT_BUFFER             12      // Default buffer size ()
 #define POWER_CURRENT_DECIMALS          2       // Decimals for current values
 #define POWER_VOLTAGE_DECIMALS          0       // Decimals for voltage values
 #define POWER_POWER_DECIMALS            0       // Decimals for power values
@@ -582,9 +598,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
 
-    #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60      // Override median buffer size
-
     #ifndef V9261F_PIN
     #define V9261F_PIN                  2       // TX pin from the V9261F
     #endif
@@ -604,9 +617,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
-
-    #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60      // Override median buffer size
 
     #ifndef ECH1560_CLK_PIN
     #define ECH1560_CLK_PIN             4       // Default CLK pin

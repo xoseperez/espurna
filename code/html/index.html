@@ -8,13 +8,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
         <!-- build:css style.css -->
-        <link rel="stylesheet" href="pure-min.css" />
+        <link rel="stylesheet" href="pure-1.0.0.min.css" />
         <link rel="stylesheet" href="side-menu.css" />
-        <link rel="stylesheet" href="grids-responsive-min.css" />
+        <link rel="stylesheet" href="grids-responsive-1.0.0.min.css" />
         <link rel="stylesheet" href="checkboxes.css" />
         <link rel="stylesheet" href="custom.css" />
-        <link rel="stylesheet" href="wheelcolorpicker.css" />
-        <link rel="stylesheet" href="nouislider.min.css" />
+        <link rel="stylesheet" href="jquery.wheelcolorpicker-3.0.3.css" />
+        <link rel="stylesheet" href="nouislider-10.1.0.min.css" />
         <!-- endbuild -->
 
     </head>
@@ -126,7 +126,7 @@
                     </ul>
 
                     <div class="main-buttons">
-                        <button class="pure-button button-update">Update</button>
+                        <button class="pure-button button-update">Save</button>
                         <button class="pure-button button-reconnect">Reconnect</button>
                         <button class="pure-button button-reset">Reset</button>
                     </div>
@@ -225,8 +225,8 @@
                                 </div>
 
                                 <div class="pure-g module module-emon module-hlw module-v9261f module-ech1560">
-                                    <label class="pure-u-1 pure-u-sm-1-4" for="pwrEnergy">Energy (Agg)</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrEnergy" post=" J" readonly />
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="pwrEnergy">Energy</label>
+                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrEnergy" post=" J (aggregated)" readonly />
                                 </div>
 
                                 <div class="pure-u-1 state">
@@ -249,11 +249,14 @@
                                     <div class="pure-u-1 pure-u-sm-1-4">IP</div>
                                     <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="deviceip"></span></div>
 
-                                    <div class="pure-u-1 pure-u-sm-1-4">ESPurna version</div>
-                                    <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="version"></span></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4">Firmware name</div>
+                                    <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="app_name"></span></div>
 
-                                    <div class="pure-u-1 pure-u-sm-1-4">ESPurna build</div>
-                                    <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="build"></span></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4">Firmware version</div>
+                                    <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="app_version"></span></div>
+
+                                    <div class="pure-u-1 pure-u-sm-1-4">Firmware build</div>
+                                    <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="app_build"></span></div>
 
                                     <div class="pure-u-1 pure-u-sm-1-4">Current time</div>
                                     <div class="pure-u-1 pure-u-sm-17-24"><span class="right" name="time"></span></div>
@@ -302,7 +305,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="hostname">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-md-3-4" type="text" action="reset" tabindex="1" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface clicking the "Reconnect" button.</div>
                                 </div>
@@ -357,7 +360,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="btnDelay">Double click delay</label>
-                                    <input name="btnDelay" class="pure-u-1 pure-u-md-3-4" type="number" min="0" step="100" max="1000" tabindex="6" />
+                                    <input name="btnDelay" class="pure-u-1 pure-u-md-3-4" type="number" action="reset" min="0" step="100" max="1000" tabindex="6" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Delay in milliseconds to detect a double click (from 0 to 1000ms).<br />
                                         The lower this number the faster the device will respond to button clicks but the harder it will be to get a double click.
@@ -369,7 +372,7 @@
 
                                 <div class="pure-g module module-color">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="useColor">Use colorpicker</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useColor" tabindex="8" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Use color picker for the first 3 channels as RGB.<br />Will only work if the device has at least 3 dimmable channels.<br />Reload the page to update the web interface.</div>
@@ -377,7 +380,7 @@
 
                                 <div class="pure-g module module-color">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="useWhite">Use white channel</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" tabindex="9" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Reload the page to update the web interface.</div>
@@ -391,23 +394,38 @@
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
                                 </div>
 
+                                <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useCSS">Use CSS style</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useCSS" tabindex="11" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"</div>
+                                </div>
+
                                 <div class="pure-g module module-alexa">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="alexaEnabled">Alexa integration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="alexaEnabled" tabindex="11" /></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="alexaEnabled" tabindex="12" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ha">
                                     <label class="pure-u-1 pure-u-md-1-4" for="haPrefix">Home Assistant Prefix</label>
-                                    <input class="pure-u-1 pure-u-md-1-2" name="haPrefix" type="text" tabindex="31" />
-                                    <div class="pure-u-1-3 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-ha-send">Send</button></div>
+                                    <input class="pure-u-1 pure-u-md-1-4" name="haPrefix" type="text" tabindex="13" />
+                                    <div class="pure-u-1-2 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-ha-add">Add</button></div>
+                                    <div class="pure-u-1-2 pure-u-md-1-8"><button type="button" class="pure-u-23-24 pure-button button-ha-del">Delete</button></div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Home Assistant auto-discovery feature.</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Home Assistant auto-discovery feature.<br />
+                                        Add should immediately add the device to your HA console. Messages are retained so the device should be there even after a HA reboot<br />
+                                        To remove the device click on the Del button (retained message will be deleted) and reboot HA.<br />
+                                        You might want to disable CSS style (above) so Home Assistant can parse the color.
+                                    </div>
                                 </div>
 
                                 <div class="pure-g module module-ds module-dht">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="tmpUnits">Temperature units</label>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="12" value="0"> Celsius (&deg;C)</input></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="13" value="1"> Fahrenheit (&deg;F)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="14" value="0"> Celsius (&deg;C)</input></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="15" value="1"> Fahrenheit (&deg;F)</input></div>
                                 </div>
 
                             </fieldset>
@@ -427,7 +445,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="adminPass1">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="11" autocomplete="false" />
+                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" action="reset" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -435,13 +453,13 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="12" autocomplete="false" />
+                                    <label class="pure-u-1 pure-u-md-1-4" for="adminPass2">Repeat password</label>
+                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" action="reset" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="webPort">HTTP port</label>
-                                    <input name="webPort" class="pure-u-1 pure-u-md-3-4" type="text" tabindex="13" />
+                                    <input name="webPort" class="pure-u-1 pure-u-md-3-4" type="text" action="reset" tabindex="13" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         This is the port for the web interface and API requests.<br />
@@ -455,6 +473,17 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="apiRealTime">Real time API</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="apiRealTime" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        By default, some magnitudes are being preprocessed and filtered to avoid spurious values.<br />
+                                        If you want to get real-time values (not preprocessed) in the API turn on this setting.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="apiKey">HTTP API Key</label>
                                     <input name="apiKey" class="pure-u-3-4 pure-u-md-1-2" type="text" tabindex="14" />
                                     <div class=" pure-u-1-4 pure-u-md-1-4"><button class="pure-button button-apikey pure-u-23-24">Generate</button></div>
@@ -465,6 +494,15 @@
                                         To know what APIs are enabled do a call to <strong>/apis</strong>.
                                     </div>
                                 </div>
+
+                                <div class="pure-g module module-telnet">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="telnetSTA">Enable TELNET</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="telnetSTA" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Turn ON to be able to telnet to your device while connected to your home router.<br />TELNET is always enabled in AP mode.</div>
+                                </div>
+
 
                                 <div class="pure-g module module-nofuss">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="nofussEnabled">Automatic remote updates (NoFUSS)</label></div>
@@ -671,7 +709,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4" for="dczTopicOut">Domoticz OUT Topic</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="dczTopicOut" type="text" tabindex="32" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="dczTopicOut" type="text" action="reconnect" tabindex="32" />
                                 </div>
 
                                 <div class="pure-g module module-dht module-ds">
@@ -772,13 +810,49 @@
                         <div class="header">
                             <h1>POWER CALIBRATION</h1>
                             <h2>
-                                Calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Set any field to 0 to leave the calibration value untouched.
+                                Configure and calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Set any field to 0 to leave the calibration value untouched.
                             </h2>
                         </div>
 
                         <div class="page">
 
                             <fieldset>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="pwrReadEvery">Read interval</label>
+                                    <select class="pure-u-1 pure-u-sm-1-4" name="pwrReadEvery">
+                                    	<option value=2000>2 seconds</option>
+                                    	<option value=6000>6 seconds</option>
+                                    	<option value=10000>10 seconds</option>
+                                    	<option value=15000>15 seconds</option>
+                                    	<option value=30000>30 seconds</option>
+                                    	<option value=60000>60 seconds</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Select the interval between readings. These will be filtered and averaged for the report.<br />
+                                        The default and recommended value is 6 seconds.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-sm-1-4" for="pwrReportEvery">Report interval</label>
+                                    <select class="pure-u-1 pure-u-sm-1-4" name="pwrReportEvery">
+                                    	<option value=6000>6 seconds</option>
+                                    	<option value=10000>10 seconds</option>
+                                    	<option value=30000>30 seconds</option>
+                                    	<option value=60000>1 minute</option>
+                                    	<option value=300000>5 minutes</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Select the interval between reports via MQTT.<br />
+                                        This can't be less than the reading interval above.<br />
+                                        The default and recommended value is 1 minute.
+                                    </div>
+                                </div>
 
                                 <div class="pure-g module module-hlw module-emon module-v9261f">
                                     <label class="pure-u-1 pure-u-md-1-4" for="pwrExpectedP">AC RMS Active Power</label>
@@ -877,7 +951,7 @@
             <div class="pure-g">
 
                 <label class="pure-u-md-1-6 pure-u-1-4" for="ssid">Network SSID</label>
-                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
+                <div class="pure-u-md-3-4 pure-u-5-8"><input name="ssid" type="text" action="reconnect" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-md-1-12 pure-u-1-8"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <div class="more">
@@ -885,27 +959,27 @@
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="pass">Password</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" value="" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="pass" type="password" action="reconnect" value="" tabindex="0" autocomplete="false" />
 
                     <div class="break"></div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="ip">Static IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" value="" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="ip" type="text" action="reconnect" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Leave empty for DNS negotiation</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="gw">Gateway IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" value="" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="gw" type="text" action="reconnect" value="" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set when using a static IP</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="mask">Network Mask</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="mask" type="text" action="reconnect" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Usually 255.255.255.0 for /24 networks</div>
 
                     <label class="pure-u-md-1-6 pure-u-1-4" for="dns">DNS IP</label>
-                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
+                    <input class="pure-u-md-5-6 pure-u-3-4" name="dns" type="text" action="reconnect" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
                     <div class="pure-u-md-1-6 pure-u-1-4"></div>
                     <div class="pure-u-md-5-6 pure-u-3-4 hint">Set the Domain Name Server IP to use when using a static IP</div>
 
@@ -984,11 +1058,11 @@
     </body>
 
     <!-- build:js script.js -->
-    <script src="jquery-1.12.3.min.js"></script>
+    <script src="jquery-3.2.1.min.js"></script>
     <script src="checkboxes.js"></script>
     <script src="custom.js"></script>
-    <script src="jquery.wheelcolorpicker-3.0.2.min.js"></script>
-    <script src="nouislider.min.js"></script>
+    <script src="jquery.wheelcolorpicker-3.0.3.min.js"></script>
+    <script src="nouislider-10.1.0.min.js"></script>
     <!-- endbuild -->
 
 </html>

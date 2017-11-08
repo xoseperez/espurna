@@ -176,10 +176,16 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         #if HOMEASSISTANT_SUPPORT
-            if (action.equals("ha_send") && root.containsKey("data")) {
+            if (action.equals("ha_add") && root.containsKey("data")) {
                 String value = root["data"];
                 setSetting("haPrefix", value);
-                haSend();
+                haSend(true);
+                wsSend_P(client_id, PSTR("{\"message\": 6}"));
+            }
+            if (action.equals("ha_del") && root.containsKey("data")) {
+                String value = root["data"];
+                setSetting("haPrefix", value);
+                haSend(false);
                 wsSend_P(client_id, PSTR("{\"message\": 6}"));
             }
         #endif
@@ -436,7 +442,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             #endif
 
             #if NTP_SUPPORT
-                if (changedNTP) ntpConnect();
+                if (changedNTP) ntpConfigure();
             #endif
 
         }
@@ -473,9 +479,9 @@ void _wsStart(uint32_t client_id) {
 
         root["webMode"] = WEB_MODE_NORMAL;
 
-        root["app"] = APP_NAME;
-        root["version"] = APP_VERSION;
-        root["build"] = buildTime();
+        root["app_name"] = APP_NAME;
+        root["app_version"] = APP_VERSION;
+        root["app_build"] = buildTime();
 
         root["manufacturer"] = String(MANUFACTURER);
         root["chipid"] = chipid;
@@ -524,6 +530,7 @@ void _wsStart(uint32_t client_id) {
             root["useColor"] = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
             root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
             root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
+            root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
             if (lightHasColor()) {
 
             #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
@@ -558,6 +565,7 @@ void _wsStart(uint32_t client_id) {
 
         root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
         root["apiKey"] = getSetting("apiKey");
+        root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 
@@ -649,6 +657,8 @@ void _wsStart(uint32_t client_id) {
             root["pwrVoltage"] = getVoltage();
             root["pwrApparent"] = getApparentPower();
             root["pwrEnergy"] = getPowerEnergy();
+            root["pwrReadEvery"] = powerReadInterval();
+            root["pwrReportEvery"] = powerReportInterval();
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = getActivePower();
                 root["pwrReactive"] = getReactivePower();
@@ -686,6 +696,11 @@ void _wsStart(uint32_t client_id) {
                     node["data"] = rfbRetrieve(id, status == 1);
                 }
             }
+        #endif
+
+        #if TELNET_SUPPORT
+            root["telnetVisible"] = 1;
+            root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
         #endif
 
         root["maxNetworks"] = WIFI_MAX_NETWORKS;
@@ -731,22 +746,25 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
-    // Authorize
-    #ifndef NOWSAUTH
-        if (!_wsAuth(client)) return;
-    #endif
-
     if (type == WS_EVT_CONNECT) {
+
+        // Authorize
+        #ifndef NOWSAUTH
+            if (!_wsAuth(client)) return;
+        #endif
+
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsStart(client->id());
         client->_tempObject = new WebSocketIncommingBuffer(&_wsParse, true);
+        wifiReconnectCheck();
 
     } else if(type == WS_EVT_DISCONNECT) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
         }
+        wifiReconnectCheck();
 
     } else if(type == WS_EVT_ERROR) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);

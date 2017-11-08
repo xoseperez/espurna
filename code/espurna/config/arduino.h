@@ -10,7 +10,7 @@
 //#define NODEMCU_LOLIN
 //#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
-//#define TINKERMAN_ESPURNA_H07
+//#define TINKERMAN_ESPURNA_H08
 //#define ITEAD_SONOFF_BASIC
 //#define ITEAD_SONOFF_RF
 //#define ITEAD_SONOFF_TH
@@ -49,6 +49,8 @@
 //#define MANCAVEMADE_ESPLIVE
 //#define INTERMITTECH_QUINLED
 //#define ARILUX_AL_LC06
+//#define XENON_SM_PW702U
+//#define AUTHOMETION_LYT8266
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

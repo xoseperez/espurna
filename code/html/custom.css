@@ -29,7 +29,7 @@
 }
 .pure-button {
     color: white;
-    padding: 8px 12px;
+    padding: 8px 8px;
     border-radius: 4px;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
@@ -47,6 +47,7 @@
 }
 .button-reset,
 .button-reconnect,
+.button-ha-del,
 .button-rfb-forget {
     background: rgb(202, 60, 60);
 }
@@ -55,7 +56,7 @@
     margin-left: 5px;
 }
 .button-upgrade-browse,
-.button-ha-send,
+.button-ha-add,
 .button-apikey {
     background: rgb(0, 202, 0);
     margin-left: 5px;
@@ -134,7 +135,6 @@ input[name=upgrade] {
     margin-top: -50px;
     margin-left: -200px;
 }
-
 div.state {
     border-top: 1px solid #eee;
     margin-top: 20px;
@@ -149,7 +149,6 @@ div.state {
     font-size: 80%;
     font-weight: bold;
 }
-
 .right {
     text-align: right;
 }
@@ -173,15 +172,12 @@ div.state {
     margin: 10px 2px;
     padding: 20px;
 }
-
 #panel-rfb input {
     margin-right: 5px;
 }
-
 #panel-rfb label {
     padding-top: 5px;
 }
-
 #panel-rfb input {
     text-align: center;
 }

@@ -10,49 +10,57 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
-void haSend() {
+void haSend(bool add) {
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
-    String component = String("light");
+    String output;
 
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
+    if (add) {
 
-    root["name"] = getSetting("hostname");
-    root["platform"] = "mqtt";
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
 
-    if (relayCount()) {
-        root["state_topic"] = getTopic(MQTT_TOPIC_RELAY, 0, false);
-        root["command_topic"] = getTopic(MQTT_TOPIC_RELAY, 0, true);
+        root["name"] = getSetting("hostname");
+        root["platform"] = "mqtt";
+
+        if (relayCount()) {
+            root["state_topic"] = getTopic(MQTT_TOPIC_RELAY, 0, false);
+            root["command_topic"] = getTopic(MQTT_TOPIC_RELAY, 0, true);
+            root["payload_on"] = String("1");
+            root["payload_off"] = String("0");
+        }
+
+        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
+            if (lightHasColor()) {
+                root["brightness_state_topic"] = getTopic(MQTT_TOPIC_BRIGHTNESS, false);
+                root["brightness_command_topic"] = getTopic(MQTT_TOPIC_BRIGHTNESS, true);
+                root["rgb_state_topic"] = getTopic(MQTT_TOPIC_COLOR, false);
+                root["rgb_command_topic"] = getTopic(MQTT_TOPIC_COLOR, true);
+                root["color_temp_command_topic"] = getTopic(MQTT_TOPIC_MIRED, true);
+            }
+
+            if (lightChannels() > 3) {
+                root["white_value_state_topic"] = getTopic(MQTT_TOPIC_CHANNEL, 3, false);
+                root["white_value_command_topic"] = getTopic(MQTT_TOPIC_CHANNEL, 3, true);
+            }
+
+        #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
+        root.printTo(output);
     }
 
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_NONE
+        String component = String("switch");
+    #else
+        String component = String("light");
+    #endif
 
-        if (lightHasColor()) {
-            root["brightness"] = 1;
-            root["brightness_state_topic"] = getTopic(MQTT_TOPIC_BRIGHTNESS, false);
-            root["brightness_command_topic"] = getTopic(MQTT_TOPIC_BRIGHTNESS, true);
-            root["rgb"] = 1;
-            root["rgb_state_topic"] = getTopic(MQTT_TOPIC_COLOR, false);
-            root["rgb_command_topic"] = getTopic(MQTT_TOPIC_COLOR, true);
-            root["color_temp"] = 1;
-            root["color_temp_command_topic"] = getTopic(MQTT_TOPIC_MIRED, true);
-        }
-
-        if (lightChannels() > 3) {
-            root["white_value"] = 1;
-            root["white_value_state_topic"] = getTopic(MQTT_TOPIC_CHANNEL, 3, false);
-            root["white_value_command_topic"] = getTopic(MQTT_TOPIC_CHANNEL, 3, true);
-        }
-
-    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
-    String output;
-    root.printTo(output);
-
-    String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX)
-        + String("/") + component + "/" + getSetting("hostname");
+    String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
+        "/" + component +
+        "/" + getSetting("hostname") +
+        "/config";
 
     mqttSendRaw(topic.c_str(), output.c_str());
 

@@ -1,4 +1,4 @@
-    // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Configuration HELP
 // -----------------------------------------------------------------------------
 //
@@ -63,11 +63,6 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-    // IR
-    #define IR_SUPPORT          1
-    #define IR_PIN              4
-    #define IR_BUTTON_SET       1
-
 // -----------------------------------------------------------------------------
 // ESPurna
 // -----------------------------------------------------------------------------
@@ -114,11 +109,11 @@
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
-#elif defined(TINKERMAN_ESPURNA_H07)
+#elif defined(TINKERMAN_ESPURNA_H08)
 
     // Info
     #define MANUFACTURER        "TINKERMAN"
-    #define DEVICE              "ESPURNA_H07"
+    #define DEVICE              "ESPURNA_H08"
 
     // Buttons
     #define BUTTON1_PIN         4
@@ -147,7 +142,7 @@
 
     // LEDs
     #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
     // HLW8012
     #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
@@ -1044,6 +1039,56 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// XENON SM-PW701U
+// -----------------------------------------------------------------------------
+
+#elif defined(XENON_SM_PW702U)
+
+    // Info
+    #define MANUFACTURER        "XENON"
+    #define DEVICE              "SM_PW702U"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// AUTHOMETION LYT8266
+// https://authometion.com/shop/en/home/13-lyt8266.html
+// -----------------------------------------------------------------------------
+
+#elif defined(AUTHOMETION_LYT8266)
+
+    // Info
+    #define MANUFACTURER        "AUTHOMETION"
+    #define DEVICE              "LYT8266"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Channels
+    #define LIGHT_CH1_PIN       13      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       2       // WHITE
+
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+    #define LIGHT_ENABLE_PIN    15
 
 // -----------------------------------------------------------------------------
 // Unknown hardware
