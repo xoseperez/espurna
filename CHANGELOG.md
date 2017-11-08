@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Option to report real-time values in API, configurable via webUI
 - Support for ESPurna-H Board v0.8
 - Preliminary support for Arilux E28 light bulb (untested)
+- Support for YJZK 2-gang switch
 
 ### Changed
 - PWM using ESP8266_new_pwm by Stephan Bruens (https://github.com/StefanBruens/ESP8266_new_pwm)
