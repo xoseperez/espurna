@@ -1,6 +1,6 @@
 /*
 
-LIGHT (EXPERIMENTAL) IR
+LIGHT (EXPERIMENTAL)
 
 Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 Copyright (C) 2017 by François Déchery
@@ -8,7 +8,7 @@ Copyright (C) 2017 by François Déchery
 ------------------------------------------------------------------------------------------
 Features :
  - ONLY RGB strips are supported (No RGBW or RGBWW)
- - IR remote supported (but not mandatory)
+ - IR remote supported (but not mandatory) -- moved to ir.ino
  - HSV (intuitive) WEB controls
  - MQTT & API "color_rgb" + "color_hsv" + "brightness" parameters
  - Uses the (amazing) Fastled library for fast and natural Color & Brightness
@@ -48,7 +48,6 @@ byte 			_cur_anim_step  		= 0;
 boolean 		_cur_anim_dir	  		= true;
 unsigned long	_cur_anim_speed 		= 1000;
 unsigned long	_anim_last_update 		= millis();
-unsigned long	_last_ir_button			= 0;
 unsigned long	_last_status_led_time	= 0;
 
 
@@ -665,13 +664,11 @@ void _strToUpper(char * str){
 // ################################################################
 void lightSetup() {
 
-    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d (With IR)\n"), LIGHT_PROVIDER);
+    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
 
 	pinMode(LIGHT_CH1_PIN, OUTPUT);
 	pinMode(LIGHT_CH2_PIN, OUTPUT);
 	pinMode(LIGHT_CH3_PIN, OUTPUT);
-
-	_ir_recv.enableIRIn(); // Start the receiver
 
 	//confirmRgb();
 
@@ -686,7 +683,6 @@ void lightSetup() {
 
 // ---------------------------------------------------------------------------------------
 void lightLoop() {
-	_loopProcessIR();
 	_loopUpdateAnimation();
 	_updateStatusLed();
 }
