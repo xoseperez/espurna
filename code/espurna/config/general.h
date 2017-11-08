@@ -731,7 +731,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // 24 Buttons Set of the IR Remote
 #ifndef IR_BUTTON_SET
-#define IR_BUTTON_SET           1
+#define IR_BUTTON_SET           1               // IR button set to use (see below)
 #endif
 
 // IR Button modes
