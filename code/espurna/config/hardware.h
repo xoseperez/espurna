@@ -1027,15 +1027,15 @@
 
     // Info
     #define MANUFACTURER        "ARILUX"
-    #define DEVICE              "AL-LC06"
+    #define DEVICE              "AL_LC06"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
     // Channels
     #define LIGHT_CHANNELS      5
-    #define LIGHT_CH1_PIN       12      // RED
-    #define LIGHT_CH2_PIN       14      // GREEN
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE1
     #define LIGHT_CH5_PIN       5       // WHITE2
