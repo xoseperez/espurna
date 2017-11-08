@@ -270,7 +270,7 @@ void _lightProviderUpdate() {
             unsigned int red = _toPWM(0);
             unsigned int green = _toPWM(1);
             unsigned int blue = _toPWM(2);
-            unsigned int white = _toPWM(3)
+            unsigned int white = _toPWM(3);
             unsigned int warm = _toPWM(4);
             _my9291->setColor((my9291_color_t) { red, green, blue, white, warm });
             _my9291->setState(true);
