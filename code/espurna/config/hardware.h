@@ -1045,6 +1045,22 @@
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
 
+
+#elif defined(ARILUX_E27)
+
+    // Info
+    #define MANUFACTURER        "ARILUX"
+    #define DEVICE              "E27"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define DUMMY_RELAY_COUNT   1
+
+    // Channels
+    #define MY9291_CHANNELS     4
+    #define MY9291_DI_PIN       13
+    #define MY9291_DCKI_PIN     15
+    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
+
 // -----------------------------------------------------------------------------
 // XENON SM-PW701U
 // -----------------------------------------------------------------------------
