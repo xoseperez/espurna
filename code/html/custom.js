@@ -1,7 +1,6 @@
 var websock;
 var password = false;
 var maxNetworks;
-var useWhite = false;
 var messages = [];
 var webhost;
 
@@ -9,6 +8,8 @@ var numChanged = 0;
 var numReset = 0;
 var numReconnect = 0;
 var numReload = 0;
+
+var useWhite = false;
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -280,12 +281,6 @@ function doReconnect(ask) {
 
 }
 
-function doToggle(element, value) {
-    var relayID = parseInt(element.attr("data"));
-    websock.send(JSON.stringify({'action': 'relay', 'data': { 'id': relayID, 'status': value ? 1 : 0 }}));
-    return false;
-}
-
 function doBackup() {
     document.getElementById('downloader').src = webhost + 'config';
     return false;
@@ -322,6 +317,12 @@ function doRestore() {
     } else {
         $("#uploader").click();
     }
+    return false;
+}
+
+function doToggle(element, value) {
+    var relayID = parseInt(element.attr("data"));
+    websock.send(JSON.stringify({'action': 'relay', 'data': { 'id': relayID, 'status': value ? 1 : 0 }}));
     return false;
 }
 
@@ -609,10 +610,10 @@ function rfbSend() {
 function processData(data) {
 
     // title
-    if ("app" in data) {
-        var title = data.app;
-		if ("version" in data) {
-			title = title + " " + data.version;
+    if ("app_name" in data) {
+        var title = data.app_name;
+		if ("app_version" in data) {
+			title = title + " " + data.app_version;
 		}
         $(".pure-menu-heading").html(title);
         if ("hostname" in data) {

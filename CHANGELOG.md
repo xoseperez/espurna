@@ -3,6 +3,26 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.8] 2017-11-08
+### Fixed
+- Removed dimmer lights flicker when saving to EEPROM (#191)
+- Fixed low brightness in dimmer lights (#157)
+- Fixed blank fields in energy (#258, #259)
+- Fixed support for Arilux AL-LC06
+- Updated fauxmoESP library with support for GetBinaryState actions
+
+### Added
+- Support for IR remotes
+- Option to select power read and report interval from webUI
+- Option to report real-time values in API, configurable via webUI
+- Support for ESPurna-H Board v0.8
+- Preliminary support for Arilux E28 light bulb (untested)
+
+### Changed
+- PWM using ESP8266_new_pwm by Stephan Bruens (https://github.com/StefanBruens/ESP8266_new_pwm)
+- Using own DHT implementation (removed dependency on Adafruit libraries)
+- Disabled serial debug for Sonoff RFBridge
+
 ## [1.9.7] 2017-10-25
 ### Fixed
 - Fix Alexa interface switching on all lights (#256)

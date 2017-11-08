@@ -311,8 +311,9 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
-#define API_ENABLED              0          // Do not enable API by default
+#define API_ENABLED             0           // Do not enable API by default
 #define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+#define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
 // MDNS
@@ -497,8 +498,16 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #ifndef LIGHT_MAX_PWM
-#define LIGHT_MAX_PWM           4095        // Maximum PWM value
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+#define LIGHT_MAX_PWM           256
 #endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#define LIGHT_MAX_PWM           1000
+#endif
+
+#endif // LIGHT_MAX_PWM
 
 #ifndef LIGHT_LIMIT_PWM
 #define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
@@ -509,6 +518,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#define LIGHT_STEP              32          // Step size
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
@@ -554,9 +564,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define POWER_VOLTAGE                   230     // Default voltage
+#define POWER_MIN_READ_INTERVAL         2000    // Minimum read interval
 #define POWER_READ_INTERVAL             6000    // Default reading interval (6 seconds)
 #define POWER_REPORT_INTERVAL           60000   // Default report interval (1 minute)
-#define POWER_REPORT_BUFFER             12      // Default buffer size ()
 #define POWER_CURRENT_DECIMALS          2       // Decimals for current values
 #define POWER_VOLTAGE_DECIMALS          0       // Decimals for voltage values
 #define POWER_POWER_DECIMALS            0       // Decimals for power values
@@ -596,9 +606,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #if POWER_PROVIDER == POWER_PROVIDER_V9261F
 
-    #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60      // Override median buffer size
-
     #ifndef V9261F_PIN
     #define V9261F_PIN                  2       // TX pin from the V9261F
     #endif
@@ -618,9 +625,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
-
-    #undef POWER_REPORT_BUFFER
-    #define POWER_REPORT_BUFFER         60      // Override median buffer size
 
     #ifndef ECH1560_CLK_PIN
     #define ECH1560_CLK_PIN             4       // Default CLK pin
@@ -706,10 +710,122 @@ PROGMEM const char* const custom_reset_string[] = {
 // Both ALEXA_SUPPORT and alexaEnabled should be 1 for Alexa support to work.
 #define ALEXA_ENABLED           1
 
-
 // -----------------------------------------------------------------------------
 // RFBRIDGE
 // -----------------------------------------------------------------------------
 
 #define RF_SEND_TIMES           4               // How many times to send the message
 #define RF_SEND_DELAY           250             // Interval between sendings in ms
+
+// -----------------------------------------------------------------------------
+// IR
+// -----------------------------------------------------------------------------
+
+#ifndef IR_SUPPORT
+#define IR_SUPPORT              0               // Do not build with IR support by default
+#endif
+
+#ifndef IR_PIN
+#define IR_PIN                  4               // IR LED
+#endif
+
+// 24 Buttons Set of the IR Remote
+#ifndef IR_BUTTON_SET
+#define IR_BUTTON_SET           1               // IR button set to use (see below)
+#endif
+
+// IR Button modes
+#define IR_BUTTON_MODE_NONE         0
+#define IR_BUTTON_MODE_RGB          1
+#define IR_BUTTON_MODE_HSV          2
+#define IR_BUTTON_MODE_BRIGHTER     3
+#define IR_BUTTON_MODE_STATE        4
+#define IR_BUTTON_MODE_EFFECT       5
+
+#define LIGHT_EFFECT_SOLID          0
+#define LIGHT_EFFECT_FLASH          1
+#define LIGHT_EFFECT_STROBE         2
+#define LIGHT_EFFECT_FADE           3
+#define LIGHT_EFFECT_SMOOTH         4
+
+//Remote Buttons SET 1 (for the original Remote shipped with the controller)
+#if IR_BUTTON_SET == 1
+
+    #define IR_BUTTON_COUNT 24
+
+    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xFF906F, IR_BUTTON_MODE_BRIGHTER, 1 },
+        { 0xFFB847, IR_BUTTON_MODE_BRIGHTER, 0 },
+        { 0xFFF807, IR_BUTTON_MODE_STATE, 0 },
+        { 0xFFB04F, IR_BUTTON_MODE_STATE, 1 },
+
+        { 0xFF9867, IR_BUTTON_MODE_RGB, 0xFF0000 },
+        { 0xFFD827, IR_BUTTON_MODE_RGB, 0x00FF00 },
+        { 0xFF8877, IR_BUTTON_MODE_RGB, 0x0000FF },
+        { 0xFFA857, IR_BUTTON_MODE_RGB, 0xFFFFFF },
+
+        { 0xFFE817, IR_BUTTON_MODE_RGB, 0xD13A01 },
+        { 0xFF48B7, IR_BUTTON_MODE_RGB, 0x00E644 },
+        { 0xFF6897, IR_BUTTON_MODE_RGB, 0x0040A7 },
+        { 0xFFB24D, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FLASH },
+
+        { 0xFF02FD, IR_BUTTON_MODE_RGB, 0xE96F2A },
+        { 0xFF32CD, IR_BUTTON_MODE_RGB, 0x00BEBF },
+        { 0xFF20DF, IR_BUTTON_MODE_RGB, 0x56406F },
+        { 0xFF00FF, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_STROBE },
+
+        { 0xFF50AF, IR_BUTTON_MODE_RGB, 0xEE9819 },
+        { 0xFF7887, IR_BUTTON_MODE_RGB, 0x00799A },
+        { 0xFF708F, IR_BUTTON_MODE_RGB, 0x944E80 },
+        { 0xFF58A7, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FADE },
+
+        { 0xFF38C7, IR_BUTTON_MODE_RGB, 0xFFFF00 },
+        { 0xFF28D7, IR_BUTTON_MODE_RGB, 0x0060A1 },
+        { 0xFFF00F, IR_BUTTON_MODE_RGB, 0xEF45AD },
+        { 0xFF30CF, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_SMOOTH }
+
+    };
+
+#endif
+
+//Remote Buttons SET 2 (another identical IR Remote shipped with another controller)
+#if IR_BUTTON_SET == 2
+
+    #define IR_BUTTON_COUNT 24
+
+    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xFF00FF, IR_BUTTON_MODE_BRIGHTER, 1 },
+        { 0xFF807F, IR_BUTTON_MODE_BRIGHTER, 0 },
+        { 0xFF40BF, IR_BUTTON_MODE_STATE, 0 },
+        { 0xFFC03F, IR_BUTTON_MODE_STATE, 1 },
+
+        { 0xFF20DF, IR_BUTTON_MODE_RGB, 0xFF0000 },
+        { 0xFFA05F, IR_BUTTON_MODE_RGB, 0x00FF00 },
+        { 0xFF609F, IR_BUTTON_MODE_RGB, 0x0000FF },
+        { 0xFFE01F, IR_BUTTON_MODE_RGB, 0xFFFFFF },
+
+        { 0xFF10EF, IR_BUTTON_MODE_RGB, 0xD13A01 },
+        { 0xFF906F, IR_BUTTON_MODE_RGB, 0x00E644 },
+        { 0xFF50AF, IR_BUTTON_MODE_RGB, 0x0040A7 },
+        { 0xFFD02F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FLASH },
+
+        { 0xFF30CF, IR_BUTTON_MODE_RGB, 0xE96F2A },
+        { 0xFFB04F, IR_BUTTON_MODE_RGB, 0x00BEBF },
+        { 0xFF708F, IR_BUTTON_MODE_RGB, 0x56406F },
+        { 0xFFF00F, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_STROBE },
+
+        { 0xFF08F7, IR_BUTTON_MODE_RGB, 0xEE9819 },
+        { 0xFF8877, IR_BUTTON_MODE_RGB, 0x00799A },
+        { 0xFF48B7, IR_BUTTON_MODE_RGB, 0x944E80 },
+        { 0xFFC837, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_FADE },
+
+        { 0xFF28D7, IR_BUTTON_MODE_RGB, 0xFFFF00 },
+        { 0xFFA857, IR_BUTTON_MODE_RGB, 0x0060A1 },
+        { 0xFF6897, IR_BUTTON_MODE_RGB, 0xEF45AD },
+        { 0xFFE817, IR_BUTTON_MODE_EFFECT, LIGHT_EFFECT_SMOOTH }
+
+    };
+
+#endif

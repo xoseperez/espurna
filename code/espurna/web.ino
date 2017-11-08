@@ -215,7 +215,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             if (lightHasColor()) {
 
                 if (action.equals("color") && root.containsKey("data")) {
-                    lightColor(root["data"]);
+                    lightColor((const char *) root["data"]);
                     lightUpdate(true, true);
                 }
 
@@ -479,9 +479,9 @@ void _wsStart(uint32_t client_id) {
 
         root["webMode"] = WEB_MODE_NORMAL;
 
-        root["app"] = APP_NAME;
-        root["version"] = APP_VERSION;
-        root["build"] = buildTime();
+        root["app_name"] = APP_NAME;
+        root["app_version"] = APP_VERSION;
+        root["app_build"] = buildTime();
 
         root["manufacturer"] = String(MANUFACTURER);
         root["chipid"] = chipid;
@@ -565,6 +565,7 @@ void _wsStart(uint32_t client_id) {
 
         root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
         root["apiKey"] = getSetting("apiKey");
+        root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 
@@ -656,6 +657,8 @@ void _wsStart(uint32_t client_id) {
             root["pwrVoltage"] = getVoltage();
             root["pwrApparent"] = getApparentPower();
             root["pwrEnergy"] = getPowerEnergy();
+            root["pwrReadEvery"] = powerReadInterval();
+            root["pwrReportEvery"] = powerReportInterval();
             #if POWER_HAS_ACTIVE
                 root["pwrActive"] = getActivePower();
                 root["pwrReactive"] = getReactivePower();

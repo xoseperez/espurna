@@ -461,7 +461,7 @@ void hwUpwardsCompatibility() {
 
         setSetting("board", 38);
 
-    #elif defined(TINKERMAN_ESPURNA_H07)
+    #elif defined(TINKERMAN_ESPURNA_H08)
 
         setSetting("board", 39);
         setSetting("ledGPIO", 1, 2);
@@ -556,6 +556,15 @@ void hwUpwardsCompatibility() {
         setSetting("chLogic", 4, 0);
         setSetting("relays", 1);
         setSetting("enGPIO", 15);
+
+    #elif defined(ARILUX_E27)
+
+        setSetting("board", 46);
+        setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
+        setSetting("myDIGPIO", 13);
+        setSetting("myDCKIGPIO", 15);
+        setSetting("relays", 1);
 
     #else
 

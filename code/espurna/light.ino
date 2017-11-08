@@ -13,6 +13,13 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
+extern "C" {
+    #include "pwm.h"
+}
+#endif
+
 Ticker colorTicker;
 typedef struct {
     unsigned char pin;
@@ -29,29 +36,45 @@ unsigned int _brightness = LIGHT_MAX_BRIGHTNESS;
 my9291 * _my9291;
 #endif
 
-// Gamma Correction lookup table for gamma=2.8 and 12 bit (4095) full scale
+// Gamma Correction lookup table (8 bit)
 // TODO: move to PROGMEM
-const unsigned short gamma_table[LIGHT_MAX_VALUE+1] = {
-   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   1,   1,   1,
-   2,   2,   2,   3,   3,   4,   4,   5,   5,   6,   7,   8,   8,   9,  10,  11,
-  12,  13,  15,  16,  17,  18,  20,  21,  23,  25,  26,  28,  30,  32,  34,  36,
-  38,  40,  43,  45,  48,  50,  53,  56,  59,  62,  65,  68,  71,  75,  78,  82,
-  85,  89,  93,  97, 101, 105, 110, 114, 119, 123, 128, 133, 138, 143, 149, 154,
- 159, 165, 171, 177, 183, 189, 195, 202, 208, 215, 222, 229, 236, 243, 250, 258,
- 266, 273, 281, 290, 298, 306, 315, 324, 332, 341, 351, 360, 369, 379, 389, 399,
- 409, 419, 430, 440, 451, 462, 473, 485, 496, 508, 520, 532, 544, 556, 569, 582,
- 594, 608, 621, 634, 648, 662, 676, 690, 704, 719, 734, 749, 764, 779, 795, 811,
- 827, 843, 859, 876, 893, 910, 927, 944, 962, 980, 998,1016,1034,1053,1072,1091,
-1110,1130,1150,1170,1190,1210,1231,1252,1273,1294,1316,1338,1360,1382,1404,1427,
-1450,1473,1497,1520,1544,1568,1593,1617,1642,1667,1693,1718,1744,1770,1797,1823,
-1850,1877,1905,1932,1960,1988,2017,2045,2074,2103,2133,2162,2192,2223,2253,2284,
-2315,2346,2378,2410,2442,2474,2507,2540,2573,2606,2640,2674,2708,2743,2778,2813,
-2849,2884,2920,2957,2993,3030,3067,3105,3143,3181,3219,3258,3297,3336,3376,3416,
-3456,3496,3537,3578,3619,3661,3703,3745,3788,3831,3874,3918,3962,4006,4050,4095 };
+const unsigned char gamma_table[] = {
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
+    3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
+    6,   7,   7,   7,   7,   8,   8,   8,   9,   9,   9,   10,  10,  11,  11,  11,
+    12,  12,  13,  13,  14,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,
+    19,  20,  20,  21,  22,  22,  23,  23,  24,  25,  25,  26,  26,  27,  28,  28,
+    29,  30,  30,  31,  32,  33,  33,  34,  35,  35,  36,  37,  38,  39,  39,  40,
+    41,  42,  43,  43,  44,  45,  46,  47,  48,  49,  50,  50,  51,  52,  53,  54,
+    55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  71,
+    72,  73,  74,  75,  76,  77,  78,  80,  81,  82,  83,  84,  86,  87,  88,  89,
+    91,  92,  93,  94,  96,  97,  98,  100, 101, 102, 104, 105, 106, 108, 109, 110,
+    112, 113, 115, 116, 118, 119, 121, 122, 123, 125, 126, 128, 130, 131, 133, 134,
+    136, 137, 139, 140, 142, 144, 145, 147, 149, 150, 152, 154, 155, 157, 159, 160,
+    162, 164, 166, 167, 169, 171, 173, 175, 176, 178, 180, 182, 184, 186, 187, 189,
+    191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
+    223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
+};
 
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
+
+void _fromLong(unsigned long value, bool brightness) {
+
+    if (brightness) {
+        _channels[0].value = (value >> 24) & 0xFF;
+        _channels[1].value = (value >> 16) & 0xFF;
+        _channels[2].value = (value >> 8) & 0xFF;
+        _brightness = (value & 0xFF) * LIGHT_MAX_BRIGHTNESS / 255;
+    } else {
+        _channels[0].value = (value >> 16) & 0xFF;
+        _channels[1].value = (value >> 8) & 0xFF;
+        _channels[2].value = (value) & 0xFF;
+    }
+
+}
 
 void _fromRGB(const char * rgb) {
 
@@ -67,16 +90,7 @@ void _fromRGB(const char * rgb) {
             unsigned long value = strtoul(p, NULL, 16);
 
             // RGBA values are interpreted like RGB + brightness
-            if (strlen(p) > 7) {
-                _channels[0].value = (value >> 24) & 0xFF;
-                _channels[1].value = (value >> 16) & 0xFF;
-                _channels[2].value = (value >> 8) & 0xFF;
-                _brightness = (value & 0xFF) * LIGHT_MAX_BRIGHTNESS / 255;
-            } else {
-                _channels[0].value = (value >> 16) & 0xFF;
-                _channels[1].value = (value >> 8) & 0xFF;
-                _channels[2].value = (value) & 0xFF;
-            }
+            _fromLong(value, strlen(p) > 7);
 
         }
 
@@ -197,9 +211,10 @@ void _fromMireds(unsigned long mireds) {
 unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (bright) value *= ((float) _brightness / LIGHT_MAX_BRIGHTNESS);
-    unsigned int pwm = gamma ? gamma_table[value] : map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
-    if (reverse) pwm = LIGHT_LIMIT_PWM - pwm;
-    return pwm;
+    if (gamma) value = gamma_table[value];
+    if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
+    if (reverse) value = LIGHT_LIMIT_PWM - value;
+    return value;
 }
 
 // Returns a PWM valule for the given channel ID
@@ -252,13 +267,11 @@ void _lightProviderUpdate() {
 
         if (_lightState) {
 
-            float ratio = (float) LIGHT_MAX_VALUE / LIGHT_MAX_PWM;
-
-            unsigned int red = _toPWM(0) * ratio;
-            unsigned int green = _toPWM(1) * ratio;
-            unsigned int blue = _toPWM(2) * ratio;
-            unsigned int white = _toPWM(3) * ratio;
-            unsigned int warm = _toPWM(4) * ratio;
+            unsigned int red = _toPWM(0);
+            unsigned int green = _toPWM(1);
+            unsigned int blue = _toPWM(2);
+            unsigned int white = _toPWM(3);
+            unsigned int warm = _toPWM(4);
             _my9291->setColor((my9291_color_t) { red, green, blue, white, warm });
             _my9291->setState(true);
 
@@ -274,8 +287,9 @@ void _lightProviderUpdate() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
         for (unsigned int i=0; i < _channels.size(); i++) {
-            analogWrite(_channels[i].pin, _toPWM(i));
+            pwm_set_duty(_toPWM(i), i);
         }
+        pwm_start();
 
     #endif
 
@@ -467,6 +481,10 @@ void lightColor(const char * color) {
     _fromRGB(color);
 }
 
+void lightColor(unsigned long color) {
+    _fromLong(color, false);
+}
+
 String lightColor() {
     char rgb[8];
     _toRGB(rgb, 8, false);
@@ -490,8 +508,12 @@ unsigned int lightBrightness() {
     return _brightness;
 }
 
-void lightBrightness(unsigned int b) {
+void lightBrightness(int b) {
     _brightness = constrain(b, 0, LIGHT_MAX_BRIGHTNESS);
+}
+
+void lightBrightnessStep(int steps) {
+    lightBrightness(_brightness + steps * LIGHT_STEP);
 }
 
 // -----------------------------------------------------------------------------
@@ -571,6 +593,30 @@ void _lightAPISetup() {
 
 }
 
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+
+unsigned long getIOMux(unsigned long gpio) {
+    unsigned long muxes[16] = {
+        PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_U0RXD_U,
+        PERIPHS_IO_MUX_GPIO4_U, PERIPHS_IO_MUX_GPIO5_U, PERIPHS_IO_MUX_SD_CLK_U, PERIPHS_IO_MUX_SD_DATA0_U,
+        PERIPHS_IO_MUX_SD_DATA1_U, PERIPHS_IO_MUX_SD_DATA2_U, PERIPHS_IO_MUX_SD_DATA3_U, PERIPHS_IO_MUX_SD_CMD_U,
+        PERIPHS_IO_MUX_MTDI_U, PERIPHS_IO_MUX_MTCK_U, PERIPHS_IO_MUX_MTMS_U, PERIPHS_IO_MUX_MTDO_U
+    };
+    return muxes[gpio];
+}
+
+unsigned long getIOFunc(unsigned long gpio) {
+    unsigned long funcs[16] = {
+        FUNC_GPIO0, FUNC_GPIO1, FUNC_GPIO2, FUNC_GPIO3,
+        FUNC_GPIO4, FUNC_GPIO5, FUNC_GPIO6, FUNC_GPIO7,
+        FUNC_GPIO8, FUNC_GPIO9, FUNC_GPIO10, FUNC_GPIO11,
+        FUNC_GPIO12, FUNC_GPIO13, FUNC_GPIO14, FUNC_GPIO15
+    };
+    return funcs[gpio];
+}
+
+#endif
+
 void lightSetup() {
 
     #ifdef LIGHT_ENABLE_PIN
@@ -608,11 +654,17 @@ void lightSetup() {
             _channels.push_back((channel_t) {LIGHT_CH5_PIN, LIGHT_CH5_INVERSE, 0});
         #endif
 
-        analogWriteRange(LIGHT_MAX_PWM+1);
-        analogWriteFreq(LIGHT_PWM_FREQUENCY);
+        uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
+        uint32 io_info[PWM_CHANNEL_NUM_MAX][3];
         for (unsigned int i=0; i < _channels.size(); i++) {
+            pwm_duty_init[i] = 0;
+            io_info[i][0] = getIOMux(_channels[i].pin);
+            io_info[i][1] = getIOFunc(_channels[i].pin);
+            io_info[i][2] = _channels[i].pin;
             pinMode(_channels[i].pin, OUTPUT);
         }
+        pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
+        pwm_start();
 
 
     #endif

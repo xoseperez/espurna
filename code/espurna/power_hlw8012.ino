@@ -151,7 +151,7 @@ void _powerLoopProvider(bool before) {
     if (before) {
 
         static unsigned long last = 0;
-        if (millis() - last > POWER_READ_INTERVAL) {
+        if (millis() - last > powerReadInterval()) {
 
             last = millis();
             _power_newdata = true;

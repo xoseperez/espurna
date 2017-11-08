@@ -30,6 +30,7 @@ void alexaSetup() {
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
     alexaConfigure();
+
     unsigned int relays = relayCount();
     String hostname = getSetting("hostname");
     if (relays == 1) {
@@ -39,11 +40,17 @@ void alexaSetup() {
             alexa.addDevice((hostname + "_" + i).c_str());
         }
     }
-    alexa.onMessage([relays](unsigned char device_id, const char * name, bool state) {
+
+    alexa.onSetState([relays](unsigned char device_id, const char * name, bool state) {
         _alexa_change = true;
         _alexa_device_id = device_id;
         _alexa_state = state;
     });
+
+    alexa.onGetState([relays](unsigned char device_id, const char * name) {
+        return relayStatus(device_id);
+    });
+
 }
 
 void alexaLoop() {

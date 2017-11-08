@@ -1,14 +1,14 @@
 /*
 
-LIGHT (EXPERIMENTAL) IR
+LIGHT (EXPERIMENTAL)
 
 Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
-Copyright (C) 2017 by François Déchery 
+Copyright (C) 2017 by François Déchery
 
 ------------------------------------------------------------------------------------------
 Features :
  - ONLY RGB strips are supported (No RGBW or RGBWW)
- - IR remote supported (but not mandatory)
+ - IR remote supported (but not mandatory) -- moved to ir.ino
  - HSV (intuitive) WEB controls
  - MQTT & API "color_rgb" + "color_hsv" + "brightness" parameters
  - Uses the (amazing) Fastled library for fast and natural Color & Brightness
@@ -24,8 +24,6 @@ Not currently Implemented :
 
 #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
 
-#include <IRremoteESP8266.h>
-#include <IRrecv.h>
 #include <FastLED.h>
 
 // #### Defined ##########################################################################
@@ -37,64 +35,9 @@ Not currently Implemented :
 #define ANIM3_SPEED 100			// fade speed
 #define ANIM4_SPEED 700			// smooth speed
 #define ANIM5_SPEED 200			// party speed
-
-#define BUTTONS_COUNT 24
 #define LED_DURATION 70			// Status led ON duration
 
 // #### Variables ########################################################################
-unsigned long r_but_codes[]={		// IR remote buttons codes
-	IR_BUTTON_0  , //	Brightness +
-	IR_BUTTON_1  , //	Brightness -
-	IR_BUTTON_2  , //	OFF
-	IR_BUTTON_3  , //	ON
-	IR_BUTTON_4  , //	Red
-	IR_BUTTON_5  , //	Green
-	IR_BUTTON_6  , //	Blue
-	IR_BUTTON_7  , //	White
-	IR_BUTTON_8  , //	R1
-	IR_BUTTON_9  , //	G1
-	IR_BUTTON_10 , //	B1
-	IR_BUTTON_11 , //	Flash
-	IR_BUTTON_12 , //	R2
-	IR_BUTTON_13 , //	G2
-	IR_BUTTON_14 , //	B2
-	IR_BUTTON_15 , //	Strobe
-	IR_BUTTON_16 , //	R3
-	IR_BUTTON_17 , //	G3
-	IR_BUTTON_18 , //	B3
-	IR_BUTTON_19 , //	Fade
-	IR_BUTTON_20 , //	R4
-	IR_BUTTON_21 , //	G4
-	IR_BUTTON_22 , //	B4
-	IR_BUTTON_23	//	Smooth
-};
-
-unsigned long r_but_colors[]={	// IR remote buttons colors
-	0,			//	Brightness +
-	0,			//	Brightness -
-	0,			//	OFF
-	0,			//	ON
-	0xFF0000,	//	Red
-	0x00FF00,	//	Green
-	0x0000FF,	//	Blue
-	0xFFFFFF,	//	White
-	0xD13A01,	//	R1
-	0x00E644,	//	G1
-	0x0040A7,	//	B1
-	0,			//	Flash
-	0xE96F2A,	//	R2
-	0x00BEBF,	//	G2
-	0x56406F,	//	B2
-	0,			//	Strobe
-	0xEE9819,	//	R3
-	0x00799A,	//	G3
-	0x944E80,	//	B3
-	0,			//	Fade
-	0xFFFF00,	//	R4
-	0x0060A1,	//	G4
-	0xEF45AD,	//	B4
-	0			//	Smooth
-};
 
 // variables declarations ###############################################################
 CHSV 			_cur_color				= CHSV(0,255,255);
@@ -105,11 +48,7 @@ byte 			_cur_anim_step  		= 0;
 boolean 		_cur_anim_dir	  		= true;
 unsigned long	_cur_anim_speed 		= 1000;
 unsigned long	_anim_last_update 		= millis();
-unsigned long	_last_ir_button			= 0;
 unsigned long	_last_status_led_time	= 0;
-
-IRrecv _ir_recv(LIGHT_IR_PIN); 		//IRrecv _ir_recv(IR_PIN, IR_LED_PIN); dont work. Why ?
-decode_results _ir_results;
 
 
 // #######################################################################################
@@ -127,75 +66,6 @@ void _updateStatusLed(){
 void _flashStatusLed(){
 	digitalWrite(LED1_PIN, HIGH);
 	_last_status_led_time=millis();
-}
-
-// ---------------------------------------------------------------------------------------
-void _loopProcessIR() {
-	if (_ir_recv.decode(&_ir_results)) {
-		//dumpIR(&_ir_results);
-	    //DEBUG_MSG_P(PSTR(".\n"));
-		unsigned long code = _ir_results.value;
-		DEBUG_MSG_P(PSTR("[IR] received : 0x%X "), code );
-		if( code == 0xFFFFFFFF){
-			code = _last_ir_button;
-			DEBUG_MSG_P(PSTR("(Repeat : %X) "), code );
-		}
-		DEBUG_MSG_P(PSTR("=> ") );
-		_processIrButtons(code);
-		_ir_recv.resume(); // Receive the next value
-	}
-}
-
-// ---------------------------------------------------------------------------------------
-void _processIrButtons(unsigned long code) {
-	//DEBUG_MSG_P(PSTR("IR code : %X\n"), code );
-	boolean done=false;
-	for (int i = 0; i < BUTTONS_COUNT ; i = i + 1) {
-		if( code == r_but_codes[i] ){
-		    //DEBUG_MSG_P(PSTR(" : %X  -> "), r_but_colors[i] );
-
-			_last_ir_button = 0; //no repat else if specified
-				
-			if(i == 0){
-				_buttonBrightness(true);
-				_last_ir_button = code;
-				delay(150); //debounce
-			}		 
-			else if(i == 1){
-				_buttonBrightness(false);
-				_last_ir_button = code;
-				delay(150); //debounce
-			}		 
-			else if(i == 2){
-				_buttonPower(false);
-			}		 
-			else if(i == 3){
-				_buttonPower(true);
-			}		 
-			else if(i == 11){
-				_buttonAnimMode(1);
-			}		 
-			else if(i == 15){
-				_buttonAnimMode(2);
-			}
-			else if(i == 19){
-				_buttonAnimMode(3);
-			}		 
-			else if(i == 23){
-				_buttonAnimMode(4);
-			}
-			else{
-				_buttonColorRVB(r_but_colors[i],0);
-			}
-			done=true;
-			lightUpdate(true, true);
-		}
-	}
-	if(!done){
-		_last_ir_button = 0; 
-		//DEBUG_PRINTHEX(code);
-		DEBUG_MSG_P(PSTR("ignored!\n"));
-	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -289,7 +159,7 @@ CHSV _dimHSV(CHSV color, int offset){
 	offset=offset*10;
 	int bright=color.v + offset;
 	if(offset ==0){
-		return color;	
+		return color;
 	}
 	else if(bright < 1){
 		bright=1; // no off
@@ -316,7 +186,7 @@ void _setBrightness(byte val){
 	if(val==0){
 		_cur_status=0;
 	}
-	_buttonColorHSV(_cur_color,0);	
+	_buttonColorHSV(_cur_color,0);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -330,7 +200,7 @@ void _setAnimSpeed(unsigned long speed){
 void _setLedsRGB(CRGB rgb){
 	analogWrite(LIGHT_CH1_PIN, rgb.r);
 	analogWrite(LIGHT_CH2_PIN, rgb.g);
-	analogWrite(LIGHT_CH3_PIN, rgb.b);	
+	analogWrite(LIGHT_CH3_PIN, rgb.b);
 	if(_cur_anim_mode == 0){
 		DEBUG_MSG_P(PSTR("RGB=%3u,%3u,%3u\n"), rgb.r, rgb.g, rgb.b);
 	}
@@ -528,9 +398,9 @@ void _anim5(boolean init){
 		_cur_anim_color.v= 255;
 	}
 	unsigned long now= millis();
-	if(_cur_anim_step == 1 && now > (_anim_last_update + _cur_anim_speed) ){ 
+	if(_cur_anim_step == 1 && now > (_anim_last_update + _cur_anim_speed) ){
 		DEBUG_MSG_P(PSTR("[ANIM_%d] Update : "), _cur_anim_mode);
-		_cur_anim_color.h = random(0,255); 
+		_cur_anim_color.h = random(0,255);
 		_setLedsHSV(_cur_anim_color);
 		_cur_anim_step    = 0;
 		_anim_last_update = now;
@@ -794,16 +664,14 @@ void _strToUpper(char * str){
 // ################################################################
 void lightSetup() {
 
-    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d (With IR)\n"), LIGHT_PROVIDER);
+    DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
 
-	pinMode(LIGHT_CH1_PIN, OUTPUT);		
+	pinMode(LIGHT_CH1_PIN, OUTPUT);
 	pinMode(LIGHT_CH2_PIN, OUTPUT);
 	pinMode(LIGHT_CH3_PIN, OUTPUT);
 
-	_ir_recv.enableIRIn(); // Start the receiver
-
 	//confirmRgb();
-	
+
 	_cur_color = _romLoadColor();
 
     _lightColorRestore();
@@ -815,7 +683,6 @@ void lightSetup() {
 
 // ---------------------------------------------------------------------------------------
 void lightLoop() {
-	_loopProcessIR();
 	_loopUpdateAnimation();
 	_updateStatusLed();
 }
@@ -849,12 +716,12 @@ void lightUpdate(bool save, bool forward) {
     	//root["color_hsv"]  = lightColor();
         //root["brightness"] = _cur_color.v;
 
-		// RGB channels        
+		// RGB channels
         //JsonArray& channels = root.createNestedArray("channels");
         //for (unsigned char id=0; id < lightChannels(); id++) {
         //    channels.add(lightChannel(id));
         //}
-	    
+
 	    // Relay
 	    JsonArray& relay = root.createNestedArray("relayStatus");
 		relay.add(_cur_status);
@@ -927,7 +794,7 @@ unsigned int lightChannel(unsigned char id) {
 		return current_rvb.b;
 	}
 	else{
-		DEBUG_MSG_P(PSTR("    [ERROR] GET lightChannel : %s\n"), id);	
+		DEBUG_MSG_P(PSTR("    [ERROR] GET lightChannel : %s\n"), id);
 	    return 0;
 	}
 }
@@ -935,27 +802,27 @@ unsigned int lightChannel(unsigned char id) {
 // ---------------------------------------------------------------------------------------
 // Set Channel's Value
 void lightChannel(unsigned char id, unsigned int value) {
-	DEBUG_MSG_P(PSTR("[WEB|API] Set Color Channel "));	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set Color Channel "));
 	value= constrain(value, 0, 255);
 	CRGB current_rvb = CHSV(_cur_color);
 
 	if(id == 0 ){
-		DEBUG_MSG_P(PSTR("RED  to : %d => "), value);	
+		DEBUG_MSG_P(PSTR("RED  to : %d => "), value);
 		current_rvb.r=value;
 		_buttonColorRVB(current_rvb,0);
 	}
 	else if(id == 1 ){
-		DEBUG_MSG_P(PSTR("GREEN  to : %d => "), value);	
+		DEBUG_MSG_P(PSTR("GREEN  to : %d => "), value);
 		current_rvb.g=value;
 		_buttonColorRVB(current_rvb,0);
 	}
 	else if(id == 2 ){
-		DEBUG_MSG_P(PSTR("BLUE  to : %d => "), value);	
+		DEBUG_MSG_P(PSTR("BLUE  to : %d => "), value);
 		current_rvb.b=value;
 		_buttonColorRVB(current_rvb,0);
 	}
 	else{
-		DEBUG_MSG_P(PSTR("    [ERROR] SET lightChannel %s To %d \n"), id, value);	
+		DEBUG_MSG_P(PSTR("    [ERROR] SET lightChannel %s To %d \n"), id, value);
 	}
 }
 
@@ -967,12 +834,12 @@ unsigned int lightBrightness() {
 
 // ---------------------------------------------------------------------------------------
 // Set Brightness
-void lightBrightness(unsigned int b) {
+void lightBrightness(int b) {
 	b=constrain(b, 0, 255);
-	DEBUG_MSG_P(PSTR("[WEB|API] Set Brightness to : %d\n"), b);	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set Brightness to : %d\n"), b);
 	_cur_color.v=b;
 	_setLedsHSV(_cur_color);
-	
+
 	//set status
 	if(b > 0){
 		_cur_status=1;
@@ -1011,34 +878,34 @@ void lightColor(const char * color) {
 
 void _SetLightColorRGB(const char * color) {
 //used only from settings
-	DEBUG_MSG_P(PSTR("[WEB|API] Set (#RGB) Color to : "));	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set (#RGB) Color to : "));
 	if( _charColorIsValid(color) ){
-		DEBUG_MSG_P(PSTR("%s \n"), color);	
+		DEBUG_MSG_P(PSTR("%s \n"), color);
 		_buttonColorRVB(_charToRgb(color), 0);
 	}
 	else{
-		DEBUG_MSG_P(PSTR(" Canceled ('%s' is invalid) !\n"), color);	
+		DEBUG_MSG_P(PSTR(" Canceled ('%s' is invalid) !\n"), color);
 	}
 }
 
 void _SetLightColorHSV(const char * color) {
-	DEBUG_MSG_P(PSTR("[WEB|API] Set (#HSV) Color to : "));	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set (#HSV) Color to : "));
 	if( _charColorIsValid(color) ){
-		DEBUG_MSG_P(PSTR("%s \n"), color);	
+		DEBUG_MSG_P(PSTR("%s \n"), color);
 		_buttonColorHSV(_charToHsv(color), 0);
 	}
 	else{
-		DEBUG_MSG_P(PSTR(" Canceled ('%s' is invalid) !\n"), color);	
+		DEBUG_MSG_P(PSTR(" Canceled ('%s' is invalid) !\n"), color);
 	}
 }
 
 void setLightColor (const char * h, const char * s, const char * v){
-	DEBUG_MSG_P(PSTR("[WEB|API] Set Color from (%s,%s,%s) "), h, s, v);	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set Color from (%s,%s,%s) "), h, s, v);
 	CHSV color;
 	color.h=strtoul(h, NULL, 10);
 	color.s=strtoul(s, NULL, 10);
 	color.v=strtoul(v, NULL, 10);
-	DEBUG_MSG_P(PSTR("to (%d,%d,%d) "), color.h, color.s, color.v);	
+	DEBUG_MSG_P(PSTR("to (%d,%d,%d) "), color.h, color.s, color.v);
 	_buttonColorRVB(color, 0);
 }
 
@@ -1062,7 +929,7 @@ bool lightState() {
 // ---------------------------------------------------------------------------------------
 // Set State
 void lightState(bool state){
-	DEBUG_MSG_P(PSTR("[WEB|API] Set Relay to : %u => "), state);	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set Relay to : %u => "), state);
 	//if(state != _cur_status){
 		_buttonPower(state);
 	//}
@@ -1074,7 +941,7 @@ String lightAnimMode(){
 	return String(_cur_anim_mode);
 }
 void lightAnimMode(const char * val){
-	DEBUG_MSG_P(PSTR("[WEB|API] Set AnimMode to %s\n"), val);	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set AnimMode to %s\n"), val);
 	_setAnimMode(strtoul(val, NULL, 10));
 }
 // ---------------------------------------------------------------------------------------
@@ -1082,7 +949,7 @@ String lightAnimSpeed(){
 	return String(_cur_anim_speed);
 }
 void lightAnimSpeed(const char * val){
-	DEBUG_MSG_P(PSTR("[WEB|API] Set AnimSpeed to %s \n"), val);	
+	DEBUG_MSG_P(PSTR("[WEB|API] Set AnimSpeed to %s \n"), val);
 	_setAnimSpeed(strtoul(val, NULL, 10));
 }
 
@@ -1138,7 +1005,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             _setAnimSpeed(atoi(payload));
             lightUpdate(true, mqttForward());
         }
-        
+
         // Brightness
         if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
             _setBrightness (constrain(atoi(payload), 0, LIGHT_MAX_BRIGHTNESS));
