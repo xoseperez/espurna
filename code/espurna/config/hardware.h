@@ -479,8 +479,9 @@
     #ifndef DUMMY_RELAY_COUNT
     #define DUMMY_RELAY_COUNT   6
     #endif
-    #define TERMINAL_SUPPORT    0
-    #define TRACK_RELAY_STATUS  0
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
+    #define TRACK_RELAY_STATUS      0
 
     // Buttons
     #define BUTTON1_PIN         0
