@@ -195,8 +195,8 @@ void _powerReport() {
     #endif
 
     char buf_current[10];
-    char buf_energy_delta[10];
-    char buf_energy_total[10];
+    char buf_energy_delta[20];
+    char buf_energy_total[20];
     dtostrf(_power_current, 1-sizeof(buf_current), POWER_CURRENT_DECIMALS, buf_current);
     dtostrf(energy_delta * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_delta), POWER_ENERGY_DECIMALS, buf_energy_delta);
     dtostrf(_power_energy * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_total), POWER_ENERGY_DECIMALS, buf_energy_total);
