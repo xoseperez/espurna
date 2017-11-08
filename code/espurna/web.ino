@@ -215,7 +215,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             if (lightHasColor()) {
 
                 if (action.equals("color") && root.containsKey("data")) {
-                    lightColor(root["data"]);
+                    lightColor((const char *) root["data"]);
                     lightUpdate(true, true);
                 }
 

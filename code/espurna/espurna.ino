@@ -294,6 +294,9 @@ void setup() {
     #if RF_SUPPORT
         rfSetup();
     #endif
+    #if IR_SUPPORT
+        irSetup();
+    #endif
     #if DOMOTICZ_SUPPORT
         domoticzSetup();
     #endif
@@ -355,6 +358,9 @@ void loop() {
     #endif
     #if RF_SUPPORT
         rfLoop();
+    #endif
+    #if IR_SUPPORT
+        irLoop();
     #endif
 
 }

@@ -25,9 +25,9 @@ void _irProcessCode(unsigned long code) {
     boolean found = false;
 
     // Repeat last valid code
-    DEBUG_MSG_P(PSTR("[IR] Received 0x%08X\n"), code);
+    DEBUG_MSG_P(PSTR("[IR] Received 0x%06X\n"), code);
     if (code == 0xFFFFFFFF) {
-        DEBUG_MSG_P(PSTR("[IR] Processing 0x%08X\n"), code);
+        DEBUG_MSG_P(PSTR("[IR] Processing 0x%06X\n"), code);
         code = last_code;
     }
 
@@ -38,6 +38,10 @@ void _irProcessCode(unsigned long code) {
 
             unsigned long button_mode = pgm_read_dword(&IR_BUTTON[i][1]);
             unsigned long button_value = pgm_read_dword(&IR_BUTTON[i][2]);
+
+            if (button_mode == IR_BUTTON_MODE_STATE) {
+                relayStatus(0, button_value);
+            }
 
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
@@ -51,22 +55,22 @@ void _irProcessCode(unsigned long code) {
                 }
 
                 /*
+                #if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
+                    if (button_mode == IR_BUTTON_MODE_EFFECT) {
+                        _buttonAnimMode(button_value);
+                    }
+                #endif
+                */
+
+                /*
                 if (button_mode == IR_BUTTON_MODE_HSV) {
                     lightColor(button_value);
                 }
                 */
 
-            #endif
+                lightUpdate(true, true);
 
-            /*
-            #if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
-                if (button_mode == IR_BUTTON_MODE_EFFECT) {
-                    _buttonAnimMode(button_value);
-                }
             #endif
-            */
-
-            lightUpdate(true, true);
 
             found = true;
             last_code = code;
@@ -77,7 +81,6 @@ void _irProcessCode(unsigned long code) {
 	}
 
 	if (!found) {
-		last_code = 0;
 		DEBUG_MSG_P(PSTR("[IR] Ignoring code\n"));
 	}
 

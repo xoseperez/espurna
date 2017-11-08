@@ -699,13 +699,17 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
+    // IR
+    #define IR_SUPPORT          1
+    #define IR_PIN              4
+    #define IR_BUTTON_SET       1
+
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
     // Info
     #define MANUFACTURER        "MAGICHOME"
     #define DEVICE              "LED_CONTROLLER_20"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
