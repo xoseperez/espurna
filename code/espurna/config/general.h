@@ -500,7 +500,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #ifndef LIGHT_MAX_PWM
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-#define LIGHT_MAX_PWM           256
+#define LIGHT_MAX_PWM           255
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
