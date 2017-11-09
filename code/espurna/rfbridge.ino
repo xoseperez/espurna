@@ -94,6 +94,10 @@ void _rfbSend(byte * message, int times) {
 
 void _rfbDecode() {
 
+    static unsigned long last = 0;
+    if (millis() - last < RF_RECEIVE_DELAY) return;
+    last = millis();
+
     byte action = _uartbuf[0];
     char buffer[RF_MESSAGE_SIZE * 2 + 1] = {0};
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Action 0x%02X\n"), action);
@@ -134,20 +138,27 @@ void _rfbDecode() {
         unsigned char id, status;
         bool found = false;
         for (id=0; id<relayCount(); id++) {
-            for (status=0; status<2; status++) {
-                String code = rfbRetrieve(id, status == 1);
-                if (code.length()) {
-                    if (code.endsWith(&buffer[12])) {
-                        found = true;
-                        break;
-                    }
+            String code_on = rfbRetrieve(id, true);
+            String code_off = rfbRetrieve(id, false);
+            if (code_on.length() && code_off.length()) {
+                if (code_on.endsWith(&buffer[12])) {
+                    found = true;
+                    status = 1;
+                }
+                if (code_off.endsWith(&buffer[12])) {
+                    found = true;
+                    if (status == 1) status = 2;
                 }
             }
             if (found) break;
         }
         if (found) {
             _rfbin = true;
-            relayStatus(id, status == 1);
+            if (status == 2) {
+                relayToggle(id);
+            } else {
+                relayStatus(id, status == 1);
+            }
         }
 
     }

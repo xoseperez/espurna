@@ -716,6 +716,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define RF_SEND_TIMES           4               // How many times to send the message
 #define RF_SEND_DELAY           250             // Interval between sendings in ms
+#define RF_RECEIVE_DELAY        500             // Interval between recieving in ms (avoid debouncing)
 
 // -----------------------------------------------------------------------------
 // IR
