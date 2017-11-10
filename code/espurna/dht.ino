@@ -136,7 +136,8 @@ int readDHT() {
 // -----------------------------------------------------------------------------
 
 double getDHTTemperature(bool celsius) {
-    return celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
+    double value = celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
+    return roundTo(value, DHT_TEMPERATURE_DECIMALS);
 }
 
 double getDHTTemperature() {
