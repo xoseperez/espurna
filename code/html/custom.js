@@ -421,14 +421,14 @@ function addNetwork() {
 
 }
 
-function initColor() {
+function initColorRGB() {
 
     // check if already initialized
     var done = $("#colors > div").length;
     if (done > 0) return;
 
     // add template
-    var template = $("#colorTemplate").children();
+    var template = $("#colorRGBTemplate").children();
     var line = $(template).clone();
     line.appendTo("#colors");
 
@@ -437,7 +437,7 @@ function initColor() {
         sliders: 'wrgbp'
     }).on('sliderup', function() {
         var value = $(this).wheelColorPicker('getValue', 'css');
-        websock.send(JSON.stringify({'action': 'color', 'data' : value}));
+        websock.send(JSON.stringify({'action': 'rgb', 'data' : value}));
     });
 
     // init bright slider
@@ -458,14 +458,14 @@ function initColor() {
 
 }
 
-function initColorHsv() {
+function initColorHSV() {
 
     // check if already initialized
     var done = $("#colors > div").length;
     if (done > 0) return;
 
     // add template
-    var template = $("#colorHsvTemplate").children();
+    var template = $("#colorHSVTemplate").children();
     var line = $(template).clone();
     line.appendTo("#colors");
 
@@ -473,12 +473,9 @@ function initColorHsv() {
     $('input[name="color"]').wheelColorPicker({
         sliders: 'whsvp'
     }).on('sliderup', function() {
-        var color_all = $(this).wheelColorPicker('getColor');
-        var color_hsv ={};
-        color_hsv.h	  =Math.floor(color_all.h * 255);
-        color_hsv.s	  =Math.floor(color_all.s * 255);
-        color_hsv.v	  =Math.floor(color_all.v * 255);
-        websock.send(JSON.stringify({'action': 'color_hsv', 'data' : color_hsv}));
+        var color = $(this).wheelColorPicker('getColor');
+        var value = parseInt(color.h * 360) + "," + parseInt(color.s * 100) + "," + parseInt(color.v * 100);
+        websock.send(JSON.stringify({'action': 'hsv', 'data': value}));
     });
 
 }
@@ -667,19 +664,21 @@ function processData(data) {
             return;
         }
 
-        if (key == "color") {
-            initColor();
+        if (key == "rgb") {
+            initColorRGB();
             $("input[name='color']").wheelColorPicker('setValue', data[key], true);
             return;
         }
 
-        if (key == "color_hsv") {
-            initColorHsv();
-            var color_hsv ={};
-            color_hsv.h = data[key]['h'] / 255;
-            color_hsv.s = data[key]['s'] / 255;
-            color_hsv.v = data[key]['v'] / 255;
-            $("input[name='color']").wheelColorPicker('setColor', color_hsv);
+        if (key == "hsv") {
+            initColorHSV();
+            // wheelColorPicker expects HSV to be between 0 and 1 all of them
+            var chunks = data[key].split(",");
+            var obj = {};
+            obj.h = chunks[0] / 360;
+            obj.s = chunks[1] / 100;
+            obj.v = chunks[2] / 100;
+            $("input[name='color']").wheelColorPicker('setColor', obj);
             return;
         }
 

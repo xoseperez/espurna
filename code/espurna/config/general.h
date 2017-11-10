@@ -312,7 +312,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
 #define API_ENABLED             0           // Do not enable API by default
-#define API_BUFFER_SIZE         10          // Size of the buffer for HTTP GET API responses
+#define API_BUFFER_SIZE         15          // Size of the buffer for HTTP GET API responses
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
@@ -435,9 +435,9 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
-#define MQTT_TOPIC_COLOR        "color"
-#define MQTT_TOPIC_COLOR_RGB    "color_rgb"
-#define MQTT_TOPIC_COLOR_HSV    "color_hsv"
+#define MQTT_TOPIC_COLOR        "color"     // DEPRECATED, use RGB instead
+#define MQTT_TOPIC_COLOR_RGB    "rgb"
+#define MQTT_TOPIC_COLOR_HSV    "hsv"
 #define MQTT_TOPIC_ANIM_MODE    "anim_mode"
 #define MQTT_TOPIC_ANIM_SPEED   "anim_speed"
 #define MQTT_TOPIC_BRIGHTNESS   "brightness"
@@ -523,6 +523,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
 #define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
+#define LIGHT_USE_RGB           0           // Use RGB color selector (1=> RGB, 0=> HSV)
 
 // -----------------------------------------------------------------------------
 // POWER METERING

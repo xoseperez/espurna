@@ -379,6 +379,14 @@
                                 </div>
 
                                 <div class="pure-g module module-color">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label for="useRGB">Use RGB picker</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useRGB"  action="reload" tabindex="11" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Use RGB color picker if enabled (plus brightness), otherwise use HSV (hue-saturation-value) style</div>
+                                </div>
+
+                                <div class="pure-g module module-color">
                                     <div class="pure-u-1 pure-u-sm-1-4"><label for="useWhite">Use white channel</label></div>
                                     <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
@@ -1007,7 +1015,7 @@
             </div>
         </div>
 
-        <div id="colorTemplate" class="template">
+        <div id="colorRGBTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-sm-1-4">Color</label>
                 <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />
@@ -1019,7 +1027,7 @@
             </div>
         </div>
 
-        <div id="colorHsvTemplate" class="template">
+        <div id="colorHSVTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-sm-1-4">Color</label>
                 <input class="pure-u-1 pure-u-sm-1-4" data-wcp-layout="block" name="color" readonly />

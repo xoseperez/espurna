@@ -156,6 +156,130 @@ void _toRGB(char * rgb, size_t len) {
     _toRGB(rgb, len, false);
 }
 
+// HSV string is expected to be "H,S,V", where:
+//   0 <= H <= 360
+//   0 <= S <= 100
+//   0 <= V <= 100
+void _fromHSV(const char * hsv) {
+
+    char * ptr = (char *) hsv;
+    if (strlen(ptr) == 0) return;
+    if (!lightHasColor()) return;
+
+    char * tok;
+    unsigned char count = 0;
+    unsigned int value[3] = {0};
+
+    tok = strtok(ptr, ",");
+    while (tok != NULL) {
+        value[count] = atoi(tok);
+        if (++count == 3) break;
+        tok = strtok(NULL, ",");
+    }
+    if (count != 3) return;
+
+    // HSV to RGB transformation -----------------------------------------------
+
+    double h = (value[0] == 360) ? 0 : (double) value[0] / 60.0;
+    double f = (h - floor(h));
+    double s = (double) value[1] / 100.0;
+    unsigned char v = round((double) value[2] * 255.0 / 100.0);
+    unsigned char p = round(v * (1.0 - s));
+    unsigned char q = round(v * (1.0 - s * f));
+    unsigned char t = round(v * (1.0 - s * (1.0 - f)));
+
+    switch (int(h)) {
+        case 0:
+            _channels[0].value = v;
+            _channels[1].value = t;
+            _channels[2].value = p;
+            break;
+        case 1:
+            _channels[0].value = q;
+            _channels[1].value = v;
+            _channels[2].value = p;
+            break;
+        case 2:
+            _channels[0].value = p;
+            _channels[1].value = v;
+            _channels[2].value = t;
+            break;
+        case 3:
+            _channels[0].value = p;
+            _channels[1].value = q;
+            _channels[2].value = v;
+            break;
+        case 4:
+            _channels[0].value = t;
+            _channels[1].value = p;
+            _channels[2].value = v;
+            break;
+        case 5:
+            _channels[0].value = v;
+            _channels[1].value = p;
+            _channels[2].value = q;
+            break;
+        default:
+            _channels[0].value = 0;
+            _channels[1].value = 0;
+            _channels[2].value = 0;
+            break;
+    }
+
+    _brightness = LIGHT_MAX_BRIGHTNESS;
+
+}
+
+void _toHSV(char * hsv, size_t len) {
+
+    if (!lightHasColor()) return;
+
+    double min, max;
+    double h, s, v;
+
+    double r = (double) _channels[0].value / 255.0;
+    double g = (double) _channels[1].value / 255.0;
+    double b = (double) _channels[2].value / 255.0;
+
+    min = (r < g) ? r : g;
+    min = (min < b) ? min : b;
+    max = (r > g) ? r : g;
+    max = (max > b) ? max : b;
+
+    v = 100.0 * max;
+    if (v == 0) {
+
+        h = s = 0;
+
+    } else {
+
+        s = 100.0 * (max - min) / max;
+        if (s == 0) {
+
+            h = 0;
+
+        } else {
+
+            if (max == r) {
+                if (g >= b) {
+                    h = 0.0 + 60.0 * (g - b) / (max - min);
+                } else {
+                    h = 360.0 + 60.0 * (g - b) / (max - min);
+                }
+            } else if (max == g) {
+                h = 120.0 + 60.0 * (b - r) / (max - min);
+            } else {
+                h = 240.0 + 60.0 * (r - g) / (max - min);
+            }
+        }
+
+    }
+
+    // String
+    snprintf_P(hsv, len, PSTR("%d,%d,%d"), round(h), round(s), round(v));
+
+}
+
 void _toLong(char * color, size_t len, bool applyBrightness) {
 
     if (!lightHasColor()) return;
@@ -328,7 +452,9 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
             mqttSubscribe(MQTT_TOPIC_MIRED);
             mqttSubscribe(MQTT_TOPIC_KELVIN);
-            mqttSubscribe(MQTT_TOPIC_COLOR);
+            mqttSubscribe(MQTT_TOPIC_COLOR); // DEPRECATE
+            mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
+            mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
         }
 
         char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
@@ -355,8 +481,12 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         }
 
         // Color
-        if (t.equals(MQTT_TOPIC_COLOR)) {
-            lightColor(payload);
+        if (t.equals(MQTT_TOPIC_COLOR) || t.equals(MQTT_TOPIC_COLOR_RGB)) { // DEPRECATE MQTT_TOPIC_COLOR
+            lightColor(payload, true);
+            lightUpdate(true, mqttForward());
+        }
+        if (t.equals(MQTT_TOPIC_COLOR_HSV)) {
+            lightColor(payload, false);
             lightUpdate(true, mqttForward());
         }
 
@@ -406,11 +536,14 @@ void lightMQTT() {
 
         // Color
         if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
-            _toRGB(buffer, 12, false);
+            _toRGB(buffer, sizeof(buffer), false);
         } else {
-            _toLong(buffer, 12, false);
+            _toLong(buffer, sizeof(buffer), false);
         }
-        mqttSend(MQTT_TOPIC_COLOR, buffer);
+        mqttSend(MQTT_TOPIC_COLOR, buffer); // DEPRECATE
+        mqttSend(MQTT_TOPIC_COLOR_RGB, buffer);
+        _toHSV(buffer, sizeof(buffer));
+        mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
 
         // Brightness
         snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _brightness);
@@ -443,8 +576,13 @@ void lightUpdate(bool save, bool forward) {
         root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
         root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
         if (lightHasColor()) {
-            root["color"] = lightColor();
-            root["brightness"] = lightBrightness();
+            bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
+            if (useRGB) {
+                root["rgb"] = lightColor(true);
+                root["brightness"] = lightBrightness();
+            } else {
+                root["hsv"] = lightColor(false);
+            }
         }
         JsonArray& channels = root.createNestedArray("channels");
         for (unsigned char id=0; id < lightChannels(); id++) {
@@ -477,18 +615,35 @@ bool lightState() {
     return _lightState;
 }
 
+void lightColor(const char * color, bool rgb) {
+    DEBUG_MSG_P(PSTR("[LIGHT] %s: %s\n"), rgb ? "RGB" : "HSV", color);
+    if (rgb) {
+        _fromRGB(color);
+    } else {
+        _fromHSV(color);
+    }
+}
+
 void lightColor(const char * color) {
-    _fromRGB(color);
+    lightColor(color, true);
 }
 
 void lightColor(unsigned long color) {
     _fromLong(color, false);
 }
 
+String lightColor(bool rgb) {
+    char str[12];
+    if (rgb) {
+        _toRGB(str, sizeof(str), false);
+    } else {
+        _toHSV(str, sizeof(str));
+    }
+    return String(str);
+}
+
 String lightColor() {
-    char rgb[8];
-    _toRGB(rgb, 8, false);
-    return String(rgb);
+    return lightColor(true);
 }
 
 unsigned int lightChannel(unsigned char id) {
@@ -527,6 +682,7 @@ void _lightAPISetup() {
         // API entry points (protected with apikey)
         if (lightHasColor()) {
 
+			// DEPRECATE
             apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
                 [](char * buffer, size_t len) {
                     if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
@@ -536,7 +692,31 @@ void _lightAPISetup() {
                     }
                 },
                 [](const char * payload) {
-                    lightColor(payload);
+                    lightColor(payload, true);
+                    lightUpdate(true, true);
+                }
+            );
+
+            apiRegister(MQTT_TOPIC_COLOR_RGB, MQTT_TOPIC_COLOR_RGB,
+                [](char * buffer, size_t len) {
+                    if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+                        _toRGB(buffer, len, false);
+                    } else {
+                        _toLong(buffer, len, false);
+                    }
+                },
+                [](const char * payload) {
+                    lightColor(payload, true);
+                    lightUpdate(true, true);
+                }
+            );
+
+            apiRegister(MQTT_TOPIC_COLOR_HSV, MQTT_TOPIC_COLOR_HSV,
+                [](char * buffer, size_t len) {
+                    _toHSV(buffer, len);
+                },
+                [](const char * payload) {
+                    lightColor(payload, false);
                     lightUpdate(true, true);
                 }
             );
