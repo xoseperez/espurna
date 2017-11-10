@@ -3,6 +3,17 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.9.9] 2017-11-09
+### Fixed
+- Fixed bug in MY9291-based light bulbs at full brightness
+
+### Added
+- RFBridge: toggle when RF codes for ON and OFF are the same (#270)
+- Support for HSV color schema (MQTT, API and webUI via a selector)
+
+### Changed
+- "COLOR" entry point deprecated, use "RGB" instead (MQTT and API, ex. topic "light/rgb/set" instead of "light/color/set")
+
 ## [1.9.8] 2017-11-08
 ### Fixed
 - Removed dimmer lights flicker when saving to EEPROM (#191)
@@ -16,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Option to select power read and report interval from webUI
 - Option to report real-time values in API, configurable via webUI
 - Support for ESPurna-H Board v0.8
-- Preliminary support for Arilux E28 light bulb (untested)
+- Support for Arilux E27 light bulb (untested)
 - Support for YJZK 2-gang switch
 
 ### Changed

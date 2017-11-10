@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.9.8**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+> **Current Release Version is 1.9.9**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 > **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
 
@@ -36,7 +36,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
 * [**Home Assistant**](https://home-assistant.io/) integration via MQTT
-    * Supports MQTT auto-discover feature (switches and lights)
+    * Support for switches (on/off)
+    * Support for lights (color, brightness, on/off state)
+    * Supports MQTT auto-discover feature (both switches and lights)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * Support for different **sensors**
     * DHT11 / DHT22 / DHT21 / AM2301 (supports celsius & fahrenheit reporting)
@@ -44,6 +46,12 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * HLW8012 using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
     * Non-invasive current sensor using the [EmonLiteESP Library](https://bitbucket.org/xoseperez/emonliteesp) (requires some hacking)
     * Raw analog sensor
+* Support for LED lights
+    * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
+    * RGB and HSV color codes supported
+    * Manage channels individually
+    * Temperature color supported (in mired and kelvin) via MQTT / REST API
+    * Flicker-free PWM management
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
@@ -113,7 +121,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Xenon SM-PW702U, Authometion LYT8266.
+**Other supported boards:** Itead Sonoff LED, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
 
 ## License
 
