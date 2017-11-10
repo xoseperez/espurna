@@ -82,11 +82,15 @@
 #endif
 
 //------------------------------------------------------------------------------
-// CRASH
+// SYSTEM CHECK
 //------------------------------------------------------------------------------
 
-#define CRASH_SAFE_TIME         60000           // The system is considered stable after these many millis
-#define CRASH_COUNT_MAX         5               // After this many crashes on boot
+#ifndef SYSTEM_CHECK_ENABLED
+#define SYSTEM_CHECK_ENABLED    1               // Enable crash check by default
+#endif
+
+#define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
+#define SYSTEM_CHECK_MAX        5               // After this many crashes on boot
                                                 // the system is flagged as unstable
 
 //------------------------------------------------------------------------------

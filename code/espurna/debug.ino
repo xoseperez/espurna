@@ -33,7 +33,9 @@ void debugSend(const char * format, ...) {
     #endif
 
     #if DEBUG_UDP_SUPPORT
+        #if SYSTEM_CHECK_ENABLED
         if (systemCheck()) {
+        #endif
             udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
             udpDebug.write(buffer);
             if (len > DEBUG_MESSAGE_MAX_LENGTH) {
@@ -41,7 +43,9 @@ void debugSend(const char * format, ...) {
             }
             udpDebug.endPacket();
             delay(1);
+        #if SYSTEM_CHECK_ENABLED
         }
+        #endif
     #endif
 
     #if DEBUG_TELNET_SUPPORT
@@ -70,7 +74,9 @@ void debugSend_P(PGM_P format, ...) {
     #endif
 
     #if DEBUG_UDP_SUPPORT
+        #if SYSTEM_CHECK_ENABLED
         if (systemCheck()) {
+        #endif
             udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
             udpDebug.write(buffer);
             if (len > DEBUG_MESSAGE_MAX_LENGTH) {
@@ -78,7 +84,9 @@ void debugSend_P(PGM_P format, ...) {
             }
             udpDebug.endPacket();
             delay(1);
+        #if SYSTEM_CHECK_ENABLED
         }
+        #endif
     #endif
 
     #if DEBUG_TELNET_SUPPORT

@@ -53,14 +53,6 @@ void hardwareSetup() {
 
 void hardwareLoop() {
 
-    // System check
-    static bool checked = false;
-    if (!checked && (millis() > CRASH_SAFE_TIME)) {
-        // Check system as stable
-        systemCheck(true);
-        checked = true;
-    }
-
     // Heartbeat
     static unsigned long last_uptime = 0;
     if ((millis() - last_uptime > HEARTBEAT_INTERVAL) || (last_uptime == 0)) {
@@ -225,7 +217,9 @@ void setup() {
     hardwareSetup();
 
     // Question system stability
-    systemCheck(false);
+    #if SYSTEM_CHECK_ENABLED
+        systemCheck(false);
+    #endif
 
     // Show welcome message and system configuration
     welcome();
@@ -243,7 +237,9 @@ void setup() {
     #endif
 
     // Do not run the next services if system is flagged stable
-    if (!systemCheck()) return;
+    #if SYSTEM_CHECK_ENABLED
+        if (!systemCheck()) return;
+    #endif
 
     #if WEB_SUPPORT
         webSetup();
@@ -316,7 +312,10 @@ void loop() {
     otaLoop();
 
     // Do not run the next services if system is flagged stable
-    if (!systemCheck()) return;
+    #if SYSTEM_CHECK_ENABLED
+        systemCheckLoop();
+        if (!systemCheck()) return;
+    #endif
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightLoop();
