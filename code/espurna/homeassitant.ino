@@ -36,8 +36,8 @@ void haSend(bool add) {
             if (lightHasColor()) {
                 root["brightness_state_topic"] = getTopic(MQTT_TOPIC_BRIGHTNESS, false);
                 root["brightness_command_topic"] = getTopic(MQTT_TOPIC_BRIGHTNESS, true);
-                root["rgb_state_topic"] = getTopic(MQTT_TOPIC_COLOR, false);
-                root["rgb_command_topic"] = getTopic(MQTT_TOPIC_COLOR, true);
+                root["rgb_state_topic"] = getTopic(MQTT_TOPIC_COLOR_RGB, false);
+                root["rgb_command_topic"] = getTopic(MQTT_TOPIC_COLOR_RGB, true);
                 root["color_temp_command_topic"] = getTopic(MQTT_TOPIC_MIRED, true);
             }
 
