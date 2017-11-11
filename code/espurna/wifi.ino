@@ -174,6 +174,10 @@ void wifiInject() {
 
 void wifiSetup() {
 
+    #if WIFI_SLEEP_ENABLED
+        wifi_set_sleep_type(LIGHT_SLEEP_T);
+    #endif
+
     wifiInject();
     wifiConfigure();
 

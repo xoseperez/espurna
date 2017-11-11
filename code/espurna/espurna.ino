@@ -241,6 +241,7 @@ void setup() {
         if (!systemCheck()) return;
     #endif
 
+    // Init webserver required before any module that uses API
     #if WEB_SUPPORT
         webSetup();
     #endif
@@ -256,7 +257,6 @@ void setup() {
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif
-
     #if POWER_PROVIDER != POWER_PROVIDER_NONE
         powerSetup();
     #endif
@@ -311,26 +311,23 @@ void loop() {
     wifiLoop();
     otaLoop();
 
-    // Do not run the next services if system is flagged stable
     #if SYSTEM_CHECK_ENABLED
         systemCheckLoop();
+        // Do not run the next services if system is flagged stable
         if (!systemCheck()) return;
     #endif
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightLoop();
     #endif
-
-
-    buttonLoop();
     relayLoop();
+    buttonLoop();
     ledLoop();
     mqttLoop();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();
     #endif
-
     #if POWER_PROVIDER != POWER_PROVIDER_NONE
         powerLoop();
     #endif
@@ -360,6 +357,11 @@ void loop() {
     #endif
     #if IR_SUPPORT
         irLoop();
+    #endif
+
+    // Power saving delay
+    #if LOOP_DELAY_TIME
+        delay(LOOP_DELAY_TIME);
     #endif
 
 }

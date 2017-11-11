@@ -9,6 +9,7 @@
 
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
+#define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
 //------------------------------------------------------------------------------
 // TELNET
@@ -266,6 +267,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_RECONNECT_INTERVAL 180000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
+#define WIFI_SLEEP_ENABLED      1           // Enable WiFi light sleep
 
 // Optional hardcoded configuration (up to 2 different networks)
 //#define WIFI1_SSID              "..."
