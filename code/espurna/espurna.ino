@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // METHODS
 // -----------------------------------------------------------------------------
 
+unsigned long _loopDelay = 0;
+
 void hardwareSetup() {
 
     EEPROM.begin(EEPROM_SIZE);
@@ -49,6 +51,7 @@ void hardwareSetup() {
         pinMode(16, OUTPUT);
         digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
     #endif
+
 }
 
 void hardwareLoop() {
@@ -207,6 +210,8 @@ void welcome() {
     #if ADC_VCC_ENABLED
         DEBUG_MSG_P(PSTR("[INIT] Power: %d mV\n"), ESP.getVcc());
     #endif
+
+    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
     DEBUG_MSG_P(PSTR("\n"));
 
 }
@@ -221,15 +226,19 @@ void setup() {
         systemCheck(false);
     #endif
 
-    // Show welcome message and system configuration
-    welcome();
-
     // Init persistance and terminal features
     settingsSetup();
     if (getSetting("hostname").length() == 0) {
         setSetting("hostname", getIdentifier());
     }
 
+    // Cache loop delay value to speed things (recommended max 250ms)
+    _loopDelay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
+
+    // Show welcome message and system configuration
+    welcome();
+
+    // Basic modules, will always run
     wifiSetup();
     otaSetup();
     #if TELNET_SUPPORT
@@ -360,8 +369,6 @@ void loop() {
     #endif
 
     // Power saving delay
-    #if LOOP_DELAY_TIME
-        delay(LOOP_DELAY_TIME);
-    #endif
+    delay(_loopDelay);
 
 }
