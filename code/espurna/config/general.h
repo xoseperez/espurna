@@ -11,6 +11,9 @@
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
+#define ARRAYINIT(type, name, ...) \
+    type name[] = {__VA_ARGS__};
+
 //------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
@@ -480,7 +483,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Available light providers (do not change)
 #define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_MY9192   1 // works with MY9231 also (Sonoff B1)
+#define LIGHT_PROVIDER_MY92XX   1 // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER   2
 
 // LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
@@ -505,7 +508,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef LIGHT_MAX_PWM
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #define LIGHT_MAX_PWM           255
 #endif
 

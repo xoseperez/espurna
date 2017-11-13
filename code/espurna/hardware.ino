@@ -13,6 +13,8 @@ the migration to future version 2 will be straigh forward.
 
 */
 
+#include <my92xx.h>
+
 void hwUpwardsCompatibility() {
 
     unsigned int board = getSetting("board", 0).toInt();
@@ -222,7 +224,9 @@ void hwUpwardsCompatibility() {
 
         setSetting("board", 20);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
+        setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+        setSetting("myModel", MY92XX_MODEL_MY9291);
+        setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
         setSetting("relays", 1);
@@ -349,7 +353,9 @@ void hwUpwardsCompatibility() {
 
         setSetting("board", 28);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
+        setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+        setSetting("myModel", MY92XX_MODEL_MY9231);
+        setSetting("myChips", 2);
         setSetting("myDIGPIO", 12);
         setSetting("myDCKIGPIO", 14);
         setSetting("relays", 1);
@@ -561,7 +567,9 @@ void hwUpwardsCompatibility() {
 
         setSetting("board", 46);
         setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("lightProvider", LIGHT_PROVIDER_MY9192);
+        setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+        setSetting("myModel", MY92XX_MODEL_MY9291);
+        setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
         setSetting("relays", 1);
