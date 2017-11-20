@@ -31,6 +31,9 @@ void haSend(bool add) {
             root["command_topic"] = getTopic(MQTT_TOPIC_RELAY, 0, true);
             root["payload_on"] = String("1");
             root["payload_off"] = String("0");
+            root["availability_topic"] = getTopic(MQTT_TOPIC_STATUS, false);
+            root["payload_available"] = String("1");
+            root["payload_not_available"] = String("0");
         }
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -65,6 +68,7 @@ void haSend(bool add) {
         "/config";
 
     mqttSendRaw(topic.c_str(), output.c_str());
+    mqttSend(MQTT_TOPIC_STATUS, 1);
 
 }
 
