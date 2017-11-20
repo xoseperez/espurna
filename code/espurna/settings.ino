@@ -118,7 +118,7 @@ void settingsSetup() {
     Embedis::hardware( F("WIFI"), [](Embedis* e) {
         StreamString s;
         WiFi.printDiag(s);
-        e->response(s);
+        DEBUG_MSG(s.c_str());
     }, 0);
 
     // -------------------------------------------------------------------------
@@ -126,33 +126,33 @@ void settingsSetup() {
     Embedis::command( F("RESET.WIFI"), [](Embedis* e) {
         wifiConfigure();
         wifiDisconnect();
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("RESET.MQTT"), [](Embedis* e) {
         mqttConfigure();
         mqttDisconnect();
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("INFO"), [](Embedis* e) {
         welcome();
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("UPTIME"), [](Embedis* e) {
-        e->stream->printf("Uptime: %d seconds\n", getUptime());
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("RESET"), [](Embedis* e) {
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
         customReset(CUSTOM_RESET_TERMINAL);
         ESP.restart();
     });
 
     Embedis::command( F("ERASE.CONFIG"), [](Embedis* e) {
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
         customReset(CUSTOM_RESET_TERMINAL);
         ESP.eraseConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
@@ -160,24 +160,24 @@ void settingsSetup() {
 
     #if NOFUSS_SUPPORT
         Embedis::command( F("NOFUSS"), [](Embedis* e) {
-            e->response(Embedis::OK);
+            DEBUG_MSG_P(PSTR("+OK\n"));
             nofussRun();
         });
     #endif
 
     Embedis::command( F("FACTORY.RESET"), [](Embedis* e) {
         settingsFactoryReset();
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("HEAP"), [](Embedis* e) {
-        e->stream->printf("Free HEAP: %d bytes\n", ESP.getFreeHeap());
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("Free HEAP: %d bytes\n"), ESP.getFreeHeap());
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
-            return e->response(Embedis::ARGS_ERROR);
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         }
         int id = String(e->argv[1]).toInt();
         if (e->argc > 2) {
@@ -188,8 +188,8 @@ void settingsSetup() {
                 relayStatus(id, value == 1);
             }
         }
-        e->stream->printf("Status: %s\n", relayStatus(id) ? "true" : "false");
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("Status: %s\n"), relayStatus(id) ? "true" : "false");
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -202,8 +202,8 @@ void settingsSetup() {
                     lightColor(color.c_str());
                     lightUpdate(true, true);
                 }
-                e->stream->printf("Color: %s\n", lightColor().c_str());
-                e->response(Embedis::OK);
+                DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+                DEBUG_MSG_P(PSTR("+OK\n"));
             });
 
             Embedis::command( F("BRIGHTNESS"), [](Embedis* e) {
@@ -211,8 +211,8 @@ void settingsSetup() {
                     lightBrightness(String(e->argv[1]).toInt());
                     lightUpdate(true, true);
                 }
-                e->stream->printf("Brightness: %d\n", lightBrightness());
-                e->response(Embedis::OK);
+                DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
+                DEBUG_MSG_P(PSTR("+OK\n"));
             });
 
             Embedis::command( F("MIRED"), [](Embedis* e) {
@@ -221,8 +221,8 @@ void settingsSetup() {
                     lightColor(color.c_str());
                     lightUpdate(true, true);
                 }
-                e->stream->printf("Color: %s\n", lightColor().c_str());
-                e->response(Embedis::OK);
+                DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+                DEBUG_MSG_P(PSTR("+OK\n"));
             });
 
             Embedis::command( F("KELVIN"), [](Embedis* e) {
@@ -231,15 +231,15 @@ void settingsSetup() {
                     lightColor(color.c_str());
                     lightUpdate(true, true);
                 }
-                e->stream->printf("Color: %s\n", lightColor().c_str());
-                e->response(Embedis::OK);
+                DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+                DEBUG_MSG_P(PSTR("+OK\n"));
             });
 
         }
 
         Embedis::command( F("CHANNEL"), [](Embedis* e) {
             if (e->argc < 2) {
-                return e->response(Embedis::ARGS_ERROR);
+                DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
             }
             int id = String(e->argv[1]).toInt();
             if (e->argc > 2) {
@@ -247,17 +247,17 @@ void settingsSetup() {
                 lightChannel(id, value);
                 lightUpdate(true, true);
             }
-            e->stream->printf("Channel #%d: %d\n", id, lightChannel(id));
-            e->response(Embedis::OK);
+            DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
+            DEBUG_MSG_P(PSTR("+OK\n"));
         });
 
     #endif
 
     Embedis::command( F("EEPROM"), [](Embedis* e) {
         unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
-        e->stream->printf("Number of keys: %d\n", settingsKeyCount());
-        e->stream->printf("Free EEPROM: %d bytes (%d%%)\n", freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("Number of keys: %d\n"), settingsKeyCount());
+        DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     Embedis::command( F("DUMP"), [](Embedis* e) {
@@ -265,25 +265,24 @@ void settingsSetup() {
         for (unsigned int i=0; i<size; i++) {
             String key = settingsKeyName(i);
             String value = getSetting(key);
-            e->stream->printf("+%s => %s\n", key.c_str(), value.c_str());
+            DEBUG_MSG_P(PSTR("+%s => %s\n"), key.c_str(), value.c_str());
         }
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     #if DEBUG_SUPPORT
         Embedis::command( F("CRASH"), [](Embedis* e) {
             debugDumpCrashInfo();
-            e->response(Embedis::OK);
+            DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
 
     Embedis::command( F("DUMP.RAW"), [](Embedis* e) {
         for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-            if (i % 16 == 0) e->stream->printf("\n[%04X] ", i);
-            e->stream->printf("%02X ", EEPROM.read(i));
+            if (i % 16 == 0) DEBUG_MSG_P(PSTR("\n[%04X] "), i);
+            DEBUG_MSG_P(PSTR("%02X "), EEPROM.read(i));
         }
-        e->stream->printf("\n");
-        e->response(Embedis::OK);
+        DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
     DEBUG_MSG_P(PSTR("[SETTINGS] EEPROM size: %d bytes\n"), SPI_FLASH_SEC_SIZE);
