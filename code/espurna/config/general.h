@@ -63,9 +63,8 @@
 //------------------------------------------------------------------------------
 
 // General debug options and macros
-#define DEBUG_MESSAGE_MAX_LENGTH    80
+#define DEBUG_FORMAT_MAX_LENGTH 80
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
-
 
 #if DEBUG_SUPPORT
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
