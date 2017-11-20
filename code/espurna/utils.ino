@@ -120,6 +120,18 @@ void heartbeat() {
         mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
     #endif
 
+    // Send info to websocket clients
+    {
+        char buffer[200];
+        snprintf_P(
+            buffer,
+            sizeof(buffer) - 1,
+            PSTR("{\"time\": \"%s\", \"uptime\": %lu, \"heap\": %lu}"),
+            ntpDateTime().c_str(), uptime_seconds, free_heap
+        );
+        wsSend(buffer);
+    }
+
 }
 
 // -----------------------------------------------------------------------------
