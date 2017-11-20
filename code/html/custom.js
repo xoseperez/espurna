@@ -21,7 +21,6 @@ function initMessages() {
     messages[03] = "Error parsing data!";
     messages[04] = "The file does not look like a valid configuration backup or is corrupted";
     messages[05] = "Changes saved. You should reboot your board now";
-    messages[06] = "Home Assistant auto-discovery message sent";
     messages[07] = "Passwords do not match!";
     messages[08] = "Changes saved";
     messages[09] = "No changes detected";
@@ -951,12 +950,6 @@ function init() {
     });
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
-    });
-    $(".button-ha-add").on('click', function() {
-        websock.send(JSON.stringify({'action': 'ha_add', 'data': $("input[name='haPrefix']").val()}));
-    });
-    $(".button-ha-del").on('click', function() {
-        websock.send(JSON.stringify({'action': 'ha_del', 'data': $("input[name='haPrefix']").val()}));
     });
 
     $(document).on('change', 'input', hasChanged);

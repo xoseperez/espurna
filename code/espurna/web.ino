@@ -175,21 +175,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         }
 
-        #if HOMEASSISTANT_SUPPORT
-            if (action.equals("ha_add") && root.containsKey("data")) {
-                String value = root["data"];
-                setSetting("haPrefix", value);
-                haSend(true);
-                wsSend_P(client_id, PSTR("{\"message\": 6}"));
-            }
-            if (action.equals("ha_del") && root.containsKey("data")) {
-                String value = root["data"];
-                setSetting("haPrefix", value);
-                haSend(false);
-                wsSend_P(client_id, PSTR("{\"message\": 6}"));
-            }
-        #endif
-
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
             if (lightHasColor()) {
@@ -375,27 +360,27 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // Clean wifi networks
             int i = 0;
             while (i < network) {
-                if (getSetting("ssid" + String(i)).length() == 0) {
-                    delSetting("ssid" + String(i));
+                if (!hasSetting("ssid", i)) {
+                    delSetting("ssid", i);
                     break;
                 }
-                if (getSetting("pass" + String(i)).length() == 0) delSetting("pass" + String(i));
-                if (getSetting("ip" + String(i)).length() == 0) delSetting("ip" + String(i));
-                if (getSetting("gw" + String(i)).length() == 0) delSetting("gw" + String(i));
-                if (getSetting("mask" + String(i)).length() == 0) delSetting("mask" + String(i));
-                if (getSetting("dns" + String(i)).length() == 0) delSetting("dns" + String(i));
+                if (!hasSetting("pass", i)) delSetting("pass", i);
+                if (!hasSetting("ip", i)) delSetting("ip", i);
+                if (!hasSetting("gw", i)) delSetting("gw", i);
+                if (!hasSetting("mask", i)) delSetting("mask", i);
+                if (!hasSetting("dns", i)) delSetting("dns", i);
                 ++i;
             }
             while (i < WIFI_MAX_NETWORKS) {
-                if (getSetting("ssid" + String(i)).length() > 0) {
-                    save = changed = true;
-                }
-                delSetting("ssid" + String(i));
-                delSetting("pass" + String(i));
-                delSetting("ip" + String(i));
-                delSetting("gw" + String(i));
-                delSetting("mask" + String(i));
-                delSetting("dns" + String(i));
+                if (hasSetting("ssid", i)) {
+					save = changed = true;
+				}
+                delSetting("ssid", i);
+                delSetting("pass", i);
+                delSetting("ip", i);
+                delSetting("gw", i);
+                delSetting("mask", i);
+                delSetting("dns", i);
                 ++i;
             }
 
@@ -430,15 +415,16 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             #if POWER_PROVIDER != POWER_PROVIDER_NONE
                 powerConfigure();
             #endif
-
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
                 #if LIGHT_SAVE_ENABLED == 0
                     lightSave();
                 #endif
             #endif
-
             #if NTP_SUPPORT
                 if (changedNTP) ntpConfigure();
+            #endif
+            #if HOMEASSISTANT_SUPPORT
+                haConfigure();
             #endif
 
         }
@@ -478,11 +464,10 @@ void _wsStart(uint32_t client_id) {
         root["app_name"] = APP_NAME;
         root["app_version"] = APP_VERSION;
         root["app_build"] = buildTime();
-
-        root["manufacturer"] = String(MANUFACTURER);
+        root["manufacturer"] = MANUFACTURER;
         root["chipid"] = chipid;
         root["mac"] = WiFi.macAddress();
-        root["device"] = String(DEVICE);
+        root["device"] = DEVICE;
         root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();
         root["deviceip"] = getIP();

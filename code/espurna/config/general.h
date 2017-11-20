@@ -681,6 +681,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define HOMEASSISTANT_SUPPORT   1               // Build with home assistant support
 #endif
 
+#define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 
 // -----------------------------------------------------------------------------

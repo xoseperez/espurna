@@ -305,6 +305,9 @@ void setup() {
     #if DOMOTICZ_SUPPORT
         domoticzSetup();
     #endif
+    #if HOMEASSISTANT_SUPPORT
+        haSetup();
+    #endif
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();
