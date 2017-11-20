@@ -168,6 +168,9 @@ void welcome() {
     #if INFLUXDB_SUPPORT
         DEBUG_MSG_P(PSTR(" INFLUXDB"));
     #endif
+    #if LLMNR_SUPPORT
+        DEBUG_MSG_P(PSTR(" LLMNR"));
+    #endif
     #if MDNS_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS"));
     #endif
@@ -307,6 +310,9 @@ void setup() {
     #endif
     #if HOMEASSISTANT_SUPPORT
         haSetup();
+    #endif
+    #if LLMNR_SUPPORT
+        llmnrSetup();
     #endif
 
     // Prepare configuration for version 2.0

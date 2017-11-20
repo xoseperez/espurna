@@ -69,6 +69,7 @@
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       0
 //#define IR_SUPPORT             1
+//#define LLMNR_SUPPORT          1
 //#define MDNS_SUPPORT           0
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0

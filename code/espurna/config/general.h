@@ -324,11 +324,15 @@ PROGMEM const char* const custom_reset_string[] = {
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
-// MDNS
+// MDNS & LLMNR
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
 #define MDNS_SUPPORT            1           // Publish services using mDNS by default
+#endif
+
+#ifndef LLMNR_SUPPORT
+#define LLMNR_SUPPORT           0           // Publish device using LLMNR protocol by default - requires 2.4.0
 #endif
 
 // -----------------------------------------------------------------------------
