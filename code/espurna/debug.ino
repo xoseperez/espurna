@@ -47,6 +47,8 @@ void debugSend(const char * format, ...) {
         _telnetWrite(buffer, strlen(buffer));
     #endif
 
+    free(buffer);
+
 }
 
 void debugSend_P(PGM_P format, ...) {
@@ -82,6 +84,8 @@ void debugSend_P(PGM_P format, ...) {
     #if DEBUG_TELNET_SUPPORT
         _telnetWrite(buffer, strlen(buffer));
     #endif
+
+    free(buffer);
 
 }
 
