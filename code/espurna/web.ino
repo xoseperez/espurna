@@ -559,6 +559,7 @@ void _wsStart(uint32_t client_id) {
 
             root["dczVisible"] = 1;
             root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+            root["dczSkip"] = getSetting("dczSkip", DOMOTICZ_SKIP_TIME);
             root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
             root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
