@@ -68,7 +68,7 @@ void haSend(bool add) {
         "/config";
 
     mqttSendRaw(topic.c_str(), output.c_str());
-    mqttSend(MQTT_TOPIC_STATUS, 1);
+    mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
 
 }
 
