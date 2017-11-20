@@ -535,12 +535,12 @@
     #define DEVICE              "SONOFF_T1_1CH"
 
     // Buttons
-    #define BUTTON1_PIN         9
+    #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN          5
+    #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
@@ -555,7 +555,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON2_PIN         10
+    #define BUTTON2_PIN         9
 
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
@@ -565,7 +565,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY2_PIN          4
+    #define RELAY2_PIN          5
 
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
