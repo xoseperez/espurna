@@ -256,6 +256,8 @@ void setup() {
     // Init webserver required before any module that uses API
     #if WEB_SUPPORT
         webSetup();
+        wsSetup();
+        apiSetup();
     #endif
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
