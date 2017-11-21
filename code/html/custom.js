@@ -90,24 +90,6 @@ function generateAPIKey() {
     return false;
 }
 
-function forgetCredentials() {
-    $.ajax({
-        'method': 'GET',
-        'url': '/',
-        'async': false,
-        'username': "logmeout",
-        'password': "123456",
-        'headers': { "Authorization": "Basic xxx" }
-    }).done(function(data) {
-        return false;
-        // If we don't get an error, we actually got an error as we expect an 401!
-    }).fail(function(){
-        // We expect to get an 401 Unauthorized error! In this case we are successfully
-        // logged out and we redirect the user.
-        return true;
-    });
-}
-
 function getJson(str) {
     try {
         return JSON.parse(str);
@@ -625,14 +607,12 @@ function processData(data) {
             password = data.webMode == 1;
             $("#layout").toggle(data.webMode == 0);
             $("#password").toggle(data.webMode == 1);
-            $("#credentials").hide();
         }
 
         // Actions
         if (key == "action") {
 
             if (data.action == "reload") {
-                if (password) forgetCredentials();
                 doReload(1000);
             }
 
@@ -955,14 +935,7 @@ function init() {
     $(document).on('change', 'input', hasChanged);
     $(document).on('change', 'select', hasChanged);
 
-    $.ajax({
-        'method': 'GET',
-        'url': window.location.href + 'auth'
-    }).done(function(data) {
-        connect();
-    }).fail(function(){
-        $("#credentials").show();
-    });
+    connect();
 
 }
 

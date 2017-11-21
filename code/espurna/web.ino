@@ -36,11 +36,6 @@ Ticker _web_defer;
 // -----------------------------------------------------------------------------
 
 AsyncWebSocket _ws("/ws");
-typedef struct {
-    IPAddress ip;
-    unsigned long timestamp = 0;
-} ws_ticket_t;
-ws_ticket_t _ticket[WS_BUFFER_SIZE];
 
 // -----------------------------------------------------------------------------
 
@@ -69,6 +64,8 @@ void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload
 }
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
+
+    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %s\n"), length ? (char*) payload : "");
 
     // Get client ID
     uint32_t client_id = client->id();
@@ -389,6 +386,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         // Save settings
         if (save) {
 
+            wsConfigure();
             saveSettings();
             wifiConfigure();
             otaConfigure();
@@ -706,35 +704,9 @@ void _wsStart(uint32_t client_id) {
 
 }
 
-bool _wsAuth(AsyncWebSocketClient * client) {
-
-    IPAddress ip = client->remoteIP();
-    unsigned long now = millis();
-    unsigned short index = 0;
-
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if ((_ticket[index].ip == ip) && (now - _ticket[index].timestamp < WS_TIMEOUT)) break;
-    }
-
-    if (index == WS_BUFFER_SIZE) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-        wsSend_P(client->id(), PSTR("{\"message\": 10}"));
-        return false;
-    }
-
-    return true;
-
-}
-
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
     if (type == WS_EVT_CONNECT) {
-
-        // Authorize
-        #ifndef NOWSAUTH
-            if (!_wsAuth(client)) return;
-        #endif
-
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsStart(client->id());
@@ -755,6 +727,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u pong(%u): %s\n"), client->id(), len, len ? (char*) data : "");
 
     } else if(type == WS_EVT_DATA) {
+        //DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u data(%u): %s\n"), client->id(), len, len ? (char*) data : "");
         WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *)client->_tempObject;
         AwsFrameInfo * info = (AwsFrameInfo*)arg;
         buffer->data_event(client, info, data, len);
@@ -794,11 +767,15 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
     _ws.text(client_id, buffer);
 }
 
+void wsConfigure() {
+    _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+}
+
 void wsSetup() {
     _ws.onEvent(_wsEvent);
-    mqttRegister(_wsMQTTCallback);
+    wsConfigure();
     _server->addHandler(&_ws);
-    _server->on("/auth", HTTP_GET, _onAuth);
+    mqttRegister(_wsMQTTCallback);
 }
 
 // -----------------------------------------------------------------------------
@@ -884,7 +861,6 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
 void _onAPIs(AsyncWebServerRequest *request) {
 
     _webLog(request);
-
     if (!_authAPI(request)) return;
 
     bool asJson = _asJson(request);
@@ -911,7 +887,6 @@ void _onAPIs(AsyncWebServerRequest *request) {
 void _onRPC(AsyncWebServerRequest *request) {
 
     _webLog(request);
-
     if (!_authAPI(request)) return;
 
     //bool asJson = _asJson(request);
@@ -978,29 +953,6 @@ bool _authenticate(AsyncWebServerRequest *request) {
     return request->authenticate(WEB_USERNAME, httpPassword);
 }
 
-void _onAuth(AsyncWebServerRequest *request) {
-
-    _webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication();
-
-    IPAddress ip = request->client()->remoteIP();
-    unsigned long now = millis();
-    unsigned short index;
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if (_ticket[index].ip == ip) break;
-        if (_ticket[index].timestamp == 0) break;
-        if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
-    }
-    if (index == WS_BUFFER_SIZE) {
-        request->send(429);
-    } else {
-        _ticket[index].ip = ip;
-        _ticket[index].timestamp = now;
-        request->send(204);
-    }
-
-}
-
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     _webLog(request);
@@ -1031,6 +983,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 void _onHome(AsyncWebServerRequest *request) {
 
     _webLog(request);
+    if (!_authenticate(request)) return request->requestAuthentication();
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
 
@@ -1128,6 +1081,9 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 #endif
 
 void _onUpgrade(AsyncWebServerRequest *request) {
+
+    _webLog(request);
+    if (!_authenticate(request)) return request->requestAuthentication();
 
     char buffer[10];
     if (!Update.hasError()) {
