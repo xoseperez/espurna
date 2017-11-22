@@ -14,6 +14,21 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 bool _idb_enabled = false;
 SyncClient _idb_client;
 
+// -----------------------------------------------------------------------------
+
+#if WEB_SUPPORT
+void _idbWSSend(JsonObject& root) {
+    root["idbVisible"] = 1;
+    root["idbHost"] = getSetting("idbHost");
+    root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
+    root["idbDatabase"] = getSetting("idbDatabase");
+    root["idbUsername"] = getSetting("idbUsername");
+    root["idbPassword"] = getSetting("idbPassword");
+}
+#endif
+
+// -----------------------------------------------------------------------------
+
 template<typename T> bool idbSend(const char * topic, T payload) {
 
     if (!_idb_enabled) return true;
@@ -61,6 +76,9 @@ void idbConfigure() {
 
 void idbSetup() {
     idbConfigure();
+    #if WEB_SUPPORT
+        wsRegister(_idbWSSend);
+    #endif
 }
 
 #endif

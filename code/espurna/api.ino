@@ -16,8 +16,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 typedef struct {
     char * url;
     char * key;
-    apiGetCallbackFunction getFn = NULL;
-    apiPutCallbackFunction putFn = NULL;
+    api_get_callback_f getFn = NULL;
+    api_put_callback_f putFn = NULL;
 } web_api_t;
 std::vector<web_api_t> _apis;
 
@@ -154,7 +154,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 // -----------------------------------------------------------------------------
 
-void apiRegister(const char * url, const char * key, apiGetCallbackFunction getFn, apiPutCallbackFunction putFn) {
+void apiRegister(const char * url, const char * key, api_get_callback_f getFn, api_put_callback_f putFn) {
 
     // Store it
     web_api_t api;

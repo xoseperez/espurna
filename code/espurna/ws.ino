@@ -12,10 +12,15 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <Ticker.h>
+#include <vector>
 #include "ws.h"
 
 AsyncWebSocket _ws("/ws");
 Ticker _web_defer;
+
+std::vector<ws_callback_f> _ws_sender_callbacks;
+std::vector<ws_callback_f> _ws_receiver_callbacks;
+
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
@@ -558,20 +563,6 @@ void _wsStart(uint32_t client_id) {
 
         #endif
 
-        #if INFLUXDB_SUPPORT
-            root["idbVisible"] = 1;
-            root["idbHost"] = getSetting("idbHost");
-            root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
-            root["idbDatabase"] = getSetting("idbDatabase");
-            root["idbUsername"] = getSetting("idbUsername");
-            root["idbPassword"] = getSetting("idbPassword");
-        #endif
-
-        #if ALEXA_SUPPORT
-            root["alexaVisible"] = 1;
-            root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
-        #endif
-
         #if DS18B20_SUPPORT
             root["dsVisible"] = 1;
             root["dsTmp"] = getDSTemperatureStr();
@@ -587,16 +578,6 @@ void _wsStart(uint32_t client_id) {
             root["rfVisible"] = 1;
             root["rfChannel"] = getSetting("rfChannel", RF_CHANNEL);
             root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
-        #endif
-
-        #if ANALOG_SUPPORT
-            root["analogVisible"] = 1;
-            root["analogValue"] = getAnalog();
-        #endif
-
-        #if COUNTER_SUPPORT
-            root["counterVisible"] = 1;
-            root["counterValue"] = getCounter();
         #endif
 
         #if POWER_PROVIDER != POWER_PROVIDER_NONE
@@ -664,6 +645,12 @@ void _wsStart(uint32_t client_id) {
             network["dns"] = getSetting("dns" + String(i));
         }
 
+        // Module setters
+        for (unsigned char i = 0; i < _ws_sender_callbacks.size(); i++) {
+            (_ws_sender_callbacks[i])(root);
+        }
+
+
     }
 
     String output;
@@ -711,6 +698,22 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
 bool wsConnected() {
     return (_ws.count() > 0);
+}
+
+void wsRegister(ws_callback_f sender, ws_callback_f receiver) {
+    _ws_sender_callbacks.push_back(sender);
+    if (receiver) _ws_receiver_callbacks.push_back(receiver);
+}
+
+void wsSend(ws_callback_f sender) {
+    if (_ws.count() > 0) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        sender(root);
+        String output;
+        root.printTo(output);
+        wsSend((char *) output.c_str());
+    }
 }
 
 void wsSend(const char * payload) {

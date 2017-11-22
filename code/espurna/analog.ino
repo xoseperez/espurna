@@ -12,6 +12,13 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // ANALOG
 // -----------------------------------------------------------------------------
 
+void _analogWSSend(JsonObject& root) {
+    root["analogVisible"] = 1;
+    root["analogValue"] = getAnalog();
+}
+
+// -----------------------------------------------------------------------------
+
 unsigned int getAnalog() {
     return analogRead(ANALOG_PIN);
 }
@@ -21,9 +28,15 @@ void analogSetup() {
     pinMode(ANALOG_PIN, INPUT);
 
     #if WEB_SUPPORT
+
+        // Websocket register
+        wsRegister(_analogWSSend);
+
+        // API register
         apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("%d"), getAnalog());
         });
+
     #endif
 
     DEBUG_MSG_P(PSTR("[ANALOG] Monitoring analog values\n"));
@@ -56,9 +69,7 @@ void analogLoop() {
 
         // Update websocket clients
         #if WEB_SUPPORT
-            char buffer[100];
-            snprintf_P(buffer, sizeof(buffer), PSTR("{\"analogVisible\": 1, \"analogValue\": %d}"), analog);
-            wsSend(buffer);
+            wsSend(_analogWSSend);
         #endif
 
     }

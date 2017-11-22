@@ -20,6 +20,13 @@ bool _alexa_change = false;
 unsigned int _alexa_device_id = 0;
 bool _alexa_state = false;
 
+#if WEB_SUPPORT
+    void _alexaWSSend(JsonObject& root) {
+        root["alexaVisible"] = 1;
+        root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
+    }
+#endif
+
 // -----------------------------------------------------------------------------
 
 void alexaConfigure() {
@@ -33,6 +40,11 @@ void alexaSetup() {
 
     // Load & cache settings
     alexaConfigure();
+
+    #if WEB_SUPPORT
+        // Websockets
+        wsRegister(_alexaWSSend);
+    #endif
 
     unsigned int relays = relayCount();
     String hostname = getSetting("hostname");

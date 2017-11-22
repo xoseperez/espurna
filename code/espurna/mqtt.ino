@@ -44,7 +44,7 @@ char *_mqtt_will;
 unsigned long _mqtt_connected_at = 0;
 #endif
 
-std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
+std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 typedef struct {
     char * topic;
@@ -192,7 +192,7 @@ void mqttUnsubscribeRaw(const char * topic) {
     }
 }
 
-void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
+void mqttRegister(mqtt_callback_f callback) {
     _mqtt_callbacks.push_back(callback);
 }
 
@@ -241,7 +241,7 @@ void _mqttOnConnect() {
 
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
+        (_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
     }
 
 }
@@ -252,7 +252,7 @@ void _mqttOnDisconnect() {
 
     // Send disconnect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_DISCONNECT_EVENT, NULL, NULL);
+        (_mqtt_callbacks[i])(MQTT_DISCONNECT_EVENT, NULL, NULL);
     }
 
 }
@@ -274,7 +274,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
     // Send message event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
+        (_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
     }
 
 }
