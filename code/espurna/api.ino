@@ -11,9 +11,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
-#include <Ticker.h>
+#include <vector>
 
-Ticker _api_defer;
 typedef struct {
     char * url;
     char * key;
@@ -144,10 +143,7 @@ void _onRPC(AsyncWebServerRequest *request) {
 
         if (action.equals("reset")) {
             response = 200;
-            _api_defer.once_ms(100, []() {
-                customReset(CUSTOM_RESET_RPC);
-                ESP.restart();
-            });
+            deferredReset(100, CUSTOM_RESET_RPC);
         }
 
     }

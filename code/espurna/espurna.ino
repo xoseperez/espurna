@@ -200,10 +200,10 @@ void welcome() {
 
     // -------------------------------------------------------------------------
 
-    unsigned char custom_reset = customReset();
-    if (custom_reset > 0) {
+    unsigned char reason = resetReason();
+    if (reason > 0) {
         char buffer[32];
-        strcpy_P(buffer, custom_reset_string[custom_reset-1]);
+        strcpy_P(buffer, custom_reset_string[reason-1]);
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), buffer);
     } else {
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());

@@ -11,10 +11,11 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <Ticker.h>
 #include "ws.h"
 
 AsyncWebSocket _ws("/ws");
-
+Ticker _web_defer;
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
@@ -55,8 +56,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action.c_str());
 
         if (action.equals("reset")) {
-            customReset(CUSTOM_RESET_WEB);
-            ESP.restart();
+            deferredReset(100, CUSTOM_RESET_WEB);
         }
 
         #ifdef ITEAD_SONOFF_RFBRIDGE

@@ -6,6 +6,9 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include <Ticker.h>
+Ticker _defer_reset;
+
 String getIdentifier() {
     char buffer[20];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), DEVICE, ESP.getChipId());
@@ -136,19 +139,28 @@ void heartbeat() {
 
 // -----------------------------------------------------------------------------
 
-void customReset(unsigned char status) {
-    EEPROM.write(EEPROM_CUSTOM_RESET, status);
-    EEPROM.commit();
-}
-
-unsigned char customReset() {
+unsigned char resetReason() {
     static unsigned char status = 255;
     if (status == 255) {
         status = EEPROM.read(EEPROM_CUSTOM_RESET);
-        if (status > 0) customReset(0);
+        if (status > 0) resetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
     return status;
+}
+
+void resetReason(unsigned char reason) {
+    EEPROM.write(EEPROM_CUSTOM_RESET, reason);
+    EEPROM.commit();
+}
+
+void reset(unsigned char reason) {
+    resetReason(reason);
+    ESP.restart();
+}
+
+void deferredReset(unsigned long delay, unsigned char reason) {
+    _defer_reset.once_ms(delay, reset, reason);
 }
 
 // -----------------------------------------------------------------------------

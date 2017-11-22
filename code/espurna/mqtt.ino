@@ -216,8 +216,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
             if (strcmp(payload, MQTT_ACTION_RESET) == 0) {
-                customReset(CUSTOM_RESET_MQTT);
-                ESP.restart();
+                deferredReset(100, CUSTOM_RESET_MQTT);
             }
         }
 

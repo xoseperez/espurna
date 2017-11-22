@@ -147,13 +147,12 @@ void settingsSetup() {
 
     Embedis::command( F("RESET"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
-        customReset(CUSTOM_RESET_TERMINAL);
-        ESP.restart();
+        deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
     Embedis::command( F("ERASE.CONFIG"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
-        customReset(CUSTOM_RESET_TERMINAL);
+        resetReason(CUSTOM_RESET_TERMINAL);
         ESP.eraseConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });

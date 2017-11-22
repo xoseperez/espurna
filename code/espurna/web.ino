@@ -14,7 +14,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <FS.h>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
-#include <Ticker.h>
 
 #if WEB_EMBEDDED
 #include "static/index.html.gz.h"
@@ -29,7 +28,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 AsyncWebServer * _server;
 char _last_modified[50];
-Ticker _web_defer;
 
 // -----------------------------------------------------------------------------
 // HOOKS
@@ -177,10 +175,7 @@ void _onUpgrade(AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
     if (!Update.hasError()) {
-        _web_defer.once_ms(100, []() {
-            customReset(CUSTOM_RESET_UPGRADE);
-            ESP.restart();
-        });
+        deferredReset(100, CUSTOM_RESET_UPGRADE);
     }
     request->send(response);
 
