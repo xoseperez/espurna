@@ -96,13 +96,13 @@ void heartbeat() {
     #if (HEARTBEAT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #if INFLUXDB_SUPPORT
-        influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        	idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #endif
     #endif
     #if (HEARTBEAT_REPORT_FREEHEAP)
         mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #if INFLUXDB_SUPPORT
-        influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        	idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
     #endif
     #if (HEARTBEAT_REPORT_RELAY)

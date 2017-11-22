@@ -234,16 +234,16 @@ void _powerReport() {
     #endif
 
     #if INFLUXDB_SUPPORT
-    if (influxdbEnabled()) {
-        influxDBSend(MQTT_TOPIC_CURRENT, buf_current);
-        influxDBSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
-        influxDBSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy_delta);
-        influxDBSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
+    if (idbEnabled()) {
+        idbSend(MQTT_TOPIC_CURRENT, buf_current);
+        idbSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
+        idbSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy_delta);
+        idbSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
-            influxDBSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
-            influxDBSend(MQTT_TOPIC_POWER_REACTIVE, String((int) _power_reactive).c_str());
-            influxDBSend(MQTT_TOPIC_VOLTAGE, String((int) _power_voltage).c_str());
-            influxDBSend(MQTT_TOPIC_POWER_FACTOR, String((int) 100 * _power_factor).c_str());
+            idbSend(MQTT_TOPIC_POWER_ACTIVE, String((int) _power_active).c_str());
+            idbSend(MQTT_TOPIC_POWER_REACTIVE, String((int) _power_reactive).c_str());
+            idbSend(MQTT_TOPIC_VOLTAGE, String((int) _power_voltage).c_str());
+            idbSend(MQTT_TOPIC_POWER_FACTOR, String((int) 100 * _power_factor).c_str());
         #endif
     }
     #endif

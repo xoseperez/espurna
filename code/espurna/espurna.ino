@@ -287,7 +287,7 @@ void setup() {
         nofussSetup();
     #endif
     #if INFLUXDB_SUPPORT
-        influxDBSetup();
+        idbSetup();
     #endif
     #if DS18B20_SUPPORT
         dsSetup();

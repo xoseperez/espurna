@@ -51,7 +51,7 @@ void analogLoop() {
 
         // Send to InfluxDB
         #if INFLUXDB_SUPPORT
-            influxDBSend(MQTT_TOPIC_ANALOG, analog);
+            idbSend(MQTT_TOPIC_ANALOG, analog);
         #endif
 
         // Update websocket clients

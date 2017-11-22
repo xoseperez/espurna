@@ -20,6 +20,6 @@ template<typename T> String getSetting(const String& key, unsigned int index, T 
 template<typename T> void domoticzSend(const char * key, T value);
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue);
 
-template<typename T> bool influxDBSend(const char * topic, T payload);
+template<typename T> bool idbSend(const char * topic, T payload);
 
 char * ltrim(char * s);

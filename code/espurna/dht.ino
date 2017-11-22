@@ -208,8 +208,8 @@ void dhtLoop() {
             #endif
 
             #if INFLUXDB_SUPPORT
-                influxDBSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
-                influxDBSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+                idbSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+                idbSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
             #endif
 
             // Update websocket clients

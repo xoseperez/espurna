@@ -20,6 +20,8 @@ bool _alexa_change = false;
 unsigned int _alexa_device_id = 0;
 bool _alexa_state = false;
 
+// -----------------------------------------------------------------------------
+
 void alexaConfigure() {
     alexa.enable(getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1);
 }
@@ -29,6 +31,7 @@ void alexaSetup() {
     // Backwards compatibility
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
+    // Load & cache settings
     alexaConfigure();
 
     unsigned int relays = relayCount();

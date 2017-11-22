@@ -115,7 +115,7 @@ void dsLoop() {
                 #endif
 
                 #if INFLUXDB_SUPPORT
-                    influxDBSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+                    idbSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
                 #endif
             }
 

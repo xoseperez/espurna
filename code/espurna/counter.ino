@@ -80,7 +80,7 @@ void counterLoop() {
 
         // Send to InfluxDB
         #if INFLUXDB_SUPPORT
-            influxDBSend(COUNTER_TOPIC, _counterValue);
+            idbSend(COUNTER_TOPIC, _counterValue);
         #endif
 
     }

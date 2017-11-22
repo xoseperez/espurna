@@ -367,7 +367,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 alexaConfigure();
             #endif
             #if INFLUXDB_SUPPORT
-                influxDBConfigure();
+                idbConfigure();
             #endif
             #if DOMOTICZ_SUPPORT
                 domoticzConfigure();
