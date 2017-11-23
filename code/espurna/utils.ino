@@ -15,6 +15,24 @@ String getIdentifier() {
     return String(buffer);
 }
 
+String getCoreVersion() {
+    String version = ESP.getCoreVersion();
+    #ifdef ARDUINO_ESP8266_RELEASE
+        if (version.equals("00000000")) {
+            version = String(ARDUINO_ESP8266_RELEASE);
+        }
+    #endif
+    return version;
+}
+
+String getCoreRevision() {
+    #ifdef ARDUINO_ESP8266_GIT_VER
+        return String(ARDUINO_ESP8266_GIT_VER);
+    #else
+        return String("");
+    #endif
+}
+
 String buildTime() {
 
     const char time_now[] = __TIME__;   // hh:mm:ss

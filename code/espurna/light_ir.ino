@@ -21,7 +21,6 @@ Not currently Implemented :
 
 */
 
-
 #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
 
 #include <FastLED.h>
