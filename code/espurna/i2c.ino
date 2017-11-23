@@ -10,19 +10,18 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "brzo_i2c.h"
 
+bool i2cCheck(unsigned char address) {
+    brzo_i2c_start_transaction(address, I2C_SCL_FREQUENCY);
+    brzo_i2c_ACK_polling(1000);
+    return brzo_i2c_end_transaction();
+}
+
 void i2cScan() {
 
-    uint8_t address;
-    uint8_t response;
-    uint8_t buffer[1];
-    int nDevices = 0;
+    unsigned char nDevices = 0;
 
-    for (address = 1; address < 128; address++) {
-
-        brzo_i2c_start_transaction(address, I2C_SCL_FREQUENCY);
-        brzo_i2c_ACK_polling(1000);
-        response = brzo_i2c_end_transaction();
-
+    for (unsigned char address = 1; address < 128; address++) {
+        unsigned char response = i2cCheck(address);
         if (response == 0) {
             DEBUG_MSG_P(PSTR("[I2C] Device found at address 0x%02X\n"), address);
             nDevices++;
@@ -31,7 +30,7 @@ void i2cScan() {
         }
     }
 
-    if (nDevices == 0) DEBUG_MSG_P(PSTR("[I2C] No devices found"));
+    if (nDevices == 0) DEBUG_MSG_P(PSTR("[I2C] No devices found\n"));
 
 }
 
