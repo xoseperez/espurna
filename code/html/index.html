@@ -436,6 +436,15 @@
                                     <div class="pure-u-1 pure-u-sm-1-4"><input type="radio" name="tmpUnits" tabindex="15" value="1"> Fahrenheit (&deg;F)</input></div>
                                 </div>
 
+                                <div class="pure-g module module-ds module-dht">
+                                    <label class="pure-u-1 pure-u-md-1-4" for="tmpCorrection">Temperature correction</label>
+                                    <input name="tmpCorrection" class="pure-u-1 pure-u-md-3-4" type="number" action="reset" min="-100" step="0.1" max="100" tabindex="6" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                      Temperature correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
+                                    </div>
+                                </div>
+
                             </fieldset>
                         </div>
                     </div>

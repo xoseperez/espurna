@@ -564,6 +564,7 @@ void _wsStart(uint32_t client_id) {
         root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
 
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
+        root["tmpCorrection"] = getSetting("tmpCorrection", TMP_CORRECTION).toFloat();
 
         #if HOMEASSISTANT_SUPPORT
             root["haVisible"] = 1;
