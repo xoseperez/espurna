@@ -758,8 +758,6 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
-    //#define LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
-
     // LEDs
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1

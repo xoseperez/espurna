@@ -19,7 +19,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef TELNET_SUPPORT
-#define TELNET_SUPPORT          1               // Enable telnet support by default
+#define TELNET_SUPPORT          1               // Enable telnet support by default (3.34Kb)
 #endif
 
 #ifndef TELNET_STA
@@ -81,7 +81,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT         1               // Enable terminal commands
+#define TERMINAL_SUPPORT         1               // Enable terminal commands (0.97Kb)
 #endif
 
 //------------------------------------------------------------------------------
@@ -286,7 +286,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef WEB_SUPPORT
-#define WEB_SUPPORT             1           // Enable web support (http, api)
+#define WEB_SUPPORT             1           // Enable web support (http, api, 121.65Kb)
 #endif
 
 #ifndef WEB_EMBEDDED
@@ -328,11 +328,11 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
-#define MDNS_SUPPORT            1           // Publish services using mDNS by default
+#define MDNS_SUPPORT            1           // Publish services using mDNS by default (1.09Kb)
 #endif
 
 #ifndef LLMNR_SUPPORT
-#define LLMNR_SUPPORT           0           // Publish device using LLMNR protocol by default - requires 2.4.0
+#define LLMNR_SUPPORT           0           // ublish device using LLMNR protocol by default (1.95Kb) - requires 2.4.0
 #endif
 
 // -----------------------------------------------------------------------------
@@ -354,7 +354,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef NOFUSS_SUPPORT
-#define NOFUSS_SUPPORT          0          // Do not enable support for NoFuss by default
+#define NOFUSS_SUPPORT          0          // Do not enable support for NoFuss by default (12.65Kb)
 #endif
 
 #define NOFUSS_ENABLED          0           // Do not perform NoFUSS updates by default
@@ -366,7 +366,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
+#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0, 9.83Kb less)
 #endif
 
 // MQTT OVER SSL
@@ -656,7 +656,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef I2C_SUPPORT
-#define I2C_SUPPORT             0           // I2C enabled
+#define I2C_SUPPORT             0           // I2C enabled (1.98Kb)
 #endif
 
 #define I2C_SDA_PIN             4           // SDA GPIO
@@ -669,7 +669,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef DOMOTICZ_SUPPORT
-#define DOMOTICZ_SUPPORT        1               // Build with domoticz support
+#define DOMOTICZ_SUPPORT        1               // Build with domoticz support (1.72Kb)
 #endif
 
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
@@ -682,7 +682,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef HOMEASSISTANT_SUPPORT
-#define HOMEASSISTANT_SUPPORT   1               // Build with home assistant support
+#define HOMEASSISTANT_SUPPORT   1               // Build with home assistant support (1.64Kb)
 #endif
 
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
@@ -693,7 +693,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef INFLUXDB_SUPPORT
-#define INFLUXDB_SUPPORT         1               // Enable InfluxDB support by default
+#define INFLUXDB_SUPPORT        0               // Enable InfluxDB support by default (4.38Kb)
 #endif
 
 #define INFLUXDB_PORT           8086            // Default InfluxDB port
@@ -703,7 +703,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef NTP_SUPPORT
-#define NTP_SUPPORT             1               // Build with NTP support by default
+#define NTP_SUPPORT             1               // Build with NTP support by default (6.78Kb)
 #endif
 
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
@@ -717,7 +717,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This setting defines whether Alexa support should be built into the firmware
 #ifndef ALEXA_SUPPORT
-#define ALEXA_SUPPORT           1
+#define ALEXA_SUPPORT           1               // Enable Alexa support by default (9.5Kb)
 #endif
 
 // This is default value for the alexaEnabled setting that defines whether
@@ -738,7 +738,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef IR_SUPPORT
-#define IR_SUPPORT              0               // Do not build with IR support by default
+#define IR_SUPPORT              0               // Do not build with IR support by default (10.25Kb)
 #endif
 
 #ifndef IR_PIN
@@ -765,6 +765,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_EFFECT_SMOOTH         4
 
 //Remote Buttons SET 1 (for the original Remote shipped with the controller)
+#if IR_SUPPORT
 #if IR_BUTTON_SET == 1
 
     #define IR_BUTTON_COUNT 24
@@ -845,3 +846,4 @@ PROGMEM const char* const custom_reset_string[] = {
     };
 
 #endif
+#endif // IR_SUPPORT

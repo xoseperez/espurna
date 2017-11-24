@@ -174,17 +174,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 }
             }
 
-            #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
-                if (action.equals("anim_mode") && root.containsKey("data")) {
-                    lightAnimMode(root["data"]);
-                    lightUpdate(true, true);
-                }
-                if (action.equals("anim_speed") && root.containsKey("data")) {
-                    lightAnimSpeed(root["data"]);
-                    lightUpdate(true, true);
-                }
-            #endif //LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
-
         #endif //LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
     };
@@ -442,13 +431,13 @@ void _wsStart(uint32_t client_id) {
         root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
-        root["time"] = ntpDateTime();
         root["uptime"] = getUptime();
         root["heap"] = ESP.getFreeHeap();
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
 
         #if NTP_SUPPORT
+            root["time"] = ntpDateTime();
             root["ntpVisible"] = 1;
             root["ntpStatus"] = ntpConnected();
             root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
@@ -492,10 +481,6 @@ void _wsStart(uint32_t client_id) {
                 } else {
                     root["hsv"] = lightColor(false);
                 }
-                #ifdef LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
-                    root["anim_mode"] = lightAnimMode();
-                    root["anim_speed"] = lightAnimSpeed();
-                #endif // LIGHT_PROVIDER_EXPERIMENTAL_RGB_ONLY_HSV_IR
             }
             JsonArray& channels = root.createNestedArray("channels");
             for (unsigned char id=0; id < lightChannels(); id++) {

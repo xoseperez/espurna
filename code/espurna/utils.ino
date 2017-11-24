@@ -142,6 +142,8 @@ void heartbeat() {
     #endif
 
     // Send info to websocket clients
+    #if WEB_SUPPORT
+    #if NTP_SUPPORT
     {
         char buffer[200];
         snprintf_P(
@@ -152,6 +154,8 @@ void heartbeat() {
         );
         wsSend(buffer);
     }
+    #endif
+    #endif
 
 }
 

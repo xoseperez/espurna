@@ -4,7 +4,6 @@
 #include <AsyncMqttClient.h>
 #include <ArduinoJson.h>
 #include <functional>
-#include <FastLED.h>
 
 AsyncWebServer * webServer();
 
