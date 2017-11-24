@@ -9,6 +9,10 @@
 
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
+#define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
+
+#define ARRAYINIT(type, name, ...) \
+    type name[] = {__VA_ARGS__};
 
 //------------------------------------------------------------------------------
 // TELNET
@@ -59,9 +63,8 @@
 //------------------------------------------------------------------------------
 
 // General debug options and macros
-#define DEBUG_MESSAGE_MAX_LENGTH    80
+#define DEBUG_FORMAT_MAX_LENGTH 80
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
-
 
 #if DEBUG_SUPPORT
     #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
@@ -82,11 +85,15 @@
 #endif
 
 //------------------------------------------------------------------------------
-// CRASH
+// SYSTEM CHECK
 //------------------------------------------------------------------------------
 
-#define CRASH_SAFE_TIME         60000           // The system is considered stable after these many millis
-#define CRASH_COUNT_MAX         5               // After this many crashes on boot
+#ifndef SYSTEM_CHECK_ENABLED
+#define SYSTEM_CHECK_ENABLED    1               // Enable crash check by default
+#endif
+
+#define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
+#define SYSTEM_CHECK_MAX        5               // After this many crashes on boot
                                                 // the system is flagged as unstable
 
 //------------------------------------------------------------------------------
@@ -263,6 +270,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_RECONNECT_INTERVAL 180000      // If could not connect to WIFI, retry after this time in ms
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
+#define WIFI_SLEEP_ENABLED      1           // Enable WiFi light sleep
 
 // Optional hardcoded configuration (up to 2 different networks)
 //#define WIFI1_SSID              "..."
@@ -317,11 +325,15 @@ PROGMEM const char* const custom_reset_string[] = {
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
-// MDNS
+// MDNS & LLMNR
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
 #define MDNS_SUPPORT            1           // Publish services using mDNS by default
+#endif
+
+#ifndef LLMNR_SUPPORT
+#define LLMNR_SUPPORT           0           // Publish device using LLMNR protocol by default - requires 2.4.0
 #endif
 
 // -----------------------------------------------------------------------------
@@ -475,7 +487,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Available light providers (do not change)
 #define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_MY9192   1 // works with MY9231 also (Sonoff B1)
+#define LIGHT_PROVIDER_MY92XX   1 // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER   2
 
 // LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
@@ -500,7 +512,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef LIGHT_MAX_PWM
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #define LIGHT_MAX_PWM           255
 #endif
 
@@ -664,6 +676,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
+#define DOMOTICZ_SKIP_TIME      2               // Avoid recursion skipping messages to same IDX within 2 seconds
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
@@ -673,6 +686,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define HOMEASSISTANT_SUPPORT   1               // Build with home assistant support
 #endif
 
+#define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 
 // -----------------------------------------------------------------------------

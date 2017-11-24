@@ -26,6 +26,13 @@ void ICACHE_RAM_ATTR _counterISR() {
     }
 }
 
+#if WEB_SUPPORT
+void _counterWSSend(JsonObject& root) {
+    root["counterVisible"] = 1;
+    root["counterValue"] = getCounter();
+}
+#endif
+
 unsigned long getCounter() {
     return _counterValue;
 }
@@ -36,9 +43,15 @@ void counterSetup() {
     attachInterrupt(COUNTER_PIN, _counterISR, COUNTER_INTERRUPT_MODE);
 
     #if WEB_SUPPORT
+
+        // Websockets
+        wsRegister(_counterWSSend);
+
+        // API
         apiRegister(COUNTER_TOPIC, COUNTER_TOPIC, [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("%d"), getCounter());
         });
+
     #endif
 
     DEBUG_MSG_P(PSTR("[COUNTER] Counter on GPIO %d\n"), COUNTER_PIN);
@@ -62,9 +75,7 @@ void counterLoop() {
 
     // Update websocket clients
     #if WEB_SUPPORT
-        char buffer[100];
-        snprintf_P(buffer, sizeof(buffer), PSTR("{\"counterVisible\": 1, \"counterValue\": %d}"), _counterValue);
-        wsSend(buffer);
+        wsSend(_counterWSSend);
     #endif
 
     // Do we have to report?
@@ -80,7 +91,7 @@ void counterLoop() {
 
         // Send to InfluxDB
         #if INFLUXDB_SUPPORT
-            influxDBSend(COUNTER_TOPIC, _counterValue);
+            idbSend(COUNTER_TOPIC, _counterValue);
         #endif
 
     }

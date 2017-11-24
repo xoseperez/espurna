@@ -66,7 +66,9 @@ void wifiConfigure() {
     jw.cleanNetworks();
 
     // If system is flagged unstable we do not init wifi networks
-    if (!systemCheck()) return;
+    #if SYSTEM_CHECK_ENABLED
+        if (!systemCheck()) return;
+    #endif
 
     int i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
@@ -171,6 +173,10 @@ void wifiInject() {
 }
 
 void wifiSetup() {
+
+    #if WIFI_SLEEP_ENABLED
+        wifi_set_sleep_type(LIGHT_SLEEP_T);
+    #endif
 
     wifiInject();
     wifiConfigure();

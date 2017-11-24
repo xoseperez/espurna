@@ -321,7 +321,6 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
-    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -464,7 +463,7 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       12
     #define LIGHT_CH1_INVERSE   0
@@ -497,12 +496,17 @@
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_B1"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
     #define DUMMY_RELAY_COUNT   1
-    #define MY9291_DI_PIN       12
-    #define MY9291_DCKI_PIN     14
-    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
-    #define MY9291_CHANNELS     5
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
+    #define MY92XX_CHIPS        2
+    #define MY92XX_DI_PIN       12
+    #define MY92XX_DCKI_PIN     14
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      4, 3, 5, 0, 1
 
 #elif defined(ITEAD_SONOFF_LED)
 
@@ -517,7 +521,7 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       12  // Cold white
     #define LIGHT_CH2_PIN       14  // Warm white
@@ -531,12 +535,12 @@
     #define DEVICE              "SONOFF_T1_1CH"
 
     // Buttons
-    #define BUTTON1_PIN         9
+    #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN          5
+    #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
@@ -551,7 +555,7 @@
 
     // Buttons
     #define BUTTON1_PIN         0
-    #define BUTTON2_PIN         10
+    #define BUTTON2_PIN         9
 
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
@@ -561,7 +565,7 @@
 
     // Relays
     #define RELAY1_PIN          12
-    #define RELAY2_PIN          4
+    #define RELAY2_PIN          5
 
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
@@ -700,12 +704,17 @@
     #define MANUFACTURER        "AITHINKER"
     #define DEVICE              "AI_LIGHT"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
     #define DUMMY_RELAY_COUNT   1
-    #define MY9291_DI_PIN       13
-    #define MY9291_DCKI_PIN     15
-    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
-    #define MY9291_CHANNELS     4
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       13
+    #define MY92XX_DCKI_PIN     15
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3
 
 // -----------------------------------------------------------------------------
 // LED Controller
@@ -724,7 +733,7 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       5       // GREEN
@@ -755,7 +764,7 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
@@ -788,7 +797,7 @@
     #define LED1_PIN            5
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       15      // RED
     #define LIGHT_CH2_PIN       13      // GREEN
@@ -810,7 +819,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       12      // RED
     #define LIGHT_CH2_PIN       14      // GREEN
@@ -1047,7 +1056,7 @@
     #define LED1_PIN            5
     #define LED1_PIN_INVERSE    1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       0
     #define LIGHT_CH2_PIN       2
@@ -1067,7 +1076,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
@@ -1087,14 +1096,17 @@
     #define MANUFACTURER        "ARILUX"
     #define DEVICE              "E27"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY9192
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
     #define DUMMY_RELAY_COUNT   1
 
-    // Channels
-    #define MY9291_CHANNELS     4
-    #define MY9291_DI_PIN       13
-    #define MY9291_DCKI_PIN     15
-    #define MY9291_COMMAND      MY9291_COMMAND_DEFAULT
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       13
+    #define MY92XX_DCKI_PIN     15
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3
 
 // -----------------------------------------------------------------------------
 // XENON SM-PW701U
@@ -1133,7 +1145,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
-    // Channels
+    // Light
     #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       13      // RED
     #define LIGHT_CH2_PIN       12      // GREEN

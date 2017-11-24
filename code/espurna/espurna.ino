@@ -21,11 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/all.h"
 #include <EEPROM.h>
-#include <FastLED.h>    // W.T.H. is this include ALSO needed here ?!?!!
 
 // -----------------------------------------------------------------------------
 // METHODS
 // -----------------------------------------------------------------------------
+
+unsigned long _loopDelay = 0;
 
 void hardwareSetup() {
 
@@ -49,17 +50,10 @@ void hardwareSetup() {
         pinMode(16, OUTPUT);
         digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
     #endif
+
 }
 
 void hardwareLoop() {
-
-    // System check
-    static bool checked = false;
-    if (!checked && (millis() > CRASH_SAFE_TIME)) {
-        // Check system as stable
-        systemCheck(true);
-        checked = true;
-    }
 
     // Heartbeat
     static unsigned long last_uptime = 0;
@@ -87,7 +81,8 @@ void welcome() {
     DEBUG_MSG_P(PSTR("[INIT] CPU chip ID: 0x%06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("[INIT] CPU frequency: %d MHz\n"), ESP.getCpuFreqMHz());
     DEBUG_MSG_P(PSTR("[INIT] SDK version: %s\n"), ESP.getSdkVersion());
-    DEBUG_MSG_P(PSTR("[INIT] Core version: %s\n"), ESP.getCoreVersion().c_str());
+    DEBUG_MSG_P(PSTR("[INIT] Core version: %s\n"), getCoreVersion().c_str());
+    DEBUG_MSG_P(PSTR("[INIT] Core revision: %s\n"), getCoreRevision().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -173,6 +168,9 @@ void welcome() {
     #if INFLUXDB_SUPPORT
         DEBUG_MSG_P(PSTR(" INFLUXDB"));
     #endif
+    #if LLMNR_SUPPORT
+        DEBUG_MSG_P(PSTR(" LLMNR"));
+    #endif
     #if MDNS_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS"));
     #endif
@@ -202,10 +200,10 @@ void welcome() {
 
     // -------------------------------------------------------------------------
 
-    unsigned char custom_reset = customReset();
-    if (custom_reset > 0) {
+    unsigned char reason = resetReason();
+    if (reason > 0) {
         char buffer[32];
-        strcpy_P(buffer, custom_reset_string[custom_reset-1]);
+        strcpy_P(buffer, custom_reset_string[reason-1]);
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), buffer);
     } else {
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
@@ -215,6 +213,8 @@ void welcome() {
     #if ADC_VCC_ENABLED
         DEBUG_MSG_P(PSTR("[INIT] Power: %d mV\n"), ESP.getVcc());
     #endif
+
+    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
     DEBUG_MSG_P(PSTR("\n"));
 
 }
@@ -225,10 +225,9 @@ void setup() {
     hardwareSetup();
 
     // Question system stability
-    systemCheck(false);
-
-    // Show welcome message and system configuration
-    welcome();
+    #if SYSTEM_CHECK_ENABLED
+        systemCheck(false);
+    #endif
 
     // Init persistance and terminal features
     settingsSetup();
@@ -236,6 +235,13 @@ void setup() {
         setSetting("hostname", getIdentifier());
     }
 
+    // Cache loop delay value to speed things (recommended max 250ms)
+    _loopDelay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
+
+    // Show welcome message and system configuration
+    welcome();
+
+    // Basic modules, will always run
     wifiSetup();
     otaSetup();
     #if TELNET_SUPPORT
@@ -243,10 +249,15 @@ void setup() {
     #endif
 
     // Do not run the next services if system is flagged stable
-    if (!systemCheck()) return;
+    #if SYSTEM_CHECK_ENABLED
+        if (!systemCheck()) return;
+    #endif
 
+    // Init webserver required before any module that uses API
     #if WEB_SUPPORT
         webSetup();
+        wsSetup();
+        apiSetup();
     #endif
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -260,7 +271,6 @@ void setup() {
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif
-
     #if POWER_PROVIDER != POWER_PROVIDER_NONE
         powerSetup();
     #endif
@@ -277,7 +287,7 @@ void setup() {
         nofussSetup();
     #endif
     #if INFLUXDB_SUPPORT
-        influxDBSetup();
+        idbSetup();
     #endif
     #if DS18B20_SUPPORT
         dsSetup();
@@ -300,6 +310,12 @@ void setup() {
     #if DOMOTICZ_SUPPORT
         domoticzSetup();
     #endif
+    #if HOMEASSISTANT_SUPPORT
+        haSetup();
+    #endif
+    #if LLMNR_SUPPORT
+        llmnrSetup();
+    #endif
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();
@@ -315,23 +331,23 @@ void loop() {
     wifiLoop();
     otaLoop();
 
-    // Do not run the next services if system is flagged stable
-    if (!systemCheck()) return;
+    #if SYSTEM_CHECK_ENABLED
+        systemCheckLoop();
+        // Do not run the next services if system is flagged stable
+        if (!systemCheck()) return;
+    #endif
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightLoop();
     #endif
-
-
-    buttonLoop();
     relayLoop();
+    buttonLoop();
     ledLoop();
     mqttLoop();
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();
     #endif
-
     #if POWER_PROVIDER != POWER_PROVIDER_NONE
         powerLoop();
     #endif
@@ -362,5 +378,8 @@ void loop() {
     #if IR_SUPPORT
         irLoop();
     #endif
+
+    // Power saving delay
+    delay(_loopDelay);
 
 }

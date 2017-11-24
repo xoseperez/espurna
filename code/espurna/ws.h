@@ -19,8 +19,8 @@ class WebSocketIncommingBuffer {
     public:
         WebSocketIncommingBuffer(AwsMessageHandler cb, bool terminate_string = true, bool cb_on_fragments = false) :
             _cb(cb),
-            _cb_on_fragments(cb_on_fragments),
             _terminate_string(terminate_string),
+            _cb_on_fragments(cb_on_fragments),
             _buffer(0)
             {}
 
@@ -30,19 +30,24 @@ class WebSocketIncommingBuffer {
 
         void data_event(AsyncWebSocketClient *client, AwsFrameInfo *info, uint8_t *data, size_t len) {
 
-            if((info->final || _cb_on_fragments) &&
-               !_terminate_string && info->index == 0 && info->len == len) {
+            if ((info->final || _cb_on_fragments)
+                && !_terminate_string
+                && info->index == 0
+                && info->len == len) {
+
                 /* The whole message is in a single frame and we got all of it's
                    data therefore we can parse it without copying the data first.*/
                 _cb(client, data, len);
-            } else {
-                if (info->len > MAX_WS_MSG_SIZE) return;
-                /* Check if previous fragment was discarded because it was too long. */
-                if (!_cb_on_fragments && info->num > 0 && !_buffer) return;
 
-                if (!_buffer) {
-                    _buffer = new std::vector<uint8_t>();
-                }
+            } else {
+
+                if (info->len > MAX_WS_MSG_SIZE) return;
+
+                /* Check if previous fragment was discarded because it was too long. */
+                //if (!_cb_on_fragments && info->num > 0 && !_buffer) return;
+
+                if (!_buffer) _buffer = new std::vector<uint8_t>();
+
                 if (info->index == 0) {
                     //New frame => preallocate memory
                     if (_cb_on_fragments) {
@@ -59,16 +64,17 @@ class WebSocketIncommingBuffer {
                         }
                     }
                 }
+
                 //assert(_buffer->size() == info->index);
                 _buffer->insert(_buffer->end(), data, data+len);
-                if (info->index + len == info->len &&
-                    (info->final || _cb_on_fragments)) {
+                if (info->index + len == info->len
+                    && (info->final || _cb_on_fragments)) {
+
                     // Frame/message complete
-                    if (_terminate_string) {
-                        _buffer->push_back(0);
-                    }
+                    if (_terminate_string) _buffer->push_back(0);
                     _cb(client, _buffer->data(), _buffer->size());
                     _buffer->clear();
+
                 }
             }
         }

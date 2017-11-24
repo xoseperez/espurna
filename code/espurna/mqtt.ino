@@ -44,7 +44,7 @@ char *_mqtt_will;
 unsigned long _mqtt_connected_at = 0;
 #endif
 
-std::vector<void (*)(unsigned int, const char *, const char *)> _mqtt_callbacks;
+std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 typedef struct {
     char * topic;
@@ -180,7 +180,19 @@ void mqttSubscribe(const char * topic) {
     mqttSubscribeRaw(path.c_str());
 }
 
-void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
+void mqttUnsubscribeRaw(const char * topic) {
+    if (_mqtt.connected() && (strlen(topic) > 0)) {
+        #if MQTT_USE_ASYNC
+            unsigned int packetId = _mqtt.unsubscribe(topic);
+            DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s (PID %d)\n"), topic, packetId);
+        #else
+            _mqtt.unsubscribe(topic);
+            DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s\n"), topic);
+        #endif
+    }
+}
+
+void mqttRegister(mqtt_callback_f callback) {
     _mqtt_callbacks.push_back(callback);
 }
 
@@ -189,7 +201,6 @@ void mqttRegister(void (*callback)(unsigned int, const char *, const char *)) {
 // -----------------------------------------------------------------------------
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
-
 
     if (type == MQTT_CONNECT_EVENT) {
 
@@ -205,8 +216,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
             if (strcmp(payload, MQTT_ACTION_RESET) == 0) {
-                customReset(CUSTOM_RESET_MQTT);
-                ESP.restart();
+                deferredReset(100, CUSTOM_RESET_MQTT);
             }
         }
 
@@ -226,9 +236,12 @@ void _mqttOnConnect() {
     // Send first Heartbeat
     heartbeat();
 
+    // Clean subscriptions
+    mqttUnsubscribeRaw("#");
+
     // Send connect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
+        (_mqtt_callbacks[i])(MQTT_CONNECT_EVENT, NULL, NULL);
     }
 
 }
@@ -239,7 +252,7 @@ void _mqttOnDisconnect() {
 
     // Send disconnect event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_DISCONNECT_EVENT, NULL, NULL);
+        (_mqtt_callbacks[i])(MQTT_DISCONNECT_EVENT, NULL, NULL);
     }
 
 }
@@ -261,7 +274,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
     // Send message event to subscribers
     for (unsigned char i = 0; i < _mqtt_callbacks.size(); i++) {
-        (*_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
+        (_mqtt_callbacks[i])(MQTT_MESSAGE_EVENT, topic, message);
     }
 
 }

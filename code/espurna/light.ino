@@ -31,9 +31,9 @@ std::vector<channel_t> _channels;
 bool _lightState = false;
 unsigned int _brightness = LIGHT_MAX_BRIGHTNESS;
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
-#include <my9291.h>
-my9291 * _my9291;
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#include <my92xx.h>
+my92xx * _my92xx;
 #endif
 
 // Gamma Correction lookup table (8 bit)
@@ -387,24 +387,15 @@ void _lightProviderUpdate() {
         digitalWrite(LIGHT_ENABLE_PIN, _lightState);
     #endif
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
-        if (_lightState) {
+        ARRAYINIT(unsigned char, channels, MY92XX_MAPPING);
 
-            unsigned int red = _toPWM(0);
-            unsigned int green = _toPWM(1);
-            unsigned int blue = _toPWM(2);
-            unsigned int white = _toPWM(3);
-            unsigned int warm = _toPWM(4);
-            _my9291->setColor((my9291_color_t) { red, green, blue, white, warm });
-            _my9291->setState(true);
-
-        } else {
-
-            _my9291->setColor((my9291_color_t) { 0, 0, 0, 0, 0 });
-            _my9291->setState(false);
-
+        for (unsigned char i=0; i<_channels.size(); i++) {
+            _my92xx->setChannel(channels[i], _toPWM(i));
         }
+        _my92xx->setState(_lightState);
+        _my92xx->update();
 
     #endif
 
@@ -803,10 +794,10 @@ void lightSetup() {
         pinMode(LIGHT_ENABLE_PIN, OUTPUT);
     #endif
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY9192
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
-        _my9291 = new my9291(MY9291_DI_PIN, MY9291_DCKI_PIN, MY9291_COMMAND, MY9291_CHANNELS);
-        for (unsigned char i=0; i<MY9291_CHANNELS; i++) {
+        _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
+        for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
             _channels.push_back((channel_t) {0, false, 0});
         }
 

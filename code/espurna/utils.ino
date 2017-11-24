@@ -6,10 +6,31 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include <Ticker.h>
+Ticker _defer_reset;
+
 String getIdentifier() {
     char buffer[20];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), DEVICE, ESP.getChipId());
     return String(buffer);
+}
+
+String getCoreVersion() {
+    String version = ESP.getCoreVersion();
+    #ifdef ARDUINO_ESP8266_RELEASE
+        if (version.equals("00000000")) {
+            version = String(ARDUINO_ESP8266_RELEASE);
+        }
+    #endif
+    return version;
+}
+
+String getCoreRevision() {
+    #ifdef ARDUINO_ESP8266_GIT_VER
+        return String(ARDUINO_ESP8266_GIT_VER);
+    #else
+        return String("");
+    #endif
 }
 
 String buildTime() {
@@ -96,13 +117,13 @@ void heartbeat() {
     #if (HEARTBEAT_REPORT_UPTIME)
         mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #if INFLUXDB_SUPPORT
-        influxDBSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+        	idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #endif
     #endif
     #if (HEARTBEAT_REPORT_FREEHEAP)
         mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #if INFLUXDB_SUPPORT
-        influxDBSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+        	idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
     #endif
     #if (HEARTBEAT_REPORT_RELAY)
@@ -120,30 +141,53 @@ void heartbeat() {
         mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
     #endif
 
+    // Send info to websocket clients
+    {
+        char buffer[200];
+        snprintf_P(
+            buffer,
+            sizeof(buffer) - 1,
+            PSTR("{\"time\": \"%s\", \"uptime\": %lu, \"heap\": %lu}"),
+            ntpDateTime().c_str(), uptime_seconds, free_heap
+        );
+        wsSend(buffer);
+    }
+
 }
 
 // -----------------------------------------------------------------------------
 
-void customReset(unsigned char status) {
-    EEPROM.write(EEPROM_CUSTOM_RESET, status);
-    EEPROM.commit();
-}
-
-unsigned char customReset() {
+unsigned char resetReason() {
     static unsigned char status = 255;
     if (status == 255) {
         status = EEPROM.read(EEPROM_CUSTOM_RESET);
-        if (status > 0) customReset(0);
+        if (status > 0) resetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
     return status;
 }
 
+void resetReason(unsigned char reason) {
+    EEPROM.write(EEPROM_CUSTOM_RESET, reason);
+    EEPROM.commit();
+}
+
+void reset(unsigned char reason) {
+    resetReason(reason);
+    ESP.restart();
+}
+
+void deferredReset(unsigned long delay, unsigned char reason) {
+    _defer_reset.once_ms(delay, reset, reason);
+}
+
 // -----------------------------------------------------------------------------
+
+#if SYSTEM_CHECK_ENABLED
 
 // Call this method on boot with start=true to increase the crash counter
 // Call it again once the system is stable to decrease the counter
-// If the counter reaches CRASH_COUNT_MAX then the system is flagged as unstable
+// If the counter reaches SYSTEM_CHECK_MAX then the system is flagged as unstable
 // setting _systemOK = false;
 //
 // An unstable system will only have serial access, WiFi in AP mode and OTA
@@ -156,7 +200,7 @@ void systemCheck(bool stable) {
         value = 0;
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
     } else {
-        if (++value > CRASH_COUNT_MAX) {
+        if (++value > SYSTEM_CHECK_MAX) {
             _systemStable = false;
             value = 0;
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
@@ -169,6 +213,17 @@ void systemCheck(bool stable) {
 bool systemCheck() {
     return _systemStable;
 }
+
+void systemCheckLoop() {
+    static bool checked = false;
+    if (!checked && (millis() > SYSTEM_CHECK_TIME)) {
+        // Check system as stable
+        systemCheck(true);
+        checked = true;
+    }
+}
+
+#endif
 
 // -----------------------------------------------------------------------------
 

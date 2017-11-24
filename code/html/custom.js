@@ -21,7 +21,6 @@ function initMessages() {
     messages[03] = "Error parsing data!";
     messages[04] = "The file does not look like a valid configuration backup or is corrupted";
     messages[05] = "Changes saved. You should reboot your board now";
-    messages[06] = "Home Assistant auto-discovery message sent";
     messages[07] = "Passwords do not match!";
     messages[08] = "Changes saved";
     messages[09] = "No changes detected";
@@ -89,24 +88,6 @@ function generateAPIKey() {
     var apikey = randomString(16, '@#');
     $("input[name=\"apiKey\"]").val(apikey);
     return false;
-}
-
-function forgetCredentials() {
-    $.ajax({
-        'method': 'GET',
-        'url': '/',
-        'async': false,
-        'username': "logmeout",
-        'password': "123456",
-        'headers': { "Authorization": "Basic xxx" }
-    }).done(function(data) {
-        return false;
-        // If we don't get an error, we actually got an error as we expect an 401!
-    }).fail(function(){
-        // We expect to get an 401 Unauthorized error! In this case we are successfully
-        // logged out and we redirect the user.
-        return true;
-    });
 }
 
 function getJson(str) {
@@ -626,14 +607,12 @@ function processData(data) {
             password = data.webMode == 1;
             $("#layout").toggle(data.webMode == 0);
             $("#password").toggle(data.webMode == 1);
-            $("#credentials").hide();
         }
 
         // Actions
         if (key == "action") {
 
             if (data.action == "reload") {
-                if (password) forgetCredentials();
                 doReload(1000);
             }
 
@@ -954,24 +933,11 @@ function init() {
     $(".button-add-network").on('click', function() {
         $("div.more", addNetwork()).toggle();
     });
-    $(".button-ha-add").on('click', function() {
-        websock.send(JSON.stringify({'action': 'ha_add', 'data': $("input[name='haPrefix']").val()}));
-    });
-    $(".button-ha-del").on('click', function() {
-        websock.send(JSON.stringify({'action': 'ha_del', 'data': $("input[name='haPrefix']").val()}));
-    });
 
     $(document).on('change', 'input', hasChanged);
     $(document).on('change', 'select', hasChanged);
 
-    $.ajax({
-        'method': 'GET',
-        'url': window.location.href + 'auth'
-    }).done(function(data) {
-        connect();
-    }).fail(function(){
-        $("#credentials").show();
-    });
+    connect();
 
 }
 

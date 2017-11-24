@@ -10,6 +10,8 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
+bool _haEnabled = false;
+
 void haSend(bool add) {
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
@@ -29,6 +31,9 @@ void haSend(bool add) {
             root["command_topic"] = getTopic(MQTT_TOPIC_RELAY, 0, true);
             root["payload_on"] = String("1");
             root["payload_off"] = String("0");
+            root["availability_topic"] = getTopic(MQTT_TOPIC_STATUS, false);
+            root["payload_available"] = String("1");
+            root["payload_not_available"] = String("0");
         }
 
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -63,8 +68,21 @@ void haSend(bool add) {
         "/config";
 
     mqttSendRaw(topic.c_str(), output.c_str());
+    mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
 
 }
 
+void haConfigure() {
+    bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    if (enabled != _haEnabled) haSend(enabled);
+    _haEnabled = enabled;
+}
+
+void haSetup() {
+    haConfigure();
+    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+        if (type == MQTT_CONNECT_EVENT) haSend(_haEnabled);
+    });
+}
 
 #endif // HOMEASSISTANT_SUPPORT

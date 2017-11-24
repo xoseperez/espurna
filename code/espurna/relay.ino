@@ -493,7 +493,7 @@ void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
     char buffer[10];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s,id=%d"), MQTT_TOPIC_RELAY, id);
-    influxDBSend(buffer, relayStatus(id) ? "1" : "0");
+    idbSend(buffer, relayStatus(id) ? "1" : "0");
 }
 #endif
 

@@ -136,7 +136,8 @@ int readDHT() {
 // -----------------------------------------------------------------------------
 
 double getDHTTemperature(bool celsius) {
-    return celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
+    double value = celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
+    return roundTo(value, DHT_TEMPERATURE_DECIMALS);
 }
 
 double getDHTTemperature() {
@@ -208,8 +209,8 @@ void dhtLoop() {
             #endif
 
             #if INFLUXDB_SUPPORT
-                influxDBSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
-                influxDBSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+                idbSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+                idbSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
             #endif
 
             // Update websocket clients

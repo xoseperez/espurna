@@ -36,9 +36,9 @@
 #define DHT_UPDATE_INTERVAL         60000
 #endif
 
-#define DHT_TIMING                  11
 #define DHT_TEMPERATURE_TOPIC       "temperature"
 #define DHT_HUMIDITY_TOPIC          "humidity"
+#define DHT_TEMPERATURE_DECIMALS    1              // Decimals for temperature values
 
 #define HUMIDITY_NORMAL             0
 #define HUMIDITY_COMFORTABLE        1
