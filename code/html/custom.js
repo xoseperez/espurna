@@ -16,14 +16,14 @@ var useWhite = false;
 // -----------------------------------------------------------------------------
 
 function initMessages() {
-    messages[01] = "Remote update started";
-    messages[02] = "OTA update started";
-    messages[03] = "Error parsing data!";
-    messages[04] = "The file does not look like a valid configuration backup or is corrupted";
-    messages[05] = "Changes saved. You should reboot your board now";
-    messages[07] = "Passwords do not match!";
-    messages[08] = "Changes saved";
-    messages[09] = "No changes detected";
+    messages[ 1] = "Remote update started";
+    messages[ 2] = "OTA update started";
+    messages[ 3] = "Error parsing data!";
+    messages[ 4] = "The file does not look like a valid configuration backup or is corrupted";
+    messages[ 5] = "Changes saved. You should reboot your board now";
+    messages[ 7] = "Passwords do not match!";
+    messages[ 8] = "Changes saved";
+    messages[ 9] = "No changes detected";
     messages[10] = "Session expired, please reload page...";
 }
 
@@ -422,18 +422,10 @@ function initColorRGB() {
     });
 
     // init bright slider
-    noUiSlider.create($("#brightness").get(0), {
-		start: 255,
-		connect: [true, false],
-        tooltips: true,
-        format: {
-            to: function (value) { return parseInt(value); },
-            from: function (value) { return value; }
-        },
-		orientation: "horizontal",
-		range: { 'min': 0, 'max': 255}
-	}).on("change", function() {
-        var value = parseInt(this.get());
+    $('#brightness').on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
         websock.send(JSON.stringify({'action': 'brightness', 'data' : value}));
     });
 
@@ -461,39 +453,6 @@ function initColorHSV() {
 
 }
 
-function initColorsExtras() {
-    // check if already initialized
-    var done = $("#colorsExtras > div").length;
-    if (done > 0) return;
-
-    // add template
-    var template = $("#colorsExtrasTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colorsExtras");
-
-	// init anim mode
-    $("#animMode").on('change', function() {
-        var select = this.value;
-        websock.send(JSON.stringify( {'action': 'anim_mode', 'data'  : select }));
-    });
-
-    // init anim speed slider
-    noUiSlider.create($("#animSpeed").get(0), {
-		start: 500,
-		connect: [true, false],
-        tooltips: true,
-        format: {
-            to: function (value) { return parseInt(value); },
-            from: function (value) { return value; }
-        },
-		orientation: "horizontal",
-		range: { 'min': 0, 'max': 1000}
-	}).on("change", function() {
-        var value = parseInt(this.get());
-        websock.send(JSON.stringify({'action': 'anim_speed', 'data' : value}));
-    });
-}
-
 function initChannels(num) {
 
     // check if already initialized
@@ -517,24 +476,15 @@ function initChannels(num) {
 
         var channel_id = start + i;
         var line = $(template).clone();
-        $(".slider", line).attr("data", channel_id);
-        $("label", line).html("Channel " + (channel_id + 1));
-
-        noUiSlider.create($(".slider", line).get(0), {
-    		start: 0,
-    		connect: [true, false],
-            tooltips: true,
-            format: {
-                to: function (value) { return parseInt(value); },
-                from: function (value) { return value; }
-            },
-    		orientation: "horizontal",
-    		range: { 'min': 0, 'max': 255 }
-    	}).on("change", function() {
-            var id = $(this.target).attr("data");
-            var value = parseInt(this.get());
-            websock.send(JSON.stringify({'action': 'channel', 'data': { 'id': id, 'value': value }}));
+        $("span.slider", line).attr("data", channel_id);
+        $("input.slider", line).attr("data", channel_id).on("change", function() {
+            var id = $(this).attr("data");
+            var value = $(this).val();
+            var parent = $(this).parents(".pure-g");
+            $("span", parent).html(value);
+            websock.send(JSON.stringify({'action': 'channel', 'data' : { 'id': id, 'value': value }}));
         });
+        $("label", line).html("Channel " + (channel_id + 1));
 
         line.appendTo("#channels");
 
@@ -661,22 +611,11 @@ function processData(data) {
             return;
         }
 
-        if (key == "anim_mode") {
-            initColorsExtras();
-            $("[name='animation']").val(data[key]);
-            return;
-        }
-
-        if (key == "anim_speed") {
-            initColorsExtras();
-            var slider = $("#animSpeed");
-            if (slider.length) slider.get(0).noUiSlider.set(data[key]);
-            return;
-        }
-
         if (key == "brightness") {
             var slider = $("#brightness");
-            if (slider.length) slider.get(0).noUiSlider.set(data[key]);
+            if (slider.length) slider.val(data[key]).attr("original", data[key]);
+            var span = $("span.brightness");
+            if (span.length) span.html(data[key]);
             return;
         }
 
@@ -684,8 +623,10 @@ function processData(data) {
             var len = data[key].length;
             initChannels(len);
             for (var i=0; i<len; i++) {
-                var slider = $("div.channels[data=" + i + "]");
-                if (slider.length) slider.get(0).noUiSlider.set(data[key][i]);
+                var slider = $("input.slider[data=" + i + "]");
+                if (slider.length) slider.val(data[key][i]).attr("original", data[key][i]);
+                var span = $("span.slider[data=" + i + "]");
+                if (span.length) span.html(data[key][i]);
             }
             return;
         }
@@ -882,6 +823,8 @@ function connect(host) {
             host = 'http://' + host + '/';
         }
     }
+    if (!host.startsWith("http")) return;
+
     webhost = host;
     wshost = host.replace('http', 'ws') + 'ws';
 

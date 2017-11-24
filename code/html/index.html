@@ -14,7 +14,6 @@
         <link rel="stylesheet" href="checkboxes.css" />
         <link rel="stylesheet" href="custom.css" />
         <link rel="stylesheet" href="jquery.wheelcolorpicker-3.0.3.css" />
-        <link rel="stylesheet" href="nouislider-10.1.0.min.css" />
         <!-- endbuild -->
 
     </head>
@@ -160,10 +159,6 @@
 
                                 <div id="channels">
                                 </div>
-
-                                <div id="colorsExtras">
-                                </div>
-
 
                                 <div class="pure-g module module-analog">
                                     <label class="pure-u-1 pure-u-sm-1-4" for="analogValue">Analog</label>
@@ -1026,7 +1021,8 @@
 
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-sm-1-4">Brightness</label>
-                <div class="slider pure-u-1 pure-u-sm-1-4" id="brightness"></div>
+                <input type="range" min="0" max="255" class="slider pure-u-sm-1-4" id="brightness">
+                <span class="slider brightness pure-u-sm-1-4"></span>
             </div>
         </div>
 
@@ -1037,29 +1033,11 @@
             </div>
         </div>
 
-        <div id="colorsExtrasTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-sm-1-4">Mode</label>
-                <select class="pure-u-1 pure-u-sm-1-4" name="animation"  id="animMode">
-                	<option value=0>Single Color</option>
-                	<option value=1>1 - Flash</option>
-                	<option value=2>2 - Strobe</option>
-                	<option value=3>3 - Fade</option>
-                	<option value=4>4 - Smooth</option>
-                	<option value=5>5 - Party</option>
-                </select>
-            </div>
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-sm-1-4">Speed</label>
-                <div class="slider pure-u-1 pure-u-sm-1-4" id="animSpeed"></div>
-            </div>
-
-        </div>
-
         <div id="channelTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-sm-1-4">Channel #</label>
-                <div class="slider channels pure-u-1 pure-u-sm-1-4" data="99"></div>
+                <input type="range" min="0" max="255" class="slider channels pure-u-sm-1-4" data="99">
+                <span class="slider pure-u-sm-1-4"></span>
             </div>
         </div>
 
@@ -1073,7 +1051,6 @@
     <script src="checkboxes.js"></script>
     <script src="custom.js"></script>
     <script src="jquery.wheelcolorpicker-3.0.3.min.js"></script>
-    <script src="nouislider-10.1.0.min.js"></script>
     <!-- endbuild -->
 
 </html>

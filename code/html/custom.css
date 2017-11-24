@@ -153,20 +153,14 @@ div.state {
     text-align: right;
 }
 
-.slider {
+input.slider {
     margin-top: 10px;
 }
-.slider .noUi-target {
-    background: #D2D2D2;
-}
-.slider .noUi-connect {
-	background: #FFFFFF;
-}
-.slider .noUi-tooltip {
-    font-size: 10px;
-    border: 0px;
-    padding: 0px;
-    margin-bottom: -4px;
+span.slider {
+    font-size: 70%;
+    margin-left: 10px;
+    margin-top: 7px;
+    letter-spacing: 0;
 }
 #panel-rfb fieldset {
     margin: 10px 2px;
