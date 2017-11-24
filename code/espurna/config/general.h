@@ -328,11 +328,15 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
-#define MDNS_SUPPORT            1           // Publish services using mDNS by default (1.09Kb)
+#define MDNS_SUPPORT            1           // Publish services using mDNS by default (1.84Kb)
 #endif
 
 #ifndef LLMNR_SUPPORT
-#define LLMNR_SUPPORT           0           // ublish device using LLMNR protocol by default (1.95Kb) - requires 2.4.0
+#define LLMNR_SUPPORT           0           // Publish device using LLMNR protocol by default (1.95Kb) - requires 2.4.0
+#endif
+
+#ifndef NETBIOS_SUPPORT
+#define NETBIOS_SUPPORT         0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires 2.4.0
 #endif
 
 // -----------------------------------------------------------------------------

@@ -174,6 +174,9 @@ void welcome() {
     #if MDNS_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS"));
     #endif
+    #if NETBIOS_SUPPORT
+        DEBUG_MSG_P(PSTR(" NETBIOS"));
+    #endif
     #if NOFUSS_SUPPORT
         DEBUG_MSG_P(PSTR(" NOFUSS"));
     #endif
@@ -273,6 +276,9 @@ void setup() {
     #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
+    #endif
+    #if NETBIOS_SUPPORT
+        netbiosSetup();
     #endif
     #if NTP_SUPPORT
         ntpSetup();
