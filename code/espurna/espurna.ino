@@ -268,17 +268,23 @@ void setup() {
     ledSetup();
     mqttSetup();
 
-    #ifdef ITEAD_SONOFF_RFBRIDGE
-        rfbSetup();
+    #if MDNS_SUPPORT
+        mdnsSetup();
     #endif
-    #if POWER_PROVIDER != POWER_PROVIDER_NONE
-        powerSetup();
+    #if LLMNR_SUPPORT
+        llmnrSetup();
     #endif
     #if NTP_SUPPORT
         ntpSetup();
     #endif
     #if I2C_SUPPORT
         i2cSetup();
+    #endif
+    #ifdef ITEAD_SONOFF_RFBRIDGE
+        rfbSetup();
+    #endif
+    #if POWER_PROVIDER != POWER_PROVIDER_NONE
+        powerSetup();
     #endif
     #if ALEXA_SUPPORT
         alexaSetup();
@@ -312,9 +318,6 @@ void setup() {
     #endif
     #if HOMEASSISTANT_SUPPORT
         haSetup();
-    #endif
-    #if LLMNR_SUPPORT
-        llmnrSetup();
     #endif
 
     // Prepare configuration for version 2.0

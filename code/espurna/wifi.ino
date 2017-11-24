@@ -7,7 +7,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include "JustWifi.h"
-#include <ESP8266mDNS.h>
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -240,40 +239,9 @@ void wifiSetup() {
 
 		#endif // DEBUG_SUPPORT
 
-        // Configure mDNS
         #if MDNS_SUPPORT
-
-    	    if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
-
-                if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
-
-                    DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
-
-                    #if WEB_SUPPORT
-                        MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
-                    #endif
-                    #if TELNET_SUPPORT
-                        MDNS.addService("telnet", "tcp", TELNET_PORT);
-                    #endif
-
-                    if (code == MESSAGE_CONNECTED) mqttDiscover();
-
-    	        } else {
-
-    	            DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
-
-    	        }
-
-    	    }
-
-        #endif
-
-        // NTP connection reset
-        #if NTP_SUPPORT
-            if (code == MESSAGE_CONNECTED) {
-                ntpConfigure();
-            }
-        #endif
+            if (code == MESSAGE_CONNECTED) mdnsFindMQTT();
+        #endif  // MDNS_SUPPORT
 
     });
 

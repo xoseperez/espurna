@@ -486,26 +486,15 @@ void mqttConfigure() {
 
 }
 
-#if MDNS_SUPPORT
-boolean mqttDiscover() {
-
-    int count = MDNS.queryService("mqtt", "tcp");
-    DEBUG_MSG_P("[MQTT] MQTT brokers found: %d\n", count);
-
-    for (int i=0; i<count; i++) {
-
-        DEBUG_MSG_P("[MQTT] Broker at %s:%d\n", MDNS.IP(i).toString().c_str(), MDNS.port(i));
-
-        if ((i==0) && (getSetting("mqttServer").length() == 0)) {
-            setSetting("mqttServer", MDNS.IP(i).toString());
-            setSetting("mqttPort", MDNS.port(i));
-            mqttEnabled(MQTT_AUTOCONNECT);
-        }
-
-    }
-
+void mqttSetBroker(IPAddress ip, unsigned int port) {
+    setSetting("mqttServer", ip.toString());
+    setSetting("mqttPort", port);
+    mqttEnabled(MQTT_AUTOCONNECT);
 }
-#endif  // MDNS_SUPPORT
+
+void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
+    if (!hasSetting("mqttServer")) mqttSetBroker(ip, port);
+}
 
 void mqttSetup() {
 

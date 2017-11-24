@@ -11,10 +11,18 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <TimeLib.h>
 #include <NtpClientLib.h>
 #include <WiFiClient.h>
+#include <Ticker.h>
+
+WiFiEventHandler _ntp_wifi_onSTA;
+Ticker _ntp_delay;
 
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
+
+void _ntpDebug() {
+    DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+}
 
 void ntpConfigure() {
     NTP.begin(
@@ -46,23 +54,29 @@ String ntpDateTime() {
 }
 
 void ntpSetup() {
+
     NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
+            #if WEB_SUPPORT
+                wsSend_P(PSTR("{\"ntpStatus\": false}"));
+            #endif
             if (error == noResponse) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable\n"));
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"ntpStatus\": false}"));
-            #endif
         } else {
-            DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"ntpStatus\": true}"));
             #endif
+            _ntp_delay.once_ms(100, _ntpDebug);
         }
     });
+
+    _ntp_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
+        ntpConfigure();
+    });
+
 }
 
 void ntpLoop() {
