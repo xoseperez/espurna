@@ -59,9 +59,11 @@ unsigned int settingsKeyCount() {
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROM.read(pos)) {
         pos = pos - len - 2;
+        len = EEPROM.read(pos);
+        pos = pos - len - 2;
         count ++;
     }
-    return count / 2;
+    return count;
 }
 
 String settingsKeyName(unsigned int index) {
@@ -69,18 +71,19 @@ String settingsKeyName(unsigned int index) {
     String s;
 
     unsigned count = 0;
-    unsigned stop = index * 2 + 1;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROM.read(pos)) {
         pos = pos - len - 2;
-        count++;
-        if (count == stop) {
+        if (count == index) {
             s.reserve(len);
             for (unsigned char i = 0 ; i < len; i++) {
                 s += (char) EEPROM.read(pos + i + 1);
             }
             break;
         }
+        count++;
+        len = EEPROM.read(pos);
+        pos = pos - len - 2;
     }
 
     return s;
@@ -277,9 +280,16 @@ void settingsSetup() {
     #endif
 
     Embedis::command( F("DUMP.RAW"), [](Embedis* e) {
+        bool ascii = false;
+        if (e->argc == 2) ascii = String(e->argv[1]).toInt() == 1;
         for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
             if (i % 16 == 0) DEBUG_MSG_P(PSTR("\n[%04X] "), i);
-            DEBUG_MSG_P(PSTR("%02X "), EEPROM.read(i));
+            byte c = EEPROM.read(i);
+            if (ascii && 32 <= c && c <= 126) {
+                DEBUG_MSG_P(PSTR(" %c "), c);
+            } else {
+                DEBUG_MSG_P(PSTR("%02X "), c);
+            }
         }
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
