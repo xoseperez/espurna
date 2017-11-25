@@ -31,6 +31,7 @@
 //#define ITEAD_SONOFF_T1_1CH
 //#define ITEAD_SONOFF_T1_2CH
 //#define ITEAD_SONOFF_T1_3CH
+//#define YJZK_SWITCH_2CH
 //#define ELECTRODRAGON_WIFI_IOT
 //#define WORKCHOICE_ECOPLUG
 //#define AITHINKER_AI_LIGHT
@@ -49,6 +50,7 @@
 //#define MANCAVEMADE_ESPLIVE
 //#define INTERMITTECH_QUINLED
 //#define ARILUX_AL_LC06
+//#define ARILUX_E27
 //#define XENON_SM_PW702U
 //#define AUTHOMETION_LYT8266
 
@@ -69,9 +71,9 @@
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       0
 //#define IR_SUPPORT             1
-//#define LLMNR_SUPPORT          1
+//#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
 //#define MDNS_SUPPORT           0
-//#define NOFUSS_SUPPORT         1
+//#define NOFUSS_SUPPORT         1  // Only with Arduino Core 2.4.0
 //#define NTP_SUPPORT            0
 //#define RF_SUPPORT             1
 //#define SPIFFS_SUPPORT         1
