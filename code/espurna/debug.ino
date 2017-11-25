@@ -11,6 +11,10 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <stdio.h>
 #include <stdarg.h>
 
+extern "C" {
+    #include "user_interface.h"
+}
+
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP udpDebug;
