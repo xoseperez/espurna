@@ -31,7 +31,10 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
 }
 
-void _ntpDebug() {
+void _ntpUpdate() {
+    #if WEB_SUPPORT
+        wsSend(_ntpWebSocketOnSend);
+    #endif
     DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
 }
 
@@ -62,7 +65,7 @@ String ntpDateTime() {
     int month = value.substring(12, 14).toInt();
     int year = value.substring(15, 19).toInt();
     char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%04d/%02d/%02d %02d:%02d:%02d"), year, month, day, hour, minute, second);
+    snprintf_P(buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"), year, month, day, hour, minute, second);
     return String(buffer);
 }
 
@@ -79,10 +82,7 @@ void ntpSetup() {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
         } else {
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"ntpStatus\": true}"));
-            #endif
-            _ntp_delay.once_ms(100, _ntpDebug);
+            _ntp_delay.once_ms(100, _ntpUpdate);
         }
     });
 
