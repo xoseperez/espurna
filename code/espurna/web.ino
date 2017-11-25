@@ -36,7 +36,7 @@ char _last_modified[50];
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication();
+    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
 
     AsyncJsonResponse * response = new AsyncJsonResponse();
     JsonObject& root = response->getRoot();
@@ -63,7 +63,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 void _onHome(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication();
+    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
 
@@ -163,7 +163,7 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication();
+    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
 
     char buffer[10];
     if (!Update.hasError()) {
