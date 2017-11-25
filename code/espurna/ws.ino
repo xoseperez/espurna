@@ -296,6 +296,7 @@ void _wsStart(uint32_t client_id) {
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
+        root["tmpCorrection"] = getSetting("tmpCorrection", TMP_CORRECTION).toFloat();
 
         // Callbacks
         for (unsigned char i = 0; i < _ws_on_send_callbacks.size(); i++) {

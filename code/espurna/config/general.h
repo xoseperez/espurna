@@ -246,6 +246,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define TMP_CELSIUS             0
 #define TMP_FAHRENHEIT          1
 #define TMP_UNITS               TMP_CELSIUS // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#define TMP_CORRECTION          0.0
 
 //------------------------------------------------------------------------------
 // LED

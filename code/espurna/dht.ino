@@ -187,7 +187,8 @@ void dhtLoop() {
         if (readDHT(DHT_PIN, DHT_TYPE) == DHT_OK) {
 
             unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
-            double t = getDHTTemperature(tmpUnits == TMP_CELSIUS);
+						double tmpCorrection = getSetting("tmpCorrection", TMP_CORRECTION).toFloat();
+            double t = getDHTTemperature(tmpUnits == TMP_CELSIUS) + tmpCorrection;						
             unsigned int h = getDHTHumidity();
 
             char temperature[6];

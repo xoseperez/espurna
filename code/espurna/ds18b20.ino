@@ -87,9 +87,13 @@ void dsLoop() {
         last_update = millis();
 
         unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
+        double tmpCorrection = getSetting("tmpCorrection", TMP_CORRECTION).toFloat();
 
         // Read sensor data
         double t = (tmpUnits == TMP_CELSIUS) ? ds18b20.getTempCByIndex(0) : ds18b20.getTempFByIndex(0);
+
+        // apply temperature reading correction
+        t = t + tmpCorrection;
 
         // Check if readings are valid
         if (isnan(t) || t < -50) {
