@@ -12,6 +12,21 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // WIFI
 // -----------------------------------------------------------------------------
 
+void _wifiWebSocketOnSend(JsonObject& root) {
+    root["maxNetworks"] = WIFI_MAX_NETWORKS;
+    JsonArray& wifi = root.createNestedArray("wifi");
+    for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
+        if (getSetting("ssid" + String(i)).length() == 0) break;
+        JsonObject& network = wifi.createNestedObject();
+        network["ssid"] = getSetting("ssid" + String(i));
+        network["pass"] = getSetting("pass" + String(i));
+        network["ip"] = getSetting("ip" + String(i));
+        network["gw"] = getSetting("gw" + String(i));
+        network["mask"] = getSetting("mask" + String(i));
+        network["dns"] = getSetting("dns" + String(i));
+    }
+}
+
 String getIP() {
     if (WiFi.getMode() == WIFI_AP) {
         return WiFi.softAPIP().toString();
@@ -244,6 +259,10 @@ void wifiSetup() {
         #endif  // MDNS_SUPPORT
 
     });
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_wifiWebSocketOnSend);
+    #endif
 
 }
 

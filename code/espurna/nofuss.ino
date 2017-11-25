@@ -18,12 +18,13 @@ bool _nofussEnabled = false;
 // NOFUSS
 // -----------------------------------------------------------------------------
 
-void nofussRun() {
-    NoFUSSClient.handle();
-    _nofussLastCheck = millis();
+void _nofussWebSocketOnSend(JsonObject& root) {
+    root["nofussVisible"] = 1;
+    root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+    root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
 
-void nofussConfigure() {
+void _nofussConfigure() {
 
     String nofussServer = getSetting("nofussServer", NOFUSS_SERVER);
     if (nofussServer.length() == 0) {
@@ -57,9 +58,16 @@ void nofussConfigure() {
 
 }
 
+// -----------------------------------------------------------------------------
+
+void nofussRun() {
+    NoFUSSClient.handle();
+    _nofussLastCheck = millis();
+}
+
 void nofussSetup() {
 
-    nofussConfigure();
+    _nofussConfigure();
 
     NoFUSSClient.onMessage([](nofuss_t code) {
 
@@ -118,6 +126,11 @@ void nofussSetup() {
         }
 
     });
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_nofussWebSocketOnSend);
+        wsOnAfterParseRegister(_nofussConfigure);
+    #endif
 
 }
 

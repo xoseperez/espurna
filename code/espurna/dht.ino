@@ -132,6 +132,16 @@ int readDHT() {
 }
 
 // -----------------------------------------------------------------------------
+// Private
+// -----------------------------------------------------------------------------
+
+void _dhtWebSocketOnSend(JsonObject& root) {
+    root["dhtVisible"] = 1;
+    root["dhtTmp"] = getDHTTemperature();
+    root["dhtHum"] = getDHTHumidity();
+}
+
+// -----------------------------------------------------------------------------
 // Values
 // -----------------------------------------------------------------------------
 
@@ -151,12 +161,17 @@ unsigned int getDHTHumidity() {
 void dhtSetup() {
 
     #if WEB_SUPPORT
+
+        // Websockets
+        wsOnSendRegister(_dhtWebSocketOnSend);
+
         apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
             dtostrf(_dhtTemperature, 1-len, 1, buffer);
         });
         apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
         });
+
     #endif
 
 }

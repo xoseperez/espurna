@@ -18,16 +18,13 @@ unsigned long rfCodeOFF = 0;
 // RF
 // -----------------------------------------------------------------------------
 
-void rfLoop() {
-    return;
-    if (rfCode == 0) return;
-    DEBUG_MSG_P(PSTR("[RF] Received code: %lu\n"), rfCode);
-    if (rfCode == rfCodeON) relayStatus(0, true);
-    if (rfCode == rfCodeOFF) relayStatus(0, false);
-    rfCode = 0;
+void _rfWebSocketOnSend(JsonObject& root) {
+    root["rfVisible"] = 1;
+    root["rfChannel"] = getSetting("rfChannel", RF_CHANNEL);
+    root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
 }
 
-void rfBuildCodes() {
+void _rfBuildCodes() {
 
     unsigned long code = 0;
 
@@ -56,6 +53,17 @@ void rfBuildCodes() {
 
 }
 
+// -----------------------------------------------------------------------------
+
+void rfLoop() {
+    return;
+    if (rfCode == 0) return;
+    DEBUG_MSG_P(PSTR("[RF] Received code: %lu\n"), rfCode);
+    if (rfCode == rfCodeON) relayStatus(0, true);
+    if (rfCode == rfCodeOFF) relayStatus(0, false);
+    rfCode = 0;
+}
+
 void rfCallback(unsigned long code, unsigned int period) {
     rfCode = code;
 }
@@ -63,7 +71,7 @@ void rfCallback(unsigned long code, unsigned int period) {
 void rfSetup() {
 
     pinMode(RF_PIN, INPUT_PULLUP);
-    rfBuildCodes();
+    _rfBuildCodes();
     RemoteReceiver::init(RF_PIN, 3, rfCallback);
     RemoteReceiver::disable();
     DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
@@ -87,6 +95,11 @@ void rfSetup() {
         RemoteReceiver::enable();
         DEBUG_MSG_P(PSTR("[RF] Enabled\n"));
     });
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_rfWebSocketOnSend);
+        wsOnAfterParseRegister(_rfBuildCodes);
+    #endif
 
 }
 

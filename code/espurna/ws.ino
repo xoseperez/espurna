@@ -18,23 +18,17 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 AsyncWebSocket _ws("/ws");
 Ticker _web_defer;
 
-std::vector<ws_callback_f> _ws_sender_callbacks;
-std::vector<ws_callback_f> _ws_receiver_callbacks;
+std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
+std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
+std::vector<ws_on_after_parse_callback_f> _ws_on_after_parse_callbacks;
 
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
 
 void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
-
-    if (type == MQTT_CONNECT_EVENT) {
-        wsSend_P(PSTR("{\"mqttStatus\": true}"));
-    }
-
-    if (type == MQTT_DISCONNECT_EVENT) {
-        wsSend_P(PSTR("{\"mqttStatus\": false}"));
-    }
-
+    if (type == MQTT_CONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": true}"));
+    if (type == MQTT_DISCONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": false}"));
 }
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
@@ -53,35 +47,25 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         return;
     }
 
-    // Check actions
+    // Check actions -----------------------------------------------------------
+
     if (root.containsKey("action")) {
 
         String action = root["action"];
+        JsonObject& data = root.containsKey("data") ? root["data"] : jsonBuffer.createObject();
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action.c_str());
 
-        if (action.equals("reset")) {
-            deferredReset(100, CUSTOM_RESET_WEB);
+        // Callbacks
+        for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
+            (_ws_on_action_callbacks[i])(action.c_str(), data);
         }
 
-        #ifdef ITEAD_SONOFF_RFBRIDGE
-        if (action.equals("rfblearn") && root.containsKey("data")) {
-            JsonObject& data = root["data"];
-            rfbLearn(data["id"], data["status"]);
-        }
-        if (action.equals("rfbforget") && root.containsKey("data")) {
-            JsonObject& data = root["data"];
-            rfbForget(data["id"], data["status"]);
-        }
-        if (action.equals("rfbsend") && root.containsKey("data")) {
-            JsonObject& data = root["data"];
-            rfbStore(data["id"], data["status"], data["data"].as<const char*>());
-        }
-        #endif
+        if (action.equals("reset")) deferredReset(100, CUSTOM_RESET_WEB);
+        if (action.equals("reconnect")) _web_defer.once_ms(100, wifiDisconnect);
 
-        if (action.equals("restore") && root.containsKey("data")) {
+        if (action.equals("restore")) {
 
-            JsonObject& data = root["data"];
             if (!data.containsKey("app") || (data["app"] != APP_NAME)) {
                 wsSend_P(client_id, PSTR("{\"message\": 4}"));
                 return;
@@ -103,82 +87,10 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         }
 
-        if (action.equals("reconnect")) {
-
-            // Let the HTTP request return and disconnect after 100ms
-            _web_defer.once_ms(100, wifiDisconnect);
-
-        }
-
-        if (action.equals("relay") && root.containsKey("data")) {
-
-            JsonObject& data = root["data"];
-
-            if (data.containsKey("status")) {
-
-                unsigned char value = relayParsePayload(data["status"]);
-
-                if (value == 3) {
-
-                    relayWS();
-
-                } else if (value < 3) {
-
-                    unsigned int relayID = 0;
-                    if (data.containsKey("id")) {
-                        String value = data["id"];
-                        relayID = value.toInt();
-                    }
-
-                    // Action to perform
-                    if (value == 0) {
-                        relayStatus(relayID, false);
-                    } else if (value == 1) {
-                        relayStatus(relayID, true);
-                    } else if (value == 2) {
-                        relayToggle(relayID);
-                    }
-
-                }
-
-            }
-
-        }
-
-        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
-            if (lightHasColor()) {
-
-                if (action.equals("rgb") && root.containsKey("data")) {
-                    lightColor((const char *) root["data"], true);
-                    lightUpdate(true, true);
-                }
-
-                if (action.equals("brightness") && root.containsKey("data")) {
-                    lightBrightness(root["data"]);
-                    lightUpdate(true, true);
-                }
-
-                if (action.equals("hsv") && root.containsKey("data")) {
-                    lightColor((const char *) root["data"], false);
-                    lightUpdate(true, true);
-                }
-
-            }
-
-            if (action.equals("channel") && root.containsKey("data")) {
-                JsonObject& data = root["data"];
-                if (data.containsKey("id") && data.containsKey("value")) {
-                    lightChannel(data["id"], data["value"]);
-                    lightUpdate(true, true);
-                }
-            }
-
-        #endif //LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
     };
 
-    // Check config
+    // Check configuration -----------------------------------------------------
+
     if (root.containsKey("config") && root["config"].is<JsonArray&>()) {
 
         JsonArray& config = root["config"];
@@ -189,7 +101,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         bool save = false;
         bool changed = false;
         bool changedMQTT = false;
-        bool changedNTP = false;
 
         unsigned int network = 0;
         unsigned int dczRelayIdx = 0;
@@ -307,9 +218,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 setSetting(key, value);
                 save = changed = true;
                 if (key.startsWith("mqtt")) changedMQTT = true;
-                #if NTP_SUPPORT
-                    if (key.startsWith("ntp")) changedNTP = true;
-                #endif
             }
 
         }
@@ -348,44 +256,18 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         // Save settings
         if (save) {
 
-            wsConfigure();
-            saveSettings();
+            // Callbacks
+            for (unsigned char i = 0; i < _ws_on_after_parse_callbacks.size(); i++) {
+                (_ws_on_after_parse_callbacks[i])();
+            }
+
             wifiConfigure();
             otaConfigure();
             if (changedMQTT) {
                 mqttConfigure();
                 mqttDisconnect();
             }
-
-            #if ALEXA_SUPPORT
-                alexaConfigure();
-            #endif
-            #if INFLUXDB_SUPPORT
-                idbConfigure();
-            #endif
-            #if DOMOTICZ_SUPPORT
-                domoticzConfigure();
-            #endif
-            #if NOFUSS_SUPPORT
-                nofussConfigure();
-            #endif
-            #if RF_SUPPORT
-                rfBuildCodes();
-            #endif
-            #if POWER_PROVIDER != POWER_PROVIDER_NONE
-                powerConfigure();
-            #endif
-            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                #if LIGHT_SAVE_ENABLED == 0
-                    lightSave();
-                #endif
-            #endif
-            #if NTP_SUPPORT
-                if (changedNTP) ntpConfigure();
-            #endif
-            #if HOMEASSISTANT_SUPPORT
-                haConfigure();
-            #endif
+            saveSettings();
 
         }
 
@@ -401,9 +283,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 void _wsStart(uint32_t client_id) {
 
-    char chipid[7];
-    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
-
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
@@ -418,6 +297,9 @@ void _wsStart(uint32_t client_id) {
         root["webMode"] = WEB_MODE_PASSWORD;
 
     } else {
+
+        char chipid[7];
+        snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
 
         root["webMode"] = WEB_MODE_NORMAL;
 
@@ -436,205 +318,14 @@ void _wsStart(uint32_t client_id) {
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
 
-        #if NTP_SUPPORT
-            root["time"] = ntpDateTime();
-            root["ntpVisible"] = 1;
-            root["ntpStatus"] = ntpConnected();
-            root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
-            root["ntpServer2"] = getSetting("ntpServer2");
-            root["ntpServer3"] = getSetting("ntpServer3");
-            root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-            root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-        #endif
-
-        root["mqttStatus"] = mqttConnected();
-        root["mqttEnabled"] = mqttEnabled();
-        root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
-        root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
-        root["mqttUser"] = getSetting("mqttUser");
-        root["mqttPassword"] = getSetting("mqttPassword");
-        #if ASYNC_TCP_SSL_ENABLED
-            root["mqttsslVisible"] = 1;
-            root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
-            root["mqttFP"] = getSetting("mqttFP");
-        #endif
-        root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
-        root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
-
-        JsonArray& relay = root.createNestedArray("relayStatus");
-        for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
-            relay.add(relayStatus(relayID));
-        }
-
-        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-            root["colorVisible"] = 1;
-            root["useColor"] = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
-            root["useWhite"] = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
-            root["useGamma"] = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
-            root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
-            bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
-            root["useRGB"] = useRGB;
-            if (lightHasColor()) {
-                if (useRGB) {
-                    root["rgb"] = lightColor(true);
-                    root["brightness"] = lightBrightness();
-                } else {
-                    root["hsv"] = lightColor(false);
-                }
-            }
-            JsonArray& channels = root.createNestedArray("channels");
-            for (unsigned char id=0; id < lightChannels(); id++) {
-                channels.add(lightChannel(id));
-            }
-        #endif
-
-        root["relayMode"] = getSetting("relayMode", RELAY_MODE);
-        root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
-        root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
-        if (relayCount() > 1) {
-            root["multirelayVisible"] = 1;
-            root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
-        }
-
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-
-        root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
-        root["apiKey"] = getSetting("apiKey");
-        root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-
         root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 
-        #if HOMEASSISTANT_SUPPORT
-            root["haVisible"] = 1;
-            root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-        #endif // HOMEASSISTANT_SUPPORT
-
-        #if DOMOTICZ_SUPPORT
-
-            root["dczVisible"] = 1;
-            root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
-            root["dczSkip"] = getSetting("dczSkip", DOMOTICZ_SKIP_TIME);
-            root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
-            root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
-
-            JsonArray& dczRelayIdx = root.createNestedArray("dczRelayIdx");
-            for (byte i=0; i<relayCount(); i++) {
-                dczRelayIdx.add(domoticzIdx(i));
-            }
-
-            #if DHT_SUPPORT
-                root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
-                root["dczHumIdx"] = getSetting("dczHumIdx").toInt();
-            #endif
-
-            #if DS18B20_SUPPORT
-                root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
-            #endif
-
-            #if ANALOG_SUPPORT
-                root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
-            #endif
-
-            #if POWER_PROVIDER != POWER_PROVIDER_NONE
-                root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
-                root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
-                root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
-                #if POWER_HAS_ACTIVE
-                    root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
-                #endif
-            #endif
-
-        #endif
-
-        #if DS18B20_SUPPORT
-            root["dsVisible"] = 1;
-            root["dsTmp"] = getDSTemperatureStr();
-        #endif
-
-        #if DHT_SUPPORT
-            root["dhtVisible"] = 1;
-            root["dhtTmp"] = getDHTTemperature();
-            root["dhtHum"] = getDHTHumidity();
-        #endif
-
-        #if RF_SUPPORT
-            root["rfVisible"] = 1;
-            root["rfChannel"] = getSetting("rfChannel", RF_CHANNEL);
-            root["rfDevice"] = getSetting("rfDevice", RF_DEVICE);
-        #endif
-
-        #if POWER_PROVIDER != POWER_PROVIDER_NONE
-            root["pwrVisible"] = 1;
-            root["pwrCurrent"] = getCurrent();
-            root["pwrVoltage"] = getVoltage();
-            root["pwrApparent"] = getApparentPower();
-            root["pwrEnergy"] = getPowerEnergy();
-            root["pwrReadEvery"] = powerReadInterval();
-            root["pwrReportEvery"] = powerReportInterval();
-            #if POWER_HAS_ACTIVE
-                root["pwrActive"] = getActivePower();
-                root["pwrReactive"] = getReactivePower();
-                root["pwrFactor"] = int(100 * getPowerFactor());
-            #endif
-            #if (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
-                root["emonVisible"] = 1;
-            #endif
-            #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
-                root["hlwVisible"] = 1;
-            #endif
-            #if POWER_PROVIDER == POWER_PROVIDER_V9261F
-                root["v9261fVisible"] = 1;
-            #endif
-            #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
-                root["ech1560fVisible"] = 1;
-            #endif
-        #endif
-
-        #if NOFUSS_SUPPORT
-            root["nofussVisible"] = 1;
-            root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
-            root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
-        #endif
-
-        #ifdef ITEAD_SONOFF_RFBRIDGE
-            root["rfbVisible"] = 1;
-            root["rfbCount"] = relayCount();
-            JsonArray& rfb = root.createNestedArray("rfb");
-            for (byte id=0; id<relayCount(); id++) {
-                for (byte status=0; status<2; status++) {
-                    JsonObject& node = rfb.createNestedObject();
-                    node["id"] = id;
-                    node["status"] = status;
-                    node["data"] = rfbRetrieve(id, status == 1);
-                }
-            }
-        #endif
-
-        #if TELNET_SUPPORT
-            root["telnetVisible"] = 1;
-            root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
-        #endif
-
-        root["maxNetworks"] = WIFI_MAX_NETWORKS;
-        JsonArray& wifi = root.createNestedArray("wifi");
-        for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
-            if (getSetting("ssid" + String(i)).length() == 0) break;
-            JsonObject& network = wifi.createNestedObject();
-            network["ssid"] = getSetting("ssid" + String(i));
-            network["pass"] = getSetting("pass" + String(i));
-            network["ip"] = getSetting("ip" + String(i));
-            network["gw"] = getSetting("gw" + String(i));
-            network["mask"] = getSetting("mask" + String(i));
-            network["dns"] = getSetting("dns" + String(i));
+        // Callbacks
+        for (unsigned char i = 0; i < _ws_on_send_callbacks.size(); i++) {
+            (_ws_on_send_callbacks[i])(root);
         }
-
-        // Module setters
-        for (unsigned char i = 0; i < _ws_sender_callbacks.size(); i++) {
-            (_ws_sender_callbacks[i])(root);
-        }
-
 
     }
 
@@ -674,7 +365,6 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
     }
 
-
 }
 
 // -----------------------------------------------------------------------------
@@ -685,16 +375,23 @@ bool wsConnected() {
     return (_ws.count() > 0);
 }
 
-void wsRegister(ws_callback_f sender, ws_callback_f receiver) {
-    _ws_sender_callbacks.push_back(sender);
-    if (receiver) _ws_receiver_callbacks.push_back(receiver);
+void wsOnSendRegister(ws_on_send_callback_f callback) {
+    _ws_on_send_callbacks.push_back(callback);
 }
 
-void wsSend(ws_callback_f sender) {
+void wsOnActionRegister(ws_on_action_callback_f callback) {
+    _ws_on_action_callbacks.push_back(callback);
+}
+
+void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback) {
+    _ws_on_after_parse_callbacks.push_back(callback);
+}
+
+void wsSend(ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
-        sender(root);
+        callback(root);
         String output;
         root.printTo(output);
         wsSend((char *) output.c_str());
@@ -734,6 +431,7 @@ void wsSetup() {
     wsConfigure();
     webServer()->addHandler(&_ws);
     mqttRegister(_wsMQTTCallback);
+    wsOnAfterParseRegister(wsConfigure);
 }
 
 #endif // WEB_SUPPORT

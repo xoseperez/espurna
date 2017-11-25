@@ -78,6 +78,48 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
 };
 
+void _domoticzWebSocketOnSend(JsonObject& root) {
+
+    root["dczVisible"] = 1;
+    root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    root["dczSkip"] = getSetting("dczSkip", DOMOTICZ_SKIP_TIME);
+    root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
+    root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+
+    JsonArray& dczRelayIdx = root.createNestedArray("dczRelayIdx");
+    for (byte i=0; i<relayCount(); i++) {
+        dczRelayIdx.add(domoticzIdx(i));
+    }
+
+    #if DHT_SUPPORT
+        root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
+        root["dczHumIdx"] = getSetting("dczHumIdx").toInt();
+    #endif
+
+    #if DS18B20_SUPPORT
+        root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
+    #endif
+
+    #if ANALOG_SUPPORT
+        root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
+    #endif
+
+    #if POWER_PROVIDER != POWER_PROVIDER_NONE
+        root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
+        root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
+        root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
+        #if POWER_HAS_ACTIVE
+            root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
+        #endif
+    #endif
+
+}
+
+void _domoticzConfigure() {
+    _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    _dcz_skip_time = 1000 * getSetting("dczSkip", DOMOTICZ_SKIP_TIME).toInt();
+}
+
 //------------------------------------------------------------------------------
 // Public API
 //------------------------------------------------------------------------------
@@ -114,13 +156,12 @@ int domoticzIdx(unsigned int relayID) {
     return getSetting(buffer).toInt();
 }
 
-void domoticzConfigure() {
-    _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
-    _dcz_skip_time = 1000 * getSetting("dczSkip", DOMOTICZ_SKIP_TIME).toInt();
-}
-
 void domoticzSetup() {
-    domoticzConfigure();
+    _domoticzConfigure();
+    #if WEB_SUPPORT
+        wsOnSendRegister(_domoticzWebSocketOnSend);
+        wsOnAfterParseRegister(_domoticzConfigure);
+    #endif
     mqttRegister(_domoticzMqtt);
 }
 

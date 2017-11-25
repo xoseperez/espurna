@@ -16,8 +16,7 @@ SyncClient _idb_client;
 
 // -----------------------------------------------------------------------------
 
-#if WEB_SUPPORT
-void _idbWSSend(JsonObject& root) {
+void _idbWebSocketOnSend(JsonObject& root) {
     root["idbVisible"] = 1;
     root["idbHost"] = getSetting("idbHost");
     root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
@@ -25,7 +24,10 @@ void _idbWSSend(JsonObject& root) {
     root["idbUsername"] = getSetting("idbUsername");
     root["idbPassword"] = getSetting("idbPassword");
 }
-#endif
+
+void _idbConfigure() {
+    _idb_enabled = getSetting("idbHost").length() > 0;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -70,14 +72,11 @@ bool idbEnabled() {
     return _idb_enabled;
 }
 
-void idbConfigure() {
-    _idb_enabled = getSetting("idbHost").length() > 0;
-}
-
 void idbSetup() {
-    idbConfigure();
+    _idbConfigure();
     #if WEB_SUPPORT
-        wsRegister(_idbWSSend);
+        wsOnSendRegister(_idbWebSocketOnSend);
+        wsOnAfterParseRegister(_idbConfigure);
     #endif
 }
 

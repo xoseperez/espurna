@@ -36,6 +36,26 @@ bool _rfbin = false;
 // PRIVATES
 // -----------------------------------------------------------------------------
 
+void _rfbWebSocketOnSend(JsonObject& root) {
+    root["rfbVisible"] = 1;
+    root["rfbCount"] = relayCount();
+    JsonArray& rfb = root.createNestedArray("rfb");
+    for (byte id=0; id<relayCount(); id++) {
+        for (byte status=0; status<2; status++) {
+            JsonObject& node = rfb.createNestedObject();
+            node["id"] = id;
+            node["status"] = status;
+            node["data"] = rfbRetrieve(id, status == 1);
+        }
+    }
+}
+
+void _rfbWebSocketOnAction(const char * action, JsonObject& data) {
+    if (strcmp(action, "rfbLearn") == 0) rfbLearn(data["id"], data["status"]);
+    if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
+    if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+}
+
 void _rfbAck() {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending ACK\n"));
     Serial.println();
@@ -324,6 +344,10 @@ void rfbForget(unsigned char id, bool status) {
 
 void rfbSetup() {
     mqttRegister(_rfbMqttCallback);
+    #if WEB_SUPPORT
+        wsOnSendRegister(_rfbWebSocketOnSend);
+        wsOnActionRegister(_rfbWebSocketOnAction);
+    #endif
 }
 
 void rfbLoop() {

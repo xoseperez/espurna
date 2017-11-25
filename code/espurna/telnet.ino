@@ -19,6 +19,11 @@ AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
 // Private methods
 // -----------------------------------------------------------------------------
 
+void _telnetWebSocketOnSend(JsonObject& root) {
+    root["telnetVisible"] = 1;
+    root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+}
+
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
     _telnetClients[clientId] = NULL;
@@ -136,6 +141,10 @@ void telnetSetup() {
         _telnetNewClient(c);
     }, 0);
     _telnetServer->begin();
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_telnetWebSocketOnSend);
+    #endif
 
     DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);
 

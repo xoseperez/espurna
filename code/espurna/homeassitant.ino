@@ -12,6 +12,21 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 bool _haEnabled = false;
 
+// -----------------------------------------------------------------------------
+
+void _haWebSocketOnSend(JsonObject& root) {
+    root["haVisible"] = 1;
+    root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
+}
+
+void _haConfigure() {
+    bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    if (enabled != _haEnabled) haSend(enabled);
+    _haEnabled = enabled;
+}
+
+// -----------------------------------------------------------------------------
+
 void haSend(bool add) {
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
@@ -72,14 +87,12 @@ void haSend(bool add) {
 
 }
 
-void haConfigure() {
-    bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
-    if (enabled != _haEnabled) haSend(enabled);
-    _haEnabled = enabled;
-}
-
 void haSetup() {
-    haConfigure();
+    _haConfigure();
+    #if WEB_SUPPORT
+        wsOnSendRegister(_haWebSocketOnSend);
+        wsOnAfterParseRegister(_haConfigure);
+    #endif
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
         if (type == MQTT_CONNECT_EVENT) haSend(_haEnabled);
     });

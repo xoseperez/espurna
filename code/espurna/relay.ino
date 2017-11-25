@@ -351,6 +351,55 @@ unsigned char relayParsePayload(const char * payload) {
 
 #if WEB_SUPPORT
 
+void _relayWebSocketOnSend(JsonObject& root) {
+    JsonArray& relay = root.createNestedArray("relayStatus");
+    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
+        relay.add(relayStatus(relayID));
+    }
+    root["relayMode"] = getSetting("relayMode", RELAY_MODE);
+    root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
+    root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
+    if (relayCount() > 1) {
+        root["multirelayVisible"] = 1;
+        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
+    }
+}
+
+void _relayWebSocketOnAction(const char * action, JsonObject& data) {
+
+    if (strcmp(action, "relay") != 0) return;
+
+    if (data.containsKey("status")) {
+
+        unsigned char value = relayParsePayload(data["status"]);
+
+        if (value == 3) {
+
+            relayWS();
+
+        } else if (value < 3) {
+
+            unsigned int relayID = 0;
+            if (data.containsKey("id")) {
+                String value = data["id"];
+                relayID = value.toInt();
+            }
+
+            // Action to perform
+            if (value == 0) {
+                relayStatus(relayID, false);
+            } else if (value == 1) {
+                relayStatus(relayID, true);
+            } else if (value == 2) {
+                relayToggle(relayID);
+            }
+
+        }
+
+    }
+
+}
+
 void relaySetupAPI() {
 
     // API entry points (protected with apikey)
@@ -541,6 +590,8 @@ void relaySetup() {
 
     #if WEB_SUPPORT
         relaySetupAPI();
+        wsOnSendRegister(_relayWebSocketOnSend);
+        wsOnActionRegister(_relayWebSocketOnAction);
     #endif
     relaySetupMQTT();
 

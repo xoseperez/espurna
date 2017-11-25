@@ -20,18 +20,16 @@ bool _alexa_change = false;
 unsigned int _alexa_device_id = 0;
 bool _alexa_state = false;
 
-#if WEB_SUPPORT
-    void _alexaWSSend(JsonObject& root) {
-        root["alexaVisible"] = 1;
-        root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
-    }
-#endif
+void _alexaWebSocketOnSend(JsonObject& root) {
+    root["alexaVisible"] = 1;
+    root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
+}
 
-// -----------------------------------------------------------------------------
-
-void alexaConfigure() {
+void _alexaConfigure() {
     alexa.enable(getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1);
 }
+
+// -----------------------------------------------------------------------------
 
 void alexaSetup() {
 
@@ -39,11 +37,14 @@ void alexaSetup() {
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
     // Load & cache settings
-    alexaConfigure();
+    _alexaConfigure();
 
     #if WEB_SUPPORT
+
         // Websockets
-        wsRegister(_alexaWSSend);
+        wsOnSendRegister(_alexaWebSocketOnSend);
+        wsOnAfterParseRegister(_alexaConfigure);
+
     #endif
 
     unsigned int relays = relayCount();

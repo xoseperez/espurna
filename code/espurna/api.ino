@@ -22,6 +22,14 @@ typedef struct {
 std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
+
+void _apiWebSocketOnSend(JsonObject& root) {
+    root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
+    root["apiKey"] = getSetting("apiKey");
+    root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+}
+
+// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 
@@ -176,6 +184,7 @@ void apiRegister(const char * url, const char * key, api_get_callback_f getFn, a
 void apiSetup() {
     webServer()->on("/apis", HTTP_GET, _onAPIs);
     webServer()->on("/rpc", HTTP_GET, _onRPC);
+    wsOnSendRegister(_apiWebSocketOnSend);
 }
 
 #endif // WEB_SUPPORT

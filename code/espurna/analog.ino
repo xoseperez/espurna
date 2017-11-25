@@ -12,7 +12,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // ANALOG
 // -----------------------------------------------------------------------------
 
-void _analogWSSend(JsonObject& root) {
+void _analogWebSocketOnSend(JsonObject& root) {
     root["analogVisible"] = 1;
     root["analogValue"] = getAnalog();
 }
@@ -30,7 +30,7 @@ void analogSetup() {
     #if WEB_SUPPORT
 
         // Websocket register
-        wsRegister(_analogWSSend);
+        wsOnSendRegister(_analogWebSocketOnSend);
 
         // API register
         apiRegister(ANALOG_TOPIC, ANALOG_TOPIC, [](char * buffer, size_t len) {
@@ -69,7 +69,7 @@ void analogLoop() {
 
         // Update websocket clients
         #if WEB_SUPPORT
-            wsSend(_analogWSSend);
+            wsSend(_analogWebSocketOnSend);
         #endif
 
     }

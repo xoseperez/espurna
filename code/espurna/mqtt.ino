@@ -200,6 +200,22 @@ void mqttRegister(mqtt_callback_f callback) {
 // Callbacks
 // -----------------------------------------------------------------------------
 
+void _mqttWebSocketOnSend(JsonObject& root) {
+    root["mqttStatus"] = mqttConnected();
+    root["mqttEnabled"] = mqttEnabled();
+    root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
+    root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
+    root["mqttUser"] = getSetting("mqttUser");
+    root["mqttPassword"] = getSetting("mqttPassword");
+    #if ASYNC_TCP_SSL_ENABLED
+        root["mqttsslVisible"] = 1;
+        root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
+        root["mqttFP"] = getSetting("mqttFP");
+    #endif
+    root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
+    root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+}
+
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
@@ -551,6 +567,10 @@ void mqttSetup() {
 
     mqttConfigure();
     mqttRegister(_mqttCallback);
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_mqttWebSocketOnSend);
+    #endif
 
 }
 

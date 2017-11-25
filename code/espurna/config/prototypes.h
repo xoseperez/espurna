@@ -1,32 +1,70 @@
 #include <Arduino.h>
 #include <NtpClientLib.h>
-#include <ESPAsyncWebServer.h>
-#include <AsyncMqttClient.h>
 #include <ArduinoJson.h>
 #include <functional>
 
+#if WEB_SUPPORT
+
+// -----------------------------------------------------------------------------
+// WebServer
+// -----------------------------------------------------------------------------
+#include <ESPAsyncWebServer.h>
 AsyncWebServer * webServer();
 
+// -----------------------------------------------------------------------------
+// API
+// -----------------------------------------------------------------------------
 typedef std::function<void(char *, size_t)> api_get_callback_f;
 typedef std::function<void(const char *)> api_put_callback_f;
 void apiRegister(const char * url, const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
 
+// -----------------------------------------------------------------------------
+// WebSockets
+// -----------------------------------------------------------------------------
+typedef std::function<void(JsonObject&)> ws_on_send_callback_f;
+void wsOnSendRegister(ws_on_send_callback_f callback);
+void wsSend(ws_on_send_callback_f sender);
+
+typedef std::function<void(const char *, JsonObject&)> ws_on_action_callback_f;
+void wsOnActionRegister(ws_on_action_callback_f callback);
+
+typedef std::function<void(void)> ws_on_after_parse_callback_f;
+void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
+
+#endif // WEB_SUPPORT
+
+// -----------------------------------------------------------------------------
+// MQTT
+// -----------------------------------------------------------------------------
+#include <AsyncMqttClient.h>
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
 void mqttRegister(mqtt_callback_f callback);
 String mqttSubtopic(char * topic);
 
-typedef std::function<void(JsonObject&)> ws_callback_f;
-void wsRegister(ws_callback_f sender, ws_callback_f receiver = NULL);
-void wsSend(ws_callback_f sender);
-
+// -----------------------------------------------------------------------------
+// Settings
+// -----------------------------------------------------------------------------
 template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 
+// -----------------------------------------------------------------------------
+// Domoticz
+// -----------------------------------------------------------------------------
+#if DOMOTICZ_SUPPORT
 template<typename T> void domoticzSend(const char * key, T value);
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue);
+#endif
 
+// -----------------------------------------------------------------------------
+// InfluxDB
+// -----------------------------------------------------------------------------
+#if INFLUXDB_SUPPORT
 template<typename T> bool idbSend(const char * topic, T payload);
+#endif
 
+// -----------------------------------------------------------------------------
+// Utils
+// -----------------------------------------------------------------------------
 char * ltrim(char * s);

@@ -26,12 +26,12 @@ void ICACHE_RAM_ATTR _counterISR() {
     }
 }
 
-#if WEB_SUPPORT
-void _counterWSSend(JsonObject& root) {
+void _counterWebSocketOnSend(JsonObject& root) {
     root["counterVisible"] = 1;
     root["counterValue"] = getCounter();
 }
-#endif
+
+// -----------------------------------------------------------------------------
 
 unsigned long getCounter() {
     return _counterValue;
@@ -45,7 +45,7 @@ void counterSetup() {
     #if WEB_SUPPORT
 
         // Websockets
-        wsRegister(_counterWSSend);
+        wsOnSendRegister(_counterWebSocketOnSend);
 
         // API
         apiRegister(COUNTER_TOPIC, COUNTER_TOPIC, [](char * buffer, size_t len) {
@@ -75,7 +75,7 @@ void counterLoop() {
 
     // Update websocket clients
     #if WEB_SUPPORT
-        wsSend(_counterWSSend);
+        wsSend(_counterWebSocketOnSend);
     #endif
 
     // Do we have to report?

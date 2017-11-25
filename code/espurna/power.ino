@@ -48,6 +48,33 @@ MedianFilter _filter_current = MedianFilter();
 
 #if WEB_SUPPORT
 
+void _powerWebSocketOnSend(JsonObject& root) {
+    root["pwrVisible"] = 1;
+    root["pwrCurrent"] = getCurrent();
+    root["pwrVoltage"] = getVoltage();
+    root["pwrApparent"] = getApparentPower();
+    root["pwrEnergy"] = getPowerEnergy();
+    root["pwrReadEvery"] = powerReadInterval();
+    root["pwrReportEvery"] = powerReportInterval();
+    #if POWER_HAS_ACTIVE
+        root["pwrActive"] = getActivePower();
+        root["pwrReactive"] = getReactivePower();
+        root["pwrFactor"] = int(100 * getPowerFactor());
+    #endif
+    #if (POWER_PROVIDER == POWER_PROVIDER_EMON_ANALOG) || (POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121)
+        root["emonVisible"] = 1;
+    #endif
+    #if POWER_PROVIDER == POWER_PROVIDER_HLW8012
+        root["hlwVisible"] = 1;
+    #endif
+    #if POWER_PROVIDER == POWER_PROVIDER_V9261F
+        root["v9261fVisible"] = 1;
+    #endif
+    #if POWER_PROVIDER == POWER_PROVIDER_ECH1560
+        root["ech1560fVisible"] = 1;
+    #endif
+}
+
 void _powerAPISetup() {
 
     apiRegister(MQTT_TOPIC_CURRENT, MQTT_TOPIC_CURRENT, [](char * buffer, size_t len) {
@@ -250,6 +277,21 @@ void _powerReport() {
 
 }
 
+void _powerConfigure() {
+    _power_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    _power_read_interval = atol(getSetting("pwrReadEvery", POWER_READ_INTERVAL).c_str());
+    _power_report_interval = atol(getSetting("pwrReportEvery", POWER_REPORT_INTERVAL).c_str());
+    if (_power_read_interval < POWER_MIN_READ_INTERVAL) {
+        _power_read_interval = POWER_MIN_READ_INTERVAL;
+        setSetting("pwrReadEvery", _power_read_interval);
+    }
+    if (_power_report_interval < _power_read_interval) {
+        _power_report_interval = _power_read_interval;
+        setSetting("pwrReportEvery", _power_report_interval);
+    }
+    _powerConfigureProvider();
+}
+
 // -----------------------------------------------------------------------------
 // MAGNITUDE API
 // -----------------------------------------------------------------------------
@@ -319,21 +361,6 @@ void powerResetCalibration() {
     _powerResetCalibrationProvider();
 }
 
-void powerConfigure() {
-    _power_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    _power_read_interval = atol(getSetting("pwrReadEvery", POWER_READ_INTERVAL).c_str());
-    _power_report_interval = atol(getSetting("pwrReportEvery", POWER_REPORT_INTERVAL).c_str());
-    if (_power_read_interval < POWER_MIN_READ_INTERVAL) {
-        _power_read_interval = POWER_MIN_READ_INTERVAL;
-        setSetting("pwrReadEvery", _power_read_interval);
-    }
-    if (_power_report_interval < _power_read_interval) {
-        _power_report_interval = _power_read_interval;
-        setSetting("pwrReportEvery", _power_report_interval);
-    }
-    _powerConfigureProvider();
-}
-
 void powerSetup() {
 
     // backwards compatibility
@@ -351,10 +378,12 @@ void powerSetup() {
     moveSetting("powerRatioP", "pwrRatioP");
 
     _powerSetupProvider();
-    powerConfigure();
+    _powerConfigure();
 
     // API
     #if WEB_SUPPORT
+        wsOnSendRegister(_powerWebSocketOnSend);
+        wsOnAfterParseRegister(_powerConfigure);
         _powerAPISetup();
     #endif
 

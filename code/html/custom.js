@@ -418,7 +418,7 @@ function initColorRGB() {
         sliders: 'wrgbp'
     }).on('sliderup', function() {
         var value = $(this).wheelColorPicker('getValue', 'css');
-        websock.send(JSON.stringify({'action': 'rgb', 'data' : value}));
+        websock.send(JSON.stringify({'action': 'color', 'data' : {'rgb': value}}));
     });
 
     // init bright slider
@@ -426,7 +426,7 @@ function initColorRGB() {
         var value = $(this).val();
         var parent = $(this).parents(".pure-g");
         $("span", parent).html(value);
-        websock.send(JSON.stringify({'action': 'brightness', 'data' : value}));
+        websock.send(JSON.stringify({'action': 'color', 'data' : {'brightness': value}}));
     });
 
 }
@@ -448,7 +448,7 @@ function initColorHSV() {
     }).on('sliderup', function() {
         var color = $(this).wheelColorPicker('getColor');
         var value = parseInt(color.h * 360) + "," + parseInt(color.s * 100) + "," + parseInt(color.v * 100);
-        websock.send(JSON.stringify({'action': 'hsv', 'data': value}));
+        websock.send(JSON.stringify({'action': 'color', 'data' : {'hsv': value}}));
     });
 
 }

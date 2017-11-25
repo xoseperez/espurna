@@ -20,11 +20,22 @@ Ticker _ntp_delay;
 // NTP
 // -----------------------------------------------------------------------------
 
+void _ntpWebSocketOnSend(JsonObject& root) {
+    root["time"] = ntpDateTime();
+    root["ntpVisible"] = 1;
+    root["ntpStatus"] = ntpConnected();
+    root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
+    root["ntpServer2"] = getSetting("ntpServer2");
+    root["ntpServer3"] = getSetting("ntpServer3");
+    root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+}
+
 void _ntpDebug() {
     DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
 }
 
-void ntpConfigure() {
+void _ntpConfigure() {
     NTP.begin(
         getSetting("ntpServer1", NTP_SERVER),
         getSetting("ntpOffset", NTP_TIME_OFFSET).toInt(),
@@ -34,6 +45,8 @@ void ntpConfigure() {
     if (getSetting("ntpServer3")) NTP.setNtpServerName(getSetting("ntpServer3"), 2);
     NTP.setInterval(NTP_UPDATE_INTERVAL);
 }
+
+// -----------------------------------------------------------------------------
 
 bool ntpConnected() {
     return (timeStatus() == timeSet);
@@ -74,8 +87,13 @@ void ntpSetup() {
     });
 
     _ntp_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
-        ntpConfigure();
+        _ntpConfigure();
     });
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_ntpWebSocketOnSend);
+        wsOnAfterParseRegister(_ntpConfigure);
+    #endif
 
 }
 

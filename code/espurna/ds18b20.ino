@@ -19,6 +19,15 @@ double _dsTemperature = 0;
 char _dsTemperatureStr[6];
 
 // -----------------------------------------------------------------------------
+// Private
+// -----------------------------------------------------------------------------
+
+void _dsWebSocketOnSend(JsonObject& root) {
+    root["dsVisible"] = 1;
+    root["dsTmp"] = getDSTemperatureStr();
+}
+
+// -----------------------------------------------------------------------------
 // DS18B20
 // -----------------------------------------------------------------------------
 
@@ -39,9 +48,13 @@ void dsSetup() {
     ds18b20.setWaitForConversion(false);
 
     #if WEB_SUPPORT
+
+        wsOnSendRegister(_dsWebSocketOnSend);
+
         apiRegister(DS18B20_TEMPERATURE_TOPIC, DS18B20_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
             dtostrf(_dsTemperature, 1-len, 1, buffer);
         });
+
     #endif
 
 }
@@ -84,7 +97,7 @@ void dsLoop() {
             DEBUG_MSG_P(PSTR("[DS18B20] Error reading sensor\n"));
 
         } else {
-            
+
             //If the new temperature is different from the last
             if (fabs(t - last_temperature) >= DS18B20_UPDATE_ON_CHANGE) {
                 last_temperature = t;
@@ -125,7 +138,7 @@ void dsLoop() {
                 snprintf_P(buffer, sizeof(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
                 wsSend(buffer);
             #endif
-            
+
         }
 
     }
