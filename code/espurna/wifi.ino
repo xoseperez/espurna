@@ -16,14 +16,14 @@ void _wifiWebSocketOnSend(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
     JsonArray& wifi = root.createNestedArray("wifi");
     for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
-        if (getSetting("ssid" + String(i)).length() == 0) break;
+        if (!hasSetting("ssid", i)) break;
         JsonObject& network = wifi.createNestedObject();
-        network["ssid"] = getSetting("ssid" + String(i));
-        network["pass"] = getSetting("pass" + String(i));
-        network["ip"] = getSetting("ip" + String(i));
-        network["gw"] = getSetting("gw" + String(i));
-        network["mask"] = getSetting("mask" + String(i));
-        network["dns"] = getSetting("dns" + String(i));
+        network["ssid"] = getSetting("ssid", i, "");
+        network["pass"] = getSetting("pass", i, "");
+        network["ip"] = getSetting("ip", i, "");
+        network["gw"] = getSetting("gw", i, "");
+        network["mask"] = getSetting("mask", i, "");
+        network["dns"] = getSetting("dns", i, "");
     }
 }
 
