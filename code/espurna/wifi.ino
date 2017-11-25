@@ -143,6 +143,47 @@ void wifiStatus() {
 
 }
 
+bool wifiClean(unsigned char num) {
+
+    bool changed = false;
+    int i = 0;
+
+    // Clean defined settings
+    while (i < num) {
+
+        // Skip on first non-defined setting
+        if (!hasSetting("ssid", i)) {
+            delSetting("ssid", i);
+            break;
+        }
+
+        // Delete empty values
+        if (!hasSetting("pass", i)) delSetting("pass", i);
+        if (!hasSetting("ip", i)) delSetting("ip", i);
+        if (!hasSetting("gw", i)) delSetting("gw", i);
+        if (!hasSetting("mask", i)) delSetting("mask", i);
+        if (!hasSetting("dns", i)) delSetting("dns", i);
+
+        ++i;
+
+    }
+
+    // Delete all other settings
+    while (i < WIFI_MAX_NETWORKS) {
+        changed = hasSetting("ssid", i);
+        delSetting("ssid", i);
+        delSetting("pass", i);
+        delSetting("ip", i);
+        delSetting("gw", i);
+        delSetting("mask", i);
+        delSetting("dns", i);
+        ++i;
+    }
+
+    return changed;
+
+}
+
 // Inject hardcoded networks
 void wifiInject() {
 
@@ -262,6 +303,7 @@ void wifiSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
+        wsOnAfterParseRegister(wifiConfigure);
     #endif
 
 }

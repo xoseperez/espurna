@@ -12,15 +12,20 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // OTA
 // -----------------------------------------------------------------------------
 
-void otaConfigure() {
+void _otaConfigure() {
     ArduinoOTA.setPort(OTA_PORT);
     ArduinoOTA.setHostname(getSetting("hostname").c_str());
     ArduinoOTA.setPassword(getSetting("adminPass", ADMIN_PASS).c_str());
 }
 
+// -----------------------------------------------------------------------------
+
 void otaSetup() {
 
-    otaConfigure();
+    _otaConfigure();
+    #if WEB_SUPPORT
+        wsOnAfterParseRegister(_otaConfigure);
+    #endif
 
     ArduinoOTA.onStart([]() {
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));

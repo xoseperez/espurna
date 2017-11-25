@@ -214,7 +214,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             }
 
             if (value != getSetting(key)) {
-                //DEBUG_MSG_P(PSTR("[WEBSOCKET] Storing %s = %s\n", key.c_str(), value.c_str()));
                 setSetting(key, value);
                 save = changed = true;
                 if (key.startsWith("mqtt")) changedMQTT = true;
@@ -223,34 +222,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (webMode == WEB_MODE_NORMAL) {
-
-            // Clean wifi networks
-            int i = 0;
-            while (i < network) {
-                if (!hasSetting("ssid", i)) {
-                    delSetting("ssid", i);
-                    break;
-                }
-                if (!hasSetting("pass", i)) delSetting("pass", i);
-                if (!hasSetting("ip", i)) delSetting("ip", i);
-                if (!hasSetting("gw", i)) delSetting("gw", i);
-                if (!hasSetting("mask", i)) delSetting("mask", i);
-                if (!hasSetting("dns", i)) delSetting("dns", i);
-                ++i;
-            }
-            while (i < WIFI_MAX_NETWORKS) {
-                if (hasSetting("ssid", i)) {
-					save = changed = true;
-				}
-                delSetting("ssid", i);
-                delSetting("pass", i);
-                delSetting("ip", i);
-                delSetting("gw", i);
-                delSetting("mask", i);
-                delSetting("dns", i);
-                ++i;
-            }
-
+            if (wifiClean(network)) save = changed = true;
         }
 
         // Save settings
@@ -261,15 +233,18 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 (_ws_on_after_parse_callbacks[i])();
             }
 
-            wifiConfigure();
-            otaConfigure();
+			// This should got to callback as well
+			// but first change management has to be in place
             if (changedMQTT) {
                 mqttConfigure();
                 mqttDisconnect();
             }
+
+            // Persist settings
             saveSettings();
 
         }
+
 
         if (changed) {
             wsSend_P(client_id, PSTR("{\"message\": 8}"));
