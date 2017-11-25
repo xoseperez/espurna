@@ -136,6 +136,7 @@ function doUpdate() {
 
         numChanged = 0;
         setTimeout(function() {
+
             if (numReset > 0) {
                 var response = window.confirm("You have to reset the board for the changes to take effect, do you want to do it now?");
                 if (response == true) doReset(false);
@@ -146,7 +147,9 @@ function doUpdate() {
                 var response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
                 if (response == true) doReload();
             }
-            numReset = numReconnect = numReload = 0;
+
+            resetOriginals();
+
         }, 1000);
 
     }
@@ -362,7 +365,7 @@ function createIdxs(count) {
     for (var id=0; id<count; id++) {
         var line = $(template).clone();
         $(line).find("input").each(function() {
-            $(this).attr("data", id).attr("tabindex", 40+id).attr("original", "");
+            $(this).attr("data", id).attr("tabindex", 40+id);
         });
         if (count > 1) $(".id", line).html(" " + id);
         line.appendTo("#idxs");
@@ -392,7 +395,7 @@ function addNetwork() {
     var template = $("#networkTemplate").children();
     var line = $(template).clone();
     $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex++).attr("original", "");
+        $(this).attr("tabindex", tabindex++);
     });
     $(line).find(".button-del-network").on('click', delNetwork);
     $(line).find(".button-more-network").on('click', moreNetwork);
@@ -588,7 +591,7 @@ function processData(data) {
             for (var i in nodes) {
                 var node = nodes[i];
                 var element = $("input[name=rfbcode][data_id=" + node["id"] + "][data_status=" + node["status"] + "]");
-                if (element.length) element.val(node["data"]).attr("original", node["data"]);
+                if (element.length) element.val(node["data"]);
             }
             return;
         }
@@ -613,7 +616,7 @@ function processData(data) {
 
         if (key == "brightness") {
             var slider = $("#brightness");
-            if (slider.length) slider.val(data[key]).attr("original", data[key]);
+            if (slider.length) slider.val(data[key]);
             var span = $("span.brightness");
             if (span.length) span.html(data[key]);
             return;
@@ -624,7 +627,7 @@ function processData(data) {
             initChannels(len);
             for (var i=0; i<len; i++) {
                 var slider = $("input.slider[data=" + i + "]");
-                if (slider.length) slider.val(data[key][i]).attr("original", data[key][i]);
+                if (slider.length) slider.val(data[key][i]);
                 var span = $("span.slider[data=" + i + "]");
                 if (span.length) span.html(data[key][i]);
             }
@@ -663,7 +666,7 @@ function processData(data) {
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
                     var element = $("input[name=" + key + "]", line);
-                    if (element.length) element.val(wifi[key]).attr("original", wifi[key]);
+                    if (element.length) element.val(wifi[key]);
                 });
 
             }
@@ -698,7 +701,7 @@ function processData(data) {
 
             for (var i in idxs) {
                 var element = $(".dczRelayIdx[data=" + i + "]");
-                if (element.length > 0) element.val(idxs[i]).attr("original", idxs[i]);
+                if (element.length > 0) element.val(idxs[i]);
             }
 
             return;
@@ -744,7 +747,7 @@ function processData(data) {
             } else {
                 var pre = element.attr("pre") || "";
                 var post = element.attr("post") || "";
-                element.val(pre + data[key] + post).attr("original", data[key]);
+                element.val(pre + data[key] + post);
             }
             return;
         }
@@ -761,7 +764,7 @@ function processData(data) {
         // Look for SELECTs
         var element = $("select[name=" + key + "]");
         if (element.length > 0) {
-            element.val(data[key]).attr("original", data[key]);
+            element.val(data[key]);
             return;
         }
 
@@ -771,6 +774,8 @@ function processData(data) {
     if ($("input[name='apiKey']").val() == "") {
         generateAPIKey();
     }
+
+    resetOriginals();
 
 }
 
@@ -808,6 +813,16 @@ function hasChanged() {
         }
     }
 
+}
+
+function resetOriginals() {
+    $("input").each(function() {
+        $(this).attr("original", $(this).val());
+    })
+    $("select").each(function() {
+        $(this).attr("original", $(this).val());
+    })
+    numReset = numReconnect = numReload = 0;
 }
 
 // -----------------------------------------------------------------------------
