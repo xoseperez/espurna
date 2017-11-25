@@ -147,7 +147,8 @@ void _dhtWebSocketOnSend(JsonObject& root) {
 
 double getDHTTemperature(bool celsius) {
     double value = celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
-    return roundTo(value, DHT_TEMPERATURE_DECIMALS);
+    double correction = getSetting("tmpCorrection", TEMPERATURE_CORRECTION).toFloat();
+    return roundTo(value + correction, DHT_TEMPERATURE_DECIMALS);
 }
 
 double getDHTTemperature() {
@@ -187,8 +188,7 @@ void dhtLoop() {
         if (readDHT(DHT_PIN, DHT_TYPE) == DHT_OK) {
 
             unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
-						double tmpCorrection = getSetting("tmpCorrection", TMP_CORRECTION).toFloat();
-            double t = getDHTTemperature(tmpUnits == TMP_CELSIUS) + tmpCorrection;						
+            double t = getDHTTemperature(tmpUnits == TMP_CELSIUS);
             unsigned int h = getDHTHumidity();
 
             char temperature[6];

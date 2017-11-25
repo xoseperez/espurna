@@ -38,12 +38,14 @@
 
 #define DHT_TEMPERATURE_TOPIC       "temperature"
 #define DHT_HUMIDITY_TOPIC          "humidity"
-#define DHT_TEMPERATURE_DECIMALS    1              // Decimals for temperature values
+#define DHT_TEMPERATURE_DECIMALS    1               // Decimals for temperature values
 
 #define HUMIDITY_NORMAL             0
 #define HUMIDITY_COMFORTABLE        1
 #define HUMIDITY_DRY                2
 #define HUMIDITY_WET                3
+
+#define TEMPERATURE_CORRECTION      0.0             // This is both for DHT and DS18B20
 
 //--------------------------------------------------------------------------------
 // Analog sensor

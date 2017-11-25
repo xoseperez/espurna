@@ -734,9 +734,7 @@ function processData(data) {
         if (key == "tmpUnits") {
             $("span#tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
         }
-        if (key == "tmpCorrection") {
-            $("span#tmpCorrection").val(data[key]);
-        }
+
         // Look for INPUTs
         var element = $("input[name=" + key + "]");
         if (element.length > 0) {
