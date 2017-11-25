@@ -319,6 +319,15 @@ void settingsLoop() {
     #endif
 }
 
+void saveSettings() {
+    #if not SETTINGS_AUTOSAVE
+        _settings_save = true;
+    #endif
+    //settingsDump();
+}
+
+// -----------------------------------------------------------------------------
+
 void moveSetting(const char * from, const char * to) {
     String value = getSetting(from);
     if (value.length() > 0) setSetting(to, value);
@@ -361,11 +370,4 @@ bool hasSetting(const String& key) {
 
 bool hasSetting(const String& key, unsigned int index) {
     return getSetting(key, index, "").length() != 0;
-}
-
-void saveSettings() {
-    #if not SETTINGS_AUTOSAVE
-        _settings_save = true;
-    #endif
-    //settingsDump();
 }
