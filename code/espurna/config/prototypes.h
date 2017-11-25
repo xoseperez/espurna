@@ -1,7 +1,10 @@
 #include <Arduino.h>
-#include <NtpClientLib.h>
 #include <ArduinoJson.h>
 #include <functional>
+
+extern "C" {
+    #include "user_interface.h"
+}
 
 #if WEB_SUPPORT
 
@@ -36,7 +39,6 @@ void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
-#include <AsyncMqttClient.h>
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
 void mqttRegister(mqtt_callback_f callback);
 String mqttSubtopic(char * topic);
