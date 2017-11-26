@@ -369,8 +369,13 @@ PROGMEM const char* const custom_reset_string[] = {
 // MQTT
 // -----------------------------------------------------------------------------
 
+#ifndef MQTT_SUPPORT
+#define MQTT_SUPPORT            1           // MQTT support (22.38Kb async, 12.48Kb sync)
+#endif
+
+
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0, 9.83Kb less)
+#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient
 #endif
 
 // MQTT OVER SSL
@@ -673,7 +678,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef DOMOTICZ_SUPPORT
-#define DOMOTICZ_SUPPORT        1               // Build with domoticz support (1.72Kb)
+#define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
@@ -686,7 +691,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef HOMEASSISTANT_SUPPORT
-#define HOMEASSISTANT_SUPPORT   1               // Build with home assistant support (1.64Kb)
+#define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
 #endif
 
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default

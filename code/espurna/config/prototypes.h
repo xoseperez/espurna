@@ -6,8 +6,6 @@ extern "C" {
     #include "user_interface.h"
 }
 
-#if WEB_SUPPORT
-
 // -----------------------------------------------------------------------------
 // WebServer
 // -----------------------------------------------------------------------------
@@ -33,8 +31,6 @@ void wsOnActionRegister(ws_on_action_callback_f callback);
 
 typedef std::function<void(void)> ws_on_after_parse_callback_f;
 void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
-
-#endif // WEB_SUPPORT
 
 // -----------------------------------------------------------------------------
 // MQTT

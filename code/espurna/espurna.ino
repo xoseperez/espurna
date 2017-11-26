@@ -269,7 +269,9 @@ void setup() {
     relaySetup();
     buttonSetup();
     ledSetup();
-    mqttSetup();
+    #if MQTT_SUPPORT
+        mqttSetup();
+    #endif
 
     #if MDNS_SUPPORT
         mdnsSetup();
@@ -352,7 +354,9 @@ void loop() {
     relayLoop();
     buttonLoop();
     ledLoop();
-    mqttLoop();
+    #if MQTT_SUPPORT
+        mqttLoop();
+    #endif
 
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();

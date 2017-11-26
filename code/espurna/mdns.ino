@@ -13,6 +13,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 WiFiEventHandler _mdns_wifi_onSTA;
 WiFiEventHandler _mdns_wifi_onAP;
 
+#if MQTT_SUPPORT
 void mdnsFindMQTT() {
     int count = MDNS.queryService("mqtt", "tcp");
     DEBUG_MSG_P("[MQTT] MQTT brokers found: %d\n", count);
@@ -21,6 +22,7 @@ void mdnsFindMQTT() {
         mqttSetBrokerIfNone(MDNS.IP(i), MDNS.port(i));
     }
 }
+#endif
 
 void _mdnsStart() {
     if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {

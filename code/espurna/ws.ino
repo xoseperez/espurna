@@ -26,10 +26,12 @@ std::vector<ws_on_after_parse_callback_f> _ws_on_after_parse_callbacks;
 // Private methods
 // -----------------------------------------------------------------------------
 
+#if MQTT_SUPPORT
 void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": true}"));
     if (type == MQTT_DISCONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": false}"));
 }
+#endif
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
@@ -100,7 +102,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         bool save = false;
         bool changed = false;
-        bool changedMQTT = false;
+        #if MQTT_SUPPORT
+            bool changedMQTT = false;
+        #endif
 
         unsigned int network = 0;
         unsigned int dczRelayIdx = 0;
@@ -216,7 +220,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             if (value != getSetting(key)) {
                 setSetting(key, value);
                 save = changed = true;
-                if (key.startsWith("mqtt")) changedMQTT = true;
+                #if MQTT_SUPPORT
+                    if (key.startsWith("mqtt")) changedMQTT = true;
+                #endif
             }
 
         }
@@ -235,10 +241,12 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 			// This should got to callback as well
 			// but first change management has to be in place
-            if (changedMQTT) {
-                mqttConfigure();
-                mqttDisconnect();
-            }
+			#if MQTT_SUPPORT
+                if (changedMQTT) {
+                    mqttConfigure();
+                    mqttDisconnect();
+                }
+            #endif
 
             // Persist settings
             saveSettings();
@@ -406,7 +414,9 @@ void wsSetup() {
     _ws.onEvent(_wsEvent);
     wsConfigure();
     webServer()->addHandler(&_ws);
-    mqttRegister(_wsMQTTCallback);
+    #if MQTT_SUPPORT
+        mqttRegister(_wsMQTTCallback);
+    #endif
     wsOnAfterParseRegister(wsConfigure);
 }
 

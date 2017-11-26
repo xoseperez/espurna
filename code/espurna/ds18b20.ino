@@ -120,7 +120,9 @@ void dsLoop() {
             last_temperature = _dsTemperature;
 
             // Send MQTT messages
-            mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), temperature);
+            #if MQTT_SUPPORT
+                mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), temperature);
+            #endif
 
             // Send to Domoticz
             #if DOMOTICZ_SUPPORT

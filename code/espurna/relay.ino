@@ -143,6 +143,7 @@ void relayPulseMode(unsigned int value, bool report) {
     setSetting("relayPulseMode", value);
 
     /*
+    #if MQTT_SUPPORT
     if (report) {
         char topic[strlen(MQTT_TOPIC_RELAY) + 10];
         snprintf_P(topic, sizeof(topic), PSTR("%s/pulse"), MQTT_TOPIC_RELAY);
@@ -150,6 +151,7 @@ void relayPulseMode(unsigned int value, bool report) {
         snprintf_P(value, sizeof(value), PSTR("%d"), value);
         mqttSend(topic, value);
     }
+    #endif
     */
 
     #if WEB_SUPPORT
@@ -465,6 +467,8 @@ void relayWS() {
 // MQTT
 //------------------------------------------------------------------------------
 
+#if MQTT_SUPPORT
+
 void relayMQTT(unsigned char id) {
     if (id >= _relays.size()) return;
     mqttSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
@@ -533,6 +537,8 @@ void relaySetupMQTT() {
     mqttRegister(relayMQTTCallback);
 }
 
+#endif
+
 //------------------------------------------------------------------------------
 // InfluxDB
 //------------------------------------------------------------------------------
@@ -593,7 +599,10 @@ void relaySetup() {
         wsOnSendRegister(_relayWebSocketOnSend);
         wsOnActionRegister(_relayWebSocketOnAction);
     #endif
-    relaySetupMQTT();
+
+    #if MQTT_SUPPORT
+        relaySetupMQTT();
+    #endif
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
@@ -621,9 +630,9 @@ void relayLoop(void) {
             }
 
             // Send MQTT report if requested
-            if (_relays[id].scheduledReport) {
-                relayMQTT(id);
-            }
+            #if MQTT_SUPPORT
+                if (_relays[id].scheduledReport) relayMQTT(id);
+            #endif
 
             if (!recursive) {
                 relayPulse(id);

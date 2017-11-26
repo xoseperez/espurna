@@ -132,12 +132,14 @@ void settingsSetup() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    Embedis::command( F("RESET.MQTT"), [](Embedis* e) {
-        mqttConfigure();
-        mqttDisconnect();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
+    #if MQTT_SUPPORT
+        Embedis::command( F("RESET.MQTT"), [](Embedis* e) {
+            mqttConfigure();
+            mqttDisconnect();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif
+    
     Embedis::command( F("INFO"), [](Embedis* e) {
         welcome();
         DEBUG_MSG_P(PSTR("+OK\n"));

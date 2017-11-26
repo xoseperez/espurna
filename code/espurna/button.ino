@@ -21,6 +21,7 @@ typedef struct {
 
 std::vector<button_t> _buttons;
 
+#if MQTT_SUPPORT
 #ifdef MQTT_TOPIC_BUTTON
 void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
@@ -28,6 +29,7 @@ void buttonMQTT(unsigned char id, uint8_t event) {
     snprintf_P(payload, sizeof(payload), PSTR("%d"), event);
     mqttSend(MQTT_TOPIC_BUTTON, id, payload);
 }
+#endif
 #endif
 
 int buttonFromRelay(unsigned int relayID) {
@@ -81,8 +83,10 @@ void buttonEvent(unsigned int id, unsigned char event) {
     DEBUG_MSG_P(PSTR("[BUTTON] Pressed #%d, event: %d\n"), id, event);
     if (event == 0) return;
 
+    #if MQTT_SUPPORT
     #ifdef MQTT_TOPIC_BUTTON
         buttonMQTT(id, event);
+    #endif
     #endif
 
     unsigned char action = buttonAction(id, event);

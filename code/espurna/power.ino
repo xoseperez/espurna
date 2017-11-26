@@ -227,6 +227,8 @@ void _powerReport() {
     dtostrf(_power_current, 1-sizeof(buf_current), POWER_CURRENT_DECIMALS, buf_current);
     dtostrf(energy_delta * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_delta), POWER_ENERGY_DECIMALS, buf_energy_delta);
     dtostrf(_power_energy * POWER_ENERGY_FACTOR, 1-sizeof(buf_energy_total), POWER_ENERGY_DECIMALS, buf_energy_total);
+
+    #if MQTT_SUPPORT
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);
         mqttSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
@@ -239,6 +241,7 @@ void _powerReport() {
             mqttSend(MQTT_TOPIC_POWER_FACTOR, String((int) 100 * _power_factor).c_str());
         #endif
     }
+    #endif
 
     #if DOMOTICZ_SUPPORT
     if (domoticzEnabled()) {

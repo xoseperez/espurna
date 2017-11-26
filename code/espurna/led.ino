@@ -58,6 +58,7 @@ void showStatus() {
 }
 #endif
 
+#if MQTT_SUPPORT
 void ledMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     static bool isFirstMessage = true;
@@ -99,6 +100,7 @@ void ledMQTTCallback(unsigned int type, const char * topic, const char * payload
     }
 
 }
+#endif
 
 unsigned char ledCount() {
     return _leds.size();
@@ -130,7 +132,9 @@ void ledSetup() {
 
     ledConfigure();
 
-    mqttRegister(ledMQTTCallback);
+    #if MQTT_SUPPORT
+        mqttRegister(ledMQTTCallback);
+    #endif
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
     DEBUG_MSG_P(PSTR("[LED] Led auto indicator is %s\n"), ledAuto ? "ON" : "OFF" );

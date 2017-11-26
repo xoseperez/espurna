@@ -55,7 +55,9 @@ void analogLoop() {
         DEBUG_MSG_P(PSTR("[ANALOG] Value: %d\n"), analog);
 
         // Send MQTT messages
-        mqttSend(getSetting("analogTopic", ANALOG_TOPIC).c_str(), String(analog).c_str());
+        #if MQTT_SUPPORT
+            mqttSend(getSetting("analogTopic", ANALOG_TOPIC).c_str(), String(analog).c_str());
+        #endif
 
         // Send to Domoticz
         #if DOMOTICZ_SUPPORT

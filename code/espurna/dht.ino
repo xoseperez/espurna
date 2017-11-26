@@ -232,8 +232,10 @@ void dhtLoop() {
             last_humidity = h;
 
             // Send MQTT messages
-            mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
-            mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+            #if MQTT_SUPPORT
+                mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
+                mqttSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
+            #endif
 
             // Send to Domoticz
             #if DOMOTICZ_SUPPORT

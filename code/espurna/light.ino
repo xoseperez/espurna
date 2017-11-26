@@ -433,6 +433,7 @@ void _lightColorRestore() {
 // MQTT
 // -----------------------------------------------------------------------------
 
+#if MQTT_SUPPORT
 void _lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
 
@@ -501,23 +502,6 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
 }
 
-// -----------------------------------------------------------------------------
-// API
-// -----------------------------------------------------------------------------
-
-unsigned char lightChannels() {
-    return _channels.size();
-}
-
-bool lightHasColor() {
-    bool useColor = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
-    return useColor && (_channels.size() > 2);
-}
-
-unsigned char lightWhiteChannels() {
-    return _channels.size() % 3;
-}
-
 void lightMQTT() {
 
     char buffer[12];
@@ -549,12 +533,33 @@ void lightMQTT() {
 
 }
 
+#endif
+
+// -----------------------------------------------------------------------------
+// API
+// -----------------------------------------------------------------------------
+
+unsigned char lightChannels() {
+    return _channels.size();
+}
+
+bool lightHasColor() {
+    bool useColor = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+    return useColor && (_channels.size() > 2);
+}
+
+unsigned char lightWhiteChannels() {
+    return _channels.size() % 3;
+}
+
 void lightUpdate(bool save, bool forward) {
 
     _lightProviderUpdate();
 
     // Report color & brightness to MQTT broker
-    if (forward) lightMQTT();
+    #if MQTT_SUPPORT
+        if (forward) lightMQTT();
+    #endif
 
     // Report color to WS clients (using current brightness setting)
     #if WEB_SUPPORT
@@ -897,6 +902,7 @@ void lightSetup() {
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _channels.size());
 
     _lightColorRestore();
+
     #if WEB_SUPPORT
         _lightAPISetup();
         wsOnSendRegister(_lightWebSocketOnSend);
@@ -906,7 +912,9 @@ void lightSetup() {
         #endif
     #endif
 
-    mqttRegister(_lightMQTTCallback);
+    #if MQTT_SUPPORT
+        mqttRegister(_lightMQTTCallback);
+    #endif
 
 }
 

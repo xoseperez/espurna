@@ -82,7 +82,9 @@ void counterLoop() {
     if (_counterBufferPointer == 0) {
 
         // Send MQTT messages
-        mqttSend(getSetting("counterTopic", COUNTER_TOPIC).c_str(), String(_counterValue).c_str());
+        #if MQTT_SUPPORT
+            mqttSend(getSetting("counterTopic", COUNTER_TOPIC).c_str(), String(_counterValue).c_str());
+        #endif
 
         // Send to Domoticz
         #if DOMOTICZ_SUPPORT

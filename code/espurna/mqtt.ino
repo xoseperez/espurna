@@ -6,6 +6,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#if MQTT_SUPPORT
+
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
@@ -201,6 +203,7 @@ void mqttRegister(mqtt_callback_f callback) {
 // -----------------------------------------------------------------------------
 
 void _mqttWebSocketOnSend(JsonObject& root) {
+    root["mqttVisible"] = 1;
     root["mqttStatus"] = mqttConnected();
     root["mqttEnabled"] = mqttEnabled();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
@@ -602,3 +605,5 @@ void mqttLoop() {
     #endif
 
 }
+
+#endif // MQTT_SUPPORT

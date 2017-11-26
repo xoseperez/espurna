@@ -295,9 +295,11 @@ void wifiSetup() {
 
 		#endif // DEBUG_SUPPORT
 
+        #if MQTT_SUPPORT
         #if MDNS_SUPPORT
             if (code == MESSAGE_CONNECTED) mdnsFindMQTT();
-        #endif  // MDNS_SUPPORT
+        #endif // MDNS_SUPPORT
+        #endif // MQTT_SUPPORT
 
     });
 

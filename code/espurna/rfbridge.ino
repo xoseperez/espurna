@@ -131,8 +131,10 @@ void _rfbDecode() {
     }
 
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
-        _rfbToChar(&_uartbuf[1], buffer);
-        mqttSend(MQTT_TOPIC_RFIN, buffer);
+        #if MQTT_SUPPORT
+            _rfbToChar(&_uartbuf[1], buffer);
+            mqttSend(MQTT_TOPIC_RFIN, buffer);
+        #endif
         _rfbAck();
     }
 
@@ -243,6 +245,7 @@ bool _rfbToChar(byte * in, char * out) {
     return true;
 }
 
+#if MQTT_SUPPORT
 void _rfbMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
@@ -287,6 +290,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
     }
 
 }
+#endif
 
 // -----------------------------------------------------------------------------
 // PUBLIC
@@ -343,11 +347,16 @@ void rfbForget(unsigned char id, bool status) {
 // -----------------------------------------------------------------------------
 
 void rfbSetup() {
-    mqttRegister(_rfbMqttCallback);
+
+    #if MQTT_SUPPORT
+        mqttRegister(_rfbMqttCallback);
+    #endif
+
     #if WEB_SUPPORT
         wsOnSendRegister(_rfbWebSocketOnSend);
         wsOnActionRegister(_rfbWebSocketOnAction);
     #endif
+    
 }
 
 void rfbLoop() {
