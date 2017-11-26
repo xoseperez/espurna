@@ -3,6 +3,38 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.10.0] 2017-11-26
+### Fixed
+- Temperatures with 1 decimal resolution
+- Issues with Sonoff B1 due to bad driver management (using my92xx library now)
+- Avoid recursive messages on Domoticz (#272)
+- Fixed Sonoff T1 configuration
+- Simplify and fix web auth (#284)
+- Fix Embedis custom parser
+
+### Added
+- Added option to define a temperature correction factor (thanks to Pawel Raszewski)
+- Option to disable system check on build time
+- Power saving features (loopDelay and wifi sleep)
+- Added Sonoff TH build environment
+- Send Home Assistant auto discover messages on connect (#279)
+- Implemented Home Assistant availability topic (#280)
+- Update time, uptime and heap on webUI every heartbeat
+- Support for LLMNR and NetBIOS (#282)
+- Added I2C clean bus code
+- Added realm to auth challenge
+
+### Changed
+- Changed default hostname to "ESPURNA_XXXXXX"
+- Binaries built against stable core (~40Kb less, #274)
+- Enabled TERMINAL_SUPPORT for Sonoff Dual (only available via TELNET)
+- Dinamically resize debug strings (now messages are not cropped)
+- MQTT: unsubscribe to '#' before subscribing
+- Updated ESPAsyncWebServer and ESPAsyncTCP libraries
+- Removed InfluxDB support by default
+- Using stock slider in webUI to reduce size
+- Unify DHT and DS18B20 code, show NOT CONNECTED on webUI
+
 ## [1.9.9] 2017-11-09
 ### Fixed
 - Fixed bug in MY9291-based light bulbs at full brightness

@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.9.9**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+> **Current Release Version is 1.10.0**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 > **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
 
@@ -12,13 +12,17 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Features
 
-* *KRACK* vulnerability free
+* *KRACK* vulnerability free (when built against Arduino Core 2.4.0 RC2)
 * Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
+* Power saving options
 * Wifi **AP Mode** or **STA mode**
     * Up to 5 different networks can be defined
     * Supports static IP
     * Scans for strongest network if more than one defined
     * Defaults to AP mode (also available after double clicking the main button)
+* Network visibility
+    * Supports mDNS (service reporting and metadata)
+    * Supports NetBIOS and LLMNR (when built against Arduino Core 2.4.0 RC2)
 * Switch management
     * Support for **push buttons** and **toggle switches**
     * Configurable **status on boot** (always ON, always OFF, same as before or toggle)
