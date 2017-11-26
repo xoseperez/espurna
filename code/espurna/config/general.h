@@ -546,6 +546,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
 #define LIGHT_USE_RGB           0           // Use RGB color selector (1=> RGB, 0=> HSV)
 
+#define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
+#define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
+#define LIGHT_TRANSITION_STEPS  50          // Number of steps to acomplish transition
+
 // -----------------------------------------------------------------------------
 // POWER METERING
 // -----------------------------------------------------------------------------
