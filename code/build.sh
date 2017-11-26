@@ -5,7 +5,7 @@ echo "--------------------------------------------------------------"
 echo "ESPURNA FIRMWARE BUILDER"
 
 # Available environments
-available=`cat platformio.ini | grep env: | grep -v ota  | sed 's/\[env://' | sed 's/\]/ /' | sort`
+available=`cat platformio.ini | grep env: | grep -v ota  | grep -v ssl  | sed 's/\[env://' | sed 's/\]/ /' | sort`
 environments=$@
 if [ "$environments" == "list" ]; then
     echo "--------------------------------------------------------------"
