@@ -16,7 +16,6 @@ DallasTemperature ds18b20(&oneWire);
 
 bool _dsIsConnected = false;
 double _dsTemperature = 0;
-char _dsTemperatureStr[6];
 
 // -----------------------------------------------------------------------------
 // Private
@@ -24,25 +23,37 @@ char _dsTemperatureStr[6];
 
 void _dsWebSocketOnSend(JsonObject& root) {
     root["dsVisible"] = 1;
-    root["dsTmp"] = getDSTemperatureStr();
+    root["dsConnected"] = getDSIsConnected();
+    if (getDSIsConnected()) {
+        root["dsTmp"] = getDSTemperature();
+    }
+    root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 }
 
 // -----------------------------------------------------------------------------
 // DS18B20
 // -----------------------------------------------------------------------------
 
-double getDSTemperature() {
-    return _dsTemperature;
+bool getDSIsConnected() {
+    return _dsIsConnected;
 }
 
-const char* getDSTemperatureStr() {
-    if (!_dsIsConnected)
-        return "NOT CONNECTED";
+double getDSTemperature(bool celsius) {
+    double value = celsius ? _dsTemperature : _dsTemperature * 1.8 + 32;
+    double correction = getSetting("tmpCorrection", TEMPERATURE_CORRECTION).toFloat();
+    return roundTo(value + correction, TEMPERATURE_DECIMALS);
+}
 
-    return _dsTemperatureStr;
+double getDSTemperature() {
+    bool celsius = getSetting("tmpUnits", TMP_UNITS).toInt() == TMP_CELSIUS;
+    return getDSTemperature(celsius);
 }
 
 void dsSetup() {
+
+    #if DS18B20_PULLUP
+        pinMode(DS18B20_PIN, INPUT_PULLUP);
+    #endif
 
     ds18b20.begin();
     ds18b20.setWaitForConversion(false);
@@ -52,7 +63,7 @@ void dsSetup() {
         wsOnSendRegister(_dsWebSocketOnSend);
 
         apiRegister(DS18B20_TEMPERATURE_TOPIC, DS18B20_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-            dtostrf(_dsTemperature, 1-len, 1, buffer);
+            dtostrf(getDSTemperature(), 1-len, 1, buffer);
         });
 
     #endif
@@ -61,88 +72,71 @@ void dsSetup() {
 
 void dsLoop() {
 
-    // Check if we should read new data
     static unsigned long last_update = 0;
+    static double last_temperature = 0.0;
     static bool requested = false;
 
-    static double last_temperature = 0.0;
-    bool send_update = false;
-
     if ((millis() - last_update > DS18B20_UPDATE_INTERVAL) || (last_update == 0)) {
+
         if (!requested) {
             ds18b20.requestTemperatures();
             requested = true;
-
-            /* Requesting takes time,
-             * so data will probably not be available in this round */
+            // Requesting takes time, so data will probably not be available in this round
             return;
         }
 
-        /* Check if requested data is already available */
-        if (!ds18b20.isConversionComplete()) {
-            return;
-        }
-
+        // Check if requested data is already available
+        if (!ds18b20.isConversionComplete()) return;
         requested = false;
         last_update = millis();
 
         // Read sensor data
-        unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
-        double t = (tmpUnits == TMP_CELSIUS) ? ds18b20.getTempCByIndex(0) : ds18b20.getTempFByIndex(0);
+        double t = ds18b20.getTempCByIndex(0);
 
-        // apply temperature reading correction
-        double correction = getSetting("tmpCorrection", TEMPERATURE_CORRECTION).toFloat();
-        t = t + correction;
-
-        // Check if readings are valid
-        if (isnan(t) || t < -50) {
-
-            DEBUG_MSG_P(PSTR("[DS18B20] Error reading sensor\n"));
-
+        // Check returned value
+        if (t == DEVICE_DISCONNECTED_C) {
+            _dsIsConnected = false;
+            DEBUG_MSG_P(PSTR("[DS18B20] Not connected\n"));
+            return;
         } else {
+            _dsIsConnected = true;
+        }
 
-            //If the new temperature is different from the last
-            if (fabs(t - last_temperature) >= DS18B20_UPDATE_ON_CHANGE) {
-                last_temperature = t;
-                send_update = true;
-            }
+        // Save & convert
+        _dsTemperature = t;
+        bool celsius = getSetting("tmpUnits", TMP_UNITS).toInt() == TMP_CELSIUS;
+        t = getDSTemperature(celsius);
 
-            _dsTemperature = t;
+        // Build string
+        char temperature[6];
+        dtostrf(getDSTemperature(celsius), 1-sizeof(temperature), 1, temperature);
 
-            if ((tmpUnits == TMP_CELSIUS && _dsTemperature == DEVICE_DISCONNECTED_C) ||
-            		(tmpUnits == TMP_FAHRENHEIT && _dsTemperature == DEVICE_DISCONNECTED_F))
-            	_dsIsConnected = false;
-            else
-            	_dsIsConnected = true;
+        // Debug
+        DEBUG_MSG_P(PSTR("[DS18B20] Temperature: %s%s\n"), temperature, celsius ? "ºC" : "ºF");
 
-            dtostrf(t, 1-sizeof(_dsTemperatureStr), 1, _dsTemperatureStr);
+        // If the new temperature is different from the last
+        if (fabs(_dsTemperature - last_temperature) >= TEMPERATURE_MIN_CHANGE) {
 
-            DEBUG_MSG_P(PSTR("[DS18B20] Temperature: %s%s\n"),
-                getDSTemperatureStr(),
-			    (_dsIsConnected ? ((tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF") : ""));
+            last_temperature = _dsTemperature;
 
-            if (send_update) {
-                // Send MQTT messages
-                mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
+            // Send MQTT messages
+            mqttSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), temperature);
 
-                // Send to Domoticz
-                #if DOMOTICZ_SUPPORT
-                    domoticzSend("dczTmpIdx", 0, _dsTemperatureStr);
-                #endif
+            // Send to Domoticz
+            #if DOMOTICZ_SUPPORT
+                domoticzSend("dczTmpIdx", 0, temperature);
+            #endif
 
-                #if INFLUXDB_SUPPORT
-                    idbSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), _dsTemperatureStr);
-                #endif
-            }
-
-            // Update websocket clients
-            #if WEB_SUPPORT
-                char buffer[100];
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"dsVisible\": 1, \"dsTmp\": %s, \"tmpUnits\": %d}"), getDSTemperatureStr(), tmpUnits);
-                wsSend(buffer);
+            #if INFLUXDB_SUPPORT
+                idbSend(getSetting("dsTmpTopic", DS18B20_TEMPERATURE_TOPIC).c_str(), temperature);
             #endif
 
         }
+
+        // Update websocket clients
+        #if WEB_SUPPORT
+            wsSend(_dsWebSocketOnSend);
+        #endif
 
     }
 

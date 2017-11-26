@@ -1034,7 +1034,7 @@
     #define DS18B20_SUPPORT             1
     #define DS18B20_PIN                 2
     #define DS18B20_UPDATE_INTERVAL     5000
-    #define DS18B20_UPDATE_ON_CHANGE    1.0
+    #define TEMPERATURE_MIN_CHANGE      1.0
 
 // -----------------------------------------------------------------------------
 // QuinLED

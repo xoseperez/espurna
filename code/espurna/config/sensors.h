@@ -16,6 +16,21 @@
 #define RF_DEVICE                   1
 
 //--------------------------------------------------------------------------------
+// General
+//--------------------------------------------------------------------------------
+
+#ifndef TEMPERATURE_MIN_CHANGE
+#define TEMPERATURE_MIN_CHANGE      0.0             // Minimum temperature change to report
+#endif
+
+#ifndef HUMIDITY_MIN_CHANGE
+#define HUMIDITY_MIN_CHANGE         0               // Minimum humidity change to report
+#endif
+
+#define TEMPERATURE_CORRECTION      0.0             // This is both for DHT and DS18B20
+#define TEMPERATURE_DECIMALS        1               // Decimals for temperature values
+
+//--------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor
 // Enable support by passing DHT_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -32,20 +47,21 @@
 #define DHT_TYPE                    DHT22
 #endif
 
+#ifndef DHT_PULLUP
+#define DHT_PULLUP                  0
+#endif
+
 #ifndef DHT_UPDATE_INTERVAL
 #define DHT_UPDATE_INTERVAL         60000
 #endif
 
 #define DHT_TEMPERATURE_TOPIC       "temperature"
 #define DHT_HUMIDITY_TOPIC          "humidity"
-#define DHT_TEMPERATURE_DECIMALS    1               // Decimals for temperature values
 
 #define HUMIDITY_NORMAL             0
 #define HUMIDITY_COMFORTABLE        1
 #define HUMIDITY_DRY                2
 #define HUMIDITY_WET                3
-
-#define TEMPERATURE_CORRECTION      0.0             // This is both for DHT and DS18B20
 
 //--------------------------------------------------------------------------------
 // Analog sensor
@@ -113,16 +129,16 @@
 #define DS18B20_PIN                 14
 #endif
 
+#ifndef DS18B20_PULLUP
+#define DS18B20_PULLUP              1
+#endif
+
 #ifndef DS18B20_UPDATE_INTERVAL
 #define DS18B20_UPDATE_INTERVAL     60000
 #endif
 
 #ifndef DS18B20_TEMPERATURE_TOPIC
 #define DS18B20_TEMPERATURE_TOPIC   "temperature"
-#endif
-
-#ifndef DS18B20_UPDATE_ON_CHANGE
-#define DS18B20_UPDATE_ON_CHANGE    0.0
 #endif
 
 //--------------------------------------------------------------------------------

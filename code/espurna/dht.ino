@@ -10,6 +10,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 double _dhtTemperature = 0;
 unsigned int _dhtHumidity = 0;
+bool _dhtIsConnected = false;
 
 // -----------------------------------------------------------------------------
 // HAL
@@ -40,7 +41,7 @@ unsigned long _getSignalLevel(unsigned char gpio, int usTimeOut, bool state) {
 int readDHT(unsigned char gpio, unsigned char type) {
 
     static unsigned long last_ok = 0;
-    if (millis() - last_ok < DHT_MIN_INTERVAL) return DHT_OK;
+    if ((last_ok > 0) && (millis() - last_ok < DHT_MIN_INTERVAL)) return DHT_OK;
 
     unsigned long low = 0;
     unsigned long high = 0;
@@ -137,22 +138,31 @@ int readDHT() {
 
 void _dhtWebSocketOnSend(JsonObject& root) {
     root["dhtVisible"] = 1;
-    root["dhtTmp"] = getDHTTemperature();
-    root["dhtHum"] = getDHTHumidity();
+    root["dhtConnected"] = getDHTIsConnected();
+    if (getDHTIsConnected()) {
+        root["dhtTmp"] = getDHTTemperature();
+        root["dhtHum"] = getDHTHumidity();
+    }
+    root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
 }
 
 // -----------------------------------------------------------------------------
 // Values
 // -----------------------------------------------------------------------------
 
+bool getDHTIsConnected() {
+    return _dhtIsConnected;
+}
+
 double getDHTTemperature(bool celsius) {
     double value = celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
     double correction = getSetting("tmpCorrection", TEMPERATURE_CORRECTION).toFloat();
-    return roundTo(value + correction, DHT_TEMPERATURE_DECIMALS);
+    return roundTo(value + correction, TEMPERATURE_DECIMALS);
 }
 
 double getDHTTemperature() {
-    return getDHTTemperature(true);
+    bool celsius = getSetting("tmpUnits", TMP_UNITS).toInt() == TMP_CELSIUS;
+    return getDHTTemperature(celsius);
 }
 
 unsigned int getDHTHumidity() {
@@ -161,16 +171,20 @@ unsigned int getDHTHumidity() {
 
 void dhtSetup() {
 
+    #if DHT_PULLUP
+        pinMode(DHT_PIN, INPUT_PULLUP);
+    #endif
+
     #if WEB_SUPPORT
 
         // Websockets
         wsOnSendRegister(_dhtWebSocketOnSend);
 
         apiRegister(DHT_TEMPERATURE_TOPIC, DHT_TEMPERATURE_TOPIC, [](char * buffer, size_t len) {
-            dtostrf(_dhtTemperature, 1-len, 1, buffer);
+            dtostrf(getDHTTemperature(), 1-len, 1, buffer);
         });
         apiRegister(DHT_HUMIDITY_TOPIC, DHT_HUMIDITY_TOPIC, [](char * buffer, size_t len) {
-            snprintf_P(buffer, len, PSTR("%d"), _dhtHumidity);
+            snprintf_P(buffer, len, PSTR("%d"), getDHTHumidity());
         });
 
     #endif
@@ -179,25 +193,43 @@ void dhtSetup() {
 
 void dhtLoop() {
 
-    // Check if we should read new data
     static unsigned long last_update = 0;
+    static double last_temperature = 0.0;
+    static unsigned int last_humidity = 0;
+
+    // Check if we should read new data
     if ((millis() - last_update > DHT_UPDATE_INTERVAL) || (last_update == 0)) {
         last_update = millis();
 
         // Read sensor data
-        if (readDHT(DHT_PIN, DHT_TYPE) == DHT_OK) {
+        int response = readDHT(DHT_PIN, DHT_TYPE);
+        if (response != DHT_OK) {
+            DEBUG_MSG_P(PSTR("[DHT] Error: %d\n"), response);
+            return;
+        }
+        _dhtIsConnected = true;
 
-            unsigned char tmpUnits = getSetting("tmpUnits", TMP_UNITS).toInt();
-            double t = getDHTTemperature(tmpUnits == TMP_CELSIUS);
-            unsigned int h = getDHTHumidity();
+        // Get values
+        bool celsius = getSetting("tmpUnits", TMP_UNITS).toInt() == TMP_CELSIUS;
+        double t = getDHTTemperature(celsius);
+        unsigned int h = getDHTHumidity();
 
-            char temperature[6];
-            char humidity[6];
-            dtostrf(t, 1-sizeof(temperature), 1, temperature);
-            itoa((unsigned int) h, humidity, 10);
+        // Build strings
+        char temperature[6];
+        char humidity[6];
+        dtostrf(t, 1-sizeof(temperature), 1, temperature);
+        itoa((unsigned int) h, humidity, 10);
 
-            DEBUG_MSG_P(PSTR("[DHT] Temperature: %s%s\n"), temperature, (tmpUnits == TMP_CELSIUS) ? "ºC" : "ºF");
-            DEBUG_MSG_P(PSTR("[DHT] Humidity: %s\n"), humidity);
+        // Debug
+        DEBUG_MSG_P(PSTR("[DHT] Temperature: %s%s\n"), temperature, celsius ? "ºC" : "ºF");
+        DEBUG_MSG_P(PSTR("[DHT] Humidity: %s\n"), humidity);
+
+        // If the new temperature & humidity are different from the last
+        if ((fabs(t - last_temperature) >= TEMPERATURE_MIN_CHANGE)
+            || (abs(h - last_humidity) >= HUMIDITY_MIN_CHANGE)) {
+
+            last_temperature = t;
+            last_humidity = h;
 
             // Send MQTT messages
             mqttSend(getSetting("dhtTmpTopic", DHT_TEMPERATURE_TOPIC).c_str(), temperature);
@@ -228,14 +260,12 @@ void dhtLoop() {
                 idbSend(getSetting("dhtHumTopic", DHT_HUMIDITY_TOPIC).c_str(), humidity);
             #endif
 
-            // Update websocket clients
-            #if WEB_SUPPORT
-                char buffer[100];
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"dhtVisible\": 1, \"dhtTmp\": %s, \"dhtHum\": %s, \"tmpUnits\": %d}"), temperature, humidity, tmpUnits);
-                wsSend(buffer);
-            #endif
-
         }
+
+        // Update websocket clients
+        #if WEB_SUPPORT
+            wsSend(_dhtWebSocketOnSend);
+        #endif
 
     }
 

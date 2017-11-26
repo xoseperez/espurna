@@ -732,7 +732,14 @@ function processData(data) {
             data.ntpStatus = data.ntpStatus ? "SYNC'D" : "NOT SYNC'D";
         }
         if (key == "tmpUnits") {
-            $("span#tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
+            $("span[name='tmpUnits']").html(data[key] == 1 ? "ºF" : "ºC");
+        }
+        if (key == "dhtConnected" && !data[key]) {
+            $("input[name='dhtTmp']").val("NOT CONNECTED");
+            $("input[name='dhtHum']").val("NOT CONNECTED");
+        }
+        if (key == "dsConnected" && !data[key]) {
+            $("input[name='dsTmp']").val("NOT CONNECTED");
         }
 
         // Look for INPUTs
