@@ -34,10 +34,11 @@ typedef struct {
 std::vector<channel_t> _light_channel;
 
 bool _light_state = false;
+bool _light_use_transitions = false;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_gamma = false;
-unsigned long _light_steps_left = 0;
+unsigned long _light_steps_left = 1;
 unsigned int _light_brightness = LIGHT_MAX_BRIGHTNESS;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -342,6 +343,10 @@ void _fromMireds(unsigned long mireds) {
     _fromKelvin(kelvin);
 }
 
+// -----------------------------------------------------------------------------
+// PROVIDER
+// -----------------------------------------------------------------------------
+
 unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (bright) value *= ((float) _light_brightness / LIGHT_MAX_BRIGHTNESS);
@@ -351,22 +356,20 @@ unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) 
     return value;
 }
 
-// Returns a PWM valule for the given channel ID
+// Returns a PWM value for the given channel ID
 unsigned int _toPWM(unsigned char id) {
-    if (id < _light_channel.size()) {
-        bool isColor = _light_has_color && (id < 3);
-        bool bright = isColor;
-        bool gamma = isColor & _light_use_gamma;
-        return _toPWM(_light_channel[id].shadow, bright, gamma, _light_channel[id].reverse);
-    }
-    return 0;
+    if (id >= _light_channel.size()) return 0;
+    bool isColor = _light_has_color && (id < 3);
+    bool bright = isColor;
+    bool gamma = isColor & _light_use_gamma;
+    return _toPWM(_light_channel[id].shadow, bright, gamma, _light_channel[id].reverse);
 }
 
-// -----------------------------------------------------------------------------
-// PROVIDER
-// -----------------------------------------------------------------------------
-
 void _shadow() {
+
+    // Update transition ticker
+    _light_steps_left--;
+    if (_light_steps_left == 0) _light_transition_ticker.detach();
 
     // Transitions
     unsigned char target;
@@ -379,13 +382,6 @@ void _shadow() {
             _light_channel[i].current = _light_channel[i].current + difference;
         }
         _light_channel[i].shadow = _light_channel[i].current;
-    }
-
-    // Update transition ticker
-    if (_light_steps_left == 0) {
-        _light_transition_ticker.detach();
-    } else {
-        _light_steps_left--;
     }
 
     // Use white channel for same RGB
@@ -403,10 +399,6 @@ void _shadow() {
 void _lightProviderUpdate() {
 
     _shadow();
-
-    #ifdef LIGHT_ENABLE_PIN
-        digitalWrite(LIGHT_ENABLE_PIN, _light_state);
-    #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -573,13 +565,9 @@ unsigned char lightWhiteChannels() {
 
 void lightUpdate(bool save, bool forward) {
 
-    #if LIGHT_USE_TRANSITIONS
-        _light_steps_left = LIGHT_TRANSITION_STEPS;
-        _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
-    #else
-        _light_steps_left = 0;
-        _lightProviderUpdate();
-    #endif
+    // Configure color transition
+    _light_steps_left = _light_use_transitions ? LIGHT_TRANSITION_STEPS : 1;
+    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
 
     // Report color & brightness to MQTT broker
     #if MQTT_SUPPORT
@@ -679,6 +667,7 @@ void _lightWebSocketOnSend(JsonObject& root) {
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
+    root["useTransitions"] = _light_use_transitions;
     root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
     bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
     root["useRGB"] = useRGB;
@@ -862,6 +851,7 @@ void _lightConfigure() {
     }
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
+    _light_use_transitions = getSetting("useTransitions", LIGHT_USE_TRANSITIONS).toInt() == 1;
 
 }
 
@@ -869,6 +859,7 @@ void lightSetup() {
 
     #ifdef LIGHT_ENABLE_PIN
         pinMode(LIGHT_ENABLE_PIN, OUTPUT);
+        digitalWrite(LIGHT_ENABLE_PIN, HIGH);
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
