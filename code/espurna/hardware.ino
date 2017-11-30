@@ -13,8 +13,6 @@ the migration to future version 2 will be straigh forward.
 
 */
 
-#include <my92xx.h>
-
 void hwUpwardsCompatibility() {
 
     unsigned int board = getSetting("board", 0).toInt();
