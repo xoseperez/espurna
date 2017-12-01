@@ -51,7 +51,7 @@ void _rfbWebSocketOnSend(JsonObject& root) {
 }
 
 void _rfbWebSocketOnAction(const char * action, JsonObject& data) {
-    if (strcmp(action, "rfbLearn") == 0) rfbLearn(data["id"], data["status"]);
+    if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
     if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
 }
@@ -356,7 +356,7 @@ void rfbSetup() {
         wsOnSendRegister(_rfbWebSocketOnSend);
         wsOnActionRegister(_rfbWebSocketOnAction);
     #endif
-    
+
 }
 
 void rfbLoop() {
