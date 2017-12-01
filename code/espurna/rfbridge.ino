@@ -157,19 +157,22 @@ void _rfbDecode() {
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Forward message '%s'\n"), buffer);
 
         // Look for the code
-        unsigned char id, status;
+        unsigned char id;
+        unsigned char status = 0;
         bool found = false;
         for (id=0; id<relayCount(); id++) {
             String code_on = rfbRetrieve(id, true);
             String code_off = rfbRetrieve(id, false);
             if (code_on.length() && code_off.length()) {
                 if (code_on.endsWith(&buffer[12])) {
-                    found = true;
+                    DEBUG_MSG_P(PSTR("[RFBRIDGE] Match ON code for relay %d\n"), id);
                     status = 1;
+                    found = true;
                 }
                 if (code_off.endsWith(&buffer[12])) {
+                    DEBUG_MSG_P(PSTR("[RFBRIDGE] Match OFF code for relay %d\n"), id);
+                    if (found) status = 2;
                     found = true;
-                    if (status == 1) status = 2;
                 }
             }
             if (found) break;
