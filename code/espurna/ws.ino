@@ -106,8 +106,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             bool changedMQTT = false;
         #endif
 
-        unsigned int network = 0;
+        unsigned int wifiIdx = 0;
         unsigned int dczRelayIdx = 0;
+        unsigned int mqttGroupIdx = 0;
         String adminPass;
 
         for (unsigned int i=0; i<config.size(); i++) {
@@ -117,6 +118,44 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             // Skip firmware filename
             if (key.equals("filename")) continue;
+
+            // -----------------------------------------------------------------
+            // GENERAL
+            // -----------------------------------------------------------------
+
+            // Web mode (normal or password)
+            if (key == "webMode") {
+                webMode = value.toInt();
+                continue;
+            }
+
+            // HTTP port
+            if (key == "webPort") {
+                if ((value.toInt() == 0) || (value.toInt() == 80)) {
+                    save = changed = true;
+                    delSetting(key);
+                    continue;
+                }
+            }
+
+            // Check password
+            if (key == "adminPass1") {
+                adminPass = value;
+                continue;
+            }
+            if (key == "adminPass2") {
+                if (!value.equals(adminPass)) {
+                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
+                    return;
+                }
+                if (value.length() == 0) continue;
+                wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
+                key = String("adminPass");
+            }
+
+            // -----------------------------------------------------------------
+            // POWER
+            // -----------------------------------------------------------------
 
             #if POWER_PROVIDER != POWER_PROVIDER_NONE
 
@@ -154,6 +193,10 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             #endif
 
+            // -----------------------------------------------------------------
+            // DOMOTICZ
+            // -----------------------------------------------------------------
+
             #if DOMOTICZ_SUPPORT
 
                 if (key == "dczRelayIdx") {
@@ -168,54 +211,47 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             #endif
 
-            // Web portions
-            if (key == "webPort") {
-                if ((value.toInt() == 0) || (value.toInt() == 80)) {
-                    save = changed = true;
-                    delSetting(key);
-                    continue;
-                }
-            }
+            // -----------------------------------------------------------------
+            // MQTT GROUP TOPICS
+            // -----------------------------------------------------------------
 
-            if (key == "webMode") {
-                webMode = value.toInt();
-                continue;
-            }
+            #if MQTT_SUPPORT
 
-            // Check password
-            if (key == "adminPass1") {
-                adminPass = value;
-                continue;
-            }
-            if (key == "adminPass2") {
-                if (!value.equals(adminPass)) {
-                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
-                    return;
+                if (key == "mqttGroup") {
+                    key = key + String(mqttGroupIdx);
                 }
-                if (value.length() == 0) continue;
-                wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
-                key = String("adminPass");
-            }
+                if (key == "mqttGroupInv") {
+                    key = key + String(mqttGroupIdx);
+                    ++mqttGroupIdx;
+                }
+
+            #endif
+
+            // -----------------------------------------------------------------
+            // WIFI
+            // -----------------------------------------------------------------
 
             if (key == "ssid") {
-                key = key + String(network);
+                key = key + String(wifiIdx);
             }
             if (key == "pass") {
-                key = key + String(network);
+                key = key + String(wifiIdx);
             }
             if (key == "ip") {
-                key = key + String(network);
+                key = key + String(wifiIdx);
             }
             if (key == "gw") {
-                key = key + String(network);
+                key = key + String(wifiIdx);
             }
             if (key == "mask") {
-                key = key + String(network);
+                key = key + String(wifiIdx);
             }
             if (key == "dns") {
-                key = key + String(network);
-                ++network;
+                key = key + String(wifiIdx);
+                ++wifiIdx;
             }
+
+            // -----------------------------------------------------------------
 
             if (value != getSetting(key)) {
                 setSetting(key, value);
@@ -228,7 +264,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (webMode == WEB_MODE_NORMAL) {
-            if (wifiClean(network)) save = changed = true;
+            if (wifiClean(wifiIdx)) save = changed = true;
         }
 
         // Save settings

@@ -480,7 +480,6 @@
     #endif
     #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
-    #define TRACK_RELAY_STATUS      0
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -1304,11 +1303,6 @@
 #define BUTTON_SWITCH       1
 #define BUTTON_DEFAULT_HIGH 2
 #define BUTTON_SET_PULLUP   4
-#endif
-
-// Does the board track the relay status?
-#ifndef TRACK_RELAY_STATUS
-#define TRACK_RELAY_STATUS  1
 #endif
 
 // Serial baudrate

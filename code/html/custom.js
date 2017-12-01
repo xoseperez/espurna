@@ -405,6 +405,23 @@ function addNetwork() {
 
 }
 
+function addRelayGroup() {
+
+    var numGroups = $("#relayGroups > div").length;
+    var tabindex = 200 + numGroups * 2;
+    var template = $("#relayGroupTemplate").children();
+    var line = $(template).clone();
+    var element = $("span.relay_id", line);
+    if (element.length) element.html(numGroups+1);
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    line.appendTo("#relayGroups");
+
+    return line;
+
+}
+
 function initColorRGB() {
 
     // check if already initialized
@@ -692,6 +709,28 @@ function processData(data) {
 
             return;
 
+        }
+
+        // Relay groups
+        if (key == "relayGroups") {
+
+            var groups = data.relayGroups;
+
+            for (var i in groups) {
+
+                // add a new row
+                var line = addRelayGroup();
+
+                // fill in the blanks
+                var group = data.relayGroups[i];
+                Object.keys(group).forEach(function(key) {
+                    var element = $("input[name=" + key + "]", line);
+                    if (element.length) element.val(group[key]);
+                });
+
+            }
+
+            return;
         }
 
         // Domoticz
