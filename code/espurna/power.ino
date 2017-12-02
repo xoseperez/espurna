@@ -12,7 +12,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // MODULE GLOBALS AND CACHE
 // -----------------------------------------------------------------------------
 
-#include "power.h"
+#include "libs/MedianFilter.h"
 #include <Hash.h>
 #include <ArduinoJson.h>
 

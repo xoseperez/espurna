@@ -12,7 +12,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <StreamString.h>
 
 #if TELNET_SUPPORT
-    #include "settings.h"
+    #include "libs/StreamInjector.h"
     #ifdef DEBUG_PORT
         StreamInjector _serial = StreamInjector(DEBUG_PORT);
     #else
@@ -139,7 +139,7 @@ void settingsSetup() {
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
-    
+
     Embedis::command( F("INFO"), [](Embedis* e) {
         welcome();
         DEBUG_MSG_P(PSTR("+OK\n"));

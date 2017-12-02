@@ -514,10 +514,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 
-#ifndef LIGHT_PWM_FREQUENCY
-#define LIGHT_PWM_FREQUENCY     1000        // PWM frequency
-#endif
-
 #ifndef LIGHT_MAX_PWM
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -525,7 +521,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define LIGHT_MAX_PWM           1000
+#define LIGHT_MAX_PWM           5000        // 5000 * 200ns => 1 kHz
 #endif
 
 #endif // LIGHT_MAX_PWM
