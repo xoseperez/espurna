@@ -65,13 +65,12 @@ void _relayProviderStatus(unsigned char id, bool status) {
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
 
         // Calculate mask
-        unsigned char mask = 0;
-        for (unsigned char i=_relays.size()-1; i>=0; i-- ) {
-            mask <<= 1;
-            if (_relays[i].current_status) mask++;
+        unsigned char mask=0;
+        for (unsigned char i=0; i<_relays.size(); i++) {
+            if (_relays[i].current_status) mask = mask + (1 << i);
         }
 
-        // Send it to EFM88
+        // Send it to F330
         Serial.flush();
         Serial.write(0xA0);
         Serial.write(0x04);
