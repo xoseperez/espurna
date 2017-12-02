@@ -321,6 +321,7 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
+    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON3_RELAY       1

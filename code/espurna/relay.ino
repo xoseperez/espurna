@@ -50,7 +50,7 @@ Ticker _relaySaveTicker;
 
 #endif
 
-void relayProviderStatus(unsigned char id, bool status) {
+void _relayProviderStatus(unsigned char id, bool status) {
 
     // Check relay ID
     if (id >= _relays.size()) return;
@@ -685,7 +685,7 @@ void relayLoop(void) {
             DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, status ? "ON" : "OFF");
 
             // Call the provider to perform the action
-            relayProviderStatus(id, status);
+            _relayProviderStatus(id, status);
 
             // Change the binded LED if any
             if (_relays[id].led > 0) {
