@@ -75,8 +75,8 @@ void _onHome(AsyncWebServerRequest *request) {
 
             // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
             // This is necessary when a TLS connection is open since it sucks too much memory
-            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), ESP.getFreeHeap());
-            size_t max = (ESP.getFreeHeap() / 3) & 0xFFE0;
+            DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
+            size_t max = (getFreeHeap() / 3) & 0xFFE0;
 
             AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 

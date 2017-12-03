@@ -212,7 +212,7 @@ void welcome() {
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
 
-    DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), ESP.getFreeHeap());
+    DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
     #if ADC_VCC_ENABLED
         DEBUG_MSG_P(PSTR("[INIT] Power: %d mV\n"), ESP.getVcc());
     #endif

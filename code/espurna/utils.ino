@@ -33,6 +33,14 @@ String getCoreRevision() {
     #endif
 }
 
+// WTF
+// Calling ESP.getFreeHeap() is making the system crash on a specific
+// AiLight bulb, but anywhere else...
+unsigned int getFreeHeap() {
+    if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
+    return ESP.getFreeHeap();
+}
+
 String buildTime() {
 
     const char time_now[] = __TIME__;   // hh:mm:ss
@@ -79,7 +87,7 @@ unsigned long getUptime() {
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
-    unsigned int free_heap = ESP.getFreeHeap();
+    unsigned int free_heap = getFreeHeap();
 
     // -------------------------------------------------------------------------
     // MQTT

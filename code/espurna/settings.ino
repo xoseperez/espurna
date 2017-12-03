@@ -175,7 +175,7 @@ void settingsSetup() {
     });
 
     Embedis::command( F("HEAP"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Free HEAP: %d bytes\n"), ESP.getFreeHeap());
+        DEBUG_MSG_P(PSTR("Free HEAP: %d bytes\n"), getFreeHeap());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

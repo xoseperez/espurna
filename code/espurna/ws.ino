@@ -333,7 +333,7 @@ void _wsStart(uint32_t client_id) {
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
         root["uptime"] = getUptime();
-        root["heap"] = ESP.getFreeHeap();
+        root["heap"] = getFreeHeap();
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
 
