@@ -39,7 +39,7 @@ typedef struct {
 
 } relay_t;
 std::vector<relay_t> _relays;
-bool recursive = false;
+bool _relayRecursive = false;
 Ticker _relaySaveTicker;
 
 // -----------------------------------------------------------------------------
@@ -198,6 +198,8 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
         if (report) _relays[id].report = true;
         if (group_report) _relays[id].group_report = true;
 
+        relaySync(id);
+
         DEBUG_MSG_P(PSTR("[RELAY] #%d scheduled %s in %u ms\n"),
                 id, status ? "ON" : "OFF",
                 (_relays[id].change_time - current_time));
@@ -226,38 +228,42 @@ bool relayStatus(unsigned char id) {
 
 void relaySync(unsigned char id) {
 
-    if (_relays.size() > 1) {
+    // No sync if none or only one relay
+    if (_relays.size() < 2) return;
 
-        recursive = true;
+    // Do not go on if we are comming from a previous sync
+    if (_relayRecursive) return;
 
-        byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
-        bool status = relayStatus(id);
+    // Flag sync mode
+    _relayRecursive = true;
 
-        // If RELAY_SYNC_SAME all relays should have the same state
-        if (relaySync == RELAY_SYNC_SAME) {
+    byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
+    bool status = _relays[id].target_status;
+
+    // If RELAY_SYNC_SAME all relays should have the same state
+    if (relaySync == RELAY_SYNC_SAME) {
+        for (unsigned short i=0; i<_relays.size(); i++) {
+            if (i != id) relayStatus(i, status);
+        }
+
+    // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
+    } else if (status) {
+        if (relaySync != RELAY_SYNC_ANY) {
             for (unsigned short i=0; i<_relays.size(); i++) {
-                if (i != id) relayStatus(i, status);
-            }
-
-        // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
-        } else if (status) {
-            if (relaySync != RELAY_SYNC_ANY) {
-                for (unsigned short i=0; i<_relays.size(); i++) {
-                    if (i != id) relayStatus(i, false);
-                }
-            }
-
-        // If ONLY_ONE and setting OFF we should set ON the other one
-        } else {
-            if (relaySync == RELAY_SYNC_ONE) {
-                unsigned char i = (id + 1) % _relays.size();
-                relayStatus(i, true);
+                if (i != id) relayStatus(i, false);
             }
         }
 
-        recursive = false;
-
+    // If ONLY_ONE and setting OFF we should set ON the other one
+    } else {
+        if (relaySync == RELAY_SYNC_ONE) {
+            unsigned char i = (id + 1) % _relays.size();
+            relayStatus(i, true);
+        }
     }
+
+    // Unflag sync mode
+    _relayRecursive = false;
 
 }
 
@@ -274,7 +280,7 @@ void relaySave() {
 }
 
 void relayRetrieve(bool invert) {
-    recursive = true;
+    _relayRecursive = true;
     unsigned char bit = 1;
     unsigned char mask = invert ? ~EEPROM.read(EEPROM_RELAY_STATUS) : EEPROM.read(EEPROM_RELAY_STATUS);
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
@@ -288,7 +294,7 @@ void relayRetrieve(bool invert) {
         EEPROM.write(EEPROM_RELAY_STATUS, mask);
         EEPROM.commit();
     }
-    recursive = false;
+    _relayRecursive = false;
 }
 
 void relayToggle(unsigned char id, bool report, bool group_report) {
@@ -349,8 +355,8 @@ void _relayWebSocketUpdate() {
 
     // Statuses
     JsonArray& relay = root.createNestedArray("relayStatus");
-    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
-        relay.add(relayStatus(relayID));
+    for (unsigned char i=0; i<relayCount(); i++) {
+        relay.add(_relays[i].target_status);
     }
 
     String output;
@@ -696,9 +702,8 @@ void relayLoop(void) {
                 relayMQTT(id);
             #endif
 
-            if (!recursive) {
+            if (!_relayRecursive) {
                 relayPulse(id);
-                relaySync(id);
                 _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
                 #if WEB_SUPPORT
                     _relayWebSocketUpdate();
