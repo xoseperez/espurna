@@ -58,22 +58,15 @@ int readDHT(unsigned char gpio, unsigned char type) {
         delay(250);
     }
     pinMode(gpio, OUTPUT);
-	digitalWrite(gpio, LOW);
-	delay(20);
     noInterrupts();
+	digitalWrite(gpio, LOW);
+    delayMicroseconds(500);
     digitalWrite(gpio, HIGH);
     delayMicroseconds(40);
     pinMode(gpio, INPUT_PULLUP);
-    delayMicroseconds(10);
-
-	// DHT will keep the line low for 80 us and then high for 80us
-	low = _getSignalLevel(gpio, 85, LOW);
-	if (low==0) return DHT_TIMEOUT_ERROR;
-	high = _getSignalLevel(gpio, 85, HIGH);
-    if (high==0) return DHT_TIMEOUT_ERROR;
 
 	// No errors, read the 40 data bits
-	for( int k = 0; k < 40; k++ ) {
+	for( int k = 0; k < 41; k++ ) {
 
 		// Starts new data transmission with >50us low signal
 		low = _getSignalLevel(gpio, 56, LOW);
@@ -82,6 +75,9 @@ int readDHT(unsigned char gpio, unsigned char type) {
 		// Check to see if after >70us rx data is a 0 or a 1
 		high = _getSignalLevel(gpio, 75, HIGH);
         if (high==0) return DHT_TIMEOUT_ERROR;
+
+        // Skip the first bit
+        if (k==0) continue;
 
 		// add the current read to the output data
 		// since all dhtData array where set to 0 at the start,
