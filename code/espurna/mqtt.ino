@@ -140,11 +140,15 @@ void _mqttFlush() {
 void mqttSend(const char * topic, const char * message, bool force) {
     bool useJson = force ? false : _mqtt_use_json;
     if (useJson) {
+
+        if (_mqtt_queue.size() >= MQTT_QUEUE_MAX_SIZE) _mqttFlush();
+
         mqtt_message_t element;
         element.topic = strdup(topic);
         element.message = strdup(message);
         _mqtt_queue.push_back(element);
         _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
+        
     } else {
         String path = _mqtt_topic + String(topic) + _mqtt_getter;
         mqttSendRaw(path.c_str(), message);

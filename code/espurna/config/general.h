@@ -419,6 +419,8 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define MQTT_USE_JSON           0           // Group messages in a JSON body
 #define MQTT_USE_JSON_DELAY     100         // Wait this many ms before grouping messages
+#define MQTT_QUEUE_MAX_SIZE     10          // Size of the MQTT queue when MQTT_USE_JSON is enabled
+
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
 #define MQTT_TOPIC_JSON         "data"
