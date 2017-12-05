@@ -33,9 +33,9 @@ function initMessages() {
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
-    // at least one number, one lowercase and one uppercase letter
-    // at least eight characters that are letters, numbers or the underscore
-    var re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{8,}$/;
+    // at least one lowercase and one uppercase letter or number
+    // at least five characters (letters, numbers or special characters)
+    var re = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
     return re.test(str);
 }
 
@@ -48,7 +48,7 @@ function validateForm(form) {
     // password
     var adminPass1 = $("input[name='adminPass1']", form).val();
     if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 8 characters, 1 lower and 1 uppercase and 1 number!");
+        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
         return false;
     }
 
