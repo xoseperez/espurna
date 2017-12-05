@@ -587,6 +587,22 @@ void hwUpwardsCompatibility() {
         setSetting("relayType", 1, RELAY_TYPE_NORMAL);
         setSetting("relayType", 2, RELAY_TYPE_NORMAL);
 
+    #elif defined(ITEAD_SONOFF_DUAL_R2)
+
+        setSetting("board", 48);
+        setSetting("ledGPIO", 1, 13);
+        setSetting("ledLogic", 1, 1);
+        setSetting("btnGPIO", 1, 0);
+        setSetting("btnGPIO", 2, 9);
+        setSetting("btnGPIO", 3, 10);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+        setSetting("btnRelay", 3, 1);
+        setSetting("relayGPIO", 1, 12);
+        setSetting("relayGPIO", 2, 5);
+        setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+        setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+
     #else
 
         #error "UNSUPPORTED HARDWARE!"
