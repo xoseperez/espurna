@@ -347,9 +347,8 @@ void _fromMireds(unsigned long mireds) {
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) {
+unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
-    if (bright) value *= ((float) _light_brightness / LIGHT_MAX_BRIGHTNESS);
     if (gamma) value = _light_gamma_table[value];
     if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
     if (reverse) value = LIGHT_LIMIT_PWM - value;
@@ -358,11 +357,8 @@ unsigned int _toPWM(unsigned long value, bool bright, bool gamma, bool reverse) 
 
 // Returns a PWM value for the given channel ID
 unsigned int _toPWM(unsigned char id) {
-    if (id >= _light_channel.size()) return 0;
-    bool isColor = _light_has_color && (id < 3);
-    bool bright = isColor;
-    bool gamma = isColor & _light_use_gamma;
-    return _toPWM(_light_channel[id].shadow, bright, gamma, _light_channel[id].reverse);
+    bool useGamma = _light_use_gamma && _light_has_color && (id < 3);
+    return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse);
 }
 
 void _shadow() {
@@ -374,7 +370,14 @@ void _shadow() {
     // Transitions
     unsigned char target;
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        target = _light_state ? _light_channel[i].value : 0;
+        if (_light_state) {
+            target = _light_channel[i].value;
+            if ((_light_brightness < LIGHT_MAX_BRIGHTNESS) && _light_has_color && (i < 3)) {
+                target *= ((float) _light_brightness / LIGHT_MAX_BRIGHTNESS);
+            }
+        } else {
+            target = 0;
+        }
         if (_light_steps_left == 0) {
             _light_channel[i].current = target;
         } else {
