@@ -3,6 +3,27 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.10.1] 2017-12-05
+### Fixed
+- Fix Sonoff RFBridge learn message from web UI (#287)
+- Fix unstability in "one and just one" sync mode (#290)
+- Fix unnecessary inclusion of my92xx library (#293)
+- Limit the MQTT queue to 10 messages when "Use JSON payload" enabled (#296)
+- Fix Sonoff RFBridge OFF button toggling switch (#303)
+- Allow defining only ON or OFF codes in Sonoff RFBridge (#304)
+- Disabled terminal support for Sonoff Dual (#310)
+
+### Added
+- Support for SI7021-based sensor by Itead Studio compatible with Sonoff TH (#216)
+- Support for Sonoff Dual R2 (#286)
+- MQTT group topics (sync two or more switches from different devices, #300)
+- Color transitions (enabled by default, can be disabled from web UI)
+- Option to disable MQTT support at build time
+
+### Changed
+- Decreased PWM frequency for dimmer lights
+- Changed password policy (#297)
+
 ## [1.10.0] 2017-11-26
 ### Fixed
 - Temperatures with 1 decimal resolution
