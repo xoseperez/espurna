@@ -142,7 +142,7 @@
 
     // LEDs
     #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
 
     // HLW8012
     #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
