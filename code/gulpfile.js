@@ -32,6 +32,8 @@ const gzip = require('gulp-gzip');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
+const htmllint = require('gulp-htmllint');
+const gutil = require('gulp-util');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
@@ -68,6 +70,15 @@ var toHeader = function(filename) {
 
 }
 
+function htmllintReporter(filepath, issues) {
+	if (issues.length > 0) {
+		issues.forEach(function (issue) {
+			gutil.log(gutil.colors.cyan('[gulp-htmllint] ') + gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') + gutil.colors.red('(' + issue.code + ') ' + issue.msg));
+		});
+		process.exitCode = 1;
+	}
+}
+
 gulp.task('build_certs', function() {
     toHeader('server.cer');
     toHeader('server.key');
@@ -79,10 +90,17 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
 gulp.task('buildfs_inline', function() {
     return gulp.src('html/*.html')
+        .pipe(htmllint({
+            'failOnError': true,
+            'rules': {
+                'id-class-style': false,
+                'label-req-for': false,
+            }
+        }, htmllintReporter))
         .pipe(favicon())
         .pipe(inline({
             base: 'html/',
-            js: uglify,
+            js: [uglify],
             css: [cleancss, inlineImages],
             disabledTypes: ['svg', 'img']
         }))

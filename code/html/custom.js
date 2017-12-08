@@ -521,8 +521,8 @@ function addRfbNode() {
     var status = true;
     $("span", line).html(numNodes+1);
     $(line).find("input").each(function() {
-        $(this).attr("data_id", numNodes);
-        $(this).attr("data_status", status ? 1 : 0);
+        $(this).attr("data-id", numNodes);
+        $(this).attr("data-status", status ? 1 : 0);
         status = !status;
     });
     $(line).find(".button-rfb-learn").on('click', rfbLearn);
@@ -536,19 +536,19 @@ function addRfbNode() {
 function rfbLearn() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({'action': 'rfblearn', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status")}}));
+    websock.send(JSON.stringify({'action': 'rfblearn', 'data' : {'id' : input.attr("data-id"), 'status': input.attr("data-status")}}));
 }
 
 function rfbForget() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({'action': 'rfbforget', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status")}}));
+    websock.send(JSON.stringify({'action': 'rfbforget', 'data' : {'id' : input.attr("data-id"), 'status': input.attr("data-status")}}));
 }
 
 function rfbSend() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({'action': 'rfbsend', 'data' : {'id' : input.attr("data_id"), 'status': input.attr("data_status"), 'data': input.val()}}));
+    websock.send(JSON.stringify({'action': 'rfbsend', 'data' : {'id' : input.attr("data-id"), 'status': input.attr("data-status"), 'data': input.val()}}));
 }
 
 // -----------------------------------------------------------------------------
@@ -607,7 +607,7 @@ function processData(data) {
             var nodes = data.rfb;
             for (var i in nodes) {
                 var node = nodes[i];
-                var element = $("input[name=rfbcode][data_id=" + node["id"] + "][data_status=" + node["status"] + "]");
+                var element = $("input[name=rfbcode][data-id=" + node["id"] + "][data-status=" + node["status"] + "]");
                 if (element.length) element.val(node["data"]);
             }
             return;

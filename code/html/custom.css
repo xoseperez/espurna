@@ -176,3 +176,10 @@ span.slider {
 #panel-rfb input {
     text-align: center;
 }
+#uploader,
+#downloader {
+    display: none;
+}
+.panel.block {
+    display: block;
+}
