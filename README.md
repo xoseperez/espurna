@@ -31,7 +31,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
     * **SSL/TLS support** (not on regular builds, see #64)
-    * Switch on/off and toggle relays
+    * Switch on/off and toggle relays, group topics (sync relays between different devices)
     * Report button event notifications
     * Enable/disable pulse mode
     * Change LED notification mode
@@ -45,17 +45,19 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Supports MQTT auto-discover feature (both switches and lights)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * Support for different **sensors**
-    * DHT11 / DHT22 / DHT21 / AM2301 (supports celsius & fahrenheit reporting)
+    * DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021 (supports celsius & fahrenheit reporting)
     * DS18B20 (supports celsius & fahrenheit reporting)
     * HLW8012 using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
     * Non-invasive current sensor using the [EmonLiteESP Library](https://bitbucket.org/xoseperez/emonliteesp) (requires some hacking)
     * Raw analog sensor
+    * Simple pulse counter
 * Support for LED lights
     * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
     * RGB and HSV color codes supported
     * Manage channels individually
     * Temperature color supported (in mired and kelvin) via MQTT / REST API
     * Flicker-free PWM management
+    * Soft color transitions
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
@@ -125,7 +127,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
+**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
 
 ## License
 
