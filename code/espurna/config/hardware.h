@@ -1014,6 +1014,7 @@
     // Info
     #define MANUFACTURER        "GENERIC"
     #define DEVICE              "V9261F"
+    #define ALEXA_SUPPORT       0
 
     // V9261F
     #define POWER_PROVIDER      POWER_PROVIDER_V9261F
@@ -1029,6 +1030,7 @@
     // Info
     #define MANUFACTURER        "GENERIC"
     #define DEVICE              "ECH1560"
+    #define ALEXA_SUPPORT       0
 
     // ECH1560
     #define POWER_PROVIDER      POWER_PROVIDER_ECH1560
