@@ -149,7 +149,7 @@ void _onRPC(AsyncWebServerRequest *request) {
         String action = p->value();
         DEBUG_MSG_P(PSTR("[RPC] Action: %s\n"), action.c_str());
 
-        if (action.equals("reset")) {
+        if (action.equals("reboot")) {
             response = 200;
             deferredReset(100, CUSTOM_RESET_RPC);
         }

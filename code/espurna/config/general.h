@@ -148,13 +148,13 @@
 #include <pgmspace.h>
 
 PROGMEM const char custom_reset_hardware[] = "Hardware button";
-PROGMEM const char custom_reset_web[] = "Reset from web interface";
-PROGMEM const char custom_reset_terminal[] = "Reset from terminal";
-PROGMEM const char custom_reset_mqtt[] = "Reset from MQTT";
-PROGMEM const char custom_reset_rpc[] = "Reset from RPC";
-PROGMEM const char custom_reset_ota[] = "Reset after successful OTA update";
-PROGMEM const char custom_reset_nofuss[] = "Reset after successful NoFUSS update";
-PROGMEM const char custom_reset_upgrade[] = "Reset after successful web update";
+PROGMEM const char custom_reset_web[] = "Reboot from web interface";
+PROGMEM const char custom_reset_terminal[] = "Reboot from terminal";
+PROGMEM const char custom_reset_mqtt[] = "Reboot from MQTT";
+PROGMEM const char custom_reset_rpc[] = "Reboot from RPC";
+PROGMEM const char custom_reset_ota[] = "Reboot after successful OTA update";
+PROGMEM const char custom_reset_nofuss[] = "Reboot after successful NoFUSS update";
+PROGMEM const char custom_reset_upgrade[] = "Reboot after successful web update";
 PROGMEM const char custom_reset_factory[] = "Factory reset";
 PROGMEM const char* const custom_reset_string[] = {
     custom_reset_hardware, custom_reset_web, custom_reset_terminal,
@@ -471,7 +471,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_STATUS_ONLINE      "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE     "0"         // Value for the device OFF message (will)
 
-#define MQTT_ACTION_RESET       "reset"     // RESET MQTT topic particle
+#define MQTT_ACTION_RESET       "reboot"    // RESET MQTT topic particle
 
 // Internal MQTT events (do not change)
 #define MQTT_CONNECT_EVENT      0

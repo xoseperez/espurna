@@ -63,7 +63,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             (_ws_on_action_callbacks[i])(action.c_str(), data);
         }
 
-        if (action.equals("reset")) deferredReset(100, CUSTOM_RESET_WEB);
+        if (action.equals("reboot")) deferredReset(100, CUSTOM_RESET_WEB);
         if (action.equals("reconnect")) _web_defer.once_ms(100, wifiDisconnect);
 
         if (action.equals("restore")) {

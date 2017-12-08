@@ -5,7 +5,7 @@ var messages = [];
 var webhost;
 
 var numChanged = 0;
-var numReset = 0;
+var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
 
@@ -137,11 +137,11 @@ function doUpdate() {
         numChanged = 0;
         setTimeout(function() {
 
-            if (numReset > 0) {
-                var response = window.confirm("You have to reset the board for the changes to take effect, do you want to do it now?");
-                if (response == true) doReset(false);
+            if (numReboot > 0) {
+                var response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
+                if (response == true) doReboot(false);
             } else if (numReconnect > 0) {
-                var response = window.confirm("You have to reset the wifi connection for the changes to take effect, do you want to do it now?");
+                var response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
                 if (response == true) doReconnect(false);
             } else if (numReload > 0) {
                 var response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
@@ -225,7 +225,7 @@ function doUpdatePassword() {
     return false;
 }
 
-function doReset(ask) {
+function doReboot(ask) {
 
     ask = (typeof ask == 'undefined') ? true : ask;
 
@@ -235,11 +235,11 @@ function doReset(ask) {
     }
 
     if (ask) {
-        var response = window.confirm("Are you sure you want to reset the device?");
+        var response = window.confirm("Are you sure you want to reboot the device?");
         if (response == false) return false;
     }
 
-    websock.send(JSON.stringify({'action': 'reset'}));
+    websock.send(JSON.stringify({'action': 'reboot'}));
     doReload(5000);
     return false;
 
@@ -845,7 +845,7 @@ function hasChanged() {
         if (hasChanged == 0) {
             ++numChanged;
             if (action == "reconnect") ++numReconnect;
-            if (action == "reset") ++numReset;
+            if (action == "reboot") ++numReboot;
             if (action == "reload") ++numReload;
             $(this).attr("hasChanged", 1);
         }
@@ -853,7 +853,7 @@ function hasChanged() {
         if (hasChanged == 1) {
             --numChanged;
             if (action == "reconnect") --numReconnect;
-            if (action == "reset") --numReset;
+            if (action == "reboot") --numReboot;
             if (action == "reload") --numReload;
             $(this).attr("hasChanged", 0);
         }
@@ -868,7 +868,7 @@ function resetOriginals() {
     $("select").each(function() {
         $(this).attr("original", $(this).val());
     })
-    numReset = numReconnect = numReload = 0;
+    numReboot = numReconnect = numReload = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -916,7 +916,7 @@ function init() {
 
     $(".button-update").on('click', doUpdate);
     $(".button-update-password").on('click', doUpdatePassword);
-    $(".button-reset").on('click', doReset);
+    $(".button-reboot").on('click', doReboot);
     $(".button-reconnect").on('click', doReconnect);
     $(".button-settings-backup").on('click', doBackup);
     $(".button-settings-restore").on('click', doRestore);
