@@ -367,6 +367,10 @@ void _relayWebSocketUpdate() {
 
 void _relayWebSocketOnSend(JsonObject& root) {
 
+    if (relayCount() == 0) return;
+
+    root["relayVisible"] = 1;
+    
     // Statuses
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
