@@ -199,17 +199,20 @@ void _powerRead() {
 void _powerReport() {
 
     // Get the fitered values
-    _power_current = _filter_current.result(true);
     #if POWER_HAS_ACTIVE
-        _power_apparent = _filter_apparent.result(true);
+        double max_power = _filter_active.max();
+        _power_current = _filter_current.result(true);
         _power_voltage = _filter_voltage.result(true);
         _power_active = _filter_active.result(true);
+        _power_apparent = _filter_apparent.result(true);
         if (_power_active > _power_apparent) _power_apparent = _power_active;
         _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
         _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
         if (_power_factor > 1) _power_factor = 1;
         double power = _power_active;
     #else
+        double max_power = _filter_current.max() * _power_voltage;
+        _power_current = _filter_current.result(true);
         _power_apparent = _power_current * _power_voltage;
         double power = _power_apparent;
     #endif
@@ -232,6 +235,7 @@ void _powerReport() {
     {
         mqttSend(MQTT_TOPIC_CURRENT, buf_current);
         mqttSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
+        mqttSend(MQTT_TOPIC_MAX_POWER, String((int) max_power).c_str());
         mqttSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy_delta);
         mqttSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE
@@ -267,6 +271,7 @@ void _powerReport() {
     if (idbEnabled()) {
         idbSend(MQTT_TOPIC_CURRENT, buf_current);
         idbSend(MQTT_TOPIC_POWER_APPARENT, String((int) _power_apparent).c_str());
+        idbSend(MQTT_TOPIC_MAX_POWER, String((int) max_power).c_str());
         idbSend(MQTT_TOPIC_ENERGY_DELTA, buf_energy_delta);
         idbSend(MQTT_TOPIC_ENERGY_TOTAL, buf_energy_total);
         #if POWER_HAS_ACTIVE

@@ -447,11 +447,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFLEARN      "rflearn"
 
 // Power module
-#define MQTT_TOPIC_POWER_ACTIVE     "power"
 #define MQTT_TOPIC_CURRENT          "current"
 #define MQTT_TOPIC_VOLTAGE          "voltage"
+#define MQTT_TOPIC_POWER_ACTIVE     "power"
 #define MQTT_TOPIC_POWER_APPARENT   "apparent"
 #define MQTT_TOPIC_POWER_REACTIVE   "reactive"
+#define MQTT_TOPIC_MAX_POWER        "max_power"
 #define MQTT_TOPIC_POWER_FACTOR     "factor"
 #define MQTT_TOPIC_ENERGY_DELTA     "energy_delta"
 #define MQTT_TOPIC_ENERGY_TOTAL     "energy_total"

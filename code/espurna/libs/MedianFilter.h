@@ -30,6 +30,14 @@ class MedianFilter {
             add(last);
         }
 
+        virtual double max() {
+            double max = 0;
+            for (unsigned char i = 1; i < _data->size(); i++) {
+                if (max < _data->at(i)) max = _data->at(i);
+            }
+            return max;
+        }
+
         virtual double result(bool do_reset = false) {
 
             double sum = 0;
