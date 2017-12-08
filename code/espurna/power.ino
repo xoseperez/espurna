@@ -201,10 +201,10 @@ void _powerReport() {
     // Get the fitered values
     #if POWER_HAS_ACTIVE
         double max_power = _filter_active.max();
-        _power_current = _filter_current.result(true);
-        _power_voltage = _filter_voltage.result(true);
-        _power_active = _filter_active.result(true);
-        _power_apparent = _filter_apparent.result(true);
+        _power_current = _filter_current.result();
+        _power_voltage = _filter_voltage.result();
+        _power_active = _filter_active.result();
+        _power_apparent = _filter_apparent.result();
         if (_power_active > _power_apparent) _power_apparent = _power_active;
         _power_reactive = (_power_apparent > _power_active) ? sqrt(_power_apparent * _power_apparent - _power_active * _power_active) : 0;
         _power_factor = (_power_apparent > 0) ? _power_active / _power_apparent : 1;
@@ -212,7 +212,7 @@ void _powerReport() {
         double power = _power_active;
     #else
         double max_power = _filter_current.max() * _power_voltage;
-        _power_current = _filter_current.result(true);
+        _power_current = _filter_current.result();
         _power_apparent = _power_current * _power_voltage;
         double power = _power_apparent;
     #endif
@@ -282,6 +282,8 @@ void _powerReport() {
         #endif
     }
     #endif
+
+    _powerReset();
 
 }
 

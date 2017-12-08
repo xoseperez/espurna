@@ -38,7 +38,7 @@ class MedianFilter {
             return max;
         }
 
-        virtual double result(bool do_reset = false) {
+        virtual double result() {
 
             double sum = 0;
 
@@ -65,8 +65,6 @@ class MedianFilter {
                 sum = _data->front();
 
             }
-
-            if (do_reset) reset();
 
             return sum;
 
