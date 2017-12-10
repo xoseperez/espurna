@@ -256,9 +256,6 @@ void _mqttOnConnect() {
         _mqtt_connected_at = millis();
     #endif
 
-    // Send first Heartbeat
-    heartbeat();
-
     // Clean subscriptions
     mqttUnsubscribeRaw("#");
 

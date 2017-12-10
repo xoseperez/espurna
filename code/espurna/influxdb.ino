@@ -18,15 +18,20 @@ SyncClient _idb_client;
 
 void _idbWebSocketOnSend(JsonObject& root) {
     root["idbVisible"] = 1;
-    root["idbHost"] = getSetting("idbHost");
+    root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
+    root["idbHost"] = getSetting("idbHost", INFLUXDB_HOST);
     root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
-    root["idbDatabase"] = getSetting("idbDatabase");
-    root["idbUsername"] = getSetting("idbUsername");
-    root["idbPassword"] = getSetting("idbPassword");
+    root["idbDatabase"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
+    root["idbUsername"] = getSetting("idbUsername", INFLUXDB_USERNAME);
+    root["idbPassword"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
 }
 
 void _idbConfigure() {
-    _idb_enabled = getSetting("idbHost").length() > 0;
+    _idb_enabled = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
+    if (_idb_enabled && (getSetting("idbHost", INFLUXDB_HOST).length() == 0)) {
+        _idb_enabled = false;
+        setSetting("idbEnabled", 0);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -36,10 +41,13 @@ template<typename T> bool idbSend(const char * topic, T payload) {
     if (!_idb_enabled) return true;
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return true;
 
-    DEBUG_MSG("[INFLUXDB] Sending\n");
+    char host[64];
+    getSetting("idbHost", INFLUXDB_HOST).toCharArray(host, sizeof(host));
+    int port = getSetting("idbPort", INFLUXDB_PORT).toInt();
 
+    DEBUG_MSG("[INFLUXDB] Sending to %s:%d\n", host, port);
     _idb_client.setTimeout(2);
-    if (!_idb_client.connect(getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt())) {
+    if (!_idb_client.connect(host, port)) {
         DEBUG_MSG("[INFLUXDB] Connection failed\n");
         return false;
     }
@@ -50,9 +58,9 @@ template<typename T> bool idbSend(const char * topic, T payload) {
 
     char request[256];
     snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
-        getSetting("idbDatabase").c_str(), getSetting("idbUsername").c_str(), getSetting("idbPassword").c_str(),
-        getSetting("idbHost").c_str(), getSetting("idbPort", INFLUXDB_PORT).toInt(),
-        strlen(data), data);
+        getSetting("idbDatabase", INFLUXDB_DATABASE).c_str(),
+        getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
+        host, port, strlen(data), data);
 
     if (_idb_client.printf(request) > 0) {
         while (_idb_client.connected() && _idb_client.available() == 0) delay(1);

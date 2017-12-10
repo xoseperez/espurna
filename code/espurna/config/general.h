@@ -708,7 +708,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #define INFLUXDB_SUPPORT        0               // Enable InfluxDB support by default (4.38Kb)
 #endif
 
+#define INFLUXDB_ENABLED        0               // InfluxDB disabled by default
+#define INFLUXDB_HOST           ""              // Default server
 #define INFLUXDB_PORT           8086            // Default InfluxDB port
+#define INFLUXDB_DATABASE       ""              // Default database
+#define INFLUXDB_USERNAME       ""              // Default username
+#define INFLUXDB_PASSWORD       ""              // Default password
 
 // -----------------------------------------------------------------------------
 // NTP
