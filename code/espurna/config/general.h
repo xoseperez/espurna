@@ -120,6 +120,7 @@
 #define HEARTBEAT_REPORT_MAC        1
 #define HEARTBEAT_REPORT_RSSI       1
 #define HEARTBEAT_REPORT_UPTIME     1
+#define HEARTBEAT_REPORT_DATETIME   1
 #define HEARTBEAT_REPORT_FREEHEAP   1
 #define HEARTBEAT_REPORT_VCC        1
 #define HEARTBEAT_REPORT_RELAY      1
@@ -431,6 +432,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_IP           "ip"
 #define MQTT_TOPIC_VERSION      "version"
 #define MQTT_TOPIC_UPTIME       "uptime"
+#define MQTT_TOPIC_DATETIME     "datetime"
 #define MQTT_TOPIC_FREEHEAP     "freeheap"
 #define MQTT_TOPIC_VCC          "vcc"
 #define MQTT_TOPIC_STATUS       "status"
