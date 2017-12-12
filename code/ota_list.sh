@@ -15,7 +15,7 @@ useAvahi() {
 
     echo_pad "#" 4
     echo_pad "HOSTNAME" 20
-    echo_pad "IP" 20
+    echo_pad "IP" 25
     echo_pad "APP" 15
     echo_pad "VERSION" 15
     echo_pad "DEVICE" 30
@@ -39,7 +39,7 @@ useAvahi() {
 
         echo_pad "$counter" 4
         echo_pad "$hostname" 20
-        echo_pad "$ip" 20
+        echo_pad "http://$ip" 25
         echo_pad "$app_name" 15
         echo_pad "$app_version" 15
         echo_pad "$board" 30
