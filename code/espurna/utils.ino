@@ -118,6 +118,9 @@ void heartbeat() {
         #if (HEARTBEAT_REPORT_UPTIME)
             mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
         #endif
+        #if (HEARTBEAT_REPORT_DATETIME) & (NTP_SUPPORT)
+            mqttSend(MQTT_TOPIC_DATETIME, String(ntpDateTime()).c_str());
+        #endif
         #if (HEARTBEAT_REPORT_FREEHEAP)
             mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
