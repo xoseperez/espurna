@@ -618,9 +618,7 @@ void relaySetupMQTT() {
 #if INFLUXDB_SUPPORT
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
-    char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s,id=%d"), MQTT_TOPIC_RELAY, id);
-    idbSend(buffer, relayStatus(id) ? "1" : "0");
+    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
 #endif
 

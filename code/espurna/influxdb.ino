@@ -76,6 +76,12 @@ template<typename T> bool idbSend(const char * topic, T payload) {
 
 }
 
+template<typename T> bool idbSend(const char * topic, unsigned char id, T payload) {
+    char measurement[64];
+    snprintf_P(measurement, sizeof(measurement), PSTR("%s,id=%d"), topic, id);
+    return idbSend(topic, payload);
+}
+
 bool idbEnabled() {
     return _idb_enabled;
 }

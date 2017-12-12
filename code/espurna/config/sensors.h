@@ -27,7 +27,6 @@
 #define HUMIDITY_MIN_CHANGE         0               // Minimum humidity change to report
 #endif
 
-#define TEMPERATURE_CORRECTION      0.0             // This is both for DHT and DS18B20
 #define TEMPERATURE_DECIMALS        1               // Decimals for temperature values
 
 //--------------------------------------------------------------------------------
@@ -36,11 +35,11 @@
 //--------------------------------------------------------------------------------
 
 #ifndef DHT_SUPPORT
-#define DHT_SUPPORT                 0
+#define DHT_SUPPORT                 1
 #endif
 
 #ifndef DHT_PIN
-#define DHT_PIN                     14
+#define DHT_PIN                     13
 #endif
 
 #ifndef DHT_TYPE

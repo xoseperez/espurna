@@ -12,7 +12,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 // MODULE GLOBALS AND CACHE
 // -----------------------------------------------------------------------------
 
-#include "libs/MedianFilter.h"
+#include "libs/AggregatorMedian.h"
 #include <Hash.h>
 #include <ArduinoJson.h>
 
@@ -27,15 +27,15 @@ double _power_current = 0;
 double _power_voltage = 0;
 double _power_apparent = 0;
 double _power_energy = 0;
-MedianFilter _filter_current = MedianFilter();
+AggregatorMedian _filter_current = AggregatorMedian();
 
 #if POWER_HAS_ACTIVE
     double _power_active = 0;
     double _power_reactive = 0;
     double _power_factor = 0;
-    MedianFilter _filter_voltage = MedianFilter();
-    MedianFilter _filter_active = MedianFilter();
-    MedianFilter _filter_apparent = MedianFilter();
+    AggregatorMedian _filter_voltage = AggregatorMedian();
+    AggregatorMedian _filter_active = AggregatorMedian();
+    AggregatorMedian _filter_apparent = AggregatorMedian();
 #endif
 
 #if POWER_HAS_ENERGY

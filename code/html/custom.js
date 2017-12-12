@@ -27,6 +27,12 @@ function initMessages() {
     messages[10] = "Session expired, please reload page...";
 }
 
+function sensorType(type) {
+    if (type == 1) return "Temperature";
+    if (type == 2) return "Humidity";
+    return null;
+}
+
 // -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
@@ -422,6 +428,24 @@ function addRelayGroup() {
 
 }
 
+function initSensors(data) {
+
+    // check if already initialized
+    var done = $("#sensors > div").length;
+    if (done > 0) return;
+
+    // add templates
+    var template = $("#sensorTemplate").children();
+    for (var i=0; i<data.length; i++) {
+        var line = $(template).clone();
+        $("label", line).html(sensorType(data[i].type));
+        $("div.hint", line).html(data[i].description);
+        $("input", line).attr("data", i);
+        line.appendTo("#sensors");
+    }
+
+}
+
 function initColorRGB() {
 
     // check if already initialized
@@ -557,6 +581,8 @@ function rfbSend() {
 
 function processData(data) {
 
+    console.log(data);
+
     // title
     if ("app_name" in data) {
         var title = data.app_name;
@@ -666,6 +692,16 @@ function processData(data) {
 
         if (key == "maxNetworks") {
             maxNetworks = parseInt(data.maxNetworks);
+            return;
+        }
+
+        // Sensors
+        if (key == "sensors") {
+            initSensors(data[key]);
+            for (var i=0; i<data[key].length; i++) {
+                var element = $("input[data=" + i + "]");
+                if (element.length) element.val(data[key][i].value + data[key][i].units);
+            }
             return;
         }
 

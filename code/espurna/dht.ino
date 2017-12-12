@@ -139,7 +139,7 @@ void _dhtWebSocketOnSend(JsonObject& root) {
         root["dhtTmp"] = getDHTTemperature();
         root["dhtHum"] = getDHTHumidity();
     }
-    root["tmpUnits"] = getSetting("tmpUnits", TMP_UNITS).toInt();
+    root["tmpUnits"] = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
 }
 
 // -----------------------------------------------------------------------------
@@ -152,12 +152,12 @@ bool getDHTIsConnected() {
 
 double getDHTTemperature(bool celsius) {
     double value = celsius ? _dhtTemperature : _dhtTemperature * 1.8 + 32;
-    double correction = getSetting("tmpCorrection", TEMPERATURE_CORRECTION).toFloat();
+    double correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
     return roundTo(value + correction, TEMPERATURE_DECIMALS);
 }
 
 double getDHTTemperature() {
-    bool celsius = getSetting("tmpUnits", TMP_UNITS).toInt() == TMP_CELSIUS;
+    bool celsius = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt() == TMP_CELSIUS;
     return getDHTTemperature(celsius);
 }
 
@@ -206,7 +206,7 @@ void dhtLoop() {
         _dhtIsConnected = true;
 
         // Get values
-        bool celsius = getSetting("tmpUnits", TMP_UNITS).toInt() == TMP_CELSIUS;
+        bool celsius = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt() == TMP_CELSIUS;
         double t = getDHTTemperature(celsius);
         unsigned int h = getDHTHumidity();
 

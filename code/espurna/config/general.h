@@ -146,8 +146,6 @@
 
 #define CUSTOM_RESET_MAX        10
 
-#include <pgmspace.h>
-
 PROGMEM const char custom_reset_hardware[] = "Hardware button";
 PROGMEM const char custom_reset_web[] = "Reboot from web interface";
 PROGMEM const char custom_reset_terminal[] = "Reboot from terminal";
@@ -246,7 +244,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define TMP_CELSIUS             0
 #define TMP_FAHRENHEIT          1
-#define TMP_UNITS               TMP_CELSIUS // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
 
 //------------------------------------------------------------------------------
 // LED
@@ -748,6 +745,25 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RF_SEND_TIMES           4               // How many times to send the message
 #define RF_SEND_DELAY           250             // Interval between sendings in ms
 #define RF_RECEIVE_DELAY        500             // Interval between recieving in ms (avoid debouncing)
+
+// -----------------------------------------------------------------------------
+// SENSORS
+// -----------------------------------------------------------------------------
+
+#define SENSOR_READ_INTERVAL            6000            // Read data from sensors every 6 seconds
+#define SENSOR_REPORT_EVERY             10              // Report every this many readings
+#define SENSOR_USE_INDEX                0               // Use the index in topic (i.e. temperature/0)
+                                                        // even if just one sensor (0 for backwards compatibility)
+
+#define SENSOR_TEMPERATURE_DECIMALS     2
+#define SENSOR_HUMIDITY_DECIMALS        0
+
+#define SENSOR_UNKNOWN_TOPIC            "unknown"
+#define SENSOR_TEMPERATURE_TOPIC        "temperature"
+#define SENSOR_HUMIDITY_TOPIC           "humidity"
+
+#define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#define SENSOR_TEMPERATURE_CORRECTION   0.0             // Offset correction
 
 // -----------------------------------------------------------------------------
 // IR

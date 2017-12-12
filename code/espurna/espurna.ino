@@ -324,7 +324,8 @@ void setup() {
         counterSetup();
     #endif
     #if DHT_SUPPORT
-        dhtSetup();
+        //dhtSetup();
+        sensorSetup();
     #endif
     #if RF_SUPPORT
         rfSetup();
@@ -394,7 +395,8 @@ void loop() {
         counterLoop();
     #endif
     #if DHT_SUPPORT
-        dhtLoop();
+        //dhtLoop();
+        sensorLoop();
     #endif
     #if RF_SUPPORT
         rfLoop();

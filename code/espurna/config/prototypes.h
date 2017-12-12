@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <pgmspace.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -60,6 +61,7 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
 // -----------------------------------------------------------------------------
 #if INFLUXDB_SUPPORT
 template<typename T> bool idbSend(const char * topic, T payload);
+template<typename T> bool idbSend(const char * topic, unsigned char id, T payload);
 #endif
 
 // -----------------------------------------------------------------------------
@@ -68,6 +70,11 @@ template<typename T> bool idbSend(const char * topic, T payload);
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 #endif
+
+// -----------------------------------------------------------------------------
+// Sensors
+// -----------------------------------------------------------------------------
+#include "sensors/SensorBase.h"
 
 // -----------------------------------------------------------------------------
 // Utils

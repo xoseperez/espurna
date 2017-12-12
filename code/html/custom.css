@@ -93,6 +93,9 @@ div.hint {
     font-size: 80%;
     color: #ccc;
 }
+div.hint.inline {
+    margin-top: 6px;
+}
 .break {
     margin-top: 5px;
 }
