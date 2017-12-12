@@ -755,12 +755,14 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SENSOR_USE_INDEX                0               // Use the index in topic (i.e. temperature/0)
                                                         // even if just one sensor (0 for backwards compatibility)
 
-#define SENSOR_TEMPERATURE_DECIMALS     2
+#define SENSOR_TEMPERATURE_DECIMALS     1
 #define SENSOR_HUMIDITY_DECIMALS        0
+#define SENSOR_ANALOG_DECIMALS          0
 
 #define SENSOR_UNKNOWN_TOPIC            "unknown"
 #define SENSOR_TEMPERATURE_TOPIC        "temperature"
 #define SENSOR_HUMIDITY_TOPIC           "humidity"
+#define SENSOR_ANALOG_TOPIC             "analog"
 
 #define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
 #define SENSOR_TEMPERATURE_CORRECTION   0.0             // Offset correction

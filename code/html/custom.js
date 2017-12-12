@@ -30,6 +30,7 @@ function initMessages() {
 function sensorType(type) {
     if (type == 1) return "Temperature";
     if (type == 2) return "Humidity";
+    if (type == 11) return "Analog";
     return null;
 }
 

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "Arduino.h"
-#include "SensorBase.h"
+#include "BaseSensor.h"
 
 #define DHT_MAX_DATA                5
 #define DHT_MAX_ERRORS              5
@@ -19,11 +19,11 @@
 #define DHT21                       21
 #define AM2301                      21
 
-class SensorDHT : public SensorBase {
+class DHTSensor : public BaseSensor {
 
     public:
 
-        SensorDHT(unsigned char gpio, unsigned char type): SensorBase() {
+        DHTSensor(unsigned char gpio, unsigned char type): BaseSensor() {
             _gpio = gpio;
             _type = type;
         }

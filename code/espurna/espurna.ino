@@ -317,15 +317,8 @@ void setup() {
     #if DS18B20_SUPPORT
         dsSetup();
     #endif
-    #if ANALOG_SUPPORT
-        analogSetup();
-    #endif
     #if COUNTER_SUPPORT
         counterSetup();
-    #endif
-    #if DHT_SUPPORT
-        //dhtSetup();
-        sensorSetup();
     #endif
     #if RF_SUPPORT
         rfSetup();
@@ -339,6 +332,8 @@ void setup() {
     #if HOMEASSISTANT_SUPPORT
         haSetup();
     #endif
+
+    sensorSetup();
 
     // Prepare configuration for version 2.0
     hwUpwardsCompatibility();
@@ -388,15 +383,8 @@ void loop() {
     #if DS18B20_SUPPORT
         dsLoop();
     #endif
-    #if ANALOG_SUPPORT
-        analogLoop();
-    #endif
     #if COUNTER_SUPPORT
         counterLoop();
-    #endif
-    #if DHT_SUPPORT
-        //dhtLoop();
-        sensorLoop();
     #endif
     #if RF_SUPPORT
         rfLoop();
@@ -404,6 +392,8 @@ void loop() {
     #if IR_SUPPORT
         irLoop();
     #endif
+
+    sensorLoop();
 
     // Power saving delay
     delay(_loopDelay);

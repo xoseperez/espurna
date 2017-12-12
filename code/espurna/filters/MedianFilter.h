@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "AggregatorBase.h"
+#include "BaseFilter.h"
 
-class AggregatorMedian : public AggregatorBase {
+class MedianFilter : public BaseFilter {
 
     public:
 

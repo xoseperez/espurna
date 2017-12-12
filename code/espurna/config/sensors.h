@@ -68,7 +68,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef ANALOG_SUPPORT
-#define ANALOG_SUPPORT              0
+#define ANALOG_SUPPORT              1
 #endif
 
 #ifndef ANALOG_PIN

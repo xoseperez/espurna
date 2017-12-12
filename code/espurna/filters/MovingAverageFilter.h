@@ -5,13 +5,13 @@
 #pragma once
 
 #include <vector>
-#include "AggregatorBase.h"
+#include "BaseFilter.h"
 
-class AggregatorMovingAverage : public AggregatorBase {
+class MovingAverageFilter : public BaseFilter {
 
     public:
 
-        AggregatorMovingAverage(unsigned char size) {
+        MovingAverageFilter(unsigned char size) {
             _size = size;
             for (unsigned char i=0; i<size; i++) {
                 _data->push_back(0);

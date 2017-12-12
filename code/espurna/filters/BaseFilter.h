@@ -6,15 +6,15 @@
 
 #include <vector>
 
-class AggregatorBase {
+class BaseFilter {
 
     public:
 
-        AggregatorBase() {
+        BaseFilter() {
             _data = new std::vector<double>();
         }
 
-        ~AggregatorBase() {
+        ~BaseFilter() {
             if (_data) delete _data;
         }
 

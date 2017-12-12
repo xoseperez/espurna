@@ -27,14 +27,14 @@ typedef enum magnitude_t {
 
 } magnitude_t;
 
-class SensorBase {
+class BaseSensor {
 
     public:
 
-        SensorBase() {
+        BaseSensor() {
         }
 
-        ~SensorBase() {
+        ~BaseSensor() {
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
