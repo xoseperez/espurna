@@ -19,7 +19,6 @@ typedef struct {
     unsigned char pin;          // GPIO pin for the relay
     unsigned char type;
     unsigned char reset_pin;
-    unsigned char led;
     unsigned long delay_on;
     unsigned long delay_off;
 
@@ -370,7 +369,7 @@ void _relayWebSocketOnSend(JsonObject& root) {
     if (relayCount() == 0) return;
 
     root["relayVisible"] = 1;
-    
+
     // Statuses
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
@@ -642,16 +641,16 @@ void relaySetup() {
     #else
 
         #ifdef RELAY1_PIN
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_LED, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
         #endif
         #ifdef RELAY2_PIN
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_LED, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
         #endif
         #ifdef RELAY3_PIN
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_LED, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
         #endif
         #ifdef RELAY4_PIN
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_LED, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
         #endif
 
     #endif
@@ -695,11 +694,6 @@ void relayLoop(void) {
 
             // Call the provider to perform the action
             _relayProviderStatus(id, status);
-
-            // Change the binded LED if any
-            if (_relays[id].led > 0) {
-                ledStatus(_relays[id].led - 1, status);
-            }
 
             // Send MQTT
             #if MQTT_SUPPORT

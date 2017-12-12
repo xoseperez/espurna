@@ -13,9 +13,10 @@
 //   - BUTTON_SET_PULLUP: set pullup by software
 // RELAY#_PIN: GPIO for the n-th relay (1-based, up to 4 relays)
 // RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
-// RELAY#_LED: LED number that will be bind to the n-th relay (1-based)
 // LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
+// LED#_MODE: Check hardware.h for LED_MODE_%
+// LED#_RELAY: Linked relay (1-based)
 //
 // Besides, other hardware specific information should be stated here
 
@@ -100,11 +101,13 @@
     #define RELAY1_TYPE         RELAY_TYPE_INVERSE
 
     // LEDs
-    #define LED1_PIN            5
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
 
     // HLW8012
+    #ifndef POWER_PROVIDER
     #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
+    #endif
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -145,7 +148,9 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
+    #ifndef POWER_PROVIDER
     #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
+    #endif
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -1321,17 +1326,30 @@
 #define RELAY4_DELAY_OFF      0
 #endif
 
-#ifndef RELAY1_LED
-#define RELAY1_LED          0
+#ifndef LED1_MODE
+#define LED1_MODE           LED_MODE_WIFI
 #endif
-#ifndef RELAY2_LED
-#define RELAY2_LED          0
+#ifndef LED2_MODE
+#define LED2_MODE           LED_MODE_MQTT
 #endif
-#ifndef RELAY3_LED
-#define RELAY3_LED          0
+#ifndef LED3_MODE
+#define LED3_MODE           LED_MODE_MQTT
 #endif
-#ifndef RELAY4_LED
-#define RELAY4_LED          0
+#ifndef LED4_MODE
+#define LED4_MODE           LED_MODE_MQTT
+#endif
+
+#ifndef LED1_RELAY
+#define LED1_RELAY          1
+#endif
+#ifndef LED2_RELAY
+#define LED2_RELAY          2
+#endif
+#ifndef LED3_RELAY
+#define LED3_RELAY          3
+#endif
+#ifndef LED4_RELAY
+#define LED4_RELAY          4
 #endif
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)

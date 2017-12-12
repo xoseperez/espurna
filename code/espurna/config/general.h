@@ -251,15 +251,12 @@ PROGMEM const char* const custom_reset_string[] = {
 // LED
 //------------------------------------------------------------------------------
 
-// All defined LEDs in the board can be managed through MQTT
-// except the first one when LED_AUTO is set to 1.
-// If LED_AUTO is set to 1 the board will use a defined LED to show wifi status.
-#define LED_AUTO                1
-
-// LED # to use as WIFI status indicator
-#ifndef LED_WIFI
-#define LED_WIFI                1
-#endif
+#define LED_MODE_MQTT           0       // LED will be managed from MQTT (OFF by default)
+#define LED_MODE_WIFI           1       // LED will blink according to the WIFI status
+#define LED_MODE_FOLLOW         2       // LED will follow state of linked relay (check RELAY#_LED)
+#define LED_MODE_FOLLOW_INVERSE 3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
+#define LED_MODE_FINDME         4       // LED will be ON if all relays are OFF
+#define LED_MODE_MIXED          5       // A mixed between WIFI and FINDME
 
 // -----------------------------------------------------------------------------
 // WIFI
