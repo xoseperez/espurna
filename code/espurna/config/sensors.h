@@ -39,7 +39,7 @@
 #endif
 
 #ifndef DHT_PIN
-#define DHT_PIN                     13
+#define DHT_PIN                     12
 #endif
 
 #ifndef DHT_TYPE
@@ -68,7 +68,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef ANALOG_SUPPORT
-#define ANALOG_SUPPORT              1
+#define ANALOG_SUPPORT              0
 #endif
 
 #ifndef ANALOG_PIN
@@ -92,7 +92,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef COUNTER_SUPPORT
-#define COUNTER_SUPPORT             1           // Do not build with counter support by default
+#define COUNTER_SUPPORT             0           // Do not build with counter support by default
 #endif
 
 #ifndef COUNTER_PIN
@@ -121,7 +121,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef DS18B20_SUPPORT
-#define DS18B20_SUPPORT             1
+#define DS18B20_SUPPORT             0
 #endif
 
 #ifndef DS18B20_PIN
@@ -139,6 +139,8 @@
 #ifndef DS18B20_TEMPERATURE_TOPIC
 #define DS18B20_TEMPERATURE_TOPIC   "temperature"
 #endif
+
+#define DS18B20_RESOLUTION          9
 
 //--------------------------------------------------------------------------------
 // Internal power montior

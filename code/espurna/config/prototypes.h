@@ -75,7 +75,9 @@ template<typename T> bool idbSend(const char * topic, unsigned char id, T payloa
 // Sensors
 // -----------------------------------------------------------------------------
 #include "sensors/BaseSensor.h"
-#include <DallasTemperature.h> // WTF!
+#if DS18B20_SUPPORT
+#include <OneWire.h>
+#endif
 
 // -----------------------------------------------------------------------------
 // Utils

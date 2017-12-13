@@ -141,6 +141,30 @@ void _sensorAPISetup() {
 }
 #endif
 
+void _sensorTick() {
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+        _sensors[i]->tick();
+    }
+}
+
+void _sensorPre() {
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+        _sensors[i]->pre();
+        if (!_sensors[i]->status()) {
+            DEBUG_MSG("[SENSOR] Error reading data from %s (error: %d)\n",
+                _sensors[i]->name().c_str(),
+                _sensors[i]->error()
+            );
+        }
+    }
+}
+
+void _sensorPost() {
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+        _sensors[i]->post();
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Values
 // -----------------------------------------------------------------------------
@@ -170,8 +194,8 @@ void sensorInit() {
     #endif
 
     #if DS18B20_SUPPORT
-        #include "sensors/DS18B20Sensor.h"
-        sensorRegister(new DS18B20Sensor(DS18B20_PIN, DS18B20_PULLUP));
+        #include "sensors/DallasSensor.h"
+        sensorRegister(new DallasSensor(DS18B20_PIN, SENSOR_READ_INTERVAL, DS18B20_PULLUP));
     #endif
 
     #if ANALOG_SUPPORT
@@ -244,6 +268,9 @@ void sensorLoop() {
     static unsigned long last_update = 0;
     static unsigned long report_count = 0;
 
+    // Tick hook
+    _sensorTick();
+
     // Check if we should read new data
     if ((millis() - last_update > SENSOR_READ_INTERVAL) || (last_update == 0)) {
 
@@ -254,15 +281,7 @@ void sensorLoop() {
         char buffer[64];
 
         // Pre-read hook
-        for (unsigned char i=0; i<_sensors.size(); i++) {
-            _sensors[i]->pre();
-            if (!_sensors[i]->status()) {
-                DEBUG_MSG("[SENSOR] Error reading data from %s (error: %d)\n",
-                    _sensors[i]->name().c_str(),
-                    _sensors[i]->error()
-                );
-            }
-        }
+        _sensorPre();
 
         // Get readings
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
@@ -283,7 +302,7 @@ void sensorLoop() {
                 _magnitudes[i].current = value;
 
                 // Debug
-                /*
+                #if TRUE
                 {
                     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
                     DEBUG_MSG("[SENSOR] %s - %s: %s%s\n",
@@ -293,7 +312,7 @@ void sensorLoop() {
                         _sensorUnits(magnitude.type).c_str()
                     );
                 }
-                */
+                #endif
 
                 if (report_count == 0) {
 
@@ -330,9 +349,7 @@ void sensorLoop() {
         }
 
         // Post-read hook
-        for (unsigned char i=0; i<_sensors.size(); i++) {
-            _sensors[i]->post();
-        }
+        _sensorPost();
 
         #if WEB_SUPPORT
             wsSend(_sensorWebSocketOnSend);

@@ -274,3 +274,8 @@ double roundTo(double num, unsigned char positions) {
     while (positions-- > 0) multiplier *= 10;
     return round(num * multiplier) / multiplier;
 }
+
+void nice_delay(unsigned long ms) {
+    unsigned long start = millis();
+    while (millis() - start < ms) delay(1);
+}

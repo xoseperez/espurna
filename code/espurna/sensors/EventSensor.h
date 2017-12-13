@@ -40,18 +40,22 @@ class EventSensor : public BaseSensor {
 
         // Type for slot # index
         magnitude_t type(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_EVENTS;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            double value = 0;
+            _error = SENSOR_ERROR_OK;
             if (index == 0) {
-                value = _events;
+                double value = _events;
                 _events = 0;
+                return value;
             };
-            return value;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return 0;
         }
 
 

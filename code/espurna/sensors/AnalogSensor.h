@@ -30,13 +30,17 @@ class AnalogSensor : public BaseSensor {
 
         // Type for slot # index
         magnitude_t type(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_ANALOG;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
             if (index == 0) return analogRead(_gpio);
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

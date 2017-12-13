@@ -27,6 +27,9 @@ typedef enum magnitude_t {
 
 } magnitude_t;
 
+#define SENSOR_ERROR_OK             0
+#define SENSOR_ERROR_OUT_OF_RANGE   1
+
 class BaseSensor {
 
     public:
@@ -40,20 +43,14 @@ class BaseSensor {
         // General interrupt handler
         void InterruptHandler() {}
 
+        // Loop-like method, call it in your main loop
+        virtual void tick() {}
+
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {}
+        virtual void pre() {}
 
         // Post-read hook (usually to reset things)
-        void post() {}
-
-        // Return sensor status (true for ready)
-        bool status() { return _error == 0; }
-
-        // Return sensor last internal error
-        int error() { return _error; }
-
-        // Number of available slots
-        unsigned char count() { return _count; }
+        virtual void post() {}
 
         // Descriptive name of the sensor
         virtual String name();
@@ -66,6 +63,15 @@ class BaseSensor {
 
         // Current value for slot # index
         virtual double value(unsigned char index);
+
+        // Return sensor status (true for ready)
+        bool status() { return _error == 0; }
+
+        // Return sensor last internal error
+        int error() { return _error; }
+
+        // Number of available slots
+        unsigned char count() { return _count; }
 
 
     protected:
