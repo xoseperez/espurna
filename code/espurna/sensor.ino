@@ -28,6 +28,7 @@ unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
+unsigned char _sensor_isr = 0xFF;
 
 // -----------------------------------------------------------------------------
 // Private
@@ -40,6 +41,8 @@ String _sensorTopic(magnitude_t type) {
         return String(SENSOR_HUMIDITY_TOPIC);
     } else if (type == MAGNITUDE_ANALOG) {
         return String(SENSOR_ANALOG_TOPIC);
+    } else if (type == MAGNITUDE_EVENTS) {
+        return String(SENSOR_EVENTS_TOPIC);
     }
     return String(SENSOR_UNKNOWN_TOPIC);
 }
@@ -51,6 +54,8 @@ unsigned char _sensorDecimals(magnitude_t type) {
         return SENSOR_HUMIDITY_DECIMALS;
     } else if (type == MAGNITUDE_ANALOG) {
         return SENSOR_ANALOG_DECIMALS;
+    } else if (type == MAGNITUDE_EVENTS) {
+        return SENSOR_EVENTS_DECIMALS;
     }
     return 0;
 }
@@ -64,6 +69,8 @@ String _sensorUnits(magnitude_t type) {
         }
     } else if (type == MAGNITUDE_HUMIDITY) {
         return String("%");
+    } else if (type == MAGNITUDE_EVENTS) {
+        return String("/m");
     }
     return String();
 }
@@ -138,22 +145,56 @@ void _sensorAPISetup() {
 // Values
 // -----------------------------------------------------------------------------
 
+void sensorISR() {
+    _sensors[_sensor_isr]->InterruptHandler();
+}
+
+void sensorRegister(BaseSensor * sensor) {
+    _sensors.push_back(sensor);
+}
+
+unsigned char sensorCount() {
+    return _sensors.size();
+}
+
+void sensorInterrupt(unsigned char sensor_id, unsigned char gpio, int mode) {
+    _sensor_isr = sensor_id;
+    attachInterrupt(gpio, sensorISR, mode);
+}
+
+void sensorInit() {
+
+    #if DHT_SUPPORT
+        #include "sensors/DHTSensor.h"
+        sensorRegister(new DHTSensor(DHT_PIN, DHT_TYPE, DHT_PULLUP));
+    #endif
+
+    #if DS18B20_SUPPORT
+        #include "sensors/DS18B20Sensor.h"
+        sensorRegister(new DS18B20Sensor(DS18B20_PIN, DS18B20_PULLUP));
+    #endif
+
+    #if ANALOG_SUPPORT
+        #include "sensors/AnalogSensor.h"
+        sensorRegister(new AnalogSensor(ANALOG_PIN));
+    #endif
+
+    #if COUNTER_SUPPORT
+        if (_sensor_isr == 0xFF) {
+            #include "sensors/EventSensor.h"
+            sensorRegister(new EventSensor(COUNTER_PIN, COUNTER_PIN_MODE, COUNTER_DEBOUNCE));
+            sensorInterrupt(sensorCount()-1, COUNTER_PIN, COUNTER_INTERRUPT_MODE);
+        }
+    #endif
+
+}
+
 void sensorSetup() {
 
     // Load sensors
-    #if DHT_SUPPORT
-        #include "sensors/DHTSensor.h"
-        _sensors.push_back(new DHTSensor(DHT_PIN, DHT_TYPE));
-        #if DHT_PULLUP
-            pinMode(DHT_PIN, INPUT_PULLUP);
-        #endif
-    #endif
-    #if ANALOG_SUPPORT
-        #include "sensors/AnalogSensor.h"
-        _sensors.push_back(new AnalogSensor(ANALOG_PIN));
-    #endif
+    sensorInit();
 
-    // Read magnitudes
+    // Load magnitudes
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
         BaseSensor * sensor = _sensors[i];
@@ -234,6 +275,10 @@ void sensorLoop() {
 
                 value = magnitude.sensor->value(magnitude.local);
                 magnitude.filter->add(value);
+
+                // Special case
+                if (magnitude.type == MAGNITUDE_EVENTS) value = magnitude.filter->result();
+
                 value = _sensorProcess(magnitude.type, value);
                 _magnitudes[i].current = value;
 
@@ -252,7 +297,9 @@ void sensorLoop() {
 
                 if (report_count == 0) {
 
-                    double value = magnitude.filter->result();
+                    // TODO: option to report only if it has change (configurable amount)
+
+                    value = magnitude.filter->result();
                     value = _sensorProcess(magnitude.type, value);
                     _magnitudes[i].filtered = value;
                     magnitude.filter->reset();

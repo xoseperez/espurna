@@ -75,6 +75,7 @@ template<typename T> bool idbSend(const char * topic, unsigned char id, T payloa
 // Sensors
 // -----------------------------------------------------------------------------
 #include "sensors/BaseSensor.h"
+#include <DallasTemperature.h> // WTF!
 
 // -----------------------------------------------------------------------------
 // Utils

@@ -758,11 +758,13 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SENSOR_TEMPERATURE_DECIMALS     1
 #define SENSOR_HUMIDITY_DECIMALS        0
 #define SENSOR_ANALOG_DECIMALS          0
+#define SENSOR_EVENTS_DECIMALS          0
 
 #define SENSOR_UNKNOWN_TOPIC            "unknown"
 #define SENSOR_TEMPERATURE_TOPIC        "temperature"
 #define SENSOR_HUMIDITY_TOPIC           "humidity"
 #define SENSOR_ANALOG_TOPIC             "analog"
+#define SENSOR_EVENTS_TOPIC             "events"
 
 #define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
 #define SENSOR_TEMPERATURE_CORRECTION   0.0             // Offset correction

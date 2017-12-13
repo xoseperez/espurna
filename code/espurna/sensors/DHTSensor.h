@@ -23,9 +23,11 @@ class DHTSensor : public BaseSensor {
 
     public:
 
-        DHTSensor(unsigned char gpio, unsigned char type): BaseSensor() {
+        DHTSensor(unsigned char gpio, unsigned char type, bool pull_up = false): BaseSensor() {
             _gpio = gpio;
             _type = type;
+            if (pull_up) pinMode(_gpio, INPUT_PULLUP);
+            _count = 2;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
@@ -123,29 +125,9 @@ class DHTSensor : public BaseSensor {
 
         }
 
-        // Post-read hook (usually to reset things)
-        void post() {
-
-        }
-
-        // Return sensor status (true for ready)
-        bool status() {
-            return (_last_ok > 0) & (_error == 0);
-        }
-
-        // Return sensor last internal error
-        int error() {
-            return _error;
-        }
-
-        // Number of available slots
-        unsigned char count() {
-            return 2;
-        }
-
         // Descriptive name of the sensor
         String name() {
-            char buffer[64];
+            char buffer[20];
             snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", _type, _gpio);
             return String(buffer);
         }
@@ -170,7 +152,7 @@ class DHTSensor : public BaseSensor {
         }
 
 
-    private:
+    protected:
 
         unsigned long _signal(int usTimeOut, bool state) {
         	unsigned long uSec = 1;
@@ -183,7 +165,6 @@ class DHTSensor : public BaseSensor {
 
         unsigned char _gpio;
         unsigned char _type;
-        int _error;
 
         unsigned long _last_ok = 0;
         unsigned char _errors = 0;

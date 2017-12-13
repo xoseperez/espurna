@@ -35,7 +35,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef DHT_SUPPORT
-#define DHT_SUPPORT                 1
+#define DHT_SUPPORT                 0
 #endif
 
 #ifndef DHT_PIN
@@ -92,7 +92,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef COUNTER_SUPPORT
-#define COUNTER_SUPPORT             0           // Do not build with counter support by default
+#define COUNTER_SUPPORT             1           // Do not build with counter support by default
 #endif
 
 #ifndef COUNTER_PIN
@@ -121,11 +121,11 @@
 //--------------------------------------------------------------------------------
 
 #ifndef DS18B20_SUPPORT
-#define DS18B20_SUPPORT             0
+#define DS18B20_SUPPORT             1
 #endif
 
 #ifndef DS18B20_PIN
-#define DS18B20_PIN                 14
+#define DS18B20_PIN                 13
 #endif
 
 #ifndef DS18B20_PULLUP

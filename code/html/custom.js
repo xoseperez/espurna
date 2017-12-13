@@ -31,6 +31,7 @@ function sensorType(type) {
     if (type == 1) return "Temperature";
     if (type == 2) return "Humidity";
     if (type == 11) return "Analog";
+    if (type == 12) return "Events";
     return null;
 }
 

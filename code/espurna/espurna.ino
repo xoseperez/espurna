@@ -314,12 +314,6 @@ void setup() {
     #if INFLUXDB_SUPPORT
         idbSetup();
     #endif
-    #if DS18B20_SUPPORT
-        dsSetup();
-    #endif
-    #if COUNTER_SUPPORT
-        counterSetup();
-    #endif
     #if RF_SUPPORT
         rfSetup();
     #endif
@@ -379,12 +373,6 @@ void loop() {
     #endif
     #if NOFUSS_SUPPORT
         nofussLoop();
-    #endif
-    #if DS18B20_SUPPORT
-        dsLoop();
-    #endif
-    #if COUNTER_SUPPORT
-        counterLoop();
     #endif
     #if RF_SUPPORT
         rfLoop();

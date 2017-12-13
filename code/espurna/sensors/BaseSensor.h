@@ -31,26 +31,29 @@ class BaseSensor {
 
     public:
 
-        BaseSensor() {
-        }
+        // Constructor
+        BaseSensor() {}
 
-        ~BaseSensor() {
-        }
+        // Destructor
+        ~BaseSensor() {}
+
+        // General interrupt handler
+        void InterruptHandler() {}
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        virtual void pre();
+        void pre() {}
 
         // Post-read hook (usually to reset things)
-        virtual void post();
+        void post() {}
 
         // Return sensor status (true for ready)
-        virtual bool status();
+        bool status() { return _error == 0; }
 
         // Return sensor last internal error
-        virtual int error();
+        int error() { return _error; }
 
         // Number of available slots
-        virtual unsigned char count();
+        unsigned char count() { return _count; }
 
         // Descriptive name of the sensor
         virtual String name();
@@ -65,6 +68,10 @@ class BaseSensor {
         virtual double value(unsigned char index);
 
 
-    private:
+    protected:
+
+        int _error = 0;
+        unsigned char _count = 0;
+
 
 };
