@@ -18,6 +18,8 @@ typedef struct {
     unsigned char global;       // Global index in its type
     double current;             // Current (last) value, unfiltered
     double filtered;            // Filtered (averaged) value
+    double reported;            // Last reported value
+    double min_change;          // Minimum value change to report
     BaseFilter * filter;    // Filter object
 } sensor_magnitude_t;
 
@@ -181,6 +183,25 @@ unsigned char sensorCount() {
     return _sensors.size();
 }
 
+unsigned char magnitudeCount() {
+    return _magnitudes.size();
+}
+
+String magnitudeName(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        sensor_magnitude_t magnitude = _magnitudes[index];
+        return magnitude.sensor->slot(magnitude.local);
+    }
+    return String();
+}
+
+unsigned char magnitudeType(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        return int(_magnitudes[index].type);
+    }
+    return MAGNITUDE_NONE;
+}
+
 void sensorInterrupt(unsigned char sensor_id, unsigned char gpio, int mode) {
     _sensor_isr = sensor_id;
     attachInterrupt(gpio, sensorISR, mode);
@@ -235,6 +256,8 @@ void sensorSetup() {
             new_magnitude.global = _counts[type];
             new_magnitude.current = 0;
             new_magnitude.filtered = 0;
+            new_magnitude.reported = 0;
+            new_magnitude.min_change = 0;
             if (type == MAGNITUDE_EVENTS) {
                 new_magnitude.filter = new MovingAverageFilter(SENSOR_REPORT_EVERY);
             } else {
@@ -277,7 +300,8 @@ void sensorLoop() {
         last_update = millis();
         report_count = (report_count + 1) % SENSOR_REPORT_EVERY;
 
-        double value;
+        double current;
+        double filtered;
         char buffer[64];
 
         // Pre-read hook
@@ -292,19 +316,19 @@ void sensorLoop() {
 
                 unsigned char decimals = _sensorDecimals(magnitude.type);
 
-                value = magnitude.sensor->value(magnitude.local);
-                magnitude.filter->add(value);
+                current = magnitude.sensor->value(magnitude.local);
+                magnitude.filter->add(current);
 
                 // Special case
-                if (magnitude.type == MAGNITUDE_EVENTS) value = magnitude.filter->result();
+                if (magnitude.type == MAGNITUDE_EVENTS) current = magnitude.filter->result();
 
-                value = _sensorProcess(magnitude.type, value);
-                _magnitudes[i].current = value;
+                current = _sensorProcess(magnitude.type, current);
+                _magnitudes[i].current = current;
 
                 // Debug
-                #if TRUE
+                #if true
                 {
-                    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+                    dtostrf(current, 1-sizeof(buffer), decimals, buffer);
                     DEBUG_MSG("[SENSOR] %s - %s: %s%s\n",
                         magnitude.sensor->name().c_str(),
                         _sensorTopic(magnitude.type).c_str(),
@@ -314,39 +338,64 @@ void sensorLoop() {
                 }
                 #endif
 
+                // Time to report (we do it every SENSOR_REPORT_EVERY readings)
                 if (report_count == 0) {
 
-                    // TODO: option to report only if it has change (configurable amount)
-
-                    value = magnitude.filter->result();
-                    value = _sensorProcess(magnitude.type, value);
-                    _magnitudes[i].filtered = value;
+                    filtered = magnitude.filter->result();
                     magnitude.filter->reset();
-                    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+                    filtered = _sensorProcess(magnitude.type, filtered);
+                    _magnitudes[i].filtered = filtered;
 
-                    #if MQTT_SUPPORT
-                        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                            mqttSend(_sensorTopic(magnitude.type).c_str(), magnitude.global, buffer);
-                        } else {
-                            mqttSend(_sensorTopic(magnitude.type).c_str(), buffer);
+                    // Check if there is a minimum change threshold to report
+                    if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {
+
+                        _magnitudes[i].reported = filtered;
+                        dtostrf(filtered, 1-sizeof(buffer), decimals, buffer);
+
+                        #if MQTT_SUPPORT
+                            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+                                mqttSend(_sensorTopic(magnitude.type).c_str(), magnitude.global, buffer);
+                            } else {
+                                mqttSend(_sensorTopic(magnitude.type).c_str(), buffer);
+                            }
+                        #endif
+
+                        #if INFLUXDB_SUPPORT
+                            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+                                idbSend(_sensorTopic(magnitude.type).c_str(), magnitude.global, buffer);
+                            } else {
+                                idbSend(_sensorTopic(magnitude.type).c_str(), buffer);
+                            }
+                        #endif
+
+                        #if DOMOTICZ_SUPPORT
+                        {
+                            char key[15];
+                            snprintf_P(key, sizeof(key), PSTR("dczSensor%d"), i);
+                            if (magnitude.type == MAGNITUDE_HUMIDITY) {
+                                int status;
+                                if (filtered > 70) {
+                                    status = HUMIDITY_WET;
+                                } else if (filtered > 45) {
+                                    status = HUMIDITY_COMFORTABLE;
+                                } else if (filtered > 30) {
+                                    status = HUMIDITY_NORMAL;
+                                } else {
+                                    status = HUMIDITY_DRY;
+                                }
+                                char status_buf[5];
+                                itoa(status, status_buf, 10);
+                                domoticzSend(key, buffer, status_buf);
+                            } else {
+                                domoticzSend(key, 0, buffer);
+                            }
                         }
-                    #endif
+                        #endif
 
-                    #if INFLUXDB_SUPPORT
-                        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                            idbSend(_sensorTopic(magnitude.type).c_str(), magnitude.global, buffer);
-                        } else {
-                            idbSend(_sensorTopic(magnitude.type).c_str(), buffer);
-                        }
-                    #endif
-
-                    #if DOMOTICZ_SUPPORT
-                        // TODO
-                    #endif
-
-                }
-            }
-        }
+                    } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
+                } // if (report_count == 0)
+            } // if (magnitude.sensor->status())
+        } // for (unsigned char i=0; i<_magnitudes.size(); i++)
 
         // Post-read hook
         _sensorPost();

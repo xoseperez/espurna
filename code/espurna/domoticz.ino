@@ -86,23 +86,18 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
-    JsonArray& dczRelayIdx = root.createNestedArray("dczRelayIdx");
+    JsonArray& relays = root.createNestedArray("dczRelayIdx");
     for (byte i=0; i<relayCount(); i++) {
-        dczRelayIdx.add(domoticzIdx(i));
+        relays.add(domoticzIdx(i));
     }
 
-    #if DHT_SUPPORT
-        root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
-        root["dczHumIdx"] = getSetting("dczHumIdx").toInt();
-    #endif
-
-    #if DS18B20_SUPPORT
-        root["dczTmpIdx"] = getSetting("dczTmpIdx").toInt();
-    #endif
-
-    #if ANALOG_SUPPORT
-        root["dczAnaIdx"] = getSetting("dczAnaIdx").toInt();
-    #endif
+    JsonArray& sensors = root.createNestedArray("dczSensors");
+    for (byte i=0; i<magnitudeCount(); i++) {
+        JsonObject& sensor = sensors.createNestedObject();
+        sensor["name"] = magnitudeName(i);
+        sensor["type"] = magnitudeType(i);
+        sensor["idx"] = getSetting("dczSensor", i, 0).toInt();
+    }
 
     #if POWER_PROVIDER != POWER_PROVIDER_NONE
         root["dczPowIdx"] = getSetting("dczPowIdx").toInt();

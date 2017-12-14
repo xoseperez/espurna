@@ -336,60 +336,43 @@ function toggleMenu() {
 }
 
 // -----------------------------------------------------------------------------
-// Templates
+// Domoticz
 // -----------------------------------------------------------------------------
 
-function createRelays(count) {
+function createRelayIdxs(data) {
 
-    var current = $("#relays > div").length;
+    var current = $("#domoticzRelays > div").length;
     if (current > 0) return;
 
-    var template = $("#relayTemplate .pure-g")[0];
-    for (var relayID=0; relayID<count; relayID++) {
+    var template = $("#relayIdxTemplate .pure-g")[0];
+    for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        $(line).find("input").each(function() {
-            $(this).attr("data", relayID);
-        });
-        if (count > 1) $(".relay_id", line).html(" " + (relayID+1));
-        line.appendTo("#relays");
-        $(":checkbox", line).iphoneStyle({
-            onChange: doToggle,
-            resizeContainer: true,
-            resizeHandle: true,
-            checkedLabel: 'ON',
-            uncheckedLabel: 'OFF'
-        });
-
+        if (data.length > 1) $("label", line).html("Switch #" + i);
+        $("input", line).attr("name", "dczRelayIdx" + i).attr("tabindex", 40 + i).val(data[i]);
+        line.appendTo("#domoticzRelays");
     }
 
 }
 
-function createIdxs(count) {
+function createSensorIdxs(data) {
 
-    var current = $("#idxs > div").length;
+    var current = $("#domoticzSensors > div").length;
     if (current > 0) return;
 
-    var template = $("#idxTemplate .pure-g")[0];
-    for (var id=0; id<count; id++) {
+    var template = $("#sensorIdxTemplate .pure-g")[0];
+    for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        $(line).find("input").each(function() {
-            $(this).attr("data", id).attr("tabindex", 40+id);
-        });
-        if (count > 1) $(".id", line).html(" " + id);
-        line.appendTo("#idxs");
+        $("label", line).html(sensorType(data[i].type));
+        $("div.hint", line).html(data[i].name);
+        $("input", line).attr("name", "dczSensor" + i).attr("tabindex", 40 + i).val(data[i].idx);
+        line.appendTo("#domoticzSensors");
     }
 
 }
 
-function delNetwork() {
-    var parent = $(this).parents(".pure-g");
-    $(parent).remove();
-}
-
-function moreNetwork() {
-    var parent = $(this).parents(".pure-g");
-    $("div.more", parent).toggle();
-}
+// -----------------------------------------------------------------------------
+// Wifi
+// -----------------------------------------------------------------------------
 
 function addNetwork() {
 
@@ -413,6 +396,43 @@ function addNetwork() {
 
 }
 
+function delNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $(parent).remove();
+}
+
+function moreNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $("div.more", parent).toggle();
+}
+
+// -----------------------------------------------------------------------------
+// Relays
+// -----------------------------------------------------------------------------
+
+function initRelays(data) {
+
+    var current = $("#relays > div").length;
+    if (current > 0) return;
+
+    var template = $("#relayTemplate .pure-g")[0];
+    for (var i=0; i<data.length; i++) {
+        var line = $(template).clone();
+        if (data.length > 1) $(".relay_id", line).html(" " + (i+1));
+        $("input", line).attr("data", i).prop("checked", data[i]);
+        line.appendTo("#relays");
+        $(":checkbox", line).iphoneStyle({
+            onChange: doToggle,
+            resizeContainer: true,
+            resizeHandle: true,
+            checkedLabel: 'ON',
+            uncheckedLabel: 'OFF'
+        }).iphoneStyle("refresh");
+
+    }
+
+}
+
 function addRelayGroup() {
 
     var numGroups = $("#relayGroups > div").length;
@@ -429,6 +449,10 @@ function addRelayGroup() {
     return line;
 
 }
+
+// -----------------------------------------------------------------------------
+// Sensors
+// -----------------------------------------------------------------------------
 
 function initSensors(data) {
 
@@ -447,6 +471,10 @@ function initSensors(data) {
     }
 
 }
+
+// -----------------------------------------------------------------------------
+// Lights
+// -----------------------------------------------------------------------------
 
 function initColorRGB() {
 
@@ -538,6 +566,10 @@ function initChannels(num) {
 
 }
 
+// -----------------------------------------------------------------------------
+// RFBridge
+// -----------------------------------------------------------------------------
+
 function addRfbNode() {
 
     var numNodes = $("#rfbNodes > fieldset").length;
@@ -583,8 +615,6 @@ function rfbSend() {
 
 function processData(data) {
 
-    console.log(data);
-
     // title
     if ("app_name" in data) {
         var title = data.app_name;
@@ -600,31 +630,30 @@ function processData(data) {
 
     Object.keys(data).forEach(function(key) {
 
-        // Web Modes
+        // ---------------------------------------------------------------------
+
+        // ---------------------------------------------------------------------
+        // Web mode
+        // ---------------------------------------------------------------------
+
         if (key == "webMode") {
             password = data.webMode == 1;
             $("#layout").toggle(data.webMode == 0);
             $("#password").toggle(data.webMode == 1);
         }
 
+        // ---------------------------------------------------------------------
         // Actions
+        // ---------------------------------------------------------------------
+
         if (key == "action") {
-
-            if (data.action == "reload") {
-                doReload(1000);
-            }
-
-            if (data.action == "rfbLearn") {
-                // Nothing to do?
-            }
-
-            if (data.action == "rfbTimeout") {
-                // Nothing to do?
-            }
-
+            if (data.action == "reload") doReload(1000);
             return;
-
         }
+
+        // ---------------------------------------------------------------------
+        // RFBridge
+        // ---------------------------------------------------------------------
 
         if (key == "rfbCount") {
             for (var i=0; i<data.rfbCount; i++) addRfbNode();
@@ -640,6 +669,10 @@ function processData(data) {
             }
             return;
         }
+
+        // ---------------------------------------------------------------------
+        // Lights
+        // ---------------------------------------------------------------------
 
         if (key == "rgb") {
             initColorRGB();
@@ -679,35 +712,32 @@ function processData(data) {
             return;
         }
 
-        if (key == "uptime") {
-            var uptime  = parseInt(data[key]);
-            var seconds = uptime % 60; uptime = parseInt(uptime / 60);
-            var minutes = uptime % 60; uptime = parseInt(uptime / 60);
-            var hours   = uptime % 24; uptime = parseInt(uptime / 24);
-            var days    = uptime;
-            data[key] = days + 'd ' + zeroPad(hours, 2) + 'h ' + zeroPad(minutes, 2) + 'm ' + zeroPad(seconds, 2) + 's';
-        }
-
         if (key == "useWhite") {
             useWhite = data[key];
         }
+
+        // ---------------------------------------------------------------------
+        // Sensors
+        // ---------------------------------------------------------------------
+
+        if (key == "sensors") {
+            initSensors(data[key]);
+            for (var i=0; i<data[key].length; i++) {
+                var element = $("input[name=sensor][data=" + i + "]");
+                if (element.length) element.val(data[key][i].value + data[key][i].units);
+            }
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // WiFi
+        // ---------------------------------------------------------------------
 
         if (key == "maxNetworks") {
             maxNetworks = parseInt(data.maxNetworks);
             return;
         }
 
-        // Sensors
-        if (key == "sensors") {
-            initSensors(data[key]);
-            for (var i=0; i<data[key].length; i++) {
-                var element = $("input[data=" + i + "]");
-                if (element.length) element.val(data[key][i].value + data[key][i].units);
-            }
-            return;
-        }
-
-        // Wifi
         if (key == "wifi") {
 
             var networks = data.wifi;
@@ -730,23 +760,13 @@ function processData(data) {
 
         }
 
-        // Relay status
+        // ---------------------------------------------------------------------
+        // Relays
+        // ---------------------------------------------------------------------
+
         if (key == "relayStatus") {
-
-            var relays = data.relayStatus;
-            createRelays(relays.length);
-
-            for (var relayID in relays) {
-                var element = $(".relayStatus[data=" + relayID + "]");
-                if (element.length > 0) {
-                    element
-                        .prop("checked", relays[relayID])
-                        .iphoneStyle("refresh");
-                }
-            }
-
+            initRelays(data[key]);
             return;
-
         }
 
         // Relay groups
@@ -771,19 +791,25 @@ function processData(data) {
             return;
         }
 
+        // ---------------------------------------------------------------------
         // Domoticz
+        // ---------------------------------------------------------------------
+
+        // Domoticz - Relays
         if (key == "dczRelayIdx") {
-            var idxs = data.dczRelayIdx;
-            createIdxs(idxs.length);
-
-            for (var i in idxs) {
-                var element = $(".dczRelayIdx[data=" + i + "]");
-                if (element.length > 0) element.val(idxs[i]);
-            }
-
+            createRelayIdxs(data[key]);
             return;
         }
 
+        // Domoticz - Sensors
+        if (key == "dczSensors") {
+            createSensorIdxs(data[key]);
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // General
+        // ---------------------------------------------------------------------
 
         // Messages
         if (key == "message") {
@@ -808,16 +834,18 @@ function processData(data) {
         if (key == "ntpStatus") {
             data.ntpStatus = data.ntpStatus ? "SYNC'D" : "NOT SYNC'D";
         }
-        if (key == "tmpUnits") {
-            $("span[name='tmpUnits']").html(data[key] == 1 ? "ºF" : "ºC");
+        if (key == "uptime") {
+            var uptime  = parseInt(data[key]);
+            var seconds = uptime % 60; uptime = parseInt(uptime / 60);
+            var minutes = uptime % 60; uptime = parseInt(uptime / 60);
+            var hours   = uptime % 24; uptime = parseInt(uptime / 24);
+            var days    = uptime;
+            data[key] = days + 'd ' + zeroPad(hours, 2) + 'h ' + zeroPad(minutes, 2) + 'm ' + zeroPad(seconds, 2) + 's';
         }
-        if (key == "dhtConnected" && !data[key]) {
-            $("input[name='dhtTmp']").val("NOT CONNECTED");
-            $("input[name='dhtHum']").val("NOT CONNECTED");
-        }
-        if (key == "dsConnected" && !data[key]) {
-            $("input[name='dsTmp']").val("NOT CONNECTED");
-        }
+
+        // ---------------------------------------------------------------------
+        // Matching
+        // ---------------------------------------------------------------------
 
         // Look for INPUTs
         var element = $("input[name=" + key + "]");
