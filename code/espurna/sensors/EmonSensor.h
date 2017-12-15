@@ -7,7 +7,7 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#define EMON_DEBUG      1
+#define EMON_DEBUG      0
 
 class EmonSensor : public BaseSensor {
 
@@ -19,7 +19,6 @@ class EmonSensor : public BaseSensor {
             _voltage = voltage;
             _adc_counts = 1 << bits;
             _pivot = _adc_counts >> 1;
-            _count = 2;
 
             // Calculate factor
             _current_factor = ratio * ref / _adc_counts;
@@ -30,7 +29,7 @@ class EmonSensor : public BaseSensor {
             #if EMON_DEBUG
                 Serial.print("[EMON] Current ratio: "); Serial.println(ratio);
                 Serial.print("[EMON] Ref. Voltage: "); Serial.println(_voltage);
-                Serial.print("[EMON] ADC Couns: "); Serial.println(_adc_counts);
+                Serial.print("[EMON] ADC Counts: "); Serial.println(_adc_counts);
                 Serial.print("[EMON] Current factor: "); Serial.println(_current_factor);
                 Serial.print("[EMON] Multiplier: "); Serial.println(_multiplier);
             #endif
@@ -53,7 +52,7 @@ class EmonSensor : public BaseSensor {
             }
         }
 
-        double read(unsigned long value, unsigned char mode, unsigned char port) {
+        double read(unsigned char port) {
 
             int sample;
             int max = 0;
@@ -61,10 +60,8 @@ class EmonSensor : public BaseSensor {
             double filtered;
             double sum = 0;
 
-            unsigned long start = millis();
-            unsigned long samples = 0;
-
-            while (true) {
+            unsigned long time_span = millis();
+            for (unsigned long i=0; i<_samples; i++) {
 
                 // Read analog value
                 sample = readADC(port);
@@ -72,44 +69,41 @@ class EmonSensor : public BaseSensor {
                 if (sample < min) min = sample;
 
                 // Digital low pass filter extracts the VDC offset
-                _pivot = (_pivot + (sample - _pivot) / EMON_FILTER_SPEED);
+                _pivot = (_pivot + (sample - _pivot) / _adc_counts);
                 filtered = sample - _pivot;
 
                 // Root-mean-square method
                 sum += (filtered * filtered);
-                ++samples;
-
-                // Exit condition
-                if (mode == EMON_MODE_SAMPLES) {
-                    if (samples >= value) break;
-                } else {
-                    if (millis() - start >= value) break;
-                }
-
-                yield();
 
             }
+            time_span = millis() - time_span;
 
             // Quick fix
             if (_pivot < min || max < _pivot) {
                 _pivot = (max + min) / 2.0;
             }
 
-            double rms = samples > 0 ? sqrt(sum / samples) : 0;
+            // Calculate current
+            double rms = _samples > 0 ? sqrt(sum / _samples) : 0;
             double current = _current_factor * rms;
-            current = (double) (round(current * _multiplier) - 1) / _multiplier;
+            current = (double) (int(current * _multiplier) - 1) / _multiplier;
             if (current < 0) current = 0;
 
             #if EMON_DEBUG
-                Serial.print("[EMON] Total samples: "); Serial.println(samples);
-                Serial.print("[EMON] Total time (ms): "); Serial.println(millis() - start);
-                Serial.print("[EMON] Sample frequency (1/s): "); Serial.println(1000 * samples / (millis() - start));
+                Serial.print("[EMON] Total samples: "); Serial.println(_samples);
+                Serial.print("[EMON] Total time (ms): "); Serial.println(time_span);
+                Serial.print("[EMON] Sample frequency (Hz): "); Serial.println(1000 * _samples / time_span);
                 Serial.print("[EMON] Max value: "); Serial.println(max);
                 Serial.print("[EMON] Min value: "); Serial.println(min);
                 Serial.print("[EMON] Midpoint value: "); Serial.println(_pivot);
                 Serial.print("[EMON] RMS value: "); Serial.println(rms);
                 Serial.print("[EMON] Current: "); Serial.println(current);
             #endif
+
+            // Check timing
+            if (time_span > EMON_MAX_TIME) {
+                _samples = (_samples * EMON_MAX_TIME) / time_span;
+            }
 
             return current;
 
@@ -120,6 +114,8 @@ class EmonSensor : public BaseSensor {
         unsigned int _multiplier = 1;
         double _current_factor;
         double _pivot;
+
+        unsigned long _samples = EMON_MAX_SAMPLES;
 
 
 };

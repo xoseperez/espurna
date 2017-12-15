@@ -142,10 +142,9 @@
 // Energy Monitor
 //--------------------------------------------------------------------------------
 
-#define EMON_FILTER_SPEED        512
-
-#define EMON_MODE_SAMPLES        1
-#define EMON_MODE_MSECONDS       2
+#define EMON_MAX_SAMPLES            1500        // Max number of samples to get
+#define EMON_MAX_TIME               200         // Max time in ms to sample
+#define EMON_MAINS_VOLTAGE          230         // Mains voltage
 
 //--------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
@@ -156,20 +155,13 @@
 #define EMON_ANALOG_SUPPORT             0       // Do not build support by default
 #endif
 
-#define EMON_ANALOG_MAINS_VOLTAGE       230     // Mains voltage
 #define EMON_ANALOG_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
 #define EMON_ANALOG_ADC_BITS            10      // ADC depth
 #define EMON_ANALOG_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
 
-#define EMON_ANALOG_READ_VALUE          1000
-#define EMON_ANALOG_READ_MODE           EMON_MODE_SAMPLES
-
-#define EMON_ANALOG_WARMUP_VALUE        1000
-#define EMON_ANALOG_WARMUP_MODE         EMON_MODE_MSECONDS
-
 #if EMON_ANALOG_SUPPORT
     #undef ADC_VCC_ENABLED
-    #define ADC_VCC_ENABLED         0
+    #define ADC_VCC_ENABLED             0
 #endif
 
 //--------------------------------------------------------------------------------
@@ -187,12 +179,6 @@
 #define EMON_ADC121_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
 #define EMON_ADC121_ADC_BITS            12      // ADC depth
 #define EMON_ADC121_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
-
-#define EMON_ADC121_READ_VALUE          200
-#define EMON_ADC121_READ_MODE           EMON_MODE_MSECONDS
-
-#define EMON_ADC121_WARMUP_VALUE        1000
-#define EMON_ADC121_WARMUP_MODE         EMON_MODE_MSECONDS
 
 //--------------------------------------------------------------------------------
 // Internal power montior

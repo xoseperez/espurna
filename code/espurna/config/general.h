@@ -677,8 +677,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define I2C_SCL_PIN             SCL         // SCL GPIO (Sonoff => 14)
 #endif
 
-#define I2C_CLOCK_STRETCH_TIME  50000       // BRZO clock stretch time
-#define I2C_SCL_FREQUENCY       200         // BRZO SCL frequency
+#define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time
+#define I2C_SCL_FREQUENCY       1000        // BRZO SCL frequency
 #define I2C_CLEAR_BUS           0           // Clear I2C bus at boot
 
 // -----------------------------------------------------------------------------
@@ -773,7 +773,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SENSOR_VOLTAGE_DECIMALS         0
 #define SENSOR_POWER_DECIMALS           0
 #define SENSOR_POWER_FACTOR_DECIMALS    0
-#define SENSOR_ENERGY_DECIMALS          3
+#define SENSOR_ENERGY_DECIMALS          0
 
 #define SENSOR_UNKNOWN_TOPIC            "unknown"
 #define SENSOR_TEMPERATURE_TOPIC        "temperature"

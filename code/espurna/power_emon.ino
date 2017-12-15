@@ -53,7 +53,7 @@ unsigned int currentCallback() {
 
         #if I2C_USE_BRZO
             uint8_t buffer[2];
-            i2cStart(ADC121_I2C_ADDRESS);
+            brzo_i2c_start_transaction(ADC121_I2C_ADDRESS, I2C_SCL_FREQUENCY);
             buffer[0] = ADC121_REG_RESULT;
             brzo_i2c_write(buffer, 1, false);
             brzo_i2c_read(buffer, 2, false);

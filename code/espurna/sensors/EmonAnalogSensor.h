@@ -16,12 +16,13 @@ class EmonAnalogSensor : public EmonSensor {
 
             // Cache
             _gpio = gpio;
+            _count = 4;
 
             // Prepare GPIO
             pinMode(gpio, INPUT);
 
             // warmup
-            read(EMON_ANALOG_WARMUP_VALUE, EMON_ANALOG_WARMUP_MODE, _gpio);
+            read(_gpio);
 
         }
 
@@ -42,6 +43,8 @@ class EmonAnalogSensor : public EmonSensor {
             _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_POWER_APPARENT;
+            if (index == 2) return MAGNITUDE_ENERGY;
+            if (index == 3) return MAGNITUDE_ENERGY_DELTA;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
@@ -54,13 +57,19 @@ class EmonAnalogSensor : public EmonSensor {
             // Cache the value
             static unsigned long last = 0;
             static double current = 0;
+            static unsigned long energy_delta = 0;
+
             if ((last == 0) || (millis() - last > 1000)) {
-                current = read(EMON_ANALOG_READ_VALUE, EMON_ANALOG_READ_MODE, _gpio);
+                current = read(_gpio);
+                energy_delta = current * _voltage * (millis() - last) / 1000;
+                _energy += energy_delta;
                 last = millis();
             }
 
             if (index == 0) return current;
             if (index == 1) return current * _voltage;
+            if (index == 2) return _energy;
+            if (index == 3) return energy_delta;
 
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
@@ -74,6 +83,7 @@ class EmonAnalogSensor : public EmonSensor {
         }
 
         unsigned char _gpio;
+        unsigned long _energy = 0;
 
 
 };
