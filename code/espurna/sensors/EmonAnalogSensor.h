@@ -28,7 +28,7 @@ class EmonAnalogSensor : public EmonSensor {
         // Descriptive name of the sensor
         String name() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "ANALOG EMON @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "EMON @ GPIO%d", _gpio);
             return String(buffer);
         }
 

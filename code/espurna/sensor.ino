@@ -240,9 +240,13 @@ void sensorInit() {
 
     #if EMON_ANALOG_SUPPORT
         #include "sensors/EmonAnalogSensor.h"
-        sensorRegister((BaseSensor *) new EmonAnalogSensor(A0, EMON_ANALOG_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
+        sensorRegister(new EmonAnalogSensor(A0, EMON_ANALOG_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
     #endif
 
+    #if EMON_ADC121_SUPPORT
+        #include "sensors/EmonADC121Sensor.h"
+        sensorRegister(new EmonADC121Sensor(EMON_ADC121_I2C_ADDRESS, EMON_ANALOG_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
+    #endif
 
     #if COUNTER_SUPPORT
         if (_sensor_isr == 0xFF) {

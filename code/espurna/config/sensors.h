@@ -148,12 +148,12 @@
 #define EMON_MODE_MSECONDS       2
 
 //--------------------------------------------------------------------------------
-// Analog Energy Monitor
+// Energy Monitor based on interval analog GPIO
 // Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #ifndef EMON_ANALOG_SUPPORT
-#define EMON_ANALOG_SUPPORT             1       // Do not build support by default
+#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
 #endif
 
 #define EMON_ANALOG_MAINS_VOLTAGE       230     // Mains voltage
@@ -167,11 +167,32 @@
 #define EMON_ANALOG_WARMUP_VALUE        1000
 #define EMON_ANALOG_WARMUP_MODE         EMON_MODE_MSECONDS
 
-
 #if EMON_ANALOG_SUPPORT
     #undef ADC_VCC_ENABLED
     #define ADC_VCC_ENABLED         0
 #endif
+
+//--------------------------------------------------------------------------------
+// Energy Monitor based on ADC121
+// Enable support by passing EMON_ADC121_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef EMON_ADC121_SUPPORT
+#define EMON_ADC121_SUPPORT             1       // Do not build support by default
+#endif
+
+#define EMON_ADC121_I2C_ADDRESS         0x50    // I2C address of the ADC121
+
+#define EMON_ADC121_MAINS_VOLTAGE       230     // Mains voltage
+#define EMON_ADC121_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
+#define EMON_ADC121_ADC_BITS            12      // ADC depth
+#define EMON_ADC121_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
+
+#define EMON_ADC121_READ_VALUE          200
+#define EMON_ADC121_READ_MODE           EMON_MODE_MSECONDS
+
+#define EMON_ADC121_WARMUP_VALUE        1000
+#define EMON_ADC121_WARMUP_MODE         EMON_MODE_MSECONDS
 
 //--------------------------------------------------------------------------------
 // Internal power montior

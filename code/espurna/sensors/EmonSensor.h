@@ -7,6 +7,8 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
+#define EMON_DEBUG      1
+
 class EmonSensor : public BaseSensor {
 
     public:
@@ -24,6 +26,14 @@ class EmonSensor : public BaseSensor {
 
             // Calculate multiplier
             calculateMultiplier();
+
+            #if EMON_DEBUG
+                Serial.print("[EMON] Current ratio: "); Serial.println(ratio);
+                Serial.print("[EMON] Ref. Voltage: "); Serial.println(_voltage);
+                Serial.print("[EMON] ADC Couns: "); Serial.println(_adc_counts);
+                Serial.print("[EMON] Current factor: "); Serial.println(_current_factor);
+                Serial.print("[EMON] Multiplier: "); Serial.println(_multiplier);
+            #endif
 
         }
 
@@ -89,6 +99,17 @@ class EmonSensor : public BaseSensor {
             double current = _current_factor * rms;
             current = (double) (round(current * _multiplier) - 1) / _multiplier;
             if (current < 0) current = 0;
+
+            #if EMON_DEBUG
+                Serial.print("[EMON] Total samples: "); Serial.println(samples);
+                Serial.print("[EMON] Total time (ms): "); Serial.println(millis() - start);
+                Serial.print("[EMON] Sample frequency (1/s): "); Serial.println(1000 * samples / (millis() - start));
+                Serial.print("[EMON] Max value: "); Serial.println(max);
+                Serial.print("[EMON] Min value: "); Serial.println(min);
+                Serial.print("[EMON] Midpoint value: "); Serial.println(_pivot);
+                Serial.print("[EMON] RMS value: "); Serial.println(rms);
+                Serial.print("[EMON] Current: "); Serial.println(current);
+            #endif
 
             return current;
 

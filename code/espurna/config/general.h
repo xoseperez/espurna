@@ -667,7 +667,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define I2C_SUPPORT             1           // I2C enabled (1.98Kb)
 #endif
 
-#define I2C_USE_BRZO            0           // Use brzo_i2c library or standard Wire
+#define I2C_USE_BRZO            1           // Use brzo_i2c library or standard Wire
 
 #ifndef I2C_SDA_PIN
 #define I2C_SDA_PIN             SDA         // SDA GPIO (Sonoff => 4)
