@@ -1,21 +1,4 @@
 //--------------------------------------------------------------------------------
-// Custom RF module
-// Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
-// Enable support by passing RF_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef RF_SUPPORT
-#define RF_SUPPORT                  0
-#endif
-
-#ifndef RF_PIN
-#define RF_PIN                      14
-#endif
-
-#define RF_CHANNEL                  31
-#define RF_DEVICE                   1
-
-//--------------------------------------------------------------------------------
 // General
 //--------------------------------------------------------------------------------
 
@@ -61,6 +44,46 @@
 #define HUMIDITY_COMFORTABLE        1
 #define HUMIDITY_DRY                2
 #define HUMIDITY_WET                3
+
+//--------------------------------------------------------------------------------
+// SI7021 temperature & humidity sensor
+// Enable support by passing SI7021_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef SI7021_SUPPORT
+#define SI7021_SUPPORT              0
+#endif
+
+#ifndef SI7021_ADDRESS
+#define SI7021_ADDRESS              0x40
+#endif
+
+//--------------------------------------------------------------------------------
+// DS18B20 temperature sensor
+// Enable support by passing DS18B20_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef DS18B20_SUPPORT
+#define DS18B20_SUPPORT             0
+#endif
+
+#ifndef DS18B20_PIN
+#define DS18B20_PIN                 13
+#endif
+
+#ifndef DS18B20_PULLUP
+#define DS18B20_PULLUP              1
+#endif
+
+#ifndef DS18B20_UPDATE_INTERVAL
+#define DS18B20_UPDATE_INTERVAL     60000
+#endif
+
+#ifndef DS18B20_TEMPERATURE_TOPIC
+#define DS18B20_TEMPERATURE_TOPIC   "temperature"
+#endif
+
+#define DS18B20_RESOLUTION          9
 
 //--------------------------------------------------------------------------------
 // Analog sensor
@@ -116,44 +139,35 @@
 #define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
 
 //--------------------------------------------------------------------------------
-// SI7021 temperature & humidity sensor
-// Enable support by passing SI7021_SUPPORT=1 build flag
+// Analog Energy Monitor
+// Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
-#ifndef SI7021_SUPPORT
-#define SI7021_SUPPORT              0
+#ifndef EMON_ANALOG_SUPPORT
+#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
 #endif
 
-#ifndef SI7021_ADDRESS
-#define SI7021_ADDRESS              0x40
+#define EMON_ANALOG_MAINS_VOLTAGE       230     // Mains voltage
+#define EMON_ANALOG_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
+#define EMON_ANALOG_ADC_BITS            10      // ADC depth
+#define EMON_ANALOG_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
+
+#define EMON_ANALOG_FILTER_SPEED        512
+
+#define EMON_ANALOG_MODE_SAMPLES        1
+#define EMON_ANALOG_MODE_MSECONDS       2
+
+#define EMON_ANALOG_READ_VALUE          1000
+#define EMON_ANALOG_READ_MODE           EMON_ANALOG_MODE_SAMPLES
+
+#define EMON_ANALOG_WARMUP_VALUE        1000
+#define EMON_ANALOG_WARMUP_MODE         EMON_ANALOG_MODE_MSECONDS
+
+
+#if EMON_ANALOG_SUPPORT
+    #undef ADC_VCC_ENABLED
+    #define ADC_VCC_ENABLED         0
 #endif
-
-//--------------------------------------------------------------------------------
-// DS18B20 temperature sensor
-// Enable support by passing DS18B20_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef DS18B20_SUPPORT
-#define DS18B20_SUPPORT             0
-#endif
-
-#ifndef DS18B20_PIN
-#define DS18B20_PIN                 14
-#endif
-
-#ifndef DS18B20_PULLUP
-#define DS18B20_PULLUP              1
-#endif
-
-#ifndef DS18B20_UPDATE_INTERVAL
-#define DS18B20_UPDATE_INTERVAL     60000
-#endif
-
-#ifndef DS18B20_TEMPERATURE_TOPIC
-#define DS18B20_TEMPERATURE_TOPIC   "temperature"
-#endif
-
-#define DS18B20_RESOLUTION          9
 
 //--------------------------------------------------------------------------------
 // Internal power montior

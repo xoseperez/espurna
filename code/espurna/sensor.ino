@@ -37,43 +37,52 @@ unsigned char _sensor_isr = 0xFF;
 // -----------------------------------------------------------------------------
 
 String _sensorTopic(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) {
-        return String(SENSOR_TEMPERATURE_TOPIC);
-    } else if (type == MAGNITUDE_HUMIDITY) {
-        return String(SENSOR_HUMIDITY_TOPIC);
-    } else if (type == MAGNITUDE_ANALOG) {
-        return String(SENSOR_ANALOG_TOPIC);
-    } else if (type == MAGNITUDE_EVENTS) {
-        return String(SENSOR_EVENTS_TOPIC);
-    }
+    if (type == MAGNITUDE_TEMPERATURE) return String(SENSOR_TEMPERATURE_TOPIC);
+    if (type == MAGNITUDE_HUMIDITY) return String(SENSOR_HUMIDITY_TOPIC);
+    if (type == MAGNITUDE_PRESSURE) return String(SENSOR_PRESSURE_TOPIC);
+    if (type == MAGNITUDE_CURRENT) return String(SENSOR_CURRENT_TOPIC);
+    if (type == MAGNITUDE_VOLTAGE) return String(SENSOR_VOLTAGE_TOPIC);
+    if (type == MAGNITUDE_POWER_ACTIVE) return String(SENSOR_ACTIVE_POWER_TOPIC);
+    if (type == MAGNITUDE_POWER_APPARENT) return String(SENSOR_APPARENT_POWER_TOPIC);
+    if (type == MAGNITUDE_POWER_REACTIVE) return String(SENSOR_REACTIVE_POWER_TOPIC);
+    if (type == MAGNITUDE_POWER_FACTOR) return String(SENSOR_POWER_FACTOR_TOPIC);
+    if (type == MAGNITUDE_ENERGY) return String(SENSOR_ENERGY_TOPIC);
+    if (type == MAGNITUDE_ENERGY_DELTA) return String(SENSOR_ENERGY_DELTA_TOPIC);
+    if (type == MAGNITUDE_ANALOG) return String(SENSOR_ANALOG_TOPIC);
+    if (type == MAGNITUDE_EVENTS) return String(SENSOR_EVENTS_TOPIC);
     return String(SENSOR_UNKNOWN_TOPIC);
 }
 
 unsigned char _sensorDecimals(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) {
-        return SENSOR_TEMPERATURE_DECIMALS;
-    } else if (type == MAGNITUDE_HUMIDITY) {
-        return SENSOR_HUMIDITY_DECIMALS;
-    } else if (type == MAGNITUDE_ANALOG) {
-        return SENSOR_ANALOG_DECIMALS;
-    } else if (type == MAGNITUDE_EVENTS) {
-        return SENSOR_EVENTS_DECIMALS;
-    }
+    if (type == MAGNITUDE_TEMPERATURE) return SENSOR_TEMPERATURE_DECIMALS;
+    if (type == MAGNITUDE_HUMIDITY) return SENSOR_HUMIDITY_DECIMALS;
+    if (type == MAGNITUDE_PRESSURE) return SENSOR_PRESSURE_DECIMALS;
+    if (type == MAGNITUDE_CURRENT) return SENSOR_CURRENT_DECIMALS;
+    if (type == MAGNITUDE_VOLTAGE) return SENSOR_VOLTAGE_DECIMALS;
+    if (type == MAGNITUDE_POWER_ACTIVE) return SENSOR_POWER_DECIMALS;
+    if (type == MAGNITUDE_POWER_APPARENT) return SENSOR_POWER_DECIMALS;
+    if (type == MAGNITUDE_POWER_REACTIVE) return SENSOR_POWER_DECIMALS;
+    if (type == MAGNITUDE_POWER_FACTOR) return SENSOR_POWER_FACTOR_DECIMALS;
+    if (type == MAGNITUDE_ENERGY) return SENSOR_ENERGY_DECIMALS;
+    if (type == MAGNITUDE_ENERGY_DELTA) return SENSOR_ENERGY_DECIMALS;
+    if (type == MAGNITUDE_ANALOG) return SENSOR_ANALOG_DECIMALS;
+    if (type == MAGNITUDE_EVENTS) return SENSOR_EVENTS_DECIMALS;
     return 0;
 }
 
 String _sensorUnits(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) {
-        if (_sensor_temperature_units == TMP_CELSIUS) {
-            return String("C");
-        } else {
-            return String("F");
-        }
-    } else if (type == MAGNITUDE_HUMIDITY) {
-        return String("%");
-    } else if (type == MAGNITUDE_EVENTS) {
-        return String("/m");
-    }
+    if (type == MAGNITUDE_TEMPERATURE) return (_sensor_temperature_units == TMP_CELSIUS) ? String("C") : String("F");
+    if (type == MAGNITUDE_HUMIDITY) return String("%");
+    if (type == MAGNITUDE_PRESSURE) return String("hPa");
+    if (type == MAGNITUDE_CURRENT) return String("A");
+    if (type == MAGNITUDE_VOLTAGE) return String("V");
+    if (type == MAGNITUDE_POWER_ACTIVE) return String("W");
+    if (type == MAGNITUDE_POWER_APPARENT) return String("W");
+    if (type == MAGNITUDE_POWER_REACTIVE) return String("W");
+    if (type == MAGNITUDE_POWER_FACTOR) return String("%");
+    if (type == MAGNITUDE_ENERGY) return String("J");
+    if (type == MAGNITUDE_ENERGY_DELTA) return String("J");
+    if (type == MAGNITUDE_EVENTS) return String("/m");
     return String();
 }
 
@@ -228,6 +237,12 @@ void sensorInit() {
         #include "sensors/AnalogSensor.h"
         sensorRegister(new AnalogSensor(ANALOG_PIN));
     #endif
+
+    #if EMON_ANALOG_SUPPORT
+        #include "sensors/AnalogEmonSensor.h"
+        sensorRegister(new AnalogEmonSensor(A0, EMON_ANALOG_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
+    #endif
+
 
     #if COUNTER_SUPPORT
         if (_sensor_isr == 0xFF) {

@@ -766,12 +766,27 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define SENSOR_TEMPERATURE_DECIMALS     1
 #define SENSOR_HUMIDITY_DECIMALS        0
+#define SENSOR_PRESSURE_DECIMALS        2
 #define SENSOR_ANALOG_DECIMALS          0
 #define SENSOR_EVENTS_DECIMALS          0
+#define SENSOR_CURRENT_DECIMALS         3
+#define SENSOR_VOLTAGE_DECIMALS         0
+#define SENSOR_POWER_DECIMALS           0
+#define SENSOR_POWER_FACTOR_DECIMALS    0
+#define SENSOR_ENERGY_DECIMALS          3
 
 #define SENSOR_UNKNOWN_TOPIC            "unknown"
 #define SENSOR_TEMPERATURE_TOPIC        "temperature"
 #define SENSOR_HUMIDITY_TOPIC           "humidity"
+#define SENSOR_PRESSURE_TOPIC           "pressure"
+#define SENSOR_CURRENT_TOPIC            "current"
+#define SENSOR_VOLTAGE_TOPIC            "voltage"
+#define SENSOR_ACTIVE_POWER_TOPIC       "power"
+#define SENSOR_APPARENT_POWER_TOPIC     "apparent"
+#define SENSOR_REACTIVE_POWER_TOPIC     "reactive"
+#define SENSOR_POWER_FACTOR_TOPIC       "factor"
+#define SENSOR_ENERGY_TOPIC             "energy"
+#define SENSOR_ENERGY_DELTA_TOPIC       "energy_delta"
 #define SENSOR_ANALOG_TOPIC             "analog"
 #define SENSOR_EVENTS_TOPIC             "events"
 
@@ -892,3 +907,20 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #endif
 #endif // IR_SUPPORT
+
+//--------------------------------------------------------------------------------
+// Custom RF module
+// Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
+// Enable support by passing RF_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef RF_SUPPORT
+#define RF_SUPPORT                  0
+#endif
+
+#ifndef RF_PIN
+#define RF_PIN                      14
+#endif
+
+#define RF_CHANNEL                  31
+#define RF_DEVICE                   1

@@ -30,8 +30,17 @@ function initMessages() {
 function sensorType(type) {
     if (type == 1) return "Temperature";
     if (type == 2) return "Humidity";
-    if (type == 11) return "Analog";
-    if (type == 12) return "Events";
+    if (type == 3) return "Pressure";
+    if (type == 4) return "Current";
+    if (type == 5) return "Voltage";
+    if (type == 6) return "Active Power";
+    if (type == 7) return "Apparent Power";
+    if (type == 8) return "Reactive Power";
+    if (type == 9) return "Energy";
+    if (type == 10) return "Energy (delta)";
+    if (type == 11) return "Power Factor";
+    if (type == 12) return "Analog";
+    if (type == 13) return "Events";
     return null;
 }
 
