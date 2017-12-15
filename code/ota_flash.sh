@@ -22,14 +22,16 @@ echo_pad() {
 useAvahi() {
 
     echo_pad "#" 4
-    echo_pad "HOSTNAME" 20
-    echo_pad "IP" 20
+    echo_pad "HOSTNAME" 25
+    echo_pad "IP" 25
     echo_pad "APP" 15
     echo_pad "VERSION" 15
     echo_pad "DEVICE" 30
+    echo_pad "MEM_SIZE" 10
+    echo_pad "SDK_SIZE" 10
     echo
 
-    printf -v line '%*s\n' 104
+    printf -v line '%*s\n' 134
     echo ${line// /-}
 
     counter=0
@@ -52,16 +54,20 @@ useAvahi() {
         app_name=`echo $txt | sed -n "s/.*app_name=\([^\"]*\).*/\1/p"`
         app_version=`echo $txt | sed -n "s/.*app_version=\([^\"]*\).*/\1/p"`
         board=`echo $txt | sed -n "s/.*target_board=\([^\"]*\).*/\1/p"`
+        mem_size=`echo $txt | sed -n "s/.*mem_size=\([^\"]*\).*/\1/p"`
+        sdk_size=`echo $txt | sed -n "s/.*sdk_size=\([^\"]*\).*/\1/p"`
 
         echo -n "$ip;" >> $ip_file
         echo -n "$board;" >> $board_file
 
         echo_pad "$counter" 4
-        echo_pad "$hostname" 20
-        echo_pad "$ip" 20
+        echo_pad "$hostname" 25
+        echo_pad "http://$ip" 25
         echo_pad "$app_name" 15
         echo_pad "$app_version" 15
         echo_pad "$board" 30
+        echo_pad "$mem_size" 10
+        echo_pad "$sdk_size" 10
         echo
 
 
