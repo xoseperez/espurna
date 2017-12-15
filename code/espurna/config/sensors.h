@@ -139,12 +139,21 @@
 #define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
 
 //--------------------------------------------------------------------------------
+// Energy Monitor
+//--------------------------------------------------------------------------------
+
+#define EMON_FILTER_SPEED        512
+
+#define EMON_MODE_SAMPLES        1
+#define EMON_MODE_MSECONDS       2
+
+//--------------------------------------------------------------------------------
 // Analog Energy Monitor
 // Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #ifndef EMON_ANALOG_SUPPORT
-#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
+#define EMON_ANALOG_SUPPORT             1       // Do not build support by default
 #endif
 
 #define EMON_ANALOG_MAINS_VOLTAGE       230     // Mains voltage
@@ -152,16 +161,11 @@
 #define EMON_ANALOG_ADC_BITS            10      // ADC depth
 #define EMON_ANALOG_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
 
-#define EMON_ANALOG_FILTER_SPEED        512
-
-#define EMON_ANALOG_MODE_SAMPLES        1
-#define EMON_ANALOG_MODE_MSECONDS       2
-
 #define EMON_ANALOG_READ_VALUE          1000
-#define EMON_ANALOG_READ_MODE           EMON_ANALOG_MODE_SAMPLES
+#define EMON_ANALOG_READ_MODE           EMON_MODE_SAMPLES
 
 #define EMON_ANALOG_WARMUP_VALUE        1000
-#define EMON_ANALOG_WARMUP_MODE         EMON_ANALOG_MODE_MSECONDS
+#define EMON_ANALOG_WARMUP_MODE         EMON_MODE_MSECONDS
 
 
 #if EMON_ANALOG_SUPPORT

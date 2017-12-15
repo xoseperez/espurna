@@ -239,8 +239,8 @@ void sensorInit() {
     #endif
 
     #if EMON_ANALOG_SUPPORT
-        #include "sensors/AnalogEmonSensor.h"
-        sensorRegister(new AnalogEmonSensor(A0, EMON_ANALOG_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
+        #include "sensors/EmonAnalogSensor.h"
+        sensorRegister((BaseSensor *) new EmonAnalogSensor(A0, EMON_ANALOG_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
     #endif
 
 

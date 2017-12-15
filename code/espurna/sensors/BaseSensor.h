@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <Arduino.h>
+
 typedef enum magnitude_t {
 
     MAGNITUDE_NONE = 0,
@@ -54,16 +56,16 @@ class BaseSensor {
         virtual void post() {}
 
         // Descriptive name of the sensor
-        virtual String name();
+        virtual String name() {}
 
         // Descriptive name of the slot # index
-        virtual String slot(unsigned char index);
+        virtual String slot(unsigned char index) {}
 
         // Type for slot # index
-        virtual magnitude_t type(unsigned char index);
+        virtual magnitude_t type(unsigned char index) {}
 
         // Current value for slot # index
-        virtual double value(unsigned char index);
+        virtual double value(unsigned char index) {}
 
         // Return sensor status (true for ready)
         bool status() { return _error == 0; }

@@ -7,17 +7,13 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-class AnalogEmonSensor : public BaseSensor {
+class EmonSensor : public BaseSensor {
 
     public:
 
-        AnalogEmonSensor(unsigned char gpio, double voltage, unsigned char bits, double ref, double ratio): BaseSensor() {
-
-            // Prepare GPIO
-            pinMode(gpio, INPUT);
+        EmonSensor(double voltage, unsigned char bits, double ref, double ratio): BaseSensor() {
 
             // Cache
-            _gpio = gpio;
             _voltage = voltage;
             _adc_counts = 1 << bits;
             _pivot = _adc_counts >> 1;
@@ -29,58 +25,11 @@ class AnalogEmonSensor : public BaseSensor {
             // Calculate multiplier
             calculateMultiplier();
 
-            // warmup
-            read(EMON_ANALOG_WARMUP_VALUE, EMON_ANALOG_WARMUP_MODE, _gpio);
-
-        }
-
-        // Descriptive name of the sensor
-        String name() {
-            char buffer[20];
-            snprintf(buffer, sizeof(buffer), "ANALOG EMON @ GPIO%d", _gpio);
-            return String(buffer);
-        }
-
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            return name();
-        }
-
-        // Type for slot # index
-        magnitude_t type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_POWER_APPARENT;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return MAGNITUDE_NONE;
-        }
-
-        // Current value for slot # index
-        double value(unsigned char index) {
-
-            _error = SENSOR_ERROR_OK;
-
-            // Cache the value
-            static unsigned long last = 0;
-            static double current = 0;
-            if ((last == 0) || (millis() - last > 1000)) {
-                current = read(EMON_ANALOG_READ_VALUE, EMON_ANALOG_READ_MODE, _gpio);
-                last = millis();
-            }
-
-            if (index == 0) return current;
-            if (index == 1) return current * _voltage;
-
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return 0;
-
         }
 
     protected:
 
-        unsigned int readADC(unsigned char port) {
-            return analogRead(port);
-        }
+        virtual unsigned int readADC(unsigned char port) {}
 
         void calculateMultiplier() {
             unsigned int s = 1;
@@ -113,7 +62,7 @@ class AnalogEmonSensor : public BaseSensor {
                 if (sample < min) min = sample;
 
                 // Digital low pass filter extracts the VDC offset
-                _pivot = (_pivot + (sample - _pivot) / EMON_ANALOG_FILTER_SPEED);
+                _pivot = (_pivot + (sample - _pivot) / EMON_FILTER_SPEED);
                 filtered = sample - _pivot;
 
                 // Root-mean-square method
@@ -121,7 +70,7 @@ class AnalogEmonSensor : public BaseSensor {
                 ++samples;
 
                 // Exit condition
-                if (mode == EMON_ANALOG_MODE_SAMPLES) {
+                if (mode == EMON_MODE_SAMPLES) {
                     if (samples >= value) break;
                 } else {
                     if (millis() - start >= value) break;
@@ -146,7 +95,6 @@ class AnalogEmonSensor : public BaseSensor {
         }
 
         double _voltage;
-        unsigned char _gpio;
         unsigned int _adc_counts;
         unsigned int _multiplier = 1;
         double _current_factor;
