@@ -1,0 +1,159 @@
+// -----------------------------------------------------------------------------
+// DHT Sensor
+// -----------------------------------------------------------------------------
+
+#pragma once
+
+#include "Arduino.h"
+#include "BaseSensor.h"
+#if I2C_USE_BRZO
+#include <brzo_i2c.h>
+#else
+#include <Wire.h>
+#endif
+
+#define SI7021_SCL_FREQUENCY    200
+
+#define SI7021_CHIP_SI7021      0x15
+#define SI7021_CHIP_HTU21D      0x32
+
+#define SI7021_CMD_TMP_HOLD     0xE3
+#define SI7021_CMD_HUM_HOLD     0xE5
+#define SI7021_CMD_TMP_NOHOLD   0xF3
+#define SI7021_CMD_HUM_NOHOLD   0xF5
+
+#define SI7021_ERROR_UNKNOW_CHIP    -1
+#define SI7021_ERROR_TIMEOUT        -2
+#define SI7021_ERROR_CRC            -3
+
+class SI7021Sensor : public BaseSensor {
+
+    public:
+
+        SI7021Sensor(unsigned char address = 0x40): BaseSensor() {
+
+            // Asume I2C already started
+            _address = address;
+
+            // Check device
+            #if I2C_USE_BRZO
+                uint8_t buffer[2] = {0xFC, 0xC9};
+                brzo_i2c_start_transaction(_address, SI7021_SCL_FREQUENCY);
+                brzo_i2c_write(buffer, 2, false);
+                brzo_i2c_read(buffer, 1, false);
+                brzo_i2c_end_transaction();
+                _chip = buffer[0];
+            #else
+                Wire.beginTransmission(_address);
+                Wire.write(0xFC);
+                Wire.write(0xC9);
+                Wire.endTransmission();
+                Wire.requestFrom(_address, (unsigned char) 1);
+                _chip = Wire.read();
+            #endif
+
+            if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
+                _error = SI7021_ERROR_UNKNOW_CHIP;
+            } else {
+                _count = 2;
+            }
+
+        }
+
+        // Descriptive name of the sensor
+        String name() {
+            char buffer[20];
+            snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", chipAsString().c_str(), _address);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return name();
+        }
+
+        // Type for slot # index
+        magnitude_t type(unsigned char index) {
+            if (index < _count) {
+                _error = SENSOR_ERROR_OK;
+                if (index == 0) return MAGNITUDE_TEMPERATURE;
+                if (index == 1) return MAGNITUDE_HUMIDITY;
+            }
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return MAGNITUDE_NONE;
+        }
+
+        // Current value for slot # index
+        double value(unsigned char index) {
+            if (index < _count) {
+                _error = SENSOR_ERROR_OK;
+                double value;
+                if (index == 0) {
+                    value = read(SI7021_CMD_TMP_NOHOLD);
+                    value = (175.72 * value / 65536) - 46.85;
+                }
+                if (index == 1) {
+                    value = read(SI7021_CMD_HUM_NOHOLD);
+                    value = (125.0 * value / 65536) - 6;
+                    value = constrain(value, 0, 100);
+                }
+                return value;
+            }
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return 0;
+        }
+
+    protected:
+
+        unsigned int read(uint8_t command) {
+
+            unsigned char bytes = (command == 0xE0) ? 2 : 3;
+
+            #if I2C_USE_BRZO
+            #else
+                Wire.beginTransmission(_address);
+                Wire.write(command);
+                Wire.endTransmission();
+            #endif
+
+            // When not using clock stretching (*_NOHOLD commands) delay here
+            // is needed to wait for the measurement.
+            // According to datasheet the max. conversion time is ~22ms
+            unsigned long start = millis();
+            while (millis() - start < 50) delay(1);
+
+            #if I2C_USE_BRZO
+                unsigned int msb = 0;
+                unsigned int lsb = 0;
+            #else
+                Wire.requestFrom(_address, bytes);
+                if (Wire.available() != bytes) return 100;
+                unsigned int msb = Wire.read();
+                unsigned int lsb = Wire.read();
+            #endif
+
+            // Clear the last to bits of LSB to 00.
+            // According to datasheet LSB of RH is always xxxxxx10
+            lsb &= 0xFC;
+
+            unsigned int value = (msb << 8) | lsb;
+
+            return value;
+
+        }
+
+        unsigned char chip() {
+            return _chip;
+        }
+
+        String chipAsString() {
+            if (_chip == SI7021_CHIP_SI7021) return String("SI7021");
+            if (_chip == SI7021_CHIP_HTU21D) return String("HTU21D");
+            return String("Unknown");
+        }
+
+        unsigned char _address;
+        unsigned char _chip;
+        bool _found = false;
+
+};

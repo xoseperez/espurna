@@ -17,7 +17,11 @@ EmonLiteESP _emon;
 
 #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
 
+    #if I2C_USE_BRZO
     #include "brzo_i2c.h"
+    #else
+    #include "Wire.h"
+    #endif
 
     // ADC121 Registers
     #define ADC121_REG_RESULT       0x00
@@ -45,15 +49,26 @@ unsigned int currentCallback() {
 
     #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
 
-        uint8_t buffer[2];
-        brzo_i2c_start_transaction(ADC121_I2C_ADDRESS, I2C_SCL_FREQUENCY);
-        buffer[0] = ADC121_REG_RESULT;
-        brzo_i2c_write(buffer, 1, false);
-        brzo_i2c_read(buffer, 2, false);
-        brzo_i2c_end_transaction();
         unsigned int value;
-        value = (buffer[0] & 0x0F) << 8;
-        value |= buffer[1];
+
+        #if I2C_USE_BRZO
+            uint8_t buffer[2];
+            i2cStart(ADC121_I2C_ADDRESS);
+            buffer[0] = ADC121_REG_RESULT;
+            brzo_i2c_write(buffer, 1, false);
+            brzo_i2c_read(buffer, 2, false);
+            brzo_i2c_end_transaction();
+            value = (buffer[0] & 0x0F) << 8;
+            value |= buffer[1];
+        #else
+            Wire.beginTransmission(ADC121_I2C_ADDRESS);
+            Wire.write(ADC121_REG_RESULT);
+            Wire.endTransmission();
+            Wire.requestFrom(ADC121_I2C_ADDRESS, 2);
+            value = (Wire.read() & 0x0F) << 8;
+            value = value + Wire.read();
+        #endif
+
         return value;
 
     #endif // POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
@@ -133,12 +148,19 @@ void _powerSetupProvider() {
     _emon.initCurrent(currentCallback, EMON_ADC_BITS, EMON_REFERENCE_VOLTAGE, EMON_CURRENT_RATIO);
 
     #if POWER_PROVIDER == POWER_PROVIDER_EMON_ADC121
-        uint8_t buffer[2];
-        buffer[0] = ADC121_REG_CONFIG;
-        buffer[1] = 0x00;
-        brzo_i2c_start_transaction(ADC121_I2C_ADDRESS, I2C_SCL_FREQUENCY);
-        brzo_i2c_write(buffer, 2, false);
-        brzo_i2c_end_transaction();
+        #if I2C_USE_BRZO
+            uint8_t buffer[2];
+            buffer[0] = ADC121_REG_CONFIG;
+            buffer[1] = 0x00;
+            brzo_i2c_start_transaction(ADC121_I2C_ADDRESS, I2C_SCL_FREQUENCY);
+            brzo_i2c_write(buffer, 2, false);
+            brzo_i2c_end_transaction();
+        #else
+            Wire.beginTransmission(ADC121_I2C_ADDRESS);
+            Wire.write(ADC121_REG_CONFIG);
+            Wire.write(0x00);
+            Wire.endTransmission();
+        #endif
     #endif
 
     _emon.warmup();

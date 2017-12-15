@@ -114,7 +114,7 @@ class DallasSensor : public BaseSensor {
         // Descriptive name of the sensor
         String name() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "OneWire @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "Dallas @ GPIO%d", _gpio);
             return String(buffer);
         }
 

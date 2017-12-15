@@ -298,7 +298,12 @@ void setup() {
     #endif
     #if I2C_SUPPORT
         i2cSetup();
+        #if I2C_CLEAR_BUS
+            i2cClearBus();
+        #endif
+        i2cScan();
     #endif
+
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif

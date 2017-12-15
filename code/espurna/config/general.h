@@ -664,13 +664,22 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef I2C_SUPPORT
-#define I2C_SUPPORT             0           // I2C enabled (1.98Kb)
+#define I2C_SUPPORT             1           // I2C enabled (1.98Kb)
 #endif
 
-#define I2C_SDA_PIN             4           // SDA GPIO
-#define I2C_SCL_PIN             14          // SCL GPIO
-#define I2C_CLOCK_STRETCH_TIME  200         // BRZO clock stretch time
-#define I2C_SCL_FREQUENCY       1000        // BRZO SCL frequency
+#define I2C_USE_BRZO            0           // Use brzo_i2c library or standard Wire
+
+#ifndef I2C_SDA_PIN
+#define I2C_SDA_PIN             SDA         // SDA GPIO (Sonoff => 4)
+#endif
+
+#ifndef I2C_SCL_PIN
+#define I2C_SCL_PIN             SCL         // SCL GPIO (Sonoff => 14)
+#endif
+
+#define I2C_CLOCK_STRETCH_TIME  50000       // BRZO clock stretch time
+#define I2C_SCL_FREQUENCY       200         // BRZO SCL frequency
+#define I2C_CLEAR_BUS           0           // Clear I2C bus at boot
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

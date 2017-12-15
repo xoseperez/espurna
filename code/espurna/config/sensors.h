@@ -39,7 +39,7 @@
 #endif
 
 #ifndef DHT_PIN
-#define DHT_PIN                     12
+#define DHT_PIN                     14
 #endif
 
 #ifndef DHT_TYPE
@@ -116,6 +116,19 @@
 #define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
 
 //--------------------------------------------------------------------------------
+// SI7021 temperature & humidity sensor
+// Enable support by passing SI7021_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef SI7021_SUPPORT
+#define SI7021_SUPPORT              0
+#endif
+
+#ifndef SI7021_ADDRESS
+#define SI7021_ADDRESS              0x40
+#endif
+
+//--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
 // Enable support by passing DS18B20_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -125,7 +138,7 @@
 #endif
 
 #ifndef DS18B20_PIN
-#define DS18B20_PIN                 13
+#define DS18B20_PIN                 14
 #endif
 
 #ifndef DS18B20_PULLUP

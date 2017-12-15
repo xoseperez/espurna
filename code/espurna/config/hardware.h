@@ -222,6 +222,10 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+    // Jack is connected to GPIO14 (and with a small hack to GPIO4)
+    //#define I2C_SDA_PIN         4
+    //#define I2C_SCL_PIN         14
+
 #elif defined(ITEAD_SONOFF_SV)
 
     // Info

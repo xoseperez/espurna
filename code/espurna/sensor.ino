@@ -219,6 +219,11 @@ void sensorInit() {
         sensorRegister(new DallasSensor(DS18B20_PIN, SENSOR_READ_INTERVAL, DS18B20_PULLUP));
     #endif
 
+    #if SI7021_SUPPORT
+        #include "sensors/SI7021Sensor.h"
+        sensorRegister(new SI7021Sensor(SI7021_ADDRESS));
+    #endif
+
     #if ANALOG_SUPPORT
         #include "sensors/AnalogSensor.h"
         sensorRegister(new AnalogSensor(ANALOG_PIN));
@@ -295,7 +300,7 @@ void sensorLoop() {
     _sensorTick();
 
     // Check if we should read new data
-    if ((millis() - last_update > SENSOR_READ_INTERVAL) || (last_update == 0)) {
+    if (millis() - last_update > SENSOR_READ_INTERVAL) {
 
         last_update = millis();
         report_count = (report_count + 1) % SENSOR_REPORT_EVERY;

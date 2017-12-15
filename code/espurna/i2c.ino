@@ -8,7 +8,16 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if I2C_SUPPORT
 
+#if I2C_USE_BRZO
 #include "brzo_i2c.h"
+unsigned long _i2c_scl_frequency = 0;
+#else
+#include "Wire.h"
+#endif
+
+// -----------------------------------------------------------------------------
+// Private
+// -----------------------------------------------------------------------------
 
 int _i2cClearbus(int sda, int scl) {
 
@@ -93,13 +102,28 @@ int _i2cClearbus(int sda, int scl) {
 
 }
 
-bool i2cCheck(unsigned char address) {
-    brzo_i2c_start_transaction(address, I2C_SCL_FREQUENCY);
-    brzo_i2c_ACK_polling(1000);
-    return brzo_i2c_end_transaction();
+// -----------------------------------------------------------------------------
+// Utils
+// -----------------------------------------------------------------------------
+
+void i2cClearBus() {
+    unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
+    unsigned char scl = getSetting("i2cSCL", I2C_SCL_PIN).toInt();
+    DEBUG_MSG_P(PSTR("[I2C] Clear bus (response: %d)\n"), _i2cClearbus(sda, scl));
 }
 
-unsigned char i2cFind(size_t size, unsigned char * addresses) {
+bool i2cCheck(unsigned char address) {
+    #if I2C_USE_BRZO
+        brzo_i2c_start_transaction(address, _i2c_scl_frequency);
+        brzo_i2c_ACK_polling(1000);
+        return brzo_i2c_end_transaction();
+    #else
+        Wire.beginTransmission(address);
+        return Wire.endTransmission();
+    #endif
+}
+
+unsigned char i2cFindFirst(size_t size, unsigned char * addresses) {
     for (unsigned char i=0; i<size; i++) {
         if (i2cCheck(addresses[i]) == 0) return addresses[i];
     }
@@ -113,17 +137,26 @@ void i2cScan() {
         if (error == 0) {
             DEBUG_MSG_P(PSTR("[I2C] Device found at address 0x%02X\n"), address);
             nDevices++;
-        } else if (error != 32) {
-            //DEBUG_MSG_P(PSTR("[I2C] Unknown error at address 0x%02X\n"), address);
         }
     }
     if (nDevices == 0) DEBUG_MSG_P(PSTR("[I2C] No devices found\n"));
 }
 
 void i2cSetup() {
-    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%d for SDA and GPIO%d for SCL\n"), I2C_SDA_PIN, I2C_SCL_PIN);
-    //DEBUG_MSG_P(PSTR("[I2C] Clear bus (response: %d)\n"), _i2cClearbus(I2C_SDA_PIN, I2C_SCL_PIN));
-    brzo_i2c_setup(I2C_SDA_PIN, I2C_SCL_PIN, I2C_CLOCK_STRETCH_TIME);
+
+    unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
+    unsigned char scl = getSetting("i2cSCL", I2C_SCL_PIN).toInt();
+
+    #if I2C_USE_BRZO
+        unsigned long cst = getSetting("i2cCST", I2C_CLOCK_STRETCH_TIME).toInt();
+        _i2c_scl_frequency = getSetting("i2cFreq", I2C_SCL_FREQUENCY).toInt();
+        brzo_i2c_setup(sda, scl, cst);
+    #else
+        Wire.begin(sda, scl);
+    #endif
+
+    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%d for SDA and GPIO%d for SCL\n"), sda, scl);
+
 }
 
 #endif
