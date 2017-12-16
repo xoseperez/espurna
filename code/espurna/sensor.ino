@@ -248,6 +248,11 @@ void sensorInit() {
         sensorRegister(new EmonADC121Sensor(EMON_ADC121_I2C_ADDRESS, EMON_MAINS_VOLTAGE, EMON_ADC121_ADC_BITS, EMON_ADC121_REFERENCE_VOLTAGE, EMON_ADC121_CURRENT_RATIO));
     #endif
 
+    #if EMON_ADS1115_SUPPORT
+        #include "sensors/EmonADS1115Sensor.h"
+        sensorRegister(new EmonADS1115Sensor(EMON_ADS1115_I2C_ADDRESS, EMON_ADS1115_PORT_MASK, EMON_MAINS_VOLTAGE, EMON_ADS1115_ADC_BITS, EMON_ADS1115_REFERENCE_VOLTAGE, EMON_ADS1115_CURRENT_RATIO));
+    #endif
+
     #if COUNTER_SUPPORT
         if (_sensor_isr == 0xFF) {
             #include "sensors/EventSensor.h"
@@ -354,7 +359,7 @@ void sensorLoop() {
                 {
                     dtostrf(current, 1-sizeof(buffer), decimals, buffer);
                     DEBUG_MSG("[SENSOR] %s - %s: %s%s\n",
-                        magnitude.sensor->name().c_str(),
+                        magnitude.sensor->slot(magnitude.local).c_str(),
                         _sensorTopic(magnitude.type).c_str(),
                         buffer,
                         _sensorUnits(magnitude.type).c_str()

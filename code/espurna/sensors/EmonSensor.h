@@ -28,7 +28,7 @@ class EmonSensor : public BaseSensor {
 
             #if EMON_DEBUG
                 Serial.print("[EMON] Current ratio: "); Serial.println(ratio);
-                Serial.print("[EMON] Ref. Voltage: "); Serial.println(_voltage);
+                Serial.print("[EMON] Ref. Voltage: "); Serial.println(ref);
                 Serial.print("[EMON] ADC Counts: "); Serial.println(_adc_counts);
                 Serial.print("[EMON] Current factor: "); Serial.println(_current_factor);
                 Serial.print("[EMON] Multiplier: "); Serial.println(_multiplier);
@@ -69,7 +69,7 @@ class EmonSensor : public BaseSensor {
                 if (sample < min) min = sample;
 
                 // Digital low pass filter extracts the VDC offset
-                _pivot = (_pivot + (sample - _pivot) / _adc_counts);
+                _pivot = (_pivot + (sample - _pivot) / EMON_FILTER_SPEED);
                 filtered = sample - _pivot;
 
                 // Root-mean-square method
@@ -101,7 +101,8 @@ class EmonSensor : public BaseSensor {
             #endif
 
             // Check timing
-            if (time_span > EMON_MAX_TIME) {
+            if ((time_span > EMON_MAX_TIME)
+                || ((time_span < EMON_MAX_TIME) && (_samples < EMON_MAX_SAMPLES))) {
                 _samples = (_samples * EMON_MAX_TIME) / time_span;
             }
 
@@ -110,7 +111,7 @@ class EmonSensor : public BaseSensor {
         }
 
         double _voltage;
-        unsigned int _adc_counts;
+        unsigned long _adc_counts;
         unsigned int _multiplier = 1;
         double _current_factor;
         double _pivot;

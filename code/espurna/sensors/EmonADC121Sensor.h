@@ -56,7 +56,7 @@ class EmonADC121Sensor : public EmonSensor {
 
         // Descriptive name of the sensor
         String name() {
-            char buffer[20];
+            char buffer[30];
             snprintf(buffer, sizeof(buffer), "EMON @ ADC121 @ I2C (0x%02X)", _address);
             return String(buffer);
         }

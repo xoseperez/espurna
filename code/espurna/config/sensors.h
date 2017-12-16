@@ -142,8 +142,9 @@
 // Energy Monitor
 //--------------------------------------------------------------------------------
 
-#define EMON_MAX_SAMPLES            1500        // Max number of samples to get
-#define EMON_MAX_TIME               200         // Max time in ms to sample
+#define EMON_MAX_SAMPLES            1000        // Max number of samples to get
+#define EMON_MAX_TIME               500         // Max time in ms to sample
+#define EMON_FILTER_SPEED           512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE          230         // Mains voltage
 
 //--------------------------------------------------------------------------------
@@ -170,15 +171,31 @@
 //--------------------------------------------------------------------------------
 
 #ifndef EMON_ADC121_SUPPORT
-#define EMON_ADC121_SUPPORT             1       // Do not build support by default
+#define EMON_ADC121_SUPPORT             0       // Do not build support by default
 #endif
 
 #define EMON_ADC121_I2C_ADDRESS         0x50    // I2C address of the ADC121
 
-#define EMON_ADC121_MAINS_VOLTAGE       230     // Mains voltage
 #define EMON_ADC121_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
 #define EMON_ADC121_ADC_BITS            12      // ADC depth
 #define EMON_ADC121_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
+
+//--------------------------------------------------------------------------------
+// Energy Monitor based on ADS1115
+// Enable support by passing EMON_ADS1115_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef EMON_ADS1115_SUPPORT
+#define EMON_ADS1115_SUPPORT            1       // Do not build support by default
+#endif
+
+#define EMON_ADS1115_PORT_MASK          0x08    // A0=1 A1=2 A2=4 A4=8
+#define EMON_ADS1115_I2C_ADDRESS        0x48    // I2C address of the ADS1115
+
+#define EMON_ADS1115_CURRENT_RATIO      30      // Current ratio in the clamp (30V/1A)
+#define EMON_ADS1115_ADC_BITS           16      // ADC depth
+#define EMON_ADS1115_GAIN               ADS1115_PGA_4P096
+#define EMON_ADS1115_REFERENCE_VOLTAGE  8.192   // Double the gain for peak-to-peak
 
 //--------------------------------------------------------------------------------
 // Internal power montior
