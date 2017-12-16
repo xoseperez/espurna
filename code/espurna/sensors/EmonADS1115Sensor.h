@@ -84,7 +84,7 @@
 #define ADS1015_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 */
 
-#define EMON_ADS1115_PORTS                  4
+#define EMON_ADS1115_CHANNELS                  4
 #define EMON_ADS1115_MAGNITUDES_PER_PORT    2
 
 class EmonADS1115Sensor : public EmonSensor {
@@ -126,7 +126,7 @@ class EmonADS1115Sensor : public EmonSensor {
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             char buffer[35];
-            unsigned char port = getPort(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
+            unsigned char port = getChannel(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
             snprintf(buffer, sizeof(buffer), "EMON @ ADS1115 (A%d) @ I2C (0x%02X)", port, _address);
             return String(buffer);
         }
@@ -135,7 +135,7 @@ class EmonADS1115Sensor : public EmonSensor {
         magnitude_t type(unsigned char index) {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
-                unsigned char port = getPort(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
+                unsigned char port = getChannel(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
                 unsigned char magnitude = index % EMON_ADS1115_MAGNITUDES_PER_PORT;
                 if (magnitude == 0) return MAGNITUDE_CURRENT;
                 if (magnitude == 1) return MAGNITUDE_POWER_APPARENT;
@@ -149,7 +149,7 @@ class EmonADS1115Sensor : public EmonSensor {
         void pre() {
             //static unsigned long last = 0;
             for (unsigned char index=0; index<_ports; index++) {
-                unsigned char port = getPort(index);
+                unsigned char port = getChannel(index);
                 _current[port] = read(port);
                 //if (last > 0) {
                 //    _delta[port] = _current[port] * _voltage * (millis() - last) / 1000;
@@ -164,7 +164,7 @@ class EmonADS1115Sensor : public EmonSensor {
 
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
-                unsigned char port = getPort(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
+                unsigned char port = getChannel(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
                 unsigned char magnitude = index % EMON_ADS1115_MAGNITUDES_PER_PORT;
                 if (magnitude == 0) return _current[port];
                 if (magnitude == 1) return _current[port] * _voltage;
@@ -179,12 +179,12 @@ class EmonADS1115Sensor : public EmonSensor {
 
     protected:
 
-        unsigned char getPort(unsigned char index) {
+        unsigned char getChannel(unsigned char port) {
             unsigned char count = 0;
             unsigned char bit = 1;
-            for (unsigned char i=0; i<EMON_ADS1115_PORTS; i++) {
+            for (unsigned char channel=0; channel<EMON_ADS1115_CHANNELS; channel++) {
                 if ((_mask & bit) == bit) {
-                    if (count == index) return i;
+                    if (count == port) return channel;
                     ++count;
                 }
                 bit <<= 1;
@@ -192,19 +192,19 @@ class EmonADS1115Sensor : public EmonSensor {
             return 0;
         }
 
-        unsigned int readADC(unsigned char port) {
-            if (port < EMON_ADS1115_PORTS) {
-                _ads->setMultiplexer(port + 4);
+        unsigned int readADC(unsigned char channel) {
+            if (channel < EMON_ADS1115_CHANNELS) {
+                _ads->setMultiplexer(channel + 4);
                 return _ads->getConversion(true);
             }
             return 0;
         }
 
         /*
-        unsigned int readADC(unsigned char port) {
+        unsigned int readADC(unsigned char channel) {
 
-            if (port > 3) return 0;
-            port = 3;
+            if (channel > 3) return 0;
+            channel = 3;
             unsigned int value;
 
             // Start with default values
@@ -218,7 +218,7 @@ class EmonADS1115Sensor : public EmonSensor {
             config |= ADS1015_REG_CONFIG_MODE_SINGLE;   // Single-shot mode (default)
             config |= ADS1015_REG_CONFIG_OS_SINGLE;     // Set 'start single-conversion' bit
             config |= EMON_ADS1115_GAIN;                // Set PGA/voltage range
-            config |= ((port + 4) << 12);               // Set single-ended input channel
+            config |= ((channel + 4) << 12);            // Set single-ended input channel
 
             Serial.println(config);
 
@@ -272,9 +272,9 @@ class EmonADS1115Sensor : public EmonSensor {
         unsigned char _address;
         unsigned char _mask;
         unsigned char _ports;
-        double _current[EMON_ADS1115_PORTS] = {0, 0, 0, 0};
-        //unsigned long _energy[EMON_ADS1115_PORTS] = {0, 0, 0, 0};
-        //unsigned long _delta[EMON_ADS1115_PORTS] = {0, 0, 0, 0};
+        double _current[EMON_ADS1115_CHANNELS] = {0, 0, 0, 0};
+        //unsigned long _energy[EMON_ADS1115_CHANNELS] = {0, 0, 0, 0};
+        //unsigned long _delta[EMON_ADS1115_CHANNELS] = {0, 0, 0, 0};
 
 
 };

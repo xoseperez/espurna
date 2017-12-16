@@ -78,8 +78,8 @@ class EmonAnalogSensor : public EmonSensor {
 
     protected:
 
-        unsigned int readADC(unsigned char port) {
-            return analogRead(port);
+        unsigned int readADC(unsigned char channel) {
+            return analogRead(channel);
         }
 
         unsigned char _gpio;

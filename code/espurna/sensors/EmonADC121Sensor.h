@@ -106,24 +106,24 @@ class EmonADC121Sensor : public EmonSensor {
 
     protected:
 
-        unsigned int readADC(unsigned char port) {
+        unsigned int readADC(unsigned char channel) {
 
             unsigned int value;
 
             #if I2C_USE_BRZO
                 uint8_t buffer[2];
                 buffer[0] = ADC121_REG_RESULT;
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
+                brzo_i2c_start_transaction(channel, I2C_SCL_FREQUENCY);
                 brzo_i2c_write(buffer, 1, false);
                 brzo_i2c_read(buffer, 2, false);
                 brzo_i2c_end_transaction();
                 value = (buffer[0] & 0x0F) << 8;
                 value |= buffer[1];
             #else
-                Wire.beginTransmission(port);
+                Wire.beginTransmission(channel);
                 Wire.write(ADC121_REG_RESULT);
                 Wire.endTransmission();
-                Wire.requestFrom(port, (unsigned char) 2);
+                Wire.requestFrom(channel, (unsigned char) 2);
                 value = (Wire.read() & 0x0F) << 8;
                 value = value + Wire.read();
             #endif

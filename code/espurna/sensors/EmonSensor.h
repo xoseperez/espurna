@@ -38,7 +38,7 @@ class EmonSensor : public BaseSensor {
 
     protected:
 
-        virtual unsigned int readADC(unsigned char port) {}
+        virtual unsigned int readADC(unsigned char channel) {}
 
         void calculateMultiplier() {
             unsigned int s = 1;
@@ -52,7 +52,7 @@ class EmonSensor : public BaseSensor {
             }
         }
 
-        double read(unsigned char port) {
+        double read(unsigned char channel) {
 
             int sample;
             int max = 0;
@@ -64,7 +64,7 @@ class EmonSensor : public BaseSensor {
             for (unsigned long i=0; i<_samples; i++) {
 
                 // Read analog value
-                sample = readADC(port);
+                sample = readADC(channel);
                 if (sample > max) max = sample;
                 if (sample < min) min = sample;
 
