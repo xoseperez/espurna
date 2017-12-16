@@ -186,7 +186,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef EMON_ADS1115_SUPPORT
-#define EMON_ADS1115_SUPPORT            1       // Do not build support by default
+#define EMON_ADS1115_SUPPORT            0       // Do not build support by default
 #endif
 
 #define EMON_ADS1115_PORT_MASK          0x08    // A0=1 A1=2 A2=4 A4=8
@@ -196,6 +196,18 @@
 #define EMON_ADS1115_ADC_BITS           16      // ADC depth
 #define EMON_ADS1115_GAIN               ADS1115_PGA_4P096
 #define EMON_ADS1115_REFERENCE_VOLTAGE  8.192   // Double the gain for peak-to-peak
+
+//--------------------------------------------------------------------------------
+// Particle Monitor based on Plantower PMSX003
+// Enable support by passing PMSX003_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef PMSX003_SUPPORT
+#define PMSX003_SUPPORT                 1
+#endif
+
+#define PMS_RX_PIN                      13
+#define PMS_TX_PIN                      15
 
 //--------------------------------------------------------------------------------
 // Internal power montior
