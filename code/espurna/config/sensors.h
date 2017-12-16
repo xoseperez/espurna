@@ -181,21 +181,23 @@
 #define EMON_ADC121_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
 
 //--------------------------------------------------------------------------------
-// Energy Monitor based on ADS1115
-// Enable support by passing EMON_ADS1115_SUPPORT=1 build flag
+// Energy Monitor based on ADS1X15
+// Enable support by passing EMON_ADS1X15_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
-#ifndef EMON_ADS1115_SUPPORT
-#define EMON_ADS1115_SUPPORT            1       // Do not build support by default
+#ifndef EMON_ADS1X15_SUPPORT
+#define EMON_ADS1X15_SUPPORT            1       // Do not build support by default
 #endif
 
-#define EMON_ADS1115_PORT_MASK          0x08    // A0=1 A1=2 A2=4 A4=8
-#define EMON_ADS1115_I2C_ADDRESS        0x48    // I2C address of the ADS1115
+#define EMON_ADSX115_USE_I2CDEVLIB      1       // Use I2CDevLib
 
-#define EMON_ADS1115_CURRENT_RATIO      30      // Current ratio in the clamp (30V/1A)
-#define EMON_ADS1115_ADC_BITS           16      // ADC depth
-#define EMON_ADS1115_GAIN               ADS1115_PGA_4P096
-#define EMON_ADS1115_REFERENCE_VOLTAGE  8.192   // Double the gain for peak-to-peak
+#define EMON_ADS1X15_ADS1115            1       // 0 for ADS10115, 1 for ADS1115
+#define EMON_ADS1X15_PORT_MASK          0x08    // A0=1 A1=2 A2=4 A4=8
+#define EMON_ADS1X15_I2C_ADDRESS        0x48    // I2C address of the ADS1115
+
+#define EMON_ADS1X15_CURRENT_RATIO      30      // Current ratio in the clamp (30V/1A)
+#define EMON_ADS1X15_ADC_BITS           16      // ADC depth
+#define EMON_ADS1X15_REFERENCE_VOLTAGE  8.192   // Double the gain for peak-to-peak
 
 //--------------------------------------------------------------------------------
 // Internal power montior
