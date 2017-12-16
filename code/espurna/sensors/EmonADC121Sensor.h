@@ -88,7 +88,7 @@ class EmonADC121Sensor : public EmonSensor {
             static unsigned long energy_delta = 0;
 
             if ((last == 0) || (millis() - last > 1000)) {
-                current = read(_address);
+                current = read(0, _pivot);
                 energy_delta = current * _voltage * (millis() - last) / 1000;
                 _energy += energy_delta;
                 last = millis();
@@ -113,17 +113,17 @@ class EmonADC121Sensor : public EmonSensor {
             #if I2C_USE_BRZO
                 uint8_t buffer[2];
                 buffer[0] = ADC121_REG_RESULT;
-                brzo_i2c_start_transaction(channel, I2C_SCL_FREQUENCY);
+                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
                 brzo_i2c_write(buffer, 1, false);
                 brzo_i2c_read(buffer, 2, false);
                 brzo_i2c_end_transaction();
                 value = (buffer[0] & 0x0F) << 8;
                 value |= buffer[1];
             #else
-                Wire.beginTransmission(channel);
+                Wire.beginTransmission(_address);
                 Wire.write(ADC121_REG_RESULT);
                 Wire.endTransmission();
-                Wire.requestFrom(channel, (unsigned char) 2);
+                Wire.requestFrom(_address, (unsigned char) 2);
                 value = (Wire.read() & 0x0F) << 8;
                 value = value + Wire.read();
             #endif
@@ -134,6 +134,6 @@ class EmonADC121Sensor : public EmonSensor {
 
         unsigned char _address;
         unsigned long _energy = 0;
-
+        double _pivot = 0;
 
 };

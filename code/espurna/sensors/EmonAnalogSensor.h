@@ -60,7 +60,7 @@ class EmonAnalogSensor : public EmonSensor {
             static unsigned long energy_delta = 0;
 
             if ((last == 0) || (millis() - last > 1000)) {
-                current = read(_gpio);
+                current = read(0, _pivot);
                 energy_delta = current * _voltage * (millis() - last) / 1000;
                 _energy += energy_delta;
                 last = millis();
@@ -79,11 +79,12 @@ class EmonAnalogSensor : public EmonSensor {
     protected:
 
         unsigned int readADC(unsigned char channel) {
-            return analogRead(channel);
+            return analogRead(_gpio);
         }
 
         unsigned char _gpio;
         unsigned long _energy = 0;
+        double _pivot = 0;
 
 
 };

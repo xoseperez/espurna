@@ -143,7 +143,7 @@
 //--------------------------------------------------------------------------------
 
 #define EMON_MAX_SAMPLES            1000        // Max number of samples to get
-#define EMON_MAX_TIME               500         // Max time in ms to sample
+#define EMON_MAX_TIME               250         // Max time in ms to sample
 #define EMON_FILTER_SPEED           512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE          230         // Mains voltage
 

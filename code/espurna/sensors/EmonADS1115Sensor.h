@@ -84,7 +84,7 @@
 #define ADS1015_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 */
 
-#define EMON_ADS1115_CHANNELS                  4
+#define EMON_ADS1115_CHANNELS               4
 #define EMON_ADS1115_MAGNITUDES_PER_PORT    2
 
 class EmonADS1115Sensor : public EmonSensor {
@@ -106,13 +106,16 @@ class EmonADS1115Sensor : public EmonSensor {
             // Initialize
             _ads = new ADS1115(_address);
             _ads->initialize();
-            _ads->setMode(ADS1115_MODE_SINGLESHOT);
+            _ads->setMode(ADS1115_MODE_CONTINUOUS);
             _ads->setRate(ADS1115_RATE_860);
             _ads->setGain(ADS1115_PGA_4P096);
-            _ads->setConversionReadyPinMode();
 
             // warmup
-            read(_address);
+            for (unsigned char port=0; port<_ports; port++) {
+                unsigned char channel = getChannel(port);
+                _ads->setMultiplexer(channel + 4);
+                read(channel, _pivot[channel]);
+            }
 
         }
 
@@ -126,8 +129,8 @@ class EmonADS1115Sensor : public EmonSensor {
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             char buffer[35];
-            unsigned char port = getChannel(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
-            snprintf(buffer, sizeof(buffer), "EMON @ ADS1115 (A%d) @ I2C (0x%02X)", port, _address);
+            unsigned char channel = getChannel(index % _ports);
+            snprintf(buffer, sizeof(buffer), "EMON @ ADS1115 (A%d) @ I2C (0x%02X)", channel, _address);
             return String(buffer);
         }
 
@@ -135,8 +138,7 @@ class EmonADS1115Sensor : public EmonSensor {
         magnitude_t type(unsigned char index) {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
-                unsigned char port = getChannel(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
-                unsigned char magnitude = index % EMON_ADS1115_MAGNITUDES_PER_PORT;
+                unsigned char magnitude = index / _ports;
                 if (magnitude == 0) return MAGNITUDE_CURRENT;
                 if (magnitude == 1) return MAGNITUDE_POWER_APPARENT;
                 //if (magnitude == 2) return MAGNITUDE_ENERGY;
@@ -148,9 +150,10 @@ class EmonADS1115Sensor : public EmonSensor {
 
         void pre() {
             //static unsigned long last = 0;
-            for (unsigned char index=0; index<_ports; index++) {
-                unsigned char port = getChannel(index);
-                _current[port] = read(port);
+            for (unsigned char port=0; port<_ports; port++) {
+                unsigned char channel = getChannel(port);
+                _ads->setMultiplexer(channel + 4);
+                _current[port] = read(channel, _pivot[channel]);
                 //if (last > 0) {
                 //    _delta[port] = _current[port] * _voltage * (millis() - last) / 1000;
                 //}
@@ -164,8 +167,8 @@ class EmonADS1115Sensor : public EmonSensor {
 
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
-                unsigned char port = getChannel(index / EMON_ADS1115_MAGNITUDES_PER_PORT);
-                unsigned char magnitude = index % EMON_ADS1115_MAGNITUDES_PER_PORT;
+                unsigned char port = index % _ports;
+                unsigned char magnitude = index / _ports;
                 if (magnitude == 0) return _current[port];
                 if (magnitude == 1) return _current[port] * _voltage;
                 //if (magnitude == 2) return _energy[port];
@@ -193,11 +196,7 @@ class EmonADS1115Sensor : public EmonSensor {
         }
 
         unsigned int readADC(unsigned char channel) {
-            if (channel < EMON_ADS1115_CHANNELS) {
-                _ads->setMultiplexer(channel + 4);
-                return _ads->getConversion(true);
-            }
-            return 0;
+            return _ads->getConversion();
         }
 
         /*
@@ -272,9 +271,10 @@ class EmonADS1115Sensor : public EmonSensor {
         unsigned char _address;
         unsigned char _mask;
         unsigned char _ports;
-        double _current[EMON_ADS1115_CHANNELS] = {0, 0, 0, 0};
-        //unsigned long _energy[EMON_ADS1115_CHANNELS] = {0, 0, 0, 0};
-        //unsigned long _delta[EMON_ADS1115_CHANNELS] = {0, 0, 0, 0};
+        double _pivot[EMON_ADS1115_CHANNELS] = {0};
+        double _current[EMON_ADS1115_CHANNELS] = {0};
+        //unsigned long _energy[EMON_ADS1115_CHANNELS] = {0};
+        //unsigned long _delta[EMON_ADS1115_CHANNELS] = {0};
 
 
 };

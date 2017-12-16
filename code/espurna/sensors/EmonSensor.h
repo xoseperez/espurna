@@ -18,7 +18,6 @@ class EmonSensor : public BaseSensor {
             // Cache
             _voltage = voltage;
             _adc_counts = 1 << bits;
-            _pivot = _adc_counts >> 1;
 
             // Calculate factor
             _current_factor = ratio * ref / _adc_counts;
@@ -52,7 +51,7 @@ class EmonSensor : public BaseSensor {
             }
         }
 
-        double read(unsigned char channel) {
+        double read(unsigned char channel, double &pivot) {
 
             int sample;
             int max = 0;
@@ -69,8 +68,8 @@ class EmonSensor : public BaseSensor {
                 if (sample < min) min = sample;
 
                 // Digital low pass filter extracts the VDC offset
-                _pivot = (_pivot + (sample - _pivot) / EMON_FILTER_SPEED);
-                filtered = sample - _pivot;
+                pivot = (pivot + (sample - pivot) / EMON_FILTER_SPEED);
+                filtered = sample - pivot;
 
                 // Root-mean-square method
                 sum += (filtered * filtered);
@@ -79,8 +78,8 @@ class EmonSensor : public BaseSensor {
             time_span = millis() - time_span;
 
             // Quick fix
-            if (_pivot < min || max < _pivot) {
-                _pivot = (max + min) / 2.0;
+            if (pivot < min || max < pivot) {
+                pivot = (max + min) / 2.0;
             }
 
             // Calculate current
@@ -95,7 +94,7 @@ class EmonSensor : public BaseSensor {
                 Serial.print("[EMON] Sample frequency (Hz): "); Serial.println(1000 * _samples / time_span);
                 Serial.print("[EMON] Max value: "); Serial.println(max);
                 Serial.print("[EMON] Min value: "); Serial.println(min);
-                Serial.print("[EMON] Midpoint value: "); Serial.println(_pivot);
+                Serial.print("[EMON] Midpoint value: "); Serial.println(pivot);
                 Serial.print("[EMON] RMS value: "); Serial.println(rms);
                 Serial.print("[EMON] Current: "); Serial.println(current);
             #endif
@@ -114,7 +113,6 @@ class EmonSensor : public BaseSensor {
         unsigned long _adc_counts;
         unsigned int _multiplier = 1;
         double _current_factor;
-        double _pivot;
 
         unsigned long _samples = EMON_MAX_SAMPLES;
 
