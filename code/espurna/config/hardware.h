@@ -43,6 +43,10 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+    #define PMSX003_SUPPORT     true
+    #define PMS_RX_PIN          13
+    #define PMS_TX_PIN          15
+
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
     // Info
