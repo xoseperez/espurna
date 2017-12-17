@@ -14,6 +14,8 @@
     #include <Wire.h>
 #endif
 
+#define ADS1X15_CHANNELS                (4)
+
 #define ADS1015_CONVERSIONDELAY         (1)
 #define ADS1115_CONVERSIONDELAY         (8)
 
@@ -88,7 +90,6 @@
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
-#define ADS1X15_CHANNELS                    4
 
 class EmonADS1X15Sensor : public EmonSensor {
 
