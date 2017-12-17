@@ -16,13 +16,13 @@ class EmonAnalogSensor : public EmonSensor {
 
             // Cache
             _gpio = gpio;
-            _count = 4;
+            _count = _magnitudes;
 
             // Prepare GPIO
             pinMode(gpio, INPUT);
 
             // warmup
-            read(_gpio);
+            read(_gpio, _pivot);
 
         }
 
@@ -41,10 +41,16 @@ class EmonAnalogSensor : public EmonSensor {
         // Type for slot # index
         magnitude_t type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_POWER_APPARENT;
-            if (index == 2) return MAGNITUDE_ENERGY;
-            if (index == 3) return MAGNITUDE_ENERGY_DELTA;
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return MAGNITUDE_CURRENT;
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return MAGNITUDE_POWER_APPARENT;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return MAGNITUDE_ENERGY;
+            #endif
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
@@ -56,20 +62,25 @@ class EmonAnalogSensor : public EmonSensor {
 
             // Cache the value
             static unsigned long last = 0;
-            static double current = 0;
-            static unsigned long energy_delta = 0;
-
             if ((last == 0) || (millis() - last > 1000)) {
-                current = read(_gpio);
-                energy_delta = current * _voltage * (millis() - last) / 1000;
-                _energy += energy_delta;
+                _current = read(0, _pivot);
+                #if EMON_REPORT_ENERGY
+                    _energy += (_current * _voltage * (millis() - last) / 1000);
+                #endif
                 last = millis();
             }
 
-            if (index == 0) return current;
-            if (index == 1) return current * _voltage;
-            if (index == 2) return _energy;
-            if (index == 3) return energy_delta;
+            // Report
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return _current;
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return _current * _voltage;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return _energy;
+            #endif
 
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
@@ -79,11 +90,15 @@ class EmonAnalogSensor : public EmonSensor {
     protected:
 
         unsigned int readADC(unsigned char channel) {
-            return analogRead(channel);
+            return analogRead(_gpio);
         }
 
         unsigned char _gpio;
-        unsigned long _energy = 0;
+        double _pivot = 0;
+        double _current;
+        #if EMON_REPORT_ENERGY
+            unsigned long _energy = 0;
+        #endif
 
 
 };

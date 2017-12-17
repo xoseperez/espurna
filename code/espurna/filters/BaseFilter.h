@@ -11,29 +11,27 @@ class BaseFilter {
     public:
 
         BaseFilter() {
-            _data = new std::vector<double>();
         }
 
         ~BaseFilter() {
-            if (_data) delete _data;
         }
 
         virtual void add(double value) {
-            _data->push_back(value);
+            _data.push_back(value);
         }
 
         virtual unsigned char count() {
-            return _data->size();
+            return _data.size();
         }
 
         virtual void reset() {
-            _data->clear();
+            _data.clear();
         }
 
         virtual double max() {
             double max = 0;
-            for (unsigned char i = 1; i < _data->size(); i++) {
-                if (max < _data->at(i)) max = _data->at(i);
+            for (unsigned char i = 1; i < _data.size(); i++) {
+                if (max < _data.at(i)) max = _data.at(i);
             }
             return max;
         }
@@ -44,6 +42,6 @@ class BaseFilter {
 
     protected:
 
-        std::vector<double> *_data;
+        std::vector<double> _data;
 
 };

@@ -32,7 +32,7 @@ class EmonADC121Sensor : public EmonSensor {
 
             // Cache
             _address = address;
-            _count = 4;
+            _count = _magnitudes;
 
             // Init sensor
             #if I2C_USE_BRZO
@@ -50,7 +50,7 @@ class EmonADC121Sensor : public EmonSensor {
             #endif
 
             // warmup
-            read(_address);
+            read(_address, _pivot);
 
         }
 
@@ -69,10 +69,16 @@ class EmonADC121Sensor : public EmonSensor {
         // Type for slot # index
         magnitude_t type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_POWER_APPARENT;
-            if (index == 2) return MAGNITUDE_ENERGY;
-            if (index == 3) return MAGNITUDE_ENERGY_DELTA;
+            unsigned char i = 0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return MAGNITUDE_CURRENT;
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return MAGNITUDE_POWER_APPARENT;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return MAGNITUDE_ENERGY;
+            #endif
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
@@ -84,20 +90,25 @@ class EmonADC121Sensor : public EmonSensor {
 
             // Cache the value
             static unsigned long last = 0;
-            static double current = 0;
-            static unsigned long energy_delta = 0;
-
             if ((last == 0) || (millis() - last > 1000)) {
-                current = read(_address);
-                energy_delta = current * _voltage * (millis() - last) / 1000;
-                _energy += energy_delta;
+                _current = read(0, _pivot);
+                #if EMON_REPORT_ENERGY
+                    _energy += (_current * _voltage * (millis() - last) / 1000);
+                #endif
                 last = millis();
             }
 
-            if (index == 0) return current;
-            if (index == 1) return current * _voltage;
-            if (index == 2) return _energy;
-            if (index == 3) return energy_delta;
+            // Report
+            unsigned char i = 0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return _current;
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return _current * _voltage;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return _energy;
+            #endif
 
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
@@ -113,17 +124,17 @@ class EmonADC121Sensor : public EmonSensor {
             #if I2C_USE_BRZO
                 uint8_t buffer[2];
                 buffer[0] = ADC121_REG_RESULT;
-                brzo_i2c_start_transaction(channel, I2C_SCL_FREQUENCY);
+                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
                 brzo_i2c_write(buffer, 1, false);
                 brzo_i2c_read(buffer, 2, false);
                 brzo_i2c_end_transaction();
                 value = (buffer[0] & 0x0F) << 8;
                 value |= buffer[1];
             #else
-                Wire.beginTransmission(channel);
+                Wire.beginTransmission(_address);
                 Wire.write(ADC121_REG_RESULT);
                 Wire.endTransmission();
-                Wire.requestFrom(channel, (unsigned char) 2);
+                Wire.requestFrom(_address, (unsigned char) 2);
                 value = (Wire.read() & 0x0F) << 8;
                 value = value + Wire.read();
             #endif
@@ -133,7 +144,10 @@ class EmonADC121Sensor : public EmonSensor {
         }
 
         unsigned char _address;
-        unsigned long _energy = 0;
-
+        double _pivot = 0;
+        double _current = 0;
+        #if EMON_REPORT_ENERGY
+            unsigned long _energy = 0;
+        #endif
 
 };

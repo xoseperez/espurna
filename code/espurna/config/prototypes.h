@@ -78,9 +78,7 @@ template<typename T> bool idbSend(const char * topic, unsigned char id, T payloa
 #if DS18B20_SUPPORT
 #include <OneWire.h>
 #endif
-#if EMON_ADS1115_SUPPORT
-#include <ADS1115.h>
-#endif
+
 #if PMSX003_SUPPORT
 #include <SoftwareSerial.h>
 #include <PMS.h>
