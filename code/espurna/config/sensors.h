@@ -156,7 +156,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef EMON_ANALOG_SUPPORT
-#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
+#define EMON_ANALOG_SUPPORT             1       // Do not build support by default
 #endif
 
 #define EMON_ANALOG_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)

@@ -50,7 +50,7 @@ class EmonADC121Sensor : public EmonSensor {
             #endif
 
             // warmup
-            read(_address);
+            read(_address, _pivot);
 
         }
 
@@ -90,11 +90,10 @@ class EmonADC121Sensor : public EmonSensor {
 
             // Cache the value
             static unsigned long last = 0;
-            static double current = 0;
             if ((last == 0) || (millis() - last > 1000)) {
-                current = read(0, _pivot);
+                _current = read(0, _pivot);
                 #if EMON_REPORT_ENERGY
-                    _energy += (current * _voltage * (millis() - last) / 1000);
+                    _energy += (_current * _voltage * (millis() - last) / 1000);
                 #endif
                 last = millis();
             }
@@ -102,10 +101,10 @@ class EmonADC121Sensor : public EmonSensor {
             // Report
             unsigned char i = 0;
             #if EMON_REPORT_CURRENT
-                if (index == i++) return current;
+                if (index == i++) return _current;
             #endif
             #if EMON_REPORT_POWER
-                if (index == i++) return current * _voltage;
+                if (index == i++) return _current * _voltage;
             #endif
             #if EMON_REPORT_ENERGY
                 if (index == i) return _energy;
@@ -146,6 +145,7 @@ class EmonADC121Sensor : public EmonSensor {
 
         unsigned char _address;
         double _pivot = 0;
+        double _current = 0;
         #if EMON_REPORT_ENERGY
             unsigned long _energy = 0;
         #endif
