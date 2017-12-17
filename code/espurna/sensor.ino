@@ -50,6 +50,9 @@ String _sensorTopic(magnitude_t type) {
     if (type == MAGNITUDE_ENERGY_DELTA) return String(SENSOR_ENERGY_DELTA_TOPIC);
     if (type == MAGNITUDE_ANALOG) return String(SENSOR_ANALOG_TOPIC);
     if (type == MAGNITUDE_EVENTS) return String(SENSOR_EVENTS_TOPIC);
+    if (type == MAGNITUDE_PM1dot0) return String(SENSOR_PM1dot0_TOPIC);
+    if (type == MAGNITUDE_PM2dot5) return String(SENSOR_PM2dot5_TOPIC);
+    if (type == MAGNITUDE_PM10) return String(SENSOR_PM10_TOPIC);
     return String(SENSOR_UNKNOWN_TOPIC);
 }
 
@@ -67,6 +70,9 @@ unsigned char _sensorDecimals(magnitude_t type) {
     if (type == MAGNITUDE_ENERGY_DELTA) return SENSOR_ENERGY_DECIMALS;
     if (type == MAGNITUDE_ANALOG) return SENSOR_ANALOG_DECIMALS;
     if (type == MAGNITUDE_EVENTS) return SENSOR_EVENTS_DECIMALS;
+    if (type == MAGNITUDE_PM1dot0) return SENSOR_PM1dot0_DECIMALS;
+    if (type == MAGNITUDE_PM2dot5) return SENSOR_PM2dot5_DECIMALS;
+    if (type == MAGNITUDE_PM10) return SENSOR_PM10_DECIMALS;
     return 0;
 }
 
@@ -83,6 +89,9 @@ String _sensorUnits(magnitude_t type) {
     if (type == MAGNITUDE_ENERGY) return String("J");
     if (type == MAGNITUDE_ENERGY_DELTA) return String("J");
     if (type == MAGNITUDE_EVENTS) return String("/m");
+    if (type == MAGNITUDE_PM1dot0) return String("µg/m3");
+    if (type == MAGNITUDE_PM2dot5) return String("µg/m3");
+    if (type == MAGNITUDE_PM10) return String("µg/m3");
     return String();
 }
 
@@ -251,6 +260,11 @@ void sensorInit() {
     #if EMON_ADS1X15_SUPPORT
         #include "sensors/EmonADS1X15Sensor.h"
         sensorRegister(new EmonADS1X15Sensor(EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_ADS1115, EMON_ADS1X15_PORT_MASK, EMON_MAINS_VOLTAGE, EMON_ADS1X15_ADC_BITS, EMON_ADS1X15_REFERENCE_VOLTAGE, EMON_ADS1X15_CURRENT_RATIO));
+    #endif
+    
+    #if PMSX003_SUPPORT
+        #include "sensors/PMSX003Sensor.h"
+        sensorRegister(new PMSX003Sensor(PMS_RX_PIN, PMS_TX_PIN));
     #endif
 
     #if COUNTER_SUPPORT

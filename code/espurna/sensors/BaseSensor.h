@@ -26,12 +26,17 @@ typedef enum magnitude_t {
     MAGNITUDE_ANALOG,
     MAGNITUDE_EVENTS,
 
+    MAGNITUDE_PM1dot0,
+    MAGNITUDE_PM2dot5,
+    MAGNITUDE_PM10,
+
     MAGNITUDE_MAX,
 
 } magnitude_t;
 
 #define SENSOR_ERROR_OK             0
 #define SENSOR_ERROR_OUT_OF_RANGE   1
+#define SENSOR_ERROR_WARM_UP        2
 
 class BaseSensor {
 
