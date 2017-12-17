@@ -14,13 +14,13 @@ class MovingAverageFilter : public BaseFilter {
         MovingAverageFilter(unsigned char size) {
             _size = size;
             for (unsigned char i=0; i<size; i++) {
-                _data->push_back(0);
+                _data.push_back(0);
             }
         }
 
         virtual void add(double value) {
-            _sum = _sum + value - _data->at(_pointer);
-            _data->at(_pointer) = value;
+            _sum = _sum + value - _data.at(_pointer);
+            _data.at(_pointer) = value;
             _pointer = (_pointer + 1) % _size;
         }
 
