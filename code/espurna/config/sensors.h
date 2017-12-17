@@ -146,6 +146,9 @@
 #define EMON_MAX_TIME               250         // Max time in ms to sample
 #define EMON_FILTER_SPEED           512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE          230         // Mains voltage
+#define EMON_REPORT_CURRENT         0           // Calculate current
+#define EMON_REPORT_POWER           1           // Calculate power
+#define EMON_REPORT_ENERGY          1           // Calculate energy
 
 //--------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO

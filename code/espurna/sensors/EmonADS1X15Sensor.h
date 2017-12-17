@@ -89,7 +89,6 @@
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
 #define ADS1X15_CHANNELS                    4
-#define EMON_ADS1X15_MAGNITUDES_PER_PORT    2
 
 class EmonADS1X15Sensor : public EmonSensor {
 
@@ -106,7 +105,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 if (mask & 0x01) ++_ports;
                 mask = mask >> 1;
             }
-            _count = _ports * EMON_ADS1X15_MAGNITUDES_PER_PORT;
+            _count = _ports * _magnitudes;
 
             // warmup
             warmup();
@@ -133,39 +132,53 @@ class EmonADS1X15Sensor : public EmonSensor {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 unsigned char magnitude = index / _ports;
-                if (magnitude == 0) return MAGNITUDE_CURRENT;
-                if (magnitude == 1) return MAGNITUDE_POWER_APPARENT;
-                //if (magnitude == 2) return MAGNITUDE_ENERGY;
-                //if (magnitude == 3) return MAGNITUDE_ENERGY_DELTA;
+                unsigned char i=0;
+                #if EMON_REPORT_CURRENT
+                    if (magnitude == i++) return MAGNITUDE_CURRENT;
+                #endif
+                #if EMON_REPORT_POWER
+                    if (magnitude == i++) return MAGNITUDE_POWER_APPARENT;
+                #endif
+                #if EMON_REPORT_ENERGY
+                    if (magnitude == i) return MAGNITUDE_ENERGY;
+                #endif
             }
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         void pre() {
-            //static unsigned long last = 0;
+            static unsigned long last = 0;
             for (unsigned char port=0; port<_ports; port++) {
                 unsigned char channel = getChannel(port);
                 _current[port] = getCurrent(channel);
-                //if (last > 0) {
-                //    _delta[port] = _current[port] * _voltage * (millis() - last) / 1000;
-                //}
-                //_energy[port] += _delta[port];
+                #if EMON_REPORT_ENERGY
+                    _energy[port] += (_current[port] * _voltage * (millis() - last) / 1000);
+                #endif
             }
-            //last = millis();
+            last = millis();
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
 
             if (index < _count) {
+
                 _error = SENSOR_ERROR_OK;
                 unsigned char port = index % _ports;
                 unsigned char magnitude = index / _ports;
-                if (magnitude == 0) return _current[port];
-                if (magnitude == 1) return _current[port] * _voltage;
-                //if (magnitude == 2) return _energy[port];
-                //if (magnitude == 3) return _delta[port];
+
+                unsigned char i=0;
+                #if EMON_REPORT_CURRENT
+                    if (magnitude == i++) return _current[port];
+                #endif
+                #if EMON_REPORT_POWER
+                    if (magnitude == i++) return _current[port] * _voltage;
+                #endif
+                #if EMON_REPORT_ENERGY
+                    if (magnitude == i) return _energy[port];
+                #endif
+
             }
 
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -297,8 +310,9 @@ class EmonADS1X15Sensor : public EmonSensor {
         unsigned char _ports;
         double _pivot[ADS1X15_CHANNELS] = {0};
         double _current[ADS1X15_CHANNELS] = {0};
-        //unsigned long _energy[ADS1X15_CHANNELS] = {0};
-        //unsigned long _delta[ADS1X15_CHANNELS] = {0};
+        #if EMON_REPORT_ENERGY
+            unsigned long _energy[ADS1X15_CHANNELS] = {0};
+        #endif
 
 
 };

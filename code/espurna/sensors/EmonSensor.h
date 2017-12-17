@@ -19,6 +19,16 @@ class EmonSensor : public BaseSensor {
             _voltage = voltage;
             _adc_counts = 1 << bits;
 
+            #if EMON_REPORT_CURRENT
+                ++_magnitudes;
+            #endif
+            #if EMON_REPORT_POWER
+                ++_magnitudes;
+            #endif
+            #if EMON_REPORT_ENERGY
+                ++_magnitudes;
+            #endif
+
             // Calculate factor
             _current_factor = ratio * ref / _adc_counts;
 
@@ -110,6 +120,7 @@ class EmonSensor : public BaseSensor {
         }
 
         double _voltage;
+        unsigned char _magnitudes = 0;
         unsigned long _adc_counts;
         unsigned int _multiplier = 1;
         double _current_factor;
