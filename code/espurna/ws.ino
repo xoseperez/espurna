@@ -300,10 +300,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 }
 
-void _wsStart(uint32_t client_id) {
-
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
+void _wsOnStart(JsonObject& root) {
 
     bool changePassword = false;
     #if WEB_FORCE_PASS_CHANGE
@@ -342,17 +339,14 @@ void _wsStart(uint32_t client_id) {
         root["tmpUnits"] = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
         root["tmpCorrection"] = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
 
-        // Callbacks
-        for (unsigned char i = 0; i < _ws_on_send_callbacks.size(); i++) {
-            (_ws_on_send_callbacks[i])(root);
-        }
-
     }
 
-    String output;
-    root.printTo(output);
-    wsSend(client_id, (char *) output.c_str());
+}
 
+void _wsStart(uint32_t client_id) {
+    for (unsigned char i = 0; i < _ws_on_send_callbacks.size(); i++) {
+        wsSend(client_id, _ws_on_send_callbacks[i]);
+    }
 }
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
@@ -414,7 +408,7 @@ void wsSend(ws_on_send_callback_f callback) {
         callback(root);
         String output;
         root.printTo(output);
-        wsSend((char *) output.c_str());
+        _ws.textAll((char *) output.c_str());
     }
 }
 
@@ -430,6 +424,15 @@ void wsSend_P(PGM_P payload) {
         strcpy_P(buffer, payload);
         _ws.textAll(buffer);
     }
+}
+
+void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    callback(root);
+    String output;
+    root.printTo(output);
+    _ws.text(client_id, (char *) output.c_str());
 }
 
 void wsSend(uint32_t client_id, const char * payload) {
@@ -453,6 +456,7 @@ void wsSetup() {
     #if MQTT_SUPPORT
         mqttRegister(_wsMQTTCallback);
     #endif
+    wsOnSendRegister(_wsOnStart);
     wsOnAfterParseRegister(wsConfigure);
 }
 
