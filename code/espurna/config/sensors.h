@@ -201,6 +201,18 @@
 #define EMON_ADS1X15_REFERENCE_VOLTAGE  8.192   // Double the gain for peak-to-peak
 
 //--------------------------------------------------------------------------------
+// Particle Monitor based on Plantower PMSX003
+// Enable support by passing PMSX003_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef PMSX003_SUPPORT
+#define PMSX003_SUPPORT                 1
+#endif
+
+#define PMS_RX_PIN                      13
+#define PMS_TX_PIN                      15
+
+//--------------------------------------------------------------------------------
 // Internal power montior
 // Enable support by passing ADC_VCC_ENABLED=1 build flag
 // Do not enable this if using the analog GPIO for any other thing

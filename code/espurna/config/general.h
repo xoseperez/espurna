@@ -774,6 +774,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SENSOR_POWER_DECIMALS           0
 #define SENSOR_POWER_FACTOR_DECIMALS    0
 #define SENSOR_ENERGY_DECIMALS          0
+#define SENSOR_PM1dot0_DECIMALS         0
+#define SENSOR_PM2dot5_DECIMALS         0
+#define SENSOR_PM10_DECIMALS            0
 
 #define SENSOR_UNKNOWN_TOPIC            "unknown"
 #define SENSOR_TEMPERATURE_TOPIC        "temperature"
@@ -787,6 +790,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SENSOR_POWER_FACTOR_TOPIC       "factor"
 #define SENSOR_ENERGY_TOPIC             "energy"
 #define SENSOR_ENERGY_DELTA_TOPIC       "energy_delta"
+#define SENSOR_PM1dot0_TOPIC            "pm1dot0"
+#define SENSOR_PM2dot5_TOPIC            "pm2dot5"
+#define SENSOR_PM10_TOPIC               "pm10"
 #define SENSOR_ANALOG_TOPIC             "analog"
 #define SENSOR_EVENTS_TOPIC             "events"
 

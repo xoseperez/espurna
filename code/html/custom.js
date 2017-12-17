@@ -41,6 +41,9 @@ function sensorType(type) {
     if (type == 11) return "Power Factor";
     if (type == 12) return "Analog";
     if (type == 13) return "Events";
+    if (type == 14) return "PM1.0"
+    if (type == 15) return "PM2.5"
+    if (type == 16) return "PM10"
     return null;
 }
 
