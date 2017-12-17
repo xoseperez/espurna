@@ -186,10 +186,8 @@
 //--------------------------------------------------------------------------------
 
 #ifndef EMON_ADS1X15_SUPPORT
-#define EMON_ADS1X15_SUPPORT            1       // Do not build support by default
+#define EMON_ADS1X15_SUPPORT            0       // Do not build support by default
 #endif
-
-#define EMON_ADS1X15_USE_I2CDEVLIB      0       // Use I2CDevLib
 
 #define EMON_ADS1X15_ADS1115            1       // 0 for ADS10115, 1 for ADS1115
 #define EMON_ADS1X15_PORT_MASK          0x08    // A0=1 A1=2 A2=4 A4=8
