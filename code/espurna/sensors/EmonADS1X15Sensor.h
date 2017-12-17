@@ -8,7 +8,7 @@
 #include "BaseSensor.h"
 #include "EmonSensor.h"
 
-#if EMON_ADSX115_USE_I2CDEVLIB
+#if EMON_ADS1X15_USE_I2CDEVLIB
     #include <ADS1115.h>
 #else
     #if I2C_USE_BRZO
@@ -91,6 +91,7 @@
 #define ADS1X15_REG_CONFIG_CQUE_2CONV   (0x0001)  // Assert ALERT/RDY after two conversions
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
+
 #define ADS1X15_CHANNELS                    4
 #define EMON_ADS1X15_MAGNITUDES_PER_PORT    2
 
@@ -206,7 +207,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         //----------------------------------------------------------------------
 
         void init() {
-            #if EMON_ADSX115_USE_I2CDEVLIB
+            #if EMON_ADS1X15_USE_I2CDEVLIB
                 _ads = new ADS1115(_address);
                 _ads->initialize();
                 _ads->setMode(ADS1115_MODE_CONTINUOUS);
@@ -215,25 +216,31 @@ class EmonADS1X15Sensor : public EmonSensor {
             #endif
         }
 
-        #if EMON_ADSX115_USE_I2CDEVLIB == 0
+        #if EMON_ADS1X15_USE_I2CDEVLIB == 0
 
-            void setChannel(unsigned char channel, bool continuous) {
+            void setConfigRegistry(unsigned char channel, bool continuous, bool start) {
 
                 // Start with default values
                 uint16_t config = 0;
-                config |= ADS1X15_REG_CONFIG_PGA_4_096V;        // Set PGA/voltage range
-                if (continuous) {
-                    config |= ADS1X15_REG_CONFIG_MODE_CONTIN;   // Continuous mode (default)
-                } else {
-                    config |= ADS1X15_REG_CONFIG_MODE_SINGLE;   // Single-shot mode
-                    config |= ADS1X15_REG_CONFIG_OS_SINGLE;     // Set 'start single-conversion' bit
+                config |= ADS1X15_REG_CONFIG_PGA_4_096V;        // Set PGA/voltage range (0x0200)
+                config |= ADS1X15_REG_CONFIG_DR_MASK;           // Always at max speed (0x00E0)
+                //config |= ADS1X15_REG_CONFIG_CMODE_TRAD;        // Traditional comparator (default val) (0x0000)
+                //config |= ADS1X15_REG_CONFIG_CPOL_ACTVLOW;      // Alert/Rdy active low   (default val) (0x0000)
+                //config |= ADS1X15_REG_CONFIG_CLAT_NONLAT;       // Non-latching (default val) (0x0000)
+                config |= ADS1X15_REG_CONFIG_CQUE_NONE;         // Disable the comparator (default val) (0x0003)
+                if (start) {
+                    config |= ADS1X15_REG_CONFIG_OS_SINGLE;         // Start a single-conversion (0x8000)
                 }
-                config |= ADS1X15_REG_CONFIG_DR_MASK;           // Always at max speed
-                config |= ADS1X15_REG_CONFIG_CMODE_TRAD;        // Traditional comparator (default val)
-                config |= ADS1X15_REG_CONFIG_CPOL_ACTVLOW;      // Alert/Rdy active low   (default val)
-                config |= ADS1X15_REG_CONFIG_CLAT_NONLAT;       // Non-latching (default val)
-                config |= ADS1X15_REG_CONFIG_CQUE_NONE;         // Disable the comparator (default val)
-                config |= ((channel + 4) << 12);                // Set single-ended input channel
+                if (continuous) {
+                    //config |= ADS1X15_REG_CONFIG_MODE_CONTIN;   // Continuous mode (default) (0x0000)
+                } else {
+                    config |= ADS1X15_REG_CONFIG_MODE_SINGLE;   // Single-shot mode (0x0100)
+                }
+                config |= ((channel + 4) << 12);                // Set single-ended input channel (0x4000 - 0x7000)
+
+                #if EMON_DEBUG
+                    Serial.printf("[EMON] ADS1X115 Config Registry: %04X\n", config);
+                #endif
 
                 // Write config register to the ADC
                 #if I2C_USE_BRZO
@@ -258,17 +265,20 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         double getCurrent(unsigned char channel) {
 
-            #if EMON_ADSX115_USE_I2CDEVLIB
+            #if EMON_ADS1X15_USE_I2CDEVLIB
                 _ads->setMultiplexer(channel + 4);
             #else
                 // Force stop by setting single mode and back to continuous
                 static unsigned char previous = 9;
                 if (previous != channel) {
-                    setChannel(previous, false);
-                    delay(50);
+                    setConfigRegistry(channel, true, false);
+                    setConfigRegistry(channel, false, false);
+                    setConfigRegistry(channel, false, true);
+                    delay(10);
+                    readADC(channel);
                     previous = channel;
                 }
-                setChannel(channel, true);
+                setConfigRegistry(channel, true, true);
             #endif
 
             return read(channel, _pivot[channel]);
@@ -279,7 +289,7 @@ class EmonADS1X15Sensor : public EmonSensor {
 
             unsigned int value = 0;
 
-            #if EMON_ADSX115_USE_I2CDEVLIB
+            #if EMON_ADS1X15_USE_I2CDEVLIB
                 value = _ads->getConversion();
 
             #elif I2C_USE_BRZO
@@ -309,7 +319,7 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         }
 
-        #if EMON_ADSX115_USE_I2CDEVLIB
+        #if EMON_ADS1X15_USE_I2CDEVLIB
             ADS1115 * _ads;
         #endif
 
