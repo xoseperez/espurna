@@ -153,7 +153,7 @@
 #endif
 
 #define COUNTER_REPORT_EVERY        12          // Report counter every this updates (1 minute)
-#define COUNTER_DEBOUNCE            10          // Do not register events within less than 10 millis
+#define COUNTER_DEBOUNCE            50          // Do not register events within less than 10 millis
 #define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
 
 //--------------------------------------------------------------------------------

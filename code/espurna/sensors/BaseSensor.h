@@ -49,7 +49,7 @@ class BaseSensor {
         ~BaseSensor() {}
 
         // General interrupt handler
-        void InterruptHandler() {}
+        virtual void InterruptHandler() {}
 
         // Loop-like method, call it in your main loop
         virtual void tick() {}

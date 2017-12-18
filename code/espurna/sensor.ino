@@ -88,7 +88,7 @@ String _sensorUnits(magnitude_t type) {
     if (type == MAGNITUDE_POWER_FACTOR) return String("%");
     if (type == MAGNITUDE_ENERGY) return String("J");
     if (type == MAGNITUDE_ENERGY_DELTA) return String("J");
-    if (type == MAGNITUDE_EVENTS) return String("/m");
+    if (type == MAGNITUDE_EVENTS) return String("/min");
     if (type == MAGNITUDE_PM1dot0) return String("µg/m3");
     if (type == MAGNITUDE_PM2dot5) return String("µg/m3");
     if (type == MAGNITUDE_PM10) return String("µg/m3");
@@ -186,12 +186,20 @@ void _sensorPost() {
 }
 
 // -----------------------------------------------------------------------------
+// Interrupts
+// -----------------------------------------------------------------------------
+#if COUNTER_SUPPORT
+
+unsigned char _event_sensor_id = 0;
+void isrEventSensor() {
+    _sensors[_event_sensor_id]->InterruptHandler();
+}
+
+#endif // COUNTER_SUPPORT
+
+// -----------------------------------------------------------------------------
 // Values
 // -----------------------------------------------------------------------------
-
-void sensorISR() {
-    _sensors[_sensor_isr]->InterruptHandler();
-}
 
 void sensorRegister(BaseSensor * sensor) {
     _sensors.push_back(sensor);
@@ -218,11 +226,6 @@ unsigned char magnitudeType(unsigned char index) {
         return int(_magnitudes[index].type);
     }
     return MAGNITUDE_NONE;
-}
-
-void sensorInterrupt(unsigned char sensor_id, unsigned char gpio, int mode) {
-    _sensor_isr = sensor_id;
-    attachInterrupt(gpio, sensorISR, mode);
 }
 
 void sensorInit() {
@@ -273,11 +276,10 @@ void sensorInit() {
     #endif
 
     #if COUNTER_SUPPORT
-        if (_sensor_isr == 0xFF) {
-            #include "sensors/EventSensor.h"
-            sensorRegister(new EventSensor(COUNTER_PIN, COUNTER_PIN_MODE, COUNTER_DEBOUNCE));
-            sensorInterrupt(sensorCount()-1, COUNTER_PIN, COUNTER_INTERRUPT_MODE);
-        }
+        #include "sensors/EventSensor.h"
+        sensorRegister(new EventSensor(COUNTER_PIN, COUNTER_PIN_MODE, COUNTER_DEBOUNCE));
+        _event_sensor_id = sensorCount() - 1;
+        attachInterrupt(COUNTER_PIN, isrEventSensor, COUNTER_INTERRUPT_MODE);
     #endif
 
 }
