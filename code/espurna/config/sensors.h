@@ -59,6 +59,24 @@
 #endif
 
 //--------------------------------------------------------------------------------
+// BME280
+// Enable support by passing BME280_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef BME280_SUPPORT
+#define BME280_SUPPORT              0
+#endif
+
+#ifndef BME280_ADDRESS
+#define BME280_ADDRESS              0x76
+#endif
+
+#define BME280_MODE                 1       // 1 for forced mode, 3 for normal mode
+#define BME280_TEMPERATURE          1       // Oversampling for temperature (set to 0 to disable magnitude)
+#define BME280_HUMIDITY             1       // Oversampling for humidity (set to 0 to disable magnitude)
+#define BME280_PRESSURE             1       // Oversampling for pressure (set to 0 to disable magnitude)
+
+//--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
 // Enable support by passing DS18B20_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -206,7 +224,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef PMSX003_SUPPORT
-#define PMSX003_SUPPORT                 1
+#define PMSX003_SUPPORT                 0
 #endif
 
 #define PMS_RX_PIN                      13

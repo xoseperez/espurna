@@ -78,10 +78,12 @@ template<typename T> bool idbSend(const char * topic, unsigned char id, T payloa
 #if DS18B20_SUPPORT
 #include <OneWire.h>
 #endif
-
 #if PMSX003_SUPPORT
 #include <SoftwareSerial.h>
 #include <PMS.h>
+#endif
+#if BME280_SUPPORT
+#include <SparkFunBME280.h>
 #endif
 
 // -----------------------------------------------------------------------------

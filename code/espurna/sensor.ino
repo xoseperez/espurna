@@ -242,6 +242,11 @@ void sensorInit() {
         sensorRegister(new SI7021Sensor(SI7021_ADDRESS));
     #endif
 
+    #if BME280_SUPPORT
+        #include "sensors/BME280Sensor.h"
+        sensorRegister(new BME280Sensor(BME280_ADDRESS));
+    #endif
+
     #if ANALOG_SUPPORT
         #include "sensors/AnalogSensor.h"
         sensorRegister(new AnalogSensor(ANALOG_PIN));
@@ -261,7 +266,7 @@ void sensorInit() {
         #include "sensors/EmonADS1X15Sensor.h"
         sensorRegister(new EmonADS1X15Sensor(EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_ADS1115, EMON_ADS1X15_PORT_MASK, EMON_MAINS_VOLTAGE, EMON_ADS1X15_ADC_BITS, EMON_ADS1X15_REFERENCE_VOLTAGE, EMON_ADS1X15_CURRENT_RATIO));
     #endif
-    
+
     #if PMSX003_SUPPORT
         #include "sensors/PMSX003Sensor.h"
         sensorRegister(new PMSX003Sensor(PMS_RX_PIN, PMS_TX_PIN));
