@@ -794,6 +794,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SENSOR_PM2dot5_TOPIC            "pm2dot5"
 #define SENSOR_PM10_TOPIC               "pm10"
 #define SENSOR_ANALOG_TOPIC             "analog"
+#define SENSOR_DIGITAL_TOPIC            "digital"
 #define SENSOR_EVENTS_TOPIC             "events"
 
 #define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)

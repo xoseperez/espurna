@@ -24,6 +24,7 @@ typedef enum magnitude_t {
     MAGNITUDE_POWER_FACTOR,
 
     MAGNITUDE_ANALOG,
+    MAGNITUDE_DIGITAL,
     MAGNITUDE_EVENTS,
 
     MAGNITUDE_PM1dot0,

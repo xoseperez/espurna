@@ -7,12 +7,13 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-class AnalogSensor : public BaseSensor {
+class DigitalSensor : public BaseSensor {
 
     public:
 
-        AnalogSensor(unsigned char gpio, int mode = INPUT): BaseSensor() {
+        DigitalSensor(unsigned char gpio, int mode = INPUT, bool default_state = false): BaseSensor() {
             _gpio = gpio;
+            _default = default_state;
             pinMode(_gpio, mode);
             _count = 1;
         }
@@ -20,7 +21,7 @@ class AnalogSensor : public BaseSensor {
         // Descriptive name of the sensor
         String name() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "ANALOG @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "DIGITAL @ GPIO%d", _gpio);
             return String(buffer);
         }
 
@@ -32,7 +33,7 @@ class AnalogSensor : public BaseSensor {
         // Type for slot # index
         magnitude_t type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
-            if (index == 0) return MAGNITUDE_ANALOG;
+            if (index == 0) return MAGNITUDE_DIGITAL;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
@@ -40,7 +41,7 @@ class AnalogSensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             _error = SENSOR_ERROR_OK;
-            if (index == 0) return analogRead(_gpio);
+            if (index == 0) return (digitalRead(_gpio) == _default) ? 0 : 1;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
@@ -49,5 +50,6 @@ class AnalogSensor : public BaseSensor {
     protected:
 
         unsigned char _gpio;
+        bool _default;
 
 };

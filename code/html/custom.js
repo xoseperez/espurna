@@ -28,22 +28,14 @@ function initMessages() {
 }
 
 function sensorType(type) {
-    if (type == 1) return "Temperature";
-    if (type == 2) return "Humidity";
-    if (type == 3) return "Pressure";
-    if (type == 4) return "Current";
-    if (type == 5) return "Voltage";
-    if (type == 6) return "Active Power";
-    if (type == 7) return "Apparent Power";
-    if (type == 8) return "Reactive Power";
-    if (type == 9) return "Energy";
-    if (type == 10) return "Energy (delta)";
-    if (type == 11) return "Power Factor";
-    if (type == 12) return "Analog";
-    if (type == 13) return "Events";
-    if (type == 14) return "PM1.0"
-    if (type == 15) return "PM2.5"
-    if (type == 16) return "PM10"
+    var types = [
+        "Temperature", "Humidity", "Pressure",
+        "Current", "Voltage", "Active Power", "Apparent Power",
+        "Reactive Power", "Energy", "Energy (delta)", "Power Factor",
+        "Analog", "Digital", "Events",
+        "PM1.0", "PM2.5", "PM10"
+    ];
+    if (1 <= type && type <= types.length) return types[type-1];
     return null;
 }
 
@@ -626,6 +618,8 @@ function rfbSend() {
 // -----------------------------------------------------------------------------
 
 function processData(data) {
+
+    console.log(data);
 
     // title
     if ("app_name" in data) {

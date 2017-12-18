@@ -7,6 +7,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <vector>
+#include "filters/MaxFilter.h"
 #include "filters/MedianFilter.h"
 #include "filters/MovingAverageFilter.h"
 #include "sensors/BaseSensor.h"
@@ -49,6 +50,7 @@ String _sensorTopic(magnitude_t type) {
     if (type == MAGNITUDE_ENERGY) return String(SENSOR_ENERGY_TOPIC);
     if (type == MAGNITUDE_ENERGY_DELTA) return String(SENSOR_ENERGY_DELTA_TOPIC);
     if (type == MAGNITUDE_ANALOG) return String(SENSOR_ANALOG_TOPIC);
+    if (type == MAGNITUDE_DIGITAL) return String(SENSOR_DIGITAL_TOPIC);
     if (type == MAGNITUDE_EVENTS) return String(SENSOR_EVENTS_TOPIC);
     if (type == MAGNITUDE_PM1dot0) return String(SENSOR_PM1dot0_TOPIC);
     if (type == MAGNITUDE_PM2dot5) return String(SENSOR_PM2dot5_TOPIC);
@@ -252,7 +254,12 @@ void sensorInit() {
 
     #if ANALOG_SUPPORT
         #include "sensors/AnalogSensor.h"
-        sensorRegister(new AnalogSensor(ANALOG_PIN));
+        sensorRegister(new AnalogSensor(ANALOG_PIN, ANALOG_PIN_MODE));
+    #endif
+
+    #if DIGITAL_SUPPORT
+        #include "sensors/DigitalSensor.h"
+        sensorRegister(new DigitalSensor(DIGITAL_PIN, DIGITAL_PIN_MODE, DIGITAL_DEFAULT_STATE));
     #endif
 
     #if EMON_ANALOG_SUPPORT
@@ -308,7 +315,9 @@ void sensorSetup() {
             new_magnitude.filtered = 0;
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
-            if (type == MAGNITUDE_EVENTS) {
+            if (type == MAGNITUDE_DIGITAL) {
+                new_magnitude.filter = new MaxFilter();
+            } else if (type == MAGNITUDE_EVENTS) {
                 new_magnitude.filter = new MovingAverageFilter(SENSOR_REPORT_EVERY);
             } else {
                 new_magnitude.filter = new MedianFilter();

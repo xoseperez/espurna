@@ -104,6 +104,28 @@
 #define DS18B20_RESOLUTION          9
 
 //--------------------------------------------------------------------------------
+// Digital sensor
+// Enable support by passing DIGITAL_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef DIGITAL_SUPPORT
+#define DIGITAL_SUPPORT             0
+#endif
+
+#ifndef DIGITAL_PIN
+#define DIGITAL_PIN                 2
+#endif
+
+#ifndef DIGITAL_PIN_MODE
+#define DIGITAL_PIN_MODE            INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL_DEFAULT_STATE
+#define DIGITAL_DEFAULT_STATE       1
+#endif
+
+
+//--------------------------------------------------------------------------------
 // Analog sensor
 // Enable support by passing ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -116,11 +138,9 @@
 #define ANALOG_PIN                  0
 #endif
 
-#ifndef ANALOG_UPDATE_INTERVAL
-#define ANALOG_UPDATE_INTERVAL      60000
+#ifndef ANALOG_PIN_MODE
+#define ANALOG_PIN_MODE             INPUT
 #endif
-
-#define ANALOG_TOPIC                "analog"
 
 #if ANALOG_SUPPORT
     #undef ADC_VCC_ENABLED
@@ -148,13 +168,7 @@
 #define COUNTER_INTERRUPT_MODE      RISING      // RISING, FALLING, BOTH
 #endif
 
-#ifndef COUNTER_UPDATE_INTERVAL
-#define COUNTER_UPDATE_INTERVAL     5000        // Update counter every this millis
-#endif
-
-#define COUNTER_REPORT_EVERY        12          // Report counter every this updates (1 minute)
 #define COUNTER_DEBOUNCE            50          // Do not register events within less than 10 millis
-#define COUNTER_TOPIC               "counter"   // Default topic for MQTT, API and InfluxDB
 
 //--------------------------------------------------------------------------------
 // Energy Monitor
