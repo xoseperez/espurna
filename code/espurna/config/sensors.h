@@ -7,10 +7,21 @@
 #define SENSOR_USE_INDEX                0               // Use the index in topic (i.e. temperature/0)
                                                         // even if just one sensor (0 for backwards compatibility)
 
+#ifndef SENSOR_TEMPERATURE_UNITS
 #define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#endif
+
+#ifndef SENSOR_TEMPERATURE_CORRECTION
 #define SENSOR_TEMPERATURE_CORRECTION   0.0             // Offset correction
+#endif
+
+#ifndef TEMPERATURE_MIN_CHANGE
 #define TEMPERATURE_MIN_CHANGE          0.0             // Minimum temperature change to report
+#endif
+
+#ifndef HUMIDITY_MIN_CHANGE
 #define HUMIDITY_MIN_CHANGE             0               // Minimum humidity change to report
+#endif
 
 #define SENSOR_TEMPERATURE_DECIMALS     1
 #define SENSOR_HUMIDITY_DECIMALS        0
@@ -68,13 +79,6 @@
 #define DHT_PULLUP                  0
 #endif
 
-#ifndef DHT_UPDATE_INTERVAL
-#define DHT_UPDATE_INTERVAL         60000
-#endif
-
-#define DHT_TEMPERATURE_TOPIC       "temperature"
-#define DHT_HUMIDITY_TOPIC          "humidity"
-
 #define HUMIDITY_NORMAL             0
 #define HUMIDITY_COMFORTABLE        1
 #define HUMIDITY_DRY                2
@@ -113,30 +117,22 @@
 
 //--------------------------------------------------------------------------------
 // DS18B20 temperature sensor
-// Enable support by passing DS18B20_SUPPORT=1 build flag
+// Enable support by passing DALLAS_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
-#ifndef DS18B20_SUPPORT
-#define DS18B20_SUPPORT             0
+#ifndef DALLAS_SUPPORT
+#define DALLAS_SUPPORT             0
 #endif
 
-#ifndef DS18B20_PIN
-#define DS18B20_PIN                 13
+#ifndef DALLAS_PIN
+#define DALLAS_PIN                 13
 #endif
 
-#ifndef DS18B20_PULLUP
-#define DS18B20_PULLUP              1
+#ifndef DALLAS_PULLUP
+#define DALLAS_PULLUP              1
 #endif
 
-#ifndef DS18B20_UPDATE_INTERVAL
-#define DS18B20_UPDATE_INTERVAL     60000
-#endif
-
-#ifndef DS18B20_TEMPERATURE_TOPIC
-#define DS18B20_TEMPERATURE_TOPIC   "temperature"
-#endif
-
-#define DS18B20_RESOLUTION          9
+#define DALLAS_RESOLUTION          9        // Not used atm
 
 //--------------------------------------------------------------------------------
 // Digital sensor
@@ -184,38 +180,38 @@
 
 //--------------------------------------------------------------------------------
 // Counter sensor
-// Enable support by passing COUNTER_SUPPORT=1 build flag
+// Enable support by passing EVENTS_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
-#ifndef COUNTER_SUPPORT
-#define COUNTER_SUPPORT             0           // Do not build with counter support by default
+#ifndef EVENTS_SUPPORT
+#define EVENTS_SUPPORT             0           // Do not build with counter support by default
 #endif
 
-#ifndef COUNTER_PIN
-#define COUNTER_PIN                 2           // GPIO to monitor
+#ifndef EVENTS_PIN
+#define EVENTS_PIN                 2           // GPIO to monitor
 #endif
 
-#ifndef COUNTER_PIN_MODE
-#define COUNTER_PIN_MODE            INPUT       // INPUT, INPUT_PULLUP
+#ifndef EVENTS_PIN_MODE
+#define EVENTS_PIN_MODE            INPUT       // INPUT, INPUT_PULLUP
 #endif
 
-#ifndef COUNTER_INTERRUPT_MODE
-#define COUNTER_INTERRUPT_MODE      RISING      // RISING, FALLING, BOTH
+#ifndef EVENTS_INTERRUPT_MODE
+#define EVENTS_INTERRUPT_MODE      RISING      // RISING, FALLING, BOTH
 #endif
 
-#define COUNTER_DEBOUNCE            50          // Do not register events within less than 10 millis
+#define EVENTS_DEBOUNCE            50          // Do not register events within less than 10 millis
 
 //--------------------------------------------------------------------------------
-// Energy Monitor
+// Energy Monitor general settings
 //--------------------------------------------------------------------------------
 
 #define EMON_MAX_SAMPLES            1000        // Max number of samples to get
 #define EMON_MAX_TIME               250         // Max time in ms to sample
 #define EMON_FILTER_SPEED           512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE          230         // Mains voltage
-#define EMON_REPORT_CURRENT         0           // Calculate current
-#define EMON_REPORT_POWER           1           // Calculate power
-#define EMON_REPORT_ENERGY          1           // Calculate energy
+#define EMON_REPORT_CURRENT         0           // Report current
+#define EMON_REPORT_POWER           1           // Report power
+#define EMON_REPORT_ENERGY          1           // Report energy
 
 //--------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO

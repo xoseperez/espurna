@@ -146,12 +146,6 @@ void welcome() {
     #if ALEXA_SUPPORT
         DEBUG_MSG_P(PSTR(" ALEXA"));
     #endif
-    #if ANALOG_SUPPORT
-        DEBUG_MSG_P(PSTR(" ANALOG"));
-    #endif
-    #if COUNTER_SUPPORT
-        DEBUG_MSG_P(PSTR(" COUNTER"));
-    #endif
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
     #endif
@@ -161,14 +155,8 @@ void welcome() {
     #if DEBUG_UDP_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
     #endif
-    #if DHT_SUPPORT
-        DEBUG_MSG_P(PSTR(" DHT"));
-    #endif
     #if DOMOTICZ_SUPPORT
         DEBUG_MSG_P(PSTR(" DOMOTICZ"));
-    #endif
-    #if DS18B20_SUPPORT
-        DEBUG_MSG_P(PSTR(" DS18B20"));
     #endif
     #if HOMEASSISTANT_SUPPORT
         DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
@@ -208,6 +196,45 @@ void welcome() {
     #endif
     #if WEB_SUPPORT
         DEBUG_MSG_P(PSTR(" WEB"));
+    #endif
+
+    DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
+
+    #if ANALOG_SUPPORT
+        DEBUG_MSG_P(PSTR(" ANALOG"));
+    #endif
+    #if BMX280_SUPPORT
+        DEBUG_MSG_P(PSTR(" BMX280"));
+    #endif
+    #if DALLAS_SUPPORT
+        DEBUG_MSG_P(PSTR(" DALLAS"));
+    #endif
+    #if DHT_SUPPORT
+        DEBUG_MSG_P(PSTR(" DHTXX"));
+    #endif
+    #if DIGITAL_SUPPORT
+        DEBUG_MSG_P(PSTR(" DIGITAL"));
+    #endif
+    #if EMON_ADC121_SUPPORT
+        DEBUG_MSG_P(PSTR(" EMON_ADC121"));
+    #endif
+    #if EMON_ADS1X15_SUPPORT
+        DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
+    #endif
+    #if EMON_ANALOG_SUPPORT
+        DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
+    #endif
+    #if EVENTS_SUPPORT
+        DEBUG_MSG_P(PSTR(" EVENTS"));
+    #endif
+    #if MHZ19_SUPPORT
+        DEBUG_MSG_P(PSTR(" MHZ19"));
+    #endif
+    #if PMSX003_SUPPORT
+        DEBUG_MSG_P(PSTR(" PMSX003"));
+    #endif
+    #if SI7021_SUPPORT
+        DEBUG_MSG_P(PSTR(" SI7021"));
     #endif
 
     DEBUG_MSG_P(PSTR("\n\n"));

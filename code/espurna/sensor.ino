@@ -31,7 +31,6 @@ unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
-unsigned char _sensor_isr = 0xFF;
 
 // -----------------------------------------------------------------------------
 // Private
@@ -193,14 +192,14 @@ void _sensorPost() {
 // -----------------------------------------------------------------------------
 // Interrupts
 // -----------------------------------------------------------------------------
-#if COUNTER_SUPPORT
+#if EVENTS_SUPPORT
 
 unsigned char _event_sensor_id = 0;
 void isrEventSensor() {
     _sensors[_event_sensor_id]->InterruptHandler();
 }
 
-#endif // COUNTER_SUPPORT
+#endif // EVENTS_SUPPORT
 
 // -----------------------------------------------------------------------------
 // Values
@@ -240,9 +239,9 @@ void sensorInit() {
         sensorRegister(new DHTSensor(DHT_PIN, DHT_TYPE, DHT_PULLUP));
     #endif
 
-    #if DS18B20_SUPPORT
+    #if DALLAS_SUPPORT
         #include "sensors/DallasSensor.h"
-        sensorRegister(new DallasSensor(DS18B20_PIN, SENSOR_READ_INTERVAL, DS18B20_PULLUP));
+        sensorRegister(new DallasSensor(DALLAS_PIN, SENSOR_READ_INTERVAL, DALLAS_PULLUP));
     #endif
 
     #if SI7021_SUPPORT
@@ -290,11 +289,11 @@ void sensorInit() {
         sensorRegister(new MHZ19Sensor(MHZ19_RX_PIN, MHZ19_TX_PIN));
     #endif
 
-    #if COUNTER_SUPPORT
+    #if EVENTS_SUPPORT
         #include "sensors/EventSensor.h"
-        sensorRegister(new EventSensor(COUNTER_PIN, COUNTER_PIN_MODE, COUNTER_DEBOUNCE));
+        sensorRegister(new EventSensor(EVENTS_PIN, EVENTS_PIN_MODE, EVENTS_DEBOUNCE));
         _event_sensor_id = sensorCount() - 1;
-        attachInterrupt(COUNTER_PIN, isrEventSensor, COUNTER_INTERRUPT_MODE);
+        attachInterrupt(EVENTS_PIN, isrEventSensor, EVENTS_INTERRUPT_MODE);
     #endif
 
 }

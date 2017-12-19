@@ -1076,9 +1076,9 @@
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // DB18B20
-    #define DS18B20_SUPPORT             1
-    #define DS18B20_PIN                 2
-    #define DS18B20_UPDATE_INTERVAL     5000
+    #define DALLAS_SUPPORT             	1
+    #define DALLAS_PIN                 	2
+    #define DALLAS_UPDATE_INTERVAL     	5000
     #define TEMPERATURE_MIN_CHANGE      1.0
 
 // -----------------------------------------------------------------------------

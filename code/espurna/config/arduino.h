@@ -60,14 +60,10 @@
 //--------------------------------------------------------------------------------
 
 //#define ALEXA_SUPPORT          0
-//#define ANALOG_SUPPORT         1
-//#define COUNTER_SUPPORT        1
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
-//#define DHT_SUPPORT            1
 //#define DOMOTICZ_SUPPORT       0
-//#define DS18B20_SUPPORT        1
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       0
@@ -81,3 +77,20 @@
 //#define TELNET_SUPPORT         0
 //#define TERMINAL_SUPPORT       0
 //#define WEB_SUPPORT            0
+
+//--------------------------------------------------------------------------------
+// Sensors (values below are non-default values)
+//--------------------------------------------------------------------------------
+
+//#define ANALOG_SUPPORT         1
+//#define BMX280_SUPPORT         1
+//#define DALLAS_SUPPORT         1
+//#define DHT_SUPPORT            1
+//#define DIGITAL_SUPPORT        1
+//#define EMON_ADC121_SUPPORT    1
+//#define EMON_ADS1X15_SUPPORT   1
+//#define EMON_ANALOG_SUPPORT    1
+//#define EVENTS_SUPPORT         1
+//#define MHZ19_SUPPORT          1
+//#define PMSX003_SUPPORT        1
+//#define SI7021_SUPPORT         1
