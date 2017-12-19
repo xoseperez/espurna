@@ -29,17 +29,29 @@ class DallasSensor : public BaseSensor {
 
     public:
 
-        DallasSensor(unsigned char gpio, unsigned long interval, bool pull_up = false): BaseSensor() {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache params
+        void setGPIO(unsigned char gpio, bool pullup = false) {
             _gpio = gpio;
-            _interval = interval / 2;
+            _interval = SENSOR_READ_INTERVAL / 2;
+            _pullup = pullup;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
 
             // OneWire
+            if (_wire) delete _wire;
             _wire = new OneWire(_gpio);
 
             // Must be done after the OneWire initialization
-            if (pull_up) pinMode(_gpio, INPUT_PULLUP);
+            if (_pullup) pinMode(_gpio, INPUT_PULLUP);
 
             // Search devices
             loadDevices();
@@ -194,6 +206,10 @@ class DallasSensor : public BaseSensor {
 
     protected:
 
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
+
         unsigned char chip(unsigned char index) {
             if (index < _count) return _devices[index].address[0];
             return 0;
@@ -234,6 +250,7 @@ class DallasSensor : public BaseSensor {
 
         unsigned char _gpio;
         unsigned long _interval;
+        bool _pullup;
         OneWire * _wire;
 
 };

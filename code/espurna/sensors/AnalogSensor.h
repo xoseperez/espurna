@@ -12,11 +12,22 @@ class AnalogSensor : public BaseSensor {
 
     public:
 
-        AnalogSensor(unsigned char gpio, int mode = INPUT): BaseSensor() {
-            _gpio = gpio;
-            pinMode(_gpio, mode);
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
+
+        AnalogSensor(): BaseSensor() {
             _count = 1;
         }
+
+        void setGPIO(unsigned char gpio, unsigned char mode = INPUT) {
+            _gpio = gpio;
+            pinMode(_gpio, mode);
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
 
         // Descriptive name of the sensor
         String name() {
@@ -48,6 +59,10 @@ class AnalogSensor : public BaseSensor {
 
 
     protected:
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
 
         unsigned char _gpio;
 

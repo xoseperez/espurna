@@ -58,6 +58,9 @@ class BaseSensor {
         // General interrupt handler
         virtual void InterruptHandler() {}
 
+        // Initialization method, must be idempotent
+        virtual void begin() {}
+
         // Loop-like method, call it in your main loop
         virtual void tick() {}
 

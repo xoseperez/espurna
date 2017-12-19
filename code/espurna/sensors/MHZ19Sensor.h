@@ -25,15 +25,29 @@ class MHZ19Sensor : public BaseSensor {
 
     public:
 
-        MHZ19Sensor(int pin_rx = MHZ19_RX_PIN, int pin_tx = MHZ19_TX_PIN): BaseSensor() {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache
+        MHZ19Sensor(): BaseSensor() {
+            _count = 1;
+        }
+
+        void setGPIO(unsigned char pin_rx, unsigned char pin_tx) {
             _pin_rx = pin_rx;
             _pin_tx = pin_tx;
-            _count = 1;
+        }
 
-            // Init
-            _serial = new SoftwareSerial(pin_rx, pin_tx, false, 256);
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            if (_serial) delete _serial;
+
+            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 256);
             _serial->begin(9600);
             calibrateAuto(false);
 
@@ -91,6 +105,10 @@ class MHZ19Sensor : public BaseSensor {
         }
 
     protected:
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
 
         void _write(unsigned char * command) {
             _serial->write(command, MHZ19_REQUEST_LEN);

@@ -12,19 +12,33 @@ class EventSensor : public BaseSensor {
 
     public:
 
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
+
+        EventSensor(): BaseSensor() {
+            _count = 1;
+        }
+
+        void setGPIO(unsigned char gpio, int mode = INPUT) {
+            _gpio = gpio;
+            pinMode(_gpio, mode);
+        }
+
+        void setDebounceTime(unsigned long debounce) {
+            _debounce = debounce;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensors API
+        // ---------------------------------------------------------------------
+
         void InterruptHandler() {
             static unsigned long last = 0;
             if (millis() - last > _debounce) {
                 _events = _events + 1;
                 last = millis();
             }
-        }
-
-        EventSensor(unsigned char gpio, int pin_mode, unsigned long debounce): BaseSensor() {
-            _gpio = gpio;
-            _count = 1;
-            _debounce = debounce;
-            pinMode(_gpio, pin_mode);
         }
 
         // Descriptive name of the sensor
@@ -61,6 +75,10 @@ class EventSensor : public BaseSensor {
 
 
     protected:
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
 
         volatile unsigned long _events = 0;
         unsigned long _debounce = 0;

@@ -58,103 +58,10 @@
 #define SENSOR_EVENTS_TOPIC             "events"
 #define SENSOR_CO2_TOPIC                "co2"
 
-//--------------------------------------------------------------------------------
-// DHTXX temperature/humidity sensor
-// Enable support by passing DHT_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef DHT_SUPPORT
-#define DHT_SUPPORT                 0
-#endif
-
-#ifndef DHT_PIN
-#define DHT_PIN                     14
-#endif
-
-#ifndef DHT_TYPE
-#define DHT_TYPE                    DHT22
-#endif
-
-#ifndef DHT_PULLUP
-#define DHT_PULLUP                  0
-#endif
-
-#define HUMIDITY_NORMAL             0
-#define HUMIDITY_COMFORTABLE        1
-#define HUMIDITY_DRY                2
-#define HUMIDITY_WET                3
-
-//--------------------------------------------------------------------------------
-// SI7021 temperature & humidity sensor
-// Enable support by passing SI7021_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef SI7021_SUPPORT
-#define SI7021_SUPPORT              0
-#endif
-
-#ifndef SI7021_ADDRESS
-#define SI7021_ADDRESS              0x40
-#endif
-
-//--------------------------------------------------------------------------------
-// BMX280
-// Enable support by passing BMX280_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef BMX280_SUPPORT
-#define BMX280_SUPPORT              0
-#endif
-
-#ifndef BMX280_ADDRESS
-#define BMX280_ADDRESS              0x76
-#endif
-
-#define BMX280_MODE                 1       // 1 for forced mode, 3 for normal mode
-#define BMX280_TEMPERATURE          1       // Oversampling for temperature (set to 0 to disable magnitude)
-#define BMX280_HUMIDITY             1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
-#define BMX280_PRESSURE             1       // Oversampling for pressure (set to 0 to disable magnitude)
-
-//--------------------------------------------------------------------------------
-// DS18B20 temperature sensor
-// Enable support by passing DALLAS_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef DALLAS_SUPPORT
-#define DALLAS_SUPPORT             0
-#endif
-
-#ifndef DALLAS_PIN
-#define DALLAS_PIN                 13
-#endif
-
-#ifndef DALLAS_PULLUP
-#define DALLAS_PULLUP              1
-#endif
-
-#define DALLAS_RESOLUTION          9        // Not used atm
-
-//--------------------------------------------------------------------------------
-// Digital sensor
-// Enable support by passing DIGITAL_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef DIGITAL_SUPPORT
-#define DIGITAL_SUPPORT             0
-#endif
-
-#ifndef DIGITAL_PIN
-#define DIGITAL_PIN                 2
-#endif
-
-#ifndef DIGITAL_PIN_MODE
-#define DIGITAL_PIN_MODE            INPUT_PULLUP
-#endif
-
-#ifndef DIGITAL_DEFAULT_STATE
-#define DIGITAL_DEFAULT_STATE       1
-#endif
-
+#define HUMIDITY_NORMAL                 0
+#define HUMIDITY_COMFORTABLE            1
+#define HUMIDITY_DRY                    2
+#define HUMIDITY_WET                    3
 
 //--------------------------------------------------------------------------------
 // Analog sensor
@@ -162,74 +69,110 @@
 //--------------------------------------------------------------------------------
 
 #ifndef ANALOG_SUPPORT
-#define ANALOG_SUPPORT              0
+#define ANALOG_SUPPORT                  0
 #endif
 
 #ifndef ANALOG_PIN
-#define ANALOG_PIN                  0
+#define ANALOG_PIN                      0
 #endif
 
 #ifndef ANALOG_PIN_MODE
-#define ANALOG_PIN_MODE             INPUT
+#define ANALOG_PIN_MODE                 INPUT
 #endif
 
 #if ANALOG_SUPPORT
     #undef ADC_VCC_ENABLED
-    #define ADC_VCC_ENABLED         0
+    #define ADC_VCC_ENABLED             0
 #endif
 
 //--------------------------------------------------------------------------------
-// Counter sensor
-// Enable support by passing EVENTS_SUPPORT=1 build flag
+// BME280/BMP280
+// Enable support by passing BMX280_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
-#ifndef EVENTS_SUPPORT
-#define EVENTS_SUPPORT             0           // Do not build with counter support by default
+#ifndef BMX280_SUPPORT
+#define BMX280_SUPPORT                  0
 #endif
 
-#ifndef EVENTS_PIN
-#define EVENTS_PIN                 2           // GPIO to monitor
+#ifndef BMX280_ADDRESS
+#define BMX280_ADDRESS                  0
 #endif
 
-#ifndef EVENTS_PIN_MODE
-#define EVENTS_PIN_MODE            INPUT       // INPUT, INPUT_PULLUP
+#define BMX280_MODE                     1       // 1 for forced mode, 3 for normal mode
+#define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
+#define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
+#define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
+
+//--------------------------------------------------------------------------------
+// Dallas OneWire temperature sensors
+// Enable support by passing DALLAS_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef DALLAS_SUPPORT
+#define DALLAS_SUPPORT                  0
 #endif
 
-#ifndef EVENTS_INTERRUPT_MODE
-#define EVENTS_INTERRUPT_MODE      RISING      // RISING, FALLING, BOTH
+#ifndef DALLAS_PIN
+#define DALLAS_PIN                      13
 #endif
 
-#define EVENTS_DEBOUNCE            50          // Do not register events within less than 10 millis
+#ifndef DALLAS_PULLUP
+#define DALLAS_PULLUP                   1
+#endif
+
+#define DALLAS_RESOLUTION               9        // Not used atm
+
+//--------------------------------------------------------------------------------
+// DHTXX temperature/humidity sensor
+// Enable support by passing DHT_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef DHT_SUPPORT
+#define DHT_SUPPORT                     0
+#endif
+
+#ifndef DHT_PIN
+#define DHT_PIN                         13
+#endif
+
+#ifndef DHT_TYPE
+#define DHT_TYPE                        DHT22
+#endif
+
+//--------------------------------------------------------------------------------
+// Digital sensor
+// Enable support by passing DIGITAL_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef DIGITAL_SUPPORT
+#define DIGITAL_SUPPORT                 0
+#endif
+
+#ifndef DIGITAL_PIN
+#define DIGITAL_PIN                     2
+#endif
+
+#ifndef DIGITAL_PIN_MODE
+#define DIGITAL_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL_DEFAULT_STATE
+#define DIGITAL_DEFAULT_STATE           1
+#endif
 
 //--------------------------------------------------------------------------------
 // Energy Monitor general settings
 //--------------------------------------------------------------------------------
 
-#define EMON_MAX_SAMPLES            1000        // Max number of samples to get
-#define EMON_MAX_TIME               250         // Max time in ms to sample
-#define EMON_FILTER_SPEED           512         // Mobile average filter speed
-#define EMON_MAINS_VOLTAGE          230         // Mains voltage
-#define EMON_REPORT_CURRENT         0           // Report current
-#define EMON_REPORT_POWER           1           // Report power
-#define EMON_REPORT_ENERGY          1           // Report energy
-
-//--------------------------------------------------------------------------------
-// Energy Monitor based on interval analog GPIO
-// Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
-
-#ifndef EMON_ANALOG_SUPPORT
-#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
-#endif
-
-#define EMON_ANALOG_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
-#define EMON_ANALOG_ADC_BITS            10      // ADC depth
-#define EMON_ANALOG_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
-
-#if EMON_ANALOG_SUPPORT
-    #undef ADC_VCC_ENABLED
-    #define ADC_VCC_ENABLED             0
-#endif
+#define EMON_MAX_SAMPLES                1000        // Max number of samples to get
+#define EMON_MAX_TIME                   250         // Max time in ms to sample
+#define EMON_FILTER_SPEED               512         // Mobile average filter speed
+#define EMON_MAINS_VOLTAGE              230         // Mains voltage
+#define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
+#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30V/1A)
+#define EMON_REPORT_CURRENT             0           // Report current
+#define EMON_REPORT_POWER               1           // Report power
+#define EMON_REPORT_ENERGY              1           // Report energy
 
 //--------------------------------------------------------------------------------
 // Energy Monitor based on ADC121
@@ -242,10 +185,6 @@
 
 #define EMON_ADC121_I2C_ADDRESS         0x50    // I2C address of the ADC121
 
-#define EMON_ADC121_CURRENT_RATIO       30      // Current ratio in the clamp (30V/1A)
-#define EMON_ADC121_ADC_BITS            12      // ADC depth
-#define EMON_ADC121_REFERENCE_VOLTAGE   3.3     // Reference voltage of the ADC
-
 //--------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
 // Enable support by passing EMON_ADS1X15_SUPPORT=1 build flag
@@ -255,13 +194,59 @@
 #define EMON_ADS1X15_SUPPORT            0       // Do not build support by default
 #endif
 
-#define EMON_ADS1X15_ADS1115            1       // 0 for ADS10115, 1 for ADS1115
-#define EMON_ADS1X15_PORT_MASK          0x08    // A0=1 A1=2 A2=4 A4=8
 #define EMON_ADS1X15_I2C_ADDRESS        0x48    // I2C address of the ADS1115
+#define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
+#define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
+#define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A4=8
 
-#define EMON_ADS1X15_CURRENT_RATIO      30      // Current ratio in the clamp (30V/1A)
-#define EMON_ADS1X15_ADC_BITS           16      // ADC depth
-#define EMON_ADS1X15_REFERENCE_VOLTAGE  8.192   // Double the gain for peak-to-peak
+//--------------------------------------------------------------------------------
+// Energy Monitor based on interval analog GPIO
+// Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef EMON_ANALOG_SUPPORT
+#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
+#endif
+
+#if EMON_ANALOG_SUPPORT
+    #undef ADC_VCC_ENABLED
+    #define ADC_VCC_ENABLED             0
+#endif
+
+//--------------------------------------------------------------------------------
+// Counter sensor
+// Enable support by passing EVENTS_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef EVENTS_SUPPORT
+#define EVENTS_SUPPORT                  0       // Do not build with counter support by default
+#endif
+
+#ifndef EVENTS_PIN
+#define EVENTS_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS_PIN_MODE
+#define EVENTS_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS_INTERRUPT_MODE
+#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#endif
+
+#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
+
+//--------------------------------------------------------------------------------
+// MHZ19 CO2 sensor
+// Enable support by passing MHZ19_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef MHZ19_SUPPORT
+#define MHZ19_SUPPORT                   0
+#endif
+
+#define MHZ19_RX_PIN                    13
+#define MHZ19_TX_PIN                    15
 
 //--------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMSX003
@@ -276,16 +261,17 @@
 #define PMS_TX_PIN                      15
 
 //--------------------------------------------------------------------------------
-// MHZ19 CO2 sensor
-// Enable support by passing MHZ19_SUPPORT=1 build flag
+// SI7021 temperature & humidity sensor
+// Enable support by passing SI7021_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
-#ifndef MHZ19_SUPPORT
-#define MHZ19_SUPPORT                   0
+#ifndef SI7021_SUPPORT
+#define SI7021_SUPPORT                  1
 #endif
 
-#define MHZ19_RX_PIN                    13
-#define MHZ19_TX_PIN                    15
+#ifndef SI7021_ADDRESS
+#define SI7021_ADDRESS                  0x40
+#endif
 
 //--------------------------------------------------------------------------------
 // Internal power montior

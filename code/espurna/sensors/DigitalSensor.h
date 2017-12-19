@@ -12,12 +12,26 @@ class DigitalSensor : public BaseSensor {
 
     public:
 
-        DigitalSensor(unsigned char gpio, int mode = INPUT, bool default_state = false): BaseSensor() {
-            _gpio = gpio;
-            _default = default_state;
-            pinMode(_gpio, mode);
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
+
+        DigitalSensor(): BaseSensor() {
             _count = 1;
         }
+
+        void setGPIO(unsigned char gpio, int mode = INPUT) {
+            _gpio = gpio;
+            pinMode(_gpio, mode);
+        }
+
+        void setDefault(bool value) {
+            _default = value;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
 
         // Descriptive name of the sensor
         String name() {
@@ -50,7 +64,11 @@ class DigitalSensor : public BaseSensor {
 
     protected:
 
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
+
         unsigned char _gpio;
-        bool _default;
+        bool _default = false;
 
 };

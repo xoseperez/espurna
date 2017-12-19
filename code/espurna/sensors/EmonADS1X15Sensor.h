@@ -17,6 +17,11 @@
 
 #define ADS1X15_CHANNELS                (4)
 
+#define ADS1X15_CHIP_ADS1015            (0)
+#define ADS1X15_CHIP_ADS1115            (1)
+
+#define ADS1X15_RESOLUTION              (16)
+
 #define ADS1015_CONVERSIONDELAY         (1)
 #define ADS1115_CONVERSIONDELAY         (8)
 
@@ -96,20 +101,67 @@ class EmonADS1X15Sensor : public EmonSensor {
 
     public:
 
-        EmonADS1X15Sensor(unsigned char address, bool is_ads1115, unsigned char mask, double voltage, unsigned char bits, double ref, double ratio): EmonSensor(voltage, bits, ref, ratio) {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache
-            _is_ads1115 = is_ads1115;
+        void setAddress(unsigned char address) {
             _address = address;
+        }
+
+        void setType(unsigned char type) {
+            _type = type;
+        }
+
+        void setMask(unsigned char mask) {
             _mask = mask;
+        }
+
+        void setGain(unsigned int gain) {
+            _gain = gain;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            // Discover
+            if (_address == 0) {
+                unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};
+                _address = i2cFindFirst(4, addresses);
+            }
+            if (_address == 0) {
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+                return;
+            }
+
+            // Calculate ports
             _ports = 0;
+            unsigned char mask = _mask;
             while (mask) {
                 if (mask & 0x01) ++_ports;
                 mask = mask >> 1;
             }
             _count = _ports * _magnitudes;
 
-            // warmup
+            // Bit depth
+            _resolution = ADS1X15_RESOLUTION;
+
+            // Reference based on gain
+            if (_gain == ADS1X15_REG_CONFIG_PGA_6_144V) _reference = 12.288;
+            if (_gain == ADS1X15_REG_CONFIG_PGA_4_096V) _reference = 8.192;
+            if (_gain == ADS1X15_REG_CONFIG_PGA_2_048V) _reference = 4.096;
+            if (_gain == ADS1X15_REG_CONFIG_PGA_1_024V) _reference = 2.048;
+            if (_gain == ADS1X15_REG_CONFIG_PGA_0_512V) _reference = 1.024;
+            if (_gain == ADS1X15_REG_CONFIG_PGA_0_256V) _reference = 0.512;
+
+            // Call the parent class method
+            EmonSensor::begin();
+
+            // warmup all channels
             warmup();
 
         }
@@ -117,7 +169,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Descriptive name of the sensor
         String name() {
             char buffer[30];
-            snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 @ I2C (0x%02X)", _is_ads1115 ? 1 : 0, _address);
+            snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, _address);
             return String(buffer);
         }
 
@@ -125,7 +177,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         String slot(unsigned char index) {
             char buffer[35];
             unsigned char channel = getChannel(index % _ports);
-            snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 (A%d) @ I2C (0x%02X)", _is_ads1115 ? 1 : 0, channel, _address);
+            snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 (A%d) @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, channel, _address);
             return String(buffer);
         }
 
@@ -190,6 +242,10 @@ class EmonADS1X15Sensor : public EmonSensor {
 
     protected:
 
+        //----------------------------------------------------------------------
+        // Protected
+        //----------------------------------------------------------------------
+
         unsigned char getChannel(unsigned char port) {
             unsigned char count = 0;
             unsigned char bit = 1;
@@ -206,6 +262,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         void warmup() {
             for (unsigned char port=0; port<_ports; port++) {
                 unsigned char channel = getChannel(port);
+                _pivot[channel] = _adc_counts >> 1;
                 getCurrent(channel);
             }
         }
@@ -218,7 +275,7 @@ class EmonADS1X15Sensor : public EmonSensor {
 
             // Start with default values
             uint16_t config = 0;
-            config |= ADS1X15_REG_CONFIG_PGA_4_096V;        // Set PGA/voltage range (0x0200)
+            config |= _gain;                                // Set PGA/voltage range (0x0200)
             config |= ADS1X15_REG_CONFIG_DR_MASK;           // Always at max speed (0x00E0)
             //config |= ADS1X15_REG_CONFIG_CMODE_TRAD;        // Traditional comparator (default val) (0x0000)
             //config |= ADS1X15_REG_CONFIG_CPOL_ACTVLOW;      // Alert/Rdy active low   (default val) (0x0000)
@@ -298,7 +355,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 value |= Wire.read();
             #endif
 
-            if (!_is_ads1115) value >>= ADS1015_BIT_SHIFT;
+            if (_type = ADS1X15_CHIP_ADS1015) value >>= ADS1015_BIT_SHIFT;
 
             delayMicroseconds(500);
 
@@ -306,9 +363,10 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         }
 
-        bool _is_ads1115 = true;
         unsigned char _address;
-        unsigned char _mask;
+        unsigned char _type = ADS1X15_CHIP_ADS1115;
+        unsigned char _mask = 0x0F;
+        unsigned int _gain = ADS1X15_REG_CONFIG_PGA_4_096V;
         unsigned char _ports;
         double _pivot[ADS1X15_CHANNELS] = {0};
         double _current[ADS1X15_CHANNELS] = {0};

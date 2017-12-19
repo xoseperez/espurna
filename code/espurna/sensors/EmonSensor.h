@@ -14,12 +14,11 @@ class EmonSensor : public BaseSensor {
 
     public:
 
-        EmonSensor(double voltage, unsigned char bits, double ref, double ratio): BaseSensor() {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache
-            _voltage = voltage;
-            _adc_counts = 1 << bits;
-
+        EmonSensor(): BaseSensor() {
             #if EMON_REPORT_CURRENT
                 ++_magnitudes;
             #endif
@@ -29,12 +28,42 @@ class EmonSensor : public BaseSensor {
             #if EMON_REPORT_ENERGY
                 ++_magnitudes;
             #endif
+        }
+
+        void setVoltage(double voltage) {
+            _voltage = voltage;
+        }
+
+        void setReference(double ref) {
+            _reference = ref;
+        }
+
+        void setCurrentRatio(double ratio) {
+            _current_ratio = ratio;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        void begin() {
+
+            // Resolution
+            _adc_counts = 1 << _resolution;
 
             // Calculate factor
-            _current_factor = ratio * ref / _adc_counts;
+            _current_factor = _current_ratio * _reference / _adc_counts;
 
             // Calculate multiplier
-            calculateMultiplier();
+            unsigned int s = 1;
+            unsigned int i = 1;
+            unsigned int m = s * i;
+            while (m * _current_factor < 1) {
+                _multiplier = m;
+                i = (i == 1) ? 2 : (i == 2) ? 5 : 1;
+                if (i == 1) s *= 10;
+                m = s * i;
+            }
 
             #if EMON_DEBUG
                 Serial.print("[EMON] Current ratio: "); Serial.println(ratio);
@@ -48,19 +77,11 @@ class EmonSensor : public BaseSensor {
 
     protected:
 
-        virtual unsigned int readADC(unsigned char channel) {}
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
 
-        void calculateMultiplier() {
-            unsigned int s = 1;
-            unsigned int i = 1;
-            unsigned int m = s * i;
-            while (m * _current_factor < 1) {
-                _multiplier = m;
-                i = (i == 1) ? 2 : (i == 2) ? 5 : 1;
-                if (i == 1) s *= 10;
-                m = s * i;
-            }
-        }
+        virtual unsigned int readADC(unsigned char channel) {}
 
         double read(unsigned char channel, double &pivot) {
 
@@ -120,13 +141,19 @@ class EmonSensor : public BaseSensor {
 
         }
 
-        double _voltage;
         unsigned char _magnitudes = 0;
-        unsigned long _adc_counts;
+        unsigned long _samples = EMON_MAX_SAMPLES;
+
         unsigned int _multiplier = 1;
+        unsigned char _resolution = 10;
+
+        double _voltage = EMON_MAINS_VOLTAGE;
+        double _reference = EMON_REFERENCE_VOLTAGE;
+        double _current_ratio = EMON_CURRENT_RATIO;
+
+        unsigned long _adc_counts;
         double _current_factor;
 
-        unsigned long _samples = EMON_MAX_SAMPLES;
 
 
 };

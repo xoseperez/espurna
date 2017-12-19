@@ -193,22 +193,153 @@ void _sensorPost() {
 // -----------------------------------------------------------------------------
 // Interrupts
 // -----------------------------------------------------------------------------
-#if EVENTS_SUPPORT
 
+#if EVENTS_SUPPORT
 unsigned char _event_sensor_id = 0;
-void isrEventSensor() {
+void _isrEventSensor() {
     _sensors[_event_sensor_id]->InterruptHandler();
 }
-
 #endif // EVENTS_SUPPORT
+
+// -----------------------------------------------------------------------------
+// Sensor initialization
+// -----------------------------------------------------------------------------
+
+void _sensorRegister(BaseSensor * sensor) {
+    sensor->begin();
+    _sensors.push_back(sensor);
+}
+
+void _sensorInit() {
+
+    #if ANALOG_SUPPORT
+    {
+        #include "sensors/AnalogSensor.h"
+        AnalogSensor * sensor = new AnalogSensor();
+        sensor->setGPIO(ANALOG_PIN, ANALOG_PIN_MODE);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if BMX280_SUPPORT
+    {
+        #include "sensors/BMX280Sensor.h"
+        BMX280Sensor * sensor = new BMX280Sensor();
+        sensor->setAddress(BMX280_ADDRESS);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if DALLAS_SUPPORT
+    {
+        #include "sensors/DallasSensor.h"
+        DallasSensor * sensor = new DallasSensor();
+        sensor->setGPIO(DALLAS_PIN, DALLAS_PULLUP);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if DHT_SUPPORT
+    {
+        #include "sensors/DHTSensor.h"
+        DHTSensor * sensor = new DHTSensor();
+        sensor->setGPIO(DHT_PIN);
+        sensor->setType(DHT_TYPE);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if DIGITAL_SUPPORT
+    {
+        #include "sensors/DigitalSensor.h"
+        DigitalSensor * sensor = new DigitalSensor();
+        sensor->setGPIO(DIGITAL_PIN, DIGITAL_PIN_MODE);
+        sensor->setDefault(DIGITAL_DEFAULT_STATE);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if EMON_ADC121_SUPPORT
+    {
+        #include "sensors/EmonADC121Sensor.h"
+        EmonADC121Sensor * sensor = new EmonADC121Sensor();
+        sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
+        sensor->setVoltage(EMON_MAINS_VOLTAGE);
+        sensor->setReference(EMON_REFERENCE_VOLTAGE);
+        sensor->setCurrentRatio(EMON_CURRENT_RATIO);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if EMON_ADS1X15_SUPPORT
+    {
+        #include "sensors/EmonADS1X15Sensor.h"
+        EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
+        sensor->setAddress(EMON_ADS1X15_I2C_ADDRESS);
+        sensor->setType(EMON_ADS1X15_TYPE);
+        sensor->setMask(EMON_ADS1X15_MASK);
+        sensor->setGain(EMON_ADS1X15_GAIN);
+        sensor->setVoltage(EMON_MAINS_VOLTAGE);
+        sensor->setCurrentRatio(EMON_CURRENT_RATIO);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if EMON_ANALOG_SUPPORT
+    {
+        #include "sensors/EmonAnalogSensor.h"
+        EmonAnalogSensor * sensor = new EmonAnalogSensor();
+        sensor->setVoltage(EMON_MAINS_VOLTAGE);
+        sensor->setReference(EMON_REFERENCE_VOLTAGE);
+        sensor->setCurrentRatio(EMON_CURRENT_RATIO);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if EVENTS_SUPPORT
+    {
+        #include "sensors/EventSensor.h"
+        EventSensor * sensor = new EventSensor();
+        sensor->setGPIO(EVENTS_PIN, EVENTS_PIN_MODE);
+        sensor->setDebounceTime(EVENTS_DEBOUNCE);
+        _sensorRegister(sensor);
+        _event_sensor_id = sensorCount() - 1;
+        attachInterrupt(EVENTS_PIN, _isrEventSensor, EVENTS_INTERRUPT_MODE);
+    }
+    #endif
+
+    #if MHZ19_SUPPORT
+    {
+        #include "sensors/MHZ19Sensor.h"
+        MHZ19Sensor * sensor = new MHZ19Sensor();
+        sensor->setGPIO(MHZ19_RX_PIN, MHZ19_TX_PIN);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if PMSX003_SUPPORT
+    {
+        #include "sensors/PMSX003Sensor.h"
+        PMSX003Sensor * sensor = new PMSX003Sensor();
+        sensor->setGPIO(PMS_RX_PIN, PMS_TX_PIN);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+    #if SI7021_SUPPORT
+    {
+        #include "sensors/SI7021Sensor.h"
+        SI7021Sensor * sensor = new SI7021Sensor();
+        sensor->setAddress(SI7021_ADDRESS);
+        _sensorRegister(sensor);
+    }
+    #endif
+
+}
 
 // -----------------------------------------------------------------------------
 // Values
 // -----------------------------------------------------------------------------
-
-void sensorRegister(BaseSensor * sensor) {
-    _sensors.push_back(sensor);
-}
 
 unsigned char sensorCount() {
     return _sensors.size();
@@ -233,76 +364,12 @@ unsigned char magnitudeType(unsigned char index) {
     return MAGNITUDE_NONE;
 }
 
-void sensorInit() {
-
-    #if DHT_SUPPORT
-        #include "sensors/DHTSensor.h"
-        sensorRegister(new DHTSensor(DHT_PIN, DHT_TYPE, DHT_PULLUP));
-    #endif
-
-    #if DALLAS_SUPPORT
-        #include "sensors/DallasSensor.h"
-        sensorRegister(new DallasSensor(DALLAS_PIN, SENSOR_READ_INTERVAL, DALLAS_PULLUP));
-    #endif
-
-    #if SI7021_SUPPORT
-        #include "sensors/SI7021Sensor.h"
-        sensorRegister(new SI7021Sensor(SI7021_ADDRESS));
-    #endif
-
-    #if BMX280_SUPPORT
-        #include "sensors/BMX280Sensor.h"
-        sensorRegister(new BMX280Sensor(BMX280_ADDRESS));
-    #endif
-
-    #if ANALOG_SUPPORT
-        #include "sensors/AnalogSensor.h"
-        sensorRegister(new AnalogSensor(ANALOG_PIN, ANALOG_PIN_MODE));
-    #endif
-
-    #if DIGITAL_SUPPORT
-        #include "sensors/DigitalSensor.h"
-        sensorRegister(new DigitalSensor(DIGITAL_PIN, DIGITAL_PIN_MODE, DIGITAL_DEFAULT_STATE));
-    #endif
-
-    #if EMON_ANALOG_SUPPORT
-        #include "sensors/EmonAnalogSensor.h"
-        sensorRegister(new EmonAnalogSensor(A0, EMON_MAINS_VOLTAGE, EMON_ANALOG_ADC_BITS, EMON_ANALOG_REFERENCE_VOLTAGE, EMON_ANALOG_CURRENT_RATIO));
-    #endif
-
-    #if EMON_ADC121_SUPPORT
-        #include "sensors/EmonADC121Sensor.h"
-        sensorRegister(new EmonADC121Sensor(EMON_ADC121_I2C_ADDRESS, EMON_MAINS_VOLTAGE, EMON_ADC121_ADC_BITS, EMON_ADC121_REFERENCE_VOLTAGE, EMON_ADC121_CURRENT_RATIO));
-    #endif
-
-    #if EMON_ADS1X15_SUPPORT
-        #include "sensors/EmonADS1X15Sensor.h"
-        sensorRegister(new EmonADS1X15Sensor(EMON_ADS1X15_I2C_ADDRESS, EMON_ADS1X15_ADS1115, EMON_ADS1X15_PORT_MASK, EMON_MAINS_VOLTAGE, EMON_ADS1X15_ADC_BITS, EMON_ADS1X15_REFERENCE_VOLTAGE, EMON_ADS1X15_CURRENT_RATIO));
-    #endif
-
-    #if PMSX003_SUPPORT
-        #include "sensors/PMSX003Sensor.h"
-        sensorRegister(new PMSX003Sensor(PMS_RX_PIN, PMS_TX_PIN));
-    #endif
-
-    #if MHZ19_SUPPORT
-        #include "sensors/MHZ19Sensor.h"
-        sensorRegister(new MHZ19Sensor(MHZ19_RX_PIN, MHZ19_TX_PIN));
-    #endif
-
-    #if EVENTS_SUPPORT
-        #include "sensors/EventSensor.h"
-        sensorRegister(new EventSensor(EVENTS_PIN, EVENTS_PIN_MODE, EVENTS_DEBOUNCE));
-        _event_sensor_id = sensorCount() - 1;
-        attachInterrupt(EVENTS_PIN, isrEventSensor, EVENTS_INTERRUPT_MODE);
-    #endif
-
-}
+// -----------------------------------------------------------------------------
 
 void sensorSetup() {
 
     // Load sensors
-    sensorInit();
+    _sensorInit();
 
     // Load magnitudes
     for (unsigned char i=0; i<_sensors.size(); i++) {
@@ -472,6 +539,5 @@ void sensorLoop() {
         #endif
 
     }
-
 
 }

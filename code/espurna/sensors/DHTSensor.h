@@ -21,15 +21,68 @@ class DHTSensor : public BaseSensor {
 
     public:
 
-        DHTSensor(unsigned char gpio, unsigned char type, bool pull_up = false): BaseSensor() {
-            _gpio = gpio;
-            _type = type;
-            if (pull_up) pinMode(_gpio, INPUT_PULLUP);
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
+
+        DHTSensor(): BaseSensor() {
             _count = 2;
         }
 
+        void setGPIO(unsigned char gpio) {
+            _gpio = gpio;
+        }
+
+        void setType(unsigned char type) {
+            _type = type;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
+            _read();
+        }
+
+        // Descriptive name of the sensor
+        String name() {
+            char buffer[20];
+            snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", _type, _gpio);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return name();
+        }
+
+        // Type for slot # index
+        magnitude_t type(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
+            if (index == 0) return MAGNITUDE_TEMPERATURE;
+            if (index == 1) return MAGNITUDE_HUMIDITY;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return MAGNITUDE_NONE;
+        }
+
+        // Current value for slot # index
+        double value(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
+            if (index == 0) return _temperature;
+            if (index == 1) return _humidity;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return 0;
+        }
+
+    protected:
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
+
+        void _read() {
 
             if ((_last_ok > 0) && (millis() - _last_ok < DHT_MIN_INTERVAL)) {
                 _error = SENSOR_ERROR_OK;
@@ -122,39 +175,6 @@ class DHTSensor : public BaseSensor {
             _error = SENSOR_ERROR_OK;
 
         }
-
-        // Descriptive name of the sensor
-        String name() {
-            char buffer[20];
-            snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", _type, _gpio);
-            return String(buffer);
-        }
-
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            return name();
-        }
-
-        // Type for slot # index
-        magnitude_t type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
-            if (index == 0) return MAGNITUDE_TEMPERATURE;
-            if (index == 1) return MAGNITUDE_HUMIDITY;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return MAGNITUDE_NONE;
-        }
-
-        // Current value for slot # index
-        double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
-            if (index == 0) return _temperature;
-            if (index == 1) return _humidity;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return 0;
-        }
-
-
-    protected:
 
         unsigned long _signal(int usTimeOut, bool state) {
         	unsigned long uSec = 1;

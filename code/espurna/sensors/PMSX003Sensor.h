@@ -16,15 +16,36 @@ class PMSX003Sensor : public BaseSensor {
 
     public:
 
-        PMSX003Sensor(int pin_rx = PMS_RX_PIN, int pin_tx = PMS_TX_PIN): BaseSensor() {
-            _pmsSerial = new SoftwareSerial(pin_rx, pin_tx, false, 256);
-            _pmsSerial->begin(9600);
-            _pms = new PMS(* _pmsSerial);
-            _pms->passiveMode();
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
+
+        PMSX003Sensor(): BaseSensor() {
+            _count = 3;
+        }
+
+        void setGPIO(unsigned char pin_rx, unsigned char pin_tx) {
             _pin_rx = pin_rx;
             _pin_tx = pin_tx;
-            _count = 3;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            if (_serial) delete _serial;
+            if (_pms) delete _pms;
+
+            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 256);
+            _serial->begin(9600);
+            _pms = new PMS(* _serial);
+            _pms->passiveMode();
+
             _startTime = millis();
+
         }
 
         // Descriptive name of the sensor
@@ -96,7 +117,7 @@ class PMSX003Sensor : public BaseSensor {
         unsigned int _pin_rx;
         unsigned int _pin_tx;
         unsigned long _startTime;
-        SoftwareSerial * _pmsSerial;
+        SoftwareSerial * _serial;
         PMS * _pms;
         PMS::DATA _data;
 

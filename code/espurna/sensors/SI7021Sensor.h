@@ -27,10 +27,30 @@ class SI7021Sensor : public BaseSensor {
 
     public:
 
-        SI7021Sensor(unsigned char address = 0x40): BaseSensor() {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Asume I2C already started
+        void setAddress(unsigned char address) {
             _address = address;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            // Discover
+            if (_address == 0) {
+                unsigned char addresses[] = {0x40};
+                _address = i2cFindFirst(1, addresses);
+            }
+            if (_address == 0) {
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+                return;
+            }
 
             // Check device
             #if I2C_USE_BRZO
@@ -102,6 +122,10 @@ class SI7021Sensor : public BaseSensor {
 
     protected:
 
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
+
         unsigned int read(uint8_t command) {
 
             unsigned char bytes = (command == 0xE0) ? 2 : 3;
@@ -139,10 +163,6 @@ class SI7021Sensor : public BaseSensor {
 
         }
 
-        unsigned char chip() {
-            return _chip;
-        }
-
         String chipAsString() {
             if (_chip == SI7021_CHIP_SI7021) return String("SI7021");
             if (_chip == SI7021_CHIP_HTU21D) return String("HTU21D");
@@ -151,6 +171,5 @@ class SI7021Sensor : public BaseSensor {
 
         unsigned char _address;
         unsigned char _chip;
-        bool _found = false;
 
 };

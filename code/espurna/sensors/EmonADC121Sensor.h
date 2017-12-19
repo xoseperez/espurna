@@ -8,6 +8,7 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 #include "EmonSensor.h"
+#include "EmonAnalogSensor.h"
 
 #if I2C_USE_BRZO
 #include <brzo_i2c.h>
@@ -25,15 +26,36 @@
 #define ADC121_REG_CONVL        0x06
 #define ADC121_REG_CONVH        0x07
 
-class EmonADC121Sensor : public EmonSensor {
+#define ADC121_RESOLUTION       12
+
+class EmonADC121Sensor : public EmonAnalogSensor {
 
     public:
 
-        EmonADC121Sensor(unsigned char address, double voltage, unsigned char bits, double ref, double ratio): EmonSensor(voltage, bits, ref, ratio) {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache
+        void setAddress(unsigned char address) {
             _address = address;
-            _count = _magnitudes;
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            // Discover
+            if (_address == 0) {
+                unsigned char addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
+                _address = i2cFindFirst(9, addresses);
+            }
+            if (_address == 0) {
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+                return;
+            }
 
             // Init sensor
             #if I2C_USE_BRZO
@@ -50,8 +72,18 @@ class EmonADC121Sensor : public EmonSensor {
                 Wire.endTransmission();
             #endif
 
-            // warmup
-            read(_address, _pivot);
+            // Just one channel
+            _count = _magnitudes;
+
+            // Bit depth
+            _resolution = ADC121_RESOLUTION;
+
+            // Call the parent class method
+            EmonSensor::begin();
+
+            // warmup channel 0 (the only one)
+            _pivot = _adc_counts >> 1;
+            read(0, _pivot);
 
         }
 
@@ -62,61 +94,23 @@ class EmonADC121Sensor : public EmonSensor {
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            return name();
-        }
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        void pre() {
 
-        // Type for slot # index
-        magnitude_t type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
-            unsigned char i = 0;
-            #if EMON_REPORT_CURRENT
-                if (index == i++) return MAGNITUDE_CURRENT;
-            #endif
-            #if EMON_REPORT_POWER
-                if (index == i++) return MAGNITUDE_POWER_APPARENT;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (index == i) return MAGNITUDE_ENERGY;
-            #endif
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return MAGNITUDE_NONE;
-        }
-
-        // Current value for slot # index
-        double value(unsigned char index) {
-
-            _error = SENSOR_ERROR_OK;
-
-            // Cache the value
-            static unsigned long last = 0;
-            if ((last == 0) || (millis() - last > 1000)) {
-                _current = read(0, _pivot);
-                #if EMON_REPORT_ENERGY
-                    _energy += (_current * _voltage * (millis() - last) / 1000);
-                #endif
-                last = millis();
+            if (_address == 0) {
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+                return;
             }
 
-            // Report
-            unsigned char i = 0;
-            #if EMON_REPORT_CURRENT
-                if (index == i++) return _current;
-            #endif
-            #if EMON_REPORT_POWER
-                if (index == i++) return _current * _voltage;
-            #endif
-            #if EMON_REPORT_ENERGY
-                if (index == i) return _energy;
-            #endif
-
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return 0;
+            EmonAnalogSensor:pre();
 
         }
 
     protected:
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
 
         unsigned int readADC(unsigned char channel) {
 
@@ -144,11 +138,6 @@ class EmonADC121Sensor : public EmonSensor {
 
         }
 
-        unsigned char _address;
-        double _pivot = 0;
-        double _current = 0;
-        #if EMON_REPORT_ENERGY
-            unsigned long _energy = 0;
-        #endif
+        unsigned char _address = 0;
 
 };

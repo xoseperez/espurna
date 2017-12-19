@@ -9,20 +9,37 @@
 #include "BaseSensor.h"
 #include "EmonSensor.h"
 
+#define INTERNAL_ADC_RESOLUTION 10
+
 class EmonAnalogSensor : public EmonSensor {
 
     public:
 
-        EmonAnalogSensor(unsigned char gpio, double voltage, unsigned char bits, double ref, double ratio): EmonSensor(voltage, bits, ref, ratio) {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache
-            _gpio = gpio;
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            // Just one channel
             _count = _magnitudes;
 
-            // Prepare GPIO
-            pinMode(gpio, INPUT);
+            // Bit depth
+            _resolution = INTERNAL_ADC_RESOLUTION;
 
-            // warmup
+            // Init analog PIN
+            pinMode(_gpio, INPUT);
+
+            // Call the parent class method
+            EmonSensor::begin();
+
+            // warmup channel 0 (the only one)
+            _pivot = _adc_counts >> 1;
             read(_gpio, _pivot);
 
         }
@@ -56,22 +73,26 @@ class EmonAnalogSensor : public EmonSensor {
             return MAGNITUDE_NONE;
         }
 
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        void pre() {
+
+            _current = read(0, _pivot);
+
+            #if EMON_REPORT_ENERGY
+                static unsigned long last = 0;
+                if (last > 0) {
+                    _energy += (_current * _voltage * (millis() - last) / 1000);
+                }
+                last = millis();
+            #endif
+
+        }
+
         // Current value for slot # index
         double value(unsigned char index) {
 
             _error = SENSOR_ERROR_OK;
 
-            // Cache the value
-            static unsigned long last = 0;
-            if ((last == 0) || (millis() - last > 1000)) {
-                _current = read(0, _pivot);
-                #if EMON_REPORT_ENERGY
-                    _energy += (_current * _voltage * (millis() - last) / 1000);
-                #endif
-                last = millis();
-            }
-
-            // Report
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return _current;
@@ -94,7 +115,7 @@ class EmonAnalogSensor : public EmonSensor {
             return analogRead(_gpio);
         }
 
-        unsigned char _gpio;
+        unsigned char _gpio = 0;
         double _pivot = 0;
         double _current;
         #if EMON_REPORT_ENERGY

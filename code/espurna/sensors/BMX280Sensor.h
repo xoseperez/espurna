@@ -17,45 +17,34 @@ class BMX280Sensor : public BaseSensor {
 
     public:
 
-        BMX280Sensor(unsigned char address = BMX280_ADDRESS): BaseSensor() {
+        // ---------------------------------------------------------------------
+        // Public
+        // ---------------------------------------------------------------------
 
-            // Cache
+        void setAddress(unsigned char address) {
             _address = address;
-            _measurement_delay = bmeMeasurementTime();
+        }
 
-            // Init
-            bme = new BME280();
-            bme->settings.commInterface = I2C_MODE;
-            bme->settings.I2CAddress = _address;
-            bme->settings.runMode = BMX280_MODE;
-            bme->settings.tStandby = 0;
-            bme->settings.filter = 0;
-            bme->settings.tempOverSample = BMX280_TEMPERATURE;
-            bme->settings.pressOverSample = BMX280_PRESSURE;
-            bme->settings.humidOverSample = BMX280_HUMIDITY;
+        // ---------------------------------------------------------------------
+        // Sensor API
+        // ---------------------------------------------------------------------
 
-            // Fix when not measuring temperature, t_fine should have a sensible value
-            if (BMX280_TEMPERATURE == 0) bme->t_fine = 100000; // aprox 20ºC
+        // Initialization method, must be idempotent
+        void begin() {
 
-            // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
-            delay(10);
-
-            // Check sensor correctly initialized
-            _chip = bme->begin();
-            if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
-                _chip = 0;
+            // Discover
+            if (_address == 0) {
+                unsigned char addresses[] = {0x76, 0x77};
+                _address = i2cFindFirst(2, addresses);
+            }
+            if (_address == 0) {
                 _error = SENSOR_ERROR_UNKNOWN_ID;
+                _chip = 0;
+                return;
             }
 
-            #if BMX280_TEMPERATURE > 0
-                ++_count;
-            #endif
-            #if BMX280_PRESSURE > 0
-                ++_count;
-            #endif
-            #if BMX280_HUMIDITY > 0
-                if (_chip == BMX280_CHIP_BME280) ++_count;
-            #endif
+            // Init
+            init();
 
         }
 
@@ -101,7 +90,7 @@ class BMX280Sensor : public BaseSensor {
             }
 
             #if BMX280_MODE == 1
-                bmeForceRead();
+                forceRead();
             #endif
 
         }
@@ -130,7 +119,49 @@ class BMX280Sensor : public BaseSensor {
 
     protected:
 
-        unsigned long bmeMeasurementTime() {
+        void init() {
+
+            // Destroy previous instance if any
+            if (bme) delete bme;
+
+            bme = new BME280();
+            bme->settings.commInterface = I2C_MODE;
+            bme->settings.I2CAddress = _address;
+            bme->settings.runMode = BMX280_MODE;
+            bme->settings.tStandby = 0;
+            bme->settings.filter = 0;
+            bme->settings.tempOverSample = BMX280_TEMPERATURE;
+            bme->settings.pressOverSample = BMX280_PRESSURE;
+            bme->settings.humidOverSample = BMX280_HUMIDITY;
+
+            // Fix when not measuring temperature, t_fine should have a sensible value
+            if (BMX280_TEMPERATURE == 0) bme->t_fine = 100000; // aprox 20ºC
+
+            // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
+            delay(10);
+
+            // Check sensor correctly initialized
+            _chip = bme->begin();
+            if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
+                _chip = 0;
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+            }
+
+            #if BMX280_TEMPERATURE > 0
+                ++_count;
+            #endif
+            #if BMX280_PRESSURE > 0
+                ++_count;
+            #endif
+            #if BMX280_HUMIDITY > 0
+                if (_chip == BMX280_CHIP_BME280) ++_count;
+            #endif
+
+            _measurement_delay = measurementTime();
+
+        }
+
+        unsigned long measurementTime() {
 
             // Measurement Time (as per BMX280 datasheet section 9.1)
             // T_max(ms) = 1.25
@@ -156,7 +187,7 @@ class BMX280Sensor : public BaseSensor {
 
         }
 
-        void bmeForceRead() {
+        void forceRead() {
 
             // We set the sensor in "forced mode" to force a reading.
             // After the reading the sensor will go back to sleep mode.
@@ -172,7 +203,7 @@ class BMX280Sensor : public BaseSensor {
 
         BME280 * bme;
         unsigned char _chip;
-        unsigned char _address;
+        unsigned char _address = 0;
         unsigned long _measurement_delay;
 
 };
