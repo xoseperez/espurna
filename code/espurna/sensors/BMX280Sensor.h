@@ -1,5 +1,7 @@
 // -----------------------------------------------------------------------------
-// BMX280 Sensor
+// BME280/BMP280 Sensor over I2C
+// Uses SparkFun BME280 library
+// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #pragma once

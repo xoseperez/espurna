@@ -1,5 +1,6 @@
 // -----------------------------------------------------------------------------
-// Aggregator base class
+// Base Filter (other filters inherit from this)
+// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #pragma once

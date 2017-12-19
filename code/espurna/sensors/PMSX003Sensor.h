@@ -1,5 +1,7 @@
 // -----------------------------------------------------------------------------
-// PMSX003 Dust sensor
+// PMSX003 Dust Sensor
+// Uses SoftwareSerial library
+// Contribution by Òscar Rovira López
 // -----------------------------------------------------------------------------
 
 #pragma once
@@ -86,7 +88,7 @@ class PMSX003Sensor : public BaseSensor {
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
-    
+
     protected:
         unsigned int _pm1dot0;
         unsigned int _pm2dot5;

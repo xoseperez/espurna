@@ -2,6 +2,8 @@
 // MHZ19 CO2 sensor
 // Based on: https://github.com/nara256/mhz19_uart
 // http://www.winsen-sensor.com/d/files/infrared-gas-sensor/mh-z19b-co2-ver1_0.pdf
+// Uses SoftwareSerial library
+// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #pragma once

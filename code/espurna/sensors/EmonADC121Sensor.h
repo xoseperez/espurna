@@ -1,5 +1,6 @@
 // -----------------------------------------------------------------------------
-// Energy monitor sensor
+// ADS121-based Energy Monitor Sensor over I2C
+// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #pragma once
