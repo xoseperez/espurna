@@ -41,6 +41,7 @@ typedef enum magnitude_t {
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
 #define SENSOR_ERROR_TIMEOUT        3       // Response from sensor timed out
+#define SENSOR_ERROR_UNKNOWN_ID     4       // Sensor did not report a known ID
 
 class BaseSensor {
 

@@ -250,9 +250,9 @@ void sensorInit() {
         sensorRegister(new SI7021Sensor(SI7021_ADDRESS));
     #endif
 
-    #if BME280_SUPPORT
-        #include "sensors/BME280Sensor.h"
-        sensorRegister(new BME280Sensor(BME280_ADDRESS));
+    #if BMX280_SUPPORT
+        #include "sensors/BMX280Sensor.h"
+        sensorRegister(new BMX280Sensor(BMX280_ADDRESS));
     #endif
 
     #if ANALOG_SUPPORT

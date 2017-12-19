@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// BME280 Sensor
+// BMX280 Sensor
 // -----------------------------------------------------------------------------
 
 #pragma once
@@ -8,59 +8,59 @@
 #include "BaseSensor.h"
 #include <SparkFunBME280.h>
 
-#define BME280_ERROR_UNKNOW_CHIP    -1
+#define BMX280_CHIP_BMP280          0x58
+#define BMX280_CHIP_BME280          0x60
 
-class BME280Sensor : public BaseSensor {
+class BMX280Sensor : public BaseSensor {
 
     public:
 
-        BME280Sensor(unsigned char address = BME280_ADDRESS): BaseSensor() {
+        BMX280Sensor(unsigned char address = BMX280_ADDRESS): BaseSensor() {
 
             // Cache
             _address = address;
             _measurement_delay = bmeMeasurementTime();
 
-            #if BME280_TEMPERATURE > 0
-                ++_count;
-            #endif
-            #if BME280_HUMIDITY > 0
-                ++_count;
-            #endif
-            #if BME280_PRESSURE > 0
-                ++_count;
-            #endif
-
             // Init
             bme = new BME280();
             bme->settings.commInterface = I2C_MODE;
             bme->settings.I2CAddress = _address;
-            bme->settings.runMode = BME280_MODE;
+            bme->settings.runMode = BMX280_MODE;
             bme->settings.tStandby = 0;
             bme->settings.filter = 0;
-            bme->settings.tempOverSample = BME280_TEMPERATURE;
-            bme->settings.pressOverSample = BME280_PRESSURE;
-            bme->settings.humidOverSample = BME280_HUMIDITY;
+            bme->settings.tempOverSample = BMX280_TEMPERATURE;
+            bme->settings.pressOverSample = BMX280_PRESSURE;
+            bme->settings.humidOverSample = BMX280_HUMIDITY;
 
             // Fix when not measuring temperature, t_fine should have a sensible value
-            if (BME280_TEMPERATURE == 0) bme->t_fine = 100000; // aprox 20ºC
+            if (BMX280_TEMPERATURE == 0) bme->t_fine = 100000; // aprox 20ºC
 
-            // Make sure sensor had enough time to turn on. BME280 requires 2ms to start up
+            // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
             delay(10);
 
             // Check sensor correctly initialized
-            unsigned char response = bme->begin();
-            if (response == 0x60) {
-                _ready = true;
-            } else {
-                _error = BME280_ERROR_UNKNOW_CHIP;
+            _chip = bme->begin();
+            if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
+                _chip = 0;
+                _error = SENSOR_ERROR_UNKNOWN_ID;
             }
+
+            #if BMX280_TEMPERATURE > 0
+                ++_count;
+            #endif
+            #if BMX280_PRESSURE > 0
+                ++_count;
+            #endif
+            #if BMX280_HUMIDITY > 0
+                if (_chip == BMX280_CHIP_BME280) ++_count;
+            #endif
 
         }
 
         // Descriptive name of the sensor
         String name() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "BME280 @ I2C (0x%02X)", _address);
+            snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", _chip == BMX280_CHIP_BME280 ? "BME280" : "BMP280",  _address);
             return String(buffer);
         }
 
@@ -74,14 +74,16 @@ class BME280Sensor : public BaseSensor {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 unsigned char i = 0;
-                #if BME280_TEMPERATURE > 0
+                #if BMX280_TEMPERATURE > 0
                     if (index == i++) return MAGNITUDE_TEMPERATURE;
                 #endif
-                #if BME280_HUMIDITY > 0
-                    if (index == i++) return MAGNITUDE_HUMIDITY;
+                #if BMX280_PRESSURE > 0
+                    if (index == i++) return MAGNITUDE_PRESSURE;
                 #endif
-                #if BME280_PRESSURE > 0
-                    if (index == i) return MAGNITUDE_PRESSURE;
+                #if BMX280_HUMIDITY > 0
+                    if (_chip == BMX280_CHIP_BME280) {
+                        if (index == i) return MAGNITUDE_HUMIDITY;
+                    }
                 #endif
             }
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -91,12 +93,12 @@ class BME280Sensor : public BaseSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         virtual void pre() {
 
-            if (!_ready) {
-                _error = BME280_ERROR_UNKNOW_CHIP;
+            if (_chip == 0) {
+                _error = SENSOR_ERROR_UNKNOWN_ID;
                 return;
             }
 
-            #if BME280_MODE == 1
+            #if BMX280_MODE == 1
                 bmeForceRead();
             #endif
 
@@ -108,14 +110,16 @@ class BME280Sensor : public BaseSensor {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 unsigned char i = 0;
-                #if BME280_TEMPERATURE > 0
+                #if BMX280_TEMPERATURE > 0
                     if (index == i++) return bme->readTempC();
                 #endif
-                #if BME280_HUMIDITY > 0
-                    if (index == i++) return bme->readFloatHumidity();
+                #if BMX280_PRESSURE > 0
+                    if (index == i++) return bme->readFloatPressure() / 100;
                 #endif
-                #if BME280_PRESSURE > 0
-                    if (index == i) return bme->readFloatPressure() / 100;
+                #if BMX280_HUMIDITY > 0
+                    if (_chip == BMX280_CHIP_BME280) {
+                        if (index == i) return bme->readFloatHumidity();
+                    }
                 #endif
             }
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -126,7 +130,7 @@ class BME280Sensor : public BaseSensor {
 
         unsigned long bmeMeasurementTime() {
 
-            // Measurement Time (as per BME280 datasheet section 9.1)
+            // Measurement Time (as per BMX280 datasheet section 9.1)
             // T_max(ms) = 1.25
             //  + (2.3 * T_oversampling)
             //  + (2.3 * P_oversampling + 0.575)
@@ -134,14 +138,16 @@ class BME280Sensor : public BaseSensor {
             //  ~ 9.3ms for current settings
 
             double t = 1.25;
-            #if BME280_TEMPERATURE > 0
-                t += (2.3 * BME280_TEMPERATURE);
+            #if BMX280_TEMPERATURE > 0
+                t += (2.3 * BMX280_TEMPERATURE);
             #endif
-            #if BME280_HUMIDITY > 0
-                t += (2.4 * BME280_HUMIDITY + 0.575);
+            #if BMX280_PRESSURE > 0
+                t += (2.3 * BMX280_PRESSURE + 0.575);
             #endif
-            #if BME280_PRESSURE > 0
-                t += (2.3 * BME280_PRESSURE + 0.575);
+            #if BMX280_HUMIDITY > 0
+                if (_chip == BMX280_CHIP_BME280) {
+                    t += (2.4 * BMX280_HUMIDITY + 0.575);
+                }
             #endif
 
             return round(t + 1); // round up
@@ -163,8 +169,8 @@ class BME280Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         BME280 * bme;
+        unsigned char _chip;
         unsigned char _address;
         unsigned long _measurement_delay;
-        bool _ready = false;
 
 };
