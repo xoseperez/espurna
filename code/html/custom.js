@@ -39,6 +39,14 @@ function sensorType(type) {
     return null;
 }
 
+function sensorError(error) {
+    var errors = [
+        "OK", "Out of range", "Warming up", "Timeout", "Wrong ID", "CRC Error"
+    ];
+    if (0 <= error && error < errors.length) return errors[error];
+    return "Error " + error;
+}
+
 // -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
@@ -730,7 +738,14 @@ function processData(data) {
             initSensors(data[key]);
             for (var i=0; i<data[key].length; i++) {
                 var element = $("input[name=sensor][data=" + i + "]");
-                if (element.length) element.val(data[key][i].value + data[key][i].units);
+                if (element.length) {
+                    var error = data[key][i].error || 0;
+                    if (error == 0) {
+                        element.val(data[key][i].value + data[key][i].units);
+                    } else {
+                        element.val(sensorError(error));
+                    }
+                }
             }
             return;
         }

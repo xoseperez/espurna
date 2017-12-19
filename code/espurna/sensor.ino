@@ -132,6 +132,7 @@ void _sensorWebSocketOnSend(JsonObject& root) {
         sensor["value"] = String(buffer);
         sensor["units"] = _sensorUnits(magnitude.type);
         sensor["description"] = magnitude.sensor->slot(magnitude.local);
+        sensor["error"] = magnitude.sensor->error();
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
 
