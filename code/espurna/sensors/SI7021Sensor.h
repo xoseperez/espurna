@@ -22,10 +22,6 @@
 #define SI7021_CMD_TMP_NOHOLD   0xF3
 #define SI7021_CMD_HUM_NOHOLD   0xF5
 
-#define SI7021_ERROR_UNKNOW_CHIP    -1
-#define SI7021_ERROR_TIMEOUT        -2
-#define SI7021_ERROR_CRC            -3
-
 class SI7021Sensor : public BaseSensor {
 
     public:
@@ -53,7 +49,7 @@ class SI7021Sensor : public BaseSensor {
             #endif
 
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
-                _error = SI7021_ERROR_UNKNOW_CHIP;
+                _error = SENSOR_ERROR_UNKNOWN_ID;
             } else {
                 _count = 2;
             }

@@ -20,10 +20,8 @@
 #define DS_CMD_START_CONVERSION     0x44
 #define DS_CMD_READ_SCRATCHPAD      0xBE
 
-#define DS_ERROR_NOT_FOUND          -1
 #define DS_ERROR_FAILED_RESET       -2
 #define DS_ERROR_FAILED_READ        -3
-#define DS_ERROR_CRC                -4
 
 class DallasSensor : public BaseSensor {
 
@@ -96,7 +94,7 @@ class DallasSensor : public BaseSensor {
                     }
 
                     if (OneWire::crc8(data, 8) != data[8]) {
-                        _error = DS_ERROR_CRC;
+                        _error = SENSOR_ERROR_CRC;
                         return;
                     }
 
@@ -182,8 +180,13 @@ class DallasSensor : public BaseSensor {
                                                         // 12 bit res, 750 ms
             }
 
+            double value = (float) raw / 16.0;
+            if (value == DS_DISCONNECTED) {
+                _error = SENSOR_ERROR_CRC;
+                return 0;
+            }
             _error = SENSOR_ERROR_OK;
-            return (float) raw / 16.0;
+            return value;
 
         }
 

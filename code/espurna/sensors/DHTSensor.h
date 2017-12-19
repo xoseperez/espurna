@@ -10,9 +10,6 @@
 #define DHT_MAX_DATA                5
 #define DHT_MAX_ERRORS              5
 #define DHT_MIN_INTERVAL            2000
-#define DHT_OK                      0
-#define DHT_CHECKSUM_ERROR          -1
-#define DHT_TIMEOUT_ERROR           -2
 
 #define DHT11                       11
 #define DHT22                       22
@@ -65,14 +62,14 @@ class DHTSensor : public BaseSensor {
         		// Starts new data transmission with >50us low signal
         		low = _signal(56, LOW);
         		if (low == 0) {
-                    _error = DHT_TIMEOUT_ERROR;
+                    _error = SENSOR_ERROR_TIMEOUT;
                     return;
                 }
 
         		// Check to see if after >70us rx data is a 0 or a 1
         		high = _signal(75, HIGH);
                 if (high == 0) {
-                    _error = DHT_TIMEOUT_ERROR;
+                    _error = SENSOR_ERROR_TIMEOUT;
                     return;
                 }
 
@@ -98,7 +95,7 @@ class DHTSensor : public BaseSensor {
 
             // Verify checksum
             if (dhtData[4] != ((dhtData[0] + dhtData[1] + dhtData[2] + dhtData[3]) & 0xFF)) {
-                _error = DHT_CHECKSUM_ERROR;
+                _error = SENSOR_ERROR_CRC;
                 return;
             }
 

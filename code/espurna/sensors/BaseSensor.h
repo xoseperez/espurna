@@ -42,6 +42,7 @@ typedef enum magnitude_t {
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
 #define SENSOR_ERROR_TIMEOUT        3       // Response from sensor timed out
 #define SENSOR_ERROR_UNKNOWN_ID     4       // Sensor did not report a known ID
+#define SENSOR_ERROR_CRC            5       // Sensor data corrupted
 
 class BaseSensor {
 
