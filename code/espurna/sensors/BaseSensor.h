@@ -31,13 +31,16 @@ typedef enum magnitude_t {
     MAGNITUDE_PM2dot5,
     MAGNITUDE_PM10,
 
+    MAGNITUDE_CO2,
+
     MAGNITUDE_MAX,
 
 } magnitude_t;
 
-#define SENSOR_ERROR_OK             0
-#define SENSOR_ERROR_OUT_OF_RANGE   1
-#define SENSOR_ERROR_WARM_UP        2
+#define SENSOR_ERROR_OK             0       // No error
+#define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
+#define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
+#define SENSOR_ERROR_TIMEOUT        3       // Response from sensor timed out
 
 class BaseSensor {
 

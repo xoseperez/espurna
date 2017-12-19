@@ -1,16 +1,51 @@
-//--------------------------------------------------------------------------------
-// General
-//--------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// SENSORS
+// -----------------------------------------------------------------------------
 
-#ifndef TEMPERATURE_MIN_CHANGE
-#define TEMPERATURE_MIN_CHANGE      0.0             // Minimum temperature change to report
-#endif
+#define SENSOR_READ_INTERVAL            6000            // Read data from sensors every 6 seconds
+#define SENSOR_REPORT_EVERY             10              // Report every this many readings
+#define SENSOR_USE_INDEX                0               // Use the index in topic (i.e. temperature/0)
+                                                        // even if just one sensor (0 for backwards compatibility)
 
-#ifndef HUMIDITY_MIN_CHANGE
-#define HUMIDITY_MIN_CHANGE         0               // Minimum humidity change to report
-#endif
+#define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#define SENSOR_TEMPERATURE_CORRECTION   0.0             // Offset correction
+#define TEMPERATURE_MIN_CHANGE          0.0             // Minimum temperature change to report
+#define HUMIDITY_MIN_CHANGE             0               // Minimum humidity change to report
 
-#define TEMPERATURE_DECIMALS        1               // Decimals for temperature values
+#define SENSOR_TEMPERATURE_DECIMALS     1
+#define SENSOR_HUMIDITY_DECIMALS        0
+#define SENSOR_PRESSURE_DECIMALS        2
+#define SENSOR_ANALOG_DECIMALS          0
+#define SENSOR_EVENTS_DECIMALS          0
+#define SENSOR_CURRENT_DECIMALS         3
+#define SENSOR_VOLTAGE_DECIMALS         0
+#define SENSOR_POWER_DECIMALS           0
+#define SENSOR_POWER_FACTOR_DECIMALS    0
+#define SENSOR_ENERGY_DECIMALS          0
+#define SENSOR_PM1dot0_DECIMALS         0
+#define SENSOR_PM2dot5_DECIMALS         0
+#define SENSOR_PM10_DECIMALS            0
+#define SENSOR_CO2_DECIMALS             0
+
+#define SENSOR_UNKNOWN_TOPIC            "unknown"
+#define SENSOR_TEMPERATURE_TOPIC        "temperature"
+#define SENSOR_HUMIDITY_TOPIC           "humidity"
+#define SENSOR_PRESSURE_TOPIC           "pressure"
+#define SENSOR_CURRENT_TOPIC            "current"
+#define SENSOR_VOLTAGE_TOPIC            "voltage"
+#define SENSOR_ACTIVE_POWER_TOPIC       "power"
+#define SENSOR_APPARENT_POWER_TOPIC     "apparent"
+#define SENSOR_REACTIVE_POWER_TOPIC     "reactive"
+#define SENSOR_POWER_FACTOR_TOPIC       "factor"
+#define SENSOR_ENERGY_TOPIC             "energy"
+#define SENSOR_ENERGY_DELTA_TOPIC       "energy_delta"
+#define SENSOR_PM1dot0_TOPIC            "pm1dot0"
+#define SENSOR_PM2dot5_TOPIC            "pm2dot5"
+#define SENSOR_PM10_TOPIC               "pm10"
+#define SENSOR_ANALOG_TOPIC             "analog"
+#define SENSOR_DIGITAL_TOPIC            "digital"
+#define SENSOR_EVENTS_TOPIC             "events"
+#define SENSOR_CO2_TOPIC                "co2"
 
 //--------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor
@@ -243,6 +278,18 @@
 
 #define PMS_RX_PIN                      13
 #define PMS_TX_PIN                      15
+
+//--------------------------------------------------------------------------------
+// MHZ19 CO2 sensor
+// Enable support by passing MHZ19_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef MHZ19_SUPPORT
+#define MHZ19_SUPPORT                   1
+#endif
+
+#define MHZ19_RX_PIN                    13
+#define MHZ19_TX_PIN                    15
 
 //--------------------------------------------------------------------------------
 // Internal power montior

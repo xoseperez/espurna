@@ -55,6 +55,7 @@ String _sensorTopic(magnitude_t type) {
     if (type == MAGNITUDE_PM1dot0) return String(SENSOR_PM1dot0_TOPIC);
     if (type == MAGNITUDE_PM2dot5) return String(SENSOR_PM2dot5_TOPIC);
     if (type == MAGNITUDE_PM10) return String(SENSOR_PM10_TOPIC);
+    if (type == MAGNITUDE_CO2) return String(SENSOR_CO2_TOPIC);
     return String(SENSOR_UNKNOWN_TOPIC);
 }
 
@@ -75,6 +76,7 @@ unsigned char _sensorDecimals(magnitude_t type) {
     if (type == MAGNITUDE_PM1dot0) return SENSOR_PM1dot0_DECIMALS;
     if (type == MAGNITUDE_PM2dot5) return SENSOR_PM2dot5_DECIMALS;
     if (type == MAGNITUDE_PM10) return SENSOR_PM10_DECIMALS;
+    if (type == MAGNITUDE_CO2) return SENSOR_CO2_DECIMALS;
     return 0;
 }
 
@@ -94,6 +96,7 @@ String _sensorUnits(magnitude_t type) {
     if (type == MAGNITUDE_PM1dot0) return String("µg/m3");
     if (type == MAGNITUDE_PM2dot5) return String("µg/m3");
     if (type == MAGNITUDE_PM10) return String("µg/m3");
+    if (type == MAGNITUDE_CO2) return String("ppm");
     return String();
 }
 
@@ -280,6 +283,11 @@ void sensorInit() {
     #if PMSX003_SUPPORT
         #include "sensors/PMSX003Sensor.h"
         sensorRegister(new PMSX003Sensor(PMS_RX_PIN, PMS_TX_PIN));
+    #endif
+
+    #if MHZ19_SUPPORT
+        #include "sensors/MHZ19Sensor.h"
+        sensorRegister(new MHZ19Sensor(MHZ19_RX_PIN, MHZ19_TX_PIN));
     #endif
 
     #if COUNTER_SUPPORT

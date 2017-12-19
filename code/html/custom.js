@@ -33,7 +33,7 @@ function sensorType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Energy", "Energy (delta)", "Power Factor",
         "Analog", "Digital", "Events",
-        "PM1.0", "PM2.5", "PM10"
+        "PM1.0", "PM2.5", "PM10", "CO2"
     ];
     if (1 <= type && type <= types.length) return types[type-1];
     return null;
