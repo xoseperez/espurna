@@ -274,13 +274,13 @@
 #endif
 
 //--------------------------------------------------------------------------------
-// Internal power montior
+// Internal power monitor
 // Enable support by passing ADC_VCC_ENABLED=1 build flag
 // Do not enable this if using the analog GPIO for any other thing
 //--------------------------------------------------------------------------------
 
 #ifndef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED             1
+#define ADC_VCC_ENABLED                 1
 #endif
 
 #if ADC_VCC_ENABLED

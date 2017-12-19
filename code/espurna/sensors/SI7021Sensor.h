@@ -79,7 +79,7 @@ class SI7021Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String name() {
-            char buffer[20];
+            char buffer[25];
             snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", chipAsString().c_str(), _address);
             return String(buffer);
         }
@@ -131,6 +131,9 @@ class SI7021Sensor : public BaseSensor {
             unsigned char bytes = (command == 0xE0) ? 2 : 3;
 
             #if I2C_USE_BRZO
+                uint8_t buffer[2] = {command, 0x00};
+                brzo_i2c_start_transaction(_address, SI7021_SCL_FREQUENCY);
+                brzo_i2c_write(buffer, 1, false);
             #else
                 Wire.beginTransmission(_address);
                 Wire.write(command);
@@ -144,11 +147,16 @@ class SI7021Sensor : public BaseSensor {
             while (millis() - start < 50) delay(1);
 
             #if I2C_USE_BRZO
-                unsigned int msb = 0;
-                unsigned int lsb = 0;
+                brzo_i2c_read(buffer, 2, false);
+                brzo_i2c_end_transaction();
+                unsigned int msb = buffer[0];
+                unsigned int lsb = buffer[1];
             #else
                 Wire.requestFrom(_address, bytes);
-                if (Wire.available() != bytes) return 100;
+                if (Wire.available() != bytes) {
+                    _error = SENSOR_ERROR_CRC;
+                    return 0;
+                }
                 unsigned int msb = Wire.read();
                 unsigned int lsb = Wire.read();
             #endif
@@ -159,6 +167,7 @@ class SI7021Sensor : public BaseSensor {
 
             unsigned int value = (msb << 8) | lsb;
 
+            _error = SENSOR_ERROR_OK;
             return value;
 
         }
