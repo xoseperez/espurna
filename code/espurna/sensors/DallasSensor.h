@@ -33,12 +33,26 @@ class DallasSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        void setGPIO(unsigned char gpio, bool pullup = false) {
-            if (_gpio != gpio) _dirty = true;
-            if (_pullup != pullup) _dirty = true;
+        void setGPIO(unsigned char gpio) {
+            if (_gpio == gpio) return;
             _gpio = gpio;
+            _dirty = true;
+        }
+
+        void setPullUp(bool pullup) {
+            if (_pullup == pullup) return;
             _pullup = pullup;
-            _interval = SENSOR_READ_INTERVAL / 2;
+            _dirty = true;
+        }
+
+        // ---------------------------------------------------------------------
+
+        unsigned char getGPIO() {
+            return _gpio;
+        }
+
+        bool getPullUp() {
+            return _pullup;
         }
 
         // ---------------------------------------------------------------------
@@ -50,6 +64,7 @@ class DallasSensor : public BaseSensor {
 
             if (!_dirty) return;
             _dirty = false;
+            _interval = SENSOR_READ_INTERVAL / 2;
 
             // OneWire
             if (_wire) delete _wire;

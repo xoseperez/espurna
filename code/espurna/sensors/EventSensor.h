@@ -24,17 +24,40 @@ class EventSensor : public BaseSensor {
             detachInterrupt(_gpio);
         }
 
-        void setGPIO(unsigned char gpio, int mode = INPUT) {
+        // ---------------------------------------------------------------------
+
+        void setGPIO(unsigned char gpio) {
             _gpio = gpio;
-            pinMode(_gpio, mode);
         }
 
-        void setinterruptMode(unsigned long mode) {
+        void setMode(unsigned char mode) {
             _mode = mode;
+        }
+
+        void setInterruptMode(unsigned char mode) {
+            _interrupt_mode = mode;
         }
 
         void setDebounceTime(unsigned long debounce) {
             _debounce = debounce;
+        }
+
+        // ---------------------------------------------------------------------
+
+        unsigned char getGPIO() {
+            return _gpio;
+        }
+
+        unsigned char getMode() {
+            return _mode;
+        }
+
+        unsigned char getInterruptMode() {
+            return _interrupt_mode;
+        }
+
+        unsigned long getDebounceTime() {
+            return _debounce;
         }
 
         // ---------------------------------------------------------------------
@@ -45,7 +68,8 @@ class EventSensor : public BaseSensor {
         // Defined outside the class body
         void begin() {
             if (_interrupt_gpio != GPIO_NONE) detach(_interrupt_gpio);
-            attach(this, _gpio, _mode);
+            pinMode(_gpio, _mode);
+            attach(this, _gpio, _interrupt_mode);
         }
 
         // Descriptive name of the sensor
@@ -112,7 +136,8 @@ class EventSensor : public BaseSensor {
         volatile unsigned long _events = 0;
         unsigned long _debounce = EVENTS_DEBOUNCE;
         unsigned char _gpio;
-        unsigned char _interrupt_gpio = GPIO_NONE;
         unsigned char _mode;
+        unsigned char _interrupt_mode;
+        unsigned char _interrupt_gpio = GPIO_NONE;
 
 };

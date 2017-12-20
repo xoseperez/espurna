@@ -29,12 +29,24 @@ class DHTSensor : public BaseSensor {
             _count = 2;
         }
 
+        // ---------------------------------------------------------------------
+
         void setGPIO(unsigned char gpio) {
             _gpio = gpio;
         }
 
         void setType(unsigned char type) {
             _type = type;
+        }
+
+        // ---------------------------------------------------------------------
+
+        unsigned char getGPIO() {
+            return _gpio;
+        }
+
+        unsigned char getType() {
+            return _type;
         }
 
         // ---------------------------------------------------------------------

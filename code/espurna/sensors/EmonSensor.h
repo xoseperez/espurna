@@ -31,6 +31,17 @@ class EmonSensor : public BaseSensor {
 
         }
 
+        void expectedPower(unsigned char channel, unsigned int expected) {
+            if (channel >= _channels) return;
+            unsigned int actual = _current[channel] * _voltage;
+            if (actual == 0) return;
+            if (expected == actual) return;
+            _current_ratio[channel] = _current_ratio[channel] * (expected / actual);
+            _dirty = true;
+        }
+
+        // ---------------------------------------------------------------------
+
         void setVoltage(double voltage) {
             if (_voltage == voltage) return;
             _voltage = voltage;
@@ -50,13 +61,23 @@ class EmonSensor : public BaseSensor {
             _dirty = true;
         }
 
-        void expectedPower(unsigned char channel, unsigned int expected) {
-            if (channel >= _channels) return;
-            unsigned int actual = _current[channel] * _voltage;
-            if (actual == 0) return;
-            if (expected == actual) return;
-            _current_ratio[channel] = _current_ratio[channel] * (expected / actual);
-            _dirty = true;
+        // ---------------------------------------------------------------------
+
+        double getVoltage() {
+            return _voltage;
+        }
+        
+        double getReference() {
+            return _reference;
+        }
+
+        double getCurrentRatio(unsigned char channel) {
+            if (channel >= _channels) return 0;
+            return _current_ratio[channel];
+        }
+
+        unsigned char getChannels() {
+            return _channels;
         }
 
         // ---------------------------------------------------------------------

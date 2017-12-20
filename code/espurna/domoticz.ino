@@ -91,12 +91,12 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
         relays.add(domoticzIdx(i));
     }
 
-    JsonArray& sensors = root.createNestedArray("dczSensors");
+    JsonArray& list = root.createNestedArray("dczMagnitudes");
     for (byte i=0; i<magnitudeCount(); i++) {
-        JsonObject& sensor = sensors.createNestedObject();
-        sensor["name"] = magnitudeName(i);
-        sensor["type"] = magnitudeType(i);
-        sensor["idx"] = getSetting("dczSensor", i, 0).toInt();
+        JsonObject& element = list.createNestedObject();
+        element["name"] = magnitudeName(i);
+        element["type"] = magnitudeType(i);
+        element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
     }
 
     #if POWER_PROVIDER != POWER_PROVIDER_NONE

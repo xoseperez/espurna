@@ -20,9 +20,14 @@ class DigitalSensor : public BaseSensor {
             _count = 1;
         }
 
-        void setGPIO(unsigned char gpio, int mode = INPUT) {
+        // ---------------------------------------------------------------------
+
+        void setGPIO(unsigned char gpio) {
             _gpio = gpio;
-            pinMode(_gpio, mode);
+        }
+
+        void setMode(unsigned char mode) {
+            _mode = mode;
         }
 
         void setDefault(bool value) {
@@ -30,8 +35,27 @@ class DigitalSensor : public BaseSensor {
         }
 
         // ---------------------------------------------------------------------
+
+        unsigned char getGPIO() {
+            return _gpio;
+        }
+
+        unsigned char getMode() {
+            return _mode;
+        }
+
+        bool getDefault() {
+            return _default;
+        }
+
+        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+            pinMode(_gpio, _mode);
+        }
 
         // Descriptive name of the sensor
         String name() {
@@ -69,6 +93,7 @@ class DigitalSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         unsigned char _gpio;
+        unsigned char _mode;
         bool _default = false;
 
 };

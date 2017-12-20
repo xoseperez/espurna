@@ -120,19 +120,19 @@ void _sensorWebSocketOnSend(JsonObject& root) {
     char buffer[10];
     bool hasTemperature = false;
 
-    JsonArray& sensors = root.createNestedArray("sensors");
+    JsonArray& list = root.createNestedArray("magnitudes");
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
 
         sensor_magnitude_t magnitude = _magnitudes[i];
         unsigned char decimals = _sensorDecimals(magnitude.type);
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
-        JsonObject& sensor = sensors.createNestedObject();
-        sensor["type"] = int(magnitude.type);
-        sensor["value"] = String(buffer);
-        sensor["units"] = _sensorUnits(magnitude.type);
-        sensor["description"] = magnitude.sensor->slot(magnitude.local);
-        sensor["error"] = magnitude.sensor->error();
+        JsonObject& element = list.createNestedObject();
+        element["type"] = int(magnitude.type);
+        element["value"] = String(buffer);
+        element["units"] = _sensorUnits(magnitude.type);
+        element["description"] = magnitude.sensor->slot(magnitude.local);
+        element["error"] = magnitude.sensor->error();
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
 
@@ -220,7 +220,8 @@ void _sensorInit() {
     #if DALLAS_SUPPORT
     {
         DallasSensor * sensor = new DallasSensor();
-        sensor->setGPIO(DALLAS_PIN, DALLAS_PULLUP);
+        sensor->setGPIO(DALLAS_PIN);
+        sensor->setPullUp(DALLAS_PULLUP);
         _sensorRegister(sensor);
     }
     #endif
@@ -237,7 +238,8 @@ void _sensorInit() {
     #if DIGITAL_SUPPORT
     {
         DigitalSensor * sensor = new DigitalSensor();
-        sensor->setGPIO(DIGITAL_PIN, DIGITAL_PIN_MODE);
+        sensor->setGPIO(DIGITAL_PIN);
+        sensor->setMode(DIGITAL_PIN_MODE);
         sensor->setDefault(DIGITAL_DEFAULT_STATE);
         _sensorRegister(sensor);
     }
@@ -283,9 +285,10 @@ void _sensorInit() {
     #if EVENTS_SUPPORT
     {
         EventSensor * sensor = new EventSensor();
-        sensor->setGPIO(EVENTS_PIN, EVENTS_PIN_MODE);
+        sensor->setGPIO(EVENTS_PIN);
+        sensor->setMode(EVENTS_PIN_MODE);
         sensor->setDebounceTime(EVENTS_DEBOUNCE);
-        sensor->setinterruptMode(EVENTS_INTERRUPT_MODE);
+        sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
         _sensorRegister(sensor);
     }
     #endif
@@ -293,7 +296,8 @@ void _sensorInit() {
     #if MHZ19_SUPPORT
     {
         MHZ19Sensor * sensor = new MHZ19Sensor();
-        sensor->setGPIO(MHZ19_RX_PIN, MHZ19_TX_PIN);
+        sensor->setRX(MHZ19_RX_PIN);
+        sensor->setTX(MHZ19_TX_PIN);
         _sensorRegister(sensor);
     }
     #endif
@@ -301,7 +305,8 @@ void _sensorInit() {
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
-        sensor->setGPIO(PMS_RX_PIN, PMS_TX_PIN);
+        sensor->setRX(PMS_RX_PIN);
+        sensor->setTX(PMS_TX_PIN);
         _sensorRegister(sensor);
     }
     #endif

@@ -27,7 +27,7 @@ function initMessages() {
     messages[10] = "Session expired, please reload page...";
 }
 
-function sensorType(type) {
+function magnitudeType(type) {
     var types = [
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
@@ -39,7 +39,7 @@ function sensorType(type) {
     return null;
 }
 
-function sensorError(error) {
+function magnitudeError(error) {
     var errors = [
         "OK", "Out of range", "Warming up", "Timeout", "Wrong ID", "CRC Error"
     ];
@@ -366,18 +366,18 @@ function createRelayIdxs(data) {
 
 }
 
-function createSensorIdxs(data) {
+function createMagnitudeIdxs(data) {
 
-    var current = $("#domoticzSensors > div").length;
+    var current = $("#domoticzMagnitudes > div").length;
     if (current > 0) return;
 
-    var template = $("#sensorIdxTemplate .pure-g")[0];
+    var template = $("#magnitudeIdxTemplate .pure-g")[0];
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        $("label", line).html(sensorType(data[i].type));
+        $("label", line).html(magnitudeType(data[i].type));
         $("div.hint", line).html(data[i].name);
-        $("input", line).attr("name", "dczSensor" + i).attr("tabindex", 40 + i).val(data[i].idx);
-        line.appendTo("#domoticzSensors");
+        $("input", line).attr("name", "dczMagnitude" + i).attr("tabindex", 40 + i).val(data[i].idx);
+        line.appendTo("#domoticzMagnitudes");
     }
 
 }
@@ -463,23 +463,23 @@ function addRelayGroup() {
 }
 
 // -----------------------------------------------------------------------------
-// Sensors
+// Sensors & Magnitudes
 // -----------------------------------------------------------------------------
 
-function initSensors(data) {
+function initMagnitudes(data) {
 
     // check if already initialized
-    var done = $("#sensors > div").length;
+    var done = $("#magnitudes > div").length;
     if (done > 0) return;
 
     // add templates
-    var template = $("#sensorTemplate").children();
+    var template = $("#magnitudeTemplate").children();
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        $("label", line).html(sensorType(data[i].type));
+        $("label", line).html(magnitudeType(data[i].type));
         $("div.hint", line).html(data[i].description);
         $("input", line).attr("data", i);
-        line.appendTo("#sensors");
+        line.appendTo("#magnitudes");
     }
 
 }
@@ -731,19 +731,19 @@ function processData(data) {
         }
 
         // ---------------------------------------------------------------------
-        // Sensors
+        // Sensors & Magnitudes
         // ---------------------------------------------------------------------
 
-        if (key == "sensors") {
-            initSensors(data[key]);
+        if (key == "magnitudes") {
+            initMagnitudes(data[key]);
             for (var i=0; i<data[key].length; i++) {
-                var element = $("input[name=sensor][data=" + i + "]");
+                var element = $("input[name=magnitude][data=" + i + "]");
                 if (element.length) {
                     var error = data[key][i].error || 0;
                     if (error == 0) {
                         element.val(data[key][i].value + data[key][i].units);
                     } else {
-                        element.val(sensorError(error));
+                        element.val(magnitudeError(error));
                     }
                 }
             }
@@ -822,9 +822,9 @@ function processData(data) {
             return;
         }
 
-        // Domoticz - Sensors
-        if (key == "dczSensors") {
-            createSensorIdxs(data[key]);
+        // Domoticz - Magnitudes
+        if (key == "dczMagnitudes") {
+            createMagnitudeIdxs(data[key]);
             return;
         }
 

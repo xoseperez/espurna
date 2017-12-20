@@ -33,11 +33,26 @@ class MHZ19Sensor : public BaseSensor {
             _count = 1;
         }
 
-        void setGPIO(unsigned char pin_rx, unsigned char pin_tx) {
-            if (_pin_rx != pin_rx) _dirty = true;
-            if (_pin_tx != pin_tx) _dirty = true;
+        void setRX(unsigned char pin_rx) {
+            if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;
+            _dirty = true;
+        }
+
+        void setTX(unsigned char pin_tx) {
+            if (_pin_tx == pin_tx) return;
             _pin_tx = pin_tx;
+            _dirty = true;
+        }
+
+        // ---------------------------------------------------------------------
+
+        unsigned char getRX() {
+            return _pin_rx;
+        }
+
+        unsigned char getTX() {
+            return _pin_tx;
         }
 
         // ---------------------------------------------------------------------
