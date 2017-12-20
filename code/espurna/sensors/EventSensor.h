@@ -51,7 +51,7 @@ class EventSensor : public BaseSensor {
         // Descriptive name of the sensor
         String name() {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "EVENT @ GPIO%d", _gpio);
+            snprintf(buffer, sizeof(buffer), "INTERRUPT @ GPIO%d", _gpio);
             return String(buffer);
         }
 

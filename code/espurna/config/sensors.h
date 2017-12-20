@@ -2,7 +2,7 @@
 // SENSORS
 // -----------------------------------------------------------------------------
 
-#define SENSOR_DEBUG                    0               // Debug sensors (always to 0 in prod)
+#define SENSOR_DEBUG                    0               // Debug sensors
 
 #define SENSOR_READ_INTERVAL            6000            // Read data from sensors every 6 seconds
 #define SENSOR_REPORT_EVERY             10              // Report every this many readings
@@ -295,6 +295,8 @@
 
 // Embarrasing...
 unsigned char i2cFindFirst(size_t size, unsigned char * addresses);
+void debugSend(const char * format, ...);
+void debugSend_P(PGM_P format, ...);
 
 #include "sensors/BaseSensor.h"
 

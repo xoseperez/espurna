@@ -437,7 +437,7 @@ void sensorLoop() {
                 _magnitudes[i].current = current;
 
                 // Debug
-                #if true
+                #if SENSOR_DEBUG
                 {
                     dtostrf(current, 1-sizeof(buffer), decimals, buffer);
                     DEBUG_MSG("[SENSOR] %s - %s: %s%s\n",

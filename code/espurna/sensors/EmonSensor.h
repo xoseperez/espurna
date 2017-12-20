@@ -67,8 +67,8 @@ class EmonSensor : public BaseSensor {
             }
 
             #if SENSOR_DEBUG
-                Serial.print("[EMON] Current ratio: "); Serial.println(ratio);
-                Serial.print("[EMON] Ref. Voltage: "); Serial.println(ref);
+                Serial.print("[EMON] Current ratio: "); Serial.println(_current_ratio);
+                Serial.print("[EMON] Ref. Voltage: "); Serial.println(_reference);
                 Serial.print("[EMON] ADC Counts: "); Serial.println(_adc_counts);
                 Serial.print("[EMON] Current factor: "); Serial.println(_current_factor);
                 Serial.print("[EMON] Multiplier: "); Serial.println(_multiplier);

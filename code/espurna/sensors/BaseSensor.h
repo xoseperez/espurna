@@ -96,14 +96,14 @@ class BaseSensor {
         // Interrupt attach callback
         void attached(unsigned char gpio) {
             #if SENSOR_DEBUG
-                Serial.printf("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, name().c_str());
+                DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, name().c_str());
             #endif
         }
 
         // Interrupt detach callback
         void detached(unsigned char gpio) {
             #if SENSOR_DEBUG
-                Serial.printf("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, name().c_str());
+                DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, name().c_str());
             #endif
         }
 
