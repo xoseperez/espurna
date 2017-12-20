@@ -220,7 +220,6 @@ void _sensorInit() {
     {
         DallasSensor * sensor = new DallasSensor();
         sensor->setGPIO(DALLAS_PIN);
-        sensor->setPullUp(DALLAS_PULLUP);
         _sensorRegister(sensor);
     }
     #endif
@@ -320,8 +319,49 @@ void _sensorInit() {
 
 }
 
+void _magnitudesInit() {
+
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        BaseSensor * sensor = _sensors[i];
+
+        DEBUG_MSG("[SENSOR] %s\n", sensor->name().c_str());
+        if (sensor->error() != 0) DEBUG_MSG("[SENSOR]  -> ERROR %d\n", sensor->error());
+
+        for (unsigned char k=0; k<sensor->count(); k++) {
+
+            magnitude_t type = sensor->type(k);
+
+            sensor_magnitude_t new_magnitude;
+            new_magnitude.sensor = sensor;
+            new_magnitude.local = k;
+            new_magnitude.type = type;
+            new_magnitude.global = _counts[type];
+            new_magnitude.current = 0;
+            new_magnitude.filtered = 0;
+            new_magnitude.reported = 0;
+            new_magnitude.min_change = 0;
+            if (type == MAGNITUDE_DIGITAL) {
+                new_magnitude.filter = new MaxFilter();
+            } else if (type == MAGNITUDE_EVENTS) {
+                new_magnitude.filter = new MovingAverageFilter(SENSOR_REPORT_EVERY);
+            } else {
+                new_magnitude.filter = new MedianFilter();
+            }
+            _magnitudes.push_back(new_magnitude);
+
+            DEBUG_MSG("[SENSOR]  -> %s:%d\n", _sensorTopic(type).c_str(), _counts[type]);
+
+            _counts[type] = _counts[type] + 1;
+
+        }
+
+    }
+
+}
+
 // -----------------------------------------------------------------------------
-// Values
+// Public
 // -----------------------------------------------------------------------------
 
 unsigned char sensorCount() {
@@ -355,41 +395,7 @@ void sensorSetup() {
     _sensorInit();
 
     // Load magnitudes
-    for (unsigned char i=0; i<_sensors.size(); i++) {
-
-        BaseSensor * sensor = _sensors[i];
-        DEBUG_MSG("[SENSOR] %s\n", sensor->name().c_str());
-        if (sensor->count() == 0) DEBUG_MSG("[SENSOR]  -> NOTHING FOUND\n");
-
-        for (unsigned char k=0; k<sensor->count(); k++) {
-
-            magnitude_t type = sensor->type(k);
-
-            sensor_magnitude_t new_magnitude;
-            new_magnitude.sensor = sensor;
-            new_magnitude.local = k;
-            new_magnitude.type = type;
-            new_magnitude.global = _counts[type];
-            new_magnitude.current = 0;
-            new_magnitude.filtered = 0;
-            new_magnitude.reported = 0;
-            new_magnitude.min_change = 0;
-            if (type == MAGNITUDE_DIGITAL) {
-                new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_EVENTS) {
-                new_magnitude.filter = new MovingAverageFilter(SENSOR_REPORT_EVERY);
-            } else {
-                new_magnitude.filter = new MedianFilter();
-            }
-            _magnitudes.push_back(new_magnitude);
-
-            DEBUG_MSG("[SENSOR]  -> %s:%d\n", _sensorTopic(type).c_str(), _counts[type]);
-
-            _counts[type] = _counts[type] + 1;
-
-        }
-
-    }
+    _magnitudesInit();
 
     #if WEB_SUPPORT
 

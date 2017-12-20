@@ -115,10 +115,6 @@
 #define DALLAS_PIN                      13
 #endif
 
-#ifndef DALLAS_PULLUP
-#define DALLAS_PULLUP                   1
-#endif
-
 #define DALLAS_RESOLUTION               9        // Not used atm
 
 //--------------------------------------------------------------------------------

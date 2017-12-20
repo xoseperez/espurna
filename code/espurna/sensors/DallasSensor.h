@@ -39,20 +39,10 @@ class DallasSensor : public BaseSensor {
             _dirty = true;
         }
 
-        void setPullUp(bool pullup) {
-            if (_pullup == pullup) return;
-            _pullup = pullup;
-            _dirty = true;
-        }
-
         // ---------------------------------------------------------------------
 
         unsigned char getGPIO() {
             return _gpio;
-        }
-
-        bool getPullUp() {
-            return _pullup;
         }
 
         // ---------------------------------------------------------------------
@@ -70,11 +60,14 @@ class DallasSensor : public BaseSensor {
             if (_wire) delete _wire;
             _wire = new OneWire(_gpio);
 
-            // Must be done after the OneWire initialization
-            if (_pullup) pinMode(_gpio, INPUT_PULLUP);
-
             // Search devices
             loadDevices();
+
+            // If no devices found check again pulling up the line
+            if (_count == 0) {
+                pinMode(_gpio, INPUT_PULLUP);
+                loadDevices();
+            }
 
         }
 
@@ -230,6 +223,10 @@ class DallasSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
+        bool validateID(unsigned char id) {
+            return (id == DS_CHIP_DS18S20) || (id == DS_CHIP_DS18B20) || (id == DS_CHIP_DS1822) || (id == DS_CHIP_DS1825);
+        }
+
         unsigned char chip(unsigned char index) {
             if (index < _count) return _devices[index].address[0];
             return 0;
@@ -247,14 +244,20 @@ class DallasSensor : public BaseSensor {
         void loadDevices() {
 
             uint8_t address[8];
+            _wire->reset();
             _wire->reset_search();
             while (_wire->search(address)) {
 
                 // Check CRC
                 if (_wire->crc8(address, 7) == address[7]) {
-                    ds_device_t device;
-                    memcpy(device.address, address, 8);
-                    _devices.push_back(device);
+
+                    // Check ID
+                    if (validateID(address[0])) {
+                        ds_device_t device;
+                        memcpy(device.address, address, 8);
+                        _devices.push_back(device);
+                    }
+
                 }
 
             }
@@ -270,7 +273,6 @@ class DallasSensor : public BaseSensor {
 
         unsigned char _gpio;
         unsigned long _interval;
-        bool _pullup;
         OneWire * _wire;
 
 };
