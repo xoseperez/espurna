@@ -191,17 +191,6 @@ void _sensorPost() {
 }
 
 // -----------------------------------------------------------------------------
-// Interrupts
-// -----------------------------------------------------------------------------
-
-#if EVENTS_SUPPORT
-unsigned char _event_sensor_id = 0;
-void _isrEventSensor() {
-    _sensors[_event_sensor_id]->InterruptHandler();
-}
-#endif // EVENTS_SUPPORT
-
-// -----------------------------------------------------------------------------
 // Sensor initialization
 // -----------------------------------------------------------------------------
 
@@ -293,9 +282,8 @@ void _sensorInit() {
         EventSensor * sensor = new EventSensor();
         sensor->setGPIO(EVENTS_PIN, EVENTS_PIN_MODE);
         sensor->setDebounceTime(EVENTS_DEBOUNCE);
+        sensor->setinterruptMode(EVENTS_INTERRUPT_MODE);
         _sensorRegister(sensor);
-        _event_sensor_id = sensorCount() - 1;
-        attachInterrupt(EVENTS_PIN, _isrEventSensor, EVENTS_INTERRUPT_MODE);
     }
     #endif
 

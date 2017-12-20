@@ -20,9 +20,17 @@ class EventSensor : public BaseSensor {
             _count = 1;
         }
 
+        ~EventSensor() {
+            detachInterrupt(_gpio);
+        }
+
         void setGPIO(unsigned char gpio, int mode = INPUT) {
             _gpio = gpio;
             pinMode(_gpio, mode);
+        }
+
+        void setinterruptMode(unsigned long mode) {
+            _mode = mode;
         }
 
         void setDebounceTime(unsigned long debounce) {
@@ -33,12 +41,11 @@ class EventSensor : public BaseSensor {
         // Sensors API
         // ---------------------------------------------------------------------
 
-        void InterruptHandler() {
-            static unsigned long last = 0;
-            if (millis() - last > _debounce) {
-                _events = _events + 1;
-                last = millis();
-            }
+        // Initialization method, must be idempotent
+        // Defined outside the class body
+        void begin() {
+            if (_interrupt_gpio != GPIO_NONE) detach(_interrupt_gpio);
+            attach(this, _gpio, _mode);
         }
 
         // Descriptive name of the sensor
@@ -50,6 +57,7 @@ class EventSensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
+            (void) index;
             return name();
         }
 
@@ -73,6 +81,27 @@ class EventSensor : public BaseSensor {
             return 0;
         }
 
+        // Handle interrupt calls
+        void handleInterrupt(unsigned char gpio) {
+            (void) gpio;
+            static unsigned long last = 0;
+            if (millis() - last > _debounce) {
+                _events = _events + 1;
+                last = millis();
+            }
+        }
+
+        // Interrupt attach callback
+        void attached(unsigned char gpio) {
+            BaseSensor::attached(gpio);
+            _interrupt_gpio = gpio;
+        }
+
+        // Interrupt detach callback
+        void detached(unsigned char gpio) {
+            BaseSensor::detached(gpio);
+            if (_interrupt_gpio == gpio) _interrupt_gpio = GPIO_NONE;
+        }
 
     protected:
 
@@ -81,7 +110,9 @@ class EventSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         volatile unsigned long _events = 0;
-        unsigned long _debounce = 0;
+        unsigned long _debounce = EVENTS_DEBOUNCE;
         unsigned char _gpio;
+        unsigned char _interrupt_gpio = GPIO_NONE;
+        unsigned char _mode;
 
 };

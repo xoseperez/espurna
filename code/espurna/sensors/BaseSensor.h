@@ -38,6 +38,8 @@ typedef enum magnitude_t {
 
 } magnitude_t;
 
+#define GPIO_NONE                   0x99
+
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
@@ -54,9 +56,6 @@ class BaseSensor {
 
         // Destructor
         ~BaseSensor() {}
-
-        // General interrupt handler
-        virtual void InterruptHandler() {}
 
         // Initialization method, must be idempotent
         virtual void begin() {}
@@ -91,11 +90,77 @@ class BaseSensor {
         // Number of available slots
         unsigned char count() { return _count; }
 
+        // Handle interrupt calls
+        virtual void handleInterrupt(unsigned char gpio) {}
+
+        // Interrupt attach callback
+        void attached(unsigned char gpio) {
+            #if SENSOR_DEBUG
+                Serial.printf("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, name().c_str());
+            #endif
+        }
+
+        // Interrupt detach callback
+        void detached(unsigned char gpio) {
+            #if SENSOR_DEBUG
+                Serial.printf("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, name().c_str());
+            #endif
+        }
 
     protected:
+
+        // Attach interrupt
+        void attach(BaseSensor * instance, unsigned char gpio, unsigned char mode);
+
+        // Detach interrupt
+        void detach(unsigned char gpio);
 
         int _error = 0;
         unsigned char _count = 0;
 
 
 };
+
+// -----------------------------------------------------------------------------
+// Interrupt helpers
+// -----------------------------------------------------------------------------
+
+BaseSensor * _isr_sensor_instance[16] = {NULL};
+
+void _sensor_isr(unsigned char gpio) {
+    if (_isr_sensor_instance[gpio]) {
+        _isr_sensor_instance[gpio]->handleInterrupt(gpio);
+    }
+}
+
+void _sensor_isr_0() { _sensor_isr(0); }
+void _sensor_isr_2() { _sensor_isr(2); }
+void _sensor_isr_4() { _sensor_isr(4); }
+void _sensor_isr_5() { _sensor_isr(5); }
+void _sensor_isr_12() { _sensor_isr(12); }
+void _sensor_isr_13() { _sensor_isr(13); }
+void _sensor_isr_14() { _sensor_isr(14); }
+void _sensor_isr_15() { _sensor_isr(15); }
+
+void (*_sensor_isrs[16])() = {
+    _sensor_isr_0, NULL, _sensor_isr_2, NULL, _sensor_isr_4, _sensor_isr_5,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    _sensor_isr_12, _sensor_isr_13, _sensor_isr_14, _sensor_isr_15
+};
+
+void BaseSensor::attach(BaseSensor * instance, unsigned char gpio, unsigned char mode) {
+    detach(gpio);
+    if (_sensor_isrs[gpio]) {
+        _isr_sensor_instance[gpio] = instance;
+        attachInterrupt(gpio, _sensor_isrs[gpio], mode);
+        instance->attached(gpio);
+    }
+}
+
+void BaseSensor::detach(unsigned char gpio) {
+    if (_isr_sensor_instance[gpio]) {
+        detachInterrupt(gpio);
+        _isr_sensor_instance[gpio]->detached(gpio);
+        _isr_sensor_instance[gpio] = NULL;
+    }
+}

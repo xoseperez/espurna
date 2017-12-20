@@ -2,6 +2,8 @@
 // SENSORS
 // -----------------------------------------------------------------------------
 
+#define SENSOR_DEBUG                    0               // Debug sensors (always to 0 in prod)
+
 #define SENSOR_READ_INTERVAL            6000            // Read data from sensors every 6 seconds
 #define SENSOR_REPORT_EVERY             10              // Report every this many readings
 #define SENSOR_USE_INDEX                0               // Use the index in topic (i.e. temperature/0)

@@ -8,8 +8,6 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#define EMON_DEBUG      0
-
 class EmonSensor : public BaseSensor {
 
     public:
@@ -65,7 +63,7 @@ class EmonSensor : public BaseSensor {
                 m = s * i;
             }
 
-            #if EMON_DEBUG
+            #if SENSOR_DEBUG
                 Serial.print("[EMON] Current ratio: "); Serial.println(ratio);
                 Serial.print("[EMON] Ref. Voltage: "); Serial.println(ref);
                 Serial.print("[EMON] ADC Counts: "); Serial.println(_adc_counts);
@@ -120,7 +118,7 @@ class EmonSensor : public BaseSensor {
             current = (double) (int(current * _multiplier) - 1) / _multiplier;
             if (current < 0) current = 0;
 
-            #if EMON_DEBUG
+            #if SENSOR_DEBUG
                 Serial.print("[EMON] Total samples: "); Serial.println(_samples);
                 Serial.print("[EMON] Total time (ms): "); Serial.println(time_span);
                 Serial.print("[EMON] Sample frequency (Hz): "); Serial.println(1000 * _samples / time_span);
