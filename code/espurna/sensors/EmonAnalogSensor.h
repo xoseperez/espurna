@@ -53,13 +53,13 @@ class EmonAnalogSensor : public EmonSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             return String("EMON @ ANALOG @ GPIO0");
         }
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return name();
+            return description();
         }
 
         // Type for slot # index

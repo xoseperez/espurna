@@ -137,7 +137,7 @@ class DallasSensor : public BaseSensor {
 
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "Dallas @ GPIO%d", _gpio);
             return String(buffer);

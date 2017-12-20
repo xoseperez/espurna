@@ -74,7 +74,7 @@ class MHZ19Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[28];
             snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
             return String(buffer);
@@ -82,7 +82,7 @@ class MHZ19Sensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return name();
+            return description();
         }
 
         // Type for slot # index

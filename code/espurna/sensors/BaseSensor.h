@@ -6,6 +6,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 typedef enum magnitude_t {
 
@@ -71,7 +72,7 @@ class BaseSensor {
         virtual void post() {}
 
         // Descriptive name of the sensor
-        virtual String name() {}
+        virtual String description() {}
 
         // Descriptive name of the slot # index
         virtual String slot(unsigned char index) {}
@@ -81,6 +82,15 @@ class BaseSensor {
 
         // Current value for slot # index
         virtual double value(unsigned char index) {}
+
+        // Retrieve current instance configuration
+        virtual void getConfig(JsonObject& root) {};
+
+        // Save current instance configuration
+        virtual void setConfig(JsonObject& root) {};
+
+        // Load the configuration manifest
+        static void manifest(JsonObject& root) {};
 
         // Specific for I2C sensors
         unsigned char lock_i2c(unsigned char address, size_t size, unsigned char * addresses) {
@@ -125,14 +135,14 @@ class BaseSensor {
         // Interrupt attach callback
         void attached(unsigned char gpio) {
             #if SENSOR_DEBUG
-                DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, name().c_str());
+                DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, description().c_str());
             #endif
         }
 
         // Interrupt detach callback
         void detached(unsigned char gpio) {
             #if SENSOR_DEBUG
-                DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, name().c_str());
+                DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, description().c_str());
             #endif
         }
 

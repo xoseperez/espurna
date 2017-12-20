@@ -69,7 +69,7 @@ class PMSX003Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[28];
             snprintf(buffer, sizeof(buffer), "PMSX003 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
             return String(buffer);

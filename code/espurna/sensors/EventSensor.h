@@ -73,7 +73,7 @@ class EventSensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "INTERRUPT @ GPIO%d", _gpio);
             return String(buffer);
@@ -82,7 +82,7 @@ class EventSensor : public BaseSensor {
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             (void) index;
-            return name();
+            return description();
         }
 
         // Type for slot # index

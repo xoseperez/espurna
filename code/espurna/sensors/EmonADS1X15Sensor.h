@@ -198,7 +198,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[30];
             snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, _address);
             return String(buffer);

@@ -115,7 +115,7 @@ void _sensorConfigure() {
 
 #if WEB_SUPPORT
 
-void _sensorWebSocketOnSend(JsonObject& root) {
+void _sensorWebSocketSendData(JsonObject& root) {
 
     char buffer[10];
     bool hasTemperature = false;
@@ -142,6 +142,26 @@ void _sensorWebSocketOnSend(JsonObject& root) {
     root["tmpUnits"] = _sensor_temperature_units;
     root["tmpCorrection"] = _sensor_temperature_correction;
     if (hasTemperature) root["temperatureVisible"] = 1;
+
+}
+
+void _sensorWebSocketStart(JsonObject& root) {
+
+    /*
+    // Sensors manifest
+    JsonObject& manifest = root.createNestedObject("manifest");
+    #if BMX280_SUPPORT
+        BMX280Sensor::manifest(manifest);
+    #endif
+
+    // Sensors configuration
+    JsonArray& sensors = root.createNestedArray("sensors");
+    for (unsigned char i; i<_sensors.size(); i++) {
+        JsonObject& sensor = sensors.createNestedObject();
+        sensor["id"] = i;
+        _sensors[i]->getConfig(sensor);
+    }
+    */
 
 }
 
@@ -177,7 +197,7 @@ void _sensorPre() {
         _sensors[i]->pre();
         if (!_sensors[i]->status()) {
             DEBUG_MSG("[SENSOR] Error reading data from %s (error: %d)\n",
-                _sensors[i]->name().c_str(),
+                _sensors[i]->description().c_str(),
                 _sensors[i]->error()
             );
         }
@@ -325,7 +345,7 @@ void _magnitudesInit() {
 
         BaseSensor * sensor = _sensors[i];
 
-        DEBUG_MSG("[SENSOR] %s\n", sensor->name().c_str());
+        DEBUG_MSG("[SENSOR] %s\n", sensor->description().c_str());
         if (sensor->error() != 0) DEBUG_MSG("[SENSOR]  -> ERROR %d\n", sensor->error());
 
         for (unsigned char k=0; k<sensor->count(); k++) {
@@ -400,7 +420,8 @@ void sensorSetup() {
     #if WEB_SUPPORT
 
         // Websockets
-        wsOnSendRegister(_sensorWebSocketOnSend);
+        wsOnSendRegister(_sensorWebSocketStart);
+        wsOnSendRegister(_sensorWebSocketSendData);
         wsOnAfterParseRegister(_sensorConfigure);
 
         // API
@@ -525,7 +546,7 @@ void sensorLoop() {
         _sensorPost();
 
         #if WEB_SUPPORT
-            wsSend(_sensorWebSocketOnSend);
+            wsSend(_sensorWebSocketSendData);
         #endif
 
     }

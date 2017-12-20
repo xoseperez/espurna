@@ -10,6 +10,8 @@
 #include "BaseSensor.h"
 #include <SparkFunBME280.h>
 
+#define BMX280_NAME                 "BME280 / BMP280"
+#define BMX280_KEY                  "bme280"
 #define BMX280_CHIP_BMP280          0x58
 #define BMX280_CHIP_BME280          0x60
 
@@ -17,13 +19,16 @@ class BMX280Sensor : public BaseSensor {
 
     public:
 
+        static unsigned char addresses[2];
+
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
 
         void setAddress(unsigned char address) {
-            if (_address != address) _dirty = true;
+            if (_address == address) return;
             _address = address;
+            _dirty = true;
         }
 
         // ---------------------------------------------------------------------
@@ -44,8 +49,7 @@ class BMX280Sensor : public BaseSensor {
             _chip = 0;
 
             // I2C auto-discover
-            unsigned char addresses[] = {0x76, 0x77};
-            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            _address = lock_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
             if (_address == 0) return;
 
             // Init
@@ -54,7 +58,7 @@ class BMX280Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", _chip == BMX280_CHIP_BME280 ? "BME280" : "BMP280",  _address);
             return String(buffer);
@@ -62,7 +66,7 @@ class BMX280Sensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return name();
+            return description();
         }
 
         // Type for slot # index
@@ -121,6 +125,45 @@ class BMX280Sensor : public BaseSensor {
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
+
+        // Load the configuration manifest
+        static void manifest(JsonObject& sensors) {
+
+            char buffer[10];
+
+            JsonObject& sensor = sensors.createNestedObject(BMX280_KEY);
+            sensor["name"] = BMX280_NAME;
+            JsonArray& fields = sensor.createNestedArray("fields");
+
+            {
+                JsonObject& field = fields.createNestedObject();
+                field["tag"] = UI_TAG_SELECT;
+                field["name"] = "address";
+                field["label"] = "Address";
+                JsonArray& options = field.createNestedArray("options");
+                {
+                    JsonObject& option = options.createNestedObject();
+                    option["name"] = "auto";
+                    option["value"] = 0;
+                }
+                for (unsigned char i=0; i< sizeof(BMX280Sensor::addresses); i++) {
+                    JsonObject& option = options.createNestedObject();
+                    snprintf(buffer, sizeof(buffer), "0x%02X", BMX280Sensor::addresses[i]);
+                    option["name"] = String(buffer);
+                    option["value"] = BMX280Sensor::addresses[i];
+                }
+            }
+
+        };
+
+        void getConfig(JsonObject& root) {
+            root["key"] = BMX280_KEY;
+            root["address"] = getAddress();
+        };
+
+        void setConfig(JsonObject& root) {
+            if (root.containsKey("address")) setAddress(root["address"]);
+        };
 
     protected:
 
@@ -212,3 +255,7 @@ class BMX280Sensor : public BaseSensor {
         unsigned long _measurement_delay;
 
 };
+
+// Static inizializations
+
+unsigned char BMX280Sensor::addresses[2] = {0x76, 0x77};

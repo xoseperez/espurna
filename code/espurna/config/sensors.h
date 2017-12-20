@@ -71,7 +71,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef ANALOG_SUPPORT
-#define ANALOG_SUPPORT                  0
+#define ANALOG_SUPPORT                  1
 #endif
 
 #if ANALOG_SUPPORT
@@ -85,7 +85,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef BMX280_SUPPORT
-#define BMX280_SUPPORT                  0
+#define BMX280_SUPPORT                  1
 #endif
 
 #ifndef BMX280_ADDRESS

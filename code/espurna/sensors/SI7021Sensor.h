@@ -84,7 +84,7 @@ class SI7021Sensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[25];
             snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", chipAsString().c_str(), _address);
             return String(buffer);
@@ -92,7 +92,7 @@ class SI7021Sensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return name();
+            return description();
         }
 
         // Type for slot # index

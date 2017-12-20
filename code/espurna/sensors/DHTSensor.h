@@ -59,7 +59,7 @@ class DHTSensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", _type, _gpio);
             return String(buffer);
@@ -67,7 +67,7 @@ class DHTSensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return name();
+            return description();
         }
 
         // Type for slot # index

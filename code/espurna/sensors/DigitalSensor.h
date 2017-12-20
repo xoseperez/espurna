@@ -58,7 +58,7 @@ class DigitalSensor : public BaseSensor {
         }
 
         // Descriptive name of the sensor
-        String name() {
+        String description() {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "DIGITAL @ GPIO%d", _gpio);
             return String(buffer);
@@ -66,7 +66,7 @@ class DigitalSensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            return name();
+            return description();
         }
 
         // Type for slot # index

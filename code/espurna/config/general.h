@@ -319,6 +319,14 @@ PROGMEM const char* const custom_reset_string[] = {
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
+// UI
+// -----------------------------------------------------------------------------
+
+#define UI_TAG_INPUT            0
+#define UI_TAG_CHECKBOX         1
+#define UI_TAG_SELECT           2
+
+// -----------------------------------------------------------------------------
 // MDNS & LLMNR
 // -----------------------------------------------------------------------------
 
