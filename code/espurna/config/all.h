@@ -1,9 +1,9 @@
 #include "version.h"
 #include "arduino.h"
 #include "hardware.h"
+#include "prototypes.h"
 #include "general.h"
 #include "sensors.h"
-#include "prototypes.h"
 
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"

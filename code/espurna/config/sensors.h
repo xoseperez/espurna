@@ -97,13 +97,18 @@
 #endif
 
 #ifndef BMX280_ADDRESS
-#define BMX280_ADDRESS                  0
+#define BMX280_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
 #define BMX280_MODE                     1       // 1 for forced mode, 3 for normal mode
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
+
+#if BMX280_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
 
 //--------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
@@ -185,7 +190,12 @@
 #define EMON_ADC121_SUPPORT             0       // Do not build support by default
 #endif
 
-#define EMON_ADC121_I2C_ADDRESS         0x50    // I2C address of the ADC121
+#define EMON_ADC121_I2C_ADDRESS         0x00    // 0x00 means auto
+
+#if EMON_ADC121_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
 
 //--------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
@@ -196,10 +206,15 @@
 #define EMON_ADS1X15_SUPPORT            0       // Do not build support by default
 #endif
 
-#define EMON_ADS1X15_I2C_ADDRESS        0x48    // I2C address of the ADS1115
+#define EMON_ADS1X15_I2C_ADDRESS        0x00    // 0x00 means auto
 #define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
 #define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A4=8
+
+#if EMON_ADS1X15_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
 
 //--------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
@@ -272,8 +287,35 @@
 #endif
 
 #ifndef SI7021_ADDRESS
-#define SI7021_ADDRESS                  0x40
+#define SI7021_ADDRESS                  0x00    // 0x00 means auto
 #endif
+
+#if SI7021_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+// -----------------------------------------------------------------------------
+// I2C
+// -----------------------------------------------------------------------------
+
+#ifndef I2C_SUPPORT
+#define I2C_SUPPORT                     0       // I2C enabled (1.98Kb)
+#endif
+
+#define I2C_USE_BRZO                    0       // Use brzo_i2c library or standard Wire
+
+#ifndef I2C_SDA_PIN
+#define I2C_SDA_PIN                     SDA     // SDA GPIO (Sonoff => 4)
+#endif
+
+#ifndef I2C_SCL_PIN
+#define I2C_SCL_PIN                     SCL     // SCL GPIO (Sonoff => 14)
+#endif
+
+#define I2C_CLOCK_STRETCH_TIME          200     // BRZO clock stretch time
+#define I2C_SCL_FREQUENCY               1000    // BRZO SCL frequency
+#define I2C_CLEAR_BUS                   0       // Clear I2C bus at boot
 
 //--------------------------------------------------------------------------------
 // Internal power monitor
@@ -292,11 +334,6 @@
 //--------------------------------------------------------------------------------
 // Class loading
 //--------------------------------------------------------------------------------
-
-// Embarrasing...
-unsigned char i2cFindFirst(size_t size, unsigned char * addresses);
-void debugSend(const char * format, ...);
-void debugSend_P(PGM_P format, ...);
 
 #include "sensors/BaseSensor.h"
 

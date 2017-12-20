@@ -49,20 +49,27 @@ template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 
 // -----------------------------------------------------------------------------
+// I2C
+// -----------------------------------------------------------------------------
+unsigned char i2cFindFirst(size_t size, unsigned char * addresses);
+
+// -----------------------------------------------------------------------------
+// Debug
+// -----------------------------------------------------------------------------
+void debugSend(const char * format, ...);
+void debugSend_P(PGM_P format, ...);
+
+// -----------------------------------------------------------------------------
 // Domoticz
 // -----------------------------------------------------------------------------
-#if DOMOTICZ_SUPPORT
 template<typename T> void domoticzSend(const char * key, T value);
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue);
-#endif
 
 // -----------------------------------------------------------------------------
 // InfluxDB
 // -----------------------------------------------------------------------------
-#if INFLUXDB_SUPPORT
 template<typename T> bool idbSend(const char * topic, T payload);
 template<typename T> bool idbSend(const char * topic, unsigned char id, T payload);
-#endif
 
 // -----------------------------------------------------------------------------
 // Light
