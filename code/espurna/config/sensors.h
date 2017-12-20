@@ -74,14 +74,6 @@
 #define ANALOG_SUPPORT                  0
 #endif
 
-#ifndef ANALOG_PIN
-#define ANALOG_PIN                      0
-#endif
-
-#ifndef ANALOG_PIN_MODE
-#define ANALOG_PIN_MODE                 INPUT
-#endif
-
 #if ANALOG_SUPPORT
     #undef ADC_VCC_ENABLED
     #define ADC_VCC_ENABLED             0

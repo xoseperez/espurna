@@ -204,7 +204,6 @@ void _sensorInit() {
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
-        sensor->setGPIO(ANALOG_PIN, ANALOG_PIN_MODE);
         _sensorRegister(sensor);
     }
     #endif

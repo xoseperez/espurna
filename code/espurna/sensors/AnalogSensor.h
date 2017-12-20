@@ -20,20 +20,18 @@ class AnalogSensor : public BaseSensor {
             _count = 1;
         }
 
-        void setGPIO(unsigned char gpio, unsigned char mode = INPUT) {
-            _gpio = gpio;
-            pinMode(_gpio, mode);
-        }
-
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
+        // Initialization method, must be idempotent
+        void begin() {
+            pinMode(0, INPUT);
+        }
+
         // Descriptive name of the sensor
         String name() {
-            char buffer[20];
-            snprintf(buffer, sizeof(buffer), "ANALOG @ GPIO%d", _gpio);
-            return String(buffer);
+            return String("ANALOG @ GPIO0");
         }
 
         // Descriptive name of the slot # index
@@ -52,18 +50,10 @@ class AnalogSensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             _error = SENSOR_ERROR_OK;
-            if (index == 0) return analogRead(_gpio);
+            if (index == 0) return analogRead(0);
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
-
-    protected:
-
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
-
-        unsigned char _gpio;
 
 };
