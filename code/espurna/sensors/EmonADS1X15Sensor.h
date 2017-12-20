@@ -141,14 +141,9 @@ class EmonADS1X15Sensor : public EmonSensor {
             _dirty = false;
 
             // Discover
-            if (_address == 0) {
-                unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};
-                _address = i2cFindFirst(4, addresses);
-            }
-            if (_address == 0) {
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-                return;
-            }
+            unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};
+            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
 
             // Calculate ports
             _ports = 0;

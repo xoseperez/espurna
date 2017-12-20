@@ -46,15 +46,10 @@ class SI7021Sensor : public BaseSensor {
             if (!_dirty) return;
             _dirty = false;
 
-            // Discover
-            if (_address == 0) {
-                unsigned char addresses[] = {0x40};
-                _address = i2cFindFirst(1, addresses);
-            }
-            if (_address == 0) {
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-                return;
-            }
+            // I2C auto-discover
+            unsigned char addresses[] = {0x40};
+            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
 
             // Check device
             #if I2C_USE_BRZO
@@ -182,7 +177,6 @@ class SI7021Sensor : public BaseSensor {
             return String("Unknown");
         }
 
-        unsigned char _address;
         unsigned char _chip;
 
 };

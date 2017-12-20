@@ -46,6 +46,7 @@ typedef enum magnitude_t {
 #define SENSOR_ERROR_TIMEOUT        3       // Response from sensor timed out
 #define SENSOR_ERROR_UNKNOWN_ID     4       // Sensor did not report a known ID
 #define SENSOR_ERROR_CRC            5       // Sensor data corrupted
+#define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 
 class BaseSensor {
 
@@ -80,6 +81,34 @@ class BaseSensor {
 
         // Current value for slot # index
         virtual double value(unsigned char index) {}
+
+        // Specific for I2C sensors
+        unsigned char lock_i2c(unsigned char address, size_t size, unsigned char * addresses) {
+
+            // Check if we should release a previously locked address
+            if (_previous_address != address) {
+                i2cReleaseLock(_previous_address);
+            }
+
+            // If we have already an address, check it is not locked
+            if (address && !i2cGetLock(address)) {
+                _error = SENSOR_ERROR_I2C;
+
+            // If we don't have an address...
+            } else {
+
+                // Trigger auto-discover
+                address = i2cFindAndLock(size, addresses);
+
+                // If still nothing exit with error
+                if (address == 0) _error = SENSOR_ERROR_I2C;
+
+            }
+
+            _previous_address = address;
+            return address;
+
+        }
 
         // Return sensor status (true for ready)
         bool status() { return _error == 0; }
@@ -119,6 +148,9 @@ class BaseSensor {
         bool _dirty = true;
         unsigned char _count = 0;
 
+        // I2C
+        unsigned char _previous_address = 0;
+        unsigned char _address = 0;
 
 };
 

@@ -8,6 +8,9 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if I2C_SUPPORT
 
+#include <vector>
+std::vector<unsigned char> _i2c_locked;
+
 #if I2C_USE_BRZO
 #include "brzo_i2c.h"
 unsigned long _i2c_scl_frequency = 0;
@@ -123,11 +126,48 @@ bool i2cCheck(unsigned char address) {
     #endif
 }
 
-unsigned char i2cFindFirst(size_t size, unsigned char * addresses) {
-    for (unsigned char i=0; i<size; i++) {
-        if (i2cCheck(addresses[i]) == 0) return addresses[i];
+bool i2cGetLock(unsigned char address) {
+    for (unsigned char i=0; i<_i2c_locked.size(); i++) {
+        if (_i2c_locked[i] == address) return false;
+    }
+    _i2c_locked.push_back(address);
+    DEBUG_MSG_P(PSTR("[I2C] Address 0x%02X locked\n"), address);
+    return true;
+}
+
+bool i2cReleaseLock(unsigned char address) {
+    for (unsigned char i=0; i<_i2c_locked.size(); i++) {
+        if (_i2c_locked[i] == address) {
+            _i2c_locked.erase(_i2c_locked.begin() + i);
+            return true;
+        }
+    }
+    return false;
+}
+
+unsigned char i2cFind(size_t size, unsigned char * addresses, unsigned char &start) {
+    for (unsigned char i=start; i<size; i++) {
+        if (i2cCheck(addresses[i]) == 0) {
+            start = i;
+            return addresses[i];
+        }
     }
     return 0;
+}
+
+unsigned char i2cFind(size_t size, unsigned char * addresses) {
+    unsigned char start = 0;
+    return i2cFind(size, addresses, start);
+}
+
+unsigned char i2cFindAndLock(size_t size, unsigned char * addresses) {
+    unsigned char start = 0;
+    unsigned char address = 0;
+    while (address = i2cFind(size, addresses, start)) {
+        if (i2cGetLock(address)) break;
+        start++;
+    }
+    return address;
 }
 
 void i2cScan() {

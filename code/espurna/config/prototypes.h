@@ -51,7 +51,9 @@ template<typename T> String getSetting(const String& key, unsigned int index, T 
 // -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
-unsigned char i2cFindFirst(size_t size, unsigned char * addresses);
+unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
+bool i2cGetLock(unsigned char address);
+bool i2cReleaseLock(unsigned char address);
 
 // -----------------------------------------------------------------------------
 // Debug

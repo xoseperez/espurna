@@ -35,17 +35,12 @@ class BMX280Sensor : public BaseSensor {
 
             if (!_dirty) return;
             _dirty = false;
+            _chip = 0;
 
-            // Discover
-            if (_address == 0) {
-                unsigned char addresses[] = {0x76, 0x77};
-                _address = i2cFindFirst(2, addresses);
-            }
-            if (_address == 0) {
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-                _chip = 0;
-                return;
-            }
+            // I2C auto-discover
+            unsigned char addresses[] = {0x76, 0x77};
+            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
 
             // Init
             init();
@@ -207,7 +202,6 @@ class BMX280Sensor : public BaseSensor {
 
         BME280 * bme;
         unsigned char _chip;
-        unsigned char _address = 0;
         unsigned long _measurement_delay;
 
 };

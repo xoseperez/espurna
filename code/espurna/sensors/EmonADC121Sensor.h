@@ -58,14 +58,9 @@ class EmonADC121Sensor : public EmonAnalogSensor {
             _dirty = false;
 
             // Discover
-            if (_address == 0) {
-                unsigned char addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
-                _address = i2cFindFirst(9, addresses);
-            }
-            if (_address == 0) {
-                _error = SENSOR_ERROR_UNKNOWN_ID;
-                return;
-            }
+            unsigned char addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
+            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
 
             // Init sensor
             #if I2C_USE_BRZO
