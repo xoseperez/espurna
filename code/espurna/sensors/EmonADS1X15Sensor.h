@@ -111,23 +111,27 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         void setAddress(unsigned char address) {
-            if (_address != address) _dirty = true;
+            if (_address == address) return;
             _address = address;
+            _dirty = true;
         }
 
         void setType(unsigned char type) {
-            if (_type != type) _dirty = true;
+            if (_type == type) return;
             _type = type;
+            _dirty = true;
         }
 
         void setMask(unsigned char mask) {
-            if (_mask != mask) _dirty = true;
+            if (_mask == mask) return;
             _mask = mask;
+            _dirty = true;
         }
 
         void setGain(unsigned int gain) {
-            if (_gain != gain) _dirty = true;
+            if (_gain == gain) return;
             _gain = gain;
+            _dirty = true;
         }
 
         // ---------------------------------------------------------------------

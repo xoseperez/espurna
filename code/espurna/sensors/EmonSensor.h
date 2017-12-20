@@ -32,19 +32,31 @@ class EmonSensor : public BaseSensor {
         }
 
         void setVoltage(double voltage) {
-            if (_voltage != voltage) _dirty = true;
+            if (_voltage == voltage) return;
             _voltage = voltage;
+            _dirty = true;
         }
 
         void setReference(double reference) {
-            if (_reference != reference) _dirty = true;
+            if (_reference == reference) return;
             _reference = reference;
+            _dirty = true;
         }
 
         void setCurrentRatio(unsigned char channel, double current_ratio) {
             if (channel >= _channels) return;
-            if (_current_ratio[channel] != current_ratio) _dirty = true;
+            if (_current_ratio[channel] == current_ratio) return;
             _current_ratio[channel] = current_ratio;
+            _dirty = true;
+        }
+
+        void expectedPower(unsigned char channel, unsigned int expected) {
+            if (channel >= _channels) return;
+            unsigned int actual = _current[channel] * _voltage;
+            if (actual == 0) return;
+            if (expected == actual) return;
+            _current_ratio[channel] = _current_ratio[channel] * (expected / actual);
+            _dirty = true;
         }
 
         // ---------------------------------------------------------------------
