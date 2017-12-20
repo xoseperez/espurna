@@ -352,6 +352,7 @@ void sensorSetup() {
 
         BaseSensor * sensor = _sensors[i];
         DEBUG_MSG("[SENSOR] %s\n", sensor->name().c_str());
+        if (sensor->count() == 0) DEBUG_MSG("[SENSOR]  -> NOTHING FOUND\n");
 
         for (unsigned char k=0; k<sensor->count(); k++) {
 
