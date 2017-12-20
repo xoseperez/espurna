@@ -266,7 +266,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef SI7021_SUPPORT
-#define SI7021_SUPPORT                  1
+#define SI7021_SUPPORT                  0
 #endif
 
 #ifndef SI7021_ADDRESS
@@ -285,4 +285,66 @@
 
 #if ADC_VCC_ENABLED
     ADC_MODE(ADC_VCC);
+#endif
+
+//--------------------------------------------------------------------------------
+// Class loading
+//--------------------------------------------------------------------------------
+
+// Embarrasing...
+unsigned char i2cFindFirst(size_t size, unsigned char * addresses);
+
+#include "sensors/BaseSensor.h"
+
+#if ANALOG_SUPPORT
+    #include "sensors/AnalogSensor.h"
+#endif
+
+#if BMX280_SUPPORT
+    #include <SparkFunBME280.h>
+    #include "sensors/BMX280Sensor.h"
+#endif
+
+#if DALLAS_SUPPORT
+    #include <OneWire.h>
+    #include "sensors/DallasSensor.h"
+#endif
+
+#if DHT_SUPPORT
+    #include "sensors/DHTSensor.h"
+#endif
+
+#if DIGITAL_SUPPORT
+    #include "sensors/DigitalSensor.h"
+#endif
+
+#if EMON_ADC121_SUPPORT
+    #include "sensors/EmonADC121Sensor.h"
+#endif
+
+#if EMON_ADS1X15_SUPPORT
+    #include "sensors/EmonADS1X15Sensor.h"
+#endif
+
+#if EMON_ANALOG_SUPPORT
+    #include "sensors/EmonAnalogSensor.h"
+#endif
+
+#if EVENTS_SUPPORT
+    #include "sensors/EventSensor.h"
+#endif
+
+#if MHZ19_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/MHZ19Sensor.h"
+#endif
+
+#if PMSX003_SUPPORT
+    #include <SoftwareSerial.h>
+    #include <PMS.h>
+    #include "sensors/PMSX003Sensor.h"
+#endif
+
+#if SI7021_SUPPORT
+    #include "sensors/SI7021Sensor.h"
 #endif

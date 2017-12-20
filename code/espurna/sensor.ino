@@ -214,7 +214,6 @@ void _sensorInit() {
 
     #if ANALOG_SUPPORT
     {
-        #include "sensors/AnalogSensor.h"
         AnalogSensor * sensor = new AnalogSensor();
         sensor->setGPIO(ANALOG_PIN, ANALOG_PIN_MODE);
         _sensorRegister(sensor);
@@ -223,7 +222,6 @@ void _sensorInit() {
 
     #if BMX280_SUPPORT
     {
-        #include "sensors/BMX280Sensor.h"
         BMX280Sensor * sensor = new BMX280Sensor();
         sensor->setAddress(BMX280_ADDRESS);
         _sensorRegister(sensor);
@@ -232,7 +230,6 @@ void _sensorInit() {
 
     #if DALLAS_SUPPORT
     {
-        #include "sensors/DallasSensor.h"
         DallasSensor * sensor = new DallasSensor();
         sensor->setGPIO(DALLAS_PIN, DALLAS_PULLUP);
         _sensorRegister(sensor);
@@ -241,7 +238,6 @@ void _sensorInit() {
 
     #if DHT_SUPPORT
     {
-        #include "sensors/DHTSensor.h"
         DHTSensor * sensor = new DHTSensor();
         sensor->setGPIO(DHT_PIN);
         sensor->setType(DHT_TYPE);
@@ -251,7 +247,6 @@ void _sensorInit() {
 
     #if DIGITAL_SUPPORT
     {
-        #include "sensors/DigitalSensor.h"
         DigitalSensor * sensor = new DigitalSensor();
         sensor->setGPIO(DIGITAL_PIN, DIGITAL_PIN_MODE);
         sensor->setDefault(DIGITAL_DEFAULT_STATE);
@@ -261,7 +256,6 @@ void _sensorInit() {
 
     #if EMON_ADC121_SUPPORT
     {
-        #include "sensors/EmonADC121Sensor.h"
         EmonADC121Sensor * sensor = new EmonADC121Sensor();
         sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
@@ -273,7 +267,6 @@ void _sensorInit() {
 
     #if EMON_ADS1X15_SUPPORT
     {
-        #include "sensors/EmonADS1X15Sensor.h"
         EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
         sensor->setAddress(EMON_ADS1X15_I2C_ADDRESS);
         sensor->setType(EMON_ADS1X15_TYPE);
@@ -287,7 +280,6 @@ void _sensorInit() {
 
     #if EMON_ANALOG_SUPPORT
     {
-        #include "sensors/EmonAnalogSensor.h"
         EmonAnalogSensor * sensor = new EmonAnalogSensor();
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
         sensor->setReference(EMON_REFERENCE_VOLTAGE);
@@ -298,7 +290,6 @@ void _sensorInit() {
 
     #if EVENTS_SUPPORT
     {
-        #include "sensors/EventSensor.h"
         EventSensor * sensor = new EventSensor();
         sensor->setGPIO(EVENTS_PIN, EVENTS_PIN_MODE);
         sensor->setDebounceTime(EVENTS_DEBOUNCE);
@@ -310,7 +301,6 @@ void _sensorInit() {
 
     #if MHZ19_SUPPORT
     {
-        #include "sensors/MHZ19Sensor.h"
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setGPIO(MHZ19_RX_PIN, MHZ19_TX_PIN);
         _sensorRegister(sensor);
@@ -319,7 +309,6 @@ void _sensorInit() {
 
     #if PMSX003_SUPPORT
     {
-        #include "sensors/PMSX003Sensor.h"
         PMSX003Sensor * sensor = new PMSX003Sensor();
         sensor->setGPIO(PMS_RX_PIN, PMS_TX_PIN);
         _sensorRegister(sensor);
@@ -328,7 +317,6 @@ void _sensorInit() {
 
     #if SI7021_SUPPORT
     {
-        #include "sensors/SI7021Sensor.h"
         SI7021Sensor * sensor = new SI7021Sensor();
         sensor->setAddress(SI7021_ADDRESS);
         _sensorRegister(sensor);
