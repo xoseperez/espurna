@@ -29,15 +29,18 @@ class EmonSensor : public BaseSensor {
         }
 
         void setVoltage(double voltage) {
+            if (_voltage != voltage) _dirty = true;
             _voltage = voltage;
         }
 
-        void setReference(double ref) {
-            _reference = ref;
+        void setReference(double reference) {
+            if (_reference != reference) _dirty = true;
+            _reference = reference;
         }
 
-        void setCurrentRatio(double ratio) {
-            _current_ratio = ratio;
+        void setCurrentRatio(double current_ratio) {
+            if (_current_ratio != current_ratio) _dirty = true;
+            _current_ratio = current_ratio;
         }
 
         // ---------------------------------------------------------------------

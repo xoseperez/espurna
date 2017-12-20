@@ -25,6 +25,8 @@ class PMSX003Sensor : public BaseSensor {
         }
 
         void setGPIO(unsigned char pin_rx, unsigned char pin_tx) {
+            if (_pin_rx != pin_rx) _dirty = true;
+            if (_pin_tx != pin_tx) _dirty = true;
             _pin_rx = pin_rx;
             _pin_tx = pin_tx;
         }
@@ -35,6 +37,9 @@ class PMSX003Sensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() {
+
+            if (!_dirty) return;
+            _dirty = false;
 
             if (_serial) delete _serial;
             if (_pms) delete _pms;

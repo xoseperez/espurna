@@ -22,6 +22,7 @@ class BMX280Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         void setAddress(unsigned char address) {
+            if (_address != address) _dirty = true;
             _address = address;
         }
 
@@ -31,6 +32,9 @@ class BMX280Sensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() {
+
+            if (!_dirty) return;
+            _dirty = false;
 
             // Discover
             if (_address == 0) {

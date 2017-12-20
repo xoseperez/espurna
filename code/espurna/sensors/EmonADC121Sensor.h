@@ -37,6 +37,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         // ---------------------------------------------------------------------
 
         void setAddress(unsigned char address) {
+            if (_address != address) _dirty = true;
             _address = address;
         }
 
@@ -46,6 +47,9 @@ class EmonADC121Sensor : public EmonAnalogSensor {
 
         // Initialization method, must be idempotent
         void begin() {
+
+            if (!_dirty) return;
+            _dirty = false;
 
             // Discover
             if (_address == 0) {

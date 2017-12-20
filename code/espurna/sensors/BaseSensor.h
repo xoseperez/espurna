@@ -116,6 +116,7 @@ class BaseSensor {
         void detach(unsigned char gpio);
 
         int _error = 0;
+        bool _dirty = true;
         unsigned char _count = 0;
 
 

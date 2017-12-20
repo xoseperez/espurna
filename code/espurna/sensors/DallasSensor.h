@@ -34,9 +34,11 @@ class DallasSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         void setGPIO(unsigned char gpio, bool pullup = false) {
+            if (_gpio != gpio) _dirty = true;
+            if (_pullup != pullup) _dirty = true;
             _gpio = gpio;
-            _interval = SENSOR_READ_INTERVAL / 2;
             _pullup = pullup;
+            _interval = SENSOR_READ_INTERVAL / 2;
         }
 
         // ---------------------------------------------------------------------
@@ -45,6 +47,9 @@ class DallasSensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() {
+
+            if (!_dirty) return;
+            _dirty = false;
 
             // OneWire
             if (_wire) delete _wire;

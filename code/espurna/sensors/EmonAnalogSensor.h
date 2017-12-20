@@ -26,13 +26,16 @@ class EmonAnalogSensor : public EmonSensor {
         // Initialization method, must be idempotent
         void begin() {
 
+            if (!_dirty) return;
+            _dirty = false;
+            
             // Just one channel
             _count = _magnitudes;
 
             // Bit depth
             _resolution = INTERNAL_ADC_RESOLUTION;
 
-            // Init analog PIN
+            // Init analog PIN)
             pinMode(_gpio, INPUT);
 
             // Call the parent class method
