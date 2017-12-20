@@ -27,6 +27,7 @@
 #define ADC121_REG_CONVH        0x07
 
 #define ADC121_RESOLUTION       12
+#define ADC121_CHANNELS         1
 
 class EmonADC121Sensor : public EmonAnalogSensor {
 
@@ -35,6 +36,11 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
+
+        EmonADC121Sensor(): EmonAnalogSensor() {
+            _channels = ADC121_CHANNELS;
+            init();
+        }
 
         void setAddress(unsigned char address) {
             if (_address != address) _dirty = true;
@@ -86,8 +92,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
             EmonSensor::begin();
 
             // warmup channel 0 (the only one)
-            _pivot = _adc_counts >> 1;
-            read(0, _pivot);
+            read(0);
 
         }
 
@@ -117,6 +122,8 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         // ---------------------------------------------------------------------
 
         unsigned int readADC(unsigned char channel) {
+
+            (void) channel;
 
             unsigned int value;
 

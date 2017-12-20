@@ -249,7 +249,7 @@ void _sensorInit() {
         sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
         sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(EMON_CURRENT_RATIO);
+        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
         _sensorRegister(sensor);
     }
     #endif
@@ -262,7 +262,10 @@ void _sensorInit() {
         sensor->setMask(EMON_ADS1X15_MASK);
         sensor->setGain(EMON_ADS1X15_GAIN);
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setCurrentRatio(EMON_CURRENT_RATIO);
+        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+        sensor->setCurrentRatio(1, EMON_CURRENT_RATIO);
+        sensor->setCurrentRatio(2, EMON_CURRENT_RATIO);
+        sensor->setCurrentRatio(3, EMON_CURRENT_RATIO);
         _sensorRegister(sensor);
     }
     #endif
@@ -272,7 +275,7 @@ void _sensorInit() {
         EmonAnalogSensor * sensor = new EmonAnalogSensor();
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
         sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(EMON_CURRENT_RATIO);
+        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
         _sensorRegister(sensor);
     }
     #endif

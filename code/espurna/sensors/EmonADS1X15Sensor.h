@@ -105,6 +105,11 @@ class EmonADS1X15Sensor : public EmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
+        EmonADS1X15Sensor(): EmonSensor() {
+            _channels = ADS1X15_CHANNELS;
+            init();
+        }
+
         void setAddress(unsigned char address) {
             if (_address != address) _dirty = true;
             _address = address;
@@ -299,7 +304,7 @@ class EmonADS1X15Sensor : public EmonSensor {
             config |= ((channel + 4) << 12);                // Set single-ended input channel (0x4000 - 0x7000)
 
             #if SENSOR_DEBUG
-                Serial.printf("[EMON] ADS1X115 Config Registry: %04X\n", config);
+                //Serial.printf("[EMON] ADS1X115 Config Registry: %04X\n", config);
             #endif
 
             // Write config register to the ADC
@@ -335,11 +340,13 @@ class EmonADS1X15Sensor : public EmonSensor {
             }
             setConfigRegistry(channel, true, true);
 
-            return read(channel, _pivot[channel]);
+            return read(channel);
 
         }
 
         unsigned int readADC(unsigned char channel) {
+
+            (void) channel;
 
             unsigned int value = 0;
 
@@ -375,11 +382,6 @@ class EmonADS1X15Sensor : public EmonSensor {
         unsigned char _mask = 0x0F;
         unsigned int _gain = ADS1X15_REG_CONFIG_PGA_4_096V;
         unsigned char _ports;
-        double _pivot[ADS1X15_CHANNELS] = {0};
-        double _current[ADS1X15_CHANNELS] = {0};
-        #if EMON_REPORT_ENERGY
-            unsigned long _energy[ADS1X15_CHANNELS] = {0};
-        #endif
 
 
 };

@@ -17,6 +17,8 @@ class EmonSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         EmonSensor(): BaseSensor() {
+
+            // Calculate # of magnitudes
             #if EMON_REPORT_CURRENT
                 ++_magnitudes;
             #endif
@@ -26,6 +28,7 @@ class EmonSensor : public BaseSensor {
             #if EMON_REPORT_ENERGY
                 ++_magnitudes;
             #endif
+
         }
 
         void setVoltage(double voltage) {
@@ -38,9 +41,10 @@ class EmonSensor : public BaseSensor {
             _reference = reference;
         }
 
-        void setCurrentRatio(double current_ratio) {
-            if (_current_ratio != current_ratio) _dirty = true;
-            _current_ratio = current_ratio;
+        void setCurrentRatio(unsigned char channel, double current_ratio) {
+            if (channel >= _channels) return;
+            if (_current_ratio[channel] != current_ratio) _dirty = true;
+            _current_ratio[channel] = current_ratio;
         }
 
         // ---------------------------------------------------------------------
@@ -52,26 +56,22 @@ class EmonSensor : public BaseSensor {
             // Resolution
             _adc_counts = 1 << _resolution;
 
-            // Calculate factor
-            _current_factor = _current_ratio * _reference / _adc_counts;
-
-            // Calculate multiplier
-            unsigned int s = 1;
-            unsigned int i = 1;
-            unsigned int m = s * i;
-            while (m * _current_factor < 1) {
-                _multiplier = m;
-                i = (i == 1) ? 2 : (i == 2) ? 5 : 1;
-                if (i == 1) s *= 10;
-                m = s * i;
+            // Calculations
+            for (unsigned char i=0; i<_channels; i++) {
+                _energy[i] = _current[i] = 0;
+                _pivot[i] = _adc_counts >> 1;
+                _current_factor[i] = _current_ratio[i] * _reference / _adc_counts;
+                _multiplier[i] = calculateMultiplier(_current_factor[i]);
             }
 
             #if SENSOR_DEBUG
-                Serial.print("[EMON] Current ratio: "); Serial.println(_current_ratio);
-                Serial.print("[EMON] Ref. Voltage: "); Serial.println(_reference);
-                Serial.print("[EMON] ADC Counts: "); Serial.println(_adc_counts);
-                Serial.print("[EMON] Current factor: "); Serial.println(_current_factor);
-                Serial.print("[EMON] Multiplier: "); Serial.println(_multiplier);
+                DEBUG_MSG("[EMON] Reference (mV): %d\n", int(1000 * _reference));
+                DEBUG_MSG("[EMON] ADC counts: %d\n", _adc_counts);
+                for (unsigned char i=0; i<_channels; i++) {
+                    DEBUG_MSG("[EMON] Channel #%d current ratio (mA/V): %d\n", i, int(1000 * _current_ratio[i]));
+                    DEBUG_MSG("[EMON] Channel #%d current factor (mA/bit): %d\n", i, int(1000 * _current_factor[i]));
+                    DEBUG_MSG("[EMON] Channel #%d Multiplier: %d\n", i, int(_multiplier[i]));
+                }
             #endif
 
         }
@@ -82,9 +82,35 @@ class EmonSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
+        // Initializes internal variables
+        void init() {
+            _current_ratio = new double[_channels];
+            _current_factor = new double[_channels];
+            _multiplier = new uint16_t[_channels];
+            _pivot = new double[_channels];
+            _current = new double[_channels];
+            #if EMON_REPORT_ENERGY
+                _energy = new uint32_t[_channels];
+            #endif
+        }
+
         virtual unsigned int readADC(unsigned char channel) {}
 
-        double read(unsigned char channel, double &pivot) {
+        unsigned int calculateMultiplier(double current_factor) {
+            unsigned int s = 1;
+            unsigned int i = 1;
+            unsigned int m = s * i;
+            unsigned int multiplier;
+            while (m * current_factor < 1) {
+                multiplier = m;
+                i = (i == 1) ? 2 : (i == 2) ? 5 : 1;
+                if (i == 1) s *= 10;
+                m = s * i;
+            }
+            return multiplier;
+        }
+
+        double read(unsigned char channel) {
 
             int sample;
             int max = 0;
@@ -101,8 +127,8 @@ class EmonSensor : public BaseSensor {
                 if (sample < min) min = sample;
 
                 // Digital low pass filter extracts the VDC offset
-                pivot = (pivot + (sample - pivot) / EMON_FILTER_SPEED);
-                filtered = sample - pivot;
+                _pivot[channel] = (_pivot[channel] + (sample - _pivot[channel]) / EMON_FILTER_SPEED);
+                filtered = sample - _pivot[channel];
 
                 // Root-mean-square method
                 sum += (filtered * filtered);
@@ -111,25 +137,26 @@ class EmonSensor : public BaseSensor {
             time_span = millis() - time_span;
 
             // Quick fix
-            if (pivot < min || max < pivot) {
-                pivot = (max + min) / 2.0;
+            if (_pivot[channel] < min || max < _pivot[channel]) {
+                _pivot[channel] = (max + min) / 2.0;
             }
 
             // Calculate current
             double rms = _samples > 0 ? sqrt(sum / _samples) : 0;
-            double current = _current_factor * rms;
-            current = (double) (int(current * _multiplier) - 1) / _multiplier;
+            double current = _current_factor[channel] * rms;
+            current = (double) (int(current * _multiplier[channel]) - 1) / _multiplier[channel];
             if (current < 0) current = 0;
 
             #if SENSOR_DEBUG
-                Serial.print("[EMON] Total samples: "); Serial.println(_samples);
-                Serial.print("[EMON] Total time (ms): "); Serial.println(time_span);
-                Serial.print("[EMON] Sample frequency (Hz): "); Serial.println(1000 * _samples / time_span);
-                Serial.print("[EMON] Max value: "); Serial.println(max);
-                Serial.print("[EMON] Min value: "); Serial.println(min);
-                Serial.print("[EMON] Midpoint value: "); Serial.println(pivot);
-                Serial.print("[EMON] RMS value: "); Serial.println(rms);
-                Serial.print("[EMON] Current: "); Serial.println(current);
+                DEBUG_MSG("[EMON] Channel: %d\n", channel);
+                DEBUG_MSG("[EMON] Total samples: %d\n", _samples);
+                DEBUG_MSG("[EMON] Total time (ms): %d\n", time_span);
+                DEBUG_MSG("[EMON] Sample frequency (Hz): %d\n", int(1000 * _samples / time_span));
+                DEBUG_MSG("[EMON] Max value: %d\n", max);
+                DEBUG_MSG("[EMON] Min value: %d\n", min);
+                DEBUG_MSG("[EMON] Midpoint value: %d\n", int(_pivot[channel]));
+                DEBUG_MSG("[EMON] RMS value: %d\n", int(rms));
+                DEBUG_MSG("[EMON] Current (mA): %d\n", int(current));
             #endif
 
             // Check timing
@@ -142,18 +169,25 @@ class EmonSensor : public BaseSensor {
 
         }
 
-        unsigned char _magnitudes = 0;
-        unsigned long _samples = EMON_MAX_SAMPLES;
+        unsigned char _channels = 0;                    // Number of ADC channels available
+        unsigned char _magnitudes = 0;                  // Number of magnitudes per channel
+        unsigned long _samples = EMON_MAX_SAMPLES;      // Samples (dynamically modificable)
 
-        unsigned int _multiplier = 1;
-        unsigned char _resolution = 10;
+        unsigned char _resolution = 10;                 // ADC resolution in bits
+        unsigned long _adc_counts;                      // Max count
 
-        double _voltage = EMON_MAINS_VOLTAGE;
-        double _reference = EMON_REFERENCE_VOLTAGE;
-        double _current_ratio = EMON_CURRENT_RATIO;
+        double _voltage = EMON_MAINS_VOLTAGE;           // Mains voltage
+        double _reference = EMON_REFERENCE_VOLTAGE;     // ADC reference voltage (100%)
 
-        unsigned long _adc_counts;
-        double _current_factor;
+        double * _current_ratio;                        // Ratio ampers in main loop to voltage in secondary (per channel)
+        double * _current_factor;                       // Calculated, reads (RMS) to current (per channel)
+        uint16_t * _multiplier;                         // Calculated, error (per channel)
+
+        double * _pivot;                                // Moving average mid point (per channel)
+        double * _current;                              // Last current reading (per channel)
+        #if EMON_REPORT_ENERGY
+            uint32_t * _energy;                         // Aggregated energy (per channel)
+        #endif
 
 
 
