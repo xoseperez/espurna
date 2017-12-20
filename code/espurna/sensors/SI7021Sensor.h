@@ -75,6 +75,7 @@ class SI7021Sensor : public BaseSensor {
             #endif
 
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
+                i2cReleaseLock(_address);
                 _error = SENSOR_ERROR_UNKNOWN_ID;
             } else {
                 _count = 2;

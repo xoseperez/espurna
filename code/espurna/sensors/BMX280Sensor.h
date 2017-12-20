@@ -149,6 +149,7 @@ class BMX280Sensor : public BaseSensor {
             _chip = bme->begin();
             if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
                 _chip = 0;
+                i2cReleaseLock(_address);
                 _error = SENSOR_ERROR_UNKNOWN_ID;
             }
 
