@@ -32,7 +32,7 @@ class BaseFilter {
         virtual double max() {
             double max = 0;
             for (unsigned char i = 1; i < _data.size(); i++) {
-                if (max < _data.at(i)) max = _data.at(i);
+                if (max < _data[i]) max = _data[i];
             }
             return max;
         }

@@ -12,7 +12,7 @@ class MaxFilter : public BaseFilter {
 
     public:
 
-        virtual double result() {
+        double result() {
             return max();
         }
 
