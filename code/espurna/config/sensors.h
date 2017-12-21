@@ -89,6 +89,7 @@
 #define SENSOR_BMX280_ID                0x13
 #define SENSOR_MHZ19_ID                 0x14
 #define SENSOR_SI7021_ID                0x15
+#define SENSOR_SHT3X_I2C_ID             0x16
 
 // =============================================================================
 // Specific data for each sensor
@@ -295,6 +296,24 @@
 #define PMS_TX_PIN                      15
 
 //------------------------------------------------------------------------------
+// SHT3X I2C (Wemos) temperature & humidity sensor
+// Enable support by passing SHT3X_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SHT3X_I2C_SUPPORT
+#define SHT3X_I2C_SUPPORT               0
+#endif
+
+#ifndef SHT3X_I2C_ADDRESS
+#define SHT3X_I2C_ADDRESS               0x00    // 0x00 means auto
+#endif
+
+#if SHT3X_I2C_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+//------------------------------------------------------------------------------
 // SI7021 temperature & humidity sensor
 // Enable support by passing SI7021_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -409,4 +428,8 @@
 
 #if SI7021_SUPPORT
     #include "sensors/SI7021Sensor.h"
+#endif
+
+#if SHT3X_I2C_SUPPORT
+    #include "sensors/SHT3XI2CSensor.h"
 #endif

@@ -337,6 +337,14 @@ void _sensorInit() {
     }
     #endif
 
+    #if SHT3X_I2C_SUPPORT
+    {
+        SHT3XI2CSensor * sensor = new SHT3XI2CSensor();
+        sensor->setAddress(SHT3X_I2C_ADDRESS);
+        _sensorRegister(sensor);
+    }
+    #endif
+
     #if SI7021_SUPPORT
     {
         SI7021Sensor * sensor = new SI7021Sensor();
