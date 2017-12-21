@@ -353,6 +353,15 @@ void _sensorInit() {
     }
     #endif
 
+    #if V9261F_SUPPORT
+    {
+        V9261FSensor * sensor = new V9261FSensor();
+        sensor->setRX(V9261F_PIN);
+        sensor->setInverted(V9261F_PIN_INVERSE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
 }
 
 void _sensorConfigure() {
@@ -424,7 +433,7 @@ void _magnitudesInit() {
             if (type == MAGNITUDE_DIGITAL) {
                 new_magnitude.filter = new MaxFilter();
             } else if (type == MAGNITUDE_EVENTS) {
-                new_magnitude.filter = new MovingAverageFilter(SENSOR_REPORT_EVERY);
+                new_magnitude.filter = new MovingAverageFilter();
             } else {
                 new_magnitude.filter = new MedianFilter();
             }

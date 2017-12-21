@@ -118,7 +118,7 @@ class PMSX003Sensor : public BaseSensor {
             }
 
             _pms->requestRead();
-            
+
         }
 
         // Current value for slot # index
@@ -140,8 +140,8 @@ class PMSX003Sensor : public BaseSensor {
         unsigned int _pin_rx;
         unsigned int _pin_tx;
         unsigned long _startTime;
-        SoftwareSerial * _serial;
-        PMS * _pms;
+        SoftwareSerial * _serial = NULL;
+        PMS * _pms = NULL;
         PMS::DATA _data;
 
 };

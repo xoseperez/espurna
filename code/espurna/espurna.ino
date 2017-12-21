@@ -233,8 +233,14 @@ void welcome() {
     #if PMSX003_SUPPORT
         DEBUG_MSG_P(PSTR(" PMSX003"));
     #endif
+    #if SHT3X_I2C_SUPPORT
+        DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
+    #endif
     #if SI7021_SUPPORT
         DEBUG_MSG_P(PSTR(" SI7021"));
+    #endif
+    #if V9261F_SUPPORT
+        DEBUG_MSG_P(PSTR(" V9261F"));
     #endif
 
     DEBUG_MSG_P(PSTR("\n\n"));

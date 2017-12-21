@@ -193,6 +193,6 @@ class MHZ19Sensor : public BaseSensor {
         double _co2 = 0;
         unsigned int _pin_rx;
         unsigned int _pin_tx;
-        SoftwareSerial * _serial;
+        SoftwareSerial * _serial = NULL;
 
 };

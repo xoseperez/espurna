@@ -2,33 +2,33 @@
 // SENSORS - General data
 // =============================================================================
 
-#define SENSOR_DEBUG                    0               // Debug sensors
+#define SENSOR_DEBUG                        0               // Debug sensors
 
-#define SENSOR_READ_INTERVAL            6000            // Read data from sensors every 6 seconds
-#define SENSOR_REPORT_EVERY             10              // Report every this many readings
-#define SENSOR_USE_INDEX                0               // Use the index in topic (i.e. temperature/0)
+#define SENSOR_READ_INTERVAL                6000            // Read data from sensors every 6 seconds
+#define SENSOR_REPORT_EVERY                 10              // Report every this many readings
+#define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                         // even if just one sensor (0 for backwards compatibility)
 
 #ifndef SENSOR_TEMPERATURE_UNITS
-#define SENSOR_TEMPERATURE_UNITS        TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
 #endif
 
 #ifndef SENSOR_TEMPERATURE_CORRECTION
-#define SENSOR_TEMPERATURE_CORRECTION   0.0             // Offset correction
+#define SENSOR_TEMPERATURE_CORRECTION       0.0             // Offset correction
 #endif
 
 #ifndef TEMPERATURE_MIN_CHANGE
-#define TEMPERATURE_MIN_CHANGE          0.0             // Minimum temperature change to report
+#define TEMPERATURE_MIN_CHANGE              0.0             // Minimum temperature change to report
 #endif
 
 #ifndef HUMIDITY_MIN_CHANGE
-#define HUMIDITY_MIN_CHANGE             0               // Minimum humidity change to report
+#define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
-#define HUMIDITY_NORMAL                 0
-#define HUMIDITY_COMFORTABLE            1
-#define HUMIDITY_DRY                    2
-#define HUMIDITY_WET                    3
+#define HUMIDITY_NORMAL                     0
+#define HUMIDITY_COMFORTABLE                1
+#define HUMIDITY_DRY                        2
+#define HUMIDITY_WET                        3
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -240,7 +240,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef EMON_ANALOG_SUPPORT
-#define EMON_ANALOG_SUPPORT             1       // Do not build support by default
+#define EMON_ANALOG_SUPPORT             0       // Do not build support by default
 #endif
 
 #if EMON_ANALOG_SUPPORT
@@ -330,6 +330,32 @@
 #undef I2C_SUPPORT
 #define I2C_SUPPORT                     1
 #endif
+
+//------------------------------------------------------------------------------
+// V9261F based power sensor
+// Enable support by passing SI7021_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef V9261F_SUPPORT
+#define V9261F_SUPPORT                  0
+#endif
+
+#ifndef V9261F_PIN
+#define V9261F_PIN                      2       // TX pin from the V9261F
+#endif
+
+#ifndef V9261F_PIN_INVERSE
+#define V9261F_PIN_INVERSE              1       // Signal is inverted
+#endif
+
+#define V9261F_SYNC_INTERVAL            600     // Sync signal length (ms)
+#define V9261F_BAUDRATE                 4800    // UART baudrate
+
+// Default ratios
+#define V9261F_CURRENT_FACTOR           79371434.0
+#define V9261F_VOLTAGE_FACTOR           4160651.0
+#define V9261F_POWER_FACTOR             153699.0
+#define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
 
 // =============================================================================
 // Sensor helpers configuration
@@ -432,4 +458,9 @@
 
 #if SHT3X_I2C_SUPPORT
     #include "sensors/SHT3XI2CSensor.h"
+#endif
+
+#if V9261F_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/V9261FSensor.h"
 #endif

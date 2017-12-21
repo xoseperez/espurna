@@ -1026,7 +1026,7 @@
     #define ALEXA_SUPPORT       0
 
     // V9261F
-    #define POWER_PROVIDER      POWER_PROVIDER_V9261F
+    #define V9261F_SUPPORT      1
     #define V9261F_PIN          2
     #define V9261F_PIN_INVERSE  1
 
