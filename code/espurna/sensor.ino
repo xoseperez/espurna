@@ -149,7 +149,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
                 root["emonVisible"] = 1;
-                root["pwrVoltage"] = _sensors[i]->getVoltage();
+                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
                 hasSensors = true;
             }
         #endif
@@ -400,7 +400,7 @@ void _sensorConfigure() {
         #if EMON_ANALOG_SUPPORT
             if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
 
-                AnalogSensor * sensor = (AnalogSensor *) _sensors[i];
+                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
                 if (value = getSetting("pwrExpectedP", 0).toInt() == 0) {
                     value = getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat();
