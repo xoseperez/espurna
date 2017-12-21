@@ -90,7 +90,10 @@ class BaseSensor {
         virtual void setConfig(JsonObject& root) {};
 
         // Load the configuration manifest
-        static void manifest(JsonObject& root) {};
+        static void manifest(JsonArray& root) {};
+
+        // Sensor ID
+        unsigned char getID() { return _sensor_id; };
 
         // Specific for I2C sensors
         unsigned char lock_i2c(unsigned char address, size_t size, unsigned char * addresses) {
@@ -120,18 +123,6 @@ class BaseSensor {
 
         }
 
-        // Return sensor status (true for ready)
-        bool status() { return _error == 0; }
-
-        // Return sensor last internal error
-        int error() { return _error; }
-
-        // Number of available slots
-        unsigned char count() { return _count; }
-
-        // Handle interrupt calls
-        virtual void handleInterrupt(unsigned char gpio) {}
-
         // Interrupt attach callback
         void attached(unsigned char gpio) {
             #if SENSOR_DEBUG
@@ -146,6 +137,18 @@ class BaseSensor {
             #endif
         }
 
+        // Return sensor status (true for ready)
+        bool status() { return _error == 0; }
+
+        // Return sensor last internal error
+        int error() { return _error; }
+
+        // Number of available slots
+        unsigned char count() { return _count; }
+
+        // Handle interrupt calls
+        virtual void handleInterrupt(unsigned char gpio) {}
+
     protected:
 
         // Attach interrupt
@@ -154,6 +157,7 @@ class BaseSensor {
         // Detach interrupt
         void detach(unsigned char gpio);
 
+        unsigned char _sensor_id = 0x00;
         int _error = 0;
         bool _dirty = true;
         unsigned char _count = 0;

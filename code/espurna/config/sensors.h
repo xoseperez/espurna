@@ -1,6 +1,6 @@
-// -----------------------------------------------------------------------------
-// SENSORS
-// -----------------------------------------------------------------------------
+// =============================================================================
+// SENSORS - General data
+// =============================================================================
 
 #define SENSOR_DEBUG                    0               // Debug sensors
 
@@ -25,53 +25,82 @@
 #define HUMIDITY_MIN_CHANGE             0               // Minimum humidity change to report
 #endif
 
-#define SENSOR_TEMPERATURE_DECIMALS     1
-#define SENSOR_HUMIDITY_DECIMALS        0
-#define SENSOR_PRESSURE_DECIMALS        2
-#define SENSOR_ANALOG_DECIMALS          0
-#define SENSOR_EVENTS_DECIMALS          0
-#define SENSOR_CURRENT_DECIMALS         3
-#define SENSOR_VOLTAGE_DECIMALS         0
-#define SENSOR_POWER_DECIMALS           0
-#define SENSOR_POWER_FACTOR_DECIMALS    0
-#define SENSOR_ENERGY_DECIMALS          0
-#define SENSOR_PM1dot0_DECIMALS         0
-#define SENSOR_PM2dot5_DECIMALS         0
-#define SENSOR_PM10_DECIMALS            0
-#define SENSOR_CO2_DECIMALS             0
-
-#define SENSOR_UNKNOWN_TOPIC            "unknown"
-#define SENSOR_TEMPERATURE_TOPIC        "temperature"
-#define SENSOR_HUMIDITY_TOPIC           "humidity"
-#define SENSOR_PRESSURE_TOPIC           "pressure"
-#define SENSOR_CURRENT_TOPIC            "current"
-#define SENSOR_VOLTAGE_TOPIC            "voltage"
-#define SENSOR_ACTIVE_POWER_TOPIC       "power"
-#define SENSOR_APPARENT_POWER_TOPIC     "apparent"
-#define SENSOR_REACTIVE_POWER_TOPIC     "reactive"
-#define SENSOR_POWER_FACTOR_TOPIC       "factor"
-#define SENSOR_ENERGY_TOPIC             "energy"
-#define SENSOR_ENERGY_DELTA_TOPIC       "energy_delta"
-#define SENSOR_PM1dot0_TOPIC            "pm1dot0"
-#define SENSOR_PM2dot5_TOPIC            "pm2dot5"
-#define SENSOR_PM10_TOPIC               "pm10"
-#define SENSOR_ANALOG_TOPIC             "analog"
-#define SENSOR_DIGITAL_TOPIC            "digital"
-#define SENSOR_EVENTS_TOPIC             "events"
-#define SENSOR_CO2_TOPIC                "co2"
-
 #define HUMIDITY_NORMAL                 0
 #define HUMIDITY_COMFORTABLE            1
 #define HUMIDITY_DRY                    2
 #define HUMIDITY_WET                    3
 
 //--------------------------------------------------------------------------------
+// Magnitudes
+//--------------------------------------------------------------------------------
+
+#define MAGNITUDE_TEMPERATURE_DECIMALS      1
+#define MAGNITUDE_HUMIDITY_DECIMALS         0
+#define MAGNITUDE_PRESSURE_DECIMALS         2
+#define MAGNITUDE_ANALOG_DECIMALS           0
+#define MAGNITUDE_EVENTS_DECIMALS           0
+#define MAGNITUDE_CURRENT_DECIMALS          3
+#define MAGNITUDE_VOLTAGE_DECIMALS          0
+#define MAGNITUDE_POWER_DECIMALS            0
+#define MAGNITUDE_POWER_FACTOR_DECIMALS     0
+#define MAGNITUDE_ENERGY_DECIMALS           0
+#define MAGNITUDE_PM1dot0_DECIMALS          0
+#define MAGNITUDE_PM2dot5_DECIMALS          0
+#define MAGNITUDE_PM10_DECIMALS             0
+#define MAGNITUDE_CO2_DECIMALS              0
+
+#define MAGNITUDE_UNKNOWN_TOPIC             "unknown"
+#define MAGNITUDE_TEMPERATURE_TOPIC         "temperature"
+#define MAGNITUDE_HUMIDITY_TOPIC            "humidity"
+#define MAGNITUDE_PRESSURE_TOPIC            "pressure"
+#define MAGNITUDE_CURRENT_TOPIC             "current"
+#define MAGNITUDE_VOLTAGE_TOPIC             "voltage"
+#define MAGNITUDE_ACTIVE_POWER_TOPIC        "power"
+#define MAGNITUDE_APPARENT_POWER_TOPIC      "apparent"
+#define MAGNITUDE_REACTIVE_POWER_TOPIC      "reactive"
+#define MAGNITUDE_POWER_FACTOR_TOPIC        "factor"
+#define MAGNITUDE_ENERGY_TOPIC              "energy"
+#define MAGNITUDE_ENERGY_DELTA_TOPIC        "energy_delta"
+#define MAGNITUDE_PM1dot0_TOPIC             "pm1dot0"
+#define MAGNITUDE_PM2dot5_TOPIC             "pm2dot5"
+#define MAGNITUDE_PM10_TOPIC                "pm10"
+#define MAGNITUDE_ANALOG_TOPIC              "analog"
+#define MAGNITUDE_DIGITAL_TOPIC             "digital"
+#define MAGNITUDE_EVENTS_TOPIC              "events"
+#define MAGNITUDE_CO2_TOPIC                 "co2"
+
+//--------------------------------------------------------------------------------
+// Sensor ID
+// These should remain over time, do not modify them, only add new ones at the end
+//--------------------------------------------------------------------------------
+
+#define SENSOR_DHT_ID                   0x01
+#define SENSOR_DALLAS_ID                0x02
+#define SENSOR_EMON_ANALOG_ID           0x03
+#define SENSOR_EMON_ADC121_ID           0x04
+#define SENSOR_EMON_ADS1X15_ID          0x05
+#define SENSOR_HLW8012_ID               0x06
+#define SENSOR_V9261F_ID                0x07
+#define SENSOR_ECH1560_ID               0x08
+#define SENSOR_ANALOG_ID                0x09
+#define SENSOR_DIGITAL_ID               0x10
+#define SENSOR_EVENTS_ID                0x11
+#define SENSOR_PMSX003_ID               0x12
+#define SENSOR_BMX280_ID                0x13
+#define SENSOR_MHZ19_ID                 0x14
+#define SENSOR_SI7021_ID                0x15
+
+// =============================================================================
+// Specific data for each sensor
+// =============================================================================
+
+//------------------------------------------------------------------------------
 // Analog sensor
 // Enable support by passing ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
 
 #ifndef ANALOG_SUPPORT
-#define ANALOG_SUPPORT                  1
+#define ANALOG_SUPPORT                  0
 #endif
 
 #if ANALOG_SUPPORT
@@ -79,13 +108,13 @@
     #define ADC_VCC_ENABLED             0
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // BME280/BMP280
 // Enable support by passing BMX280_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef BMX280_SUPPORT
-#define BMX280_SUPPORT                  1
+#define BMX280_SUPPORT                  0
 #endif
 
 #ifndef BMX280_ADDRESS
@@ -102,10 +131,10 @@
 #define I2C_SUPPORT                     1
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
 // Enable support by passing DALLAS_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef DALLAS_SUPPORT
 #define DALLAS_SUPPORT                  0
@@ -117,10 +146,10 @@
 
 #define DALLAS_RESOLUTION               9        // Not used atm
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor
 // Enable support by passing DHT_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef DHT_SUPPORT
 #define DHT_SUPPORT                     0
@@ -131,13 +160,13 @@
 #endif
 
 #ifndef DHT_TYPE
-#define DHT_TYPE                        DHT22
+#define DHT_TYPE                        DHT_CHIP_DHT22
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Digital sensor
 // Enable support by passing DIGITAL_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef DIGITAL_SUPPORT
 #define DIGITAL_SUPPORT                 0
@@ -155,9 +184,9 @@
 #define DIGITAL_DEFAULT_STATE           1
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Energy Monitor general settings
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #define EMON_MAX_SAMPLES                1000        // Max number of samples to get
 #define EMON_MAX_TIME                   250         // Max time in ms to sample
@@ -169,10 +198,10 @@
 #define EMON_REPORT_POWER               1           // Report power
 #define EMON_REPORT_ENERGY              1           // Report energy
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Energy Monitor based on ADC121
 // Enable support by passing EMON_ADC121_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef EMON_ADC121_SUPPORT
 #define EMON_ADC121_SUPPORT             0       // Do not build support by default
@@ -185,10 +214,10 @@
 #define I2C_SUPPORT                     1
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
 // Enable support by passing EMON_ADS1X15_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef EMON_ADS1X15_SUPPORT
 #define EMON_ADS1X15_SUPPORT            0       // Do not build support by default
@@ -204,10 +233,10 @@
 #define I2C_SUPPORT                     1
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
 // Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef EMON_ANALOG_SUPPORT
 #define EMON_ANALOG_SUPPORT             0       // Do not build support by default
@@ -218,10 +247,10 @@
     #define ADC_VCC_ENABLED             0
 #endif
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Counter sensor
 // Enable support by passing EVENTS_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef EVENTS_SUPPORT
 #define EVENTS_SUPPORT                  0       // Do not build with counter support by default
@@ -241,10 +270,10 @@
 
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
 // Enable support by passing MHZ19_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef MHZ19_SUPPORT
 #define MHZ19_SUPPORT                   0
@@ -253,10 +282,10 @@
 #define MHZ19_RX_PIN                    13
 #define MHZ19_TX_PIN                    15
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMSX003
 // Enable support by passing PMSX003_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef PMSX003_SUPPORT
 #define PMSX003_SUPPORT                 0
@@ -265,10 +294,10 @@
 #define PMS_RX_PIN                      13
 #define PMS_TX_PIN                      15
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // SI7021 temperature & humidity sensor
 // Enable support by passing SI7021_SUPPORT=1 build flag
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef SI7021_SUPPORT
 #define SI7021_SUPPORT                  0
@@ -282,6 +311,10 @@
 #undef I2C_SUPPORT
 #define I2C_SUPPORT                     1
 #endif
+
+// =============================================================================
+// Sensor helpers configuration
+// =============================================================================
 
 // -----------------------------------------------------------------------------
 // I2C

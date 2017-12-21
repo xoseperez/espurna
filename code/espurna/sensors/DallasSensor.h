@@ -33,6 +33,12 @@ class DallasSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
+        DallasSensor(): BaseSensor() {
+            _sensor_id = SENSOR_DALLAS_ID;
+        }
+
+        // ---------------------------------------------------------------------
+
         void setGPIO(unsigned char gpio) {
             if (_gpio == gpio) return;
             _gpio = gpio;

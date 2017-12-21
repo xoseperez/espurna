@@ -96,7 +96,6 @@
 #define ADS1X15_REG_CONFIG_CQUE_4CONV   (0x0002)  // Assert ALERT/RDY after four conversions
 #define ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003)  // Disable the comparator and put ALERT/RDY in high state (default)
 
-
 class EmonADS1X15Sensor : public EmonSensor {
 
     public:
@@ -107,6 +106,7 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         EmonADS1X15Sensor(): EmonSensor() {
             _channels = ADS1X15_CHANNELS;
+            _sensor_id = SENSOR_EMON_ADS1X15_ID;
             init();
         }
 

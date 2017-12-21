@@ -31,6 +31,12 @@ class SI7021Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
+        SI7021Sensor(): BaseSensor() {
+            _sensor_id = SENSOR_SI7021_ID;
+        }
+
+        // ---------------------------------------------------------------------
+
         void setAddress(unsigned char address) {
             if (_address != address) _dirty = true;
             _address = address;

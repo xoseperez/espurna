@@ -22,6 +22,7 @@ class PMSX003Sensor : public BaseSensor {
 
         PMSX003Sensor(): BaseSensor() {
             _count = 3;
+            _sensor_id = SENSOR_PMSX003_ID;
         }
 
         void setRX(unsigned char pin_rx) {

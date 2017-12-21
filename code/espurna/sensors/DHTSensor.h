@@ -12,10 +12,10 @@
 #define DHT_MAX_ERRORS              5
 #define DHT_MIN_INTERVAL            2000
 
-#define DHT11                       11
-#define DHT22                       22
-#define DHT21                       21
-#define AM2301                      21
+#define DHT_CHIP_DHT11              11
+#define DHT_CHIP_DHT22              22
+#define DHT_CHIP_DHT21              21
+#define DHT_CHIP_AM2301             21
 
 class DHTSensor : public BaseSensor {
 
@@ -27,6 +27,7 @@ class DHTSensor : public BaseSensor {
 
         DHTSensor(): BaseSensor() {
             _count = 2;
+            _sensor_id = SENSOR_DHT_ID;
         }
 
         // ---------------------------------------------------------------------
@@ -166,7 +167,7 @@ class DHTSensor : public BaseSensor {
             }
 
         	// Get humidity from Data[0] and Data[1]
-            if (_type == DHT11) {
+            if (_type == DHT_CHIP_DHT11) {
                 _humidity = dhtData[0];
             } else {
         	    _humidity = dhtData[0] * 256 + dhtData[1];
@@ -174,7 +175,7 @@ class DHTSensor : public BaseSensor {
             }
 
         	// Get temp from Data[2] and Data[3]
-            if (_type == DHT11) {
+            if (_type == DHT_CHIP_DHT11) {
                 _temperature = dhtData[2];
             } else {
                 _temperature = (dhtData[2] & 0x7F) * 256 + dhtData[3];

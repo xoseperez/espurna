@@ -18,6 +18,7 @@ class AnalogSensor : public BaseSensor {
 
         AnalogSensor(): BaseSensor() {
             _count = 1;
+            _sensor_id = SENSOR_ANALOG_ID;
         }
 
         // ---------------------------------------------------------------------

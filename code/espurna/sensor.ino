@@ -37,45 +37,45 @@ double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 // -----------------------------------------------------------------------------
 
 String _sensorTopic(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) return String(SENSOR_TEMPERATURE_TOPIC);
-    if (type == MAGNITUDE_HUMIDITY) return String(SENSOR_HUMIDITY_TOPIC);
-    if (type == MAGNITUDE_PRESSURE) return String(SENSOR_PRESSURE_TOPIC);
-    if (type == MAGNITUDE_CURRENT) return String(SENSOR_CURRENT_TOPIC);
-    if (type == MAGNITUDE_VOLTAGE) return String(SENSOR_VOLTAGE_TOPIC);
-    if (type == MAGNITUDE_POWER_ACTIVE) return String(SENSOR_ACTIVE_POWER_TOPIC);
-    if (type == MAGNITUDE_POWER_APPARENT) return String(SENSOR_APPARENT_POWER_TOPIC);
-    if (type == MAGNITUDE_POWER_REACTIVE) return String(SENSOR_REACTIVE_POWER_TOPIC);
-    if (type == MAGNITUDE_POWER_FACTOR) return String(SENSOR_POWER_FACTOR_TOPIC);
-    if (type == MAGNITUDE_ENERGY) return String(SENSOR_ENERGY_TOPIC);
-    if (type == MAGNITUDE_ENERGY_DELTA) return String(SENSOR_ENERGY_DELTA_TOPIC);
-    if (type == MAGNITUDE_ANALOG) return String(SENSOR_ANALOG_TOPIC);
-    if (type == MAGNITUDE_DIGITAL) return String(SENSOR_DIGITAL_TOPIC);
-    if (type == MAGNITUDE_EVENTS) return String(SENSOR_EVENTS_TOPIC);
-    if (type == MAGNITUDE_PM1dot0) return String(SENSOR_PM1dot0_TOPIC);
-    if (type == MAGNITUDE_PM2dot5) return String(SENSOR_PM2dot5_TOPIC);
-    if (type == MAGNITUDE_PM10) return String(SENSOR_PM10_TOPIC);
-    if (type == MAGNITUDE_CO2) return String(SENSOR_CO2_TOPIC);
-    return String(SENSOR_UNKNOWN_TOPIC);
+    if (type == MAGNITUDE_TEMPERATURE) return String(MAGNITUDE_TEMPERATURE_TOPIC);
+    if (type == MAGNITUDE_HUMIDITY) return String(MAGNITUDE_HUMIDITY_TOPIC);
+    if (type == MAGNITUDE_PRESSURE) return String(MAGNITUDE_PRESSURE_TOPIC);
+    if (type == MAGNITUDE_CURRENT) return String(MAGNITUDE_CURRENT_TOPIC);
+    if (type == MAGNITUDE_VOLTAGE) return String(MAGNITUDE_VOLTAGE_TOPIC);
+    if (type == MAGNITUDE_POWER_ACTIVE) return String(MAGNITUDE_ACTIVE_POWER_TOPIC);
+    if (type == MAGNITUDE_POWER_APPARENT) return String(MAGNITUDE_APPARENT_POWER_TOPIC);
+    if (type == MAGNITUDE_POWER_REACTIVE) return String(MAGNITUDE_REACTIVE_POWER_TOPIC);
+    if (type == MAGNITUDE_POWER_FACTOR) return String(MAGNITUDE_POWER_FACTOR_TOPIC);
+    if (type == MAGNITUDE_ENERGY) return String(MAGNITUDE_ENERGY_TOPIC);
+    if (type == MAGNITUDE_ENERGY_DELTA) return String(MAGNITUDE_ENERGY_DELTA_TOPIC);
+    if (type == MAGNITUDE_ANALOG) return String(MAGNITUDE_ANALOG_TOPIC);
+    if (type == MAGNITUDE_DIGITAL) return String(MAGNITUDE_DIGITAL_TOPIC);
+    if (type == MAGNITUDE_EVENTS) return String(MAGNITUDE_EVENTS_TOPIC);
+    if (type == MAGNITUDE_PM1dot0) return String(MAGNITUDE_PM1dot0_TOPIC);
+    if (type == MAGNITUDE_PM2dot5) return String(MAGNITUDE_PM2dot5_TOPIC);
+    if (type == MAGNITUDE_PM10) return String(MAGNITUDE_PM10_TOPIC);
+    if (type == MAGNITUDE_CO2) return String(MAGNITUDE_CO2_TOPIC);
+    return String(MAGNITUDE_UNKNOWN_TOPIC);
 }
 
 unsigned char _sensorDecimals(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) return SENSOR_TEMPERATURE_DECIMALS;
-    if (type == MAGNITUDE_HUMIDITY) return SENSOR_HUMIDITY_DECIMALS;
-    if (type == MAGNITUDE_PRESSURE) return SENSOR_PRESSURE_DECIMALS;
-    if (type == MAGNITUDE_CURRENT) return SENSOR_CURRENT_DECIMALS;
-    if (type == MAGNITUDE_VOLTAGE) return SENSOR_VOLTAGE_DECIMALS;
-    if (type == MAGNITUDE_POWER_ACTIVE) return SENSOR_POWER_DECIMALS;
-    if (type == MAGNITUDE_POWER_APPARENT) return SENSOR_POWER_DECIMALS;
-    if (type == MAGNITUDE_POWER_REACTIVE) return SENSOR_POWER_DECIMALS;
-    if (type == MAGNITUDE_POWER_FACTOR) return SENSOR_POWER_FACTOR_DECIMALS;
-    if (type == MAGNITUDE_ENERGY) return SENSOR_ENERGY_DECIMALS;
-    if (type == MAGNITUDE_ENERGY_DELTA) return SENSOR_ENERGY_DECIMALS;
-    if (type == MAGNITUDE_ANALOG) return SENSOR_ANALOG_DECIMALS;
-    if (type == MAGNITUDE_EVENTS) return SENSOR_EVENTS_DECIMALS;
-    if (type == MAGNITUDE_PM1dot0) return SENSOR_PM1dot0_DECIMALS;
-    if (type == MAGNITUDE_PM2dot5) return SENSOR_PM2dot5_DECIMALS;
-    if (type == MAGNITUDE_PM10) return SENSOR_PM10_DECIMALS;
-    if (type == MAGNITUDE_CO2) return SENSOR_CO2_DECIMALS;
+    if (type == MAGNITUDE_TEMPERATURE) return MAGNITUDE_TEMPERATURE_DECIMALS;
+    if (type == MAGNITUDE_HUMIDITY) return MAGNITUDE_HUMIDITY_DECIMALS;
+    if (type == MAGNITUDE_PRESSURE) return MAGNITUDE_PRESSURE_DECIMALS;
+    if (type == MAGNITUDE_CURRENT) return MAGNITUDE_CURRENT_DECIMALS;
+    if (type == MAGNITUDE_VOLTAGE) return MAGNITUDE_VOLTAGE_DECIMALS;
+    if (type == MAGNITUDE_POWER_ACTIVE) return MAGNITUDE_POWER_DECIMALS;
+    if (type == MAGNITUDE_POWER_APPARENT) return MAGNITUDE_POWER_DECIMALS;
+    if (type == MAGNITUDE_POWER_REACTIVE) return MAGNITUDE_POWER_DECIMALS;
+    if (type == MAGNITUDE_POWER_FACTOR) return MAGNITUDE_POWER_FACTOR_DECIMALS;
+    if (type == MAGNITUDE_ENERGY) return MAGNITUDE_ENERGY_DECIMALS;
+    if (type == MAGNITUDE_ENERGY_DELTA) return MAGNITUDE_ENERGY_DECIMALS;
+    if (type == MAGNITUDE_ANALOG) return MAGNITUDE_ANALOG_DECIMALS;
+    if (type == MAGNITUDE_EVENTS) return MAGNITUDE_EVENTS_DECIMALS;
+    if (type == MAGNITUDE_PM1dot0) return MAGNITUDE_PM1dot0_DECIMALS;
+    if (type == MAGNITUDE_PM2dot5) return MAGNITUDE_PM2dot5_DECIMALS;
+    if (type == MAGNITUDE_PM10) return MAGNITUDE_PM10_DECIMALS;
+    if (type == MAGNITUDE_CO2) return MAGNITUDE_CO2_DECIMALS;
     return 0;
 }
 
@@ -149,7 +149,7 @@ void _sensorWebSocketStart(JsonObject& root) {
 
     /*
     // Sensors manifest
-    JsonObject& manifest = root.createNestedObject("manifest");
+    JsonArray& manifest = root.createNestedArray("manifest");
     #if BMX280_SUPPORT
         BMX280Sensor::manifest(manifest);
     #endif
@@ -158,10 +158,18 @@ void _sensorWebSocketStart(JsonObject& root) {
     JsonArray& sensors = root.createNestedArray("sensors");
     for (unsigned char i; i<_sensors.size(); i++) {
         JsonObject& sensor = sensors.createNestedObject();
-        sensor["id"] = i;
+        sensor["index"] = i;
+        sensor["id"] = _sensors[i]->getID();
         _sensors[i]->getConfig(sensor);
     }
     */
+
+}
+
+void _sensorWebSocketReceiveData() {
+
+    //_emon.setCurrentRatio(getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
+    //_power_voltage = getSetting("pwrVoltage", POWER_VOLTAGE).toFloat();
 
 }
 

@@ -18,6 +18,7 @@ class EventSensor : public BaseSensor {
 
         EventSensor(): BaseSensor() {
             _count = 1;
+            _sensor_id = SENSOR_EVENTS_ID;
         }
 
         ~EventSensor() {

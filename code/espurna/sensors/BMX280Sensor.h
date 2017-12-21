@@ -10,8 +10,6 @@
 #include "BaseSensor.h"
 #include <SparkFunBME280.h>
 
-#define BMX280_NAME                 "BME280 / BMP280"
-#define BMX280_KEY                  "bme280"
 #define BMX280_CHIP_BMP280          0x58
 #define BMX280_CHIP_BME280          0x60
 
@@ -24,6 +22,10 @@ class BMX280Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
+
+        BMX280Sensor(): BaseSensor() {
+            _sensor_id = SENSOR_BMX280_ID;
+        }
 
         void setAddress(unsigned char address) {
             if (_address == address) return;
@@ -127,12 +129,12 @@ class BMX280Sensor : public BaseSensor {
         }
 
         // Load the configuration manifest
-        static void manifest(JsonObject& sensors) {
+        static void manifest(JsonArray& sensors) {
 
             char buffer[10];
 
-            JsonObject& sensor = sensors.createNestedObject(BMX280_KEY);
-            sensor["name"] = BMX280_NAME;
+            JsonObject& sensor = sensors.createNestedObject();
+            sensor["sensor_id"] = SENSOR_BMX280_ID;
             JsonArray& fields = sensor.createNestedArray("fields");
 
             {
@@ -157,7 +159,7 @@ class BMX280Sensor : public BaseSensor {
         };
 
         void getConfig(JsonObject& root) {
-            root["key"] = BMX280_KEY;
+            root["sensor_id"] = _sensor_id;
             root["address"] = getAddress();
         };
 

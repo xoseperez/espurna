@@ -18,6 +18,7 @@ class DigitalSensor : public BaseSensor {
 
         DigitalSensor(): BaseSensor() {
             _count = 1;
+            _sensor_id = SENSOR_DIGITAL_ID;
         }
 
         // ---------------------------------------------------------------------

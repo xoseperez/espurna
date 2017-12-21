@@ -39,6 +39,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
 
         EmonADC121Sensor(): EmonAnalogSensor() {
             _channels = ADC121_CHANNELS;
+            _sensor_id = SENSOR_EMON_ADC121_ID;
             init();
         }
 

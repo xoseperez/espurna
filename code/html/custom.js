@@ -10,6 +10,7 @@ var numReconnect = 0;
 var numReload = 0;
 
 var useWhite = false;
+var manifest;
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -484,6 +485,11 @@ function initMagnitudes(data) {
 
 }
 
+function getManifest(sensor_id) {
+    for (row of manifest) if (row.sensor_id == sensor_id) return row;
+    return null;
+}
+
 // -----------------------------------------------------------------------------
 // Lights
 // -----------------------------------------------------------------------------
@@ -748,6 +754,10 @@ function processData(data) {
                 }
             }
             return;
+        }
+
+        if (key == "manifest") {
+            manifest = data[key];
         }
 
         // ---------------------------------------------------------------------

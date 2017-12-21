@@ -31,6 +31,7 @@ class MHZ19Sensor : public BaseSensor {
 
         MHZ19Sensor(): BaseSensor() {
             _count = 1;
+            _sensor_id = SENSOR_MHZ19_ID;
         }
 
         void setRX(unsigned char pin_rx) {
