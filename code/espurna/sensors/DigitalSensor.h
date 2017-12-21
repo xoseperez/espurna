@@ -65,11 +65,6 @@ class DigitalSensor : public BaseSensor {
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            return description();
-        }
-
         // Type for slot # index
         magnitude_t type(unsigned char index) {
             _error = SENSOR_ERROR_OK;

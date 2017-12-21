@@ -66,11 +66,6 @@ class BMX280Sensor : public BaseSensor {
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            return description();
-        }
-
         // Type for slot # index
         magnitude_t type(unsigned char index) {
             if (index < _count) {

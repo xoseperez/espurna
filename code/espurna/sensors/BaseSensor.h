@@ -74,9 +74,6 @@ class BaseSensor {
         // Descriptive name of the sensor
         virtual String description() {}
 
-        // Descriptive name of the slot # index
-        virtual String slot(unsigned char index) {}
-
         // Type for slot # index
         virtual magnitude_t type(unsigned char index) {}
 
@@ -91,6 +88,9 @@ class BaseSensor {
 
         // Load the configuration manifest
         static void manifest(JsonArray& root) {};
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) { return description(); }
 
         // Sensor ID
         unsigned char getID() { return _sensor_id; };

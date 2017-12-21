@@ -103,20 +103,22 @@ class PMSX003Sensor : public BaseSensor {
         }
 
         void pre() {
-            if(millis() - _startTime > 30000) {
-                _error = SENSOR_ERROR_OK;
-            } else {
-                _error = SENSOR_ERROR_WARM_UP;
-            }
-            _pms->requestRead();
-        }
 
-        void tick() {
+            if (millis() - _startTime < 30000) {
+                _error = SENSOR_ERROR_WARM_UP;
+                return;
+            }
+
+            _error = SENSOR_ERROR_OK;
+
             if(_pms->read(_data)) {
                 _pm1dot0 = _data.PM_AE_UG_1_0;
                 _pm2dot5 = _data.PM_AE_UG_2_5;
                 _pm10 = _data.PM_AE_UG_10_0;
             }
+
+            _pms->requestRead();
+            
         }
 
         // Current value for slot # index
