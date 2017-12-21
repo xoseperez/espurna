@@ -271,6 +271,16 @@ void _sensorInit() {
     }
     #endif
 
+    #if ECH1560_SUPPORT
+    {
+        ECH1560Sensor * sensor = new ECH1560Sensor();
+        sensor->setCLK(ECH1560_CLK_PIN);
+        sensor->setMISO(ECH1560_MISO_PIN);
+        sensor->setInverted(ECH1560_INVERTED);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if EMON_ADC121_SUPPORT
     {
         EmonADC121Sensor * sensor = new EmonADC121Sensor();

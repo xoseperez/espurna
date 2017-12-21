@@ -22,7 +22,7 @@ class EventSensor : public BaseSensor {
         }
 
         ~EventSensor() {
-            detachInterrupt(_gpio);
+            detach(_gpio);
         }
 
         // ---------------------------------------------------------------------

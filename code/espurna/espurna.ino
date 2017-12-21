@@ -215,6 +215,9 @@ void welcome() {
     #if DIGITAL_SUPPORT
         DEBUG_MSG_P(PSTR(" DIGITAL"));
     #endif
+    #if ECH1560_SUPPORT
+        DEBUG_MSG_P(PSTR(" ECH1560"));
+    #endif
     #if EMON_ADC121_SUPPORT
         DEBUG_MSG_P(PSTR(" EMON_ADC121"));
     #endif
@@ -226,6 +229,9 @@ void welcome() {
     #endif
     #if EVENTS_SUPPORT
         DEBUG_MSG_P(PSTR(" EVENTS"));
+    #endif
+    #if HLW8012_SUPPORT
+        DEBUG_MSG_P(PSTR(" HLW8012"));
     #endif
     #if MHZ19_SUPPORT
         DEBUG_MSG_P(PSTR(" MHZ19"));

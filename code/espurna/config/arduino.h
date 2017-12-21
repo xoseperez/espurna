@@ -87,10 +87,14 @@
 //#define DALLAS_SUPPORT         1
 //#define DHT_SUPPORT            1
 //#define DIGITAL_SUPPORT        1
+//#define ECH1560_SUPPORT        1
 //#define EMON_ADC121_SUPPORT    1
 //#define EMON_ADS1X15_SUPPORT   1
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
+//#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define PMSX003_SUPPORT        1
+//#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
+//#define V9261F_SUPPORT         1

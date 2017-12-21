@@ -74,7 +74,7 @@
 // These should remain over time, do not modify them, only add new ones at the end
 //--------------------------------------------------------------------------------
 
-#define SENSOR_DHT_ID                   0x01
+#define SENSOR_DHTXX_ID                 0x01
 #define SENSOR_DALLAS_ID                0x02
 #define SENSOR_EMON_ANALOG_ID           0x03
 #define SENSOR_EMON_ADC121_ID           0x04
@@ -105,8 +105,8 @@
 #endif
 
 #if ANALOG_SUPPORT
-    #undef ADC_VCC_ENABLED
-    #define ADC_VCC_ENABLED             0
+#undef ADC_VCC_ENABLED
+#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -186,6 +186,27 @@
 #endif
 
 //------------------------------------------------------------------------------
+// ECH1560 based power sensor
+// Enable support by passing ECH1560_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef ECH1560_SUPPORT
+#define ECH1560_SUPPORT                 1
+#endif
+
+#ifndef ECH1560_CLK_PIN
+#define ECH1560_CLK_PIN                 4       // CLK pin for the ECH1560
+#endif
+
+#ifndef ECH1560_MISO_PIN
+#define ECH1560_MISO_PIN                5       // MISO pin for the ECH1560
+#endif
+
+#ifndef ECH1560_INVERTED
+#define ECH1560_INVERTED                0       // Signal is inverted
+#endif
+
+//------------------------------------------------------------------------------
 // Energy Monitor general settings
 //------------------------------------------------------------------------------
 
@@ -244,8 +265,8 @@
 #endif
 
 #if EMON_ANALOG_SUPPORT
-    #undef ADC_VCC_ENABLED
-    #define ADC_VCC_ENABLED             0
+#undef ADC_VCC_ENABLED
+#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -270,6 +291,15 @@
 #endif
 
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
+
+//------------------------------------------------------------------------------
+// HLW8012 Energy monitor IC
+// Enable support by passing HLW8012_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef HLW8012_SUPPORT
+#define HLW8012_SUPPORT                 0
+#endif
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
@@ -425,6 +455,10 @@
     #include "sensors/DigitalSensor.h"
 #endif
 
+#if ECH1560_SUPPORT
+    #include "sensors/ECH1560Sensor.h"
+#endif
+
 #if EMON_ADC121_SUPPORT
     #include "sensors/EmonADC121Sensor.h"
 #endif
@@ -439,6 +473,10 @@
 
 #if EVENTS_SUPPORT
     #include "sensors/EventSensor.h"
+#endif
+
+#if HLW8012_SUPPORT
+    #include "sensors/HLW8012Sensor.h"
 #endif
 
 #if MHZ19_SUPPORT

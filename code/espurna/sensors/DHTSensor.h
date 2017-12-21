@@ -27,7 +27,7 @@ class DHTSensor : public BaseSensor {
 
         DHTSensor(): BaseSensor() {
             _count = 2;
-            _sensor_id = SENSOR_DHT_ID;
+            _sensor_id = SENSOR_DHTXX_ID;
         }
 
         // ---------------------------------------------------------------------
