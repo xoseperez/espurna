@@ -106,16 +106,16 @@
                             <a href="#" class="pure-menu-link" data="panel-color">LIGHTS</a>
                         </li>
 
+                        <li class="pure-menu-item module module-sensors">
+                            <a href="#" class="pure-menu-link" data="panel-sensors">SENSORS</a>
+                        </li>
+
                         <li class="pure-menu-item module module-dcz">
                             <a href="#" class="pure-menu-link" data="panel-domoticz">DOMOTICZ</a>
                         </li>
 
                         <li class="pure-menu-item module module-idb">
                             <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
-                        </li>
-
-                        <li class="pure-menu-item module module-hlw module-emon module-v9261f">
-                            <a href="#" class="pure-menu-link" data="panel-power">POWER</a>
                         </li>
 
                         <li class="pure-menu-item module module-rfb">
@@ -171,6 +171,7 @@
                                 <div id="magnitudes">
                                 </div>
 
+                                <!--
                                 <div class="pure-g module module-emon module-hlw module-v9261f module-ech1560">
                                     <label class="pure-u-1 pure-u-sm-1-4">Current</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrCurrent" post=" A" readonly />
@@ -205,6 +206,7 @@
                                     <label class="pure-u-1 pure-u-sm-1-4">Energy</label>
                                     <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrEnergy" post=" J (aggregated)" readonly />
                                 </div>
+                                -->
 
                                 <div class="pure-u-1 state">
 
@@ -868,12 +870,12 @@
 
                     </div>
 
-                    <div class="panel" id="panel-power">
+                    <div class="panel" id="panel-sensors">
 
                         <div class="header">
-                            <h1>POWER CALIBRATION</h1>
+                            <h1>SENSOR CONFIGURATION</h1>
                             <h2>
-                                Configure and calibrate your power monitor device. Use a pure resistive load and introduce the expected values for active power, current and voltage. Use the nominal values or a multimeter to get the proper numbers. Set any field to 0 to leave the calibration value untouched.
+                                Configure and calibrate your device sensors.
                             </h2>
                         </div>
 
@@ -881,9 +883,13 @@
 
                             <fieldset>
 
+                                <!--
+
+                                <legend>General</legend>
+
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4">Read interval</label>
-                                    <select class="pure-u-1 pure-u-sm-1-4" name="pwrReadEvery">
+                                    <select class="pure-u-1 pure-u-sm-1-4" name="snsRead">
                                         <option value="2000">2 seconds</option>
                                         <option value="6000">6 seconds</option>
                                         <option value="10000">10 seconds</option>
@@ -901,7 +907,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4">Report interval</label>
-                                    <select class="pure-u-1 pure-u-sm-1-4" name="pwrReportEvery">
+                                    <select class="pure-u-1 pure-u-sm-1-4" name="snsReport">
                                         <option value="6000">6 seconds</option>
                                         <option value="10000">10 seconds</option>
                                         <option value="30000">30 seconds</option>
@@ -911,18 +917,48 @@
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        Select the interval between reports via MQTT.<br />
+                                        Select the interval between reports via MQTT / InfluxDB / Domoticz / ...<br />
                                         This can't be less than the reading interval above.<br />
                                         The default and recommended value is 1 minute.
                                     </div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon module-v9261f">
-                                    <label class="pure-u-1 pure-u-md-1-4">AC RMS Active Power</label>
-                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedP" type="text" size="8" tabindex="51" placeholder="0" />
+                                -->
+
+                                <legend>Energy monitor</legend>
+
+                                <!--
+                                <div class="pure-g module module-emon">
+                                    <label class="pure-u-1 pure-u-md-1-4">Current Ratio</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="pwrRatioC" type="text" size="8" tabindex="51" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Watts (W). If you are using a pure resistive load like a bulb this will be writen on it, otherwise use a socket multimeter to get this value.</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">In A/V. This number is usually written in the CT if it has a built-in burden resistor, otherwise you will have to calculate it according to the resistor you are using.</div>
                                 </div>
+                                -->
+
+                                <div class="pure-g module module-emon">
+                                    <label class="pure-u-1 pure-u-md-1-4">Voltage</label>
+                                    <input class="pure-u-1 pure-u-md-3-4" name="pwrVoltage" type="text" size="8" tabindex="52" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Mains voltage in your system (in V).</div>
+                                </div>
+
+                                <div class="pure-g module module-hlw module-emon module-v9261f">
+                                    <label class="pure-u-1 pure-u-md-1-4">Expected Power</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedP" type="text" size="8" tabindex="53" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter. In Watts.</div>
+                                </div>
+
+                                <div class="pure-g module module-hlw module-emon module-v9261f">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label>Reset calibration</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="59" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Move this switch to ON and press "Update" to revert to factory calibration values.</div>
+                                </div>
+
+                                <!--
 
                                 <div class="pure-g module module-v9261f">
                                     <label class="pure-u-1 pure-u-md-1-4">AC Power Factor</label>
@@ -945,12 +981,7 @@
                                     <div class="pure-u-1 pure-u-md-3-4 hint">In Ampers (A). If you are using a pure resistive load like a bulb this will the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one fo the power wires to get this value.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon module-v9261f">
-                                    <div class="pure-u-1 pure-u-sm-1-4"><label>Reset calibration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="pwrResetCalibration" /></div>
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Move this switch to ON and press "Update" to revert to factory calibration values.</div>
-                                </div>
+                                -->
 
                             </fieldset>
                         </div>

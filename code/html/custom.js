@@ -486,7 +486,9 @@ function initMagnitudes(data) {
 }
 
 function getManifest(sensor_id) {
-    for (row of manifest) if (row.sensor_id == sensor_id) return row;
+    for (i in manifest) {
+        if (manifest[i].sensor_id == sensor_id) return manifest[i];
+    }
     return null;
 }
 

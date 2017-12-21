@@ -107,12 +107,6 @@ double _sensorProcess(magnitude_t type, double value) {
     return roundTo(value, _sensorDecimals(type));
 }
 
-void _sensorConfigure() {
-    _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
-}
-
 #if WEB_SUPPORT
 
 void _sensorWebSocketSendData(JsonObject& root) {
@@ -147,6 +141,24 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
 void _sensorWebSocketStart(JsonObject& root) {
 
+    bool hasSensors = false;
+
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+        BaseSensor * sensor = _sensors[i];
+
+        #if EMON_ANALOG_SUPPORT
+            if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
+                root["emonVisible"] = 1;
+                root["pwrRatioC"] = ((EmonAnalogSensor *) sensor)->getCurrentRatio(0);
+                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
+                hasSensors = true;
+            }
+        #endif
+
+    }
+
+    if (hasSensors) root["sensorsVisible"] = 1;
+
     /*
     // Sensors manifest
     JsonArray& manifest = root.createNestedArray("manifest");
@@ -163,13 +175,6 @@ void _sensorWebSocketStart(JsonObject& root) {
         _sensors[i]->getConfig(sensor);
     }
     */
-
-}
-
-void _sensorWebSocketReceiveData() {
-
-    //_emon.setCurrentRatio(getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
-    //_power_voltage = getSetting("pwrVoltage", POWER_VOLTAGE).toFloat();
 
 }
 
@@ -222,17 +227,12 @@ void _sensorPost() {
 // Sensor initialization
 // -----------------------------------------------------------------------------
 
-void _sensorRegister(BaseSensor * sensor) {
-    sensor->begin();
-    _sensors.push_back(sensor);
-}
-
 void _sensorInit() {
 
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -240,7 +240,7 @@ void _sensorInit() {
     {
         BMX280Sensor * sensor = new BMX280Sensor();
         sensor->setAddress(BMX280_ADDRESS);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -248,7 +248,7 @@ void _sensorInit() {
     {
         DallasSensor * sensor = new DallasSensor();
         sensor->setGPIO(DALLAS_PIN);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -257,7 +257,7 @@ void _sensorInit() {
         DHTSensor * sensor = new DHTSensor();
         sensor->setGPIO(DHT_PIN);
         sensor->setType(DHT_TYPE);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -267,7 +267,7 @@ void _sensorInit() {
         sensor->setGPIO(DIGITAL_PIN);
         sensor->setMode(DIGITAL_PIN_MODE);
         sensor->setDefault(DIGITAL_DEFAULT_STATE);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -278,7 +278,7 @@ void _sensorInit() {
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
         sensor->setReference(EMON_REFERENCE_VOLTAGE);
         sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -294,7 +294,7 @@ void _sensorInit() {
         sensor->setCurrentRatio(1, EMON_CURRENT_RATIO);
         sensor->setCurrentRatio(2, EMON_CURRENT_RATIO);
         sensor->setCurrentRatio(3, EMON_CURRENT_RATIO);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -304,7 +304,7 @@ void _sensorInit() {
         sensor->setVoltage(EMON_MAINS_VOLTAGE);
         sensor->setReference(EMON_REFERENCE_VOLTAGE);
         sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -315,7 +315,7 @@ void _sensorInit() {
         sensor->setMode(EVENTS_PIN_MODE);
         sensor->setDebounceTime(EVENTS_DEBOUNCE);
         sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -324,7 +324,7 @@ void _sensorInit() {
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setRX(MHZ19_RX_PIN);
         sensor->setTX(MHZ19_TX_PIN);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -333,7 +333,7 @@ void _sensorInit() {
         PMSX003Sensor * sensor = new PMSX003Sensor();
         sensor->setRX(PMS_RX_PIN);
         sensor->setTX(PMS_TX_PIN);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -341,7 +341,7 @@ void _sensorInit() {
     {
         SHT3XI2CSensor * sensor = new SHT3XI2CSensor();
         sensor->setAddress(SHT3X_I2C_ADDRESS);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
 
@@ -349,9 +349,53 @@ void _sensorInit() {
     {
         SI7021Sensor * sensor = new SI7021Sensor();
         sensor->setAddress(SI7021_ADDRESS);
-        _sensorRegister(sensor);
+        _sensors.push_back(sensor);
     }
     #endif
+
+}
+
+void _sensorConfigure() {
+
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        BaseSensor * sensor = _sensors[i];
+
+        #if EMON_ANALOG_SUPPORT
+            if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
+
+                unsigned int expected = getSetting("pwrExpectedP", 0).toInt();
+                if (expected > 0) {
+                    ((EmonAnalogSensor *) sensor)->expectedPower(0, expected);
+                    setSetting("pwrRatioC", ((EmonAnalogSensor *) sensor)->getCurrentRatio(0));
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    ((EmonAnalogSensor *) sensor)->setCurrentRatio(0, EMON_CURRENT_RATIO);
+                    delSetting("pwrRatioC");
+                }
+
+                ((EmonAnalogSensor *) sensor)->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
+                ((EmonAnalogSensor *) sensor)->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+
+                delSetting("pwrExpectedP");
+                delSetting("pwrResetCalibration");
+
+            }
+        #endif
+
+        // Force sensor to reload config
+        sensor->begin();
+
+    }
+
+    // General sensor settings
+    _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
+    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+
+    // Save settings
+    saveSettings();
 
 }
 
@@ -429,6 +473,9 @@ void sensorSetup() {
 
     // Load sensors
     _sensorInit();
+
+    // Configure stored values
+    _sensorConfigure();
 
     // Load magnitudes
     _magnitudesInit();

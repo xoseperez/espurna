@@ -79,9 +79,10 @@
 .pure-g {
     margin-bottom: 20px;
 }
-.pure-g legend {
+.pure-form legend {
     font-weight: bold;
     letter-spacing: 0;
+    margin-bottom: 1em;
 }
 .l-box {
     padding-right: 1px;

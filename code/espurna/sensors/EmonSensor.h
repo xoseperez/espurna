@@ -36,7 +36,7 @@ class EmonSensor : public BaseSensor {
             unsigned int actual = _current[channel] * _voltage;
             if (actual == 0) return;
             if (expected == actual) return;
-            _current_ratio[channel] = _current_ratio[channel] * (expected / actual);
+            _current_ratio[channel] = _current_ratio[channel] * ((double) expected / (double) actual);
             _dirty = true;
         }
 
@@ -66,7 +66,7 @@ class EmonSensor : public BaseSensor {
         double getVoltage() {
             return _voltage;
         }
-        
+
         double getReference() {
             return _reference;
         }

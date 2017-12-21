@@ -159,6 +159,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             #if POWER_PROVIDER != POWER_PROVIDER_NONE
 
+                /*
+
                 if (key == "pwrExpectedP") {
                     powerCalibrate(POWER_MAGNITUDE_ACTIVE, value.toFloat());
                     changed = true;
@@ -190,6 +192,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     }
                     continue;
                 }
+
+                */
 
             #endif
 
