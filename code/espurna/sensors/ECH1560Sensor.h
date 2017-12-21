@@ -86,7 +86,7 @@ class ECH1560Sensor : public BaseSensor {
             if (_interrupt_gpio == gpio) _interrupt_gpio = GPIO_NONE;
         }
 
-        void handleInterrupt() {
+        void ICACHE_RAM_ATTR handleInterrupt() {
             _isr();
         }
 

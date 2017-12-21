@@ -154,50 +154,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             }
 
             // -----------------------------------------------------------------
-            // POWER
-            // -----------------------------------------------------------------
-
-            #if POWER_PROVIDER != POWER_PROVIDER_NONE
-
-                /*
-
-                if (key == "pwrExpectedP") {
-                    powerCalibrate(POWER_MAGNITUDE_ACTIVE, value.toFloat());
-                    changed = true;
-                    continue;
-                }
-
-                if (key == "pwrExpectedV") {
-                    powerCalibrate(POWER_MAGNITUDE_VOLTAGE, value.toFloat());
-                    changed = true;
-                    continue;
-                }
-
-                if (key == "pwrExpectedC") {
-                    powerCalibrate(POWER_MAGNITUDE_CURRENT, value.toFloat());
-                    changed = true;
-                    continue;
-                }
-
-                if (key == "pwrExpectedF") {
-                    powerCalibrate(POWER_MAGNITUDE_POWER_FACTOR, value.toFloat());
-                    changed = true;
-                    continue;
-                }
-
-                if (key == "pwrResetCalibration") {
-                    if (value.toInt() == 1) {
-                        powerResetCalibration();
-                        changed = true;
-                    }
-                    continue;
-                }
-
-                */
-
-            #endif
-
-            // -----------------------------------------------------------------
             // DOMOTICZ
             // -----------------------------------------------------------------
 

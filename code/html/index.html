@@ -171,43 +171,6 @@
                                 <div id="magnitudes">
                                 </div>
 
-                                <!--
-                                <div class="pure-g module module-emon module-hlw module-v9261f module-ech1560">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Current</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrCurrent" post=" A" readonly />
-                                </div>
-
-                                <div class="pure-g module module-emon module-hlw module-v9261f module-ech1560">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Voltage</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrVoltage" post=" V" readonly />
-                                </div>
-
-                                <div class="pure-g module module-hlw module-v9261f">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Active Power</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrActive" post=" W" readonly />
-                                </div>
-
-                                <div class="pure-g module module-emon module-hlw module-v9261f module-ech1560">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Apparent Power</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrApparent" post=" VA" readonly />
-                                </div>
-
-                                <div class="pure-g module module-hlw module-v9261f">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Reactive Power</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrReactive" post=" VAR" readonly />
-                                </div>
-
-                                <div class="pure-g module module-hlw module-v9261f">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Power Factor</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrFactor" post="%" readonly />
-                                </div>
-
-                                <div class="pure-g module module-emon module-hlw module-v9261f module-ech1560">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Energy</label>
-                                    <input class="pure-u-1 pure-u-sm-3-4" type="text" name="pwrEnergy" post=" J (aggregated)" readonly />
-                                </div>
-                                -->
-
                                 <div class="pure-u-1 state">
 
                                     <div class="pure-u-1 pure-u-sm-1-4">Manufacturer</div>
@@ -925,63 +888,43 @@
 
                                 -->
 
-                                <legend>Energy monitor</legend>
-
-                                <!--
-                                <div class="pure-g module module-emon">
-                                    <label class="pure-u-1 pure-u-md-1-4">Current Ratio</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="pwrRatioC" type="text" size="8" tabindex="51" />
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">In A/V. This number is usually written in the CT if it has a built-in burden resistor, otherwise you will have to calculate it according to the resistor you are using.</div>
-                                </div>
-                                -->
+                                <legend class="module module-hlw module-emon">Energy monitor</legend>
 
                                 <div class="pure-g module module-emon">
                                     <label class="pure-u-1 pure-u-md-1-4">Voltage</label>
-                                    <input class="pure-u-1 pure-u-md-3-4" name="pwrVoltage" type="text" size="8" tabindex="52" />
+                                    <input class="pure-u-1 pure-u-md-3-4" name="pwrVoltage" type="text" size="8" tabindex="51" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">Mains voltage in your system (in V).</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon module-v9261f">
-                                    <label class="pure-u-1 pure-u-md-1-4">Expected Power</label>
-                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedP" type="text" size="8" tabindex="53" placeholder="0" />
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter. In Watts.</div>
-                                </div>
-
-                                <div class="pure-g module module-hlw module-emon module-v9261f">
-                                    <div class="pure-u-1 pure-u-sm-1-4"><label>Reset calibration</label></div>
-                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="59" /></div>
-                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
-                                </div>
-
-                                <!--
-
-                                <div class="pure-g module module-v9261f">
-                                    <label class="pure-u-1 pure-u-md-1-4">AC Power Factor</label>
-                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedF" type="text" size="8" tabindex="51" placeholder="0" />
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">In percentage (%). You will need to use a calibrated multimeter to get this value and a mixed resistive and reactive load.</div>
-                                </div>
-
-                                <div class="pure-g module module-emon module-hlw module-v9261f">
-                                    <label class="pure-u-1 pure-u-md-1-4">AC RMS Voltage</label>
-                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedV" type="text" size="8" tabindex="52" placeholder="0" />
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
-                                </div>
-
-                                <div class="pure-g module module-hlw module-v9261f">
-                                    <label class="pure-u-1 pure-u-md-1-4">AC RMS Current</label>
-                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedC" type="text" size="8" tabindex="55" placeholder="0" />
+                                <div class="pure-g module module-hlw">
+                                    <label class="pure-u-1 pure-u-md-1-4">Expected Current</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedC" type="text" size="8" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">In Ampers (A). If you are using a pure resistive load like a bulb this will the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one fo the power wires to get this value.</div>
                                 </div>
 
-                                -->
+                                <div class="pure-g module module-hlw">
+                                    <label class="pure-u-1 pure-u-md-1-4">Expected Voltage</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedV" type="text" size="8" tabindex="53" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
+                                </div>
+
+                                <div class="pure-g module module-hlw module-emon">
+                                    <label class="pure-u-1 pure-u-md-1-4">Expected Power</label>
+                                    <input class="pure-u-1 pure-u-md-3-4 pwrExpected" name="pwrExpectedP" type="text" size="8" tabindex="54" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter.</div>
+                                </div>
+
+                                <div class="pure-g module module-hlw module-emon">
+                                    <div class="pure-u-1 pure-u-sm-1-4"><label>Reset calibration</label></div>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="55" /></div>
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
+                                </div>
 
                             </fieldset>
                         </div>

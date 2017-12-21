@@ -147,7 +147,7 @@ class BaseSensor {
         unsigned char count() { return _count; }
 
         // Handle interrupt calls
-        virtual void handleInterrupt(unsigned char gpio) {}
+        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {}
 
     protected:
 
@@ -174,20 +174,20 @@ class BaseSensor {
 
 BaseSensor * _isr_sensor_instance[16] = {NULL};
 
-void _sensor_isr(unsigned char gpio) {
+void ICACHE_RAM_ATTR _sensor_isr(unsigned char gpio) {
     if (_isr_sensor_instance[gpio]) {
         _isr_sensor_instance[gpio]->handleInterrupt(gpio);
     }
 }
 
-void _sensor_isr_0() { _sensor_isr(0); }
-void _sensor_isr_2() { _sensor_isr(2); }
-void _sensor_isr_4() { _sensor_isr(4); }
-void _sensor_isr_5() { _sensor_isr(5); }
-void _sensor_isr_12() { _sensor_isr(12); }
-void _sensor_isr_13() { _sensor_isr(13); }
-void _sensor_isr_14() { _sensor_isr(14); }
-void _sensor_isr_15() { _sensor_isr(15); }
+void ICACHE_RAM_ATTR _sensor_isr_0() { _sensor_isr(0); }
+void ICACHE_RAM_ATTR _sensor_isr_2() { _sensor_isr(2); }
+void ICACHE_RAM_ATTR _sensor_isr_4() { _sensor_isr(4); }
+void ICACHE_RAM_ATTR _sensor_isr_5() { _sensor_isr(5); }
+void ICACHE_RAM_ATTR _sensor_isr_12() { _sensor_isr(12); }
+void ICACHE_RAM_ATTR _sensor_isr_13() { _sensor_isr(13); }
+void ICACHE_RAM_ATTR _sensor_isr_14() { _sensor_isr(14); }
+void ICACHE_RAM_ATTR _sensor_isr_15() { _sensor_isr(15); }
 
 void (*_sensor_isrs[16])() = {
     _sensor_isr_0, NULL, _sensor_isr_2, NULL, _sensor_isr_4, _sensor_isr_5,

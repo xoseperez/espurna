@@ -105,9 +105,7 @@
     #define LED1_PIN_INVERSE    1
 
     // HLW8012
-    #ifndef POWER_PROVIDER
-    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
-    #endif
+    #define HLW8012_SUPPORT     1
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -148,9 +146,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #ifndef POWER_PROVIDER
-    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
-    #endif
+    #define HLW8012_SUPPORT     1
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -322,7 +318,7 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
-    #define POWER_PROVIDER      POWER_PROVIDER_HLW8012
+    #define HLW8012_SUPPORT     1
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -1042,7 +1038,7 @@
     #define ALEXA_SUPPORT       0
 
     // ECH1560
-    #define POWER_PROVIDER      POWER_PROVIDER_ECH1560
+    #define ECH1560_SUPPORT     1
     #define ECH1560_CLK_PIN     4
     #define ECH1560_MISO_PIN    5
     #define ECH1560_INVERTED    0

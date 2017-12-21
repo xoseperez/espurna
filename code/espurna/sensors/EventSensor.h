@@ -101,7 +101,7 @@ class EventSensor : public BaseSensor {
         }
 
         // Handle interrupt calls
-        void handleInterrupt(unsigned char gpio) {
+        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
             (void) gpio;
             static unsigned long last = 0;
             if (millis() - last > _debounce) {

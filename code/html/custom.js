@@ -28,23 +28,6 @@ function initMessages() {
     messages[10] = "Session expired, please reload page...";
 }
 
-#define SENSOR_DHTXX_ID                 0x01
-#define SENSOR_DALLAS_ID                0x02
-#define SENSOR_EMON_ANALOG_ID           0x03
-#define SENSOR_EMON_ADC121_ID           0x04
-#define SENSOR_EMON_ADS1X15_ID          0x05
-#define SENSOR_HLW8012_ID               0x06
-#define SENSOR_V9261F_ID                0x07
-#define SENSOR_ECH1560_ID               0x08
-#define SENSOR_ANALOG_ID                0x09
-#define SENSOR_DIGITAL_ID               0x10
-#define SENSOR_EVENTS_ID                0x11
-#define SENSOR_PMSX003_ID               0x12
-#define SENSOR_BMX280_ID                0x13
-#define SENSOR_MHZ19_ID                 0x14
-#define SENSOR_SI7021_ID                0x15
-#define SENSOR_SHT3X_I2C_ID             0x16
-
 function sensorName(id) {
     var names = [
         "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",

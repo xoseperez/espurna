@@ -191,7 +191,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef ECH1560_SUPPORT
-#define ECH1560_SUPPORT                 1
+#define ECH1560_SUPPORT                 0
 #endif
 
 #ifndef ECH1560_CLK_PIN
@@ -300,6 +300,24 @@
 #ifndef HLW8012_SUPPORT
 #define HLW8012_SUPPORT                 0
 #endif
+
+#ifndef HLW8012_SEL_PIN
+#define HLW8012_SEL_PIN                 5
+#endif
+
+#ifndef HLW8012_CF1_PIN
+#define HLW8012_CF1_PIN                 13
+#endif
+
+#ifndef HLW8012_CF_PIN
+#define HLW8012_CF_PIN                  14
+#endif
+
+#define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
+#define HLW8012_SEL_CURRENT             HIGH    // SEL pin to HIGH to measure current
+#define HLW8012_CURRENT_R               0.001   // Current resistor
+#define HLW8012_VOLTAGE_R_UP            ( 5 * 470000 )  // Upstream voltage resistor
+#define HLW8012_VOLTAGE_R_DOWN          ( 1000 )        // Downstream voltage resistor
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
@@ -476,6 +494,7 @@
 #endif
 
 #if HLW8012_SUPPORT
+    #include <HLW8012.h>
     #include "sensors/HLW8012Sensor.h"
 #endif
 
