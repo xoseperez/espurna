@@ -198,6 +198,8 @@ static void (*_sensor_isrs[16])() = {
 };
 
 void BaseSensor::attach(BaseSensor * instance, unsigned char gpio, unsigned char mode) {
+    if ((6 <= gpio) && (gpio <=11)) return;
+    if (gpio >= 16) return;
     detach(gpio);
     if (_sensor_isrs[gpio]) {
         _isr_sensor_instance[gpio] = instance;
@@ -207,6 +209,8 @@ void BaseSensor::attach(BaseSensor * instance, unsigned char gpio, unsigned char
 }
 
 void BaseSensor::detach(unsigned char gpio) {
+    if ((6 <= gpio) && (gpio <=11)) return;
+    if (gpio >= 16) return;
     if (_isr_sensor_instance[gpio]) {
         detachInterrupt(gpio);
         _isr_sensor_instance[gpio]->detached(gpio);

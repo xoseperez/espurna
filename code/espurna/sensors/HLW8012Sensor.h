@@ -22,6 +22,7 @@ class HLW8012Sensor : public BaseSensor {
         HLW8012Sensor(): BaseSensor() {
             _count = 7;
             _sensor_id = SENSOR_HLW8012_ID;
+            _hlw8012 = new HLW8012();
         }
 
         ~HLW8012Sensor() {
@@ -118,9 +119,6 @@ class HLW8012Sensor : public BaseSensor {
         // Initialization method, must be idempotent
         // Defined outside the class body
         void begin() {
-
-            if (_hlw8012) delete _hlw8012;
-            _hlw8012 = new HLW8012();
 
             // Initialize HLW8012
             // void begin(unsigned char cf_pin, unsigned char cf1_pin, unsigned char sel_pin, unsigned char currentWhen = HIGH, bool use_interrupts = false, unsigned long pulse_timeout = PULSE_TIMEOUT);

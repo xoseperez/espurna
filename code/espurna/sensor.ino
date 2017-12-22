@@ -421,33 +421,36 @@ void _sensorConfigure() {
             }
         #endif // EMON_ANALOG_SUPPORT
 
+        // Force sensor to reload config
+        _sensors[i]->begin();
+
         #if HLW8012_SUPPORT
             if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
 
                 HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toInt() == 0) {
-                    value = getSetting("pwrRatioC", 0).toFloat();
-                    if (value > 0) sensor->setCurrentRatio(value);
-                } else {
+                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
                     sensor->expectedCurrent(value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio());
+                } else {
+                    value = getSetting("pwrRatioC", 0).toFloat();
+                    if (value > 0) sensor->setCurrentRatio(value);
                 }
 
-                if (value = getSetting("pwrExpectedV", 0).toInt() == 0) {
-                    value = getSetting("pwrRatioV", 0).toFloat();
-                    if (value > 0) sensor->setVoltageRatio(value);
-                } else {
+                if (value = getSetting("pwrExpectedV", 0).toInt()) {
                     sensor->expectedVoltage(value);
                     setSetting("pwrRatioV", sensor->getVoltageRatio());
+                } else {
+                    value = getSetting("pwrRatioV", 0).toFloat();
+                    if (value > 0) sensor->setVoltageRatio(value);
                 }
 
-                if (value = getSetting("pwrExpectedP", 0).toInt() == 0) {
-                    value = getSetting("pwrRatioP", 0).toFloat();
-                    if (value > 0) sensor->setPowerRatio(value);
-                } else {
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
+                } else {
+                    value = getSetting("pwrRatioP", 0).toFloat();
+                    if (value > 0) sensor->setPowerRatio(value);
                 }
 
                 if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
@@ -459,10 +462,6 @@ void _sensorConfigure() {
 
             }
         #endif // HLW8012_SUPPORT
-
-        // Force sensor to reload config
-        _sensors[i]->begin();
-
     }
 
     // General sensor settings
