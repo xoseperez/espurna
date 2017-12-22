@@ -77,7 +77,7 @@ class SHT3XI2CSensor : public BaseSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
 
-            unsigned int buffer[6];
+            unsigned char buffer[6];
 
             #if I2C_USE_BRZO
                 buffer[0] = 0x2C;
