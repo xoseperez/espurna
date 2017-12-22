@@ -181,7 +181,9 @@ void ICACHE_RAM_ATTR _sensor_isr(unsigned char gpio) {
 }
 
 void ICACHE_RAM_ATTR _sensor_isr_0() { _sensor_isr(0); }
+void ICACHE_RAM_ATTR _sensor_isr_1() { _sensor_isr(1); }
 void ICACHE_RAM_ATTR _sensor_isr_2() { _sensor_isr(2); }
+void ICACHE_RAM_ATTR _sensor_isr_3() { _sensor_isr(3); }
 void ICACHE_RAM_ATTR _sensor_isr_4() { _sensor_isr(4); }
 void ICACHE_RAM_ATTR _sensor_isr_5() { _sensor_isr(5); }
 void ICACHE_RAM_ATTR _sensor_isr_12() { _sensor_isr(12); }
@@ -189,8 +191,8 @@ void ICACHE_RAM_ATTR _sensor_isr_13() { _sensor_isr(13); }
 void ICACHE_RAM_ATTR _sensor_isr_14() { _sensor_isr(14); }
 void ICACHE_RAM_ATTR _sensor_isr_15() { _sensor_isr(15); }
 
-void (*_sensor_isrs[16])() = {
-    _sensor_isr_0, NULL, _sensor_isr_2, NULL, _sensor_isr_4, _sensor_isr_5,
+static void (*_sensor_isrs[16])() = {
+    _sensor_isr_0, _sensor_isr_1, _sensor_isr_2, _sensor_isr_3, _sensor_isr_4, _sensor_isr_5,
     NULL, NULL, NULL, NULL, NULL, NULL,
     _sensor_isr_12, _sensor_isr_13, _sensor_isr_14, _sensor_isr_15
 };
