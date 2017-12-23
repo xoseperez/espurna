@@ -27,7 +27,6 @@ void ssdpSetup() {
         webServer()->on("/description.xml", HTTP_GET, [](AsyncWebServerRequest *request) {
             DEBUG_MSG_P(PSTR("[SSDP] Schema request\n"));
             String schema = SSDPDevice.schema();
-            Serial.println(schema);
             request->send(200, "application/xml", schema.c_str());
         });
     #endif
