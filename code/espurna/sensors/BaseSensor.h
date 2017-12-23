@@ -123,20 +123,6 @@ class BaseSensor {
 
         }
 
-        // Interrupt attach callback
-        void attached(unsigned char gpio) {
-            #if SENSOR_DEBUG
-                DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, description().c_str());
-            #endif
-        }
-
-        // Interrupt detach callback
-        void detached(unsigned char gpio) {
-            #if SENSOR_DEBUG
-                DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, description().c_str());
-            #endif
-        }
-
         // Return sensor status (true for ready)
         bool status() { return _error == 0; }
 
@@ -146,16 +132,14 @@ class BaseSensor {
         // Number of available slots
         unsigned char count() { return _count; }
 
-        // Handle interrupt calls
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {}
-
     protected:
 
-        // Attach interrupt
-        void attach(BaseSensor * instance, unsigned char gpio, unsigned char mode);
-
-        // Detach interrupt
-        void detach(unsigned char gpio);
+        // Check if valid GPIO
+        bool _validGPIO(unsigned char gpio) {
+            if (0 <= gpio && gpio <= 5) return true;
+            if (12 <= gpio && gpio <= 15) return true;
+            return false;
+        }
 
         unsigned char _sensor_id = 0x00;
         int _error = 0;
@@ -167,53 +151,3 @@ class BaseSensor {
         unsigned char _address = 0;
 
 };
-
-// -----------------------------------------------------------------------------
-// Interrupt helpers
-// -----------------------------------------------------------------------------
-
-BaseSensor * _isr_sensor_instance[16] = {NULL};
-
-void ICACHE_RAM_ATTR _sensor_isr(unsigned char gpio) {
-    if (_isr_sensor_instance[gpio]) {
-        _isr_sensor_instance[gpio]->handleInterrupt(gpio);
-    }
-}
-
-void ICACHE_RAM_ATTR _sensor_isr_0() { _sensor_isr(0); }
-void ICACHE_RAM_ATTR _sensor_isr_1() { _sensor_isr(1); }
-void ICACHE_RAM_ATTR _sensor_isr_2() { _sensor_isr(2); }
-void ICACHE_RAM_ATTR _sensor_isr_3() { _sensor_isr(3); }
-void ICACHE_RAM_ATTR _sensor_isr_4() { _sensor_isr(4); }
-void ICACHE_RAM_ATTR _sensor_isr_5() { _sensor_isr(5); }
-void ICACHE_RAM_ATTR _sensor_isr_12() { _sensor_isr(12); }
-void ICACHE_RAM_ATTR _sensor_isr_13() { _sensor_isr(13); }
-void ICACHE_RAM_ATTR _sensor_isr_14() { _sensor_isr(14); }
-void ICACHE_RAM_ATTR _sensor_isr_15() { _sensor_isr(15); }
-
-static void (*_sensor_isrs[16])() = {
-    _sensor_isr_0, _sensor_isr_1, _sensor_isr_2, _sensor_isr_3, _sensor_isr_4, _sensor_isr_5,
-    NULL, NULL, NULL, NULL, NULL, NULL,
-    _sensor_isr_12, _sensor_isr_13, _sensor_isr_14, _sensor_isr_15
-};
-
-void BaseSensor::attach(BaseSensor * instance, unsigned char gpio, unsigned char mode) {
-    if ((6 <= gpio) && (gpio <=11)) return;
-    if (gpio >= 16) return;
-    detach(gpio);
-    if (_sensor_isrs[gpio]) {
-        _isr_sensor_instance[gpio] = instance;
-        attachInterrupt(gpio, _sensor_isrs[gpio], mode);
-        instance->attached(gpio);
-    }
-}
-
-void BaseSensor::detach(unsigned char gpio) {
-    if ((6 <= gpio) && (gpio <=11)) return;
-    if (gpio >= 16) return;
-    if (_isr_sensor_instance[gpio]) {
-        detachInterrupt(gpio);
-        _isr_sensor_instance[gpio]->detached(gpio);
-        _isr_sensor_instance[gpio] = NULL;
-    }
-}

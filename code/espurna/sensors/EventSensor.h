@@ -22,7 +22,7 @@ class EventSensor : public BaseSensor {
         }
 
         ~EventSensor() {
-            detach(_gpio);
+            _enableInterrupts(false);
         }
 
         // ---------------------------------------------------------------------
@@ -68,9 +68,8 @@ class EventSensor : public BaseSensor {
         // Initialization method, must be idempotent
         // Defined outside the class body
         void begin() {
-            if (_interrupt_gpio != GPIO_NONE) detach(_interrupt_gpio);
             pinMode(_gpio, _mode);
-            attach(this, _gpio, _interrupt_mode);
+            _enableInterrupts(true);
         }
 
         // Descriptive name of the sensor
@@ -101,7 +100,7 @@ class EventSensor : public BaseSensor {
         }
 
         // Handle interrupt calls
-        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
+        void handleInterrupt(unsigned char gpio) {
             (void) gpio;
             static unsigned long last = 0;
             if (millis() - last > _debounce) {
@@ -110,19 +109,29 @@ class EventSensor : public BaseSensor {
             }
         }
 
-        // Interrupt attach callback
-        void attached(unsigned char gpio) {
-            BaseSensor::attached(gpio);
-            _interrupt_gpio = gpio;
-        }
-
-        // Interrupt detach callback
-        void detached(unsigned char gpio) {
-            BaseSensor::detached(gpio);
-            if (_interrupt_gpio == gpio) _interrupt_gpio = GPIO_NONE;
-        }
-
     protected:
+
+        // ---------------------------------------------------------------------
+        // Interrupt management
+        // ---------------------------------------------------------------------
+
+        void _attach(EventSensor * instance, unsigned char gpio, unsigned char mode);
+        void _detach(unsigned char gpio);
+
+        void _enableInterrupts(bool value) {
+
+            static unsigned char _interrupt_gpio = GPIO_NONE;
+
+            if (value) {
+                if (_interrupt_gpio != GPIO_NONE) _detach(_interrupt_gpio);
+                _attach(this, _gpio, _interrupt_mode);
+                _interrupt_gpio = _gpio;
+            } else if (_interrupt_gpio != GPIO_NONE) {
+                _detach(_interrupt_gpio);
+                _interrupt_gpio = GPIO_NONE;
+            }
+
+        }
 
         // ---------------------------------------------------------------------
         // Protected
@@ -133,6 +142,59 @@ class EventSensor : public BaseSensor {
         unsigned char _gpio;
         unsigned char _mode;
         unsigned char _interrupt_mode;
-        unsigned char _interrupt_gpio = GPIO_NONE;
 
 };
+
+// -----------------------------------------------------------------------------
+// Interrupt helpers
+// -----------------------------------------------------------------------------
+
+EventSensor * _event_sensor_instance[10] = {NULL};
+
+void ICACHE_RAM_ATTR _event_sensor_isr(unsigned char gpio) {
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    if (_event_sensor_instance[index]) {
+        _event_sensor_instance[index]->handleInterrupt(gpio);
+    }
+}
+
+void ICACHE_RAM_ATTR _event_sensor_isr_0() { _event_sensor_isr(0); }
+void ICACHE_RAM_ATTR _event_sensor_isr_1() { _event_sensor_isr(1); }
+void ICACHE_RAM_ATTR _event_sensor_isr_2() { _event_sensor_isr(2); }
+void ICACHE_RAM_ATTR _event_sensor_isr_3() { _event_sensor_isr(3); }
+void ICACHE_RAM_ATTR _event_sensor_isr_4() { _event_sensor_isr(4); }
+void ICACHE_RAM_ATTR _event_sensor_isr_5() { _event_sensor_isr(5); }
+void ICACHE_RAM_ATTR _event_sensor_isr_12() { _event_sensor_isr(12); }
+void ICACHE_RAM_ATTR _event_sensor_isr_13() { _event_sensor_isr(13); }
+void ICACHE_RAM_ATTR _event_sensor_isr_14() { _event_sensor_isr(14); }
+void ICACHE_RAM_ATTR _event_sensor_isr_15() { _event_sensor_isr(15); }
+
+static void (*_event_sensor_isr_list[10])() = {
+    _event_sensor_isr_0, _event_sensor_isr_1, _event_sensor_isr_2,
+    _event_sensor_isr_3, _event_sensor_isr_4, _event_sensor_isr_5,
+    _event_sensor_isr_12, _event_sensor_isr_13, _event_sensor_isr_14,
+    _event_sensor_isr_15
+};
+
+void EventSensor::_attach(EventSensor * instance, unsigned char gpio, unsigned char mode) {
+    if (!_validGPIO(gpio)) return;
+    _detach(gpio);
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    _event_sensor_instance[index] = instance;
+    attachInterrupt(gpio, _event_sensor_isr_list[index], mode);
+    #if SENSOR_DEBUG
+        DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, instance->description().c_str());
+    #endif
+}
+
+void EventSensor::_detach(unsigned char gpio) {
+    if (!_validGPIO(gpio)) return;
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    if (_event_sensor_instance[index]) {
+        detachInterrupt(gpio);
+        #if SENSOR_DEBUG
+            DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, _event_sensor_instance[index]->description().c_str());
+        #endif
+        _event_sensor_instance[index] = NULL;
+    }
+}

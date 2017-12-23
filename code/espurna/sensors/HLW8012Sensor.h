@@ -26,8 +26,7 @@ class HLW8012Sensor : public BaseSensor {
         }
 
         ~HLW8012Sensor() {
-            detach(_interrupt_cf);
-            detach(_interrupt_cf1);
+            _enableInterrupts(false);
         }
 
         void expectedCurrent(double expected) {
@@ -141,13 +140,13 @@ class HLW8012Sensor : public BaseSensor {
 
             // Handle interrupts
             #if HLW8012_USE_INTERRUPTS
-                _enable(true);
+                _enableInterrupts(true);
             #else
                 _onconnect_handler = WiFi.onStationModeGotIP([this](WiFiEventStationModeGotIP ipInfo) {
-                    _enable(true);
+                    _enableInterrupts(true);
                 });
                 _ondisconnect_handler = WiFi.onStationModeDisconnected([this](WiFiEventStationModeDisconnected ipInfo) {
-                    _enable(false);
+                    _enableInterrupts(false);
                 });
             #endif
 
@@ -188,54 +187,55 @@ class HLW8012Sensor : public BaseSensor {
             return 0;
         }
 
+        // Toggle between current and voltage monitoring
+        #if HLW8012_USE_INTERRUPTS == 0
         // Post-read hook (usually to reset things)
-        void post() {
-            // Toggle between current and voltage monitoring
-            #if (HLW8012_USE_INTERRUPTS == 0)
-                _hlw8012->toggleMode();
-            #endif // (HLW8012_USE_INTERRUPTS == 0)
-        }
+        void post() { _hlw8012->toggleMode(); }
+        #endif // HLW8012_USE_INTERRUPTS == 0
 
         // Handle interrupt calls
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-            if (gpio == _interrupt_cf) _hlw8012->cf_interrupt();
-            if (gpio == _interrupt_cf1) _hlw8012->cf1_interrupt();
-        }
-
-        // Interrupt attach callback
-        void attached(unsigned char gpio) {
-            BaseSensor::attached(gpio);
-            if (_cf == gpio) _interrupt_cf = gpio;
-            if (_cf1 == gpio) _interrupt_cf1 = gpio;
-        }
-
-        // Interrupt detach callback
-        void detached(unsigned char gpio) {
-            BaseSensor::detached(gpio);
-            if (_interrupt_cf == gpio) _interrupt_cf = GPIO_NONE;
-            if (_interrupt_cf1 == gpio) _interrupt_cf1 = GPIO_NONE;
+            if (gpio == _cf) _hlw8012->cf_interrupt();
+            if (gpio == _cf1) _hlw8012->cf1_interrupt();
         }
 
     protected:
 
         // ---------------------------------------------------------------------
-        // Protected
+        // Interrupt management
         // ---------------------------------------------------------------------
 
-        void _enable(bool value) {
+        void _attach(HLW8012Sensor * instance, unsigned char gpio, unsigned char mode);
+        void _detach(unsigned char gpio);
+
+        void _enableInterrupts(bool value) {
+
+            static unsigned char _interrupt_cf = GPIO_NONE;
+            static unsigned char _interrupt_cf1 = GPIO_NONE;
+
             if (value) {
+
                 if (_interrupt_cf != _cf) {
-                    detach(_interrupt_cf);
-                    attach(this, _cf, CHANGE);
+                    if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
+                    _attach(this, _cf, CHANGE);
+                    _interrupt_cf = _cf;
                 }
+
                 if (_interrupt_cf1 != _cf1) {
-                    detach(_interrupt_cf1);
-                    attach(this, _cf1, CHANGE);
+                    if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
+                    _attach(this, _cf1, CHANGE);
+                    _interrupt_cf1 = _cf1;
                 }
+
             } else {
-                detach(_interrupt_cf);
-                detach(_interrupt_cf1);
+
+                _detach(_cf);
+                _detach(_cf1);
+                _interrupt_cf = GPIO_NONE;
+                _interrupt_cf1 = GPIO_NONE;
+
             }
+
         }
 
         // ---------------------------------------------------------------------
@@ -247,10 +247,63 @@ class HLW8012Sensor : public BaseSensor {
 
         HLW8012 * _hlw8012 = NULL;
 
-        WiFiEventHandler _onconnect_handler;
-        WiFiEventHandler _ondisconnect_handler;
-
-        unsigned char _interrupt_cf = GPIO_NONE;
-        unsigned char _interrupt_cf1 = GPIO_NONE;
+        #if HLW8012_USE_INTERRUPTS == 0
+            WiFiEventHandler _onconnect_handler;
+            WiFiEventHandler _ondisconnect_handler;
+        #endif
 
 };
+
+// -----------------------------------------------------------------------------
+// Interrupt helpers
+// -----------------------------------------------------------------------------
+
+HLW8012Sensor * _hlw8012_sensor_instance[10] = {NULL};
+
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr(unsigned char gpio) {
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    if (_hlw8012_sensor_instance[index]) {
+        _hlw8012_sensor_instance[index]->handleInterrupt(gpio);
+    }
+}
+
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_0() { _hlw8012_sensor_isr(0); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_1() { _hlw8012_sensor_isr(1); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_2() { _hlw8012_sensor_isr(2); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_3() { _hlw8012_sensor_isr(3); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_4() { _hlw8012_sensor_isr(4); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_5() { _hlw8012_sensor_isr(5); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_12() { _hlw8012_sensor_isr(12); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_13() { _hlw8012_sensor_isr(13); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_14() { _hlw8012_sensor_isr(14); }
+void ICACHE_RAM_ATTR _hlw8012_sensor_isr_15() { _hlw8012_sensor_isr(15); }
+
+static void (*_hlw8012_sensor_isr_list[10])() = {
+    _hlw8012_sensor_isr_0, _hlw8012_sensor_isr_1, _hlw8012_sensor_isr_2,
+    _hlw8012_sensor_isr_3, _hlw8012_sensor_isr_4, _hlw8012_sensor_isr_5,
+    _hlw8012_sensor_isr_12, _hlw8012_sensor_isr_13, _hlw8012_sensor_isr_14,
+    _hlw8012_sensor_isr_15
+};
+
+void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsigned char mode) {
+    if (!_validGPIO(gpio)) return;
+    _detach(gpio);
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    _hlw8012_sensor_instance[index] = instance;
+    attachInterrupt(gpio, _hlw8012_sensor_isr_list[index], mode);
+    #if SENSOR_DEBUG
+        DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, instance->description().c_str());
+    #endif
+}
+
+void HLW8012Sensor::_detach(unsigned char gpio) {
+    if (!_validGPIO(gpio)) return;
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    if (_hlw8012_sensor_instance[index]) {
+        detachInterrupt(gpio);
+        #if SENSOR_DEBUG
+            DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, _hlw8012_sensor_instance[index]->description().c_str());
+        #endif
+        _hlw8012_sensor_instance[index] = NULL;
+    }
+}

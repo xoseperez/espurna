@@ -22,7 +22,7 @@ class ECH1560Sensor : public BaseSensor {
         }
 
         ~ECH1560Sensor() {
-            if (_interrupt_gpio != GPIO_NONE) detach(_interrupt_gpio);
+            _enableInterrupts(false);
         }
 
         // ---------------------------------------------------------------------
@@ -69,25 +69,8 @@ class ECH1560Sensor : public BaseSensor {
 
             pinMode(_clk, INPUT);
             pinMode(_miso, INPUT);
-            if (_interrupt_gpio != GPIO_NONE) detach(_interrupt_gpio);
-            attach(this, _clk, RISING);
+            _enableInterrupts(true);
 
-        }
-
-        // Interrupt attach callback
-        void attached(unsigned char gpio) {
-            BaseSensor::attached(gpio);
-            _interrupt_gpio = gpio;
-        }
-
-        // Interrupt detach callback
-        void detached(unsigned char gpio) {
-            BaseSensor::detached(gpio);
-            if (_interrupt_gpio == gpio) _interrupt_gpio = GPIO_NONE;
-        }
-
-        void ICACHE_RAM_ATTR handleInterrupt() {
-            _isr();
         }
 
         // Descriptive name of the sensor
@@ -117,13 +100,9 @@ class ECH1560Sensor : public BaseSensor {
             return 0;
         }
 
-    protected:
+        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
 
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
-
-        void ICACHE_RAM_ATTR _isr() {
+            (void) gpio;
 
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
             if (_dosync == false) {
@@ -151,6 +130,36 @@ class ECH1560Sensor : public BaseSensor {
             }
 
         }
+
+    protected:
+
+        // ---------------------------------------------------------------------
+        // Interrupt management
+        // ---------------------------------------------------------------------
+
+        void _attach(ECH1560Sensor * instance, unsigned char gpio, unsigned char mode);
+        void _detach(unsigned char gpio);
+
+        void _enableInterrupts(bool value) {
+
+            static unsigned char _interrupt_clk = GPIO_NONE;
+
+            if (value) {
+                if (_interrupt_clk != _clk) {
+                    if (_interrupt_clk != GPIO_NONE) _detach(_interrupt_clk);
+                    _attach(this, _clk, RISING);
+                    _interrupt_clk = _clk;
+                }
+            } else if (_interrupt_clk != GPIO_NONE) {
+                _detach(_interrupt_clk);
+                _interrupt_clk = GPIO_NONE;
+            }
+
+        }
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
 
         void _sync() {
 
@@ -247,7 +256,6 @@ class ECH1560Sensor : public BaseSensor {
 
         unsigned char _clk = 0;
         unsigned char _miso = 0;
-        unsigned char _interrupt_gpio = GPIO_NONE;
         bool _inverted = false;
 
         volatile long _bits_count = 0;
@@ -262,3 +270,57 @@ class ECH1560Sensor : public BaseSensor {
         unsigned char _data[24];
 
 };
+
+// -----------------------------------------------------------------------------
+// Interrupt helpers
+// -----------------------------------------------------------------------------
+
+ECH1560Sensor * _ech1560_sensor_instance[10] = {NULL};
+
+void ICACHE_RAM_ATTR _ech1560_sensor_isr(unsigned char gpio) {
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    if (_ech1560_sensor_instance[index]) {
+        _ech1560_sensor_instance[index]->handleInterrupt(gpio);
+    }
+}
+
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_0() { _ech1560_sensor_isr(0); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_1() { _ech1560_sensor_isr(1); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_2() { _ech1560_sensor_isr(2); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_3() { _ech1560_sensor_isr(3); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_4() { _ech1560_sensor_isr(4); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_5() { _ech1560_sensor_isr(5); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_12() { _ech1560_sensor_isr(12); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_13() { _ech1560_sensor_isr(13); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_14() { _ech1560_sensor_isr(14); }
+void ICACHE_RAM_ATTR _ech1560_sensor_isr_15() { _ech1560_sensor_isr(15); }
+
+static void (*_ech1560_sensor_isr_list[10])() = {
+    _ech1560_sensor_isr_0, _ech1560_sensor_isr_1, _ech1560_sensor_isr_2,
+    _ech1560_sensor_isr_3, _ech1560_sensor_isr_4, _ech1560_sensor_isr_5,
+    _ech1560_sensor_isr_12, _ech1560_sensor_isr_13, _ech1560_sensor_isr_14,
+    _ech1560_sensor_isr_15
+};
+
+void ECH1560Sensor::_attach(ECH1560Sensor * instance, unsigned char gpio, unsigned char mode) {
+    if (!_validGPIO(gpio)) return;
+    _detach(gpio);
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    _ech1560_sensor_instance[index] = instance;
+    attachInterrupt(gpio, _ech1560_sensor_isr_list[index], mode);
+    #if SENSOR_DEBUG
+        DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, instance->description().c_str());
+    #endif
+}
+
+void ECH1560Sensor::_detach(unsigned char gpio) {
+    if (!_validGPIO(gpio)) return;
+    unsigned char index = gpio > 5 ? gpio-6 : gpio;
+    if (_ech1560_sensor_instance[index]) {
+        detachInterrupt(gpio);
+        #if SENSOR_DEBUG
+            DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, _ech1560_sensor_instance[index]->description().c_str());
+        #endif
+        _ech1560_sensor_instance[index] = NULL;
+    }
+}
