@@ -25,6 +25,11 @@ class PMSX003Sensor : public BaseSensor {
             _sensor_id = SENSOR_PMSX003_ID;
         }
 
+        ~PMSX003Sensor() {
+            if (_serial) delete _serial;
+            if (_pms) delete _pms;
+        }
+
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;

@@ -23,6 +23,10 @@ class V9261FSensor : public BaseSensor {
             _sensor_id = SENSOR_V9261F_ID;
         }
 
+        ~V9261FSensor() {
+            if (_serial) delete _serial;
+        }
+
         // ---------------------------------------------------------------------
 
         void setRX(unsigned char pin_rx) {

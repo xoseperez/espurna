@@ -27,6 +27,7 @@ class HLW8012Sensor : public BaseSensor {
 
         ~HLW8012Sensor() {
             _enableInterrupts(false);
+            delete _hlw8012;
         }
 
         void expectedCurrent(double expected) {

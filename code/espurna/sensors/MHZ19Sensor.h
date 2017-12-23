@@ -34,6 +34,12 @@ class MHZ19Sensor : public BaseSensor {
             _sensor_id = SENSOR_MHZ19_ID;
         }
 
+        ~MHZ19Sensor() {
+            if (_serial) delete _serial;
+        }
+
+        // ---------------------------------------------------------------------
+
         void setRX(unsigned char pin_rx) {
             if (_pin_rx == pin_rx) return;
             _pin_rx = pin_rx;

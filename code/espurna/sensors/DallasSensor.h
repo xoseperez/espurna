@@ -37,6 +37,10 @@ class DallasSensor : public BaseSensor {
             _sensor_id = SENSOR_DALLAS_ID;
         }
 
+        ~DallasSensor() {
+            if (_wire) delete _wire;
+        }
+
         // ---------------------------------------------------------------------
 
         void setGPIO(unsigned char gpio) {
@@ -279,6 +283,6 @@ class DallasSensor : public BaseSensor {
 
         unsigned char _gpio;
         unsigned long _interval;
-        OneWire * _wire;
+        OneWire * _wire = NULL;
 
 };
