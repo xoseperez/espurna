@@ -181,7 +181,7 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 2) return _hlw8012->getActivePower();
             if (index == 3) return _hlw8012->getReactivePower();
             if (index == 4) return _hlw8012->getApparentPower();
-            if (index == 5) return _hlw8012->getPowerFactor();
+            if (index == 5) return 100 * _hlw8012->getPowerFactor();
             if (index == 6) return _hlw8012->getEnergy();
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
