@@ -322,7 +322,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
-// MDNS & LLMNR
+// MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
@@ -335,6 +335,10 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef NETBIOS_SUPPORT
 #define NETBIOS_SUPPORT         0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires 2.4.0
+#endif
+
+#ifndef SSDP_SUPPORT
+#define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (3.32Kb)
 #endif
 
 // -----------------------------------------------------------------------------

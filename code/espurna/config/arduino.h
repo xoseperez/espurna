@@ -78,6 +78,7 @@
 //#define NTP_SUPPORT            0
 //#define RF_SUPPORT             1
 //#define SPIFFS_SUPPORT         1
+//#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
 //#define TERMINAL_SUPPORT       0
 //#define WEB_SUPPORT            0
