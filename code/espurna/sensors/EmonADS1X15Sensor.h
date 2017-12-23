@@ -6,7 +6,6 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
 #include "EmonSensor.h"
 
 #if I2C_USE_BRZO
@@ -112,12 +111,6 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         // ---------------------------------------------------------------------
 
-        void setAddress(unsigned char address) {
-            if (_address == address) return;
-            _address = address;
-            _dirty = true;
-        }
-
         void setType(unsigned char type) {
             if (_type == type) return;
             _type = type;
@@ -137,10 +130,6 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         // ---------------------------------------------------------------------
-
-        unsigned char getAddress() {
-            return _address;
-        }
 
         unsigned char getType() {
             return _type;
@@ -166,7 +155,7 @@ class EmonADS1X15Sensor : public EmonSensor {
 
             // Discover
             unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};
-            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
             // Calculate ports
@@ -396,7 +385,6 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         }
 
-        unsigned char _address;
         unsigned char _type = ADS1X15_CHIP_ADS1115;
         unsigned char _mask = 0x0F;
         unsigned int _gain = ADS1X15_REG_CONFIG_PGA_4_096V;

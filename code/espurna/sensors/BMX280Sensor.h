@@ -7,13 +7,13 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
+#include "I2CSensor.h"
 #include <SparkFunBME280.h>
 
 #define BMX280_CHIP_BMP280          0x58
 #define BMX280_CHIP_BME280          0x60
 
-class BMX280Sensor : public BaseSensor {
+class BMX280Sensor : public I2CSensor {
 
     public:
 
@@ -23,20 +23,9 @@ class BMX280Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        BMX280Sensor(): BaseSensor() {
+        BMX280Sensor(): I2CSensor() {
             _sensor_id = SENSOR_BMX280_ID;
-        }
-
-        void setAddress(unsigned char address) {
-            if (_address == address) return;
-            _address = address;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getAddress() {
-            return _address;
+            _bme = new BME280();
         }
 
         // ---------------------------------------------------------------------
@@ -51,11 +40,11 @@ class BMX280Sensor : public BaseSensor {
             _chip = 0;
 
             // I2C auto-discover
-            _address = lock_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
+            _address = _begin_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
             if (_address == 0) return;
 
             // Init
-            init();
+            _init();
 
         }
 
@@ -108,14 +97,14 @@ class BMX280Sensor : public BaseSensor {
                 _error = SENSOR_ERROR_OK;
                 unsigned char i = 0;
                 #if BMX280_TEMPERATURE > 0
-                    if (index == i++) return bme->readTempC();
+                    if (index == i++) return _bme->readTempC();
                 #endif
                 #if BMX280_PRESSURE > 0
-                    if (index == i++) return bme->readFloatPressure() / 100;
+                    if (index == i++) return _bme->readFloatPressure() / 100;
                 #endif
                 #if BMX280_HUMIDITY > 0
                     if (_chip == BMX280_CHIP_BME280) {
-                        if (index == i) return bme->readFloatHumidity();
+                        if (index == i) return _bme->readFloatHumidity();
                     }
                 #endif
             }
@@ -164,29 +153,25 @@ class BMX280Sensor : public BaseSensor {
 
     protected:
 
-        void init() {
+        void _init() {
 
-            // Destroy previous instance if any
-            if (bme) delete bme;
-
-            bme = new BME280();
-            bme->settings.commInterface = I2C_MODE;
-            bme->settings.I2CAddress = _address;
-            bme->settings.runMode = BMX280_MODE;
-            bme->settings.tStandby = 0;
-            bme->settings.filter = 0;
-            bme->settings.tempOverSample = BMX280_TEMPERATURE;
-            bme->settings.pressOverSample = BMX280_PRESSURE;
-            bme->settings.humidOverSample = BMX280_HUMIDITY;
+            _bme->settings.commInterface = I2C_MODE;
+            _bme->settings.I2CAddress = _address;
+            _bme->settings.runMode = BMX280_MODE;
+            _bme->settings.tStandby = 0;
+            _bme->settings.filter = 0;
+            _bme->settings.tempOverSample = BMX280_TEMPERATURE;
+            _bme->settings.pressOverSample = BMX280_PRESSURE;
+            _bme->settings.humidOverSample = BMX280_HUMIDITY;
 
             // Fix when not measuring temperature, t_fine should have a sensible value
-            if (BMX280_TEMPERATURE == 0) bme->t_fine = 100000; // aprox 20ºC
+            if (BMX280_TEMPERATURE == 0) _bme->t_fine = 100000; // aprox 20ºC
 
             // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
             delay(10);
 
             // Check sensor correctly initialized
-            _chip = bme->begin();
+            _chip = _bme->begin();
             if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
                 _chip = 0;
                 i2cReleaseLock(_address);
@@ -237,9 +222,9 @@ class BMX280Sensor : public BaseSensor {
 
             // We set the sensor in "forced mode" to force a reading.
             // After the reading the sensor will go back to sleep mode.
-            uint8_t value = bme->readRegister(BME280_CTRL_MEAS_REG);
+            uint8_t value = _bme->readRegister(BME280_CTRL_MEAS_REG);
             value = (value & 0xFC) + 0x01;
-            bme->writeRegister(BME280_CTRL_MEAS_REG, value);
+            _bme->writeRegister(BME280_CTRL_MEAS_REG, value);
 
             delay(_measurement_delay);
 
@@ -247,7 +232,7 @@ class BMX280Sensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        BME280 * bme;
+        BME280 * _bme = NULL;
         unsigned char _chip;
         unsigned long _measurement_delay;
 

@@ -6,14 +6,14 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
+#include "I2CSensor.h"
 #if I2C_USE_BRZO
 #include <brzo_i2c.h>
 #else
 #include <Wire.h>
 #endif
 
-class SHT3XI2CSensor : public BaseSensor {
+class SHT3XI2CSensor : public I2CSensor {
 
     public:
 
@@ -21,22 +21,8 @@ class SHT3XI2CSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SHT3XI2CSensor(): BaseSensor() {
+        SHT3XI2CSensor(): I2CSensor() {
             _sensor_id = SENSOR_SHT3X_I2C_ID;
-        }
-
-        // ---------------------------------------------------------------------
-
-        void setAddress(unsigned char address) {
-            if (_address == address) return;
-            _address = address;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getAddress() {
-            return _address;
         }
 
         // ---------------------------------------------------------------------
@@ -51,7 +37,7 @@ class SHT3XI2CSensor : public BaseSensor {
 
             // I2C auto-discover
             unsigned char addresses[] = {0x45};
-            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
         }

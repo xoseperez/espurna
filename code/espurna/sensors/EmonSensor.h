@@ -6,9 +6,9 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
+#include "I2CSensor.h"
 
-class EmonSensor : public BaseSensor {
+class EmonSensor : public I2CSensor {
 
     public:
 
@@ -16,7 +16,7 @@ class EmonSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonSensor(): BaseSensor() {
+        EmonSensor(): I2CSensor() {
 
             // Calculate # of magnitudes
             #if EMON_REPORT_CURRENT

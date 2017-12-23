@@ -6,8 +6,6 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
-#include "EmonSensor.h"
 #include "EmonAnalogSensor.h"
 
 #if I2C_USE_BRZO
@@ -44,20 +42,6 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         }
 
         // ---------------------------------------------------------------------
-
-        void setAddress(unsigned char address) {
-            if (_address == address) return;
-            _address = address;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getAddress() {
-            return _address;
-        }
-
-        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -69,7 +53,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
 
             // Discover
             unsigned char addresses[] = {0x50, 0x51, 0x52, 0x54, 0x55, 0x56, 0x58, 0x59, 0x5A};
-            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
             // Init sensor
@@ -153,7 +137,5 @@ class EmonADC121Sensor : public EmonAnalogSensor {
             return value;
 
         }
-
-        unsigned char _address = 0;
 
 };

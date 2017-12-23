@@ -6,7 +6,6 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
 #include "EmonSensor.h"
 
 #define EMON_ANALOG_RESOLUTION      10

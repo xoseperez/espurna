@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Arduino.h"
-#include "BaseSensor.h"
+#include "I2CSensor.h"
 #if I2C_USE_BRZO
 #include <brzo_i2c.h>
 #else
@@ -23,7 +23,7 @@
 #define SI7021_CMD_TMP_NOHOLD   0xF3
 #define SI7021_CMD_HUM_NOHOLD   0xF5
 
-class SI7021Sensor : public BaseSensor {
+class SI7021Sensor : public I2CSensor {
 
     public:
 
@@ -31,21 +31,8 @@ class SI7021Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        SI7021Sensor(): BaseSensor() {
+        SI7021Sensor(): I2CSensor() {
             _sensor_id = SENSOR_SI7021_ID;
-        }
-
-        // ---------------------------------------------------------------------
-
-        void setAddress(unsigned char address) {
-            if (_address != address) _dirty = true;
-            _address = address;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getAddress() {
-            return _address;
         }
 
         // ---------------------------------------------------------------------
@@ -60,7 +47,7 @@ class SI7021Sensor : public BaseSensor {
 
             // I2C auto-discover
             unsigned char addresses[] = {0x40};
-            _address = lock_i2c(_address, sizeof(addresses), addresses);
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
             // Check device

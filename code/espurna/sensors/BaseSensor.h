@@ -95,34 +95,6 @@ class BaseSensor {
         // Sensor ID
         unsigned char getID() { return _sensor_id; };
 
-        // Specific for I2C sensors
-        unsigned char lock_i2c(unsigned char address, size_t size, unsigned char * addresses) {
-
-            // Check if we should release a previously locked address
-            if (_previous_address != address) {
-                i2cReleaseLock(_previous_address);
-            }
-
-            // If we have already an address, check it is not locked
-            if (address && !i2cGetLock(address)) {
-                _error = SENSOR_ERROR_I2C;
-
-            // If we don't have an address...
-            } else {
-
-                // Trigger auto-discover
-                address = i2cFindAndLock(size, addresses);
-
-                // If still nothing exit with error
-                if (address == 0) _error = SENSOR_ERROR_I2C;
-
-            }
-
-            _previous_address = address;
-            return address;
-
-        }
-
         // Return sensor status (true for ready)
         bool status() { return _error == 0; }
 
@@ -145,9 +117,5 @@ class BaseSensor {
         int _error = 0;
         bool _dirty = true;
         unsigned char _count = 0;
-
-        // I2C
-        unsigned char _previous_address = 0;
-        unsigned char _address = 0;
 
 };
