@@ -84,6 +84,9 @@ void wifiConfigure() {
         if (!systemCheck()) return;
     #endif
 
+    // Clean settings
+    wifiClean(WIFI_MAX_NETWORKS);
+
     int i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
         if (getSetting("ssid" + String(i)).length() == 0) break;

@@ -26,8 +26,6 @@
 
                 <form id="formPassword" class="pure-form" action="/" method="post">
 
-                    <input class="pure-u-1 pure-u-sm-3-4" type="hidden" name="webMode" value="1" />
-
                     <div class="panel block">
 
                         <div class="header">
@@ -41,7 +39,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="1" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -50,7 +48,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4">Admin password (repeat)</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-md-3-4" type="password" tabindex="2" autocomplete="false" />
                                 </div>
 
                                 <button class="pure-button button-update-password">Update</button>
@@ -288,8 +286,6 @@
                 </div>
 
                 <form id="formSave" class="pure-form" action="/" method="post" enctype="multipart/form-data">
-
-                    <input class="pure-u-1 pure-u-sm-3-4" type="hidden" name="webMode" value="0" />
 
                     <div class="panel" id="panel-general">
 
@@ -534,7 +530,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4">Admin password</label>
-                                    <input name="adminPass1" class="pure-u-1 pure-u-md-3-4" type="password" action="reboot" tabindex="11" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-md-3-4" type="password" action="reboot" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -543,7 +539,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-md-1-4">Repeat password</label>
-                                    <input name="adminPass2" class="pure-u-1 pure-u-md-3-4" type="password" action="reboot" tabindex="12" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-md-3-4" type="password" action="reboot" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">

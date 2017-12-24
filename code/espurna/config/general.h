@@ -495,6 +495,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SETTINGS_AUTOSAVE       1           // Autosave settings o force manual commit
 #endif
 
+#define SETTINGS_MAX_LIST_COUNT 10          // Maximum index for settings lists
+
 // -----------------------------------------------------------------------------
 // LIGHT
 // -----------------------------------------------------------------------------
