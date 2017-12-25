@@ -46,6 +46,7 @@ template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
+bool settingsRestore(JsonObject& data);
 
 // -----------------------------------------------------------------------------
 // Domoticz

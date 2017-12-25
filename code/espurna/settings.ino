@@ -90,6 +90,28 @@ String settingsKeyName(unsigned int index) {
 
 }
 
+bool settingsRestore(JsonObject& data) {
+
+    const char* app = data["app"];
+    if (strcmp(app, APP_NAME) != 0) return false;
+
+    for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
+        EEPROM.write(i, 0xFF);
+    }
+
+    for (auto element : data) {
+        if (strcmp(element.key, "app") == 0) continue;
+        if (strcmp(element.key, "version") == 0) continue;
+        setSetting(element.key, element.value.as<char*>());
+    }
+
+    saveSettings();
+
+    DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
+    return true;
+
+}
+
 void settingsFactoryReset() {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROM.write(i, 0xFF);

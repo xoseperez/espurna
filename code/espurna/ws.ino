@@ -55,7 +55,7 @@ bool _wsStore(String key, JsonArray& value) {
     bool changed = false;
 
     unsigned char index = 0;
-    for (auto element : (JsonArray&) value) {
+    for (auto element : value) {
         if (_wsStore(key + index, element.as<String>())) changed = true;
         index++;
     }
@@ -66,7 +66,6 @@ bool _wsStore(String key, JsonArray& value) {
         changed = true;
     }
 
-    if (changed) Serial.println(key);
     return changed;
 
 }
@@ -89,41 +88,30 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     // Check actions -----------------------------------------------------------
 
-    if (root.containsKey("action")) {
+    const char* action = root["action"];
+    if (action) {
 
-        String action = root["action"];
-        JsonObject& data = root.containsKey("data") ? root["data"] : jsonBuffer.createObject();
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action.c_str());
+        if (strcmp(action, "reboot") == 0) deferredReset(100, CUSTOM_RESET_WEB);
+        if (strcmp(action, "reconnect") == 0) _web_defer.once_ms(100, wifiDisconnect);
 
-        // Callbacks
-        for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
-            (_ws_on_action_callbacks[i])(action.c_str(), data);
-        }
+        JsonObject& data = root["data"];
+        if (data.success()) {
 
-        if (action.equals("reboot")) deferredReset(100, CUSTOM_RESET_WEB);
-        if (action.equals("reconnect")) _web_defer.once_ms(100, wifiDisconnect);
-
-        if (action.equals("restore")) {
-
-            if (!data.containsKey("app") || (data["app"] != APP_NAME)) {
-                wsSend_P(client_id, PSTR("{\"message\": 4}"));
-                return;
+            // Callbacks
+            for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
+                (_ws_on_action_callbacks[i])(action, data);
             }
 
-            for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
-                EEPROM.write(i, 0xFF);
+            // Restore configuration via websockets
+            if (strcmp(action, "restore") == 0) {
+                if (settingsRestore(data)) {
+                    wsSend_P(client_id, PSTR("{\"message\": 5}"));
+                } else {
+                    wsSend_P(client_id, PSTR("{\"message\": 4}"));
+                }
             }
-
-            for (auto element : data) {
-                if (strcmp(element.key, "app") == 0) continue;
-                if (strcmp(element.key, "version") == 0) continue;
-                setSetting(element.key, element.value.as<char*>());
-            }
-
-            saveSettings();
-
-            wsSend_P(client_id, PSTR("{\"message\": 5}"));
 
         }
 
@@ -131,9 +119,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     // Check configuration -----------------------------------------------------
 
-    if (root.containsKey("config") && root["config"].is<JsonObject&>()) {
+    JsonObject& config = root["config"];
+    if (config.success()) {
 
-        JsonObject& config = root["config"];
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data\n"));
 
         String adminPass;
@@ -179,7 +167,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                         powerCalibrate(POWER_MAGNITUDE_ACTIVE, expected);
                         save = true;
                     }
-                    delSetting(key);
                     continue;
                 }
 
@@ -188,7 +175,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                         powerCalibrate(POWER_MAGNITUDE_VOLTAGE, expected);
                         save = true;
                     }
-                    delSetting(key);
                     continue;
                 }
 
@@ -197,7 +183,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                         powerCalibrate(POWER_MAGNITUDE_CURRENT, expected);
                         save = true;
                     }
-                    delSetting(key);
                     continue;
                 }
 
@@ -206,7 +191,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                         powerCalibrate(POWER_MAGNITUDE_POWER_FACTOR, expected);
                         save = true;
                     }
-                    delSetting(key);
                     continue;
                 }
 
@@ -214,9 +198,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     if (value.as<bool>()) {
                         powerResetCalibration();
                         save = true;
-                        Serial.println(key);
                     }
-                    delSetting(key);
                     continue;
                 }
 
@@ -273,10 +255,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 void _wsOnStart(JsonObject& root) {
 
-    bool changePassword = false;
     #if WEB_FORCE_PASS_CHANGE
         String adminPass = getSetting("adminPass", ADMIN_PASS);
-        if (adminPass.equals(ADMIN_PASS)) changePassword = true;
+        bool changePassword = adminPass.equals(ADMIN_PASS);
+    #else
+        bool changePassword = false;
     #endif
 
     if (changePassword) {
