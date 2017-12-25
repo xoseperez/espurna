@@ -33,6 +33,43 @@ void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload
 }
 #endif
 
+bool _wsStore(String key, String value) {
+
+    // HTTP port
+    if (key == "webPort") {
+        if ((value.toInt() == 0) || (value.toInt() == 80)) {
+            return delSetting(key);
+        }
+    }
+
+    if (value != getSetting(key)) {
+        return setSetting(key, value);
+    }
+
+    return false;
+
+}
+
+bool _wsStore(String key, JsonArray& value) {
+
+    bool changed = false;
+
+    unsigned char index = 0;
+    for (auto element : value) {
+        if (_wsStore(key + index, element.as<String>())) changed = true;
+        index++;
+    }
+
+    // Delete further values
+    for (unsigned char i=index; i<SETTINGS_MAX_LIST_COUNT; i++) {
+        if (!delSetting(key, index)) break;
+        changed = true;
+    }
+
+    return changed;
+
+}
+
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %s\n"), length ? (char*) payload : "");
@@ -51,41 +88,30 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     // Check actions -----------------------------------------------------------
 
-    if (root.containsKey("action")) {
+    const char* action = root["action"];
+    if (action) {
 
-        String action = root["action"];
-        JsonObject& data = root.containsKey("data") ? root["data"] : jsonBuffer.createObject();
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action.c_str());
+        if (strcmp(action, "reboot") == 0) deferredReset(100, CUSTOM_RESET_WEB);
+        if (strcmp(action, "reconnect") == 0) _web_defer.once_ms(100, wifiDisconnect);
 
-        // Callbacks
-        for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
-            (_ws_on_action_callbacks[i])(action.c_str(), data);
-        }
+        JsonObject& data = root["data"];
+        if (data.success()) {
 
-        if (action.equals("reboot")) deferredReset(100, CUSTOM_RESET_WEB);
-        if (action.equals("reconnect")) _web_defer.once_ms(100, wifiDisconnect);
-
-        if (action.equals("restore")) {
-
-            if (!data.containsKey("app") || (data["app"] != APP_NAME)) {
-                wsSend_P(client_id, PSTR("{\"message\": 4}"));
-                return;
+            // Callbacks
+            for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
+                (_ws_on_action_callbacks[i])(action, data);
             }
 
-            for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
-                EEPROM.write(i, 0xFF);
+            // Restore configuration via websockets
+            if (strcmp(action, "restore") == 0) {
+                if (settingsRestore(data)) {
+                    wsSend_P(client_id, PSTR("{\"message\": 5}"));
+                } else {
+                    wsSend_P(client_id, PSTR("{\"message\": 4}"));
+                }
             }
-
-            for (auto element : data) {
-                if (strcmp(element.key, "app") == 0) continue;
-                if (strcmp(element.key, "version") == 0) continue;
-                setSetting(element.key, element.value.as<char*>());
-            }
-
-            saveSettings();
-
-            wsSend_P(client_id, PSTR("{\"message\": 5}"));
 
         }
 
@@ -93,138 +119,56 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     // Check configuration -----------------------------------------------------
 
-    if (root.containsKey("config") && root["config"].is<JsonArray&>()) {
+    JsonObject& config = root["config"];
+    if (config.success()) {
 
-        JsonArray& config = root["config"];
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing configuration data\n"));
 
-        unsigned char webMode = WEB_MODE_NORMAL;
-
+        String adminPass;
         bool save = false;
-        bool changed = false;
         #if MQTT_SUPPORT
             bool changedMQTT = false;
         #endif
 
-        unsigned int wifiIdx = 0;
-        unsigned int dczRelayIdx = 0;
-        unsigned int mqttGroupIdx = 0;
-        String adminPass;
+        for (auto kv: config) {
 
-        for (unsigned int i=0; i<config.size(); i++) {
-
-            String key = config[i]["name"];
-            String value = config[i]["value"];
-
-            // Skip firmware filename
-            if (key.equals("filename")) continue;
-
-            // -----------------------------------------------------------------
-            // GENERAL
-            // -----------------------------------------------------------------
-
-            // Web mode (normal or password)
-            if (key == "webMode") {
-                webMode = value.toInt();
-                continue;
-            }
-
-            // HTTP port
-            if (key == "webPort") {
-                if ((value.toInt() == 0) || (value.toInt() == 80)) {
-                    save = changed = true;
-                    delSetting(key);
-                    continue;
-                }
-            }
+            bool changed = false;
+            String key = kv.key;
+            JsonVariant& value = kv.value;
 
             // Check password
-            if (key == "adminPass1") {
-                adminPass = value;
+            if (key == "adminPass") {
+                if (!value.is<JsonArray&>()) continue;
+                JsonArray& values = value.as<JsonArray&>();
+                if (values.size() != 2) continue;
+                if (values[0].as<String>().equals(values[1].as<String>())) {
+                    String password = values[0].as<String>();
+                    if (password.length() > 0) {
+                        setSetting(key, password);
+                        save = true;
+                    }
+                    wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
+                } else {
+                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
+                }
                 continue;
             }
-            if (key == "adminPass2") {
-                if (!value.equals(adminPass)) {
-                    wsSend_P(client_id, PSTR("{\"message\": 7}"));
-                    return;
-                }
-                if (value.length() == 0) continue;
-                wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
-                key = String("adminPass");
+
+            // Store values
+            if (value.is<JsonArray&>()) {
+                if (_wsStore(key, value.as<JsonArray&>())) changed = true;
+            } else {
+                if (_wsStore(key, value.as<String>())) changed = true;
             }
 
-            // -----------------------------------------------------------------
-            // DOMOTICZ
-            // -----------------------------------------------------------------
-
-            #if DOMOTICZ_SUPPORT
-
-                if (key == "dczRelayIdx") {
-                    if (dczRelayIdx >= relayCount()) continue;
-                    key = key + String(dczRelayIdx);
-                    ++dczRelayIdx;
-                }
-
-            #else
-
-                if (key.startsWith("dcz")) continue;
-
-            #endif
-
-            // -----------------------------------------------------------------
-            // MQTT GROUP TOPICS
-            // -----------------------------------------------------------------
-
-            #if MQTT_SUPPORT
-
-                if (key == "mqttGroup") {
-                    key = key + String(mqttGroupIdx);
-                }
-                if (key == "mqttGroupInv") {
-                    key = key + String(mqttGroupIdx);
-                    ++mqttGroupIdx;
-                }
-
-            #endif
-
-            // -----------------------------------------------------------------
-            // WIFI
-            // -----------------------------------------------------------------
-
-            if (key == "ssid") {
-                key = key + String(wifiIdx);
-            }
-            if (key == "pass") {
-                key = key + String(wifiIdx);
-            }
-            if (key == "ip") {
-                key = key + String(wifiIdx);
-            }
-            if (key == "gw") {
-                key = key + String(wifiIdx);
-            }
-            if (key == "mask") {
-                key = key + String(wifiIdx);
-            }
-            if (key == "dns") {
-                key = key + String(wifiIdx);
-                ++wifiIdx;
-            }
-
-            // -----------------------------------------------------------------
-
-            if (value != getSetting(key)) {
-                setSetting(key, value);
-                save = changed = true;
+            // Update flags if value has changed
+            if (changed) {
+                save = true;
                 #if MQTT_SUPPORT
                     if (key.startsWith("mqtt")) changedMQTT = true;
                 #endif
             }
 
-        }
-
-        if (webMode == WEB_MODE_NORMAL) {
-            if (wifiClean(wifiIdx)) save = changed = true;
         }
 
         // Save settings
@@ -235,9 +179,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 (_ws_on_after_parse_callbacks[i])();
             }
 
-			// This should got to callback as well
-			// but first change management has to be in place
-			#if MQTT_SUPPORT
+            // This should got to callback as well
+            // but first change management has to be in place
+            #if MQTT_SUPPORT
                 if (changedMQTT) {
                     mqttConfigure();
                     mqttDisconnect();
@@ -247,13 +191,12 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // Persist settings
             saveSettings();
 
-        }
-
-
-        if (changed) {
             wsSend_P(client_id, PSTR("{\"message\": 8}"));
+
         } else {
+
             wsSend_P(client_id, PSTR("{\"message\": 9}"));
+
         }
 
     }
@@ -262,10 +205,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 void _wsOnStart(JsonObject& root) {
 
-    bool changePassword = false;
     #if WEB_FORCE_PASS_CHANGE
         String adminPass = getSetting("adminPass", ADMIN_PASS);
-        if (adminPass.equals(ADMIN_PASS)) changePassword = true;
+        bool changePassword = adminPass.equals(ADMIN_PASS);
+    #else
+        bool changePassword = false;
     #endif
 
     if (changePassword) {

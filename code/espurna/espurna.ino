@@ -188,6 +188,9 @@ void welcome() {
     #if SPIFFS_SUPPORT
         DEBUG_MSG_P(PSTR(" SPIFFS"));
     #endif
+    #if SSDP_SUPPORT
+        DEBUG_MSG_P(PSTR(" SSDP"));
+    #endif
     #if TELNET_SUPPORT
         DEBUG_MSG_P(PSTR(" TELNET"));
     #endif
@@ -332,6 +335,9 @@ void setup() {
     #if NETBIOS_SUPPORT
         netbiosSetup();
     #endif
+    #if SSDP_SUPPORT
+        ssdpSetup();
+    #endif
     #if NTP_SUPPORT
         ntpSetup();
     #endif
@@ -408,6 +414,9 @@ void loop() {
     #endif
     #if POWER_PROVIDER != POWER_PROVIDER_NONE
         powerLoop();
+    #endif
+    #if SSDP_SUPPORT
+        ssdpLoop();
     #endif
     #if NTP_SUPPORT
         ntpLoop();

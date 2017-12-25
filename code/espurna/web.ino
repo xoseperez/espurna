@@ -28,10 +28,17 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 AsyncWebServer * _server;
 char _last_modified[50];
+std::vector<uint8_t> * _webConfigBuffer;
+bool _webConfigSuccess = false;
 
 // -----------------------------------------------------------------------------
 // HOOKS
 // -----------------------------------------------------------------------------
+
+void _onReset(AsyncWebServerRequest *request) {
+    deferredReset(100, CUSTOM_RESET_HTTP);
+    request->send(200);
+}
 
 void _onGetConfig(AsyncWebServerRequest *request) {
 
@@ -56,6 +63,52 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->addHeader("Content-Disposition", buffer);
     response->setLength();
     request->send(response);
+
+}
+
+void _onPostConfig(AsyncWebServerRequest *request) {
+    webLog(request);
+    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    request->send(_webConfigSuccess ? 200 : 400);
+}
+
+void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
+    // No buffer
+    if (final && (index == 0)) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.parseObject((char *) data);
+        if (root.success()) _webConfigSuccess = settingsRestore(root);
+        return;
+    }
+
+    // Buffer start => reset
+    if (index == 0) if (_webConfigBuffer) delete _webConfigBuffer;
+
+    // init buffer if it doesn't exist
+    if (!_webConfigBuffer) {
+        _webConfigBuffer = new std::vector<uint8_t>();
+        _webConfigSuccess = false;
+    }
+
+    // Copy
+    if (len > 0) {
+        _webConfigBuffer->reserve(_webConfigBuffer->size() + len);
+        _webConfigBuffer->insert(_webConfigBuffer->end(), data, data + len);
+    }
+
+    // Ending
+    if (final) {
+
+        _webConfigBuffer->push_back(0);
+
+        // Parse JSON
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.parseObject((char *) _webConfigBuffer->data());
+        if (root.success()) _webConfigSuccess = settingsRestore(root);
+        delete _webConfigBuffer;
+
+    }
 
 }
 
@@ -250,7 +303,9 @@ void webSetup() {
     #if WEB_EMBEDDED
         _server->on("/index.html", HTTP_GET, _onHome);
     #endif
+    _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
+    _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
 
     // Serve static files

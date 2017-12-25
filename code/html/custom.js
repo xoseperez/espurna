@@ -79,13 +79,13 @@ function zeroPad(number, positions) {
 function validateForm(form) {
 
     // password
-    var adminPass1 = $("input[name='adminPass1']", form).val();
+    var adminPass1 = $("input[name='adminPass']", form).first().val();
     if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
         alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
         return false;
     }
 
-    var adminPass2 = $("input[name='adminPass2']", form).val();
+    var adminPass2 = $("input[name='adminPass']", form).last().val();
     if (adminPass1 != adminPass2) {
         alert("Passwords are different!");
         return false;
@@ -95,14 +95,40 @@ function validateForm(form) {
 
 }
 
-function valueSet(data, name, value) {
-    for (var i in data) {
-        if (data[i]['name'] == name) {
-            data[i]['value'] = value;
-            return;
+// These fields will always be a list of values
+var is_group = ["ssid", "pass", "gw", "mask", "ip", "dns", "mqttGroup", "mqttGroupInv", "dczRelayIdx", "ledMode", "ntpServer", "adminPass"];
+
+function getData(form) {
+
+    var data = {};
+
+    // Populate data
+    $("input,select", form).each(function() {
+        var name = $(this).attr("name");
+        if (name) {
+            if ($(this).attr('type') == 'checkbox') {
+                value = $(this).is(':checked') ? 1 : 0;
+            } else if ($(this).attr('type') == 'radio') {
+                if (!$(this).is(':checked')) return;
+                value = $(this).val();
+            } else {
+                value = $(this).val();
+            }
+            if (name in data) {
+                data[name].push(value);
+            } else if (is_group.indexOf(name) >= 0) {
+                data[name] = [value];
+            } else {
+                data[name] = value;
+            }
         }
-    }
-    data.push({'name': name, 'value': value});
+    });
+
+    // Delete unwanted fields
+    delete(data["filename"]);
+
+    return data;
+
 }
 
 function randomString(length, chars) {
@@ -145,28 +171,19 @@ function doReload(milliseconds) {
 function doUpdate() {
 
     var form = $("#formSave");
-
     if (validateForm(form)) {
 
         // Get data
-        var data = form.serializeArray();
-
-        // Post-process
-        delete(data['filename']);
-        $("input[type='checkbox']").each(function() {
-            var name = $(this).attr("name");
-            if (name) {
-                valueSet(data, name, $(this).is(':checked') ? 1 : 0);
-            }
-        });
-
+        var data = getData(form);
         websock.send(JSON.stringify({'config': data}));
 
+        // Empty special fields
         $(".pwrExpected").val(0);
         $("input[name='pwrResetCalibration']")
             .prop("checked", false)
             .iphoneStyle("refresh");
 
+        // Change handling
         numChanged = 0;
         setTimeout(function() {
 
@@ -252,7 +269,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateForm(form)) {
-        var data = form.serializeArray();
+        var data = getData(form);
         websock.send(JSON.stringify({'config': data}));
     }
     return false;
@@ -973,10 +990,7 @@ function hasChanged() {
 }
 
 function resetOriginals() {
-    $("input").each(function() {
-        $(this).attr("original", $(this).val());
-    })
-    $("select").each(function() {
+    $("input,select").each(function() {
         $(this).attr("original", $(this).val());
     })
     numReboot = numReconnect = numReload = 0;

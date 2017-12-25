@@ -140,6 +140,7 @@
 #define CUSTOM_RESET_MQTT       4               // Reset via MQTT
 #define CUSTOM_RESET_RPC        5               // Reset via RPC (HTTP)
 #define CUSTOM_RESET_OTA        6               // Reset after successful OTA update
+#define CUSTOM_RESET_HTTP       7               // Reset via HTTP GET
 #define CUSTOM_RESET_NOFUSS     8               // Reset after successful NOFUSS update
 #define CUSTOM_RESET_UPGRADE    9               // Reset after update from web interface
 #define CUSTOM_RESET_FACTORY    10              // Factory reset from terminal
@@ -152,13 +153,15 @@ PROGMEM const char custom_reset_terminal[] = "Reboot from terminal";
 PROGMEM const char custom_reset_mqtt[] = "Reboot from MQTT";
 PROGMEM const char custom_reset_rpc[] = "Reboot from RPC";
 PROGMEM const char custom_reset_ota[] = "Reboot after successful OTA update";
+PROGMEM const char custom_reset_http[] = "Reboot from HTTP";
 PROGMEM const char custom_reset_nofuss[] = "Reboot after successful NoFUSS update";
 PROGMEM const char custom_reset_upgrade[] = "Reboot after successful web update";
 PROGMEM const char custom_reset_factory[] = "Factory reset";
 PROGMEM const char* const custom_reset_string[] = {
     custom_reset_hardware, custom_reset_web, custom_reset_terminal,
     custom_reset_mqtt, custom_reset_rpc, custom_reset_ota,
-    custom_reset_nofuss, custom_reset_upgrade, custom_reset_factory
+    custom_reset_http, custom_reset_nofuss, custom_reset_upgrade,
+    custom_reset_factory
 };
 
 //------------------------------------------------------------------------------
@@ -327,7 +330,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define UI_TAG_SELECT           2
 
 // -----------------------------------------------------------------------------
-// MDNS & LLMNR
+// MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SUPPORT
@@ -340,6 +343,10 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef NETBIOS_SUPPORT
 #define NETBIOS_SUPPORT         0           // Publish device using NetBIOS protocol by default (1.26Kb) - requires 2.4.0
+#endif
+
+#ifndef SSDP_SUPPORT
+#define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (3.32Kb)
 #endif
 
 // -----------------------------------------------------------------------------
@@ -495,6 +502,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #ifndef SETTINGS_AUTOSAVE
 #define SETTINGS_AUTOSAVE       1           // Autosave settings o force manual commit
 #endif
+
+#define SETTINGS_MAX_LIST_COUNT 10          // Maximum index for settings lists
 
 // -----------------------------------------------------------------------------
 // LIGHT
