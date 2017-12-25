@@ -187,3 +187,6 @@ span.slider {
 .panel.block {
     display: block;
 }
+select {
+    width: 100%;
+}
