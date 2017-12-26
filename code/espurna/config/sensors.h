@@ -456,75 +456,75 @@
 // Class loading
 //--------------------------------------------------------------------------------
 
-#include "sensors/BaseSensor.h"
+#include "../sensors/BaseSensor.h"
 
 #if ANALOG_SUPPORT
-    #include "sensors/AnalogSensor.h"
+    #include "../sensors/AnalogSensor.h"
 #endif
 
 #if BMX280_SUPPORT
     #include <SparkFunBME280.h>
-    #include "sensors/BMX280Sensor.h"
+    #include "../sensors/BMX280Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
     #include <OneWire.h>
-    #include "sensors/DallasSensor.h"
+    #include "../sensors/DallasSensor.h"
 #endif
 
 #if DHT_SUPPORT
-    #include "sensors/DHTSensor.h"
+    #include "../sensors/DHTSensor.h"
 #endif
 
 #if DIGITAL_SUPPORT
-    #include "sensors/DigitalSensor.h"
+    #include "../sensors/DigitalSensor.h"
 #endif
 
 #if ECH1560_SUPPORT
-    #include "sensors/ECH1560Sensor.h"
+    #include "../sensors/ECH1560Sensor.h"
 #endif
 
 #if EMON_ADC121_SUPPORT
-    #include "sensors/EmonADC121Sensor.h"
+    #include "../sensors/EmonADC121Sensor.h"
 #endif
 
 #if EMON_ADS1X15_SUPPORT
-    #include "sensors/EmonADS1X15Sensor.h"
+    #include "../sensors/EmonADS1X15Sensor.h"
 #endif
 
 #if EMON_ANALOG_SUPPORT
-    #include "sensors/EmonAnalogSensor.h"
+    #include "../sensors/EmonAnalogSensor.h"
 #endif
 
 #if EVENTS_SUPPORT
-    #include "sensors/EventSensor.h"
+    #include "../sensors/EventSensor.h"
 #endif
 
 #if HLW8012_SUPPORT
     #include <HLW8012.h>
-    #include "sensors/HLW8012Sensor.h"
+    #include "../sensors/HLW8012Sensor.h"
 #endif
 
 #if MHZ19_SUPPORT
     #include <SoftwareSerial.h>
-    #include "sensors/MHZ19Sensor.h"
+    #include "../sensors/MHZ19Sensor.h"
 #endif
 
 #if PMSX003_SUPPORT
     #include <SoftwareSerial.h>
     #include <PMS.h>
-    #include "sensors/PMSX003Sensor.h"
+    #include "../sensors/PMSX003Sensor.h"
 #endif
 
 #if SI7021_SUPPORT
-    #include "sensors/SI7021Sensor.h"
+    #include "../sensors/SI7021Sensor.h"
 #endif
 
 #if SHT3X_I2C_SUPPORT
-    #include "sensors/SHT3XI2CSensor.h"
+    #include "../sensors/SHT3XI2CSensor.h"
 #endif
 
 #if V9261F_SUPPORT
     #include <SoftwareSerial.h>
-    #include "sensors/V9261FSensor.h"
+    #include "../sensors/V9261FSensor.h"
 #endif
