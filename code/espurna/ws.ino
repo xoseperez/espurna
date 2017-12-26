@@ -146,8 +146,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     if (password.length() > 0) {
                         setSetting(key, password);
                         save = true;
+                        wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
                     }
-                    wsSend_P(client_id, PSTR("{\"action\": \"reload\"}"));
                 } else {
                     wsSend_P(client_id, PSTR("{\"message\": 7}"));
                 }

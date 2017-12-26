@@ -17,24 +17,26 @@ typedef struct {
     // Configuration variables
 
     unsigned char pin;          // GPIO pin for the relay
-    unsigned char type;
-    unsigned char reset_pin;
-    unsigned long delay_on;
-    unsigned long delay_off;
+    unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
+    unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
+    unsigned long pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    unsigned long pulse_ms;     // Pulse length in millis
+    unsigned long delay_on;     // Delay to turn relay ON
+    unsigned long delay_off;    // Delay to turn relay OFF
 
     // Status variables
 
-    bool current_status;
-    bool target_status;
-    unsigned int fw_start;
-    unsigned char fw_count;
-    unsigned int change_time;
-    bool report;
-    bool group_report;
+    bool current_status;        // Holds the current (physical) status of the relay
+    bool target_status;         // Holds the target status
+    unsigned int fw_start;      // Flood window start time
+    unsigned char fw_count;     // Number of changes within the current flood window
+    unsigned int change_time;   // Scheduled time to change
+    bool report;                // Whether to report to own topic
+    bool group_report;          // Whether to report to group topic
 
     // Helping objects
 
-    Ticker pulseTicker;
+    Ticker pulseTicker;         // Holds the pulse back timer
 
 } relay_t;
 std::vector<relay_t> _relays;
@@ -44,10 +46,6 @@ Ticker _relaySaveTicker;
 // -----------------------------------------------------------------------------
 // RELAY PROVIDERS
 // -----------------------------------------------------------------------------
-
-#if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
-
-#endif
 
 void _relayProviderStatus(unsigned char id, bool status) {
 
@@ -111,43 +109,20 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
 void relayPulse(unsigned char id) {
 
-    byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
-    if (relayPulseMode == RELAY_PULSE_NONE) return;
-    long relayPulseTime = 1000.0 * getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
-    if (relayPulseTime == 0) return;
+    byte mode = _relays[id].pulse;
+    if (mode == RELAY_PULSE_NONE) return;
+    unsigned long ms = _relays[id].pulse_ms;
+    if (ms == 0) return;
 
     bool status = relayStatus(id);
-    bool pulseStatus = (relayPulseMode == RELAY_PULSE_ON);
+    bool pulseStatus = (mode == RELAY_PULSE_ON);
+
     if (pulseStatus == status) {
         _relays[id].pulseTicker.detach();
-        return;
+    } else {
+        _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
     }
 
-   _relays[id].pulseTicker.once_ms(relayPulseTime, relayToggle, id);
-
-}
-
-unsigned int relayPulseMode() {
-    unsigned int value = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
-    return value;
-}
-
-void relayPulseMode(unsigned int value) {
-
-    setSetting("relayPulseMode", value);
-
-    #if WEB_SUPPORT
-        char message[20];
-        snprintf_P(message, sizeof(message), PSTR("{\"relayPulseMode\": %d}"), value);
-        wsSend(message);
-    #endif
-
-}
-
-void relayPulseToggle() {
-    unsigned int value = relayPulseMode();
-    value = (value == RELAY_PULSE_NONE) ? RELAY_PULSE_OFF : RELAY_PULSE_NONE;
-    relayPulseMode(value);
 }
 
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report) {
@@ -220,7 +195,7 @@ bool relayStatus(unsigned char id) {
     // Check relay ID
     if (id >= _relays.size()) return false;
 
-    // GEt status from storage
+    // Get status from storage
     return _relays[id].current_status;
 
 }
@@ -278,24 +253,6 @@ void relaySave() {
     EEPROM.commit();
 }
 
-void relayRetrieve(bool invert) {
-    _relayRecursive = true;
-    unsigned char bit = 1;
-    unsigned char mask = invert ? ~EEPROM.read(EEPROM_RELAY_STATUS) : EEPROM.read(EEPROM_RELAY_STATUS);
-    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
-    for (unsigned int id=0; id < _relays.size(); id++) {
-        _relays[id].target_status = ((mask & bit) == bit);
-        _relays[id].report = true;
-        _relays[id].group_report = false; // Don't do group report on start
-        bit += bit;
-    }
-    if (invert) {
-        EEPROM.write(EEPROM_RELAY_STATUS, mask);
-        EEPROM.commit();
-    }
-    _relayRecursive = false;
-}
-
 void relayToggle(unsigned char id, bool report, bool group_report) {
     if (id >= _relays.size()) return;
     relayStatus(id, !relayStatus(id), report, group_report);
@@ -341,59 +298,113 @@ unsigned char relayParsePayload(const char * payload) {
 
 }
 
+// BACKWARDS COMPATIBILITY
+void _relayBackwards() {
+
+    byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
+    byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
+    float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
+    if (relayPulseMode == RELAY_PULSE_NONE) relayPulseTime = 0;
+
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        if (!hasSetting("relayBoot", i)) setSetting("relayBoot", i, relayMode);
+        if (!hasSetting("relayPulse", i)) setSetting("relayPulse", i, relayPulseMode);
+        if (!hasSetting("relayTime", i)) setSetting("relayTime", i, relayPulseTime);
+    }
+
+    delSetting("relayMode");
+    delSetting("relayPulseMode");
+    delSetting("relayPulseTime");
+
+}
+
+void _relayBoot() {
+
+    _relayRecursive = true;
+
+    unsigned char bit = 1;
+    bool trigger_save = false;
+
+    // Get last statuses from EEPROM
+    unsigned char mask = EEPROM.read(EEPROM_RELAY_STATUS);
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
+
+    // Walk the relays
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        _relays[i].current_status = false;
+        _relays[i].target_status = false;
+        unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+        switch (boot_mode) {
+            case RELAY_BOOT_OFF:
+                relayStatus(i, false);
+                break;
+            case RELAY_BOOT_ON:
+                relayStatus(i, true);
+                break;
+            case RELAY_BOOT_SAME:
+                relayStatus(i, (mask & bit) == bit);
+                break;
+            case RELAY_BOOT_TOOGLE:
+                relayStatus(i, (mask & bit) != bit);
+                mask ^= bit;
+                trigger_save = true;
+                break;
+        }
+        bit <<= 1;
+    }
+
+    // Save if there is any relay in the RELAY_BOOT_TOOGLE mode
+    if (trigger_save) {
+        EEPROM.write(EEPROM_RELAY_STATUS, mask);
+        EEPROM.commit();
+    }
+
+    _relayRecursive = false;
+
+}
+
 //------------------------------------------------------------------------------
 // WEBSOCKETS
 //------------------------------------------------------------------------------
 
 #if WEB_SUPPORT
 
-void _relayWebSocketUpdate() {
-
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-
-    // Statuses
+void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char i=0; i<relayCount(); i++) {
         relay.add(_relays[i].target_status);
     }
-
-    String output;
-    root.printTo(output);
-    wsSend((char *) output.c_str());
-
 }
 
-void _relayWebSocketOnSend(JsonObject& root) {
+void _relayWebSocketOnStart(JsonObject& root) {
 
     if (relayCount() == 0) return;
 
-    root["relayVisible"] = 1;
-
     // Statuses
-    JsonArray& relay = root.createNestedArray("relayStatus");
-    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
-        relay.add(relayStatus(relayID));
-    }
+    _relayWebSocketUpdate(root);
 
     // Configuration
-    root["relayMode"] = getSetting("relayMode", RELAY_MODE);
-    root["relayPulseMode"] = getSetting("relayPulseMode", RELAY_PULSE_MODE);
-    root["relayPulseTime"] = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
+    JsonArray& config = root.createNestedArray("relayConfig");
+    for (unsigned char i=0; i<relayCount(); i++) {
+        JsonObject& line = config.createNestedObject();
+        line["gpio"] = _relays[i].pin;
+        line["type"] = _relays[i].type;
+        line["reset"] = _relays[i].reset_pin;
+        line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+        line["pulse"] = _relays[i].pulse;
+        line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
+        #if MQTT_SUPPORT
+            line["group"] = getSetting("mqttGroup", i, "");
+            line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt() == 1;
+        #endif
+    }
+
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 
-    // Group topics
-    #if MQTT_SUPPORT
-        JsonArray& groups = root.createNestedArray("relayGroups");
-        for (unsigned char i=0; i<relayCount(); i++) {
-            JsonObject& group = groups.createNestedObject();
-            group["mqttGroup"] = getSetting("mqttGroup", i, "");
-            group["mqttGroupInv"] = getSetting("mqttGroupInv", i, 0).toInt() == 1;
-        }
-    #endif
+    root["relayVisible"] = 1;
 
 }
 
@@ -407,7 +418,7 @@ void _relayWebSocketOnAction(const char * action, JsonObject& data) {
 
         if (value == 3) {
 
-            _relayWebSocketUpdate();
+            wsSend(_relayWebSocketUpdate);
 
         } else if (value < 3) {
 
@@ -432,9 +443,19 @@ void _relayWebSocketOnAction(const char * action, JsonObject& data) {
 
 }
 
+void _relayConfigure() {
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        pinMode(_relays[i].pin, OUTPUT);
+        if (_relays[i].type == RELAY_TYPE_LATCHED) pinMode(_relays[i].reset_pin, OUTPUT);
+        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
+        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+    }
+}
+
 void relaySetupWS() {
-    wsOnSendRegister(_relayWebSocketOnSend);
+    wsOnSendRegister(_relayWebSocketOnStart);
     wsOnActionRegister(_relayWebSocketOnAction);
+    wsOnAfterParseRegister(_relayConfigure);
 }
 
 #endif // WEB_SUPPORT
@@ -560,12 +581,12 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         for (unsigned int i=0; i < _relays.size(); i++) {
             String t = getSetting("mqttGroup", i, "");
             if (t.equals(topic)) {
-                is_group_topic = true;
-                relayID = i;
-                if (getSetting("mqttGroupInv", relayID, 0).toInt() == 1) {
+                if (getSetting("mqttGroupInv", i, 0).toInt() == 1) {
                     if (value < 2) value = 1 - value;
                 }
-                DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d\n"), relayID);
+                DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d\n"), i);
+                is_group_topic = true;
+                relayID = i;
                 break;
             }
         }
@@ -576,12 +597,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             // Match topic
             String t = mqttSubtopic((char *) topic);
             if (!t.startsWith(MQTT_TOPIC_RELAY)) return;
-
-            // Pulse topic
-            if (t.endsWith("pulse")) {
-                relayPulseMode(value);
-                return;
-            }
 
             // Get relay ID
             relayID = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
@@ -653,14 +668,9 @@ void relaySetup() {
 
     #endif
 
-    byte relayMode = getSetting("relayMode", RELAY_MODE).toInt();
-    for (unsigned int i=0; i < _relays.size(); i++) {
-        pinMode(_relays[i].pin, OUTPUT);
-        if (relayMode == RELAY_MODE_OFF) relayStatus(i, false);
-        if (relayMode == RELAY_MODE_ON) relayStatus(i, true);
-    }
-    if (relayMode == RELAY_MODE_SAME) relayRetrieve(false);
-    if (relayMode == RELAY_MODE_TOOGLE) relayRetrieve(true);
+    _relayBackwards();
+    _relayConfigure();
+    _relayBoot();
     relayLoop();
 
     #if WEB_SUPPORT
@@ -702,7 +712,7 @@ void relayLoop(void) {
                 relayPulse(id);
                 _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
                 #if WEB_SUPPORT
-                    _relayWebSocketUpdate();
+                    wsSend(_relayWebSocketUpdate);
                 #endif
             }
 

@@ -380,7 +380,7 @@ void setup() {
     sensorSetup();
 
     // Prepare configuration for version 2.0
-    hwUpwardsCompatibility();
+    migrate();
 
     saveSettings();
 
