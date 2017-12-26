@@ -63,7 +63,15 @@ function validateForm(form) {
 }
 
 // These fields will always be a list of values
-var is_group = ["ssid", "pass", "gw", "mask", "ip", "dns", "mqttGroup", "mqttGroupInv", "dczRelayIdx", "ledMode", "ntpServer", "adminPass"];
+var is_group = [
+    "ssid", "pass", "gw", "mask", "ip", "dns",
+    "relayBoot", "relayPulse", "relayTime",
+    "mqttGroup", "mqttGroupInv",
+    "dczRelayIdx",
+    "ledMode",
+    "ntpServer",
+    "adminPass"
+];
 
 function getData(form) {
 
@@ -373,6 +381,26 @@ function createRelays(count) {
 
 }
 
+function initRelayConfig(data) {
+
+    var current = $("#relayConfig > div").length;
+    if (current > 0) return;
+
+    var template = $("#relayConfigTemplate").children();
+    for (var i=0; i < data.length; i++) {
+        var line = $(template).clone();
+        $("span.gpio", line).html(data[i].gpio);
+        $("span.id", line).html(i+1);
+        $("select[name='relayBoot']", line).val(data[i].boot);
+        $("select[name='relayPulse']", line).val(data[i].pulse);
+        $("input[name='relayTime']", line).val(data[i].pulse_ms);
+        $("intut[name='mqttGroup']", line).val(data[i].group || 0);
+        $("select[name='mqttGroupInv']", line).val(data[i].group_inv || 0);
+        line.appendTo("#relayConfig");
+    }
+
+}
+
 function createIdxs(count) {
 
     var current = $("#idxs > div").length;
@@ -417,23 +445,6 @@ function addNetwork() {
     $(line).find(".button-del-network").on('click', delNetwork);
     $(line).find(".button-more-network").on('click', moreNetwork);
     line.appendTo("#networks");
-
-    return line;
-
-}
-
-function addRelayGroup() {
-
-    var numGroups = $("#relayGroups > div").length;
-    var tabindex = 200 + numGroups * 2;
-    var template = $("#relayGroupTemplate").children();
-    var line = $(template).clone();
-    var element = $("span.relay_id", line);
-    if (element.length) element.html(numGroups+1);
-    $(line).find("input").each(function() {
-        $(this).attr("tabindex", tabindex++);
-    });
-    line.appendTo("#relayGroups");
 
     return line;
 
@@ -728,26 +739,9 @@ function processData(data) {
 
         }
 
-        // Relay groups
-        if (key == "relayGroups") {
-
-            var groups = data.relayGroups;
-
-            for (var i in groups) {
-
-                // add a new row
-                var line = addRelayGroup();
-
-                // fill in the blanks
-                var group = data.relayGroups[i];
-                Object.keys(group).forEach(function(key) {
-                    var element = $("input[name=" + key + "]", line);
-                    if (element.length) element.val(group[key]);
-                });
-
-            }
-
-            return;
+        // Relay configuration
+        if (key == "relayConfig") {
+            initRelayConfig(data[key]);
         }
 
         // Domoticz

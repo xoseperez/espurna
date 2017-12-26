@@ -110,7 +110,6 @@ void buttonEvent(unsigned int id, unsigned char event) {
     if (action == BUTTON_MODE_RESET) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
-    if (action == BUTTON_MODE_PULSE) relayPulseToggle();
     if (action == BUTTON_MODE_FACTORY) {
         DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
         settingsFactoryReset();

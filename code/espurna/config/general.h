@@ -196,10 +196,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // RELAY
 //------------------------------------------------------------------------------
 
-#define RELAY_MODE_OFF          0
-#define RELAY_MODE_ON           1
-#define RELAY_MODE_SAME         2
-#define RELAY_MODE_TOOGLE       3
+#define RELAY_BOOT_OFF          0
+#define RELAY_BOOT_ON           1
+#define RELAY_BOOT_SAME         2
+#define RELAY_BOOT_TOOGLE       3
 
 #define RELAY_TYPE_NORMAL       0
 #define RELAY_TYPE_INVERSE      1
@@ -219,17 +219,17 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_PROVIDER_LIGHT    2
 #define RELAY_PROVIDER_RFBRIDGE 3
 
-// Pulse time in milliseconds
-#define RELAY_PULSE_TIME        1.0
-
-// 0 means OFF, 1 ON and 2 whatever was before
-#define RELAY_MODE         		RELAY_MODE_OFF
+// Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
+#define RELAY_BOOT_MODE         RELAY_BOOT_OFF
 
 // 0 means ANY, 1 zero or one and 2 one and only one
 #define RELAY_SYNC         		RELAY_SYNC_ANY
 
-// 0 means no pulses, 1 means normally off, 2 normally on
+// Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
 #define RELAY_PULSE_MODE     	RELAY_PULSE_NONE
+
+// Default pulse time in seconds
+#define RELAY_PULSE_TIME        1.0
 
 // Relay requests flood protection window - in seconds
 #define RELAY_FLOOD_WINDOW      3
