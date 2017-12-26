@@ -590,6 +590,8 @@ void sensorLoop() {
     static unsigned long last_update = 0;
     static unsigned long report_count = 0;
 
+    if (_magnitudes.size() == 0) return;
+
     // Tick hook
     _sensorTick();
 
