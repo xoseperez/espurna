@@ -113,6 +113,12 @@ function getData(form) {
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
         if (name) {
+
+            // Do not report these fields
+            if (name == "filename") return;
+            if (name == "rfbcode") return;
+
+            // Grab the value
             if ($(this).attr('type') == 'checkbox') {
                 value = $(this).is(':checked') ? 1 : 0;
             } else if ($(this).attr('type') == 'radio') {
@@ -121,19 +127,19 @@ function getData(form) {
             } else {
                 value = $(this).val();
             }
+
+            // Build the object
             if (name in data) {
+                if (!Array.isArray(data[name])) data[name] = [data[name]];
                 data[name].push(value);
             } else if (is_group.indexOf(name) >= 0) {
                 data[name] = [value];
             } else {
                 data[name] = value;
             }
+
         }
     });
-
-    // Delete unwanted fields
-    delete(data["filename"]);
-    delete(data["rfbcode"]);
 
     return data;
 
