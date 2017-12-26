@@ -133,6 +133,7 @@ function getData(form) {
 
     // Delete unwanted fields
     delete(data["filename"]);
+    delete(data["rfbcode"]);
 
     return data;
 
@@ -452,7 +453,7 @@ function delNetwork() {
 
 function moreNetwork() {
     var parent = $(this).parents(".pure-g");
-    $("div.more", parent).toggle();
+    $(".more", parent).toggle();
 }
 
 // -----------------------------------------------------------------------------
@@ -631,7 +632,7 @@ function initChannels(num) {
 
 function addRfbNode() {
 
-    var numNodes = $("#rfbNodes > fieldset").length;
+    var numNodes = $("#rfbNodes > legend").length;
 
     var template = $("#rfbNodeTemplate").children();
     var line = $(template).clone();
@@ -1021,7 +1022,7 @@ $(function() {
         $("input[name='filename']").val(fileName.replace(/^.*[\\\/]/, ''));
     });
     $(".button-add-network").on('click', function() {
-        $("div.more", addNetwork()).toggle();
+        $(".more", addNetwork()).toggle();
     });
 
     $(document).on('change', 'input', hasChanged);

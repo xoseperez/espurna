@@ -4,6 +4,7 @@
     height: 27px;
     cursor: pointer;
     overflow: hidden;
+    margin-bottom: 10px;
 }
 
 .iPhoneCheckContainer input {

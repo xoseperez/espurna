@@ -8,7 +8,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 void _cmpMoveIndexDown(const char * key, int offset = 0) {
     if (hasSetting(key, 0)) return;
-    for (unsigned char index = 1; index < 10; index++) {
+    for (unsigned char index = 1; index < SETTINGS_MAX_LIST_COUNT; index++) {
         if (hasSetting(key, index)) {
             setSetting(key, index - 1, getSetting(key, index).toInt() + offset);
         } else {

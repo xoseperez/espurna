@@ -25,7 +25,7 @@
     margin: 0px;
 }
 .page {
-    margin-top: 40px;
+    margin-top: 10px;
 }
 .pure-button {
     color: white;
@@ -67,6 +67,7 @@
 }
 .button-del-network {
     background: rgb(202, 60, 60);
+    letter-spacing: 0px;
 }
 .button-more-network,
 .button-rfb-send {
@@ -75,17 +76,21 @@
 .button-settings-backup,
 .button-settings-restore {
     background: rgb(0, 202, 0);
+    margin-bottom: 10px;
 }
 .pure-g {
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
 .pure-form legend {
     font-weight: bold;
     letter-spacing: 0;
-    margin-bottom: 1em;
+    margin: 10px 0 1em 0;
 }
 .l-box {
     padding-right: 1px;
+}
+.pure-form input {
+    margin-bottom: 10px;
 }
 .pure-form input[type=text][disabled] {
     color: #777777;
@@ -93,19 +98,17 @@
 div.hint {
     font-size: 80%;
     color: #ccc;
-}
-div.hint.inline {
-    margin-top: 6px;
+    margin: -10px 0 10px 0;
 }
 .break {
     margin-top: 5px;
 }
 #networks .pure-g {
-    padding-bottom: 10px;
+    padding: 10px 0 10px 0;
     margin-bottom: 5px;
     border-bottom: 2px dashed #e5e5e5;
 }
-#networks div.more {
+#networks .more {
     display: none;
 }
 legend.module,
@@ -124,8 +127,11 @@ input[name=upgrade] {
     height: 20px;
     margin-top: 10px;
 }
-.pure-form .center {
-    margin: .5em 0 .2em;
+input.center {
+    margin-bottom: 0px;
+}
+div.center {
+    margin: .5em 0 1em;
 }
 .webmode {
     display: none;
@@ -190,4 +196,5 @@ span.slider {
 }
 select {
     width: 100%;
+    margin-bottom: 10px;
 }
