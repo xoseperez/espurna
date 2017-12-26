@@ -469,7 +469,7 @@ function initRelays(data) {
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
         $(".id", line).html(i);
-        $("input", line).attr("data", i).prop("checked", data[i]);
+        $("input", line).attr("data", i);
         line.appendTo("#relays");
         $(":checkbox", line).iphoneStyle({
             onChange: doToggle,
@@ -477,7 +477,7 @@ function initRelays(data) {
             resizeHandle: true,
             checkedLabel: 'ON',
             uncheckedLabel: 'OFF'
-        }).iphoneStyle("refresh");
+        });
 
     }
 
@@ -817,6 +817,11 @@ function processData(data) {
 
         if (key == "relayStatus") {
             initRelays(data[key]);
+            for (var i in data[key]) {
+                $("input.relayStatus[data='" + i + "']")
+                    .prop("checked", data[key][i])
+                    .iphoneStyle("refresh");
+            }
             return;
         }
 
