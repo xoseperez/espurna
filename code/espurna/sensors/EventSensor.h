@@ -177,7 +177,7 @@ static void (*_event_sensor_isr_list[10])() = {
 };
 
 void EventSensor::_attach(EventSensor * instance, unsigned char gpio, unsigned char mode) {
-    if (!_validGPIO(gpio)) return;
+    if (!gpioValid(gpio)) return;
     _detach(gpio);
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     _event_sensor_instance[index] = instance;
@@ -188,7 +188,7 @@ void EventSensor::_attach(EventSensor * instance, unsigned char gpio, unsigned c
 }
 
 void EventSensor::_detach(unsigned char gpio) {
-    if (!_validGPIO(gpio)) return;
+    if (!gpioValid(gpio)) return;
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_event_sensor_instance[index]) {
         detachInterrupt(gpio);

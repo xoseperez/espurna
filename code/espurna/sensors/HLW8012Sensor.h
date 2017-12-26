@@ -287,7 +287,7 @@ static void (*_hlw8012_sensor_isr_list[10])() = {
 };
 
 void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsigned char mode) {
-    if (!_validGPIO(gpio)) return;
+    if (!gpioValid(gpio)) return;
     _detach(gpio);
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     _hlw8012_sensor_instance[index] = instance;
@@ -298,7 +298,7 @@ void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsign
 }
 
 void HLW8012Sensor::_detach(unsigned char gpio) {
-    if (!_validGPIO(gpio)) return;
+    if (!gpioValid(gpio)) return;
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_hlw8012_sensor_instance[index]) {
         detachInterrupt(gpio);
