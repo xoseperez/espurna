@@ -48,6 +48,7 @@ typedef enum magnitude_t {
 #define SENSOR_ERROR_UNKNOWN_ID     4       // Sensor did not report a known ID
 #define SENSOR_ERROR_CRC            5       // Sensor data corrupted
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
+#define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
 
 class BaseSensor {
 
@@ -105,13 +106,6 @@ class BaseSensor {
         unsigned char count() { return _count; }
 
     protected:
-
-        // Check if valid GPIO
-        bool _validGPIO(unsigned char gpio) {
-            if (0 <= gpio && gpio <= 5) return true;
-            if (12 <= gpio && gpio <= 15) return true;
-            return false;
-        }
 
         unsigned char _sensor_id = 0x00;
         int _error = 0;

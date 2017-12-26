@@ -30,6 +30,10 @@ class DHTSensor : public BaseSensor {
             _sensor_id = SENSOR_DHTXX_ID;
         }
 
+        ~DHTSensor() {
+            if (_previous != 0xFF) gpioReleaseLock(_previous);
+        }
+
         // ---------------------------------------------------------------------
 
         void setGPIO(unsigned char gpio) {
@@ -53,6 +57,24 @@ class DHTSensor : public BaseSensor {
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
+
+        // Initialization method, must be idempotent
+        void begin() {
+
+            _count = 0;
+
+            // Manage GPIO lock
+            if (_previous != 0xFF) gpioReleaseLock(_previous);
+            _previous = 0xFF;
+            if (!gpioGetLock(_gpio)) {
+                _error = SENSOR_ERROR_GPIO_USED;
+                return;
+            }
+            _previous = _gpio;
+
+            _count = 2;
+
+        }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
@@ -194,6 +216,7 @@ class DHTSensor : public BaseSensor {
         }
 
         unsigned char _gpio;
+        unsigned char _previous = 0xFF;
         unsigned char _type;
 
         unsigned long _last_ok = 0;

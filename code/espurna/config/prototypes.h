@@ -57,6 +57,13 @@ bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
 
 // -----------------------------------------------------------------------------
+// GPIO
+// -----------------------------------------------------------------------------
+bool gpioValid(unsigned char gpio);
+bool gpioGetLock(unsigned char gpio);
+bool gpioReleaseLock(unsigned char gpio);
+
+// -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
 void debugSend(const char * format, ...);
