@@ -102,7 +102,6 @@ var is_group = [
     "mqttGroup", "mqttGroupInv",
     "dczRelayIdx",
     "ledMode",
-    "ntpServer",
     "adminPass"
 ];
 
@@ -397,7 +396,7 @@ function createRelayIdxs(data) {
     var template = $("#relayIdxTemplate .pure-g")[0];
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        if (data.length > 1) $("label", line).html("Switch #" + i);
+        $("label", line).html("Switch #" + i);
         $("input", line).attr("name", "dczRelayIdx" + i).attr("tabindex", 40 + i).val(data[i]);
         line.appendTo("#domoticzRelays");
     }
@@ -412,7 +411,7 @@ function createMagnitudeIdxs(data) {
     var template = $("#magnitudeIdxTemplate .pure-g")[0];
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data[i].type));
+        $("label", line).html(magnitudeType(data[i].type) + " #" + parseInt(data[i].index));
         $("div.hint", line).html(data[i].name);
         $("input", line).attr("name", "dczMagnitude" + i).attr("tabindex", 40 + i).val(data[i].idx);
         line.appendTo("#domoticzMagnitudes");
@@ -468,7 +467,7 @@ function initRelays(data) {
     var template = $("#relayTemplate .pure-g")[0];
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        if (data.length > 1) $(".relay_id", line).html(" " + (i+1));
+        $(".id", line).html(i);
         $("input", line).attr("data", i).prop("checked", data[i]);
         line.appendTo("#relays");
         $(":checkbox", line).iphoneStyle({
@@ -492,7 +491,7 @@ function initRelayConfig(data) {
     for (var i=0; i < data.length; i++) {
         var line = $(template).clone();
         $("span.gpio", line).html(data[i].gpio);
-        $("span.id", line).html(i+1);
+        $("span.id", line).html(i);
         $("select[name='relayBoot']", line).val(data[i].boot);
         $("select[name='relayPulse']", line).val(data[i].pulse);
         $("input[name='relayTime']", line).val(data[i].pulse_ms);
@@ -517,7 +516,7 @@ function initMagnitudes(data) {
     var template = $("#magnitudeTemplate").children();
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data[i].type));
+        $("label", line).html(magnitudeType(data[i].type) + " #" + parseInt(data[i].index));
         $("div.hint", line).html(data[i].description);
         $("input", line).attr("data", i);
         line.appendTo("#magnitudes");
@@ -637,7 +636,7 @@ function addRfbNode() {
     var template = $("#rfbNodeTemplate").children();
     var line = $(template).clone();
     var status = true;
-    $("span", line).html(numNodes+1);
+    $("span", line).html(numNodes);
     $(line).find("input").each(function() {
         $(this).attr("data-id", numNodes);
         $(this).attr("data-status", status ? 1 : 0);
@@ -674,8 +673,6 @@ function rfbSend() {
 // -----------------------------------------------------------------------------
 
 function processData(data) {
-
-    console.log(data);
 
     // title
     if ("app_name" in data) {
@@ -726,8 +723,7 @@ function processData(data) {
             var nodes = data.rfb;
             for (var i in nodes) {
                 var node = nodes[i];
-                var element = $("input[name=rfbcode][data-id=" + node["id"] + "][data-status=" + node["status"] + "]");
-                if (element.length) element.val(node["data"]);
+                $("input[name=rfbcode][data-id=" + node["id"] + "][data-status=" + node["status"] + "]").val(node["data"]);
             }
             return;
         }
@@ -755,10 +751,8 @@ function processData(data) {
         }
 
         if (key == "brightness") {
-            var slider = $("#brightness");
-            if (slider.length) slider.val(data[key]);
-            var span = $("span.brightness");
-            if (span.length) span.html(data[key]);
+            $("#brightness").val(data[key]);
+            $("span.brightness").html(data[key]);
             return;
         }
 
@@ -766,10 +760,8 @@ function processData(data) {
             var len = data[key].length;
             initChannels(len);
             for (var i=0; i<len; i++) {
-                var slider = $("input.slider[data=" + i + "]");
-                if (slider.length) slider.val(data[key][i]);
-                var span = $("span.slider[data=" + i + "]");
-                if (span.length) span.html(data[key][i]);
+                $("input.slider[data=" + i + "]").val(data[key][i]);
+                $("span.slider[data=" + i + "]").html(data[key][i]);
             }
             return;
         }
@@ -785,15 +777,11 @@ function processData(data) {
         if (key == "magnitudes") {
             initMagnitudes(data[key]);
             for (var i=0; i<data[key].length; i++) {
-                var element = $("input[name=magnitude][data=" + i + "]");
-                if (element.length) {
-                    var error = data[key][i].error || 0;
-                    if (error == 0) {
-                        element.val(data[key][i].value + data[key][i].units);
-                    } else {
-                        element.val(magnitudeError(error));
-                    }
-                }
+                var error = data[key][i].error || 0;
+                var text = (error == 0) ?
+                    data[key][i].value + data[key][i].units
+                    : magnitudeError(error);
+                $("input[name=magnitude][data=" + i + "]").val(text);
             }
             return;
         }
@@ -812,25 +800,14 @@ function processData(data) {
         }
 
         if (key == "wifi") {
-
-            var networks = data.wifi;
-
-            for (var i in networks) {
-
-                // add a new row
+            for (var i in data.wifi) {
                 var line = addNetwork();
-
-                // fill in the blanks
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
-                    var element = $("input[name=" + key + "]", line);
-                    if (element.length) element.val(wifi[key]);
+                    $("input[name=" + key + "]", line).val(wifi[key]);
                 });
-
             }
-
             return;
-
         }
 
         // ---------------------------------------------------------------------
@@ -845,6 +822,7 @@ function processData(data) {
         // Relay configuration
         if (key == "relayConfig") {
             initRelayConfig(data[key]);
+            return;
         }
 
         // ---------------------------------------------------------------------
@@ -1010,22 +988,13 @@ function connect(host) {
 
     if (websock) websock.close();
     websock = new WebSocket(wshost);
-    websock.onopen = function(evt) {
-        console.log("Connected");
-    };
-    websock.onclose = function(evt) {
-        console.log("Disconnected");
-    };
-    websock.onerror = function(evt) {
-        console.log("Error: ", evt);
-    };
     websock.onmessage = function(evt) {
         var data = getJson(evt.data);
         if (data) processData(data);
     };
 }
 
-function init() {
+$(function() {
 
     initMessages();
 
@@ -1060,6 +1029,4 @@ function init() {
 
     connect();
 
-}
-
-$(init);
+});

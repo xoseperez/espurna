@@ -96,6 +96,7 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
         JsonObject& element = list.createNestedObject();
         element["name"] = magnitudeName(i);
         element["type"] = magnitudeType(i);
+        element["index"] = magnitudeIndex(i);
         element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
     }
 

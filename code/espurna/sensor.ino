@@ -122,6 +122,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
         JsonObject& element = list.createNestedObject();
+        element["index"] = int(magnitude.global);
         element["type"] = int(magnitude.type);
         element["value"] = String(buffer);
         element["units"] = _sensorUnits(magnitude.type);
@@ -544,6 +545,13 @@ unsigned char magnitudeType(unsigned char index) {
         return int(_magnitudes[index].type);
     }
     return MAGNITUDE_NONE;
+}
+
+unsigned char magnitudeIndex(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        return int(_magnitudes[index].global);
+    }
+    return 0;
 }
 
 // -----------------------------------------------------------------------------

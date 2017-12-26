@@ -108,6 +108,7 @@ div.hint.inline {
 #networks div.more {
     display: none;
 }
+legend.module,
 .module {
     display: none;
 }
