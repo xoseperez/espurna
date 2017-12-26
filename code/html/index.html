@@ -300,24 +300,6 @@
                                     <input class="pure-u-1 pure-u-md-1-4" name="haPrefix" type="text" tabindex="15" />
                                 </div>
 
-                                <div class="pure-g module module-temperature">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Temperature units</label>
-                                    <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-md-1-4">
-                                        <option value="0">Celsius (&deg;C)</option>
-                                        <option value="1">Fahrenheit (&deg;F)</option>
-                                    </select>
-                                </div>
-
-                                <div class="pure-g module module-temperature">
-                                    <label class="pure-u-1 pure-u-md-1-4">Temperature correction</label>
-                                    <input name="tmpCorrection" class="pure-u-1 pure-u-md-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
-                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
-                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
-                                    <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        Temperature correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
-                                    </div>
-                                </div>
-
                             </fieldset>
                         </div>
                     </div>
@@ -784,47 +766,52 @@
 
                             <fieldset>
 
-                                <!--
-
                                 <legend>General</legend>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-sm-1-4">Read interval</label>
                                     <select class="pure-u-1 pure-u-sm-1-4" name="snsRead">
-                                        <option value="2000">2 seconds</option>
-                                        <option value="6000">6 seconds</option>
-                                        <option value="10000">10 seconds</option>
-                                        <option value="15000">15 seconds</option>
-                                        <option value="30000">30 seconds</option>
-                                        <option value="60000">60 seconds</option>
+                                        <option value="6">6 seconds</option>
+                                        <option value="10">10 seconds</option>
+                                        <option value="15">15 seconds</option>
+                                        <option value="30">30 seconds</option>
+                                        <option value="60">1 minute</option>
+                                        <option value="300">5 minutes</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        Select the interval between readings. These will be filtered and averaged for the report.<br />
-                                        The default and recommended value is 6 seconds.
+                                        Select the interval between readings. These will be filtered and averaged for the report. The default and recommended value is 6 seconds.
                                     </div>
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-sm-1-4">Report interval</label>
-                                    <select class="pure-u-1 pure-u-sm-1-4" name="snsReport">
-                                        <option value="6000">6 seconds</option>
-                                        <option value="10000">10 seconds</option>
-                                        <option value="30000">30 seconds</option>
-                                        <option value="60000">1 minute</option>
-                                        <option value="300000">5 minutes</option>
-                                    </select>
+                                    <label class="pure-u-1 pure-u-sm-1-4">Report every</label>
+                                    <div class="pure-u-1 pure-u-sm-1-4"><input name="snsReport" class="pure-u-23-24" type="number" min="1" step="1" max="12" /></div>
                                     <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
                                     <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
                                     <div class="pure-u-1 pure-u-md-3-4 hint">
-                                        Select the interval between reports via MQTT / InfluxDB / Domoticz / ...<br />
-                                        This can't be less than the reading interval above.<br />
-                                        The default and recommended value is 1 minute.
+                                        Select the number of readings to average and report
                                     </div>
                                 </div>
 
-                                -->
+                                <div class="pure-g module module-temperature">
+                                    <label class="pure-u-1 pure-u-sm-1-4">Temperature units</label>
+                                    <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-md-1-4">
+                                        <option value="0">Celsius (&deg;C)</option>
+                                        <option value="1">Fahrenheit (&deg;F)</option>
+                                    </select>
+                                </div>
+
+                                <div class="pure-g module module-temperature">
+                                    <label class="pure-u-1 pure-u-md-1-4">Temperature correction</label>
+                                    <input name="tmpCorrection" class="pure-u-1 pure-u-md-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
+                                    <div class="pure-u-0 pure-u-md-1-2">&nbsp;</div>
+                                    <div class="pure-u-0 pure-u-md-1-4">&nbsp;</div>
+                                    <div class="pure-u-1 pure-u-md-3-4 hint">
+                                        Temperature correction value is added to the measured value which may be inaccurate due to many factors. The value can be negative.
+                                    </div>
+                                </div>
 
                                 <legend class="module module-hlw module-emon">Energy monitor</legend>
 

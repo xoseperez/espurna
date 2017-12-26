@@ -29,6 +29,8 @@ std::vector<sensor_magnitude_t> _magnitudes;
 
 unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
+unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
+unsigned int _sensor_report_every = SENSOR_REPORT_EVERY;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 
@@ -91,7 +93,6 @@ String _sensorUnits(magnitude_t type) {
     if (type == MAGNITUDE_POWER_FACTOR) return String("%");
     if (type == MAGNITUDE_ENERGY) return String("J");
     if (type == MAGNITUDE_ENERGY_DELTA) return String("J");
-    if (type == MAGNITUDE_EVENTS) return String("/min");
     if (type == MAGNITUDE_PM1dot0) return String("µg/m3");
     if (type == MAGNITUDE_PM2dot5) return String("µg/m3");
     if (type == MAGNITUDE_PM10) return String("µg/m3");
@@ -133,38 +134,39 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
     }
 
-    //root["apiRealTime"] = _sensor_realtime;
-    root["tmpUnits"] = _sensor_temperature_units;
-    root["tmpCorrection"] = _sensor_temperature_correction;
     if (hasTemperature) root["temperatureVisible"] = 1;
 
 }
 
 void _sensorWebSocketStart(JsonObject& root) {
 
-    bool hasSensors = false;
-
     for (unsigned char i=0; i<_sensors.size(); i++) {
+
         BaseSensor * sensor = _sensors[i];
 
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
                 root["emonVisible"] = 1;
                 root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
-                hasSensors = true;
             }
         #endif
 
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
                 root["hlwVisible"] = 1;
-                hasSensors = true;
             }
         #endif
 
     }
 
-    if (hasSensors) root["sensorsVisible"] = 1;
+    if (_magnitudes.size() > 0) {
+        root["sensorsVisible"] = 1;
+        //root["apiRealTime"] = _sensor_realtime;
+        root["tmpUnits"] = _sensor_temperature_units;
+        root["tmpCorrection"] = _sensor_temperature_correction;
+        root["snsRead"] = _sensor_read_interval / 1000;
+        root["snsReport"] = _sensor_report_every;
+    }
 
     /*
     // Sensors manifest
@@ -466,6 +468,8 @@ void _sensorConfigure() {
     }
 
     // General sensor settings
+    _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
+    _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
     _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
     _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
@@ -590,10 +594,10 @@ void sensorLoop() {
     _sensorTick();
 
     // Check if we should read new data
-    if (millis() - last_update > SENSOR_READ_INTERVAL) {
+    if (millis() - last_update > _sensor_read_interval) {
 
         last_update = millis();
-        report_count = (report_count + 1) % SENSOR_REPORT_EVERY;
+        report_count = (report_count + 1) % _sensor_report_every;
 
         double current;
         double filtered;
@@ -631,9 +635,9 @@ void sensorLoop() {
                         _sensorUnits(magnitude.type).c_str()
                     );
                 }
-                #endif
+                #endif // SENSOR_DEBUG
 
-                // Time to report (we do it every SENSOR_REPORT_EVERY readings)
+                // Time to report (we do it every _sensor_report_every readings)
                 if (report_count == 0) {
 
                     filtered = magnitude.filter->result();
@@ -653,7 +657,7 @@ void sensorLoop() {
                             } else {
                                 mqttSend(_sensorTopic(magnitude.type).c_str(), buffer);
                             }
-                        #endif
+                        #endif // MQTT_SUPPORT
 
                         #if INFLUXDB_SUPPORT
                             if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
@@ -661,12 +665,12 @@ void sensorLoop() {
                             } else {
                                 idbSend(_sensorTopic(magnitude.type).c_str(), buffer);
                             }
-                        #endif
+                        #endif // INFLUXDB_SUPPORT
 
                         #if DOMOTICZ_SUPPORT
                         {
                             char key[15];
-                            snprintf_P(key, sizeof(key), PSTR("dczSensor%d"), i);
+                            snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), i);
                             if (magnitude.type == MAGNITUDE_HUMIDITY) {
                                 int status;
                                 if (filtered > 70) {
@@ -685,7 +689,7 @@ void sensorLoop() {
                                 domoticzSend(key, 0, buffer);
                             }
                         }
-                        #endif
+                        #endif // DOMOTICZ_SUPPORT
 
                     } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
                 } // if (report_count == 0)

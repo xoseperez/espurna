@@ -4,10 +4,16 @@
 
 #define SENSOR_DEBUG                        0               // Debug sensors
 
-#define SENSOR_READ_INTERVAL                6000            // Read data from sensors every 6 seconds
+#define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
+#define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
+#define SENSOR_READ_MAX_INTERVAL            3600            // Maximum read interval
+
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
+#define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
+#define SENSOR_REPORT_MAX_EVERY             12              // Maximum
+
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
-                                                        // even if just one sensor (0 for backwards compatibility)
+                                                            // even if just one sensor (0 for backwards compatibility)
 
 #ifndef SENSOR_TEMPERATURE_UNITS
 #define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
@@ -146,6 +152,7 @@
 #endif
 
 #define DALLAS_RESOLUTION               9        // Not used atm
+#define DALLAS_READ_INTERVAL            2000     // Force sensor read & cache every 2 seconds
 
 //------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor

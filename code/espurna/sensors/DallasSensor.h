@@ -64,7 +64,6 @@ class DallasSensor : public BaseSensor {
 
             if (!_dirty) return;
             _dirty = false;
-            _interval = SENSOR_READ_INTERVAL / 2;
 
             // OneWire
             if (_wire) delete _wire;
@@ -85,7 +84,7 @@ class DallasSensor : public BaseSensor {
         void tick() {
 
             static unsigned long last = 0;
-            if (millis() - last < _interval) return;
+            if (millis() - last < DALLAS_READ_INTERVAL) return;
             last = millis();
 
             // Every second we either start a conversion or read the scratchpad
@@ -282,7 +281,6 @@ class DallasSensor : public BaseSensor {
         std::vector<ds_device_t> _devices;
 
         unsigned char _gpio;
-        unsigned long _interval;
         OneWire * _wire = NULL;
 
 };
