@@ -141,6 +141,11 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
             changed = true;
         }
 
+        // For RFBridge, keep sending the message even if the status is already the required
+        #if RELAY_PROVIDER == RELAY_PROVIDER_RFBRIDGE
+            rfbStatus(id, status);
+        #endif
+
     } else {
 
         unsigned int current_time = millis();

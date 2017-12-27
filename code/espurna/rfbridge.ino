@@ -8,6 +8,8 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #ifdef ITEAD_SONOFF_RFBRIDGE
 
+#include <Ticker.h>
+
 // -----------------------------------------------------------------------------
 // DEFINITIONS
 // -----------------------------------------------------------------------------
@@ -31,6 +33,10 @@ unsigned char _uartpos = 0;
 unsigned char _learnId = 0;
 bool _learnStatus = true;
 bool _rfbin = false;
+
+byte _message_to_send[RF_MESSAGE_SIZE] = {0};
+byte _message_count = 0;
+Ticker _rfbTicker;
 
 // -----------------------------------------------------------------------------
 // PRIVATES
@@ -96,19 +102,21 @@ void _rfbSend(byte * message) {
     Serial.println();
 }
 
+void _rfbSend() {
+    if (_message_count) {
+        _rfbSend(_message_to_send);
+        if (--_message_count > 0) _rfbTicker.once_ms(RF_SEND_DELAY, _rfbSend);
+    }
+}
 void _rfbSend(byte * message, int times) {
 
     char buffer[RF_MESSAGE_SIZE];
     _rfbToChar(message, buffer);
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending MESSAGE '%s' %d time(s)\n"), buffer, times);
 
-    for (int i=0; i<times; i++) {
-        if (i>0) {
-            unsigned long start = millis();
-            while (millis() - start < RF_SEND_DELAY) delay(1);
-        }
-        _rfbSend(message);
-    }
+    _message_count = times;
+    memcpy(_message_to_send, message, RF_MESSAGE_SIZE);
+    _rfbSend();
 
 }
 
