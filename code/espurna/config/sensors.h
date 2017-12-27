@@ -40,40 +40,97 @@
 // Magnitudes
 //--------------------------------------------------------------------------------
 
-#define MAGNITUDE_TEMPERATURE_DECIMALS      1
-#define MAGNITUDE_HUMIDITY_DECIMALS         0
-#define MAGNITUDE_PRESSURE_DECIMALS         2
-#define MAGNITUDE_ANALOG_DECIMALS           0
-#define MAGNITUDE_EVENTS_DECIMALS           0
-#define MAGNITUDE_CURRENT_DECIMALS          3
-#define MAGNITUDE_VOLTAGE_DECIMALS          0
-#define MAGNITUDE_POWER_DECIMALS            0
-#define MAGNITUDE_POWER_FACTOR_DECIMALS     0
-#define MAGNITUDE_ENERGY_DECIMALS           0
-#define MAGNITUDE_PM1dot0_DECIMALS          0
-#define MAGNITUDE_PM2dot5_DECIMALS          0
-#define MAGNITUDE_PM10_DECIMALS             0
-#define MAGNITUDE_CO2_DECIMALS              0
+typedef enum magnitude_t {
 
-#define MAGNITUDE_UNKNOWN_TOPIC             "unknown"
-#define MAGNITUDE_TEMPERATURE_TOPIC         "temperature"
-#define MAGNITUDE_HUMIDITY_TOPIC            "humidity"
-#define MAGNITUDE_PRESSURE_TOPIC            "pressure"
-#define MAGNITUDE_CURRENT_TOPIC             "current"
-#define MAGNITUDE_VOLTAGE_TOPIC             "voltage"
-#define MAGNITUDE_ACTIVE_POWER_TOPIC        "power"
-#define MAGNITUDE_APPARENT_POWER_TOPIC      "apparent"
-#define MAGNITUDE_REACTIVE_POWER_TOPIC      "reactive"
-#define MAGNITUDE_POWER_FACTOR_TOPIC        "factor"
-#define MAGNITUDE_ENERGY_TOPIC              "energy"
-#define MAGNITUDE_ENERGY_DELTA_TOPIC        "energy_delta"
-#define MAGNITUDE_PM1dot0_TOPIC             "pm1dot0"
-#define MAGNITUDE_PM2dot5_TOPIC             "pm2dot5"
-#define MAGNITUDE_PM10_TOPIC                "pm10"
-#define MAGNITUDE_ANALOG_TOPIC              "analog"
-#define MAGNITUDE_DIGITAL_TOPIC             "digital"
-#define MAGNITUDE_EVENTS_TOPIC              "events"
-#define MAGNITUDE_CO2_TOPIC                 "co2"
+    MAGNITUDE_NONE = 0,
+
+    MAGNITUDE_TEMPERATURE,
+    MAGNITUDE_HUMIDITY,
+    MAGNITUDE_PRESSURE,
+
+    MAGNITUDE_CURRENT,
+    MAGNITUDE_VOLTAGE,
+    MAGNITUDE_POWER_ACTIVE,
+    MAGNITUDE_POWER_APPARENT,
+    MAGNITUDE_POWER_REACTIVE,
+    MAGNITUDE_ENERGY,
+    MAGNITUDE_ENERGY_DELTA,
+    MAGNITUDE_POWER_FACTOR,
+
+    MAGNITUDE_ANALOG,
+    MAGNITUDE_DIGITAL,
+    MAGNITUDE_EVENTS,
+
+    MAGNITUDE_PM1dot0,
+    MAGNITUDE_PM2dot5,
+    MAGNITUDE_PM10,
+
+    MAGNITUDE_CO2,
+
+    MAGNITUDE_MAX,
+
+} magnitude_t;
+
+PROGMEM const unsigned char magnitude_decimals[] = {
+    0,
+    1, 0, 2,
+    3, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0,
+    0, 0, 0,
+    0
+};
+
+PROGMEM const char magnitude_unknown_topic[] = "unknown";
+PROGMEM const char magnitude_temperature_topic[] =  "temperature";
+PROGMEM const char magnitude_humidity_topic[] = "humidity";
+PROGMEM const char magnitude_pressure_topic[] = "pressure";
+PROGMEM const char magnitude_current_topic[] = "current";
+PROGMEM const char magnitude_voltage_topic[] = "voltage";
+PROGMEM const char magnitude_active_power_topic[] = "power";
+PROGMEM const char magnitude_apparent_power_topic[] = "apparent";
+PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
+PROGMEM const char magnitude_power_factor_topic[] = "factor";
+PROGMEM const char magnitude_energy_topic[] = "energy";
+PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
+PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_topic[] = "pm10";
+PROGMEM const char magnitude_analog_topic[] = "analog";
+PROGMEM const char magnitude_digital_topic[] = "digital";
+PROGMEM const char magnitude_events_topic[] = "events";
+PROGMEM const char magnitude_co2_topic[] = "co2";
+
+PROGMEM const char* const magnitude_topics[] = {
+    magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
+    magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
+    magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
+    magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
+    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
+    magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
+    magnitude_co2_topic
+};
+
+PROGMEM const char magnitude_empty[] = "";
+PROGMEM const char magnitude_celsius[] =  "C";
+PROGMEM const char magnitude_fahrenheit[] =  "F";
+PROGMEM const char magnitude_percentage[] = "%";
+PROGMEM const char magnitude_hectopascals[] = "hPa";
+PROGMEM const char magnitude_amperes[] = "A";
+PROGMEM const char magnitude_volts[] = "V";
+PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_joules[] = "J";
+PROGMEM const char magnitude_ugm3[] = "µg/m3";
+PROGMEM const char magnitude_ppm[] = "ppm";
+
+PROGMEM const char* const magnitude_units[] = {
+    magnitude_empty, magnitude_celsius, magnitude_percentage,
+    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
+    magnitude_watts, magnitude_watts, magnitude_watts,
+    magnitude_percentage, magnitude_joules, magnitude_joules,
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
+    magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_ppm
+};
 
 //--------------------------------------------------------------------------------
 // Sensor ID
@@ -121,7 +178,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef BMX280_SUPPORT
-#define BMX280_SUPPORT                  0
+#define BMX280_SUPPORT                  1
 #endif
 
 #ifndef BMX280_ADDRESS

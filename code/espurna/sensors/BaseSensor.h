@@ -8,37 +8,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-typedef enum magnitude_t {
-
-    MAGNITUDE_NONE = 0,
-
-    MAGNITUDE_TEMPERATURE,
-    MAGNITUDE_HUMIDITY,
-    MAGNITUDE_PRESSURE,
-
-    MAGNITUDE_CURRENT,
-    MAGNITUDE_VOLTAGE,
-    MAGNITUDE_POWER_ACTIVE,
-    MAGNITUDE_POWER_APPARENT,
-    MAGNITUDE_POWER_REACTIVE,
-    MAGNITUDE_ENERGY,
-    MAGNITUDE_ENERGY_DELTA,
-    MAGNITUDE_POWER_FACTOR,
-
-    MAGNITUDE_ANALOG,
-    MAGNITUDE_DIGITAL,
-    MAGNITUDE_EVENTS,
-
-    MAGNITUDE_PM1dot0,
-    MAGNITUDE_PM2dot5,
-    MAGNITUDE_PM10,
-
-    MAGNITUDE_CO2,
-
-    MAGNITUDE_MAX,
-
-} magnitude_t;
-
 #define GPIO_NONE                   0x99
 
 #define SENSOR_ERROR_OK             0       // No error

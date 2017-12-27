@@ -38,75 +38,38 @@ double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 // Private
 // -----------------------------------------------------------------------------
 
-String _sensorTopic(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) return String(MAGNITUDE_TEMPERATURE_TOPIC);
-    if (type == MAGNITUDE_HUMIDITY) return String(MAGNITUDE_HUMIDITY_TOPIC);
-    if (type == MAGNITUDE_PRESSURE) return String(MAGNITUDE_PRESSURE_TOPIC);
-    if (type == MAGNITUDE_CURRENT) return String(MAGNITUDE_CURRENT_TOPIC);
-    if (type == MAGNITUDE_VOLTAGE) return String(MAGNITUDE_VOLTAGE_TOPIC);
-    if (type == MAGNITUDE_POWER_ACTIVE) return String(MAGNITUDE_ACTIVE_POWER_TOPIC);
-    if (type == MAGNITUDE_POWER_APPARENT) return String(MAGNITUDE_APPARENT_POWER_TOPIC);
-    if (type == MAGNITUDE_POWER_REACTIVE) return String(MAGNITUDE_REACTIVE_POWER_TOPIC);
-    if (type == MAGNITUDE_POWER_FACTOR) return String(MAGNITUDE_POWER_FACTOR_TOPIC);
-    if (type == MAGNITUDE_ENERGY) return String(MAGNITUDE_ENERGY_TOPIC);
-    if (type == MAGNITUDE_ENERGY_DELTA) return String(MAGNITUDE_ENERGY_DELTA_TOPIC);
-    if (type == MAGNITUDE_ANALOG) return String(MAGNITUDE_ANALOG_TOPIC);
-    if (type == MAGNITUDE_DIGITAL) return String(MAGNITUDE_DIGITAL_TOPIC);
-    if (type == MAGNITUDE_EVENTS) return String(MAGNITUDE_EVENTS_TOPIC);
-    if (type == MAGNITUDE_PM1dot0) return String(MAGNITUDE_PM1dot0_TOPIC);
-    if (type == MAGNITUDE_PM2dot5) return String(MAGNITUDE_PM2dot5_TOPIC);
-    if (type == MAGNITUDE_PM10) return String(MAGNITUDE_PM10_TOPIC);
-    if (type == MAGNITUDE_CO2) return String(MAGNITUDE_CO2_TOPIC);
-    return String(MAGNITUDE_UNKNOWN_TOPIC);
+String _magnitudeTopic(magnitude_t type) {
+    char buffer[16] = {0};
+    if (type < MAGNITUDE_MAX) strncpy_P(buffer, magnitude_topics[type], sizeof(buffer));
+    return String(buffer);
 }
 
-unsigned char _sensorDecimals(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) return MAGNITUDE_TEMPERATURE_DECIMALS;
-    if (type == MAGNITUDE_HUMIDITY) return MAGNITUDE_HUMIDITY_DECIMALS;
-    if (type == MAGNITUDE_PRESSURE) return MAGNITUDE_PRESSURE_DECIMALS;
-    if (type == MAGNITUDE_CURRENT) return MAGNITUDE_CURRENT_DECIMALS;
-    if (type == MAGNITUDE_VOLTAGE) return MAGNITUDE_VOLTAGE_DECIMALS;
-    if (type == MAGNITUDE_POWER_ACTIVE) return MAGNITUDE_POWER_DECIMALS;
-    if (type == MAGNITUDE_POWER_APPARENT) return MAGNITUDE_POWER_DECIMALS;
-    if (type == MAGNITUDE_POWER_REACTIVE) return MAGNITUDE_POWER_DECIMALS;
-    if (type == MAGNITUDE_POWER_FACTOR) return MAGNITUDE_POWER_FACTOR_DECIMALS;
-    if (type == MAGNITUDE_ENERGY) return MAGNITUDE_ENERGY_DECIMALS;
-    if (type == MAGNITUDE_ENERGY_DELTA) return MAGNITUDE_ENERGY_DECIMALS;
-    if (type == MAGNITUDE_ANALOG) return MAGNITUDE_ANALOG_DECIMALS;
-    if (type == MAGNITUDE_EVENTS) return MAGNITUDE_EVENTS_DECIMALS;
-    if (type == MAGNITUDE_PM1dot0) return MAGNITUDE_PM1dot0_DECIMALS;
-    if (type == MAGNITUDE_PM2dot5) return MAGNITUDE_PM2dot5_DECIMALS;
-    if (type == MAGNITUDE_PM10) return MAGNITUDE_PM10_DECIMALS;
-    if (type == MAGNITUDE_CO2) return MAGNITUDE_CO2_DECIMALS;
+unsigned char _magnitudeDecimals(magnitude_t type) {
+    if (type < MAGNITUDE_MAX) return pgm_read_byte(magnitude_decimals + type);
     return 0;
 }
 
-String _sensorUnits(magnitude_t type) {
-    if (type == MAGNITUDE_TEMPERATURE) return (_sensor_temperature_units == TMP_CELSIUS) ? String("C") : String("F");
-    if (type == MAGNITUDE_HUMIDITY) return String("%");
-    if (type == MAGNITUDE_PRESSURE) return String("hPa");
-    if (type == MAGNITUDE_CURRENT) return String("A");
-    if (type == MAGNITUDE_VOLTAGE) return String("V");
-    if (type == MAGNITUDE_POWER_ACTIVE) return String("W");
-    if (type == MAGNITUDE_POWER_APPARENT) return String("W");
-    if (type == MAGNITUDE_POWER_REACTIVE) return String("W");
-    if (type == MAGNITUDE_POWER_FACTOR) return String("%");
-    if (type == MAGNITUDE_ENERGY) return String("J");
-    if (type == MAGNITUDE_ENERGY_DELTA) return String("J");
-    if (type == MAGNITUDE_PM1dot0) return String("µg/m3");
-    if (type == MAGNITUDE_PM2dot5) return String("µg/m3");
-    if (type == MAGNITUDE_PM10) return String("µg/m3");
-    if (type == MAGNITUDE_CO2) return String("ppm");
-    return String();
+String _magnitudeUnits(magnitude_t type) {
+    char buffer[8] = {0};
+    if (type < MAGNITUDE_MAX) {
+        if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
+            strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
+        } else {
+            strncpy_P(buffer, magnitude_units[type], sizeof(buffer));
+        }
+    }
+    return String(buffer);
 }
 
-double _sensorProcess(magnitude_t type, double value) {
+double _magnitudeProcess(magnitude_t type, double value) {
     if (type == MAGNITUDE_TEMPERATURE) {
         if (_sensor_temperature_units == TMP_FAHRENHEIT) value = value * 1.8 + 32;
         value = value + _sensor_temperature_correction;
     }
-    return roundTo(value, _sensorDecimals(type));
+    return roundTo(value, _magnitudeDecimals(type));
 }
+
+// -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
 
@@ -119,14 +82,14 @@ void _sensorWebSocketSendData(JsonObject& root) {
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
 
         sensor_magnitude_t magnitude = _magnitudes[i];
-        unsigned char decimals = _sensorDecimals(magnitude.type);
+        unsigned char decimals = _magnitudeDecimals(magnitude.type);
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
         JsonObject& element = list.createNestedObject();
         element["index"] = int(magnitude.global);
         element["type"] = int(magnitude.type);
         element["value"] = String(buffer);
-        element["units"] = _sensorUnits(magnitude.type);
+        element["units"] = _magnitudeUnits(magnitude.type);
         element["description"] = magnitude.sensor->slot(magnitude.local);
         element["error"] = magnitude.sensor->error();
 
@@ -193,12 +156,12 @@ void _sensorAPISetup() {
 
         sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
 
-        String topic = _sensorTopic(magnitude.type);
+        String topic = _magnitudeTopic(magnitude.type);
         if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) topic = topic + "/" + String(magnitude.global);
 
         apiRegister(topic.c_str(), topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
-            unsigned char decimals = _sensorDecimals(magnitude.type);
+            unsigned char decimals = _magnitudeDecimals(magnitude.type);
             double value = _sensor_realtime ? magnitude.current : magnitude.filtered;
             dtostrf(value, 1-len, decimals, buffer);
         });
@@ -514,7 +477,7 @@ void _magnitudesInit() {
             }
             _magnitudes.push_back(new_magnitude);
 
-            DEBUG_MSG("[SENSOR]  -> %s:%d\n", _sensorTopic(type).c_str(), _counts[type]);
+            DEBUG_MSG("[SENSOR]  -> %s:%d\n", _magnitudeTopic(type).c_str(), _counts[type]);
 
             _counts[type] = _counts[type] + 1;
 
@@ -615,7 +578,7 @@ void sensorLoop() {
 
             if (magnitude.sensor->status()) {
 
-                unsigned char decimals = _sensorDecimals(magnitude.type);
+                unsigned char decimals = _magnitudeDecimals(magnitude.type);
 
                 current = magnitude.sensor->value(magnitude.local);
                 magnitude.filter->add(current);
@@ -623,7 +586,7 @@ void sensorLoop() {
                 // Special case
                 if (magnitude.type == MAGNITUDE_EVENTS) current = magnitude.filter->result();
 
-                current = _sensorProcess(magnitude.type, current);
+                current = _magnitudeProcess(magnitude.type, current);
                 _magnitudes[i].current = current;
 
                 // Debug
@@ -632,9 +595,9 @@ void sensorLoop() {
                     dtostrf(current, 1-sizeof(buffer), decimals, buffer);
                     DEBUG_MSG("[SENSOR] %s - %s: %s%s\n",
                         magnitude.sensor->slot(magnitude.local).c_str(),
-                        _sensorTopic(magnitude.type).c_str(),
+                        _magnitudeTopic(magnitude.type).c_str(),
                         buffer,
-                        _sensorUnits(magnitude.type).c_str()
+                        _magnitudeUnits(magnitude.type).c_str()
                     );
                 }
                 #endif // SENSOR_DEBUG
@@ -644,7 +607,7 @@ void sensorLoop() {
 
                     filtered = magnitude.filter->result();
                     magnitude.filter->reset();
-                    filtered = _sensorProcess(magnitude.type, filtered);
+                    filtered = _magnitudeProcess(magnitude.type, filtered);
                     _magnitudes[i].filtered = filtered;
 
                     // Check if there is a minimum change threshold to report
@@ -655,17 +618,17 @@ void sensorLoop() {
 
                         #if MQTT_SUPPORT
                             if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                mqttSend(_sensorTopic(magnitude.type).c_str(), magnitude.global, buffer);
+                                mqttSend(_magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
                             } else {
-                                mqttSend(_sensorTopic(magnitude.type).c_str(), buffer);
+                                mqttSend(_magnitudeTopic(magnitude.type).c_str(), buffer);
                             }
                         #endif // MQTT_SUPPORT
 
                         #if INFLUXDB_SUPPORT
                             if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                idbSend(_sensorTopic(magnitude.type).c_str(), magnitude.global, buffer);
+                                idbSend(_magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
                             } else {
-                                idbSend(_sensorTopic(magnitude.type).c_str(), buffer);
+                                idbSend(_magnitudeTopic(magnitude.type).c_str(), buffer);
                             }
                         #endif // INFLUXDB_SUPPORT
 
