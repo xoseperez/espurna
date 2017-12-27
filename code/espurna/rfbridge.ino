@@ -112,6 +112,42 @@ void _rfbSend(byte * message, int times) {
 
 }
 
+bool _rfbMatch(char * code, unsigned char& relayID, unsigned char& value) {
+
+    if (strlen(code) != 18) return false;
+
+    bool found = false;
+    String compareto = String(&code[12]);
+    compareto.toUpperCase();
+    DEBUG_MSG_P(PSTR("[RFBRIDGE] Trying to match code %s\n"), compareto.c_str());
+
+    for (unsigned char i=0; i<relayCount(); i++) {
+
+        String code_on = rfbRetrieve(i, true);
+        if (code_on.length() && code_on.endsWith(compareto)) {
+            DEBUG_MSG_P(PSTR("[RFBRIDGE] Match ON code for relay %d\n"), i);
+            value = 1;
+            found = true;
+        }
+
+        String code_off = rfbRetrieve(i, false);
+        if (code_off.length() && code_off.endsWith(compareto)) {
+            DEBUG_MSG_P(PSTR("[RFBRIDGE] Match OFF code for relay %d\n"), i);
+            if (found) value = 2;
+            found = true;
+        }
+
+        if (found) {
+            relayID = i;
+            return true;
+        }
+
+    }
+
+    return false;
+
+}
+
 void _rfbDecode() {
 
     static unsigned long last = 0;
@@ -159,36 +195,14 @@ void _rfbDecode() {
         // Look for the code
         unsigned char id;
         unsigned char status = 0;
-        bool found = false;
-
-        for (id=0; id<relayCount(); id++) {
-
-            String code_on = rfbRetrieve(id, true);
-            if (code_on.length() && code_on.endsWith(&buffer[12])) {
-                DEBUG_MSG_P(PSTR("[RFBRIDGE] Match ON code for relay %d\n"), id);
-                status = 1;
-                found = true;
+        if (_rfbMatch(buffer, id, status)) {
+            _rfbin = true;
+            if (status == 2) {
+                relayToggle(id);
+            } else {
+                relayStatus(id, status == 1);
             }
-
-            String code_off = rfbRetrieve(id, false);
-            if (code_off.length() && code_off.endsWith(&buffer[12])) {
-                DEBUG_MSG_P(PSTR("[RFBRIDGE] Match OFF code for relay %d\n"), id);
-                if (found) status = 2;
-                found = true;
-            }
-
-            if (found) {
-                _rfbin = true;
-                if (status == 2) {
-                    relayToggle(id);
-                } else {
-                    relayStatus(id, status == 1);
-                }
-                break;
-            }
-
         }
-
 
     }
 
@@ -286,6 +300,19 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
             // the code comma the number of times to transmit it.
             byte message[RF_MESSAGE_SIZE];
             char * tok = strtok((char *) payload, ",");
+
+            // Check if a switch is linked to that message
+            unsigned char id;
+            unsigned char status = 0;
+            if (_rfbMatch(tok, id, status)) {
+                if (status == 2) {
+                    relayToggle(id);
+                } else {
+                    relayStatus(id, status == 1);
+                }
+                return;
+            }
+
             if (_rfbToArray(tok, message)) {
                 tok = strtok(NULL, ",");
                 byte times = (tok != NULL) ? atoi(tok) : 1;
