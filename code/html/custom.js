@@ -73,7 +73,9 @@ function checkPassword(str) {
 }
 
 function zeroPad(number, positions) {
-    return ("0".repeat(positions) + number).slice(-positions);
+    var zeros = '';
+    for (var i = 0; i < positions; i++) zeros += "0";
+    return (zeros + number).slice(-positions);
 }
 
 function validateForm(form) {
@@ -697,8 +699,6 @@ function processData(data) {
     Object.keys(data).forEach(function(key) {
 
         // ---------------------------------------------------------------------
-
-        // ---------------------------------------------------------------------
         // Web mode
         // ---------------------------------------------------------------------
 
@@ -864,7 +864,8 @@ function processData(data) {
         }
 
         // Enable options
-        if (key.endsWith("Visible")) {
+        var position = key.indexOf("Visible");
+        if (position > 0 && position == key.length - 7) {
             var module = key.slice(0,-7);
             $(".module-" + module).show();
             return;
@@ -989,11 +990,11 @@ function connect(host) {
     if (typeof host === 'undefined') {
         host = window.location.href.replace('#', '');
     } else {
-        if (!host.startsWith("http")) {
+        if (host.indexOf("http") != 0) {
             host = 'http://' + host + '/';
         }
     }
-    if (!host.startsWith("http")) return;
+    if (host.indexOf("http") != 0) return;
 
     webhost = host;
     wshost = host.replace('http', 'ws') + 'ws';
