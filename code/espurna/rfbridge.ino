@@ -8,6 +8,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #ifdef ITEAD_SONOFF_RFBRIDGE
 
+#include <vector>
 #include <Ticker.h>
 
 // -----------------------------------------------------------------------------
@@ -34,8 +35,11 @@ unsigned char _learnId = 0;
 bool _learnStatus = true;
 bool _rfbin = false;
 
-byte _message_to_send[RF_MESSAGE_SIZE] = {0};
-byte _message_count = 0;
+typedef struct {
+    byte code[RF_MESSAGE_SIZE];
+    byte times;
+} rfb_message_t;
+std::vector<rfb_message_t> _rfb_message_queue;
 Ticker _rfbTicker;
 
 // -----------------------------------------------------------------------------
@@ -103,19 +107,40 @@ void _rfbSend(byte * message) {
 }
 
 void _rfbSend() {
-    if (_message_count) {
-        _rfbSend(_message_to_send);
-        if (--_message_count > 0) _rfbTicker.once_ms(RF_SEND_DELAY, _rfbSend);
+
+    // Check if there is something in the queue
+    if (_rfb_message_queue.size() == 0) return;
+
+    // Pop the first element
+    rfb_message_t message = _rfb_message_queue.front();
+    _rfb_message_queue.erase(_rfb_message_queue.begin());
+
+    // Send the message
+    _rfbSend(message.code);
+
+    // If it should be further sent, push it to the stack again
+    if (message.times > 1) {
+        message.times = message.times - 1;
+        _rfb_message_queue.push_back(message);
     }
+
+    // if there are still messages in the queue...
+    if (_rfb_message_queue.size() > 0) {
+        _rfbTicker.once_ms(RF_SEND_DELAY, _rfbSend);
+    }
+
 }
-void _rfbSend(byte * message, int times) {
+
+void _rfbSend(byte * code, int times) {
 
     char buffer[RF_MESSAGE_SIZE];
-    _rfbToChar(message, buffer);
+    _rfbToChar(code, buffer);
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending MESSAGE '%s' %d time(s)\n"), buffer, times);
 
-    _message_count = times;
-    memcpy(_message_to_send, message, RF_MESSAGE_SIZE);
+    rfb_message_t message;
+    memcpy(message.code, code, RF_MESSAGE_SIZE);
+    message.times = times;
+    _rfb_message_queue.push_back(message);
     _rfbSend();
 
 }
