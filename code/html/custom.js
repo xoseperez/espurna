@@ -504,8 +504,8 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data[i].boot);
         $("select[name='relayPulse']", line).val(data[i].pulse);
         $("input[name='relayTime']", line).val(data[i].pulse_ms);
-        $("intut[name='mqttGroup']", line).val(data[i].group || 0);
-        $("select[name='mqttGroupInv']", line).val(data[i].group_inv || 0);
+        $("input[name='mqttGroup']", line).val(data[i].group);
+        $("select[name='mqttGroupInv']", line).val(data[i].group_inv);
         line.appendTo("#relayConfig");
     }
 

@@ -133,6 +133,18 @@ void ledSetup() {
     #ifdef LED4_PIN
         _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY });
     #endif
+    #ifdef LED5_PIN
+        _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY });
+    #endif
+    #ifdef LED6_PIN
+        _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY });
+    #endif
+    #ifdef LED7_PIN
+        _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY });
+    #endif
+    #ifdef LED8_PIN
+        _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY });
+    #endif
 
     for (unsigned int i=0; i < _leds.size(); i++) {
         pinMode(_leds[i].pin, OUTPUT);

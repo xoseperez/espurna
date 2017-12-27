@@ -1,6 +1,7 @@
 #include "version.h"
 #include "arduino.h"
 #include "hardware.h"
+#include "defaults.h"
 #include "prototypes.h"
 #include "general.h"
 #include "sensors.h"

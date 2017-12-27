@@ -400,7 +400,7 @@ void _relayWebSocketOnStart(JsonObject& root) {
         line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
         #if MQTT_SUPPORT
             line["group"] = getSetting("mqttGroup", i, "");
-            line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt() == 1;
+            line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
         #endif
     }
 
@@ -547,6 +547,17 @@ void relayMQTT() {
     }
 }
 
+void relayStatusWrap(unsigned char id, unsigned char value, bool is_group_topic) {
+    // Action to perform
+    if (value == 0) {
+        relayStatus(id, false, mqttForward(), !is_group_topic);
+    } else if (value == 1) {
+        relayStatus(id, true, mqttForward(), !is_group_topic);
+    } else if (value == 2) {
+        relayToggle(id, true, true);
+    }
+}
+
 void relayMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
@@ -571,10 +582,6 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     if (type == MQTT_MESSAGE_EVENT) {
 
-        // Get relay
-        unsigned int relayID;
-        bool is_group_topic = false;
-
         // Get value
         unsigned char value = relayParsePayload(payload);
         if (value == 0xFF) {
@@ -583,43 +590,35 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         }
 
         // Check group topics
+        bool found = false;
         for (unsigned int i=0; i < _relays.size(); i++) {
             String t = getSetting("mqttGroup", i, "");
             if (t.equals(topic)) {
+                unsigned char local_value = value;
                 if (getSetting("mqttGroupInv", i, 0).toInt() == 1) {
-                    if (value < 2) value = 1 - value;
+                    if (local_value < 2) local_value = 1 - local_value;
                 }
+                found = true;
                 DEBUG_MSG_P(PSTR("[RELAY] Matched group topic for relayID %d\n"), i);
-                is_group_topic = true;
-                relayID = i;
-                break;
+                relayStatusWrap(i, local_value, true);
             }
         }
 
-        // Not group topic, look for own topic
-        if (!is_group_topic) {
+        // If found as group topic quit
+        if (found) return;
 
-            // Match topic
-            String t = mqttSubtopic((char *) topic);
-            if (!t.startsWith(MQTT_TOPIC_RELAY)) return;
+        // Else, try to match topic
+        String t = mqttSubtopic((char *) topic);
+        if (!t.startsWith(MQTT_TOPIC_RELAY)) return;
 
-            // Get relay ID
-            relayID = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
-            if (relayID >= relayCount()) {
-                DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), relayID);
-                return;
-            }
-
+        // Get relay ID
+        unsigned int id = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
+        if (id >= relayCount()) {
+            DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), id);
+            return;
         }
 
-        // Action to perform
-        if (value == 0) {
-            relayStatus(relayID, false, mqttForward(), !is_group_topic);
-        } else if (value == 1) {
-            relayStatus(relayID, true, mqttForward(), !is_group_topic);
-        } else if (value == 2) {
-            relayToggle(relayID, true, true);
-        }
+        relayStatusWrap(id, value, false);
 
     }
 
@@ -669,6 +668,18 @@ void relaySetup() {
         #endif
         #ifdef RELAY4_PIN
             _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+        #endif
+        #ifdef RELAY5_PIN
+            _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+        #endif
+        #ifdef RELAY6_PIN
+            _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+        #endif
+        #ifdef RELAY7_PIN
+            _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+        #endif
+        #ifdef RELAY8_PIN
+            _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
         #endif
 
     #endif
