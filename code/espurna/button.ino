@@ -55,7 +55,7 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
     return BUTTON_MODE_NONE;
 }
 
-unsigned long buttonStore(unsigned char pressed, unsigned char click, unsigned char dblclick, unsigned char lngclick, unsigned char lnglngclick) {
+unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick) {
     unsigned int value;
     value  = pressed;
     value += click << 4;
