@@ -3,6 +3,44 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.11.0] 2017-12-28
+### Fixed
+- Fixed Arduino IDE compilation issues (#330)
+- Fixed issues with IE
+- Fixed websocket auth issue with Safari (temporary)
+- Fixed MQTT group sync when different switches share same group
+- Fixed casting issue in buttonStore (#327)
+- Fixed crash in InfluxDB initial heartbeat (#318)
+- Fixed LED logic for ESPurna H08 board
+
+### Added
+- New sensors module (major change)
+  + Existing sensor have been migrated: EMON*, ECH1560, V9261F, HLW8012, DHT, DALLAS, ANALOG, DIGITAL and EVENTS
+  + New sensor have bee added: BMP280/BME280, EMON over ADS1115, MHZ19, PMSX003 (thanks to Òscar Rovira), SHT3X over I2C and SI7021
+- Option to change boot and pulse modes per relay from the web UI
+- Option to select sensor read interval and report interval from web UI
+- Itead RF Bridge
+  + Match MQTT RFOUT codes to relays
+  + Force RFBridge to send messages even if switch is already in requested state (#324)
+  + Implemented RFbridge message queue asynchronously
+- Added option to load config via HTTP POST & reset (#335)
+- Added option to define behaviour of the first LED between WIFI, MQTT, FIND-ME (#317)
+- Added HTML linter to gulp builder
+- Added Help command on terminal (#338)
+- Added preliminary support for SSDP (untested, disabled by default) (#282)
+- Reporting NTP datetime on MQTT heartbeat (thanks to Eldon R. Brown)
+- Added version tracking and migration code
+- I2C and GPIO locking features
+- Changed default button action for touch button devices (TOUCH and T1) (#327)
+- Generic 8 channel board (#336)
+
+### Changed
+- Added more sensor data filters (Max, MobileAverage)
+- Changed max pulse time to 1h (#316)
+- Renamed "reset" to "reboot" for clarity (#315)
+- UI refactor
+- Change apiRegister signature
+
 ## [1.10.1] 2017-12-05
 ### Fixed
 - Fix Sonoff RFBridge learn message from web UI (#287)

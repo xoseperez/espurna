@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.10.1**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+> **Current Release Version is 1.11.0**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 > **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
 
@@ -22,12 +22,13 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Defaults to AP mode (also available after double clicking the main button)
 * Network visibility
     * Supports mDNS (service reporting and metadata)
-    * Supports NetBIOS and LLMNR (when built against Arduino Core 2.4.0 RC2)
+    * Supports NetBIOS, LLMNR and Netbios (when built against Arduino Core 2.4.0 RC2) and SSDP (experimental)
 * Switch management
     * Support for **push buttons** and **toggle switches**
-    * Configurable **status on boot** (always ON, always OFF, same as before or toggle)
-    * Support for **pulse mode** (normally ON or normally OFF) with configurable time
+    * Configurable **status on boot** per switch (always ON, always OFF, same as before or toggle)
+    * Support for **pulse mode** per switch (normally ON or normally OFF) with configurable time
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
+    * Support for **MQTT groups** to sync switches between devices
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
     * **SSL/TLS support** (not on regular builds, see #64)
@@ -45,11 +46,20 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Supports MQTT auto-discover feature (both switches and lights)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * Support for different **sensors**
-    * DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021 (supports celsius & fahrenheit reporting)
-    * DS18B20 (supports celsius & fahrenheit reporting)
-    * HLW8012 using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
-    * Non-invasive current sensor using the [EmonLiteESP Library](https://bitbucket.org/xoseperez/emonliteesp) (requires some hacking)
-    * Raw analog sensor
+    * Environment
+        * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021** (supports celsius & fahrenheit reporting)
+        * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
+        * **SI7021** temperature and humidity sensor
+        * **SHT2X** temperature and humidity sensor over I2C (Wemos shield)
+        * **Dallas OneWire sensors** like the DS18B20 (supports celsius & fahrenheit reporting)
+        * **MHZ19** CO2 sensor
+        * **PMSX003** dust sensor
+    * Power monitoring
+        * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
+        * Non-invasive **current sensor** using **internal ADC** or **ADC121** or **ADS1115**
+        * **ECH1560** power monitor chip
+        * **V9261F** power monitor chip
+    * Raw analog and digital sensors
     * Simple pulse counter
 * Support for LED lights
     * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
