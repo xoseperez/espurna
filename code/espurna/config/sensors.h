@@ -307,11 +307,23 @@
 #define HLW8012_CF_PIN                  14
 #endif
 
-#define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
+#ifndef HLW8012_SEL_CURRENT
 #define HLW8012_SEL_CURRENT             HIGH    // SEL pin to HIGH to measure current
+#endif
+
+#ifndef HLW8012_CURRENT_R
 #define HLW8012_CURRENT_R               0.001   // Current resistor
+#endif
+
+#ifndef HLW8012_VOLTAGE_R_UP
 #define HLW8012_VOLTAGE_R_UP            ( 5 * 470000 )  // Upstream voltage resistor
+#endif
+
+#ifndef HLW8012_VOLTAGE_R_DOWN
 #define HLW8012_VOLTAGE_R_DOWN          ( 1000 )        // Downstream voltage resistor
+#endif
+
+#define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
