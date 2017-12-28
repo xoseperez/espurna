@@ -2,7 +2,6 @@
 // SENSORS - General data
 // =============================================================================
 
-#define SENSOR_SUPPORT                      0               // Sensor support
 #define SENSOR_DEBUG                        0               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
@@ -38,6 +37,28 @@
 #define HUMIDITY_WET                        3
 
 //--------------------------------------------------------------------------------
+// Sensor ID
+// These should remain over time, do not modify them, only add new ones at the end
+//--------------------------------------------------------------------------------
+
+#define SENSOR_DHTXX_ID                     0x01
+#define SENSOR_DALLAS_ID                    0x02
+#define SENSOR_EMON_ANALOG_ID               0x03
+#define SENSOR_EMON_ADC121_ID               0x04
+#define SENSOR_EMON_ADS1X15_ID              0x05
+#define SENSOR_HLW8012_ID                   0x06
+#define SENSOR_V9261F_ID                    0x07
+#define SENSOR_ECH1560_ID                   0x08
+#define SENSOR_ANALOG_ID                    0x09
+#define SENSOR_DIGITAL_ID                   0x10
+#define SENSOR_EVENTS_ID                    0x11
+#define SENSOR_PMSX003_ID                   0x12
+#define SENSOR_BMX280_ID                    0x13
+#define SENSOR_MHZ19_ID                     0x14
+#define SENSOR_SI7021_ID                    0x15
+#define SENSOR_SHT3X_I2C_ID                 0x16
+
+//--------------------------------------------------------------------------------
 // Magnitudes
 //--------------------------------------------------------------------------------
 
@@ -62,93 +83,6 @@
 #define MAGNITUDE_CO2                       18
 
 #define MAGNITUDE_MAX                       19
-
-#if SENSOR_SUPPORT
-
-PROGMEM const unsigned char magnitude_decimals[] = {
-    0,
-    1, 0, 2,
-    3, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0
-};
-
-PROGMEM const char magnitude_unknown_topic[] = "unknown";
-PROGMEM const char magnitude_temperature_topic[] =  "temperature";
-PROGMEM const char magnitude_humidity_topic[] = "humidity";
-PROGMEM const char magnitude_pressure_topic[] = "pressure";
-PROGMEM const char magnitude_current_topic[] = "current";
-PROGMEM const char magnitude_voltage_topic[] = "voltage";
-PROGMEM const char magnitude_active_power_topic[] = "power";
-PROGMEM const char magnitude_apparent_power_topic[] = "apparent";
-PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
-PROGMEM const char magnitude_power_factor_topic[] = "factor";
-PROGMEM const char magnitude_energy_topic[] = "energy";
-PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
-PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
-PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
-PROGMEM const char magnitude_pm10_topic[] = "pm10";
-PROGMEM const char magnitude_analog_topic[] = "analog";
-PROGMEM const char magnitude_digital_topic[] = "digital";
-PROGMEM const char magnitude_events_topic[] = "events";
-PROGMEM const char magnitude_co2_topic[] = "co2";
-
-PROGMEM const char* const magnitude_topics[] = {
-    magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
-    magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
-    magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
-    magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
-    magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
-    magnitude_co2_topic
-};
-
-PROGMEM const char magnitude_empty[] = "";
-PROGMEM const char magnitude_celsius[] =  "C";
-PROGMEM const char magnitude_fahrenheit[] =  "F";
-PROGMEM const char magnitude_percentage[] = "%";
-PROGMEM const char magnitude_hectopascals[] = "hPa";
-PROGMEM const char magnitude_amperes[] = "A";
-PROGMEM const char magnitude_volts[] = "V";
-PROGMEM const char magnitude_watts[] = "W";
-PROGMEM const char magnitude_joules[] = "J";
-PROGMEM const char magnitude_ugm3[] = "µg/m3";
-PROGMEM const char magnitude_ppm[] = "ppm";
-
-PROGMEM const char* const magnitude_units[] = {
-    magnitude_empty, magnitude_celsius, magnitude_percentage,
-    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
-    magnitude_watts, magnitude_watts, magnitude_watts,
-    magnitude_percentage, magnitude_joules, magnitude_joules,
-    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
-    magnitude_empty, magnitude_empty, magnitude_empty,
-    magnitude_ppm
-};
-
-#endif // SENSOR_SUPPORT
-
-//--------------------------------------------------------------------------------
-// Sensor ID
-// These should remain over time, do not modify them, only add new ones at the end
-//--------------------------------------------------------------------------------
-
-#define SENSOR_DHTXX_ID                 0x01
-#define SENSOR_DALLAS_ID                0x02
-#define SENSOR_EMON_ANALOG_ID           0x03
-#define SENSOR_EMON_ADC121_ID           0x04
-#define SENSOR_EMON_ADS1X15_ID          0x05
-#define SENSOR_HLW8012_ID               0x06
-#define SENSOR_V9261F_ID                0x07
-#define SENSOR_ECH1560_ID               0x08
-#define SENSOR_ANALOG_ID                0x09
-#define SENSOR_DIGITAL_ID               0x10
-#define SENSOR_EVENTS_ID                0x11
-#define SENSOR_PMSX003_ID               0x12
-#define SENSOR_BMX280_ID                0x13
-#define SENSOR_MHZ19_ID                 0x14
-#define SENSOR_SI7021_ID                0x15
-#define SENSOR_SHT3X_I2C_ID             0x16
 
 // =============================================================================
 // Specific data for each sensor
@@ -469,6 +403,17 @@ PROGMEM const char* const magnitude_units[] = {
 // Sensor helpers configuration
 // =============================================================================
 
+#if ANALOG_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
+    || DHT_SUPPORT || DIGITAL_SUPPORT || ECH1560_SUPPORT \
+    || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
+    || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
+    || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
+    || SI7021_SUPPORT || V9261F_SUPPORT
+
+#define SENSOR_SUPPORT                      1
+
+#endif
+
 // -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
@@ -510,6 +455,67 @@ PROGMEM const char* const magnitude_units[] = {
 //--------------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT
+
+PROGMEM const unsigned char magnitude_decimals[] = {
+    0,
+    1, 0, 2,
+    3, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0,
+    0, 0, 0,
+    0
+};
+
+PROGMEM const char magnitude_unknown_topic[] = "unknown";
+PROGMEM const char magnitude_temperature_topic[] =  "temperature";
+PROGMEM const char magnitude_humidity_topic[] = "humidity";
+PROGMEM const char magnitude_pressure_topic[] = "pressure";
+PROGMEM const char magnitude_current_topic[] = "current";
+PROGMEM const char magnitude_voltage_topic[] = "voltage";
+PROGMEM const char magnitude_active_power_topic[] = "power";
+PROGMEM const char magnitude_apparent_power_topic[] = "apparent";
+PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
+PROGMEM const char magnitude_power_factor_topic[] = "factor";
+PROGMEM const char magnitude_energy_topic[] = "energy";
+PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
+PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_topic[] = "pm10";
+PROGMEM const char magnitude_analog_topic[] = "analog";
+PROGMEM const char magnitude_digital_topic[] = "digital";
+PROGMEM const char magnitude_events_topic[] = "events";
+PROGMEM const char magnitude_co2_topic[] = "co2";
+
+PROGMEM const char* const magnitude_topics[] = {
+    magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
+    magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
+    magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
+    magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
+    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
+    magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
+    magnitude_co2_topic
+};
+
+PROGMEM const char magnitude_empty[] = "";
+PROGMEM const char magnitude_celsius[] =  "C";
+PROGMEM const char magnitude_fahrenheit[] =  "F";
+PROGMEM const char magnitude_percentage[] = "%";
+PROGMEM const char magnitude_hectopascals[] = "hPa";
+PROGMEM const char magnitude_amperes[] = "A";
+PROGMEM const char magnitude_volts[] = "V";
+PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_joules[] = "J";
+PROGMEM const char magnitude_ugm3[] = "µg/m3";
+PROGMEM const char magnitude_ppm[] = "ppm";
+
+PROGMEM const char* const magnitude_units[] = {
+    magnitude_empty, magnitude_celsius, magnitude_percentage,
+    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
+    magnitude_watts, magnitude_watts, magnitude_watts,
+    magnitude_percentage, magnitude_joules, magnitude_joules,
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
+    magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_ppm
+};
 
 #include "../sensors/BaseSensor.h"
 
