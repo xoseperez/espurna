@@ -210,6 +210,15 @@ void _sensorInit() {
     }
     #endif
 
+    #if BH1750_SUPPORT
+    {
+        BH1750Sensor * sensor = new BH1750Sensor();
+        sensor->setAddress(BH1750_ADDRESS);
+        sensor->setMode(BH1750_MODE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if BMX280_SUPPORT
     {
         BMX280Sensor * sensor = new BMX280Sensor();
