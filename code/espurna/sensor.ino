@@ -15,15 +15,15 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include "sensors/BaseSensor.h"
 
 typedef struct {
-    BaseSensor * sensor;
+    BaseSensor * sensor;        // Sensor object
+    BaseFilter * filter;        // Filter object
     unsigned char local;        // Local index in its provider
-    unsigned char type;           // Type of measurement
+    unsigned char type;         // Type of measurement
     unsigned char global;       // Global index in its type
     double current;             // Current (last) value, unfiltered
     double filtered;            // Filtered (averaged) value
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
-    BaseFilter * filter;    // Filter object
 } sensor_magnitude_t;
 
 std::vector<BaseSensor *> _sensors;
@@ -32,7 +32,7 @@ std::vector<sensor_magnitude_t> _magnitudes;
 unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
-unsigned int _sensor_report_every = SENSOR_REPORT_EVERY;
+unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 
