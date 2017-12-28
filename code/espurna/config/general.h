@@ -664,6 +664,22 @@ PROGMEM const char* const custom_reset_string[] = {
 #if IR_SUPPORT
 #if IR_BUTTON_SET == 1
 
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
     #define IR_BUTTON_COUNT 24
 
     const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
@@ -705,6 +721,22 @@ PROGMEM const char* const custom_reset_string[] = {
 //Remote Buttons SET 2 (another identical IR Remote shipped with another controller)
 #if IR_BUTTON_SET == 2
 
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
     #define IR_BUTTON_COUNT 24
 
     const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
@@ -742,6 +774,7 @@ PROGMEM const char* const custom_reset_string[] = {
     };
 
 #endif
+
 #endif // IR_SUPPORT
 
 //--------------------------------------------------------------------------------

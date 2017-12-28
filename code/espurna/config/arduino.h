@@ -55,6 +55,8 @@
 //#define XENON_SM_PW702U
 //#define AUTHOMETION_LYT8266
 //#define GENERIC_8CH
+//#define ARILUX_AL_LC01
+//#define ARILUX_AL_LC11
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
