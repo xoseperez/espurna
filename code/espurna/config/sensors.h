@@ -71,9 +71,9 @@
 #define MAGNITUDE_POWER_ACTIVE              6
 #define MAGNITUDE_POWER_APPARENT            7
 #define MAGNITUDE_POWER_REACTIVE            8
-#define MAGNITUDE_ENERGY                    9
-#define MAGNITUDE_ENERGY_DELTA              10
-#define MAGNITUDE_POWER_FACTOR              11
+#define MAGNITUDE_POWER_FACTOR              9
+#define MAGNITUDE_ENERGY                    10
+#define MAGNITUDE_ENERGY_DELTA              11
 #define MAGNITUDE_ANALOG                    12
 #define MAGNITUDE_DIGITAL                   13
 #define MAGNITUDE_EVENTS                    14

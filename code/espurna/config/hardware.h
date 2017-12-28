@@ -105,7 +105,9 @@
     #define LED1_PIN_INVERSE    1
 
     // HLW8012
+    #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT     1
+    #endif
     #define HLW8012_SEL_PIN     2
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -146,7 +148,9 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
+    #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT     1
+    #endif
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -219,10 +223,16 @@
     #define LED1_PIN_INVERSE    1
 
     // Jack is connected to GPIO14 (and with a small hack to GPIO4)
+    #ifndef DALLAS_SUPPORT
     #define DALLAS_SUPPORT      1
+    #endif
     #define DALLAS_PIN          14
+
+    #ifndef DHT_SUPPORT
     #define DHT_SUPPORT         1
+    #endif
     #define DHT_PIN             14
+
     //#define I2C_SDA_PIN         4
     //#define I2C_SCL_PIN         14
 
@@ -327,7 +337,9 @@
     #define LED1_PIN_INVERSE    0
 
     // HLW8012
+    #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT     1
+    #endif
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
@@ -1117,7 +1129,9 @@
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // DB18B20
+    #ifndef DALLAS_SUPPORT
     #define DALLAS_SUPPORT             	1
+    #endif
     #define DALLAS_PIN                 	2
     #define DALLAS_UPDATE_INTERVAL     	5000
     #define TEMPERATURE_MIN_CHANGE      1.0

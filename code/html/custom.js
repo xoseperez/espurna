@@ -43,7 +43,7 @@ function magnitudeType(type) {
     var types = [
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
-        "Reactive Power", "Energy", "Energy (delta)", "Power Factor",
+        "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Events",
         "PM1.0", "PM2.5", "PM10", "CO2"
     ];
