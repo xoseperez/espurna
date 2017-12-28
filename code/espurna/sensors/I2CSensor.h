@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && I2C_SUPPORT
+
 #pragma once
 
 #include "BaseSensor.h"
@@ -55,3 +57,5 @@ class I2CSensor : public BaseSensor {
         unsigned char _address = 0;
 
 };
+
+#endif // SENSOR_SUPPORT && I2C_SUPPORT

@@ -2,6 +2,7 @@
 // SENSORS - General data
 // =============================================================================
 
+#define SENSOR_SUPPORT                      0               // Sensor support
 #define SENSOR_DEBUG                        0               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
@@ -40,36 +41,29 @@
 // Magnitudes
 //--------------------------------------------------------------------------------
 
-typedef enum magnitude_t {
+#define MAGNITUDE_NONE                      0
+#define MAGNITUDE_TEMPERATURE               1
+#define MAGNITUDE_HUMIDITY                  2
+#define MAGNITUDE_PRESSURE                  3
+#define MAGNITUDE_CURRENT                   4
+#define MAGNITUDE_VOLTAGE                   5
+#define MAGNITUDE_POWER_ACTIVE              6
+#define MAGNITUDE_POWER_APPARENT            7
+#define MAGNITUDE_POWER_REACTIVE            8
+#define MAGNITUDE_ENERGY                    9
+#define MAGNITUDE_ENERGY_DELTA              10
+#define MAGNITUDE_POWER_FACTOR              11
+#define MAGNITUDE_ANALOG                    12
+#define MAGNITUDE_DIGITAL                   13
+#define MAGNITUDE_EVENTS                    14
+#define MAGNITUDE_PM1dot0                   15
+#define MAGNITUDE_PM2dot5                   16
+#define MAGNITUDE_PM10                      17
+#define MAGNITUDE_CO2                       18
 
-    MAGNITUDE_NONE = 0,
+#define MAGNITUDE_MAX                       19
 
-    MAGNITUDE_TEMPERATURE,
-    MAGNITUDE_HUMIDITY,
-    MAGNITUDE_PRESSURE,
-
-    MAGNITUDE_CURRENT,
-    MAGNITUDE_VOLTAGE,
-    MAGNITUDE_POWER_ACTIVE,
-    MAGNITUDE_POWER_APPARENT,
-    MAGNITUDE_POWER_REACTIVE,
-    MAGNITUDE_ENERGY,
-    MAGNITUDE_ENERGY_DELTA,
-    MAGNITUDE_POWER_FACTOR,
-
-    MAGNITUDE_ANALOG,
-    MAGNITUDE_DIGITAL,
-    MAGNITUDE_EVENTS,
-
-    MAGNITUDE_PM1dot0,
-    MAGNITUDE_PM2dot5,
-    MAGNITUDE_PM10,
-
-    MAGNITUDE_CO2,
-
-    MAGNITUDE_MAX,
-
-} magnitude_t;
+#if SENSOR_SUPPORT
 
 PROGMEM const unsigned char magnitude_decimals[] = {
     0,
@@ -132,6 +126,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_ppm
 };
 
+#endif // SENSOR_SUPPORT
+
 //--------------------------------------------------------------------------------
 // Sensor ID
 // These should remain over time, do not modify them, only add new ones at the end
@@ -178,7 +174,7 @@ PROGMEM const char* const magnitude_units[] = {
 //------------------------------------------------------------------------------
 
 #ifndef BMX280_SUPPORT
-#define BMX280_SUPPORT                  1
+#define BMX280_SUPPORT                  0
 #endif
 
 #ifndef BMX280_ADDRESS
@@ -513,6 +509,8 @@ PROGMEM const char* const magnitude_units[] = {
 // Class loading
 //--------------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT
+
 #include "../sensors/BaseSensor.h"
 
 #if ANALOG_SUPPORT
@@ -585,3 +583,5 @@ PROGMEM const char* const magnitude_units[] = {
     #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
 #endif
+
+#endif // SENSOR_SUPPORT

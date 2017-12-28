@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && SI7021_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -84,7 +86,7 @@ class SI7021Sensor : public I2CSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 if (index == 0) return MAGNITUDE_TEMPERATURE;
@@ -175,3 +177,5 @@ class SI7021Sensor : public I2CSensor {
         unsigned char _chip;
 
 };
+
+#endif // SENSOR_SUPPORT && SI7021_SUPPORT

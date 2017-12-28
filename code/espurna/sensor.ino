@@ -6,6 +6,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#if SENSOR_SUPPORT
+
 #include <vector>
 #include "filters/MaxFilter.h"
 #include "filters/MedianFilter.h"
@@ -15,7 +17,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 typedef struct {
     BaseSensor * sensor;
     unsigned char local;        // Local index in its provider
-    magnitude_t type;           // Type of measurement
+    unsigned char type;           // Type of measurement
     unsigned char global;       // Global index in its type
     double current;             // Current (last) value, unfiltered
     double filtered;            // Filtered (averaged) value
@@ -38,18 +40,18 @@ double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 // Private
 // -----------------------------------------------------------------------------
 
-String _magnitudeTopic(magnitude_t type) {
+String _magnitudeTopic(unsigned char type) {
     char buffer[16] = {0};
     if (type < MAGNITUDE_MAX) strncpy_P(buffer, magnitude_topics[type], sizeof(buffer));
     return String(buffer);
 }
 
-unsigned char _magnitudeDecimals(magnitude_t type) {
+unsigned char _magnitudeDecimals(unsigned char type) {
     if (type < MAGNITUDE_MAX) return pgm_read_byte(magnitude_decimals + type);
     return 0;
 }
 
-String _magnitudeUnits(magnitude_t type) {
+String _magnitudeUnits(unsigned char type) {
     char buffer[8] = {0};
     if (type < MAGNITUDE_MAX) {
         if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
@@ -61,7 +63,7 @@ String _magnitudeUnits(magnitude_t type) {
     return String(buffer);
 }
 
-double _magnitudeProcess(magnitude_t type, double value) {
+double _magnitudeProcess(unsigned char type, double value) {
     if (type == MAGNITUDE_TEMPERATURE) {
         if (_sensor_temperature_units == TMP_FAHRENHEIT) value = value * 1.8 + 32;
         value = value + _sensor_temperature_correction;
@@ -457,7 +459,7 @@ void _magnitudesInit() {
 
         for (unsigned char k=0; k<sensor->count(); k++) {
 
-            magnitude_t type = sensor->type(k);
+            unsigned char type = sensor->type(k);
 
             sensor_magnitude_t new_magnitude;
             new_magnitude.sensor = sensor;
@@ -671,3 +673,5 @@ void sensorLoop() {
     }
 
 }
+
+#endif // SENSOR_SUPPORT

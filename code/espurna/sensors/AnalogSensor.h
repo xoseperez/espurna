@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && ANALOG_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -36,7 +38,7 @@ class AnalogSensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_ANALOG;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -53,3 +55,5 @@ class AnalogSensor : public BaseSensor {
 
 
 };
+
+#endif // SENSOR_SUPPORT && ANALOG_SUPPORT

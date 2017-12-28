@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT
+
 #pragma once
 
 #include <Arduino.h>
@@ -45,7 +47,7 @@ class BaseSensor {
         virtual String description() {}
 
         // Type for slot # index
-        virtual magnitude_t type(unsigned char index) {}
+        virtual unsigned char type(unsigned char index) {}
 
         // Current value for slot # index
         virtual double value(unsigned char index) {}
@@ -82,3 +84,5 @@ class BaseSensor {
         unsigned char _count = 0;
 
 };
+
+#endif

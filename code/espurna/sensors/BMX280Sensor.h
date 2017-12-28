@@ -4,6 +4,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && BMX280_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -60,7 +62,7 @@ class BMX280Sensor : public I2CSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 unsigned char i = 0;
@@ -245,3 +247,5 @@ class BMX280Sensor : public I2CSensor {
 // Static inizializations
 
 unsigned char BMX280Sensor::addresses[2] = {0x76, 0x77};
+
+// SENSOR_SUPPORT && BMX280_SUPPORT

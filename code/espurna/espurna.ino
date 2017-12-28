@@ -185,6 +185,9 @@ void welcome() {
     #if RF_SUPPORT
         DEBUG_MSG_P(PSTR(" RF"));
     #endif
+    #if SENSOR_SUPPORT
+        DEBUG_MSG_P(PSTR(" SENSOR"));
+    #endif
     #if SPIFFS_SUPPORT
         DEBUG_MSG_P(PSTR(" SPIFFS"));
     #endif
@@ -352,9 +355,6 @@ void setup() {
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif
-    #if POWER_PROVIDER != POWER_PROVIDER_NONE
-        powerSetup();
-    #endif
     #if ALEXA_SUPPORT
         alexaSetup();
     #endif
@@ -376,8 +376,9 @@ void setup() {
     #if HOMEASSISTANT_SUPPORT
         haSetup();
     #endif
-
-    sensorSetup();
+    #if SENSOR_SUPPORT
+        sensorSetup();
+    #endif
 
     // Prepare configuration for version 2.0
     migrate();
@@ -412,9 +413,6 @@ void loop() {
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbLoop();
     #endif
-    #if POWER_PROVIDER != POWER_PROVIDER_NONE
-        powerLoop();
-    #endif
     #if SSDP_SUPPORT
         ssdpLoop();
     #endif
@@ -433,8 +431,9 @@ void loop() {
     #if IR_SUPPORT
         irLoop();
     #endif
-
-    sensorLoop();
+    #if SENSOR_SUPPORT
+        sensorLoop();
+    #endif
 
     // Power saving delay
     delay(_loopDelay);

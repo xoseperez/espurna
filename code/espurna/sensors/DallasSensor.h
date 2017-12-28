@@ -4,6 +4,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && DALLAS_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -187,7 +189,7 @@ class DallasSensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
             if (index < _count) return MAGNITUDE_TEMPERATURE;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -301,3 +303,5 @@ class DallasSensor : public BaseSensor {
         OneWire * _wire = NULL;
 
 };
+
+#endif // SENSOR_SUPPORT && DALLAS_SUPPORT

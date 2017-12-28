@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && DIGITAL_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -66,7 +68,7 @@ class DigitalSensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_DIGITAL;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -93,3 +95,5 @@ class DigitalSensor : public BaseSensor {
         bool _default = false;
 
 };
+
+#endif // SENSOR_SUPPORT && DIGITAL_SUPPORT

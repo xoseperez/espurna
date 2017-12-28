@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && V9261F_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -81,7 +83,7 @@ class V9261FSensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
@@ -244,3 +246,5 @@ class V9261FSensor : public BaseSensor {
         unsigned char _data[24];
 
 };
+
+#endif // SENSOR_SUPPORT && V9261F_SUPPORT

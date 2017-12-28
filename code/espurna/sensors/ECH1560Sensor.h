@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && ECH1560_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -81,7 +83,7 @@ class ECH1560Sensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
@@ -324,3 +326,5 @@ void ECH1560Sensor::_detach(unsigned char gpio) {
         _ech1560_sensor_instance[index] = NULL;
     }
 }
+
+#endif // SENSOR_SUPPORT && ECH1560_SUPPORT

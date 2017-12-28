@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -225,3 +227,5 @@ class EmonSensor : public I2CSensor {
 
 
 };
+
+#endif // SENSOR_SUPPORT

@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && EMON_ADC121_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -139,3 +141,5 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         }
 
 };
+
+#endif // SENSOR_SUPPORT && EMON_ADC121_SUPPORT

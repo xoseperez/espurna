@@ -6,6 +6,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && MHZ19_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -88,7 +90,7 @@ class MHZ19Sensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CO2;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -202,3 +204,5 @@ class MHZ19Sensor : public BaseSensor {
         SoftwareSerial * _serial = NULL;
 
 };
+
+#endif // SENSOR_SUPPORT && MHZ19_SUPPORT

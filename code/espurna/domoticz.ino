@@ -91,22 +91,15 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
         relays.add(domoticzIdx(i));
     }
 
-    JsonArray& list = root.createNestedArray("dczMagnitudes");
-    for (byte i=0; i<magnitudeCount(); i++) {
-        JsonObject& element = list.createNestedObject();
-        element["name"] = magnitudeName(i);
-        element["type"] = magnitudeType(i);
-        element["index"] = magnitudeIndex(i);
-        element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
-    }
-
-    #if POWER_PROVIDER != POWER_PROVIDER_NONE
-        root["dczPowIdx"] = getSetting("dczPowIdx").toInt();
-        root["dczEnergyIdx"] = getSetting("dczEnergyIdx").toInt();
-        root["dczCurrentIdx"] = getSetting("dczCurrentIdx").toInt();
-        #if POWER_HAS_ACTIVE
-            root["dczVoltIdx"] = getSetting("dczVoltIdx").toInt();
-        #endif
+    #if SENSOR_SUPPORT
+        JsonArray& list = root.createNestedArray("dczMagnitudes");
+        for (byte i=0; i<magnitudeCount(); i++) {
+            JsonObject& element = list.createNestedObject();
+            element["name"] = magnitudeName(i);
+            element["type"] = magnitudeType(i);
+            element["index"] = magnitudeIndex(i);
+            element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
+        }
     #endif
 
 }

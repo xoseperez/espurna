@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && EMON_ADS1X15_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -202,7 +204,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 unsigned char magnitude = index / _ports;
@@ -392,3 +394,5 @@ class EmonADS1X15Sensor : public EmonSensor {
 
 
 };
+
+#endif // SENSOR_SUPPORT && EMON_ADS1X15_SUPPORT

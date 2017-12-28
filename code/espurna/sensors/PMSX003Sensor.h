@@ -4,6 +4,8 @@
 // Contribution by Òscar Rovira López
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT && PMSX003_SUPPORT
+
 #pragma once
 
 #include "Arduino.h"
@@ -96,7 +98,7 @@ class PMSX003Sensor : public BaseSensor {
         }
 
         // Type for slot # index
-        magnitude_t type(unsigned char index) {
+        unsigned char type(unsigned char index) {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 if (index == 0) return MAGNITUDE_PM1dot0;
@@ -150,3 +152,5 @@ class PMSX003Sensor : public BaseSensor {
         PMS::DATA _data;
 
 };
+
+#endif // SENSOR_SUPPORT && PMSX003_SUPPORT
