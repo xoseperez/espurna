@@ -15,49 +15,36 @@ class MovingAverageFilter : public BaseFilter {
     public:
 
         void add(double value) {
-
-            // If we are at the end of the vector we add a new element
-            if (_pointer >= _data.size()) {
-                _sum = _sum + value;
-                _data.push_back(value);
-
-            // Else we substract the old value at the current poisiton and overwrite it
-            } else {
-                _sum = _sum + value - _data[_pointer];
-                _data[_pointer] = value;
-            }
-
-            _pointer++;
-
+            _sum = _sum + value - _data[_pointer];
+            _data[_pointer] = value;
+            _pointer = (_pointer + 1) % _size;
         }
 
-        void reset() {
-
-            // I assume series length to be the number of data points since last reset,
-            // so I zero-ed old data points from this point on
-            for (unsigned char i=_pointer; i<_data.size(); i++) {
-                _data[i] = 0;
-            }
-
-            _pointer = 0;
-
+        unsigned char count() {
+            return _pointer;
         }
+
+        void reset() {}
 
         double result() {
-
-            // At this point we want to return the sum since last request
-            for (unsigned char i=_pointer; i<_data.size(); i++) {
-                _sum = _sum - _data[i];
-            }
-
             return _sum;
+        }
 
+        void resize(unsigned char size) {
+            if (_size == size) return;
+            _size = size;
+            if (_data) delete _data;
+            _data = new double[_size];
+            for (unsigned char i=0; i<_size; i++) _data[i] = 0;
+            _pointer = 0;
+            _sum = 0;
         }
 
     protected:
 
         unsigned char _pointer = 0;
         double _sum = 0;
+        double * _data = NULL;
 
 };
 

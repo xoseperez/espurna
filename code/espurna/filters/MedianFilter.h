@@ -13,23 +13,37 @@ class MedianFilter : public BaseFilter {
 
     public:
 
-        virtual void reset() {
-
-            // When resetting we get the last value
-            // and make it the first of the new series
-            double last = _data.empty() ? 0 : _data.back();
-            _data.clear();
-            add(last);
-
+        ~MedianFilter() {
+            if (_data) delete _data;
         }
 
-        virtual double result() {
+        void add(double value) {
+            if (_pointer <= _size) {
+                _data[_pointer] = value;
+                _pointer++;
+            }
+        }
+
+        unsigned char count() {
+            return _pointer;
+        }
+
+        void reset() {
+            if (_pointer > 0) {
+                _data[0] = _data[_pointer-1];
+                _pointer = 1;
+            } else {
+                _pointer = 0;
+            }
+        }
+
+        double result() {
 
             double sum = 0;
 
-            if (_data.size() > 2) {
+            if (_pointer > 2) {
 
-                for (unsigned char i = 1; i <= _data.size() - 2; i++) {
+                for (unsigned char i = 1; i <= _pointer - 2; i++) {
 
                     // For each position,
                     // we find the median with the previous and next value
@@ -47,17 +61,31 @@ class MedianFilter : public BaseFilter {
 
                 }
 
-                sum /= (_data.size() - 2);
+                sum /= (_pointer - 2);
 
-            } else if (_data.size() > 0) {
+            } else if (_pointer > 0) {
 
-                sum = _data.front();
+                sum = _data[0];
 
             }
 
             return sum;
 
         }
+
+        void resize(unsigned char size) {
+            if (_size == size) return;
+            _size = size;
+            if (_data) delete _data;
+            _data = new double[_size+1];
+            for (unsigned char i=0; i<=_size; i++) _data[i] = 0;
+            _pointer = 0;
+        }
+
+    protected:
+
+        unsigned char _pointer = 0;
+        double * _data = NULL;
 
 };
 

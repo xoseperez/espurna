@@ -7,16 +7,33 @@
 
 #pragma once
 
-#include <vector>
 #include "BaseFilter.h"
 
 class MaxFilter : public BaseFilter {
 
     public:
 
-        double result() {
-            return max();
+        void add(double value) {
+            if (value > _max) _max = value;
         }
+
+        unsigned char count() {
+            return 1;
+        }
+
+        void reset() {
+            _max = 0;
+        }
+
+        double result() {
+            return _max;
+        }
+
+        void resize(unsigned char size) {}
+
+    protected:
+
+        double _max = 0;
 
 };
 

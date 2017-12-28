@@ -439,6 +439,11 @@ void _sensorConfigure() {
     _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
 
+    // Update filter sizes
+    for (unsigned char i=0; i<_magnitudes.size(); i++) {
+        _magnitudes[i].filter->resize(_sensor_report_every);
+    }
+
     // Save settings
     delSetting("pwrExpectedP");
     delSetting("pwrExpectedC");
@@ -477,6 +482,7 @@ void _magnitudesInit() {
             } else {
                 new_magnitude.filter = new MedianFilter();
             }
+            new_magnitude.filter->resize(_sensor_report_every);
             _magnitudes.push_back(new_magnitude);
 
             DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), _magnitudeTopic(type).c_str(), _counts[type]);
