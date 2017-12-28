@@ -631,6 +631,26 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
+        #elif defined(GENERIC_8CH)
+
+            setSetting("board", 49);
+            setSetting("relayGPIO", 0, 0);
+            setSetting("relayGPIO", 1, 2);
+            setSetting("relayGPIO", 2, 4);
+            setSetting("relayGPIO", 3, 5);
+            setSetting("relayGPIO", 4, 12);
+            setSetting("relayGPIO", 5, 13);
+            setSetting("relayGPIO", 6, 14);
+            setSetting("relayGPIO", 7, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 5, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 6, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 7, RELAY_TYPE_NORMAL);
+
         #else
 
             #error "UNSUPPORTED HARDWARE!"

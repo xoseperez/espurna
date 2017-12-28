@@ -1257,6 +1257,34 @@
     #define LIGHT_ENABLE_PIN    15
 
 // -----------------------------------------------------------------------------
+// Generic 8CH
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_8CH)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "8CH"
+
+    // Relays
+    #define RELAY1_PIN          0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          2
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_PIN          4
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_PIN          5
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY5_PIN          12
+    #define RELAY5_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY6_PIN          13
+    #define RELAY6_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY7_PIN          14
+    #define RELAY7_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY8_PIN          15
+    #define RELAY8_TYPE         RELAY_TYPE_NORMAL
+
+// -----------------------------------------------------------------------------
 // Unknown hardware
 // -----------------------------------------------------------------------------
 

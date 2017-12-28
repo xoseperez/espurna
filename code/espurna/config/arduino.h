@@ -54,6 +54,7 @@
 //#define ARILUX_E27
 //#define XENON_SM_PW702U
 //#define AUTHOMETION_LYT8266
+//#define GENERIC_8CH
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
