@@ -1,4 +1,4 @@
-// SSDPDevice.h
+#if SSDP_SUPPORT // SSDP_SUPPORT
 
 #ifndef _SSDPDEVICE_h
 #define _SSDPDEVICE_h
@@ -194,3 +194,5 @@ public:
 extern SSDPDeviceClass SSDPDevice;
 
 #endif
+
+#endif // SSDP_SUPPORT

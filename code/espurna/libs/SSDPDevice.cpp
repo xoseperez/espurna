@@ -1,6 +1,4 @@
-//
-//
-//
+#if SSDP_SUPPORT
 
 #include "SSDPDevice.h"
 #include "lwip/igmp.h"
@@ -374,3 +372,5 @@ void SSDPDeviceClass::setTTL(const uint8_t ttl) {
 }
 
 SSDPDeviceClass SSDPDevice;
+
+#endif
