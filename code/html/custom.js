@@ -1,6 +1,7 @@
 var websock;
 var password = false;
 var maxNetworks;
+var maxSchedules;
 var messages = [];
 var webhost;
 
@@ -43,7 +44,7 @@ function magnitudeType(type) {
     var types = [
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
-        "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
+        "Reactive Power", "Energy", "Energy (delta)", "Power Factor",
         "Analog", "Digital", "Events",
         "PM1.0", "PM2.5", "PM10", "CO2"
     ];
@@ -100,6 +101,7 @@ function validateForm(form) {
 // These fields will always be a list of values
 var is_group = [
     "ssid", "pass", "gw", "mask", "ip", "dns",
+    "sch_switch","sch_operation","sch_hour","sch_minute","sch_weekdays",
     "relayBoot", "relayPulse", "relayTime",
     "mqttGroup", "mqttGroupInv",
     "dczRelayIdx",
@@ -465,6 +467,39 @@ function moreNetwork() {
 }
 
 // -----------------------------------------------------------------------------
+// Relays scheduler
+// -----------------------------------------------------------------------------
+function delSchedule() {
+    var parent = $(this).parents(".pure-g");
+    $(parent).remove();
+}
+
+function moreSchedule() {
+    var parent = $(this).parents(".pure-g");
+    $("div.more", parent).toggle();
+}
+        
+function addSchedule() {   
+    var numSchedules = $("#schedules > div").length;
+    if (numSchedules >= maxSchedules) {
+        alert("Max number of schedules reached");
+        return;
+    }   
+    var tabindex = 200 + numSchedules * 10;
+    var template = $("#scheduleTemplate").children();
+    var line = $(template).clone(); 
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find(".button-del-schedule").on('click', delSchedule);
+    $(line).find(".button-more-schedule").on('click', moreSchedule);
+    line.appendTo("#schedules");
+    return line;
+}
+
+
+
+// -----------------------------------------------------------------------------
 // Relays
 // -----------------------------------------------------------------------------
 
@@ -817,6 +852,31 @@ function processData(data) {
             return;
         }
 
+        // -----------------------------------------------------------------------------
+        // Relays scheduler
+        // -----------------------------------------------------------------------------
+        if (key == "maxSchedules") {
+            maxSchedules = parseInt(data.maxSchedules);
+            return;
+        }
+
+        if (key == "schedule") {
+            var schedule = data.schedule;
+            for (var i in schedule) {
+                // add a new row
+                var line = addSchedule();
+                // fill in the blanks
+                var schedule = data.schedule[i];
+                Object.keys(schedule).forEach(function(key) {
+                    var element = $("input[name=" + key + "]", line);
+                    if (element.length) element.val(schedule[key]);
+                    var elementsel = $("select[name=" + key + "]", line);
+                    if (elementsel.length) elementsel.prop("value", schedule[key]);
+                });
+            }
+            return;
+        }
+
         // ---------------------------------------------------------------------
         // Relays
         // ---------------------------------------------------------------------
@@ -1036,7 +1096,10 @@ $(function() {
     $(".button-add-network").on('click', function() {
         $(".more", addNetwork()).toggle();
     });
-
+    $(".button-add-schedule").on('click', function() {
+        $("div.more", addSchedule()).toggle();
+    });
+    
     $(document).on('change', 'input', hasChanged);
     $(document).on('change', 'select', hasChanged);
 

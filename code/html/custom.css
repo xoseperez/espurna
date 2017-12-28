@@ -62,16 +62,22 @@
     margin-left: 5px;
 }
 .button-add-network,
+.button-add-schedule,
 .button-rfb-learn {
     background: rgb(28, 184, 65);
 }
-.button-del-network {
+.button-del-network,
+.button-del-schedule, {
     background: rgb(202, 60, 60);
     letter-spacing: 0px;
 }
 .button-more-network,
+.button-more-schedule,
 .button-rfb-send {
     background: rgb(223, 117, 20);
+}
+#schedules input[type=number]{
+    max-width: 55px;
 }
 .button-settings-backup,
 .button-settings-restore {

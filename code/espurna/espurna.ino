@@ -383,6 +383,9 @@ void setup() {
     #if SENSOR_SUPPORT
         sensorSetup();
     #endif
+    #if SCHEDULER_SUPPORT
+        schSetup();
+    #endif
 
     // Prepare configuration for version 2.0
     migrate();
@@ -437,6 +440,9 @@ void loop() {
     #endif
     #if SENSOR_SUPPORT
         sensorLoop();
+    #endif
+    #if SCHEDULER_SUPPORT
+        schLoop();
     #endif
 
     // Power saving delay

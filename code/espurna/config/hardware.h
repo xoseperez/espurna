@@ -39,6 +39,10 @@
     #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+    #define SCHEDULER_SUPPORT   1
+    #define SCH_UPDATE_INTERVAL 30000
+    #define MAX_SCHEDULED       10
+
     // LEDs
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
