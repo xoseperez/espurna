@@ -8,8 +8,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if I2C_SUPPORT
 
-#include <vector>
-std::vector<unsigned char> _i2c_locked;
+unsigned int _i2c_locked[16] = {0};
 
 #if I2C_USE_BRZO
 #include "brzo_i2c.h"
@@ -127,20 +126,20 @@ bool i2cCheck(unsigned char address) {
 }
 
 bool i2cGetLock(unsigned char address) {
-    for (unsigned char i=0; i<_i2c_locked.size(); i++) {
-        if (_i2c_locked[i] == address) return false;
-    }
-    _i2c_locked.push_back(address);
+    unsigned char index = address / 8;
+    unsigned char mask = 1 << (address % 8);
+    if (_i2c_locked[index] & mask) return false;
+    _i2c_locked[index] = _i2c_locked[index] | mask;
     DEBUG_MSG_P(PSTR("[I2C] Address 0x%02X locked\n"), address);
     return true;
 }
 
 bool i2cReleaseLock(unsigned char address) {
-    for (unsigned char i=0; i<_i2c_locked.size(); i++) {
-        if (_i2c_locked[i] == address) {
-            _i2c_locked.erase(_i2c_locked.begin() + i);
-            return true;
-        }
+    unsigned char index = address / 8;
+    unsigned char mask = 1 << (address % 8);
+    if (_i2c_locked[index] & mask) {
+        _i2c_locked[index] = _i2c_locked[index] & ~mask;
+        return true;
     }
     return false;
 }
