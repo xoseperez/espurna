@@ -19,7 +19,7 @@ typedef struct {
     unsigned char pin;          // GPIO pin for the relay
     unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
     unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    unsigned long pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
     unsigned long pulse_ms;     // Pulse length in millis
     unsigned long delay_on;     // Delay to turn relay ON
     unsigned long delay_off;    // Delay to turn relay OFF
@@ -28,9 +28,9 @@ typedef struct {
 
     bool current_status;        // Holds the current (physical) status of the relay
     bool target_status;         // Holds the target status
-    unsigned int fw_start;      // Flood window start time
+    unsigned long fw_start;     // Flood window start time
     unsigned char fw_count;     // Number of changes within the current flood window
-    unsigned int change_time;   // Scheduled time to change
+    unsigned long change_time;  // Scheduled time to change
     bool report;                // Whether to report to own topic
     bool group_report;          // Whether to report to group topic
 
