@@ -2,6 +2,7 @@
 
 ip=
 board=
+size=
 auth=
 flags=
 
@@ -39,8 +40,10 @@ useAvahi() {
     ip_file="/tmp/espurna.flash.ips"
     board_file="/tmp/espurna.flash.boards"
     count_file="/tmp/espurna.flash.count"
+    size_file="/tmp/espurna.flash.size"
     echo -n "" > $ip_file
     echo -n "" > $board_file
+    echo -n "" > $size_file
     echo -n "$counter" > $count_file
 
     avahi-browse -t -r -p  "_arduino._tcp" 2>/dev/null | grep ^= | sort -t ';' -k 3 | while read line; do
@@ -57,9 +60,6 @@ useAvahi() {
         mem_size=`echo $txt | sed -n "s/.*mem_size=\([^\"]*\).*/\1/p"`
         sdk_size=`echo $txt | sed -n "s/.*sdk_size=\([^\"]*\).*/\1/p"`
 
-        echo -n "$ip;" >> $ip_file
-        echo -n "$board;" >> $board_file
-
         echo_pad "$counter" 4
         echo_pad "$hostname" 25
         echo_pad "http://$ip" 25
@@ -70,6 +70,14 @@ useAvahi() {
         echo_pad "$sdk_size" 10
         echo
 
+        echo -n "$ip;" >> $ip_file
+        echo -n "$board;" >> $board_file
+        if [ "$mem_size" == "$sdk_size" ]; then
+            mem_size=`echo $mem_size | head -c 1`
+            echo -n "$mem_size;" >> $size_file
+        else
+            echo -n ";" >> $size_file
+        fi
 
     done
 
@@ -91,6 +99,7 @@ useAvahi() {
     # Fill the fields
     ip=`cat $ip_file | cut -d ';' -f$num`
     board=`cat $board_file | cut -d ';' -f$num`
+    size=`cat $size_file | cut -d ';' -f$num`
 
 }
 
@@ -165,6 +174,15 @@ if [ "$board" == "" ]; then
     exit 2
 fi
 
+if [ "$size" == "" ]; then
+    read -p "Board memory size (1 for 1M, 4 for 4M): " -e size
+fi
+
+if [ "$size" == "" ]; then
+    echo "You must define the board memory size"
+    exit 2
+fi
+
 if [ "$ip" == "" ]; then
     read -p "IP of the device to flash: " -e -i 192.168.4.1 ip
 fi
@@ -182,7 +200,7 @@ if [ "$flags" == "" ]; then
     read -p "Extra flags for the build: " -e -i "" flags
 fi
 
-read -p "Environment to build: " -e -i "esp8266-1m-ota" env
+env="esp8266-${size}m-ota"
 
 echo
 echo "ESPURNA_IP    = $ip"
