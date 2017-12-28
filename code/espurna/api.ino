@@ -14,7 +14,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 typedef struct {
-    char * url;
     char * key;
     api_get_callback_f getFn = NULL;
     api_put_callback_f putFn = NULL;
@@ -116,19 +115,23 @@ void _onAPIs(AsyncWebServerRequest *request) {
 
     bool asJson = _asJson(request);
 
+    char buffer[40];
+
     String output;
     if (asJson) {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
         for (unsigned int i=0; i < _apis.size(); i++) {
-            root[_apis[i].key] = _apis[i].url;
+            snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), _apis[i].key);
+            root[_apis[i].key] = String(buffer);
         }
         root.printTo(output);
         request->send(200, "application/json", output);
 
     } else {
         for (unsigned int i=0; i < _apis.size(); i++) {
-            output += _apis[i].key + String(" -> ") + _apis[i].url + String("\n");
+            snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), _apis[i].key);
+            output += _apis[i].key + String(" -> ") + String(buffer) + String("\n");
         }
         request->send(200, "text/plain", output);
     }
@@ -162,13 +165,12 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 // -----------------------------------------------------------------------------
 
-void apiRegister(const char * url, const char * key, api_get_callback_f getFn, api_put_callback_f putFn) {
+void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn) {
 
     // Store it
     web_api_t api;
     char buffer[40];
-    snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), url);
-    api.url = strdup(buffer);
+    snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), key);
     api.key = strdup(key);
     api.getFn = getFn;
     api.putFn = putFn;

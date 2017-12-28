@@ -724,7 +724,7 @@ void _lightAPISetup() {
     if (_light_has_color) {
 
 		// DEPRECATE
-        apiRegister(MQTT_TOPIC_COLOR, MQTT_TOPIC_COLOR,
+        apiRegister(MQTT_TOPIC_COLOR,
             [](char * buffer, size_t len) {
                 if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
                     _toRGB(buffer, len, false);
@@ -738,7 +738,7 @@ void _lightAPISetup() {
             }
         );
 
-        apiRegister(MQTT_TOPIC_COLOR_RGB, MQTT_TOPIC_COLOR_RGB,
+        apiRegister(MQTT_TOPIC_COLOR_RGB,
             [](char * buffer, size_t len) {
                 if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
                     _toRGB(buffer, len, false);
@@ -752,7 +752,7 @@ void _lightAPISetup() {
             }
         );
 
-        apiRegister(MQTT_TOPIC_COLOR_HSV, MQTT_TOPIC_COLOR_HSV,
+        apiRegister(MQTT_TOPIC_COLOR_HSV,
             [](char * buffer, size_t len) {
                 _toHSV(buffer, len);
             },
@@ -762,7 +762,7 @@ void _lightAPISetup() {
             }
         );
 
-        apiRegister(MQTT_TOPIC_BRIGHTNESS, MQTT_TOPIC_BRIGHTNESS,
+        apiRegister(MQTT_TOPIC_BRIGHTNESS,
             [](char * buffer, size_t len) {
     			snprintf_P(buffer, len, PSTR("%d"), _light_brightness);
             },
@@ -772,7 +772,7 @@ void _lightAPISetup() {
             }
         );
 
-        apiRegister(MQTT_TOPIC_KELVIN, MQTT_TOPIC_KELVIN,
+        apiRegister(MQTT_TOPIC_KELVIN,
             [](char * buffer, size_t len) {},
             [](const char * payload) {
                 _fromKelvin(atol(payload));
@@ -780,7 +780,7 @@ void _lightAPISetup() {
             }
         );
 
-        apiRegister(MQTT_TOPIC_MIRED, MQTT_TOPIC_MIRED,
+        apiRegister(MQTT_TOPIC_MIRED,
             [](char * buffer, size_t len) {},
             [](const char * payload) {
                 _fromMireds(atol(payload));
@@ -792,13 +792,10 @@ void _lightAPISetup() {
 
     for (unsigned int id=0; id<lightChannels(); id++) {
 
-        char url[15];
-        snprintf_P(url, sizeof(url), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
+        char key[15];
+        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_CHANNEL, id);
 
-        char key[10];
-        snprintf_P(key, sizeof(key), PSTR("%s%d"), MQTT_TOPIC_CHANNEL, id);
-
-        apiRegister(url, key,
+        apiRegister(key,
             [id](char * buffer, size_t len) {
 				snprintf_P(buffer, len, PSTR("%d"), lightChannel(id));
             },

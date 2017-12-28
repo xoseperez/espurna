@@ -161,7 +161,7 @@ void _sensorAPISetup() {
         String topic = _magnitudeTopic(magnitude.type);
         if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) topic = topic + "/" + String(magnitude.global);
 
-        apiRegister(topic.c_str(), topic.c_str(), [magnitude_id](char * buffer, size_t len) {
+        apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
             unsigned char decimals = _magnitudeDecimals(magnitude.type);
             double value = _sensor_realtime ? magnitude.current : magnitude.filtered;

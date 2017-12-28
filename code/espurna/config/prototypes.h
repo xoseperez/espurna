@@ -18,7 +18,7 @@ AsyncWebServer * webServer();
 // -----------------------------------------------------------------------------
 typedef std::function<void(char *, size_t)> api_get_callback_f;
 typedef std::function<void(const char *)> api_put_callback_f;
-void apiRegister(const char * url, const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
+void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
 
 // -----------------------------------------------------------------------------
 // WebSockets

@@ -476,13 +476,10 @@ void relaySetupAPI() {
     // API entry points (protected with apikey)
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
 
-        char url[15];
-        snprintf_P(url, sizeof(url), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
+        char key[15];
+        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
 
-        char key[10];
-        snprintf_P(key, sizeof(key), PSTR("%s%d"), MQTT_TOPIC_RELAY, relayID);
-
-        apiRegister(url, key,
+        apiRegister(key,
             [relayID](char * buffer, size_t len) {
 				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
             },
