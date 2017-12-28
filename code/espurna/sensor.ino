@@ -183,7 +183,7 @@ void _sensorPre() {
     for (unsigned char i=0; i<_sensors.size(); i++) {
         _sensors[i]->pre();
         if (!_sensors[i]->status()) {
-            DEBUG_MSG("[SENSOR] Error reading data from %s (error: %d)\n",
+            DEBUG_MSG_P(PSTR("[SENSOR] Error reading data from %s (error: %d)\n"),
                 _sensors[i]->description().c_str(),
                 _sensors[i]->error()
             );
@@ -454,8 +454,8 @@ void _magnitudesInit() {
 
         BaseSensor * sensor = _sensors[i];
 
-        DEBUG_MSG("[SENSOR] %s\n", sensor->description().c_str());
-        if (sensor->error() != 0) DEBUG_MSG("[SENSOR]  -> ERROR %d\n", sensor->error());
+        DEBUG_MSG_P(PSTR("[SENSOR] %s\n"), sensor->description().c_str());
+        if (sensor->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), sensor->error());
 
         for (unsigned char k=0; k<sensor->count(); k++) {
 
@@ -479,7 +479,7 @@ void _magnitudesInit() {
             }
             _magnitudes.push_back(new_magnitude);
 
-            DEBUG_MSG("[SENSOR]  -> %s:%d\n", _magnitudeTopic(type).c_str(), _counts[type]);
+            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), _magnitudeTopic(type).c_str(), _counts[type]);
 
             _counts[type] = _counts[type] + 1;
 
@@ -595,7 +595,7 @@ void sensorLoop() {
                 #if SENSOR_DEBUG
                 {
                     dtostrf(current, 1-sizeof(buffer), decimals, buffer);
-                    DEBUG_MSG("[SENSOR] %s - %s: %s%s\n",
+                    DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         _magnitudeTopic(magnitude.type).c_str(),
                         buffer,

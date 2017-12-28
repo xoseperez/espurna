@@ -185,7 +185,7 @@ void EventSensor::_attach(EventSensor * instance, unsigned char gpio, unsigned c
     _event_sensor_instance[index] = instance;
     attachInterrupt(gpio, _event_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG("[SENSOR] GPIO%d interrupt attached to %s\n", gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -195,7 +195,7 @@ void EventSensor::_detach(unsigned char gpio) {
     if (_event_sensor_instance[index]) {
         detachInterrupt(gpio);
         #if SENSOR_DEBUG
-            DEBUG_MSG("[SENSOR] GPIO%d interrupt detached from %s\n", gpio, _event_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _event_sensor_instance[index]->description().c_str());
         #endif
         _event_sensor_instance[index] = NULL;
     }

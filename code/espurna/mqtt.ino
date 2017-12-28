@@ -65,7 +65,7 @@ bool mqttConnected() {
 
 void mqttDisconnect() {
     if (_mqtt.connected()) {
-        DEBUG_MSG_P("[MQTT] Disconnecting\n");
+        DEBUG_MSG_P(PSTR("[MQTT] Disconnecting\n"));
         _mqtt.disconnect();
     }
 }
@@ -148,7 +148,7 @@ void mqttSend(const char * topic, const char * message, bool force) {
         element.message = strdup(message);
         _mqtt_queue.push_back(element);
         _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
-        
+
     } else {
         String path = _mqtt_topic + String(topic) + _mqtt_getter;
         mqttSendRaw(path.c_str(), message);

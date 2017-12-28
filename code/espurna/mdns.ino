@@ -16,9 +16,9 @@ WiFiEventHandler _mdns_wifi_onAP;
 #if MQTT_SUPPORT
 void mdnsFindMQTT() {
     int count = MDNS.queryService("mqtt", "tcp");
-    DEBUG_MSG_P("[MQTT] MQTT brokers found: %d\n", count);
+    DEBUG_MSG_P(PSTR("[MQTT] MQTT brokers found: %d\n"), count);
     for (int i=0; i<count; i++) {
-        DEBUG_MSG_P("[MQTT] Broker at %s:%d\n", MDNS.IP(i).toString().c_str(), MDNS.port(i));
+        DEBUG_MSG_P(PSTR("[MQTT] Broker at %s:%d\n"), MDNS.IP(i).toString().c_str(), MDNS.port(i));
         mqttSetBrokerIfNone(MDNS.IP(i), MDNS.port(i));
     }
 }

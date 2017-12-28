@@ -248,4 +248,4 @@ class BMX280Sensor : public I2CSensor {
 
 unsigned char BMX280Sensor::addresses[2] = {0x76, 0x77};
 
-// SENSOR_SUPPORT && BMX280_SUPPORT
+#endif // SENSOR_SUPPORT && BMX280_SUPPORT

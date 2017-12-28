@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT
+
 #pragma once
 
 #include "BaseFilter.h"
@@ -58,3 +60,5 @@ class MedianFilter : public BaseFilter {
         }
 
 };
+
+#endif // SENSOR_SUPPORT

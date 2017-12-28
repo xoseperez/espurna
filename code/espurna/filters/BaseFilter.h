@@ -3,6 +3,8 @@
 // Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+#if SENSOR_SUPPORT
+
 #pragma once
 
 #include <vector>
@@ -46,3 +48,5 @@ class BaseFilter {
         std::vector<double> _data;
 
 };
+
+#endif // SENSOR_SUPPORT

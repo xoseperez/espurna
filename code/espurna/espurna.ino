@@ -204,56 +204,60 @@ void welcome() {
         DEBUG_MSG_P(PSTR(" WEB"));
     #endif
 
-    DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
+    #if SENSOR_SUPPORT
 
-    #if ANALOG_SUPPORT
-        DEBUG_MSG_P(PSTR(" ANALOG"));
-    #endif
-    #if BMX280_SUPPORT
-        DEBUG_MSG_P(PSTR(" BMX280"));
-    #endif
-    #if DALLAS_SUPPORT
-        DEBUG_MSG_P(PSTR(" DALLAS"));
-    #endif
-    #if DHT_SUPPORT
-        DEBUG_MSG_P(PSTR(" DHTXX"));
-    #endif
-    #if DIGITAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" DIGITAL"));
-    #endif
-    #if ECH1560_SUPPORT
-        DEBUG_MSG_P(PSTR(" ECH1560"));
-    #endif
-    #if EMON_ADC121_SUPPORT
-        DEBUG_MSG_P(PSTR(" EMON_ADC121"));
-    #endif
-    #if EMON_ADS1X15_SUPPORT
-        DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
-    #endif
-    #if EMON_ANALOG_SUPPORT
-        DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
-    #endif
-    #if EVENTS_SUPPORT
-        DEBUG_MSG_P(PSTR(" EVENTS"));
-    #endif
-    #if HLW8012_SUPPORT
-        DEBUG_MSG_P(PSTR(" HLW8012"));
-    #endif
-    #if MHZ19_SUPPORT
-        DEBUG_MSG_P(PSTR(" MHZ19"));
-    #endif
-    #if PMSX003_SUPPORT
-        DEBUG_MSG_P(PSTR(" PMSX003"));
-    #endif
-    #if SHT3X_I2C_SUPPORT
-        DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
-    #endif
-    #if SI7021_SUPPORT
-        DEBUG_MSG_P(PSTR(" SI7021"));
-    #endif
-    #if V9261F_SUPPORT
-        DEBUG_MSG_P(PSTR(" V9261F"));
-    #endif
+        DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
+
+        #if ANALOG_SUPPORT
+            DEBUG_MSG_P(PSTR(" ANALOG"));
+        #endif
+        #if BMX280_SUPPORT
+            DEBUG_MSG_P(PSTR(" BMX280"));
+        #endif
+        #if DALLAS_SUPPORT
+            DEBUG_MSG_P(PSTR(" DALLAS"));
+        #endif
+        #if DHT_SUPPORT
+            DEBUG_MSG_P(PSTR(" DHTXX"));
+        #endif
+        #if DIGITAL_SUPPORT
+            DEBUG_MSG_P(PSTR(" DIGITAL"));
+        #endif
+        #if ECH1560_SUPPORT
+            DEBUG_MSG_P(PSTR(" ECH1560"));
+        #endif
+        #if EMON_ADC121_SUPPORT
+            DEBUG_MSG_P(PSTR(" EMON_ADC121"));
+        #endif
+        #if EMON_ADS1X15_SUPPORT
+            DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
+        #endif
+        #if EMON_ANALOG_SUPPORT
+            DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
+        #endif
+        #if EVENTS_SUPPORT
+            DEBUG_MSG_P(PSTR(" EVENTS"));
+        #endif
+        #if HLW8012_SUPPORT
+            DEBUG_MSG_P(PSTR(" HLW8012"));
+        #endif
+        #if MHZ19_SUPPORT
+            DEBUG_MSG_P(PSTR(" MHZ19"));
+        #endif
+        #if PMSX003_SUPPORT
+            DEBUG_MSG_P(PSTR(" PMSX003"));
+        #endif
+        #if SHT3X_I2C_SUPPORT
+            DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
+        #endif
+        #if SI7021_SUPPORT
+            DEBUG_MSG_P(PSTR(" SI7021"));
+        #endif
+        #if V9261F_SUPPORT
+            DEBUG_MSG_P(PSTR(" V9261F"));
+        #endif
+
+    #endif // SENSOR_SUPPORT
 
     DEBUG_MSG_P(PSTR("\n\n"));
 
