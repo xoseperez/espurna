@@ -6,7 +6,7 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-bool _gpio_locked[16] = {false};
+unsigned int _gpio_locked = 0;
 
 bool gpioValid(unsigned char gpio) {
     if (0 <= gpio && gpio <= 5) return true;
@@ -16,8 +16,9 @@ bool gpioValid(unsigned char gpio) {
 
 bool gpioGetLock(unsigned char gpio) {
     if (gpioValid(gpio)) {
-        if (!_gpio_locked[gpio]) {
-            _gpio_locked[gpio] = true;
+        unsigned int mask = 1 << gpio;
+        if ((_gpio_locked & mask) == 0) {
+            _gpio_locked |= mask;
             DEBUG_MSG_P(PSTR("[GPIO] GPIO%d locked\n"), gpio);
             return true;
         }
@@ -28,7 +29,8 @@ bool gpioGetLock(unsigned char gpio) {
 
 bool gpioReleaseLock(unsigned char gpio) {
     if (gpioValid(gpio)) {
-        _gpio_locked[gpio] = false;
+        unsigned int mask = 1 << gpio;
+        _gpio_locked &= ~mask;
         DEBUG_MSG_P(PSTR("[GPIO] GPIO%d lock released\n"), gpio);
         return true;
     }
