@@ -35,6 +35,9 @@ WiFiClientSecure _mqtt_client_secure;
 bool _mqtt_enabled = MQTT_ENABLED;
 bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
+unsigned char _mqtt_qos = MQTT_QOS;
+bool _mqtt_retain = MQTT_RETAIN;
+unsigned char _mqtt_keepalive = MQTT_KEEPALIVE;
 String _mqtt_topic;
 String _mqtt_setter;
 String _mqtt_getter;
@@ -86,10 +89,10 @@ String mqttSubtopic(char * topic) {
 void mqttSendRaw(const char * topic, const char * message) {
     if (_mqtt.connected()) {
         #if MQTT_USE_ASYNC
-            unsigned int packetId = _mqtt.publish(topic, MQTT_QOS, MQTT_RETAIN, message);
+            unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, _mqtt_retain, message);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
         #else
-            _mqtt.publish(topic, message, MQTT_RETAIN);
+            _mqtt.publish(topic, message, _mqtt_retain);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
     }
@@ -172,10 +175,10 @@ void mqttSend(const char * topic, unsigned int index, const char * message) {
 void mqttSubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
         #if MQTT_USE_ASYNC
-            unsigned int packetId = _mqtt.subscribe(topic, MQTT_QOS);
+            unsigned int packetId = _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
         #else
-            _mqtt.subscribe(topic, MQTT_QOS);
+            _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
         #endif
     }
@@ -214,6 +217,9 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
     root["mqttUser"] = getSetting("mqttUser");
     root["mqttPassword"] = getSetting("mqttPassword");
+    root["mqttKeep"] = _mqtt_keepalive;
+    root["mqttRetain"] = _mqtt_retain;
+    root["mqttQOS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
         root["mqttsslVisible"] = 1;
         root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
@@ -385,8 +391,8 @@ void mqttConnect() {
     #if MQTT_USE_ASYNC
 
         _mqtt.setServer(host, port);
-        _mqtt.setKeepAlive(MQTT_KEEPALIVE).setCleanSession(false);
-        _mqtt.setWill(_mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
+        _mqtt.setKeepAlive(_mqtt_keepalive).setCleanSession(false);
+        _mqtt.setWill(_mqtt_will, _mqtt_qos, _mqtt_retain, "0");
         if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
             DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
             _mqtt.setCredentials(_mqtt_user, _mqtt_pass);
@@ -409,8 +415,8 @@ void mqttConnect() {
         #endif // ASYNC_TCP_SSL_ENABLED
 
         DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
-        DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
-        DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
+        DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
+        DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
 
         _mqtt.connect();
 
@@ -459,14 +465,14 @@ void mqttConnect() {
 
             if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
                 DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
-                response = _mqtt.connect(getIdentifier().c_str(), _mqtt_user, _mqtt_pass, _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
+                response = _mqtt.connect(getIdentifier().c_str(), _mqtt_user, _mqtt_pass, _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
             } else {
-				response = _mqtt.connect(getIdentifier().c_str(), _mqtt_will, MQTT_QOS, MQTT_RETAIN, "0");
+				response = _mqtt.connect(getIdentifier().c_str(), _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
             }
 
             DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
-            DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
-            DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), MQTT_RETAIN);
+            DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
+            DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
 
         }
 
@@ -493,6 +499,11 @@ void mqttConfigure() {
     _mqtt_setter = getSetting("mqttSetter", MQTT_USE_SETTER);
     _mqtt_getter = getSetting("mqttGetter", MQTT_USE_GETTER);
     _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter);
+
+    // MQTT options
+    _mqtt_qos = getSetting("mqttQOS", MQTT_QOS).toInt();
+    _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
+    _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
 
     // Enable
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {

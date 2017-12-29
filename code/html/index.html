@@ -561,9 +561,29 @@
                                     <input class="pure-u-1 pure-u-lg-1-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no pass" autocomplete="false" />
                                 </div>
 
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">MQTT QOS</label>
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="mqttQOS">
+                                        <option value="0">0: At most once</option>
+                                        <option value="1">1: At least once</option>
+                                        <option value="2">2: Exactly once</option>
+                                    </select>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">MQTT Retain</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttRetain" tabindex="25" /></div>
+                                </div>
+
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">MQTT Keep Alive</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="number" name="mqttKeep" min="10" max="60" tabindex="25" /></div>
+                                </div>
+
                                 <div class="pure-g module module-mqttssl">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use secure connection (SSL)</label></div>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttUseSSL" tabindex="25" /></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use secure connection (SSL)</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttUseSSL" tabindex="26" /></div>
                                 </div>
 
                                 <div class="pure-g module module-mqttssl">
