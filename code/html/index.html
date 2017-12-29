@@ -268,6 +268,8 @@
                                         <option value="0">MQTT managed</option>
                                         <option value="4">Find me</option>
                                         <option value="5">Mixed</option>
+                                        <option value="6">Always ON</option>
+                                        <option value="7">Always OFF</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -276,7 +278,8 @@
                                         When in "WiFi status" it will blink at 1Hz when trying to connecting. If successfully connected if will briefly lit every 5 seconds if in STA mode or every second if in AP mode.<br />
                                         When in "MQTT managed" mode you will be able to set the LED state sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).<br />
                                         When in "Find me" mode the LED will be ON when all relays are OFF. This is meant to locate switches at night.<br />
-                                        When in "Mixed" mode it will follow the WiFi status but will stay mostly on when relays are OFF, and mostly OFF when any of them is ON.
+                                        When in "Mixed" mode it will follow the WiFi status but will stay mostly on when relays are OFF, and mostly OFF when any of them is ON.<br />
+                                        "Always ON" and "Always OFF" modes are self-explanatory.
                                     </div>
                                 </div>
 

@@ -264,6 +264,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LED_MODE_FOLLOW_INVERSE 3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
 #define LED_MODE_FINDME         4       // LED will be ON if all relays are OFF
 #define LED_MODE_MIXED          5       // A mixed between WIFI and FINDME
+#define LED_MODE_ON             6       // LED always ON
+#define LED_MODE_OFF            7       // LED always OFF
 
 // -----------------------------------------------------------------------------
 // WIFI

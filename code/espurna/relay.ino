@@ -747,6 +747,9 @@ void relayLoop(void) {
                 relayInfluxDB(id);
             #endif
 
+            // Flag relay-based LEDs to update status
+            ledUpdate(true);
+
             _relays[id].report = false;
             _relays[id].group_report = false;
 
