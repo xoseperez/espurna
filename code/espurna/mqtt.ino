@@ -219,7 +219,7 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
-    root["mqttQOS"] = _mqtt_qos;
+    root["mqttQoS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
         root["mqttsslVisible"] = 1;
         root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
@@ -501,7 +501,7 @@ void mqttConfigure() {
     _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter);
 
     // MQTT options
-    _mqtt_qos = getSetting("mqttQOS", MQTT_QOS).toInt();
+    _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
     _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
     _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
 

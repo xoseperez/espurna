@@ -562,8 +562,8 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">MQTT QOS</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="mqttQOS">
+                                    <label class="pure-u-1 pure-u-lg-1-4">MQTT QoS</label>
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="mqttQoS">
                                         <option value="0">0: At most once</option>
                                         <option value="1">1: At least once</option>
                                         <option value="2">2: Exactly once</option>
@@ -575,10 +575,9 @@
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttRetain" tabindex="25" /></div>
                                 </div>
 
-
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Keep Alive</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="number" name="mqttKeep" min="10" max="60" tabindex="25" /></div>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="number" name="mqttKeep" min="10" max="60" tabindex="25" />
                                 </div>
 
                                 <div class="pure-g module module-mqttssl">
