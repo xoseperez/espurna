@@ -78,23 +78,8 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
 
-    #ifdef USE_TOUCH_BUTTON
-
-        // Touch button
-        #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-        #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-        #define BUTTON1_CLICK           BUTTON_MODE_NONE
-        #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
-
-    #else
-
-        // Normal pushbutton
-        #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-
-    #endif
-
+    // Normal pushbutton
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -122,22 +107,8 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
 
-    #ifdef USE_TOUCH_BUTTON
-
-        // Touch button
-        #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-        #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-        #define BUTTON1_CLICK           BUTTON_MODE_NONE
-        #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
-
-    #else
-
-        // Normal pushbutton
-        #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-
-    #endif
+    // Normal pushbutton
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -154,6 +125,32 @@
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
+
+#elif defined(TINKERMAN_ESPURNA_SWITCH)
+
+    // Info
+    #define MANUFACTURER        "TINKERMAN"
+    #define DEVICE              "ESPURNA_SWITCH"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_RELAY       1
+
+    // Touch button
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK           BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
