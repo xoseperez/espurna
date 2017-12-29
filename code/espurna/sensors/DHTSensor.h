@@ -137,23 +137,24 @@ class DHTSensor : public BaseSensor {
             pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
-            delayMicroseconds(500);
+            delayMicroseconds(_type == DHT_CHIP_DHT11 ? 20000 : 500);
             digitalWrite(_gpio, HIGH);
             delayMicroseconds(40);
             pinMode(_gpio, INPUT_PULLUP);
+            delayMicroseconds(10);
 
         	// No errors, read the 40 data bits
         	for( int k = 0; k < 41; k++ ) {
 
         		// Starts new data transmission with >50us low signal
-        		low = _signal(56, LOW);
+        		low = _signal(100, LOW);
         		if (low == 0) {
                     _error = SENSOR_ERROR_TIMEOUT;
                     return;
                 }
 
         		// Check to see if after >70us rx data is a 0 or a 1
-        		high = _signal(75, HIGH);
+        		high = _signal(100, HIGH);
                 if (high == 0) {
                     _error = SENSOR_ERROR_TIMEOUT;
                     return;
@@ -219,7 +220,7 @@ class DHTSensor : public BaseSensor {
 
         unsigned char _gpio;
         unsigned char _previous = 0xFF;
-        unsigned char _type;
+        unsigned char _type = DHT_CHIP_DHT22;
 
         unsigned long _last_ok = 0;
         unsigned char _errors = 0;
