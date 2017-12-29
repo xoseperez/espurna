@@ -64,6 +64,32 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+#elif defined(GENERIC_FASTLED)
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "FASTLED"
+
+    // Buttons
+    #define BUTTON1_PIN             13  // Connect a pushbutton between D3 and GND,
+                                        // it's the same as using a Wemos one button shield
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY_PROVIDER          RELAY_PROVIDER_LIGHT
+    #define DUMMY_RELAY_COUNT       1
+
+    // LEDs
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
+
+    #define LIGHT_PROVIDER          LIGHT_PROVIDER_FASTLED
+    #define LIGHT_FASTLED_TYPE      WS2812B
+    #define LIGHT_FASTLED_ORDER     RGB
+    #define LIGHT_FASTLED_NUM       41
+    #define LIGHT_FASTLED_DATA_PIN  5
+
 // -----------------------------------------------------------------------------
 // ESPurna
 // -----------------------------------------------------------------------------

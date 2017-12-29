@@ -683,6 +683,17 @@ void migrate() {
             setSetting("chLogic", 4, 0);
             setSetting("relays", 1);
 
+        #elif defined(GENERIC_FASTLED)
+
+            setSetting("board", 51);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_FASTLED);
+            setSetting("dataGPIO", 0, 5);
+            //setSetting("ledType", WS2812B);
+            //setSetting("ledOrder", RGB);
+            setSetting("ledCount", 41);
+            setSetting("relays", 1);
+
         #else
 
             #error "UNSUPPORTED HARDWARE!"

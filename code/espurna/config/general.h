@@ -506,6 +506,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_PROVIDER_NONE     0
 #define LIGHT_PROVIDER_MY92XX   1 // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER   2
+#define LIGHT_PROVIDER_FASTLED  3
 
 // LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
 // They have to be defined for each device in the hardware.h file.
@@ -524,15 +525,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 
 #ifndef LIGHT_MAX_PWM
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #define LIGHT_MAX_PWM           255
-#endif
-
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#undef  LIGHT_MAX_PWM
 #define LIGHT_MAX_PWM           10000        // 5000 * 200ns => 1 kHz
 #endif
-
 #endif // LIGHT_MAX_PWM
 
 #ifndef LIGHT_LIMIT_PWM
@@ -554,6 +551,31 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
 #define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
 #define LIGHT_TRANSITION_STEPS  50          // Number of steps to acomplish transition
+
+// -----------------------------------------------------------------------------
+
+#ifndef LIGHT_FASTLED_TYPE
+#define LIGHT_FASTLED_TYPE      NEOPIXEL    // LED chipset
+#endif
+
+#ifndef LIGHT_FASTLED_NUM
+#define LIGHT_FASTLED_NUM       10          // Number of LEDs
+#endif
+
+#ifndef LIGHT_FASTLED_DATA_PIN
+#define LIGHT_FASTLED_DATA_PIN  4          // Data GPIO
+#endif
+
+//#define LIGHT_FASTLED_CLOCK_PIN 2           // Clock GPIO, only for SPI based chipsets
+
+#ifndef LIGHT_FASTLED_ORDER
+#define LIGHT_FASTLED_ORDER     GRB         // Channel order
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
+#undef LIGHT_CHANNELS
+#define LIGHT_CHANNELS          3
+#endif
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

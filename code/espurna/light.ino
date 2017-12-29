@@ -12,13 +12,6 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
-extern "C" {
-    #include "libs/pwm.h"
-}
-#endif
-
 // -----------------------------------------------------------------------------
 
 Ticker _light_save_ticker;
@@ -45,6 +38,18 @@ unsigned int _light_brightness = LIGHT_MAX_BRIGHTNESS;
 #include <my92xx.h>
 my92xx * _my92xx;
 ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
+extern "C" {
+    #include "libs/pwm.h"
+}
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
+#include <FastLED.h>
+CRGB _fastleds[LIGHT_FASTLED_NUM];
 #endif
 
 // Gamma Correction lookup table (8 bit)
@@ -410,6 +415,15 @@ void _lightProviderUpdate() {
         }
         _my92xx->setState(true);
         _my92xx->update();
+
+    #endif
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
+
+        for (CRGB & pixel : _fastleds) {
+            pixel = CRGB(_toPWM(0), _toPWM(1), _toPWM(2));
+        }
+        FastLED.show();
 
     #endif
 
@@ -865,6 +879,24 @@ void lightSetup() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
+        for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
+            _light_channel.push_back((channel_t) {0, false, 0, 0, 0});
+        }
+
+    #endif
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
+
+        #if LIGHT_FASTLED_TYPE == NEOPIXEL
+            FastLED.addLeds<LIGHT_FASTLED_TYPE, LIGHT_FASTLED_DATA_PIN>(_fastleds, LIGHT_FASTLED_NUM);
+        #else
+            #ifdef LIGHT_FASTLED_CLOCK_PIN
+                FastLED.addLeds<LIGHT_FASTLED_TYPE, LIGHT_FASTLED_DATA_PIN, LIGHT_FASTLED_CLOCK_PIN, LIGHT_FASTLED_ORDER>(_fastleds, LIGHT_FASTLED_NUM);
+            #else
+                FastLED.addLeds<LIGHT_FASTLED_TYPE, LIGHT_FASTLED_DATA_PIN, LIGHT_FASTLED_ORDER>(_fastleds, LIGHT_FASTLED_NUM);
+            #endif // LIGHT_FASTLED_CLOCK_PIN
+        #endif // LIGHT_FASTLED_TYPE == NEOPIXEL
+
         for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
             _light_channel.push_back((channel_t) {0, false, 0, 0, 0});
         }
