@@ -3,6 +3,15 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.11.1] 2017-12-29
+### Fixed
+- Fixed relay status on reboot
+
+### Added
+- Added support for Arilux AL-LC01 and AL-LC11
+- Added support for BH1750 luminosity sensor
+- Added automatic memory size identification in ota_flash script
+
 ## [1.11.0] 2017-12-28
 ### Fixed
 - Fixed Arduino IDE compilation issues (#330)

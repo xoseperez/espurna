@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.11.0**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+> **Current Release Version is 1.11.1**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 > **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
 
@@ -54,6 +54,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **Dallas OneWire sensors** like the DS18B20 (supports celsius & fahrenheit reporting)
         * **MHZ19** CO2 sensor
         * **PMSX003** dust sensor
+        * **BH1750** luminosity sensor
     * Power monitoring
         * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
         * Non-invasive **current sensor** using **internal ADC** or **ADC121** or **ADS1115**
@@ -137,7 +138,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC06, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
+**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
 
 ## License
 
