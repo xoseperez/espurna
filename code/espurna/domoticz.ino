@@ -35,7 +35,20 @@ bool _domoticzSkip(unsigned long idx) {
     return false;
 }
 
+void _domoticzMqttSubscribe(bool value) {
+
+    String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+    if (value) {
+        mqttSubscribeRaw(dczTopicOut.c_str());
+    } else {
+        mqttUnsubscribeRaw(dczTopicOut.c_str());
+    }
+
+}
+
 void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) {
+
+    if (!_dcz_enabled) return;
 
     String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
@@ -44,8 +57,6 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
-        if (!_dcz_enabled) return;
 
         // Check topic
         if (dczTopicOut.equals(topic)) {
@@ -107,6 +118,7 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
 void _domoticzConfigure() {
     _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     _dcz_skip_time = 1000 * getSetting("dczSkip", DOMOTICZ_SKIP_TIME).toInt();
+    _domoticzMqttSubscribe(_dcz_enabled);
 }
 
 //------------------------------------------------------------------------------
