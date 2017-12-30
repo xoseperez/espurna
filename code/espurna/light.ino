@@ -12,6 +12,12 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+extern "C" {
+    #include "libs/pwm.h"
+}
+#endif
+
 // -----------------------------------------------------------------------------
 
 Ticker _light_save_ticker;

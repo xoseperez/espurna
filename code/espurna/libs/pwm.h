@@ -9,7 +9,7 @@
  /*NOTE!!  : DO NOT CHANGE THIS FILE*/
 
  /*SUPPORT UP TO 8 PWM CHANNEL*/
-//#define PWM_CHANNEL_NUM_MAX 8 
+#define PWM_CHANNEL_NUM_MAX 8 
 
 struct pwm_param {
     uint32 period;

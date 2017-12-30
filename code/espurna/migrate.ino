@@ -696,7 +696,8 @@ void migrate() {
 
         #else
 
-            #error "UNSUPPORTED HARDWARE!"
+            // Allow users to define new settings without migration config
+            //#error "UNSUPPORTED HARDWARE!"
 
         #endif
 

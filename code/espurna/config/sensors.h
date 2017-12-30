@@ -158,7 +158,7 @@
 #endif
 
 #ifndef DALLAS_PIN
-#define DALLAS_PIN                      13
+#define DALLAS_PIN                      14
 #endif
 
 #define DALLAS_RESOLUTION               9        // Not used atm
@@ -174,7 +174,7 @@
 #endif
 
 #ifndef DHT_PIN
-#define DHT_PIN                         13
+#define DHT_PIN                         14
 #endif
 
 #ifndef DHT_TYPE
