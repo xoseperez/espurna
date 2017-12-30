@@ -43,7 +43,7 @@
 #endif
 
 #include <c_types.h>
-#include <libs/pwm.h>
+#include <pwm.h>
 #include <eagle_soc.h>
 #include <ets_sys.h>
 
