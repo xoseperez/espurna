@@ -54,6 +54,32 @@ Ticker _rfbTicker;
 // PRIVATES
 // -----------------------------------------------------------------------------
 
+/*
+ From an hexa char array ("A220EE...") to a byte array (half the size)
+ */
+static int _rfbToArray(const char * in, byte * out, int length = RF_MESSAGE_SIZE * 2) {
+    int n = strlen(in);
+    if (n > RF_MAX_MESSAGE_SIZE*2 || (length > 0 && n != length)) return 0;
+    char tmp[3] = {0,0,0};
+    n /= 2;
+    for (unsigned char p = 0; p<n; p++) {
+        memcpy(tmp, &in[p*2], 2);
+        out[p] = strtol(tmp, NULL, 16);
+    }
+    return n;
+}
+
+/*
+ From a byte array to an hexa char array ("A220EE...", double the size)
+ */
+static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
+    for (unsigned char p = 0; p<n; p++) {
+        sprintf_P(&out[p*2], PSTR("%02X"), in[p]);
+    }
+    return true;
+}
+
+
 void _rfbWebSocketOnSend(JsonObject& root) {
     root["rfbVisible"] = 1;
     root["rfbCount"] = relayCount();
@@ -160,7 +186,7 @@ void _rfbSend(byte * code, int times) {
 #ifdef RF_RAW_SUPPORT
 void _rfbSendRawOnce(byte *code, int length) {
     char buffer[length*2];
-    _rfbToChar(code, buffer);
+    _rfbToChar(code, buffer, length);
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending raw MESSAGE '%s'\n"), buffer);
 
     _rfbSendRaw(code, length);
@@ -298,31 +324,6 @@ bool _rfbSameOnOff(unsigned char id) {
     return _rfbCompare(rfbRetrieve(id, true).c_str(), rfbRetrieve(id, false).c_str());
 }
 
-/*
-From an hexa char array ("A220EE...") to a byte array (half the size)
- */
-int _rfbToArray(const char * in, byte * out, int length = RF_MESSAGE_SIZE * 2) {
-    int n = strlen(in);
-    if (n > RF_MAX_MESSAGE_SIZE*2 || (length > 0 && n != length)) return 0;
-    char tmp[3] = {0,0,0};
-    n /= 2;
-    for (unsigned char p = 0; p<n; p++) {
-        memcpy(tmp, &in[p*2], 2);
-        out[p] = strtol(tmp, NULL, 16);
-    }
-    return n;
-}
-
-/*
-From a byte array to an hexa char array ("A220EE...", double the size)
- */
-bool _rfbToChar(byte * in, char * out) {
-    for (unsigned char p = 0; p<RF_MESSAGE_SIZE; p++) {
-        sprintf_P(&out[p*2], PSTR("%02X"), in[p]);
-    }
-    return true;
-}
-
 #if MQTT_SUPPORT
 void _rfbMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -331,6 +332,9 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
         mqttSubscribe(buffer);
         mqttSubscribe(MQTT_TOPIC_RFOUT);
+#ifdef RF_RAW_SUPPORT
+        mqttSubscribe(MQTT_TOPIC_RFRAW);
+#endif
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
