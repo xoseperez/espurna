@@ -467,6 +467,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFOUT        "rfout"
 #define MQTT_TOPIC_RFIN         "rfin"
 #define MQTT_TOPIC_RFLEARN      "rflearn"
+#define MQTT_TOPIC_RFRAW        "rfraw"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"

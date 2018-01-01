@@ -15,15 +15,28 @@ Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
 // DEFINITIONS
 // -----------------------------------------------------------------------------
 
-#define RF_MESSAGE_SIZE     9
-#define RF_CODE_START       0xAA
-#define RF_CODE_ACK         0xA0
-#define RF_CODE_LEARN       0xA1
-#define RF_CODE_LEARN_KO    0xA2
-#define RF_CODE_LEARN_OK    0xA3
-#define RF_CODE_RFIN        0xA4
-#define RF_CODE_RFOUT       0xA5
-#define RF_CODE_STOP        0x55
+#define RF_MESSAGE_SIZE         9
+#ifndef RF_RAW_SUPPORT
+#  define RF_MAX_MESSAGE_SIZE   RF_MESSAGE_SIZE
+#else
+#  undef  RF_MAX_MESSAGE_SIZE
+#  define RF_MAX_MESSAGE_SIZE   16 // (112+4)
+#endif
+#define RF_CODE_START           0xAA
+#define RF_CODE_ACK             0xA0
+#define RF_CODE_LEARN           0xA1
+#define RF_CODE_LEARN_KO        0xA2
+#define RF_CODE_LEARN_OK        0xA3
+#define RF_CODE_RFIN            0xA4
+#define RF_CODE_RFOUT           0xA5
+#define RF_CODE_SNIFFING_ON     0xA6
+#define RF_CODE_SNIFFING_OFF    0xA7
+#define RF_CODE_RFOUT_NEW       0xA8
+#define RF_CODE_LEARN_NEW       0xA9
+#define RF_CODE_LEARN_KO_NEW    0xAA
+#define RF_CODE_LEARN_OK_NEW    0xAB
+#define RF_CODE_RFOUT_BUCKET    0xB0
+#define RF_CODE_STOP            0x55
 
 // -----------------------------------------------------------------------------
 // GLOBALS TO THE MODULE
@@ -36,8 +49,11 @@ bool _learnStatus = true;
 bool _rfbin = false;
 
 typedef struct {
-    byte code[RF_MESSAGE_SIZE];
+    byte code[RF_MAX_MESSAGE_SIZE];
     byte times;
+#ifdef RF_RAW_SUPPORT
+    byte length;
+#endif
 } rfb_message_t;
 std::vector<rfb_message_t> _rfb_message_queue;
 Ticker _rfbTicker;
@@ -94,13 +110,17 @@ void _rfbLearn() {
 
 }
 
+void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
+    for (unsigned char j=0; j<n; j++) {
+        Serial.write(message[j]);
+    }
+}
+
 void _rfbSend(byte * message) {
     Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_RFOUT);
-    for (unsigned char j=0; j<RF_MESSAGE_SIZE; j++) {
-        Serial.write(message[j]);
-    }
+    _rfbSendRaw(message);
     Serial.write(RF_CODE_STOP);
     Serial.flush();
     Serial.println();
@@ -116,6 +136,15 @@ void _rfbSend() {
     _rfb_message_queue.erase(_rfb_message_queue.begin());
 
     // Send the message
+#ifdef RF_RAW_SUPPORT
+    bool sendRaw = message.times < 0;
+    int length = sendRaw ? -message.times : message.times;
+    if (sendRaw) {
+        _rfbSendRaw(message.code, message.length);
+        Serial.flush();
+    }
+    else
+#endif
     _rfbSend(message.code);
 
     // If it should be further sent, push it to the stack again
@@ -123,6 +152,12 @@ void _rfbSend() {
         message.times = message.times - 1;
         _rfb_message_queue.push_back(message);
     }
+#ifdef RF_RAW_SUPPORT
+    else if (message.times < -1) {
+        message.times = message.times + 1;
+        _rfb_message_queue.push_back(message);
+    }
+#endif
 
     // if there are still messages in the queue...
     if (_rfb_message_queue.size() > 0) {
@@ -140,10 +175,28 @@ void _rfbSend(byte * code, int times) {
     rfb_message_t message;
     memcpy(message.code, code, RF_MESSAGE_SIZE);
     message.times = times;
+#ifdef RF_RAW_SUPPORT
+    message.length = RF_MESSAGE_SIZE;
+#endif
     _rfb_message_queue.push_back(message);
     _rfbSend();
 
 }
+
+#ifdef RF_RAW_SUPPORT
+void _rfbSendRawRepeated(byte *code, int length, int times) {
+    char buffer[RF_MESSAGE_SIZE*2];
+    _rfbToChar(code, buffer);
+    DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending raw MESSAGE '%s' %d time(s)\n"), buffer, times);
+
+    rfb_message_t message;
+    memcpy(message.code, code, length);
+    message.times = -times;
+    message.length = length;
+    _rfb_message_queue.push_back(message);
+    _rfbSend();
+}
+#endif
 
 bool _rfbMatch(char * code, unsigned char& relayID, unsigned char& value) {
 
@@ -279,14 +332,16 @@ bool _rfbSameOnOff(unsigned char id) {
 /*
 From an hexa char array ("A220EE...") to a byte array (half the size)
  */
-bool _rfbToArray(const char * in, byte * out) {
-    if (strlen(in) != RF_MESSAGE_SIZE * 2) return false;
-    char tmp[3] = {0};
-    for (unsigned char p = 0; p<RF_MESSAGE_SIZE; p++) {
+int _rfbToArray(const char * in, byte * out, int length = RF_MESSAGE_SIZE * 2) {
+    int n = strlen(in);
+    if (n > RF_MAX_MESSAGE_SIZE*2 || (length > 0 && n != length)) return 0;
+    char tmp[3] = {0,0,0};
+    n /= 2;
+    for (unsigned char p = 0; p<n; p++) {
         memcpy(tmp, &in[p*2], 2);
         out[p] = strtol(tmp, NULL, 16);
     }
-    return true;
+    return n;
 }
 
 /*
@@ -327,11 +382,16 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
         }
 
+#ifdef RF_RAW_SUPPORT
+        bool isRFOut = t.equals(MQTT_TOPIC_RFOUT);
+        bool isRFRaw = !isRFOut && t.equals(MQTT_TOPIC_RFRAW);
+        if (isRFOut || isRFRaw) {
+#else
         if (t.equals(MQTT_TOPIC_RFOUT)) {
-
+#endif
             // The payload may be a code in HEX format ([0-9A-Z]{18}) or
             // the code comma the number of times to transmit it.
-            byte message[RF_MESSAGE_SIZE];
+            byte message[RF_MAX_MESSAGE_SIZE];
             char * tok = strtok((char *) payload, ",");
 
             // Check if a switch is linked to that message
@@ -346,9 +406,16 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
                 return;
             }
 
+            const char *tok2 = strtok(NULL, ",");
+            byte times = (t != NULL) ? atoi(tok2) : 1;
+#ifdef RF_RAW_SUPPORT
+            int len = _rfbToArray(tok, message, 0);
+            if (len > 0 && (isRFRaw || len != RF_MESSAGE_SIZE)) {
+                _rfbSendRawRepeated(message, len, times);
+            } else {
+#else
             if (_rfbToArray(tok, message)) {
-                tok = strtok(NULL, ",");
-                byte times = (tok != NULL) ? atoi(tok) : 1;
+#endif
                 _rfbSend(message, times);
             }
 
