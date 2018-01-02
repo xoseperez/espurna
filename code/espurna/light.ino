@@ -13,6 +13,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
 extern "C" {
     #include "libs/pwm.h"
 }
