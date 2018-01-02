@@ -8,7 +8,7 @@
 #pragma once
 
 #include "Arduino.h"
-#include "EmonAnalogSensor.h"
+#include "EmonSensor.h"
 
 #if I2C_USE_BRZO
 #include <brzo_i2c.h>
@@ -29,7 +29,7 @@
 #define ADC121_RESOLUTION       12
 #define ADC121_CHANNELS         1
 
-class EmonADC121Sensor : public EmonAnalogSensor {
+class EmonADC121Sensor : public EmonSensor {
 
     public:
 
@@ -37,7 +37,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonADC121Sensor(): EmonAnalogSensor() {
+        EmonADC121Sensor(): EmonSensor() {
             _channels = ADC121_CHANNELS;
             _sensor_id = SENSOR_EMON_ADC121_ID;
             init();
@@ -102,7 +102,54 @@ class EmonADC121Sensor : public EmonAnalogSensor {
                 return;
             }
 
-            EmonAnalogSensor:pre();
+            _current[0] = read(0);
+
+            #if EMON_REPORT_ENERGY
+                static unsigned long last = 0;
+                if (last > 0) {
+                    _energy[0] += (_current[0] * _voltage * (millis() - last) / 1000);
+                }
+                last = millis();
+            #endif
+
+        }
+
+        // Type for slot # index
+        unsigned char type(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return MAGNITUDE_CURRENT;
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return MAGNITUDE_POWER_APPARENT;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return MAGNITUDE_ENERGY;
+            #endif
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return MAGNITUDE_NONE;
+        }
+
+        // Current value for slot # index
+        double value(unsigned char index) {
+
+            _error = SENSOR_ERROR_OK;
+            unsigned char channel = index / _magnitudes;
+
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return _current[channel];
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return _current[channel] * _voltage;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return _energy[channel];
+            #endif
+
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return 0;
 
         }
 

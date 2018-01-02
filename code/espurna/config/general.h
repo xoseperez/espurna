@@ -66,6 +66,11 @@
 #define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
 #endif
 
+#if DEBUG_TELNET_SUPPORT
+#undef TELNET_SUPPORT
+#define TELNET_SUPPORT          1
+#endif
+
 //------------------------------------------------------------------------------
 
 // General debug options and macros
@@ -563,6 +568,11 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef DOMOTICZ_SUPPORT
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
+#endif
+
+#if DOMOTICZ_SUPPORT
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT            1               // If Domoticz enabled enable MQTT
 #endif
 
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default

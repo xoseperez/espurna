@@ -233,7 +233,11 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
 
     if (type == MQTT_CONNECT_EVENT) {
 
+        // Subscribe to internal action topics
         mqttSubscribe(MQTT_TOPIC_ACTION);
+
+        // Send heartbeat messages
+        heartbeat();
 
     }
 

@@ -374,6 +374,15 @@ void _relayBoot() {
 
 }
 
+void _relayConfigure() {
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        pinMode(_relays[i].pin, OUTPUT);
+        if (_relays[i].type == RELAY_TYPE_LATCHED) pinMode(_relays[i].reset_pin, OUTPUT);
+        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
+        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+    }
+}
+
 //------------------------------------------------------------------------------
 // WEBSOCKETS
 //------------------------------------------------------------------------------
@@ -452,15 +461,6 @@ void _relayWebSocketOnAction(const char * action, JsonObject& data) {
 
     }
 
-}
-
-void _relayConfigure() {
-    for (unsigned int i=0; i<_relays.size(); i++) {
-        pinMode(_relays[i].pin, OUTPUT);
-        if (_relays[i].type == RELAY_TYPE_LATCHED) pinMode(_relays[i].reset_pin, OUTPUT);
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
-    }
 }
 
 void relaySetupWS() {
