@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.11.3] 2018-01-02
+### Fixed
+- Fix uninitialized PWM channels bug (#356)
+
+### Added
+- Added memory analyzer
+
 ## [1.11.2] 2017-12-30
 ### Fixed
 - Fix my92xx and pwm references for Arduino IDE (#346)
