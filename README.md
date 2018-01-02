@@ -50,7 +50,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021** (supports celsius & fahrenheit reporting)
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
         * **SI7021** temperature and humidity sensor
-        * **SHT2X** temperature and humidity sensor over I2C (Wemos shield)
+        * **SHT3X** temperature and humidity sensor over I2C (Wemos shield)
         * **Dallas OneWire sensors** like the DS18B20 (supports celsius & fahrenheit reporting)
         * **MHZ19** CO2 sensor
         * **PMSX003** dust sensor
