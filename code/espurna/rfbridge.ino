@@ -421,11 +421,26 @@ void rfbStatus(unsigned char id, bool status) {
     String value = rfbRetrieve(id, status);
     if (value.length() > 0) {
         bool same = _rfbSameOnOff(id);
+#ifdef RF_RAW_SUPPORT
+        byte message[RF_MAX_MESSAGE_SIZE];
+        int len = _rfbToArray(value.c_str(), message, 0);
+        if (len == RF_MESSAGE_SIZE &&               // probably a standard msg
+            (message[0] != RF_CODE_START        ||  // raw would start with 0xAA
+             message[1] != RF_CODE_RFOUT_BUCKET ||  // followed by 0xB0,
+             message[2] + 4 != len              ||  // needs a valid length,
+             message[len-1] != RF_CODE_STOP)) {     // and finish with 0x55
+#else
         byte message[RF_MESSAGE_SIZE];
         _rfbToArray(value.c_str(), message);
+#endif
         unsigned char times = RF_SEND_TIMES;
         if (same) times = _rfbin ? 0 : 1;
         _rfbSend(message, times);
+#ifdef RF_RAW_SUPPORT
+        } else {
+            _rfbSendRawOnce(message, len);          // send a raw message
+        }
+#endif
     }
 }
 
