@@ -222,4 +222,4 @@ export ESPURNA_BOARD=$board
 export ESPURNA_AUTH=$auth
 export ESPURNA_FLAGS=$flags
 
-pio run -e $env -t upload
+platformio run --silent --environment $env -t upload
