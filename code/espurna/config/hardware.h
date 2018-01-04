@@ -836,7 +836,7 @@
     #define LIGHT_CH4_INVERSE   0
 
     // IR
-    #define IR_SUPPORT          0
+    #define IR_SUPPORT          1
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
 
@@ -865,7 +865,7 @@
     #define LIGHT_CH4_INVERSE   0
 
     // IR
-    #define IR_SUPPORT          0
+    #define IR_SUPPORT          1
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
 
