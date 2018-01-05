@@ -512,12 +512,12 @@ PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
 PROGMEM const char magnitude_power_factor_topic[] = "factor";
 PROGMEM const char magnitude_energy_topic[] = "energy";
 PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
-PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
-PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
-PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_analog_topic[] = "analog";
 PROGMEM const char magnitude_digital_topic[] = "digital";
 PROGMEM const char magnitude_events_topic[] = "events";
+PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_co2_topic[] = "co2";
 PROGMEM const char magnitude_lux_topic[] = "lux";
 
@@ -526,8 +526,8 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
     magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
     magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
+    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_co2_topic, magnitude_lux_topic
 };
 
@@ -549,8 +549,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_hectopascals, magnitude_amperes, magnitude_volts,
     magnitude_watts, magnitude_watts, magnitude_watts,
     magnitude_percentage, magnitude_joules, magnitude_joules,
-    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_ppm, magnitude_lux
 };
 
