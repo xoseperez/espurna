@@ -41,5 +41,4 @@ def check_size(source, target, env):
 # Hooks
 # ------------------------------------------------------------------------------
 
-print env.Dump()
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
