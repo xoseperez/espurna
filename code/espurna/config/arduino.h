@@ -8,7 +8,7 @@
 //--------------------------------------------------------------------------------
 
 //#define NODEMCU_LOLIN
-//#define WEMOS_D1_MINI_RELAYSHIELD
+#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
 //#define ITEAD_SONOFF_BASIC

@@ -760,3 +760,8 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define RF_CHANNEL                  31
 #define RF_DEVICE                   1
+
+
+#define SCHEDULER_SUPPORT 1 
+#define SCH_UPDATE_INTERVAL 30000 
+#define MAX_SCHEDULED 10
