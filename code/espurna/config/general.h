@@ -208,7 +208,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_BOOT_OFF          0
 #define RELAY_BOOT_ON           1
 #define RELAY_BOOT_SAME         2
-#define RELAY_BOOT_TOOGLE       3
+#define RELAY_BOOT_TOGGLE       3
 
 #define RELAY_TYPE_NORMAL       0
 #define RELAY_TYPE_INVERSE      1

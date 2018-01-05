@@ -345,7 +345,7 @@ void _relayBoot() {
             case RELAY_BOOT_SAME:
                 status = ((mask & bit) == bit);
                 break;
-            case RELAY_BOOT_TOOGLE:
+            case RELAY_BOOT_TOGGLE:
                 status = ((mask & bit) != bit);
                 mask ^= bit;
                 trigger_save = true;
@@ -364,7 +364,7 @@ void _relayBoot() {
         bit <<= 1;
     }
 
-    // Save if there is any relay in the RELAY_BOOT_TOOGLE mode
+    // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
         EEPROM.write(EEPROM_RELAY_STATUS, mask);
         EEPROM.commit();
