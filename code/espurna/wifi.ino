@@ -73,7 +73,11 @@ void wifiReconnectCheck() {
 void wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
-    jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+    #if USE_PASSWORD
+        jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+    #else
+        jw.setSoftAP(getSetting("hostname").c_str());
+    #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
     jw.setAPMode(WIFI_AP_MODE);

@@ -7,8 +7,9 @@
 // GENERAL
 //------------------------------------------------------------------------------
 
+#define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
-#define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
+#define USE_PASSWORD            1           // Insecurity caution! Disabling this will disable password querying completely.
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
 #define ARRAYINIT(type, name, ...) \

@@ -267,10 +267,14 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 // -----------------------------------------------------------------------------
 
 bool _authenticate(AsyncWebServerRequest *request) {
-    String password = getSetting("adminPass", ADMIN_PASS);
-    char httpPassword[password.length() + 1];
-    password.toCharArray(httpPassword, password.length() + 1);
-    return request->authenticate(WEB_USERNAME, httpPassword);
+    #if USE_PASSWORD
+        String password = getSetting("adminPass", ADMIN_PASS);
+        char httpPassword[password.length() + 1];
+        password.toCharArray(httpPassword, password.length() + 1);
+        return request->authenticate(WEB_USERNAME, httpPassword);
+    #else
+        return true;
+    #endif
 }
 
 // -----------------------------------------------------------------------------
