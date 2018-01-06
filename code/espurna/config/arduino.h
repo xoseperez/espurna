@@ -57,6 +57,7 @@
 //#define GENERIC_8CH
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC11
+//#define ARILUX_AL_LC02
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
