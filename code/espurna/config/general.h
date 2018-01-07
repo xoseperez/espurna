@@ -66,6 +66,11 @@
 #define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
 #endif
 
+#if DEBUG_TELNET_SUPPORT
+#undef TELNET_SUPPORT
+#define TELNET_SUPPORT          1
+#endif
+
 //------------------------------------------------------------------------------
 
 // General debug options and macros
@@ -203,7 +208,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_BOOT_OFF          0
 #define RELAY_BOOT_ON           1
 #define RELAY_BOOT_SAME         2
-#define RELAY_BOOT_TOOGLE       3
+#define RELAY_BOOT_TOGGLE       3
 
 #define RELAY_TYPE_NORMAL       0
 #define RELAY_TYPE_INVERSE      1
@@ -264,6 +269,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LED_MODE_FOLLOW_INVERSE 3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
 #define LED_MODE_FINDME         4       // LED will be ON if all relays are OFF
 #define LED_MODE_MIXED          5       // A mixed between WIFI and FINDME
+#define LED_MODE_ON             6       // LED always ON
+#define LED_MODE_OFF            7       // LED always OFF
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -563,6 +570,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
+#if DOMOTICZ_SUPPORT
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT            1               // If Domoticz enabled enable MQTT
+#endif
+
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
@@ -574,6 +586,11 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef HOMEASSISTANT_SUPPORT
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
+#endif
+
+#if HOMEASSISTANT_SUPPORT
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT            1               // If Home Assistant enabled enable MQTT
 #endif
 
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
@@ -664,6 +681,22 @@ PROGMEM const char* const custom_reset_string[] = {
 #if IR_SUPPORT
 #if IR_BUTTON_SET == 1
 
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
     #define IR_BUTTON_COUNT 24
 
     const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
@@ -705,6 +738,22 @@ PROGMEM const char* const custom_reset_string[] = {
 //Remote Buttons SET 2 (another identical IR Remote shipped with another controller)
 #if IR_BUTTON_SET == 2
 
+/*
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
+
     #define IR_BUTTON_COUNT 24
 
     const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
@@ -742,6 +791,7 @@ PROGMEM const char* const custom_reset_string[] = {
     };
 
 #endif
+
 #endif // IR_SUPPORT
 
 //--------------------------------------------------------------------------------
@@ -760,8 +810,3 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define RF_CHANNEL                  31
 #define RF_DEVICE                   1
-
-
-#define SCHEDULER_SUPPORT 1 
-#define SCH_UPDATE_INTERVAL 30000 
-#define MAX_SCHEDULED 10

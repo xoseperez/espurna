@@ -109,12 +109,14 @@ div.hint {
 .break {
     margin-top: 5px;
 }
-#networks .pure-g {
+#networks .pure-g,
+#schedules .pure-g {
     padding: 10px 0 10px 0;
     margin-bottom: 5px;
     border-bottom: 2px dashed #e5e5e5;
 }
-#networks .more {
+#networks .more,
+#schedules .more {
     display: none;
 }
 legend.module,

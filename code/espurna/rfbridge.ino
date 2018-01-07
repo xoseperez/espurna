@@ -252,11 +252,14 @@ void _rfbReceive() {
         //DEBUG_MSG_P(PSTR("[RFBRIDGE] Received 0x%02X\n"), c);
 
         if (receiving) {
-            if (c == RF_CODE_STOP) {
+            if (c == RF_CODE_STOP && (_uartpos == 1 || _uartpos == 10)) {
                 _rfbDecode();
                 receiving = false;
-            } else {
+            } else if (_uartpos < 10) {
                 _uartbuf[_uartpos++] = c;
+            } else {
+                // wrong message, should have received a RF_CODE_STOP
+                receiving = false;
             }
         } else if (c == RF_CODE_START) {
             _uartpos = 0;

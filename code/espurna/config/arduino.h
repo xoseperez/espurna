@@ -8,7 +8,7 @@
 //--------------------------------------------------------------------------------
 
 //#define NODEMCU_LOLIN
-#define WEMOS_D1_MINI_RELAYSHIELD
+//#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
 //#define ITEAD_SONOFF_BASIC
@@ -55,6 +55,8 @@
 //#define XENON_SM_PW702U
 //#define AUTHOMETION_LYT8266
 //#define GENERIC_8CH
+//#define ARILUX_AL_LC01
+//#define ARILUX_AL_LC11
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -71,7 +73,9 @@
 //#define IR_SUPPORT             1
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
 //#define MDNS_SUPPORT           0
-//#define NOFUSS_SUPPORT         1  // Only with Arduino Core 2.4.0
+//#define MQTT_SUPPORT           0
+//#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
+//#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
 //#define RF_SUPPORT             1
 //#define SPIFFS_SUPPORT         1

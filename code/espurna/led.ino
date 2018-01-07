@@ -18,6 +18,7 @@ typedef struct {
 } led_t;
 
 std::vector<led_t> _leds;
+bool _led_update = false;            // For relay-based modes
 
 // -----------------------------------------------------------------------------
 
@@ -115,9 +116,14 @@ void _ledConfigure() {
     for (unsigned int i=0; i < _leds.size(); i++) {
         _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
     }
+    _led_update = true;
 }
 
 // -----------------------------------------------------------------------------
+
+void ledUpdate(bool value) {
+    _led_update = value;
+}
 
 void ledSetup() {
 
@@ -206,6 +212,9 @@ void ledLoop() {
 
         }
 
+        // Relay-based modes, update only if relays have been updated
+        if (!_led_update) continue;
+
         if (_ledMode(i) == LED_MODE_FOLLOW) {
             _ledStatus(i, relayStatus(_leds[i].relay-1));
         }
@@ -225,5 +234,16 @@ void ledLoop() {
             _ledStatus(i, status);
         }
 
+        if (_ledMode(i) == LED_MODE_ON) {
+            _ledStatus(i, true);
+        }
+
+        if (_ledMode(i) == LED_MODE_OFF) {
+            _ledStatus(i, false);
+        }
+
     }
+
+    _led_update = false;
+
 }

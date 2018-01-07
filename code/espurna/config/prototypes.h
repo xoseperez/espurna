@@ -82,13 +82,6 @@ template<typename T> bool idbSend(const char * topic, T payload);
 template<typename T> bool idbSend(const char * topic, unsigned char id, T payload);
 
 // -----------------------------------------------------------------------------
-// Light
-// -----------------------------------------------------------------------------
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-#include <my92xx.h>
-#endif
-
-// -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
 char * ltrim(char * s);

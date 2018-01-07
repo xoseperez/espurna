@@ -651,9 +651,42 @@ void migrate() {
             setSetting("relayType", 6, RELAY_TYPE_NORMAL);
             setSetting("relayType", 7, RELAY_TYPE_NORMAL);
 
+        #elif defined(ARILUX_AL_LC01)
+
+            setSetting("board", 50);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 5);
+            setSetting("chGPIO", 1, 12);
+            setSetting("chGPIO", 2, 13);
+            setSetting("chGPIO", 3, 14);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("relays", 1);
+
+        #elif defined(ARILUX_AL_LC11)
+
+            setSetting("board", 51);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 5);
+            setSetting("chGPIO", 1, 4);
+            setSetting("chGPIO", 2, 14);
+            setSetting("chGPIO", 3, 13);
+            setSetting("chGPIO", 4, 12);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("chLogic", 4, 0);
+            setSetting("relays", 1);
+
         #else
 
-            #error "UNSUPPORTED HARDWARE!"
+            // Allow users to define new settings without migration config
+            //#error "UNSUPPORTED HARDWARE!"
 
         #endif
 

@@ -23,7 +23,7 @@
 // -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
-
+#define NODEMCU_LOLIN
 #if defined(NODEMCU_LOLIN)
 
     // Info
@@ -36,11 +36,15 @@
     #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN          12
+    #define RELAY1_PIN          5
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+	#define RELAY2_PIN          4
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_PIN          12
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
 
     #define SCHEDULER_SUPPORT   1
-    #define SCH_UPDATE_INTERVAL 30000
+    #define SCH_UPDATE_SEC      5 //scheduler perform switch at hh:mm:05
     #define MAX_SCHEDULED       10
 
     // LEDs
@@ -82,23 +86,8 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
 
-    #ifdef USE_TOUCH_BUTTON
-
-        // Touch button
-        #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-        #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-        #define BUTTON1_CLICK           BUTTON_MODE_NONE
-        #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
-
-    #else
-
-        // Normal pushbutton
-        #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-
-    #endif
-
+    // Normal pushbutton
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -126,22 +115,8 @@
     #define BUTTON1_PIN         4
     #define BUTTON1_RELAY       1
 
-    #ifdef USE_TOUCH_BUTTON
-
-        // Touch button
-        #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-        #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-        #define BUTTON1_CLICK           BUTTON_MODE_NONE
-        #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-        #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
-
-    #else
-
-        // Normal pushbutton
-        #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-
-    #endif
+    // Normal pushbutton
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY1_PIN          12
@@ -158,6 +133,32 @@
     #define HLW8012_SEL_PIN     5
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
+
+#elif defined(TINKERMAN_ESPURNA_SWITCH)
+
+    // Info
+    #define MANUFACTURER        "TINKERMAN"
+    #define DEVICE              "ESPURNA_SWITCH"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_RELAY       1
+
+    // Touch button
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK           BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
@@ -735,7 +736,6 @@
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
-    #define LED_WIFI            0
 
 
 // -----------------------------------------------------------------------------
@@ -1169,6 +1169,27 @@
 // Arilux AL-LC06
 // -----------------------------------------------------------------------------
 
+#elif defined(ARILUX_AL_LC01)
+
+    // Info
+    #define MANUFACTURER        "ARILUX"
+    #define DEVICE              "AL_LC01"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       14      // WHITE1
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+
 #elif defined(ARILUX_AL_LC06)
 
     // Info
@@ -1185,6 +1206,29 @@
     #define LIGHT_CH3_PIN       13      // BLUE
     #define LIGHT_CH4_PIN       15      // WHITE1
     #define LIGHT_CH5_PIN       5       // WHITE2
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
+
+
+#elif defined(ARILUX_AL_LC11)
+
+    // Info
+    #define MANUFACTURER        "ARILUX"
+    #define DEVICE              "AL_LC11"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       4       // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       13      // WHITE1
+    #define LIGHT_CH5_PIN       12      // WHITE1
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0

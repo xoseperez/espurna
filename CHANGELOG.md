@@ -3,6 +3,39 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.11.3] 2018-01-02
+### Fixed
+- Fix uninitialized PWM channels bug (#356)
+
+### Added
+- Added memory analyzer
+
+## [1.11.2] 2017-12-30
+### Fixed
+- Fix my92xx and pwm references for Arduino IDE (#346)
+- Fix SHT3X I2C sensor magnitude count (#337)
+- Fix timing for DHT11 sensors (#294)
+- Fix overflow in relayParsePayload with long MQTT messages (#344)
+- Fix loading of Dallas and DHT sensors for Sonoff TH images (#352)
+- Subscribe to Domoticz MQTT topics only if Domotic< is enabled
+
+### Added
+- Added option to change MQTT retain flag, QoS and keepalive time from webUI (#321)
+- Added LED modes "always off" and "always on" (#348)
+- Defined new ESPurna switch (no HLW8012 support & touch button ready)
+
+### Changed
+- Stop requiring definition of boards in migrate module
+
+## [1.11.1] 2017-12-29
+### Fixed
+- Fixed relay status on reboot
+
+### Added
+- Added support for Arilux AL-LC01 and AL-LC11
+- Added support for BH1750 luminosity sensor
+- Added automatic memory size identification in ota_flash script
+
 ## [1.11.0] 2017-12-28
 ### Fixed
 - Fixed Arduino IDE compilation issues (#330)

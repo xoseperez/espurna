@@ -2,7 +2,7 @@
 // SENSORS - General data
 // =============================================================================
 
-#define SENSOR_DEBUG                        0               // Debug sensors
+#define SENSOR_DEBUG                        1               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
 #define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
@@ -57,6 +57,7 @@
 #define SENSOR_MHZ19_ID                     0x14
 #define SENSOR_SI7021_ID                    0x15
 #define SENSOR_SHT3X_I2C_ID                 0x16
+#define SENSOR_BH1750_ID                    0x17
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -81,8 +82,9 @@
 #define MAGNITUDE_PM2dot5                   16
 #define MAGNITUDE_PM10                      17
 #define MAGNITUDE_CO2                       18
+#define MAGNITUDE_LUX                       19
 
-#define MAGNITUDE_MAX                       19
+#define MAGNITUDE_MAX                       20
 
 // =============================================================================
 // Specific data for each sensor
@@ -100,6 +102,27 @@
 #if ANALOG_SUPPORT
 #undef ADC_VCC_ENABLED
 #define ADC_VCC_ENABLED                 0
+#endif
+
+//------------------------------------------------------------------------------
+// BH1750
+// Enable support by passing BH1750_SUPPORT=1 build flag
+// http://www.elechouse.com/elechouse/images/product/Digital%20light%20Sensor/bh1750fvi-e.pdf
+//------------------------------------------------------------------------------
+
+#ifndef BH1750_SUPPORT
+#define BH1750_SUPPORT                  0
+#endif
+
+#ifndef BH1750_ADDRESS
+#define BH1750_ADDRESS                  0x00    // 0x00 means auto
+#endif
+
+#define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
+
+#if BH1750_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
 #endif
 
 //------------------------------------------------------------------------------
@@ -135,7 +158,7 @@
 #endif
 
 #ifndef DALLAS_PIN
-#define DALLAS_PIN                      13
+#define DALLAS_PIN                      14
 #endif
 
 #define DALLAS_RESOLUTION               9        // Not used atm
@@ -151,7 +174,7 @@
 #endif
 
 #ifndef DHT_PIN
-#define DHT_PIN                         13
+#define DHT_PIN                         14
 #endif
 
 #ifndef DHT_TYPE
@@ -415,7 +438,7 @@
 // Sensor helpers configuration
 // =============================================================================
 
-#if ANALOG_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
+#if ANALOG_SUPPORT || BH1750_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
     || DHT_SUPPORT || DIGITAL_SUPPORT || ECH1560_SUPPORT \
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
@@ -474,7 +497,7 @@ PROGMEM const unsigned char magnitude_decimals[] = {
     3, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0,
     0, 0, 0,
-    0
+    0, 0
 };
 
 PROGMEM const char magnitude_unknown_topic[] = "unknown";
@@ -489,22 +512,23 @@ PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
 PROGMEM const char magnitude_power_factor_topic[] = "factor";
 PROGMEM const char magnitude_energy_topic[] = "energy";
 PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
-PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
-PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
-PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_analog_topic[] = "analog";
 PROGMEM const char magnitude_digital_topic[] = "digital";
 PROGMEM const char magnitude_events_topic[] = "events";
+PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_co2_topic[] = "co2";
+PROGMEM const char magnitude_lux_topic[] = "lux";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
     magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
     magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
     magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
-    magnitude_co2_topic
+    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
+    magnitude_co2_topic, magnitude_lux_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -518,21 +542,26 @@ PROGMEM const char magnitude_watts[] = "W";
 PROGMEM const char magnitude_joules[] = "J";
 PROGMEM const char magnitude_ugm3[] = "µg/m3";
 PROGMEM const char magnitude_ppm[] = "ppm";
+PROGMEM const char magnitude_lux[] = "lux";
 
 PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_celsius, magnitude_percentage,
     magnitude_hectopascals, magnitude_amperes, magnitude_volts,
     magnitude_watts, magnitude_watts, magnitude_watts,
     magnitude_percentage, magnitude_joules, magnitude_joules,
-    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_empty, magnitude_empty, magnitude_empty,
-    magnitude_ppm
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
+    magnitude_ppm, magnitude_lux
 };
 
 #include "../sensors/BaseSensor.h"
 
 #if ANALOG_SUPPORT
     #include "../sensors/AnalogSensor.h"
+#endif
+
+#if BH1750_SUPPORT
+    #include "../sensors/BH1750Sensor.h"
 #endif
 
 #if BMX280_SUPPORT

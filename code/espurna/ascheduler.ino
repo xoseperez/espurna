@@ -39,17 +39,23 @@ void schSetup(){
         int sch_operation = getSetting("sch_operation" + String(i)).toInt();
         int sch_hour = getSetting("sch_hour" + String(i)).toInt();
         int sch_minute = getSetting("sch_minute" + String(i)).toInt();
-        DEBUG_MSG_P(PSTR("[SCH] Turn switch #%d %d AT %02d:%02d ON %s\n"), sch_switch, sch_operation, sch_hour, sch_minute, (char *)sch_weekdays.c_str());
+        DEBUG_MSG_P(PSTR("[SCH] Turn switch #%d %s at %02d:%02d on %s\n"), sch_switch, sch_operation ? "ON" : "OFF", sch_hour, sch_minute, (char *)sch_weekdays.c_str());
     }
 }
 
 void schLoop(){
-    // Check if we should compare scheduled and actual times
-    // TODO (?) start every minute and 0 seconds
+    // Check if we should compare scheduled and actual times 
     static unsigned long last_update = 0;
-    static bool r_on = true;
-    if ((millis() - last_update > SCH_UPDATE_INTERVAL) || (last_update == 0)) {
+    static int sec = 0;
+    if ((millis() - last_update > ((SCH_UPDATE_SEC + 60 - sec)*1000)) || (last_update == 0)) {
         last_update = millis();
+        if (!ntpConnected()){
+            DEBUG_MSG_P(PSTR("[SCH] no NTP\n"));
+        }
+        else {
+            // compare at next minute and SCH_UPDATE_SEC seconds
+            sec = NTP.getTimeDateString().substring(6, 8).toInt();
+        }
         int i;
         for (i = 0; i < MAX_SCHEDULED; i++) {
             if (getSetting("sch_switch" + String(i)).length() == 0)
@@ -60,15 +66,16 @@ void schLoop(){
                 int sch_operation = getSetting("sch_operation" + String(i)).toInt();
                 int sch_hour = getSetting("sch_hour" + String(i)).toInt();
                 int sch_minute = getSetting("sch_minute" + String(i)).toInt();
-                DEBUG_MSG_P(PSTR("[SCH] Today it will turn switch #%d %d @ %02d:%02d\n"), sch_switch, sch_operation, sch_hour, sch_minute);
+                //DEBUG_MSG_P(PSTR("[SCH] Today it will turn switch #%d %d @ %02d:%02d\n"), sch_switch, sch_operation, sch_hour, sch_minute);
                 int minToTrigger = diffTime(sch_hour, sch_minute);
                 if (minToTrigger == 0) {
                     relayStatus(sch_switch, sch_operation);
-                    DEBUG_MSG_P(PSTR("[SCH] TRIGGERED!!\n"));
+                    DEBUG_MSG_P(PSTR("[SCH] TRIGGERED!! switch #%d is %s\n"), sch_switch, sch_operation ? "ON" : "OFF");
                 }
                 if (minToTrigger < 0) {
                     //DEBUG_MSG_P(PSTR("[SCH] Time now: %s\n"), (char *)ntpDateTime().c_str()); // aaaa/mm/dd hh:mm:ss
-                    DEBUG_MSG_P(PSTR("[SCH] Time now: %s, %d minutes to trigger %02d:%02d\n"),  (char *)ntpDateTime().c_str(), minToTrigger, sch_hour, sch_minute);
+                    DEBUG_MSG_P(PSTR("[SCH] Time now: %s, %d minutes to trigger %02d:%02d switch #%d %s\n"),
+                      (char *)ntpDateTime().c_str(), -minToTrigger, sch_hour, sch_minute, sch_switch, sch_operation ? "ON" : "OFF");
                 }
             }
         }

@@ -56,20 +56,9 @@ void hardwareSetup() {
 void hardwareLoop() {
 
     // Heartbeat
-    static unsigned long last_uptime = 0;
-    static bool on_connect = true;
-
-    bool send = (last_uptime == 0);
-    send = send || (millis() - last_uptime > HEARTBEAT_INTERVAL);
-    if (mqttConnected()) {
-        send = send || on_connect;
-    } else {
-        on_connect = true;
-    }
-
-    if (send) {
-        last_uptime = millis();
-        if (mqttConnected()) on_connect = false;
+    static unsigned long last = 0;
+    if ((last == 0) || (millis() - last > HEARTBEAT_INTERVAL)) {
+        last = millis();
         heartbeat();
     }
 

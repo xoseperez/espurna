@@ -25,6 +25,7 @@ class SHT3XI2CSensor : public I2CSensor {
 
         SHT3XI2CSensor(): I2CSensor() {
             _sensor_id = SENSOR_SHT3X_I2C_ID;
+            _count = 2;
         }
 
         // ---------------------------------------------------------------------
