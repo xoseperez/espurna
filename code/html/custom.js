@@ -684,6 +684,8 @@ function rfbSend() {
 
 function processData(data) {
 
+    console.log(data);
+
     // title
     if ("app_name" in data) {
         var title = data.app_name;

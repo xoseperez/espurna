@@ -189,6 +189,9 @@ void welcome() {
     #if TERMINAL_SUPPORT
         DEBUG_MSG_P(PSTR(" TERMINAL"));
     #endif
+    #if THINGSPEAK_SUPPORT
+        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
+    #endif
     #if WEB_SUPPORT
         DEBUG_MSG_P(PSTR(" WEB"));
     #endif
@@ -356,6 +359,9 @@ void setup() {
     #endif
     #if INFLUXDB_SUPPORT
         idbSetup();
+    #endif
+    #if THINGSPEAK_SUPPORT
+        tspkSetup();
     #endif
     #if RF_SUPPORT
         rfSetup();

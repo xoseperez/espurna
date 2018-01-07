@@ -747,6 +747,11 @@ void relayLoop(void) {
                 relayInfluxDB(id);
             #endif
 
+            #if THINGSPEAK_SUPPORT
+                tspkEnqueueRelay(id, status);
+                tspkFlush();
+            #endif
+
             // Flag relay-based LEDs to update status
             ledUpdate(true);
 
