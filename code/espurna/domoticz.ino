@@ -97,7 +97,7 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
-    JsonArray& relays = root.createNestedArray("dczRelayIdx");
+    JsonArray& relays = root.createNestedArray("dczRelays");
     for (byte i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }

@@ -613,6 +613,19 @@ PROGMEM const char* const custom_reset_string[] = {
 #define INFLUXDB_PASSWORD       ""              // Default password
 
 // -----------------------------------------------------------------------------
+// THINGSPEAK
+// -----------------------------------------------------------------------------
+
+#ifndef THINGSPEAK_SUPPORT
+#define THINGSPEAK_SUPPORT      1               // Enable Thingspeak support by default (???Kb)
+#endif
+
+#define THINGSPEAK_ENABLED      0               // Thingspeak disabled by default
+#define THINGSPEAK_HOST         "api.thingspeak.com"
+#define THINGSPEAK_URL          "/update"
+#define THINGSPEAK_APIKEY       ""              // Default API KEY
+
+// -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
 
