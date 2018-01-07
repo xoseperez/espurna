@@ -438,15 +438,17 @@
 // Sensor helpers configuration
 // =============================================================================
 
+#ifndef SENSOR_SUPPORT
 #if ANALOG_SUPPORT || BH1750_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
     || DHT_SUPPORT || DIGITAL_SUPPORT || ECH1560_SUPPORT \
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
     || SI7021_SUPPORT || V9261F_SUPPORT
-
 #define SENSOR_SUPPORT                      1
-
+#else
+#define SENSOR_SUPPORT                      0
+#endif
 #endif
 
 // -----------------------------------------------------------------------------

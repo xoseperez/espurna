@@ -71,7 +71,7 @@
 //#define DOMOTICZ_SUPPORT       0
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
-//#define INFLUXDB_SUPPORT       0
+//#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
 //#define MDNS_SUPPORT           0

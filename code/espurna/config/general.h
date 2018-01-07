@@ -16,6 +16,21 @@
     type name[] = {__VA_ARGS__};
 
 //------------------------------------------------------------------------------
+// ESPURNA CORE
+//------------------------------------------------------------------------------
+
+#ifdef ESPURNA_CORE
+    #define ALEXA_SUPPORT          0
+    #define DOMOTICZ_SUPPORT       0
+    #define HOMEASSISTANT_SUPPORT  0
+    #define MQTT_SUPPORT           0
+    #define NTP_SUPPORT            0
+    #define WEB_SUPPORT            0
+    #define SENSOR_SUPPORT         0
+    #define I2C_SUPPORT            0
+#endif
+
+//------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
 
