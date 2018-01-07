@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // DHTXX Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DHT_SUPPORT
@@ -137,7 +137,11 @@ class DHTSensor : public BaseSensor {
             pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
-            delayMicroseconds(_type == DHT_CHIP_DHT11 ? 20000 : 500);
+            if (_type == DHT_CHIP_DHT11) {
+                delay(20);
+            } else {
+                delayMicroseconds(500);
+            }
             digitalWrite(_gpio, HIGH);
             delayMicroseconds(40);
             pinMode(_gpio, INPUT_PULLUP);

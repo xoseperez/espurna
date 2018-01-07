@@ -7,8 +7,9 @@
 // GENERAL
 //------------------------------------------------------------------------------
 
+#define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
-#define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
+#define USE_PASSWORD            1           // Insecurity caution! Disabling this will disable password querying completely.
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
 #define ARRAYINIT(type, name, ...) \
@@ -208,7 +209,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_BOOT_OFF          0
 #define RELAY_BOOT_ON           1
 #define RELAY_BOOT_SAME         2
-#define RELAY_BOOT_TOOGLE       3
+#define RELAY_BOOT_TOGGLE       3
 
 #define RELAY_TYPE_NORMAL       0
 #define RELAY_TYPE_INVERSE      1
@@ -587,6 +588,11 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef HOMEASSISTANT_SUPPORT
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
+#endif
+
+#if HOMEASSISTANT_SUPPORT
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT            1               // If Home Assistant enabled enable MQTT
 #endif
 
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default

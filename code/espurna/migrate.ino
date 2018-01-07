@@ -2,7 +2,7 @@
 
 MIGRATE MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -681,6 +681,21 @@ void migrate() {
             setSetting("chLogic", 2, 0);
             setSetting("chLogic", 3, 0);
             setSetting("chLogic", 4, 0);
+            setSetting("relays", 1);
+
+        #elif defined(ARILUX_AL_LC02)
+
+            setSetting("board", 52);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 12);
+            setSetting("chGPIO", 1, 5);
+            setSetting("chGPIO", 2, 13);
+            setSetting("chGPIO", 3, 15);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
         #else

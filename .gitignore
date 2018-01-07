@@ -12,3 +12,5 @@ credentials.h
 node_modules
 code/utils
 custom.h
+.python
+.env

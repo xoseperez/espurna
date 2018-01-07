@@ -2,7 +2,7 @@
 
 MQTT MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -45,6 +45,7 @@ bool _mqtt_forward;
 char *_mqtt_user = 0;
 char *_mqtt_pass = 0;
 char *_mqtt_will;
+char *_mqtt_clientid;
 #if MQTT_SKIP_RETAINED
 unsigned long _mqtt_connected_at = 0;
 #endif
@@ -209,6 +210,8 @@ void mqttRegister(mqtt_callback_f callback) {
 // Callbacks
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
 void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttVisible"] = 1;
     root["mqttStatus"] = mqttConnected();
@@ -216,6 +219,7 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
     root["mqttUser"] = getSetting("mqttUser");
+    root["mqttClientID"] = getSetting("mqttClientID");
     root["mqttPassword"] = getSetting("mqttPassword");
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
@@ -228,6 +232,12 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
     root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 }
+
+void _mqttConfigure() {
+    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
+}
+
+#endif
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -385,17 +395,21 @@ void mqttConnect() {
     if (_mqtt_user) free(_mqtt_user);
     if (_mqtt_pass) free(_mqtt_pass);
     if (_mqtt_will) free(_mqtt_will);
+    if (_mqtt_clientid) free(_mqtt_clientid);
 
     _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
     _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
     _mqtt_will = strdup((_mqtt_topic + MQTT_TOPIC_STATUS).c_str());
+    _mqtt_clientid = strdup(getSetting("mqttClientID", getIdentifier()).c_str());
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
 
     #if MQTT_USE_ASYNC
 
         _mqtt.setServer(host, port);
-        _mqtt.setKeepAlive(_mqtt_keepalive).setCleanSession(false);
+        _mqtt.setClientId(_mqtt_clientid);
+        _mqtt.setKeepAlive(_mqtt_keepalive);
+        _mqtt.setCleanSession(false);
         _mqtt.setWill(_mqtt_will, _mqtt_qos, _mqtt_retain, "0");
         if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
             DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
@@ -418,9 +432,10 @@ void mqttConnect() {
 
         #endif // ASYNC_TCP_SSL_ENABLED
 
-        DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+        DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
         DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
         DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
+        DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
 
         _mqtt.connect();
 
@@ -469,14 +484,15 @@ void mqttConnect() {
 
             if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
                 DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
-                response = _mqtt.connect(getIdentifier().c_str(), _mqtt_user, _mqtt_pass, _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
+                response = _mqtt.connect(_mqtt_clientid, _mqtt_user, _mqtt_pass, _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
             } else {
-				response = _mqtt.connect(getIdentifier().c_str(), _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
+				response = _mqtt.connect(_mqtt_clientid, _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
             }
 
-            DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+            DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
             DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
+            DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
 
         }
 
@@ -589,6 +605,7 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
+        wsOnAfterParseRegister(_mqttConfigure);
     #endif
 
 }

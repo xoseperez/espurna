@@ -19,6 +19,7 @@ import shlex
 import commands
 import subprocess
 import sys
+import os
 import re
 import argparse
 
@@ -38,6 +39,12 @@ sections = OrderedDict([
 description = "ESPurna Memory Analyzer v0.1"
 
 #-------------------------------------------------------------------------------
+
+def file_size(file):
+    try:
+        return os.stat(file).st_size
+    except:
+        return 0
 
 def analyse_memory(elf_file):
 
@@ -107,7 +114,7 @@ try:
 
     # Parse command line options
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("modules", nargs='*', help="Modules to test")
+    parser.add_argument("modules", nargs='*', help="Modules to test (use ALL to test them all)")
     parser.add_argument("-c", "--core", help="use core as base configuration instead of default", default=0, action='count')
     parser.add_argument("-l", "--list", help="list available modules", default=0, action='count')
     args = parser.parse_args()
@@ -133,10 +140,12 @@ try:
         sys.exit(0)
 
     # Which modules to test?
+    test_modules = []
     if len(args.modules) > 0:
-        test_modules = args.modules
-    else:
-        test_modules = available_modules.keys()
+        if "ALL" in args.modules:
+            test_modules = available_modules.keys()
+        else:
+            test_modules = args.modules
 
     # Check test modules exist
     for module in test_modules:
@@ -153,20 +162,26 @@ try:
         modules = available_modules
 
     # Show init message
-    print "Analyzing module(s) %s on top of %s configuration\n" % (", ".join(test_modules), "CORE" if args.core > 0 else "DEFAULT")
-    output_format="{:<20}|{:<11}|{:<11}|{:<11}|{:<11}|{:<11}"
+    if len(test_modules) > 0:
+        print "Analyzing module(s) %s on top of %s configuration\n" % (", ".join(test_modules), "CORE" if args.core > 0 else "DEFAULT")
+    else:
+        print "Analyzing %s configuration\n" % ("CORE" if args.core > 0 else "DEFAULT")
+
+    output_format="{:<20}|{:<11}|{:<11}|{:<11}|{:<11}|{:<11}|{:<12}"
     print(output_format.format(
         "Module",
         "Cache IRAM",
         "Init RAM",
         "R.O. RAM",
         "Uninit RAM",
-        "Flash ROM"
+        "Flash ROM",
+        "Binary size"
     ))
 
     # Build the core without modules to get base memory usage
     run(env, modules)
-    base = analyse_memory(".pioenvs/"+env+"/firmware.elf")
+    base = analyse_memory(".pioenvs/%s/firmware.elf" % env)
+    base['size'] = file_size(".pioenvs/%s/firmware.bin" % env)
     print(output_format.format(
         "CORE" if args.core == 1 else "DEFAULT",
         base['text'],
@@ -174,6 +189,7 @@ try:
         base['rodata'],
         base['bss'],
         base['irom0_text'],
+        base['size'],
     ))
 
     # Test each module
@@ -182,7 +198,8 @@ try:
 
         modules[module] = 1
         run(env, modules)
-        results[module]=analyse_memory(".pioenvs/"+env+"/firmware.elf")
+        results[module]=analyse_memory(".pioenvs/%s/firmware.elf" % env)
+        results[module]['size'] = file_size(".pioenvs/%s/firmware.bin" % env)
         modules[module] = 0
 
         print(output_format.format(
@@ -192,32 +209,38 @@ try:
             results[module]['rodata'] - base['rodata'],
             results[module]['bss'] - base['bss'],
             results[module]['irom0_text'] - base['irom0_text'],
+            results[module]['size'] - base['size'],
         ))
 
     # Test all modules
-    for module in test_modules:
-        modules[module] = 1
-    run(env, modules)
-    total = analyse_memory(".pioenvs/"+env+"/firmware.elf")
+    if len(test_modules) > 0:
 
-    if len(test_modules) > 1:
+        for module in test_modules:
+            modules[module] = 1
+        run(env, modules)
+        total = analyse_memory(".pioenvs/%s/firmware.elf" % env)
+        total['size'] = file_size(".pioenvs/%s/firmware.bin" % env)
+
+        if len(test_modules) > 1:
+            print(output_format.format(
+                "ALL MODULES",
+                total['text'] - base['text'],
+                total['data'] - base['data'],
+                total['rodata'] - base['rodata'],
+                total['bss'] - base['bss'],
+                total['irom0_text'] - base['irom0_text'],
+                total['size'] - base['size'],
+            ))
+
         print(output_format.format(
-            "ALL MODULES",
-            total['text'] - base['text'],
-            total['data'] - base['data'],
-            total['rodata'] - base['rodata'],
-            total['bss'] - base['bss'],
-            total['irom0_text'] - base['irom0_text'],
+            "TOTAL",
+            total['text'],
+            total['data'],
+            total['rodata'],
+            total['bss'],
+            total['irom0_text'],
+            total['size'],
         ))
-
-    print(output_format.format(
-        "TOTAL",
-        total['text'],
-        total['data'],
-        total['rodata'],
-        total['bss'],
-        total['irom0_text'],
-    ))
 
 except:
     raise
