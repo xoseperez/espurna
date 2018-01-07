@@ -433,6 +433,9 @@ void loop() {
     #if SENSOR_SUPPORT
         sensorLoop();
     #endif
+    #if THINGSPEAK_SUPPORT
+        tspkLoop();
+    #endif
 
     // Power saving delay
     delay(_loopDelay);

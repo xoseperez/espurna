@@ -617,13 +617,14 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef THINGSPEAK_SUPPORT
-#define THINGSPEAK_SUPPORT      1               // Enable Thingspeak support by default (???Kb)
+#define THINGSPEAK_SUPPORT      0               // Enable Thingspeak support by default (???Kb)
 #endif
 
 #define THINGSPEAK_ENABLED      0               // Thingspeak disabled by default
-#define THINGSPEAK_USE_SSL      0               // Use secure connection
-#define THINGSPEAK_USE_ASYNC    0               // Use AsyncClient instead of WiFiClientSecure
 #define THINGSPEAK_APIKEY       ""              // Default API KEY
+
+#define THINGSPEAK_USE_ASYNC    1               // Use AsyncClient instead of WiFiClientSecure
+#define THINGSPEAK_USE_SSL      0               // Use secure connection
 
 #define THINGSPEAK_HOST         "api.thingspeak.com"
 #if THINGSPEAK_USE_SSL
@@ -632,6 +633,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define THINGSPEAK_PORT         80
 #endif
 #define THINGSPEAK_URL          "/update"
+#define THINGSPEAK_MIN_INTERVAL 15000           // Minimum interval between POSTs (in millis)
 
 #ifndef ASYNC_TCP_SSL_ENABLED
 #if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC

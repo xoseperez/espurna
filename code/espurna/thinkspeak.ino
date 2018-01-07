@@ -11,16 +11,6 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 #if THINGSPEAK_USE_ASYNC
     #include <ESPAsyncTCP.h>
     AsyncClient _tspk_client;
-
-    const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
-        "POST %s HTTP/1.1\r\n"
-        "Host: %s\r\n"
-        "User-Agent: ESPurna\r\n"
-        "Connection: close\r\n"
-        "Content-Type: application/x-www-form-urlencoded\r\n"
-        "Content-Length: %d\r\n\r\n"
-        "%s\r\n";
-
 #else
     #include <ESP8266WiFi.h>
     #if THINGSPEAK_USE_SSL
@@ -30,8 +20,20 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
     #endif
 #endif
 
+const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
+    "POST %s HTTP/1.1\r\n"
+    "Host: %s\r\n"
+    "User-Agent: ESPurna\r\n"
+    "Connection: close\r\n"
+    "Content-Type: application/x-www-form-urlencoded\r\n"
+    "Content-Length: %d\r\n\r\n"
+    "%s\r\n";
+
 bool _tspk_enabled = false;
 char * _tspk_queue[8] = {NULL};
+
+bool _tspk_flush = false;
+unsigned long _tspk_last_flush = 0;
 
 // -----------------------------------------------------------------------------
 
@@ -68,24 +70,23 @@ void _tspkConfigure() {
 
 #if THINGSPEAK_USE_ASYNC
 
-bool _tspkPost(String data) {
+void _tspkPost(String data) {
 
     _tspk_client.onError([](void * arg, AsyncClient * client, int error) {
-        DEBUG_MSG("[THINGSPEAK] Connection error (%d)\n", error);
+        _P(PSTR("[THINGSPEAK] Connection error (%d)\n", error);
         _tspk_client = NULL;
     }, NULL);
 
     _tspk_client.onConnect([data](void * arg, AsyncClient * client) {
 
-        DEBUG_MSG("[THINGSPEAK] POST %s\n", data.c_str());
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
 
         client->onData([](void * arg, AsyncClient * c, void * response, size_t len) {
             char * b = (char *) response;
             b[len] = 0;
-            Serial.println(b);
             char * p = strstr((char *)response, "\r\n\r\n");
             unsigned int code = (p != NULL) ? atoi(&p[4]) : 0;
-            DEBUG_MSG("[THINGSPEAK] Response value: %d\n", code);
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
         }, NULL);
 
         char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
@@ -106,55 +107,75 @@ bool _tspkPost(String data) {
     #else
     if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
     #endif
-        DEBUG_MSG("[THINGSPEAK] Connection failed\n");
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
     }
 
 }
 
-#else
+#else // not THINGSPEAK_USE_ASYNC
 
-bool _tspkPost(String data) {
+void _tspkPost(String data) {
 
     if (_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
 
-        DEBUG_MSG("[THINGSPEAK] POST %s\n", data.c_str());
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
 
-        _tspk_client.println("POST " + String(THINGSPEAK_URL) + " HTTP/1.1");
-        _tspk_client.println("Host: " + String(THINGSPEAK_HOST));
-        _tspk_client.println("User-Agent: ESPurna");
-        _tspk_client.println("Connection: close");
-        _tspk_client.println("Content-Type: application/x-www-form-urlencoded");
-        _tspk_client.print("Content-Length: ");
-        _tspk_client.println(data.length());
-        _tspk_client.println();
-        _tspk_client.println(data);
-        _tspk_client.println();
+        char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
+        snprintf_P(buffer, sizeof(buffer),
+            THINGSPEAK_REQUEST_TEMPLATE,
+            THINGSPEAK_URL,
+            THINGSPEAK_HOST,
+            data.length(),
+            data.c_str()
+        );
+        _tspk_client.print(buffer);
 
-        delay(10);
+        nice_delay(100);
 
         String response = _tspk_client.readString();
         int pos = response.indexOf("\r\n\r\n");
         unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
-        DEBUG_MSG("[THINGSPEAK] Response value: %d\n", code);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
         _tspk_client.stop();
-        return (code > 0);
+        return;
 
     }
 
-    DEBUG_MSG("[THINGSPEAK] Connection failed\n");
-    return false;
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
 
 }
 
-#endif
+#endif // THINGSPEAK_USE_ASYNC
 
 bool _tspkEnqueue(unsigned char index, char * payload) {
-    DEBUG_MSG("[THINGSPEAK] Enqueuing field #%d with value %s\n", index, payload);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%d with value %s\n"), index, payload);
     --index;
     if (_tspk_queue[index] != NULL) free(_tspk_queue[index]);
     _tspk_queue[index] = strdup(payload);
 }
 
+void _tspkFlush() {
+
+    String data;
+
+    // Walk the fields
+    for (unsigned char id=0; id<8; id++) {
+        if (_tspk_queue[id] != NULL) {
+            if (data.length() > 0) data = data + String("&");
+            data = data + String("field") + String(id+1) + String("=") + String(_tspk_queue[id]);
+            free(_tspk_queue[id]);
+            _tspk_queue[id] = NULL;
+        }
+    }
+
+    // POST data if any
+    if (data.length() > 0) {
+        data = data + String("&api_key=") + getSetting("tspkKey");
+        _tspkPost(data);
+        _tspk_last_flush = millis();
+    }
+
+}
 // -----------------------------------------------------------------------------
 
 bool tspkEnqueueRelay(unsigned char index, unsigned char status) {
@@ -175,29 +196,8 @@ bool tspkEnqueueMeasurement(unsigned char index, char * payload) {
     }
 }
 
-bool tspkFlush() {
-
-    if (!_tspk_enabled) return true;
-    if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return true;
-
-    String data;
-
-    // Walk the fields
-    for (unsigned char id=0; id<8; id++) {
-        if (_tspk_queue[id] != NULL) {
-            if (data.length() > 0) data = data + String("&");
-            data = data + String("field") + String(id+1) + String("=") + String(_tspk_queue[id]);
-            free(_tspk_queue[id]);
-            _tspk_queue[id] = NULL;
-        }
-    }
-
-    // POST data if any
-    if (data.length() > 0) {
-        data = data + String("&api_key=") + getSetting("tspkKey");
-        _tspkPost(data);
-    }
-
+void tspkFlush() {
+    _tspk_flush = true;
 }
 
 bool tspkEnabled() {
@@ -210,6 +210,15 @@ void tspkSetup() {
         wsOnSendRegister(_tspkWebSocketOnSend);
         wsOnAfterParseRegister(_tspkConfigure);
     #endif
+}
+
+void tspkLoop() {
+    if (!_tspk_enabled) return;
+    if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return;
+    if (_tspk_flush && (millis() - _tspk_last_flush > THINGSPEAK_MIN_INTERVAL)) {
+        _tspkFlush();
+        _tspk_flush = false;
+    }
 }
 
 #endif
