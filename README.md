@@ -143,7 +143,7 @@ Here is the list of supported hardware. For more information please refer to the
 
 ## License
 
-Copyright (C) 2016-2017 by Xose Pérez (@xoseperez)
+Copyright (C) 2016-2018 by Xose Pérez (@xoseperez)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
