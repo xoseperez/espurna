@@ -77,6 +77,11 @@ class V9261FSensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
         // Loop-like method, call it in your main loop
         void tick() {
             _read();

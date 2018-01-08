@@ -62,7 +62,7 @@ class BaseSensor {
         static void manifest(JsonArray& root) {};
 
         // Descriptive name of the slot # index
-        String slot(unsigned char index) { return description(); }
+        virtual String slot(unsigned char index) {};
 
         // Sensor ID
         unsigned char getID() { return _sensor_id; };

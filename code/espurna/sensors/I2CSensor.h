@@ -23,6 +23,11 @@ class I2CSensor : public BaseSensor {
             return _address;
         }
 
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
     protected:
 
         // Specific for I2C sensors
