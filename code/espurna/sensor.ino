@@ -634,11 +634,23 @@ void sensorLoop() {
                         dtostrf(filtered, 1-sizeof(buffer), decimals, buffer);
 
                         #if MQTT_SUPPORT
+
                             if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
                                 mqttSend(_magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
                             } else {
                                 mqttSend(_magnitudeTopic(magnitude.type).c_str(), buffer);
                             }
+
+                            #if DALLAS_SUPPORT && DALLAS_PUBLISH_ADDRESSES
+                                if (magnitude.sensor->getID() == SENSOR_DALLAS_ID) {
+                                    if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+                                        mqttSend(DALLAS_ADDRESS_TOPIC, magnitude.global, (((DallasSensor *) magnitude.sensor)->getAddress(magnitude.local)).c_str());
+                                    } else {
+                                        mqttSend(DALLAS_ADDRESS_TOPIC, (((DallasSensor *) magnitude.sensor)->getAddress(magnitude.local)).c_str());
+                                    }
+                                }
+                            #endif // DALLAS_SUPPORT && DALLAS_PUBLISH_ADDRESSES
+
                         #endif // MQTT_SUPPORT
 
                         #if INFLUXDB_SUPPORT

@@ -161,8 +161,12 @@
 #define DALLAS_PIN                      14
 #endif
 
-#define DALLAS_RESOLUTION               9        // Not used atm
-#define DALLAS_READ_INTERVAL            2000     // Force sensor read & cache every 2 seconds
+#define DALLAS_RESOLUTION               9           // Not used atm
+#define DALLAS_READ_INTERVAL            2000        // Force sensor read & cache every 2 seconds
+
+#define DALLAS_PUBLISH_ADDRESSES        0           // Publish sensor addresses
+#define DALLAS_ADDRESS_TOPIC            "address"   // Topic to publish sensor addresses
+
 
 //------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor

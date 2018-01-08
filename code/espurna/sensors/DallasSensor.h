@@ -170,6 +170,19 @@ class DallasSensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Address of the device
+        String getAddress(unsigned char index) {
+            char buffer[20] = {0};
+            if (index < _count) {
+                uint8_t * address = _devices[index].address;
+                snprintf(buffer, sizeof(buffer), "%02X%02X%02X%02X%02X%02X%02X%02X",
+                    address[0], address[1], address[2], address[3],
+                    address[4], address[5], address[6], address[7]
+                );
+            }
+            return String(buffer);
+        }
+
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             _error = SENSOR_ERROR_OK;
