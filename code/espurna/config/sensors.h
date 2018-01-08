@@ -399,7 +399,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef SI7021_SUPPORT
-#define SI7021_SUPPORT                  1
+#define SI7021_SUPPORT                  0
 #endif
 
 #ifndef SI7021_ADDRESS
