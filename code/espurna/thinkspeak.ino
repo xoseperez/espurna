@@ -73,7 +73,7 @@ void _tspkConfigure() {
 void _tspkPost(String data) {
 
     _tspk_client.onError([](void * arg, AsyncClient * client, int error) {
-        _P(PSTR("[THINGSPEAK] Connection error (%d)\n", error);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection error (%d)\n", error);
         _tspk_client = NULL;
     }, NULL);
 
