@@ -203,6 +203,19 @@ void _sensorPost() {
 
 void _sensorInit() {
 
+    /*
+
+    This is temporal, in the future sensors will be initialized based on
+    soft configuration (data stored in EEPROM config) so you will be able
+    to define and configure new sensors on the fly
+
+    At the time being, only enabled sensors (those with *_SUPPORT to 1) are being
+    loaded and initialized here. If you want to add new sensors of the same type
+    just duplicate the block and change the arguments for the set* methods.
+    Check the DHT block below for an example
+
+     */
+
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
@@ -243,6 +256,19 @@ void _sensorInit() {
         _sensors.push_back(sensor);
     }
     #endif
+
+    /*
+    // Example on how to add a second DHT sensor
+    // DHT2_PIN and DHT2_TYPE should be defined in sensors.h file
+    #if DHT_SUPPORT
+    {
+        DHTSensor * sensor = new DHTSensor();
+        sensor->setGPIO(DHT2_PIN);
+        sensor->setType(DHT2_TYPE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+    */
 
     #if DIGITAL_SUPPORT
     {
