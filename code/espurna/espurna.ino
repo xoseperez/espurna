@@ -128,8 +128,7 @@ void welcome() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[INIT] MANUFACTURER: %s\n"), MANUFACTURER);
-    DEBUG_MSG_P(PSTR("[INIT] DEVICE: %s\n"), DEVICE);
+    DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
 
     #if ALEXA_SUPPORT
@@ -289,6 +288,7 @@ void setup() {
     if (getSetting("hostname").length() == 0) {
         setSetting("hostname", getIdentifier());
     }
+    setBoardName();
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _loopDelay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());

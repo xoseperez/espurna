@@ -15,6 +15,16 @@ String getIdentifier() {
     return String(buffer);
 }
 
+void setBoardName() {
+    #ifndef ESPURNA_CORE
+        setSetting("boardName", DEVICE_NAME);
+    #endif
+}
+
+String getBoardName() {
+    return getSetting("boardName", DEVICE_NAME);
+}
+
 String getCoreVersion() {
     String version = ESP.getCoreVersion();
     #ifdef ARDUINO_ESP8266_RELEASE
