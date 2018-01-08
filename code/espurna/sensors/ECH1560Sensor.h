@@ -87,6 +87,13 @@ class ECH1560Sensor : public BaseSensor {
             return description();
         };
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[6];
+            snprintf(buffer, sizeof(buffer), "%i:%i", _clk, _miso);
+            return String(buffer);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;

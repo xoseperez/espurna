@@ -150,7 +150,7 @@ class BMX280Sensor : public I2CSensor {
 
         void getConfig(JsonObject& root) {
             root["sensor_id"] = _sensor_id;
-            root["address"] = getAddress();
+            root["address"] = _address;
         };
 
         void setConfig(JsonObject& root) {

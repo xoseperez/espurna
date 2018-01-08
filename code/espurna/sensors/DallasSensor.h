@@ -171,7 +171,7 @@ class DallasSensor : public BaseSensor {
         }
 
         // Address of the device
-        String getAddress(unsigned char index) {
+        String address(unsigned char index) {
             char buffer[20] = {0};
             if (index < _count) {
                 uint8_t * address = _devices[index].address;

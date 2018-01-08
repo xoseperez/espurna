@@ -82,6 +82,11 @@ class V9261FSensor : public BaseSensor {
             return description();
         };
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_pin_rx);
+        }
+
         // Loop-like method, call it in your main loop
         void tick() {
             _read();

@@ -641,15 +641,15 @@ void sensorLoop() {
                                 mqttSend(_magnitudeTopic(magnitude.type).c_str(), buffer);
                             }
 
-                            #if DALLAS_SUPPORT && DALLAS_PUBLISH_ADDRESSES
-                                if (magnitude.sensor->getID() == SENSOR_DALLAS_ID) {
-                                    if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                        mqttSend(DALLAS_ADDRESS_TOPIC, magnitude.global, (((DallasSensor *) magnitude.sensor)->getAddress(magnitude.local)).c_str());
-                                    } else {
-                                        mqttSend(DALLAS_ADDRESS_TOPIC, (((DallasSensor *) magnitude.sensor)->getAddress(magnitude.local)).c_str());
-                                    }
+                            #if SENSOR_PUBLISH_ADDRESSES
+                                char topic[32];
+                                snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, _magnitudeTopic(magnitude.type).c_str());
+                                if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+                                    mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
+                                } else {
+                                    mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
                                 }
-                            #endif // DALLAS_SUPPORT && DALLAS_PUBLISH_ADDRESSES
+                            #endif // SENSOR_PUBLISH_ADDRESSES
 
                         #endif // MQTT_SUPPORT
 

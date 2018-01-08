@@ -36,6 +36,9 @@
 #define HUMIDITY_DRY                        2
 #define HUMIDITY_WET                        3
 
+#define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
+#define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
+
 //--------------------------------------------------------------------------------
 // Sensor ID
 // These should remain over time, do not modify them, only add new ones at the end
@@ -163,10 +166,6 @@
 
 #define DALLAS_RESOLUTION               9           // Not used atm
 #define DALLAS_READ_INTERVAL            2000        // Force sensor read & cache every 2 seconds
-
-#define DALLAS_PUBLISH_ADDRESSES        0           // Publish sensor addresses
-#define DALLAS_ADDRESS_TOPIC            "address"   // Topic to publish sensor addresses
-
 
 //------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor

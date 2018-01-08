@@ -28,6 +28,13 @@ class I2CSensor : public BaseSensor {
             return description();
         };
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[5];
+            snprintf(buffer, sizeof(buffer), "0x%02X", _address);
+            return String(buffer);
+        }
+
     protected:
 
         // Specific for I2C sensors

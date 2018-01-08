@@ -95,6 +95,11 @@ class DHTSensor : public BaseSensor {
             return description();
         };
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_gpio);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
