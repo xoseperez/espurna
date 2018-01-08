@@ -10,14 +10,9 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
-AsyncClient _tspk_client;
+AsyncClient * _tspk_client;
 #else
 #include <ESP8266WiFi.h>
-#if THINGSPEAK_USE_SSL
-WiFiClientSecure _tspk_client;
-#else
-WiFiClient _tspk_client;
-#endif
 #endif
 
 const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
@@ -73,22 +68,44 @@ void _tspkConfigure() {
 
 void _tspkPost(String data) {
 
-    _tspk_client.onError([](void * arg, AsyncClient * client, int error) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection error (%d)\n", error);
+    if (_tspk_client == NULL) {
+        _tspk_client = new AsyncClient();
+    }
+
+    _tspk_client->onDisconnect([](void *s, AsyncClient *c) {
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected\n"));
+        _tspk_client->free();
+        delete _tspk_client;
         _tspk_client = NULL;
+    }, 0);
+
+    _tspk_client->onTimeout([](void *s, AsyncClient *c, uint32_t time) {
+        _tspk_client->close(true);
+    }, 0);
+
+    _tspk_client->onData([](void * arg, AsyncClient * c, void * response, size_t len) {
+        char * b = (char *) response;
+        b[len] = 0;
+        char * p = strstr((char *)response, "\r\n\r\n");
+        unsigned int code = (p != NULL) ? atoi(&p[4]) : 0;
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
+        _tspk_client->close(true);
     }, NULL);
 
-    _tspk_client.onConnect([data](void * arg, AsyncClient * client) {
+    _tspk_client->onConnect([data](void * arg, AsyncClient * client) {
+
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%d\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
+
+        #if THINGSPEAK_USE_SSL
+            uint8_t fp[20] = {0};
+            sslFingerPrintArray(THINGSPEAK_FINGERPRINT, fp);
+            SSL * ssl = _tspk_client->getSSL();
+            if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
+                DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
+            }
+        #endif
 
         DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
-
-        client->onData([](void * arg, AsyncClient * c, void * response, size_t len) {
-            char * b = (char *) response;
-            b[len] = 0;
-            char * p = strstr((char *)response, "\r\n\r\n");
-            unsigned int code = (p != NULL) ? atoi(&p[4]) : 0;
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
-        }, NULL);
 
         char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
         snprintf_P(buffer, sizeof(buffer),
@@ -104,14 +121,15 @@ void _tspkPost(String data) {
     }, NULL);
 
     #if ASYNC_TCP_SSL_ENABLED
-        if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL)) {
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
-        }
-    #else // ASYNC_TCP_SSL_ENABLED
-        if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
-        }
-    #endif // ASYNC_TCP_SSL_ENABLED
+        bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
+    #else
+        bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
+    #endif
+
+    if (!connected) {
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
+        _tspk_client->close(true);
+    }
 
 }
 
@@ -119,10 +137,21 @@ void _tspkPost(String data) {
 
 void _tspkPost(String data) {
 
+    #if THINGSPEAK_USE_SSL
+        WiFiClientSecure _tspk_client;
+    #else
+        WiFiClient _tspk_client;
+    #endif
+
     if (_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%d\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
 
+        if (!_tspk_client.verify(THINGSPEAK_FINGERPRINT, THINGSPEAK_HOST)) {
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
+        }
+
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
         char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
         snprintf_P(buffer, sizeof(buffer),
             THINGSPEAK_REQUEST_TEMPLATE,

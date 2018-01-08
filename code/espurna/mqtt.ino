@@ -319,47 +319,6 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
 }
 
-#if MQTT_USE_ASYNC
-
-bool mqttFormatFP(const char * fingerprint, unsigned char * bytearray) {
-
-    // check length (20 2-character digits ':' or ' ' separated => 20*2+19 = 59)
-    if (strlen(fingerprint) != 59) return false;
-
-    DEBUG_MSG_P(PSTR("[MQTT] Fingerprint %s\n"), fingerprint);
-
-    // walk the fingerprint
-    for (unsigned int i=0; i<20; i++) {
-        bytearray[i] = strtol(fingerprint + 3*i, NULL, 16);
-    }
-
-    return true;
-
-}
-
-#else
-
-bool mqttFormatFP(const char * fingerprint, char * destination) {
-
-    // check length (20 2-character digits ':' or ' ' separated => 20*2+19 = 59)
-    if (strlen(fingerprint) != 59) return false;
-
-    DEBUG_MSG_P(PSTR("[MQTT] Fingerprint %s\n"), fingerprint);
-
-    // copy it
-    strncpy(destination, fingerprint, 59);
-
-    // walk the fingerprint replacing ':' for ' '
-    for (unsigned char i = 0; i<59; i++) {
-        if (destination[i] == ':') destination[i] = ' ';
-    }
-
-    return true;
-
-}
-
-#endif
-
 void mqttEnabled(bool status) {
     _mqtt_enabled = status;
     setSetting("mqttEnabled", status ? 1 : 0);
@@ -423,7 +382,7 @@ void mqttConnect() {
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 unsigned char fp[20] = {0};
-                if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                if (sslFingerPrintArray(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                     _mqtt.addServerFingerprint(fp);
                 } else {
                     DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
@@ -450,7 +409,7 @@ void mqttConnect() {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 if (_mqtt_client_secure.connect(host, port)) {
                     char fp[60] = {0};
-                    if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                    if (sslFingerPrintChar(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                         if (_mqtt_client_secure.verify(fp, host)) {
                             _mqtt.setClient(_mqtt_client_secure);
                         } else {
