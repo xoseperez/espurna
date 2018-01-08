@@ -549,8 +549,10 @@ void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
 
 void mqttSetup() {
 
-    DEBUG_MSG_P(PSTR("[MQTT] MQTT_USE_ASYNC = %d\n"), MQTT_USE_ASYNC);
-    DEBUG_MSG_P(PSTR("[MQTT] MQTT_AUTOCONNECT = %d\n"), MQTT_AUTOCONNECT);
+    DEBUG_MSG_P(PSTR("[MQTT] Async %s, Autoconnect %s\n"),
+        MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
+        MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
+    );
 
     #if MQTT_USE_ASYNC
 
@@ -591,8 +593,6 @@ void mqttSetup() {
         });
 
     #else // not MQTT_USE_ASYNC
-
-        DEBUG_MSG_P(PSTR("[MQTT] Using SYNC MQTT library\n"));
 
         _mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {
             _mqttOnMessage(topic, (char *) payload, length);

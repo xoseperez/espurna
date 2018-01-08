@@ -9,15 +9,15 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 #if THINGSPEAK_SUPPORT
 
 #if THINGSPEAK_USE_ASYNC
-    #include <ESPAsyncTCP.h>
-    AsyncClient _tspk_client;
+#include <ESPAsyncTCP.h>
+AsyncClient _tspk_client;
 #else
-    #include <ESP8266WiFi.h>
-    #if THINGSPEAK_USE_SSL
-        WiFiClientSecure _tspk_client;
-    #else
-        WiFiClient _tspk_client;
-    #endif
+#include <ESP8266WiFi.h>
+#if THINGSPEAK_USE_SSL
+WiFiClientSecure _tspk_client;
+#else
+WiFiClient _tspk_client;
+#endif
 #endif
 
 const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
@@ -41,6 +41,7 @@ void _tspkWebSocketOnSend(JsonObject& root) {
 
     root["tspkVisible"] = 1;
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
+    root["tspkKey"] = getSetting("tspkKey");
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
     for (byte i=0; i<relayCount(); i++) {
@@ -103,16 +104,18 @@ void _tspkPost(String data) {
     }, NULL);
 
     #if ASYNC_TCP_SSL_ENABLED
-    if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL)) {
-    #else
-    if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
-    #endif
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
-    }
+        if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL)) {
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
+        }
+    #else // ASYNC_TCP_SSL_ENABLED
+        if (!_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
+        }
+    #endif // ASYNC_TCP_SSL_ENABLED
 
 }
 
-#else // not THINGSPEAK_USE_ASYNC
+#else // THINGSPEAK_USE_ASYNC
 
 void _tspkPost(String data) {
 
@@ -210,6 +213,10 @@ void tspkSetup() {
         wsOnSendRegister(_tspkWebSocketOnSend);
         wsOnAfterParseRegister(_tspkConfigure);
     #endif
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
+        THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",
+        THINGSPEAK_USE_SSL ? "ENABLED" : "DISABLED"
+    );
 }
 
 void tspkLoop() {
