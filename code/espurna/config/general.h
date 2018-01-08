@@ -321,7 +321,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // This is not working at the moment!!
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
 #define WEB_SSL_ENABLED         0           // Use HTTPS web interface
 
 #define WEB_MODE_NORMAL         0
@@ -420,7 +420,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // MQTT OVER SSL
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
 //
 // You can use it with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
 // but you might experience hiccups on the web interface, so my recommendation is:
@@ -626,6 +626,41 @@ PROGMEM const char* const custom_reset_string[] = {
 #define INFLUXDB_DATABASE       ""              // Default database
 #define INFLUXDB_USERNAME       ""              // Default username
 #define INFLUXDB_PASSWORD       ""              // Default password
+
+// -----------------------------------------------------------------------------
+// THINGSPEAK
+// -----------------------------------------------------------------------------
+
+#ifndef THINGSPEAK_SUPPORT
+#define THINGSPEAK_SUPPORT      0               // Enable Thingspeak support by default (???Kb)
+#endif
+
+#define THINGSPEAK_ENABLED      0               // Thingspeak disabled by default
+#define THINGSPEAK_APIKEY       ""              // Default API KEY
+
+#define THINGSPEAK_USE_ASYNC    1               // Use AsyncClient instead of WiFiClientSecure
+
+// THINGSPEAK OVER SSL
+// Using THINGSPEAK over SSL works well but generates problems with the web interface,
+// so you should compile it with WEB_SUPPORT to 0.
+// When THINGSPEAK_USE_ASYNC is 1, requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+#define THINGSPEAK_USE_SSL      0               // Use secure connection
+#define THINGSPEAK_FINGERPRINT  "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
+
+#define THINGSPEAK_HOST         "api.thingspeak.com"
+#if THINGSPEAK_USE_SSL
+#define THINGSPEAK_PORT         443
+#else
+#define THINGSPEAK_PORT         80
+#endif
+#define THINGSPEAK_URL          "/update"
+#define THINGSPEAK_MIN_INTERVAL 15000           // Minimum interval between POSTs (in millis)
+
+#ifndef ASYNC_TCP_SSL_ENABLED
+#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
+#undef THINGSPEAK_SUPPORT                       // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#endif
+#endif
 
 // -----------------------------------------------------------------------------
 // NTP

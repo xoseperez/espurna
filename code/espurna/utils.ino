@@ -202,6 +202,51 @@ void heartbeat() {
 }
 
 // -----------------------------------------------------------------------------
+// SSL
+// -----------------------------------------------------------------------------
+
+#if ASYNC_TCP_SSL_ENABLED
+
+bool sslCheckFingerPrint(const char * fingerprint) {
+    return (strlen(fingerprint) == 59);
+}
+
+bool sslFingerPrintArray(const char * fingerprint, unsigned char * bytearray) {
+
+    // check length (20 2-character digits ':' or ' ' separated => 20*2+19 = 59)
+    if (!sslCheckFingerPrint(fingerprint)) return false;
+
+    // walk the fingerprint
+    for (unsigned int i=0; i<20; i++) {
+        bytearray[i] = strtol(fingerprint + 3*i, NULL, 16);
+    }
+
+    return true;
+
+}
+
+bool sslFingerPrintChar(const char * fingerprint, char * destination) {
+
+    // check length (20 2-character digits ':' or ' ' separated => 20*2+19 = 59)
+    if (!sslCheckFingerPrint(fingerprint)) return false;
+
+    // copy it
+    strncpy(destination, fingerprint, 59);
+
+    // walk the fingerprint replacing ':' for ' '
+    for (unsigned char i = 0; i<59; i++) {
+        if (destination[i] == ':') destination[i] = ' ';
+    }
+
+    return true;
+
+}
+
+#endif
+
+// -----------------------------------------------------------------------------
+// Reset
+// -----------------------------------------------------------------------------
 
 unsigned char resetReason() {
     static unsigned char status = 255;

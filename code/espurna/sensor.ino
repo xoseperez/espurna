@@ -687,6 +687,10 @@ void sensorLoop() {
                             }
                         #endif // INFLUXDB_SUPPORT
 
+                        #if THINGSPEAK_SUPPORT
+                            tspkEnqueueMeasurement(i, buffer);
+                        #endif
+
                         #if DOMOTICZ_SUPPORT
                         {
                             char key[15];
@@ -721,6 +725,10 @@ void sensorLoop() {
 
         #if WEB_SUPPORT
             wsSend(_sensorWebSocketSendData);
+        #endif
+
+        #if THINGSPEAK_SUPPORT
+            if (report_count == 0) tspkFlush();
         #endif
 
     }

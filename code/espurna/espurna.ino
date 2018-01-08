@@ -188,6 +188,9 @@ void welcome() {
     #if TERMINAL_SUPPORT
         DEBUG_MSG_P(PSTR(" TERMINAL"));
     #endif
+    #if THINGSPEAK_SUPPORT
+        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
+    #endif
     #if WEB_SUPPORT
         DEBUG_MSG_P(PSTR(" WEB"));
     #endif
@@ -357,6 +360,9 @@ void setup() {
     #if INFLUXDB_SUPPORT
         idbSetup();
     #endif
+    #if THINGSPEAK_SUPPORT
+        tspkSetup();
+    #endif
     #if RF_SUPPORT
         rfSetup();
     #endif
@@ -426,6 +432,9 @@ void loop() {
     #endif
     #if SENSOR_SUPPORT
         sensorLoop();
+    #endif
+    #if THINGSPEAK_SUPPORT
+        tspkLoop();
     #endif
 
     // Power saving delay
