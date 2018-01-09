@@ -4,7 +4,7 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.11.3**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+> **Current Release Version is 1.11.4**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
 > **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
 
@@ -37,6 +37,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Enable/disable pulse mode
     * Change LED notification mode
     * Remote reset the board
+    * Fully configurable in webUI (broker, user, password, QoS, keep alive time, retain flag, client ID)
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
@@ -45,13 +46,14 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for lights (color, brightness, on/off state)
     * Supports MQTT auto-discover feature (both switches and lights)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
+* [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
 * Support for different **sensors**
     * Environment
-        * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021** (supports celsius & fahrenheit reporting)
+        * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
         * **SI7021** temperature and humidity sensor
         * **SHT3X** temperature and humidity sensor over I2C (Wemos shield)
-        * **Dallas OneWire sensors** like the DS18B20 (supports celsius & fahrenheit reporting)
+        * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
         * **PMSX003** dust sensor
         * **BH1750** luminosity sensor
@@ -62,6 +64,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **V9261F** power monitor chip
     * Raw analog and digital sensors
     * Simple pulse counter
+    * All temperature sensors support Fahrenheit and Celsius
 * Support for LED lights
     * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
     * RGB and HSV color codes supported
@@ -69,6 +72,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Temperature color supported (in mired and kelvin) via MQTT / REST API
     * Flicker-free PWM management
     * Soft color transitions
+    * Color synchronization between light using MQTT
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
@@ -139,7 +143,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
+**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC02, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
 
 ## License
 
