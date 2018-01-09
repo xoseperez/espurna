@@ -23,6 +23,7 @@
 // -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
+
 #if defined(NODEMCU_LOLIN)
 
     // Info
@@ -35,12 +36,8 @@
     #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN          5
+    #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-	#define RELAY2_PIN          4
-    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
-    #define RELAY3_PIN          12
-    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
     #define LED1_PIN            2
