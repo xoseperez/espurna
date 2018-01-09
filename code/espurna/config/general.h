@@ -90,7 +90,6 @@
 //------------------------------------------------------------------------------
 
 // General debug options and macros
-#define DEBUG_FORMAT_MAX_LENGTH 80
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
 #if DEBUG_SUPPORT
