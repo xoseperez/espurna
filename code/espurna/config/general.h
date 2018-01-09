@@ -604,7 +604,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
-#define DOMOTICZ_SKIP_TIME      2               // Avoid recursion skipping messages to same IDX within 2 seconds
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
