@@ -194,10 +194,21 @@ PROGMEM const char* const custom_reset_string[] = {
 // BUTTON
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_DEBOUNCE_DELAY
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
+#endif
+
+#ifndef BUTTON_DBLCLICK_DELAY
 #define BUTTON_DBLCLICK_DELAY       500         // Time in ms to wait for a second (or third...) click
+#endif
+
+#ifndef BUTTON_LNGCLICK_DELAY
 #define BUTTON_LNGCLICK_DELAY       1000        // Time in ms holding the button down to get a long click
+#endif
+
+#ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
 
 #define BUTTON_EVENT_NONE           0
 #define BUTTON_EVENT_PRESSED        1
