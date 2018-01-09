@@ -106,6 +106,18 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Extra long click (>10 seconds) to go back to factory settings (only main button)
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
 
+## Contribute
+
+There are several ways to contribute to ESpurna development. You can contribute to the repository by doing:
+
+* Pull requests (fixes, enhancements, new features... are very welcome)
+* Documentation (I reckon I'm bad at it)
+* Testing (filing issues or help resolving them, they take a lot of time and sometimes I don't have the required hardware to test them all)
+
+And of course you can always buy me a beer, coffee, tea,... via the donation button below.
+
+[![Donate to ESPurna Project](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+
 ## Documentation
 
 For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xoseperez/espurna/wiki/Home).
