@@ -642,7 +642,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef THINGSPEAK_SUPPORT
-#define THINGSPEAK_SUPPORT      0               // Enable Thingspeak support by default (???Kb)
+#define THINGSPEAK_SUPPORT      1               // Enable Thingspeak support by default (2.56Kb)
 #endif
 
 #define THINGSPEAK_ENABLED      0               // Thingspeak disabled by default

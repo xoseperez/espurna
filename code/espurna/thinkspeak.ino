@@ -34,7 +34,8 @@ unsigned long _tspk_last_flush = 0;
 
 void _tspkWebSocketOnSend(JsonObject& root) {
 
-    root["tspkVisible"] = 1;
+    unsigned char visible = 0;
+
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
     root["tspkKey"] = getSetting("tspkKey");
 
@@ -42,6 +43,7 @@ void _tspkWebSocketOnSend(JsonObject& root) {
     for (byte i=0; i<relayCount(); i++) {
         relays.add(getSetting("tspkRelay", i, 0).toInt());
     }
+    if (relayCount() > 0) visible = 1;
 
     #if SENSOR_SUPPORT
         JsonArray& list = root.createNestedArray("tspkMagnitudes");
@@ -52,7 +54,10 @@ void _tspkWebSocketOnSend(JsonObject& root) {
             element["index"] = magnitudeIndex(i);
             element["idx"] = getSetting("tspkMagnitude", i, 0).toInt();
         }
+        if (magnitudeCount() > 0) visible = 1;
     #endif
+
+    root["tspkVisible"] = visible;
 
 }
 
