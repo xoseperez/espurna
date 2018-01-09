@@ -7,6 +7,7 @@ Copyright (C) 2017 by faina09
 */
 
 #if SCHEDULER_SUPPORT
+
 #include <NtpClientLib.h>
 
 void _schWebSocketOnSend(JsonObject &root){
@@ -44,7 +45,7 @@ void schSetup(){
 }
 
 void schLoop(){
-    // Check if we should compare scheduled and actual times 
+    // Check if we should compare scheduled and actual times
     static unsigned long last_update = 0;
     static int sec = 0;
     if ((millis() - last_update > ((SCH_UPDATE_SEC + 60 - sec)*1000)) || (last_update == 0)) {
@@ -112,4 +113,5 @@ int diffTime(int schhour, int schminute){
         return (hour - schhour) * 60 + minute - schminute;
     }
 }
-#endif
+
+#endif // SCHEDULER_SUPPORT

@@ -438,7 +438,8 @@ void loop() {
     #endif
     #if THINGSPEAK_SUPPORT
         tspkLoop();
-    #endif    #if SCHEDULER_SUPPORT
+    #endif
+    #if SCHEDULER_SUPPORT
         schLoop();
     #endif
 
