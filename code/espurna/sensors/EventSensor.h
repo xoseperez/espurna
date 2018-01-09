@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Event Counter Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EVENTS_SUPPORT
@@ -79,6 +79,16 @@ class EventSensor : public BaseSensor {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "INTERRUPT @ GPIO%d", _gpio);
             return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_gpio);
         }
 
         // Type for slot # index

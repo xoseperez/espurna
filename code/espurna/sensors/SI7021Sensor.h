@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // SI7021 / HTU21D Sensor over I2C
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && SI7021_SUPPORT
@@ -84,6 +84,11 @@ class SI7021Sensor : public I2CSensor {
             snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", chipAsString().c_str(), _address);
             return String(buffer);
         }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
 
         // Type for slot # index
         unsigned char type(unsigned char index) {

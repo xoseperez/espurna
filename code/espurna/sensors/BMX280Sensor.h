@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // BME280/BMP280 Sensor over I2C
 // Uses SparkFun BME280 library
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && BMX280_SUPPORT
@@ -150,7 +150,7 @@ class BMX280Sensor : public I2CSensor {
 
         void getConfig(JsonObject& root) {
             root["sensor_id"] = _sensor_id;
-            root["address"] = getAddress();
+            root["address"] = _address;
         };
 
         void setConfig(JsonObject& root) {

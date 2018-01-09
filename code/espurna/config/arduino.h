@@ -57,6 +57,8 @@
 //#define GENERIC_8CH
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC11
+//#define ARILUX_AL_LC02
+//#define WEMOS_D1_TARPUNA_SHIELD
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -69,7 +71,7 @@
 //#define DOMOTICZ_SUPPORT       0
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
-//#define INFLUXDB_SUPPORT       0
+//#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
 //#define MDNS_SUPPORT           0
@@ -82,6 +84,7 @@
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
 //#define TERMINAL_SUPPORT       0
+//#define THINGSPEAK_SUPPORT     0
 //#define WEB_SUPPORT            0
 
 //--------------------------------------------------------------------------------

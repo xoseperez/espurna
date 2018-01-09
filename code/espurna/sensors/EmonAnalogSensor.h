@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Energy Monitor Sensor using builtin ADC
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
@@ -57,6 +57,11 @@ class EmonAnalogSensor : public EmonSensor {
         // Descriptive name of the sensor
         String description() {
             return String("EMON @ ANALOG @ GPIO0");
+        }
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String("0");
         }
 
         // Type for slot # index

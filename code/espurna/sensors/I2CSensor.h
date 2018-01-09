@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Abstract I2C sensor class (other sensor classes extend this class)
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && ( I2C_SUPPORT || EMON_ANALOG_SUPPORT )
@@ -21,6 +21,18 @@ class I2CSensor : public BaseSensor {
 
         unsigned char getAddress() {
             return _address;
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[5];
+            snprintf(buffer, sizeof(buffer), "0x%02X", _address);
+            return String(buffer);
         }
 
     protected:

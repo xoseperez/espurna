@@ -3,7 +3,7 @@
 // Based on: https://github.com/nara256/mhz19_uart
 // http://www.winsen-sensor.com/d/files/infrared-gas-sensor/mh-z19b-co2-ver1_0.pdf
 // Uses SoftwareSerial library
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && MHZ19_SUPPORT
@@ -86,6 +86,18 @@ class MHZ19Sensor : public BaseSensor {
         String description() {
             char buffer[28];
             snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[6];
+            snprintf(buffer, sizeof(buffer), "%i:%i", _pin_rx, _pin_tx);
             return String(buffer);
         }
 

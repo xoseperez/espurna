@@ -7,12 +7,28 @@
 // GENERAL
 //------------------------------------------------------------------------------
 
+#define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
-#define DEVICE_NAME             MANUFACTURER "_" DEVICE // Concatenate both to get a unique device name
+#define USE_PASSWORD            1           // Insecurity caution! Disabling this will disable password querying completely.
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
 #define ARRAYINIT(type, name, ...) \
     type name[] = {__VA_ARGS__};
+
+//------------------------------------------------------------------------------
+// ESPURNA CORE
+//------------------------------------------------------------------------------
+
+#ifdef ESPURNA_CORE
+    #define ALEXA_SUPPORT          0
+    #define DOMOTICZ_SUPPORT       0
+    #define HOMEASSISTANT_SUPPORT  0
+    #define MQTT_SUPPORT           0
+    #define NTP_SUPPORT            0
+    #define WEB_SUPPORT            0
+    #define SENSOR_SUPPORT         0
+    #define I2C_SUPPORT            0
+#endif
 
 //------------------------------------------------------------------------------
 // TELNET
@@ -74,7 +90,6 @@
 //------------------------------------------------------------------------------
 
 // General debug options and macros
-#define DEBUG_FORMAT_MAX_LENGTH 80
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
 #if DEBUG_SUPPORT
@@ -179,10 +194,21 @@ PROGMEM const char* const custom_reset_string[] = {
 // BUTTON
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_DEBOUNCE_DELAY
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
+#endif
+
+#ifndef BUTTON_DBLCLICK_DELAY
 #define BUTTON_DBLCLICK_DELAY       500         // Time in ms to wait for a second (or third...) click
+#endif
+
+#ifndef BUTTON_LNGCLICK_DELAY
 #define BUTTON_LNGCLICK_DELAY       1000        // Time in ms holding the button down to get a long click
+#endif
+
+#ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
 
 #define BUTTON_EVENT_NONE           0
 #define BUTTON_EVENT_PRESSED        1
@@ -208,7 +234,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_BOOT_OFF          0
 #define RELAY_BOOT_ON           1
 #define RELAY_BOOT_SAME         2
-#define RELAY_BOOT_TOOGLE       3
+#define RELAY_BOOT_TOGGLE       3
 
 #define RELAY_TYPE_NORMAL       0
 #define RELAY_TYPE_INVERSE      1
@@ -305,7 +331,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // This is not working at the moment!!
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
 #define WEB_SSL_ENABLED         0           // Use HTTPS web interface
 
 #define WEB_MODE_NORMAL         0
@@ -404,7 +430,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // MQTT OVER SSL
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
 //
 // You can use it with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
 // but you might experience hiccups on the web interface, so my recommendation is:
@@ -588,6 +614,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
 #endif
 
+#if HOMEASSISTANT_SUPPORT
+#undef MQTT_SUPPORT
+#define MQTT_SUPPORT            1               // If Home Assistant enabled enable MQTT
+#endif
+
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 
@@ -605,6 +636,41 @@ PROGMEM const char* const custom_reset_string[] = {
 #define INFLUXDB_DATABASE       ""              // Default database
 #define INFLUXDB_USERNAME       ""              // Default username
 #define INFLUXDB_PASSWORD       ""              // Default password
+
+// -----------------------------------------------------------------------------
+// THINGSPEAK
+// -----------------------------------------------------------------------------
+
+#ifndef THINGSPEAK_SUPPORT
+#define THINGSPEAK_SUPPORT      1               // Enable Thingspeak support by default (2.56Kb)
+#endif
+
+#define THINGSPEAK_ENABLED      0               // Thingspeak disabled by default
+#define THINGSPEAK_APIKEY       ""              // Default API KEY
+
+#define THINGSPEAK_USE_ASYNC    1               // Use AsyncClient instead of WiFiClientSecure
+
+// THINGSPEAK OVER SSL
+// Using THINGSPEAK over SSL works well but generates problems with the web interface,
+// so you should compile it with WEB_SUPPORT to 0.
+// When THINGSPEAK_USE_ASYNC is 1, requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+#define THINGSPEAK_USE_SSL      0               // Use secure connection
+#define THINGSPEAK_FINGERPRINT  "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
+
+#define THINGSPEAK_HOST         "api.thingspeak.com"
+#if THINGSPEAK_USE_SSL
+#define THINGSPEAK_PORT         443
+#else
+#define THINGSPEAK_PORT         80
+#endif
+#define THINGSPEAK_URL          "/update"
+#define THINGSPEAK_MIN_INTERVAL 15000           // Minimum interval between POSTs (in millis)
+
+#ifndef ASYNC_TCP_SSL_ENABLED
+#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
+#undef THINGSPEAK_SUPPORT                       // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#endif
+#endif
 
 // -----------------------------------------------------------------------------
 // NTP
