@@ -508,8 +508,9 @@ void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
 
 void mqttSetup() {
 
-    DEBUG_MSG_P(PSTR("[MQTT] Async %s, Autoconnect %s\n"),
+    DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
+        ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
         MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
     );
 
