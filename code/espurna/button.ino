@@ -80,7 +80,7 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
 
 void buttonEvent(unsigned int id, unsigned char event) {
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Pressed #%d, event: %d\n"), id, event);
+    DEBUG_MSG_P(PSTR("[BUTTON] Button #%d event %d\n"), id, event);
     if (event == 0) return;
 
     #if MQTT_SUPPORT
