@@ -72,6 +72,16 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+#elif defined(WEMOS_D1_TARPUNA_SHIELD)
+
+    // Info
+    #define MANUFACTURER        "WEMOS"
+    #define DEVICE              "D1_TARPUNA_SHIELD"
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
 // -----------------------------------------------------------------------------
 // ESPurna
 // -----------------------------------------------------------------------------
@@ -451,6 +461,37 @@
     #define BUTTON2_RELAY       2
     #define BUTTON3_RELAY       3
     #define BUTTON4_RELAY       4
+
+    // Sonoff 4CH Pro uses a secondary STM32 microcontroller to handle
+    // buttons and relays, but it also forwards button presses to the ESP8285.
+    // This allows ESPurna to handle button presses -almost- the same way
+    // as with other devices except:
+    // * Double click seems to break/disable the button on the STM32 side
+    // * With S6 switch to 1 (self-locking and inching modes) everything's OK
+    // * With S6 switch to 0 (interlock mode) if there is a relay ON
+    //    and you click on another relay button, the STM32 sends a "press"
+    //    event for the button of the first relay (to turn it OFF) but it
+    //    does not send a "release" event. It's like it's holding the
+    //    button down since you can see it is still LOW.
+    //    Whatever reason the result is that it may actually perform a
+    //    long click or long-long click.
+    // The configuration below make the button toggle the relay on press events
+    // and disables any possibly harmful combination with S6 set to 0.
+    // If you are sure you will only use S6 to 1 you can comment the
+    // BUTTON1_LNGCLICK and BUTTON1_LNGLNGCLICK options below to recover the
+    // AP mode and factory reset functionalities.
+
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_NONE
+    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_MODE_NONE
+    #define BUTTON3_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_MODE_NONE
+    #define BUTTON4_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON4_CLICK       BUTTON_MODE_NONE
 
     // Relays
     #define RELAY1_PIN          12
@@ -1189,6 +1230,26 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
+
+#elif defined(ARILUX_AL_LC02)
+
+    // Info
+    #define MANUFACTURER        "ARILUX"
+    #define DEVICE              "AL_LC02"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       12      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       15      // WHITE1
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 #elif defined(ARILUX_AL_LC06)
 

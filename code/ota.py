@@ -38,15 +38,19 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
             device['app'] = info.properties.get('app_name', '')
             device['version'] = info.properties.get('app_version', '')
             device['device'] = info.properties.get('target_board', '')
-            device['mem_size'] = info.properties.get('mem_size', '')
-            device['sdk_size'] = info.properties.get('sdk_size', '')
+            if 'mem_size' in info.properties:
+                device['mem_size'] = info.properties.get('mem_size')
+            if 'sdk_size' in info.properties:
+                device['sdk_size'] = info.properties.get('sdk_size')
+            if 'free_space' in info.properties:
+                device['free_space'] = info.properties.get('free_space')
             devices.append(device)
 
 def list():
     '''
     Shows the list of discovered devices
     '''
-    output_format="{:>3}  {:<25}{:<25}{:<15}{:<15}{:<30}{:<10}{:<10}"
+    output_format="{:>3}  {:<25}{:<25}{:<15}{:<15}{:<30}{:<10}{:<10}{:<10}"
     print(output_format.format(
         "#",
         "HOSTNAME",
@@ -56,8 +60,9 @@ def list():
         "DEVICE",
         "MEM_SIZE",
         "SDK_SIZE",
+        "FREE_SPACE"
     ))
-    print "-" * 135
+    print "-" * 146
 
     index = 0
     for device in devices:
@@ -71,6 +76,7 @@ def list():
             device.get('device', ''),
             device.get('mem_size', ''),
             device.get('sdk_size', ''),
+            device.get('free_space', ''),
         ))
 
     print
@@ -161,6 +167,7 @@ if __name__ == '__main__':
     # Parse command line options
     parser = argparse.ArgumentParser(description=description)
     #parser.add_argument("-v", "--verbose", help="show verbose output", default=0, action='count')
+    parser.add_argument("-c", "--core", help="flash ESPurna core", default=0, action='count')
     parser.add_argument("-f", "--flash", help="flash device", default=0, action='count')
     parser.add_argument("-s", "--sort", help="sort devices list by field", default='hostname')
     args = parser.parse_args()
@@ -193,6 +200,10 @@ if __name__ == '__main__':
     if args.flash > 0:
         device = flash()
         if device:
+
+            # Flash core version?
+            if args.core > 0:
+                device['flags'] = "-DESPURNA_CORE " + device['flags']
 
             env = "esp8266-%sm-ota" % device['size']
 

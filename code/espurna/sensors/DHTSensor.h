@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // DHTXX Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DHT_SUPPORT
@@ -88,6 +88,16 @@ class DHTSensor : public BaseSensor {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "DHT%d @ GPIO%d", _type, _gpio);
             return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_gpio);
         }
 
         // Type for slot # index

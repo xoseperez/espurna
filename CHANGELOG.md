@@ -3,6 +3,31 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.11.4] 2018-01-09
+### Fixed
+- Fix bug in RF Bridge when RF code contains the stop byte. Check overflow (#357)
+- Fixed typos in code and wiki (Thanks to Ryan Jarvis)
+- Fix bug in magnitude topic and units (#355)
+
+### Added
+- Small core build to allow two-step flashing method for big binaries
+- Thingspeak support (#371, disabled by default)
+- Color synchronization between lights using MQTT (#362)
+- Support for Arilux AL-LC02 (#347)
+- Support for Tarpuna Shield for Wemos D1
+- Build option to disable password checking (#373)
+- Option to report sensor address via MQTT (#377, I2C address, GPIO, Dallas address,...)
+- Added binary size to memanalyzer script
+- Option to specify custom client ID for MQTT connection (#368)
+- Cross-platform ESPurna OTA Manager implemented in python (untested)
+- Terminal command to get or set digital GPIO
+
+### Changed
+- Using 2.3.0 for prebuilt binaries
+- Fix delay in DHT sensor
+- Allow MQTT keep alive value of up to 3600s
+- Changed Sonoff 4CH Pro definitions to support built-in interlock mode (#333)
+
 ## [1.11.3] 2018-01-02
 ### Fixed
 - Fix uninitialized PWM channels bug (#356)

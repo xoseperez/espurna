@@ -2,7 +2,7 @@
 
 MDNS MODULE
 
-Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -45,7 +45,7 @@ void mdnsSetup() {
     // Public ESPurna related txt for OTA discovery
     MDNS.addServiceTxt("arduino", "tcp", "app_name", APP_NAME);
     MDNS.addServiceTxt("arduino", "tcp", "app_version", APP_VERSION);
-    MDNS.addServiceTxt("arduino", "tcp", "target_board", DEVICE_NAME);
+    MDNS.addServiceTxt("arduino", "tcp", "target_board", getBoardName());
     {
         char buffer[6];
         itoa(ESP.getFlashChipRealSize() / 1024, buffer, 10);
@@ -55,6 +55,11 @@ void mdnsSetup() {
         char buffer[6];
         itoa(ESP.getFlashChipSize() / 1024, buffer, 10);
         MDNS.addServiceTxt("arduino", "tcp", "sdk_size", (const char *) buffer);
+    }
+    {
+        char buffer[6];
+        itoa(ESP.getFreeSketchSpace(), buffer, 10);
+        MDNS.addServiceTxt("arduino", "tcp", "free_space", (const char *) buffer);
     }
 
     _mdns_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {

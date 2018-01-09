@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // ADS1X15-based Energy Monitor Sensor over I2C
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ADS1X15_SUPPORT
@@ -200,6 +200,14 @@ class EmonADS1X15Sensor : public EmonSensor {
             char buffer[35];
             unsigned char channel = getChannel(index % _ports);
             snprintf(buffer, sizeof(buffer), "EMON @ ADS1%d15 (A%d) @ I2C (0x%02X)", _type == ADS1X15_CHIP_ADS1015 ? 0 : 1, channel, _address);
+            return String(buffer);
+        }
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[10];
+            unsigned char channel = getChannel(index % _ports);
+            snprintf(buffer, sizeof(buffer), "0x%02X:%i", _address, channel);
             return String(buffer);
         }
 

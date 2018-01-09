@@ -50,7 +50,9 @@ void schLoop(){
     if ((millis() - last_update > ((SCH_UPDATE_SEC + 60 - sec)*1000)) || (last_update == 0)) {
         last_update = millis();
         if (!ntpConnected()){
-            DEBUG_MSG_P(PSTR("[SCH] no NTP\n"));
+            time_t t = now();
+            sec = second(t);
+            DEBUG_MSG_P(PSTR("[SCH] no NTP, time now=%02d:%02d:%02d\n"),hour(t),minute(t),second(t));
         }
         else {
             // compare at next minute and SCH_UPDATE_SEC seconds
@@ -96,13 +98,18 @@ bool isThisWday(String weekdays){
 }
 
 int diffTime(int schhour, int schminute){
-    if (!ntpConnected())
-        return 9999; //NTP time not set
-    String value = NTP.getTimeDateString();
-    int hour = value.substring(0, 2).toInt();
-    int minute = value.substring(3, 5).toInt();
-    //DEBUG_MSG_P(PSTR("[SCH] ntp time: %02d:%02d\n"), hour, minute);
-    //DEBUG_MSG_P(PSTR("[SCH] cmp time: %02d:%02d\n"), schhour, schminute);
-    return (hour - schhour) * 60 + minute - schminute;
+    if (!ntpConnected()){
+        time_t t = now();
+        DEBUG_MSG_P(PSTR("[SCH] no NTP time = %02d:%02d:%02d\n"),hour(t),minute(t),second(t));
+        return (hour(t) - schhour) * 60 + minute(t) - schminute;
+    }
+    else {
+        String value = NTP.getTimeDateString();
+        int hour = value.substring(0, 2).toInt();
+        int minute = value.substring(3, 5).toInt();
+        //DEBUG_MSG_P(PSTR("[SCH] ntp time: %02d:%02d\n"), hour, minute);
+        //DEBUG_MSG_P(PSTR("[SCH] cmp time: %02d:%02d\n"), schhour, schminute);
+        return (hour - schhour) * 60 + minute - schminute;
+    }
 }
 #endif

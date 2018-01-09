@@ -104,7 +104,8 @@ var is_group = [
     "sch_switch","sch_operation","sch_hour","sch_minute","sch_weekdays",
     "relayBoot", "relayPulse", "relayTime",
     "mqttGroup", "mqttGroupInv",
-    "dczRelayIdx",
+    "dczRelayIdx", "dczMagnitude",
+    "tspkRelay", "tspkMagnitude",
     "ledMode",
     "adminPass"
 ];
@@ -396,36 +397,36 @@ function toggleMenu() {
 }
 
 // -----------------------------------------------------------------------------
-// Domoticz
+// Relays & magnitudes mapping
 // -----------------------------------------------------------------------------
 
-function createRelayIdxs(data) {
+function createRelayList(data, container, template) {
 
-    var current = $("#domoticzRelays > div").length;
+    var current = $("#" + container + " > div").length;
     if (current > 0) return;
 
-    var template = $("#relayIdxTemplate .pure-g")[0];
+    var template = $("#" + template + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
-        $("input", line).attr("name", "dczRelayIdx" + i).attr("tabindex", 40 + i).val(data[i]);
-        line.appendTo("#domoticzRelays");
+        $("input", line).attr("tabindex", 40 + i).val(data[i]);
+        line.appendTo("#" + container);
     }
 
 }
 
-function createMagnitudeIdxs(data) {
+function createMagnitudeList(data, container, template) {
 
-    var current = $("#domoticzMagnitudes > div").length;
+    var current = $("#" + container + " > div").length;
     if (current > 0) return;
 
-    var template = $("#magnitudeIdxTemplate .pure-g")[0];
+    var template = $("#" + template + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
         var line = $(template).clone();
         $("label", line).html(magnitudeType(data[i].type) + " #" + parseInt(data[i].index));
         $("div.hint", line).html(data[i].name);
-        $("input", line).attr("name", "dczMagnitude" + i).attr("tabindex", 40 + i).val(data[i].idx);
-        line.appendTo("#domoticzMagnitudes");
+        $("input", line).attr("tabindex", 40 + i).val(data[i].idx);
+        line.appendTo("#" + container);
     }
 
 }
@@ -718,6 +719,8 @@ function rfbSend() {
 
 function processData(data) {
 
+    console.log(data);
+
     // title
     if ("app_name" in data) {
         var title = data.app_name;
@@ -902,14 +905,30 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Domoticz - Relays
-        if (key == "dczRelayIdx") {
-            createRelayIdxs(data[key]);
+        if (key == "dczRelays") {
+            createRelayList(data[key], "dczRelays", "dczRelayTemplate");
             return;
         }
 
         // Domoticz - Magnitudes
         if (key == "dczMagnitudes") {
-            createMagnitudeIdxs(data[key]);
+            createMagnitudeList(data[key], "dczMagnitudes", "dczMagnitudeTemplate");
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // Thingspeak
+        // ---------------------------------------------------------------------
+
+        // Thingspeak - Relays
+        if (key == "tspkRelays") {
+            createRelayList(data[key], "tspkRelays", "tspkRelayTemplate");
+            return;
+        }
+
+        // Thingspeak - Magnitudes
+        if (key == "tspkMagnitudes") {
+            createMagnitudeList(data[key], "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
         }
 
