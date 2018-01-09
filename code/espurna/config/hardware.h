@@ -23,7 +23,7 @@
 // -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
-
+#define NODEMCU_LOLIN
 #if defined(NODEMCU_LOLIN)
 
     // Info
@@ -36,8 +36,16 @@
     #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN          12
+    #define RELAY1_PIN          5
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+	#define RELAY2_PIN          4
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_PIN          12
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+
+    #define SCHEDULER_SUPPORT   1
+    #define SCH_UPDATE_SEC      5 //scheduler perform switch at hh:mm:05
+    #define MAX_SCHEDULED       10
 
     // LEDs
     #define LED1_PIN            2

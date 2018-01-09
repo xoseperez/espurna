@@ -2,7 +2,7 @@
 // SENSORS - General data
 // =============================================================================
 
-#define SENSOR_DEBUG                        0               // Debug sensors
+#define SENSOR_DEBUG                        1               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
 #define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
