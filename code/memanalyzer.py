@@ -19,11 +19,15 @@ import argparse
 import os
 import re
 import shlex
-import subprocess
 import sys
 from collections import OrderedDict
-
 from sortedcontainers import SortedDict
+import subprocess
+
+if (sys.version_info > (3, 0)):
+    from subprocess import getstatusoutput as getstatusoutput
+else:
+    from commands import getstatusoutput as getstatusoutput
 
 # -------------------------------------------------------------------------------
 
@@ -112,7 +116,6 @@ def modules_get():
     del modules_['NETBIOS']
     return modules_
 
-
 try:
 
     # Parse command line options
@@ -126,9 +129,10 @@ try:
     print()
     print(description)
     print()
+
     # Check xtensa-lx106-elf-objdump is in the path
-    status, result = subprocess.getstatusoutput(objdump_binary)
-    if status != 512:
+    status, result = getstatusoutput(objdump_binary)
+    if status != 2 and status != 512:
         print("xtensa-lx106-elf-objdump not found, please check it is in your PATH")
         sys.exit(1)
 

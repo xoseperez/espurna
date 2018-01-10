@@ -72,7 +72,7 @@ def list():
         "SDK_SIZE",
         "FREE_SPACE"
     ))
-    print "-" * 146
+    print("-" * 146)
 
     index = 0
     for device in devices:
@@ -195,7 +195,7 @@ if __name__ == '__main__':
     zeroconf.close()
 
     if len(devices) == 0:
-        print "Nothing found!\n"
+        print("Nothing found!\n")
         sys.exit(0)
 
     # Sort list
