@@ -10,9 +10,6 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ESP8266mDNS.h>
 
-WiFiEventHandler _mdns_wifi_onSTA;
-WiFiEventHandler _mdns_wifi_onAP;
-
 #if MQTT_SUPPORT
 void mdnsFindMQTT() {
     int count = MDNS.queryService("mqtt", "tcp");
@@ -62,11 +59,19 @@ void mdnsSetup() {
         MDNS.addServiceTxt("arduino", "tcp", "free_space", (const char *) buffer);
     }
 
-    _mdns_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
-        _mdnsStart();
-    });
-    _mdns_wifi_onAP = WiFi.onSoftAPModeStationConnected([](WiFiEventSoftAPModeStationConnected ipInfo) {
-        _mdnsStart();
+    wifiRegister([](justwifi_messages_t code, char * parameter) {
+
+        if (code == MESSAGE_CONNECTED) {
+            _mdnsStart();
+            #if MQTT_SUPPORT
+                mdnsFindMQTT();
+            #endif // MQTT_SUPPORT
+        }
+
+        if (code == MESSAGE_ACCESSPOINT_CREATED) {
+            _mdnsStart();
+        }
+
     });
 
 }
