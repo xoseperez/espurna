@@ -101,7 +101,7 @@ function validateForm(form) {
 // These fields will always be a list of values
 var is_group = [
     "ssid", "pass", "gw", "mask", "ip", "dns",
-    "sch_switch","sch_operation","sch_hour","sch_minute","sch_weekdays",
+    "schSwitch","schAction","schHour","schMinute","schWDs",
     "relayBoot", "relayPulse", "relayTime",
     "mqttGroup", "mqttGroupInv",
     "dczRelayIdx", "dczMagnitude",
@@ -145,6 +145,9 @@ function getData(form) {
 
         }
     });
+
+    // Post process
+    if ("schSwitch" in data) data["schSwitch"].push(0xFF);
 
     return data;
 
@@ -479,16 +482,16 @@ function moreSchedule() {
     var parent = $(this).parents(".pure-g");
     $("div.more", parent).toggle();
 }
-        
-function addSchedule() {   
+
+function addSchedule() {
     var numSchedules = $("#schedules > div").length;
     if (numSchedules >= maxSchedules) {
         alert("Max number of schedules reached");
         return;
-    }   
+    }
     var tabindex = 200 + numSchedules * 10;
     var template = $("#scheduleTemplate").children();
-    var line = $(template).clone(); 
+    var line = $(template).clone();
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex++);
     });
@@ -1118,7 +1121,7 @@ $(function() {
     $(".button-add-schedule").on('click', function() {
         $("div.more", addSchedule()).toggle();
     });
-    
+
     $(document).on('change', 'input', hasChanged);
     $(document).on('change', 'select', hasChanged);
 
