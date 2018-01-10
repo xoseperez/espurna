@@ -308,6 +308,14 @@ void settingsSetup() {
         });
     #endif
 
+    #if MQTT_SUPPORT
+        Embedis::command( F("MQTT.RESET"), [](Embedis* e) {
+            mqttConfigure();
+            mqttDisconnect();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif
+
     #if NOFUSS_SUPPORT
         Embedis::command( F("NOFUSS"), [](Embedis* e) {
             DEBUG_MSG_P(PSTR("+OK\n"));
@@ -337,22 +345,19 @@ void settingsSetup() {
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
-    #if MQTT_SUPPORT
-        Embedis::command( F("RESET.MQTT"), [](Embedis* e) {
-            mqttConfigure();
-            mqttDisconnect();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-    #endif
+    Embedis::command( F("UPTIME"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
 
-    Embedis::command( F("RESET.WIFI"), [](Embedis* e) {
+    Embedis::command( F("WIFI.RESET"), [](Embedis* e) {
         wifiConfigure();
         wifiDisconnect();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    Embedis::command( F("UPTIME"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+    Embedis::command( F("WIFI.SCAN"), [](Embedis* e) {
+        wifiScan();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

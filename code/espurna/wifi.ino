@@ -111,8 +111,7 @@ void wifiConfigure() {
         }
     }
 
-    // Scan for best network only if we have more than 1 defined
-    jw.scanNetworks(i>1);
+    jw.scanNetworks(true);
 
 }
 
@@ -144,9 +143,52 @@ void wifiStatus() {
         DEBUG_MSG_P(PSTR("[WIFI] DNS  %s\n"), WiFi.dnsIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MASK %s\n"), WiFi.subnetMask().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] HOST %s\n"), WiFi.hostname().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] RSSI %d\n"), WiFi.RSSI());
     }
 
     DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
+
+}
+
+void wifiScan() {
+
+    DEBUG_MSG_P(PSTR("[WIFI] Start scanning\n"));
+
+    unsigned char result = WiFi.scanNetworks();
+
+    if (result == WIFI_SCAN_FAILED) {
+        DEBUG_MSG_P(PSTR("[WIFI] Scan failed\n"));
+    } else if (result == 0) {
+        DEBUG_MSG_P(PSTR("[WIFI] No networks found\n"));
+    } else {
+
+        DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
+
+        // Populate defined networks with scan data
+        for (int8_t i = 0; i < result; ++i) {
+
+            String ssid_scan;
+            int32_t rssi_scan;
+            uint8_t sec_scan;
+            uint8_t* BSSID_scan;
+            int32_t chan_scan;
+            bool hidden_scan;
+
+            WiFi.getNetworkInfo(i, ssid_scan, sec_scan, rssi_scan, BSSID_scan, chan_scan, hidden_scan);
+
+            DEBUG_MSG_P(PSTR("[WIFI] - BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s\n"),
+                BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5], BSSID_scan[6],
+                (sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
+                rssi_scan,
+                chan_scan,
+                (char *) ssid_scan.c_str()
+            );
+
+        }
+
+    }
+
+    WiFi.scanDelete();
 
 }
 
