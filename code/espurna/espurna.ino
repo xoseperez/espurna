@@ -173,6 +173,9 @@ void welcome() {
     #if RF_SUPPORT
         DEBUG_MSG_P(PSTR(" RF"));
     #endif
+    #if SCHEDULER_SUPPORT
+        DEBUG_MSG_P(PSTR(" SCHEDULER"));
+    #endif
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR(" SENSOR"));
     #endif

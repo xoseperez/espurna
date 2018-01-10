@@ -15,9 +15,9 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 void _schWebSocketOnSend(JsonObject &root){
 
-    root["maxScheduled"] = MAX_SCHEDULED;
+    root["maxScheduled"] = SCHEDULER_MAX_SCHEDULES;
     JsonArray &sch = root.createNestedArray("schedule");
-    for (byte i = 0; i < MAX_SCHEDULED; i++) {
+    for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!hasSetting("schSwitch", i)) break;
         JsonObject &scheduler = sch.createNestedObject();
         scheduler["schSwitch"] = getSetting("schSwitch", i, "");
@@ -34,7 +34,7 @@ void _schConfigure() {
 
     bool delete_flag = false;
 
-    for (unsigned char i = 0; i < MAX_SCHEDULED; i++) {
+    for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
 
         int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
         if (sch_switch == 0xFF) delete_flag = true;
@@ -69,7 +69,7 @@ void _schConfigure() {
 
 }
 
-bool _isThisWeekday(String weekdays){
+bool _schIsThisWeekday(String weekdays){
 
     // Monday = 1, Tuesday = 2 ... Sunday = 7
     int w = weekday(now()) - 1;
@@ -85,7 +85,7 @@ bool _isThisWeekday(String weekdays){
 
 }
 
-int _diffTime(unsigned char schedule_hour, unsigned char schedule_minute){
+int _schMinutesLeft(unsigned char schedule_hour, unsigned char schedule_minute){
 
     unsigned char now_hour;
     unsigned char now_minute;
@@ -118,7 +118,7 @@ void schSetup() {
 
 }
 
-void schLoop(){
+void schLoop() {
 
     static unsigned long last_update = 0;
     static int update_time = 0;
@@ -132,19 +132,19 @@ void schLoop(){
             NTP.getTimeDateString().substring(6, 8).toInt() :
             second(now())
             ;
-        update_time = (SCH_UPDATE_SEC + 60 - current_second) * 1000;
+        update_time = (SCHEDULER_UPDATE_SEC + 60 - current_second) * 1000;
 
-        for (unsigned char i = 0; i < MAX_SCHEDULED; i++) {
+        for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
 
             int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
             if (sch_switch == 0xFF) break;
 
             String sch_weekdays = getSetting("schWDs", i, "");
-            if (_isThisWeekday(sch_weekdays)) {
+            if (_schIsThisWeekday(sch_weekdays)) {
 
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
-                int minutes_to_trigger = _diffTime(sch_hour, sch_minute);
+                int minutes_to_trigger = _schMinutesLeft(sch_hour, sch_minute);
                 if (minutes_to_trigger == 0) {
                     int sch_action = getSetting("schAction", i, 0).toInt();
                     if (sch_action == 2) {
