@@ -41,6 +41,11 @@ String getNetwork() {
     return WiFi.SSID();
 }
 
+double wifiDistance(int rssi) {
+    double exponent = (double) (WIFI_RSSI_1M - rssi) / WIFI_PROPAGATION_CONST / 10.0;
+    return round(pow(10, exponent));
+}
+
 void wifiDisconnect() {
     jw.disconnect();
 }

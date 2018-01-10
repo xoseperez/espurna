@@ -318,6 +318,9 @@ PROGMEM const char* const custom_reset_string[] = {
 //#define WIFI2_SSID              "..."
 //#define WIFI2_PASS              "..."
 
+#define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
+#define WIFI_PROPAGATION_CONST  4           // This is typically something between 2.7 to 4.3 (free space is 2)
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
