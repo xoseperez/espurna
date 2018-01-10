@@ -183,8 +183,12 @@ if __name__ == '__main__':
     # Look for sevices
     zeroconf = Zeroconf()
     browser = ServiceBrowser(zeroconf, "_arduino._tcp.local.", handlers=[on_service_state_change])
-    sleep(1)
+    sleep(5)
     zeroconf.close()
+
+    if len(devices) == 0:
+        print "Nothing found!\n"
+        sys.exit(0)
 
     # Sort list
     field = args.sort.lower()
