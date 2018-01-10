@@ -534,8 +534,7 @@
 
                             <fieldset>
 
-                                <div id="networks">
-                                </div>
+                                <div id="networks"></div>
 
                                 <button type="button" class="pure-button button-add-network">Add network</button>
 
@@ -1040,7 +1039,7 @@
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set the Domain Name Server IP to use when using a static IP</div>
 
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
-                <button type="button" class="pure-button button-del-network more">Delete network</button>
+                <button class="pure-button button-del-network more" type="button">Delete network</button>
 
             </div>
 
@@ -1050,31 +1049,36 @@
 
             <div class="pure-g">
 
-                <label class="pure-u-sm-4-24 pure-u-1-3">Turn&nbsp;Switch&nbsp;No</label>
-                <div class="pure-u-sm-3-24 pure-u-1-3"><input name="schSwitch" type="number" min="0" max="10" step="1" value="0" tabindex="0" /></div>
+                <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
+                <div class="pure-u-1-4 pure-u-lg-1-5">
+                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" size="20" />
+                    <div class="pure-u-1-4 hint center"> h</div>
+                </div>
+                <div class="pure-u-1-4 pure-u-lg-1-5">
+                    <input class="pure-u-2-3" name="schMinute" type="number" min="0" step="1" max="59" />
+                    <div class="pure-u-1-4 hint center"> m</div>
+                </div>
+                <div class="pure-u-0 pure-u-lg-1-3"></div>
 
-                <div class="pure-u-sm-3-24 pure-u-1-3">
-                    <select name="schAction" tabindex="0">
-                        <option value="0">OFF</option>
-                        <option value="1">ON</option>
+                <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
+                <div class="pure-u-2-5 pure-u-lg-1-5">
+                    <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" size="15" tabindex="0" value="1,2,3,4,5,6,7" />
+                </div>
+                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">1 for Monday, 2 for Tuesday...</div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">Action</label>
+                <div class="pure-u-1 pure-u-lg-1-5">
+                    <select class="pure-u-1 pure-u-lg-23-24" name="schAction">
+                        <option value="0">Turn OFF</option>
+                        <option value="1">Turn ON</option>
+                        <option value="2">Toggle</option>
                     </select>
                 </div>
+                <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch"></select>
+                <div class="pure-u-0 pure-u-lg-1-5"></div>
 
-                <label class="pure-u-sm-5-24 pure-u-1-3">at&nbsp;Time&nbsp;HH&nbsp;MM</label>
-                <div class="pure-u-sm-3-24 pure-u-1-3"><input name="schHour" type="number" min="0" max="23" step="1" tabindex="0" value="0" /></div>
-                <div class="pure-u-sm-3-24 pure-u-1-3"><input name="schMinute" type="number" min="0" max="59" step="1" tabindex="0" value="0" /></div>
-
-                <div class="pure-u break"></div>
-
-                <label class="pure-u-sm-1-4 pure-u-1">on&nbsp;Weekdays:</label>
-                <div class="pure-u-sm-3-4 pure-u-1">
-                    <div class="pure-u-1 weekDays-selector">
-                        <input type="inbox" name="schWDs" value="1,2,3,4,5,6,7" class="weekday"  tabindex="0" />
-                    </div>
-                    <div class="pure-u-1 hint">1 = Sunday, 2 = Monday, ...</div>
-                </div>
-
-                <div class="pure-u-md-1-6 pure-u-1-4"><button type="button" class="pure-button button-del-schedule pure-u-5-6 pure-u-md-5-6">Del</button></div>
+                <div class="pure-u-0 pure-u-lg-1-4"></div>
+                <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
 
             </div>
 

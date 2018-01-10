@@ -861,6 +861,7 @@ function processData(data) {
         // -----------------------------------------------------------------------------
         // Relays scheduler
         // -----------------------------------------------------------------------------
+
         if (key == "maxSchedules") {
             maxSchedules = parseInt(data.maxSchedules);
             return;
@@ -869,15 +870,11 @@ function processData(data) {
         if (key == "schedule") {
             var schedule = data.schedule;
             for (var i in schedule) {
-                // add a new row
                 var line = addSchedule();
-                // fill in the blanks
                 var schedule = data.schedule[i];
                 Object.keys(schedule).forEach(function(key) {
-                    var element = $("input[name=" + key + "]", line);
-                    if (element.length) element.val(schedule[key]);
-                    var elementsel = $("select[name=" + key + "]", line);
-                    if (elementsel.length) elementsel.prop("value", schedule[key]);
+                    $("input[name=" + key + "]", line).val(schedule[key]);
+                    $("select[name=" + key + "]", line).prop("value", schedule[key]);
                 });
             }
             return;
@@ -890,9 +887,17 @@ function processData(data) {
         if (key == "relayStatus") {
             initRelays(data[key]);
             for (var i in data[key]) {
+
+                // Set the status for each relay
                 $("input.relayStatus[data='" + i + "']")
                     .prop("checked", data[key][i])
                     .iphoneStyle("refresh");
+
+                // Populate the relay SELECTs
+                $("select.isrelay").append(
+                    $("<option></option>").attr("value",i).text("Switch #" + i)
+                );
+
             }
             return;
         }

@@ -1,8 +1,9 @@
 /*
 
-A SCHEDULER MODULE
+SCHEDULER MODULE
 
 Copyright (C) 2017 by faina09
+Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -27,6 +28,8 @@ void _schWebSocketOnSend(JsonObject &root){
     }
 }
 
+#endif // WEB_SUPPORT
+
 void _schConfigure() {
 
     bool delete_flag = false;
@@ -48,11 +51,15 @@ void _schConfigure() {
 
             #if DEBUG_SUPPORT
 
-                int sch_operation = getSetting("schAction", i, 0).toInt();
+                int sch_action = getSetting("schAction", i, 0).toInt();
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
                 String sch_weekdays = getSetting("schWDs", i, "");
-                DEBUG_MSG_P(PSTR("[SCH] Turn switch #%d %s at %02d:%02d on %s\n"), sch_switch, sch_operation ? "ON" : "OFF", sch_hour, sch_minute, (char *)sch_weekdays.c_str());
+                DEBUG_MSG_P(
+                    PSTR("[SCH] Schedule #%d: %s switch #%d at %02d:%02d on %s\n"),
+                    i, sch_action == 0 ? "turn OFF" : sch_action == 1 ? "turn ON" : "toggle", sch_switch,
+                    sch_hour, sch_minute, (char *) sch_weekdays.c_str()
+                );
 
             #endif // DEBUG_SUPPORT
 
@@ -62,19 +69,17 @@ void _schConfigure() {
 
 }
 
-#endif // WEB_SUPPORT
-
 bool _isThisWeekday(String weekdays){
 
-    //Sunday = 1, Monday = 2, ...
-    int w = weekday(now());
-    //DEBUG_MSG_P(PSTR("[SCH] NTP weekday: %d\n"), w);
+    // Monday = 1, Tuesday = 2 ... Sunday = 7
+    int w = weekday(now()) - 1;
+    if (w == 0) w = 7;
 
-    char * pch;
+    char pch;
     char * p = (char *) weekdays.c_str();
-    while ((pch = strtok_r(p, ",", &p)) != NULL) {
-        //DEBUG_MSG_P(PSTR("[SCH] w found: %d\n"), atoi(pch));
-        if (atoi(pch) == w) return true;
+    unsigned char position = 0;
+    while (pch = p[position++]) {
+        if ((pch - '0') == w) return true;
     }
     return false;
 
@@ -141,11 +146,18 @@ void schLoop(){
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
                 int minutes_to_trigger = _diffTime(sch_hour, sch_minute);
                 if (minutes_to_trigger == 0) {
-                    int sch_operation = getSetting("schAction", i, 0).toInt();
-                    relayStatus(sch_switch, sch_operation);
+                    int sch_action = getSetting("schAction", i, 0).toInt();
+                    if (sch_action == 2) {
+                        relayToggle(sch_switch);
+                    } else {
+                        relayStatus(sch_switch, sch_action);
+                    }
                     DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), sch_switch);
                 } else if (minutes_to_trigger > 0) {
-                    DEBUG_MSG_P(PSTR("[SCH] %d minutes to trigger schedule #%d\n"), minutes_to_trigger, sch_switch);
+                    DEBUG_MSG_P(
+                        PSTR("[SCH] %d minutes to trigger schedule #%d\n"),
+                        minutes_to_trigger, sch_switch
+                    );
                 }
             }
         }
