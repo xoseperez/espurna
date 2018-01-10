@@ -147,7 +147,11 @@ function getData(form) {
     });
 
     // Post process
-    if ("schSwitch" in data) data["schSwitch"].push(0xFF);
+    if ("schSwitch" in data) {
+        data["schSwitch"].push(0xFF);
+    } else {
+        data["schSwitch"] = [0xFF];
+    }
 
     return data;
 
