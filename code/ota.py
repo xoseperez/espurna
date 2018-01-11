@@ -103,8 +103,48 @@ def get_boards():
             boards.append(m.group(1))
     return sorted(boards)
 
+def get_empty_board():
+    """
+    Returns the empty structure of a board to flash
+    """
+    board = {'board': '', 'ip': '', 'size': 0, 'auth': '', 'flags': ''}
+    return board
 
-def flash():
+def get_board_by_index(index):
+    """
+    Returns the required data to flash a given board
+    """
+    board = {}
+    if 1 <= index and index <= len(devices):
+        device = devices[index - 1]
+        board['hostname'] = device.get('hostname')
+        board['board'] = device.get('device', '')
+        board['ip'] = device.get('ip', '')
+        board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
+    return board
+
+def get_board_by_hostname(hostname):
+    """
+    Returns the required data to flash a given board
+    """
+    hostname = hostname.lower()
+    for device in devices:
+        if device.get('hostname', '').lower() == hostname:
+            board = {}
+            board['hostname'] = device.get('hostname')
+            board['board'] = device.get('device')
+            if not board['board']:
+                return None
+            board['ip'] = device.get('ip')
+            if not board['ip']:
+                return None
+            board['size'] = int(device.get('sdk_size', 0)) / 1024
+            if board['size'] == 0:
+                return None
+            return board
+    return None
+
+def input_board():
     """
     Grabs info from the user about what device to flash
     """
@@ -118,16 +158,10 @@ def flash():
         print("Board number must be between 1 and %s\n" % str(len(devices)))
         return None
 
-    board = {'board': '', 'ip': '', 'size': 0, 'auth': '', 'flags': ''}
-
-    if index > 0:
-        device = devices[index - 1]
-        board['board'] = device.get('device', '')
-        board['ip'] = device.get('ip', '')
-        board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
+    board = get_board_by_index(index);
 
     # Choose board type if none before
-    if len(board['board']) == 0:
+    if len(board.get('board', '')) == 0:
 
         print()
         count = 1
@@ -146,7 +180,7 @@ def flash():
         board['board'] = boards[index - 1]
 
     # Choose board size of none before
-    if board['size'] == 0:
+    if board.get('size', 0) == 0:
         try:
             board['size'] = int(input("Board memory size (1 for 1M, 4 for 4M): "))
         except:
@@ -154,20 +188,18 @@ def flash():
             return None
 
     # Choose IP of none before
-    if len(board['ip']) == 0:
+    if len(board.get('ip', '')) == 0:
         try:
             board['ip'] = input("IP of the device to flash (empty for 192.168.4.1): ") or "192.168.4.1"
         except:
             print("Wrong IP")
             return None
 
-    board['auth'] = input("Authorization key of the device to flash: ")
-    board['flags'] = input("Extra flags for the build: ")
-
     return board
 
 
 def run(device, env):
+    print("Building and flashing image over-the-air...")
     command = "export ESPURNA_IP=\"%s\"; export ESPURNA_BOARD=\"%s\"; export ESPURNA_AUTH=\"%s\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s -t upload"
     command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
     subprocess.check_call(command, shell=True)
@@ -181,7 +213,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-c", "--core", help="flash ESPurna core", default=0, action='count')
     parser.add_argument("-f", "--flash", help="flash device", default=0, action='count')
+    parser.add_argument("-o", "--flags", help="extra flags", default='')
+    parser.add_argument("-p", "--password", help="auth password", default='')
     parser.add_argument("-s", "--sort", help="sort devices list by field", default='hostname')
+    parser.add_argument("hostnames", nargs='*', help="Hostnames to update")
     args = parser.parse_args()
 
     print()
@@ -210,24 +245,49 @@ if __name__ == '__main__':
 
     # Flash device
     if args.flash > 0:
-        device = flash()
-        if device:
+
+        # Board(s) to flash
+        queue = []
+
+        # Check if hostnames
+        for hostname in args.hostnames:
+            board = get_board_by_hostname(hostname)
+            if board:
+                board['auth'] = args.password
+                board['flags'] = args.flags
+                queue.append(board)
+
+        # If no boards ask the user
+        if len(queue) == 0:
+            board = input_board()
+            if board:
+                board['auth'] = args.password or input("Authorization key of the device to flash: ")
+                board['flags'] = args.flags or input("Extra flags for the build: ")
+                queue.append(board)
+
+        # If still no boards quit
+        if len(queue) == 0:
+            sys.exit(0)
+
+        # Flash eash board
+        for board in queue:
 
             # Flash core version?
             if args.core > 0:
-                device['flags'] = "-DESPURNA_CORE " + device['flags']
+                board['flags'] = "-DESPURNA_CORE " + board['flags']
 
-            env = "esp8266-%sm-ota" % device['size']
+            env = "esp8266-%sm-ota" % board['size']
 
             # Summary
             print()
-            print("ESPURNA_IP    = %s" % device['ip'])
-            print("ESPURNA_BOARD = %s" % device['board'])
-            print("ESPURNA_AUTH  = %s" % device['auth'])
-            print("ESPURNA_FLAGS = %s" % device['flags'])
-            print("ESPURNA_ENV   = %s" % env)
+            print("HOST  = %s" % board.get('hostname', board['ip']))
+            print("IP    = %s" % board['ip'])
+            print("BOARD = %s" % board['board'])
+            print("AUTH  = %s" % board['auth'])
+            print("FLAGS = %s" % board['flags'])
+            print("ENV   = %s" % env)
 
             response = input("\nAre these values right [y/N]: ")
             print()
             if response == "y":
-                run(device, env)
+                run(board, env)
