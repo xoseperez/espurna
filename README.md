@@ -4,15 +4,15 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.11.4**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.11.4**
 
-> **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+Read the [changes log](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
-> **NOTICE**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
+---
 
 ## Features
 
-* *KRACK* vulnerability free (when built against Arduino Core 2.4.0 RC2)
+* *KRACK* vulnerability free (when built against Arduino Core 2.4.0)
 * Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
 * Power saving options
 * Wifi **AP Mode** or **STA mode**
@@ -22,7 +22,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Defaults to AP mode (also available after double clicking the main button)
 * Network visibility
     * Supports mDNS (service reporting and metadata)
-    * Supports NetBIOS, LLMNR and Netbios (when built against Arduino Core 2.4.0 RC2) and SSDP (experimental)
+    * Supports NetBIOS, LLMNR and Netbios (when built against Arduino Core 2.4.0) and SSDP (experimental)
 * Switch management
     * Support for **push buttons** and **toggle switches**
     * Configurable **status on boot** per switch (always ON, always OFF, same as before or toggle)
@@ -109,6 +109,16 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Long click (>1 second) to reboot device (only main button)
     * Extra long click (>10 seconds) to go back to factory settings (only main button)
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
+
+## Notices
+
+---
+> **2017-08-26**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
+
+---
+> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+
+---
 
 ## Contribute
 
