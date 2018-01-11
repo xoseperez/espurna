@@ -2,7 +2,7 @@
 
 LIGHT MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -309,6 +309,17 @@ void _toLong(char * color, size_t len) {
     _toLong(color, len, false);
 }
 
+void _toCSV(char * buffer, size_t len, bool applyBrightness) {
+    char num[10];
+    float b = applyBrightness ? (float) _light_brightness / LIGHT_MAX_BRIGHTNESS : 1;
+    for (unsigned char i=0; i<_light_channel.size(); i++) {
+        itoa(_light_channel[i].value * b, num, 10);
+        if (i>0) strncat(buffer, ",", len--);
+        strncat(buffer, num, len);
+        len = len - strlen(num);
+    }
+}
+
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin) {
@@ -451,6 +462,7 @@ void _lightColorRestore() {
 #if MQTT_SUPPORT
 void _lightMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
+    String mqtt_group_color = getSetting("mqttGroupColor");
 
     if (type == MQTT_CONNECT_EVENT) {
 
@@ -463,6 +475,10 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
         }
 
+        // Group color
+        if (mqtt_group_color.length() > 0) mqttSubscribeRaw(mqtt_group_color.c_str());
+
+        // Channels
         char buffer[strlen(MQTT_TOPIC_CHANNEL) + 3];
         snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_CHANNEL);
         mqttSubscribe(buffer);
@@ -471,6 +487,13 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
     if (type == MQTT_MESSAGE_EVENT) {
 
+        // Group color
+        if ((mqtt_group_color.length() > 0) & (mqtt_group_color.equals(topic))) {
+            lightColor(payload, true);
+            lightUpdate(true, mqttForward(), false);
+            return;
+        }
+
         // Match topic
         String t = mqttSubtopic((char *) topic);
 
@@ -478,28 +501,33 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         if (t.equals(MQTT_TOPIC_MIRED)) {
             _fromMireds(atol(payload));
             lightUpdate(true, mqttForward());
+            return;
         }
 
         // Color temperature in kelvins
         if (t.equals(MQTT_TOPIC_KELVIN)) {
             _fromKelvin(atol(payload));
             lightUpdate(true, mqttForward());
+            return;
         }
 
         // Color
         if (t.equals(MQTT_TOPIC_COLOR) || t.equals(MQTT_TOPIC_COLOR_RGB)) { // DEPRECATE MQTT_TOPIC_COLOR
             lightColor(payload, true);
             lightUpdate(true, mqttForward());
+            return;
         }
         if (t.equals(MQTT_TOPIC_COLOR_HSV)) {
             lightColor(payload, false);
             lightUpdate(true, mqttForward());
+            return;
         }
 
         // Brightness
         if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
             _light_brightness = constrain(atoi(payload), 0, LIGHT_MAX_BRIGHTNESS);
             lightUpdate(true, mqttForward());
+            return;
         }
 
         // Channel
@@ -511,6 +539,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             }
             lightChannel(channelID, atoi(payload));
             lightUpdate(true, mqttForward());
+            return;
         }
 
     }
@@ -519,7 +548,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
 void lightMQTT() {
 
-    char buffer[12];
+    char buffer[20];
 
     if (_light_has_color) {
 
@@ -548,6 +577,15 @@ void lightMQTT() {
 
 }
 
+void lightMQTTGroup() {
+    String mqtt_group_color = getSetting("mqttGroupColor");
+    if (mqtt_group_color.length()>0) {
+        char buffer[20];
+        _toCSV(buffer, sizeof(buffer), true);
+        mqttSendRaw(mqtt_group_color.c_str(), buffer);
+    }
+}
+
 #endif
 
 // -----------------------------------------------------------------------------
@@ -566,7 +604,7 @@ unsigned char lightWhiteChannels() {
     return _light_channel.size() % 3;
 }
 
-void lightUpdate(bool save, bool forward) {
+void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Configure color transition
     _light_steps_left = _light_use_transitions ? LIGHT_TRANSITION_STEPS : 1;
@@ -575,6 +613,7 @@ void lightUpdate(bool save, bool forward) {
     // Report color & brightness to MQTT broker
     #if MQTT_SUPPORT
         if (forward) lightMQTT();
+        if (group_forward) lightMQTTGroup();
     #endif
 
     // Report color to WS clients (using current brightness setting)
@@ -588,6 +627,10 @@ void lightUpdate(bool save, bool forward) {
     #endif
 
 };
+
+void lightUpdate(bool save, bool forward) {
+    lightUpdate(save, forward, true);
+}
 
 #if LIGHT_SAVE_ENABLED == 0
 void lightSave() {
@@ -667,6 +710,7 @@ void lightBrightnessStep(int steps) {
 
 void _lightWebSocketOnSend(JsonObject& root) {
     root["colorVisible"] = 1;
+    root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;

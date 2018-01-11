@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Analog Sensor (maps to an analogRead)
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && ANALOG_SUPPORT
@@ -35,6 +35,16 @@ class AnalogSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             return String("ANALOG @ GPIO0");
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String("0");
         }
 
         // Type for slot # index

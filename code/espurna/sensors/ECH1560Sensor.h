@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // ECH1560 based power monitor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && ECH1560_SUPPORT
@@ -79,6 +79,18 @@ class ECH1560Sensor : public BaseSensor {
         String description() {
             char buffer[25];
             snprintf(buffer, sizeof(buffer), "ECH1560 @ GPIO(%i,%i)", _clk, _miso);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[6];
+            snprintf(buffer, sizeof(buffer), "%i:%i", _clk, _miso);
             return String(buffer);
         }
 

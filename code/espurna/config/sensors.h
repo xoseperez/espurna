@@ -36,6 +36,9 @@
 #define HUMIDITY_DRY                        2
 #define HUMIDITY_WET                        3
 
+#define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
+#define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
+
 //--------------------------------------------------------------------------------
 // Sensor ID
 // These should remain over time, do not modify them, only add new ones at the end
@@ -161,8 +164,8 @@
 #define DALLAS_PIN                      14
 #endif
 
-#define DALLAS_RESOLUTION               9        // Not used atm
-#define DALLAS_READ_INTERVAL            2000     // Force sensor read & cache every 2 seconds
+#define DALLAS_RESOLUTION               9           // Not used atm
+#define DALLAS_READ_INTERVAL            2000        // Force sensor read & cache every 2 seconds
 
 //------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor
@@ -438,15 +441,17 @@
 // Sensor helpers configuration
 // =============================================================================
 
+#ifndef SENSOR_SUPPORT
 #if ANALOG_SUPPORT || BH1750_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
     || DHT_SUPPORT || DIGITAL_SUPPORT || ECH1560_SUPPORT \
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
     || SI7021_SUPPORT || V9261F_SUPPORT
-
 #define SENSOR_SUPPORT                      1
-
+#else
+#define SENSOR_SUPPORT                      0
+#endif
 #endif
 
 // -----------------------------------------------------------------------------
@@ -512,12 +517,12 @@ PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
 PROGMEM const char magnitude_power_factor_topic[] = "factor";
 PROGMEM const char magnitude_energy_topic[] = "energy";
 PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
-PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
-PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
-PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_analog_topic[] = "analog";
 PROGMEM const char magnitude_digital_topic[] = "digital";
 PROGMEM const char magnitude_events_topic[] = "events";
+PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_co2_topic[] = "co2";
 PROGMEM const char magnitude_lux_topic[] = "lux";
 
@@ -526,8 +531,8 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
     magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
     magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
+    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_co2_topic, magnitude_lux_topic
 };
 
@@ -549,8 +554,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_hectopascals, magnitude_amperes, magnitude_volts,
     magnitude_watts, magnitude_watts, magnitude_watts,
     magnitude_percentage, magnitude_joules, magnitude_joules,
-    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_ppm, magnitude_lux
 };
 

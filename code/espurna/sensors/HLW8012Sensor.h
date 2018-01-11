@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Event Counter Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && HLW8012_SUPPORT
@@ -159,6 +159,18 @@ class HLW8012Sensor : public BaseSensor {
         String description() {
             char buffer[25];
             snprintf(buffer, sizeof(buffer), "HLW8012 @ GPIO(%i,%i,%i)", _sel, _cf, _cf1);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[10];
+            snprintf(buffer, sizeof(buffer), "%i:%i:%i", _sel, _cf, _cf1);
             return String(buffer);
         }
 

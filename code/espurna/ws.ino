@@ -2,7 +2,7 @@
 
 WEBSOCKET MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -205,7 +205,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 void _wsOnStart(JsonObject& root) {
 
-    #if WEB_FORCE_PASS_CHANGE
+    #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
         String adminPass = getSetting("adminPass", ADMIN_PASS);
         bool changePassword = adminPass.equals(ADMIN_PASS);
     #else
@@ -350,7 +350,9 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
 }
 
 void wsConfigure() {
-    _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+    #if USE_PASSWORD
+        _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+    #endif
 }
 
 void wsSetup() {

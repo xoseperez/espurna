@@ -116,6 +116,10 @@
                             <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
                         </li>
 
+                        <li class="pure-menu-item module module-tspk">
+                            <a href="#" class="pure-menu-link" data="panel-thingspeak">THINGSPEAK</a>
+                        </li>
+
                         <li class="pure-menu-item module module-rfb">
                             <a href="#" class="pure-menu-link" data="panel-rfb">RFBRIDGE</a>
                         </li>
@@ -133,7 +137,7 @@
                     </div>
 
                     <div class="footer">
-                        &copy; 2016-2017<br />
+                        &copy; 2016-2018<br />
                         Xose Pérez<br/>
                         <a href="http://tinkerman.cat" target="_blank">http://tinkerman.cat</a><br/>
                         <a href="https://bitbucket.org/xoseperez/espurna" target="_blank">ESPurna @ Bitbucket</a><br/>
@@ -399,6 +403,13 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
                                 </div>
 
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="13" action="reconnect" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Sync color between different lights.</div>
+                                </div>
+
                             </fieldset>
                         </div>
                     </div>
@@ -565,8 +576,18 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">MQTT Client ID</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttClientID" type="text" size="20" tabindex="25" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        If left empty the firmware will generate a client ID based on the serial number of the chip.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT QoS</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="mqttQoS">
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="mqttQoS" tabindex="26">
                                         <option value="0">0: At most once</option>
                                         <option value="1">1: At least once</option>
                                         <option value="2">2: Exactly once</option>
@@ -575,22 +596,22 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Retain</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttRetain" tabindex="25" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttRetain" tabindex="27" /></div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Keep Alive</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" type="number" name="mqttKeep" min="10" max="60" tabindex="25" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="number" name="mqttKeep" min="10" max="3600" tabindex="28" />
                                 </div>
 
                                 <div class="pure-g module module-mqttssl">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use secure connection (SSL)</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttUseSSL" tabindex="26" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttUseSSL" tabindex="29" /></div>
                                 </div>
 
                                 <div class="pure-g module module-mqttssl">
                                     <label class="pure-u-1 pure-u-lg-1-4">SSL Fingerprint</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttFP" type="text" size="59" tabindex="26" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttFP" type="text" size="59" tabindex="30" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the fingerprint for the SSL certificate of the server.<br />
@@ -602,7 +623,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Root Topic</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttTopic" type="text" size="20" tabindex="27" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttTopic" type="text" size="20" tabindex="31" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaced by the device hostname.<br />
@@ -618,7 +639,7 @@
 
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-lg-1-4"><label>Use JSON payload</label></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="mqttUseJson" tabindex="26" /></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="mqttUseJson" tabindex="32" /></div>
                                     <div class="pure-u-1 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         All messages (except the device status) will be included in a JSON payload along with the timestamp and hostname
@@ -721,9 +742,49 @@
                                     <div class="pure-u-1 hint">Set IDX to 0 to disable notifications from that component.</div>
                                 </div>
 
-                                <div id="domoticzRelays"></div>
+                                <div id="dczRelays"></div>
 
-                                <div id="domoticzMagnitudes"></div>
+                                <div id="dczMagnitudes"></div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-thingspeak">
+
+                        <div class="header">
+                            <h1>THINGSPEAK</h1>
+                            <h2>
+                                Send your sensors data to Thinkgspeak.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <legend>General</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable Thingspeak</label></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="tspkEnabled" tabindex="30" /></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="31" />
+                                </div>
+
+                                <legend>Sensors &amp; actuators</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 hint">Enter the field number to send each data to, 0 disable notifications from that component.</div>
+                                </div>
+
+                                <div id="tspkRelays"></div>
+
+                                <div id="tspkMagnitudes"></div>
 
                             </fieldset>
                         </div>
@@ -983,7 +1044,7 @@
                     <option value="0">Always OFF</option>
                     <option value="1">Always ON</option>
                     <option value="2">Same as before</option>
-                    <option value="3">Toogle before</option>
+                    <option value="3">Toggle before</option>
                 </select>
             </div>
             <div class="pure-g">
@@ -1011,17 +1072,32 @@
             </div>
         </div>
 
-        <div id="relayIdxTemplate" class="template">
+        <div id="dczRelayTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24 dczRelayIdx" name="dczRelayIdx" type="number" min="0" tabindex="0" data="0" /></div>
             </div>
         </div>
 
-        <div id="magnitudeIdxTemplate" class="template">
+        <div id="dczMagnitudeTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24 center" name="dczMagnitude" type="number" min="0" tabindex="0" data="0" /></div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+            </div>
+        </div>
+
+        <div id="tspkRelayTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24" name="tspkRelay" type="number" min="0" max="8" tabindex="0" data="0" /></div>
+            </div>
+        </div>
+
+        <div id="tspkMagnitudeTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24 center" name="tspkMagnitude" type="number" min="0" max="8" tabindex="0" data="0" /></div>
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
             </div>
         </div>

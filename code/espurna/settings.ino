@@ -2,7 +2,7 @@
 
 SETTINGS MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -247,6 +247,24 @@ void settingsSetup() {
 
     Embedis::command( F("FACTORY.RESET"), [](Embedis* e) {
         settingsFactoryReset();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    Embedis::command( F("GPIO"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+        int pin = String(e->argv[1]).toInt();
+        //if (!gpioValid(pin)) {
+        //    DEBUG_MSG_P(PSTR("-ERROR: Invalid GPIO\n"));
+        //    return;
+        //}
+        if (e->argc > 2) {
+            bool state = String(e->argv[2]).toInt() == 1;
+            digitalWrite(pin, state);
+        }
+        DEBUG_MSG_P(PSTR("GPIO %d is %s\n"), pin, digitalRead(pin) == HIGH ? "HIGH" : "LOW");
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

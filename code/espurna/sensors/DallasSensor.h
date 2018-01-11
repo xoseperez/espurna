@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Dallas OneWire Sensor
 // Uses OneWire library
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DALLAS_SUPPORT
@@ -167,6 +167,19 @@ class DallasSensor : public BaseSensor {
         String description() {
             char buffer[20];
             snprintf(buffer, sizeof(buffer), "Dallas @ GPIO%d", _gpio);
+            return String(buffer);
+        }
+
+        // Address of the device
+        String address(unsigned char index) {
+            char buffer[20] = {0};
+            if (index < _count) {
+                uint8_t * address = _devices[index].address;
+                snprintf(buffer, sizeof(buffer), "%02X%02X%02X%02X%02X%02X%02X%02X",
+                    address[0], address[1], address[2], address[3],
+                    address[4], address[5], address[6], address[7]
+                );
+            }
             return String(buffer);
         }
 

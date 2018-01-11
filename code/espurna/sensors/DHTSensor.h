@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // DHTXX Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DHT_SUPPORT
@@ -90,6 +90,16 @@ class DHTSensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_gpio);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;
@@ -137,7 +147,11 @@ class DHTSensor : public BaseSensor {
             pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
-            delayMicroseconds(_type == DHT_CHIP_DHT11 ? 20000 : 500);
+            if (_type == DHT_CHIP_DHT11) {
+                delay(20);
+            } else {
+                delayMicroseconds(500);
+            }
             digitalWrite(_gpio, HIGH);
             delayMicroseconds(40);
             pinMode(_gpio, INPUT_PULLUP);
