@@ -20,14 +20,15 @@
 //------------------------------------------------------------------------------
 
 #ifdef ESPURNA_CORE
-    #define ALEXA_SUPPORT          0
-    #define DOMOTICZ_SUPPORT       0
-    #define HOMEASSISTANT_SUPPORT  0
-    #define MQTT_SUPPORT           0
-    #define NTP_SUPPORT            0
-    #define WEB_SUPPORT            0
-    #define SENSOR_SUPPORT         0
-    #define I2C_SUPPORT            0
+    #define ALEXA_SUPPORT           0
+    #define SCHEDULER_SUPPORT       0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define WEB_SUPPORT             0
+    #define SENSOR_SUPPORT          0
+    #define I2C_SUPPORT             0
 #endif
 
 //------------------------------------------------------------------------------
@@ -684,6 +685,11 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef SCHEDULER_SUPPORT
 #define SCHEDULER_SUPPORT       1               // Enable scheduler (1.77Kb)
+#endif
+
+#if SCHEDULER_SUPPORT
+#undef NTP_SUPPORT
+#define NTP_SUPPORT             1               // Scheduler needs NTP
 #endif
 
 #define SCHEDULER_UPDATE_SEC    5               // Scheduler perform switch at hh:mm:05
