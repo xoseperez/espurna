@@ -343,8 +343,12 @@ void mqttConnect() {
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
-    if (strlen(host) == 0) return;
+    String h = getSetting("mqttServer", MQTT_SERVER);
+    #if MDNS_CLIENT_SUPPORT
+        h = mdnsResolve(h);
+    #endif
+    char * host = strdup(h.c_str());
+
     unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
 
     if (_mqtt_user) free(_mqtt_user);

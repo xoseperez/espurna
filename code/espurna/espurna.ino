@@ -158,7 +158,7 @@ void welcome() {
     #if LLMNR_SUPPORT
         DEBUG_MSG_P(PSTR(" LLMNR"));
     #endif
-    #if MDNS_SUPPORT
+    #if MDNS_SERVER_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS"));
     #endif
     #if NETBIOS_SUPPORT
@@ -328,8 +328,8 @@ void setup() {
         mqttSetup();
     #endif
 
-    #if MDNS_SUPPORT
-        mdnsSetup();
+    #if MDNS_SERVER_SUPPORT
+        mdnsServerSetup();
     #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
@@ -444,6 +444,9 @@ void loop() {
     #endif
     #if SCHEDULER_SUPPORT
         schLoop();
+    #endif
+    #if MDNS_CLIENT_SUPPORT
+        mdnsClientLoop();
     #endif
 
     // Power saving delay

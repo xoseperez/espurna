@@ -6,12 +6,17 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if MDNS_SUPPORT
+// -----------------------------------------------------------------------------
+// mDNS Server
+// -----------------------------------------------------------------------------
+
+#if MDNS_SERVER_SUPPORT
 
 #include <ESP8266mDNS.h>
 
 #if MQTT_SUPPORT
-void mdnsFindMQTT() {
+
+void _mdnsFindMQTT() {
     int count = MDNS.queryService("mqtt", "tcp");
     DEBUG_MSG_P(PSTR("[MQTT] MQTT brokers found: %d\n"), count);
     for (int i=0; i<count; i++) {
@@ -19,9 +24,10 @@ void mdnsFindMQTT() {
         mqttSetBrokerIfNone(MDNS.IP(i), MDNS.port(i));
     }
 }
+
 #endif
 
-void _mdnsStart() {
+void _mdnsServerStart() {
     if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
         DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     } else {
@@ -29,7 +35,9 @@ void _mdnsStart() {
     }
 }
 
-void mdnsSetup() {
+// -----------------------------------------------------------------------------
+
+void mdnsServerSetup() {
 
     #if WEB_SUPPORT
         MDNS.addService("http", "tcp", getSetting("webPort", WEB_PORT).toInt());
@@ -62,18 +70,55 @@ void mdnsSetup() {
     wifiRegister([](justwifi_messages_t code, char * parameter) {
 
         if (code == MESSAGE_CONNECTED) {
-            _mdnsStart();
+            _mdnsServerStart();
             #if MQTT_SUPPORT
-                mdnsFindMQTT();
+                _mdnsFindMQTT();
             #endif // MQTT_SUPPORT
         }
 
         if (code == MESSAGE_ACCESSPOINT_CREATED) {
-            _mdnsStart();
+            _mdnsServerStart();
         }
 
     });
 
 }
 
-#endif // MDNS_SUPPORT
+#endif // MDNS_SERVER_SUPPORT
+
+// -----------------------------------------------------------------------------
+// mDNS Client
+// -----------------------------------------------------------------------------
+
+#if MDNS_CLIENT_SUPPORT
+
+#include <WiFiUdp.h>
+#include <mDNSResolver.h>
+
+using namespace mDNSResolver;
+WiFiUDP _mdns_udp;
+Resolver _mdns_resolver(_mdns_udp);
+
+String mdnsResolve(char * name) {
+
+    if (strlen(name) == 0) return String();
+    if (WiFi.status() != WL_CONNECTED) return String();
+
+    _mdns_resolver.setLocalIP(WiFi.localIP());
+    IPAddress ip = _mdns_resolver.search(name);
+
+    if (ip == INADDR_NONE) return String(name);
+    DEBUG_MSG_P(PSTR("[MDNS] '%s' resolved to '%s'\n"), name, ip.toString().c_str());
+    return ip.toString();
+
+}
+
+String mdnsResolve(String name) {
+    return mdnsResolve((char *) name.c_str());
+}
+
+void mdnsClientLoop() {
+    _mdns_resolver.loop();
+}
+
+#endif // MDNS_CLIENT_SUPPORT

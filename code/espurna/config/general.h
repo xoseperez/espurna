@@ -375,8 +375,12 @@ PROGMEM const char* const custom_reset_string[] = {
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
 
-#ifndef MDNS_SUPPORT
-#define MDNS_SUPPORT            1           // Publish services using mDNS by default (1.84Kb)
+#ifndef MDNS_SERVER_SUPPORT
+#define MDNS_SERVER_SUPPORT     1           // Publish services using mDNS by default (1.48Kb)
+#endif
+
+#ifndef MDNS_CLIENT_SUPPORT
+#define MDNS_CLIENT_SUPPORT     1           // Resolve mDNS names (3.44Kb)
 #endif
 
 #ifndef LLMNR_SUPPORT
@@ -451,7 +455,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_SSL_FINGERPRINT    ""          // SSL fingerprint of the server
 
 #define MQTT_ENABLED            0           // Do not enable MQTT connection by default
-#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SUPPORT=1 will perform an autodiscover and
+#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
                                             // autoconnect to the first MQTT broker found if none defined
 #define MQTT_SERVER             ""          // Default MQTT broker address
 #define MQTT_USER               ""          // Default MQTT broker usename
