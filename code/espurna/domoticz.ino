@@ -74,6 +74,8 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
 };
 
+#if WEB_SUPPORT
+
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
     root["dczVisible"] = 1;
@@ -98,6 +100,8 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     #endif
 
 }
+
+#endif // WEB_SUPPORT
 
 void _domoticzConfigure() {
     _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;

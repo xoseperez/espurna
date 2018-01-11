@@ -233,10 +233,6 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 }
 
-void _mqttConfigure() {
-    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
-}
-
 #endif
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
@@ -483,6 +479,7 @@ void mqttConfigure() {
     _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
     _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
     _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
+    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
 
     // Enable
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
@@ -565,7 +562,7 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
-        wsOnAfterParseRegister(_mqttConfigure);
+        wsOnAfterParseRegister(mqttConfigure);
     #endif
 
 }

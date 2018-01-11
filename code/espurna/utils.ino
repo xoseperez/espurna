@@ -11,7 +11,7 @@ Ticker _defer_reset;
 
 String getIdentifier() {
     char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("ESPURNA_%06X"), ESP.getChipId());
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), APP_NAME, ESP.getChipId());
     return String(buffer);
 }
 

@@ -396,7 +396,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef SPIFFS_SUPPORT
-#define SPIFFS_SUPPORT           0          // Do not add support for SPIFFS by default
+#define SPIFFS_SUPPORT          0           // Do not add support for SPIFFS by default
 #endif
 
 // -----------------------------------------------------------------------------
@@ -427,7 +427,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient
+#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
 #endif
 
 // MQTT OVER SSL
@@ -699,7 +699,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
 
 // -----------------------------------------------------------------------------
-// FAUXMO
+// ALEXA
 // -----------------------------------------------------------------------------
 
 // This setting defines whether Alexa support should be built into the firmware

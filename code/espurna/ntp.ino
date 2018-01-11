@@ -13,7 +13,6 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiClient.h>
 #include <Ticker.h>
 
-WiFiEventHandler _ntp_wifi_onSTA;
 Ticker _ntp_delay;
 
 // -----------------------------------------------------------------------------
@@ -86,8 +85,8 @@ void ntpSetup() {
         }
     });
 
-    _ntp_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
-        _ntpConfigure();
+    wifiRegister([](justwifi_messages_t code, char * parameter) {
+        if (code == MESSAGE_CONNECTED) _ntpConfigure();
     });
 
     #if WEB_SUPPORT
