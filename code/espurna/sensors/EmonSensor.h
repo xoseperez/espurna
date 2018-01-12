@@ -147,14 +147,15 @@ class EmonSensor : public I2CSensor {
 
         double read(unsigned char channel) {
 
-            int sample;
             int max = 0;
             int min = _adc_counts;
-            double filtered;
             double sum = 0;
 
             unsigned long time_span = millis();
             for (unsigned long i=0; i<_samples; i++) {
+
+                int sample;
+                double filtered;
 
                 // Read analog value
                 sample = readADC(channel);

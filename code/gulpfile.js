@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+/*eslint quotes: ["error", "single"]*/
+/*eslint-env es6*/
+
 // -----------------------------------------------------------------------------
 // File system builder
 // -----------------------------------------------------------------------------

@@ -5,7 +5,7 @@ echo "--------------------------------------------------------------"
 echo "ESPURNA FIRMWARE BUILDER"
 
 # Available environments
-available=`cat platformio.ini | grep env: | grep -v ota  | grep -v ssl  | sed 's/\[env://' | sed 's/\]/ /' | sort`
+available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | sed 's/\[env://' | sed 's/\]/ /' | sort)
 environments=$@
 if [ "$environments" == "list" ]; then
     echo "--------------------------------------------------------------"
@@ -22,7 +22,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Get current version
-version=`cat espurna/config/version.h | grep APP_VERSION | awk '{print $3}' | sed 's/"//g'`
+version=$(grep APP_VERSION espurna/config/version.h | awk '{print $3}' | sed 's/"//g')
 echo "Building for version $version"
 
 # Create output folder

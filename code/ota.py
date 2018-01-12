@@ -19,7 +19,7 @@ from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 
 try:
     # noinspection PyUnresolvedReferences
-    input = raw_input  # Python2
+    input = raw_input  # Python2    *!! redefining build-in input.
 except NameError:
     pass  # Python3
 
@@ -56,7 +56,7 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
             devices.append(device)
 
 
-def list():
+def list_devices():
     """
     Shows the list of discovered devices
     """
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     devices = sorted(devices, key=lambda device: device.get(field, ''))
 
     # List devices
-    list()
+    list_devices()
 
     # Flash device
     if args.flash > 0:

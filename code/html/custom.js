@@ -36,7 +36,9 @@ function sensorName(id) {
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750"
     ];
-    if (1 <= id && id <= names.length) return names[id-1];
+    if (1 <= id && id <= names.length) {
+      return names[id-1];
+    }
     return null;
 }
 
@@ -48,7 +50,9 @@ function magnitudeType(type) {
         "Analog", "Digital", "Events",
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux"
     ];
-    if (1 <= type && type <= types.length) return types[type-1];
+    if (1 <= type && type <= types.length) {
+      return types[type-1];
+    }
     return null;
 }
 
@@ -57,7 +61,9 @@ function magnitudeError(error) {
         "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
         "CRC Error", "I2C Error", "GPIO Error"
     ];
-    if (0 <= error && error < errors.length) return errors[error];
+    if (0 <= error && error < errors.length) {
+      return errors[error];
+    }
     return "Error " + error;
 }
 
@@ -74,7 +80,7 @@ function checkPassword(str) {
 }
 
 function zeroPad(number, positions) {
-    var zeros = '';
+    var zeros = "";
     for (var i = 0; i < positions; i++) zeros += "0";
     return (zeros + number).slice(-positions);
 }
@@ -89,7 +95,7 @@ function validateForm(form) {
     }
 
     var adminPass2 = $("input[name='adminPass']", form).last().val();
-    if (adminPass1 != adminPass2) {
+    if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
         return false;
     }
@@ -118,16 +124,18 @@ function getData(form) {
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
         if (name) {
+            var value = "";
 
             // Do not report these fields
-            if (name == "filename") return;
-            if (name == "rfbcode") return;
+            if (name === "filename" || name === "rfbcode" ) {
+              return;
+            }
 
             // Grab the value
-            if ($(this).attr('type') == 'checkbox') {
-                value = $(this).is(':checked') ? 1 : 0;
-            } else if ($(this).attr('type') == 'radio') {
-                if (!$(this).is(':checked')) return;
+            if ($(this).attr("type") === "checkbox") {
+                value = $(this).is(":checked") ? 1 : 0;
+            } else if ($(this).attr("type") === "radio") {
+                if (!$(this).is(":checked")) {return;}
                 value = $(this).val();
             } else {
                 value = $(this).val();
@@ -158,20 +166,20 @@ function getData(form) {
 }
 
 function randomString(length, chars) {
-    var mask = '';
-    if (chars.indexOf('a') > -1) mask += 'abcdefghijklmnopqrstuvwxyz';
-    if (chars.indexOf('A') > -1) mask += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    if (chars.indexOf('#') > -1) mask += '0123456789';
-    if (chars.indexOf('@') > -1) mask += 'ABCDEF';
-    if (chars.indexOf('!') > -1) mask += '~`!@#$%^&*()_+-={}[]:";\'<>?,./|\\';
-    var result = '';
+    var mask = "";
+    if (chars.indexOf("a") > -1) mask += "abcdefghijklmnopqrstuvwxyz";
+    if (chars.indexOf("A") > -1) mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    if (chars.indexOf("#") > -1) mask += "0123456789";
+    if (chars.indexOf("@") > -1) mask += "ABCDEF";
+    if (chars.indexOf("!") > -1) mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\";
+    var result = "";
     for (var i = length; i > 0; --i) result += mask[Math.round(Math.random() * (mask.length - 1))];
     return result;
 }
 
 function generateAPIKey() {
-    var apikey = randomString(16, '@#');
-    $("input[name=\"apiKey\"]").val(apikey);
+    var apikey = randomString(16, "@#");
+    $("input[name='apiKey']").val(apikey);
     return false;
 }
 
@@ -187,8 +195,15 @@ function getJson(str) {
 // Actions
 // -----------------------------------------------------------------------------
 
+function resetOriginals() {
+    $("input,select").each(function() {
+        $(this).attr("original", $(this).val());
+    })
+    numReboot = numReconnect = numReload = 0;
+}
+
 function doReload(milliseconds) {
-    milliseconds = (typeof milliseconds == 'undefined') ? 0 : parseInt(milliseconds);
+    milliseconds = (typeof milliseconds == "undefined") ? 0 : parseInt(milliseconds);
     setTimeout(function() {
         window.location.reload();
     }, milliseconds);
@@ -201,11 +216,11 @@ function doUpdate() {
 
         // Get data
         var data = getData(form);
-        websock.send(JSON.stringify({'config': data}));
+        websock.send(JSON.stringify({"config": data}));
 
         // Empty special fields
         $(".pwrExpected").val(0);
-        $("input[name='pwrResetCalibration']")
+        $("input[name='"pwrResetCalibration"']")
             .prop("checked", false)
             .iphoneStyle("refresh");
 
@@ -215,13 +230,13 @@ function doUpdate() {
 
             if (numReboot > 0) {
                 var response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-                if (response == true) doReboot(false);
+                if (response === true) doReboot(false);
             } else if (numReconnect > 0) {
                 var response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-                if (response == true) doReconnect(false);
+                if (response === true) doReconnect(false);
             } else if (numReload > 0) {
                 var response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response == true) doReload();
+                if (response === true) doReload();
             }
 
             resetOriginals();
@@ -237,20 +252,20 @@ function doUpdate() {
 function doUpgrade() {
 
     var contents = $("input[name='upgrade']")[0].files[0];
-    if (typeof contents == 'undefined') {
+    if (typeof contents === "undefined") {
         alert("First you have to select a file from your computer.");
         return false;
     }
-    var filename = $("input[name='upgrade']").val().split('\\').pop();
+    var filename = $("input[name='upgrade']").val().split("\\").pop();
 
     var data = new FormData();
-    data.append('upgrade', contents, filename);
+    data.append("upgrade", contents, filename);
 
     $.ajax({
 
         // Your server script to process the upload
-        url: webhost + 'upgrade',
-        type: 'POST',
+        url: webhost + "upgrade",
+        type: "POST",
 
         // Form data
         data: data,
@@ -261,9 +276,9 @@ function doUpgrade() {
         contentType: false,
         processData: false,
 
-        success: function(data, text) {
+        success(data, text) {
             $("#upgrade-progress").hide();
-            if (data == 'OK') {
+            if (data === "OK") {
                 alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
                 doReload(5000);
             } else {
@@ -272,14 +287,14 @@ function doUpgrade() {
         },
 
         // Custom XMLHttpRequest
-        xhr: function() {
+        xhr() {
             $("#upgrade-progress").show();
             var myXhr = $.ajaxSettings.xhr();
             if (myXhr.upload) {
                 // For handling the progress of the upload
-                myXhr.upload.addEventListener('progress', function(e) {
+                myXhr.upload.addEventListener("progress", function(e) {
                     if (e.lengthComputable) {
-                        $('progress').attr({ value: e.loaded, max: e.total });
+                        $("progress").attr({ value: e.loaded, max: e.total });
                     }
                 } , false);
             }
@@ -296,71 +311,86 @@ function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateForm(form)) {
         var data = getData(form);
-        websock.send(JSON.stringify({'config': data}));
+        websock.send(JSON.stringify({"config": data}));
     }
     return false;
 }
 
 function doReboot(ask) {
 
-    ask = (typeof ask == 'undefined') ? true : ask;
+    var response;
+
+    ask = (typeof ask == "undefined") ? true : ask;
 
     if (numChanged > 0) {
-        var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
-        if (response == true) return doUpdate();
+        response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
+        if (response === true) {
+          return doUpdate();
+        }
     }
 
     if (ask) {
-        var response = window.confirm("Are you sure you want to reboot the device?");
-        if (response == false) return false;
+        response = window.confirm("Are you sure you want to reboot the device?");
+        if (response === false) {
+          return false;
+        }
     }
 
-    websock.send(JSON.stringify({'action': 'reboot'}));
+    websock.send(JSON.stringify({"action": "reboot"}));
     doReload(5000);
     return false;
 
 }
 
 function doReconnect(ask) {
+    var response;
 
-    ask = (typeof ask == 'undefined') ? true : ask;
+    ask = (typeof ask == "undefined") ? true : ask;
 
     if (numChanged > 0) {
-        var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
-        if (response == true) return doUpdate();
+        response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
+        if (response === true) {
+          return doUpdate();
+        }
     }
 
     if (ask) {
-        var response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
-        if (response == false) return false;
+        response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
+        if (response === false) {
+          return false;
+        }
     }
 
-    websock.send(JSON.stringify({'action': 'reconnect'}));
+    websock.send(JSON.stringify({"action": "reconnect"}));
     doReload(5000);
     return false;
 
 }
 
 function doBackup() {
-    document.getElementById('downloader').src = webhost + 'config';
+    document.getElementById("downloader").src = webhost + "config";
     return false;
 }
 
 function onFileUpload(event) {
 
     var inputFiles = this.files;
-    if (inputFiles == undefined || inputFiles.length == 0) return false;
+    if (inputFiles === undefined || inputFiles.length === 0) {
+      return false;
+    }
     var inputFile = inputFiles[0];
     this.value = "";
 
     var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore this settings?");
-    if (response == false) return false;
+    if (response === false) {
+      return false;
+    }
 
     var reader = new FileReader();
     reader.onload = function(e) {
         var data = getJson(e.target.result);
         if (data) {
-            websock.send(JSON.stringify({'action': 'restore', 'data': data}));
+            websock.send(JSON.stringify({"action": "restore", "data": data}));
         } else {
             alert(messages[4]);
         }
@@ -372,7 +402,7 @@ function onFileUpload(event) {
 }
 
 function doRestore() {
-    if (typeof window.FileReader !== 'function') {
+    if (typeof window.FileReader !== "function") {
         alert("The file API isn't supported on this browser yet.");
     } else {
         $("#uploader").click();
@@ -382,7 +412,7 @@ function doRestore() {
 
 function doToggle(element, value) {
     var relayID = parseInt(element.attr("data"));
-    websock.send(JSON.stringify({'action': 'relay', 'data': { 'id': relayID, 'status': value ? 1 : 0 }}));
+    websock.send(JSON.stringify({"action": "relay", "data": { "id": relayID, "status": value ? 1 : 0 }}));
     return false;
 }
 
@@ -393,14 +423,14 @@ function doToggle(element, value) {
 function showPanel() {
     $(".panel").hide();
     $("#" + $(this).attr("data")).show();
-    if ($("#layout").hasClass('active')) toggleMenu();
-    $("input[type='checkbox']").iphoneStyle("calculateDimensions").iphoneStyle("refresh");
-};
+    if ($("#layout").hasClass("active")) toggleMenu();
+    $("input[type="checkbox"]").iphoneStyle("calculateDimensions").iphoneStyle("refresh");
+}
 
 function toggleMenu() {
-    $("#layout").toggleClass('active');
-    $("#menu").toggleClass('active');
-    $("#menuLink").toggleClass('active');
+    $("#layout").toggleClass("active");
+    $("#menu").toggleClass("active");
+    $("#menuLink").toggleClass("active");
 }
 
 // -----------------------------------------------------------------------------
@@ -410,7 +440,9 @@ function toggleMenu() {
 function createRelayList(data, container, template) {
 
     var current = $("#" + container + " > div").length;
-    if (current > 0) return;
+    if (current > 0) {
+      return;
+    }
 
     var template = $("#" + template + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
@@ -425,7 +457,9 @@ function createRelayList(data, container, template) {
 function createMagnitudeList(data, container, template) {
 
     var current = $("#" + container + " > div").length;
-    if (current > 0) return;
+    if (current > 0) {
+      return;
+    }
 
     var template = $("#" + template + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
@@ -456,8 +490,8 @@ function addNetwork() {
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex++);
     });
-    $(line).find(".button-del-network").on('click', delNetwork);
-    $(line).find(".button-more-network").on('click', moreNetwork);
+    $(line).find(".button-del-network").on("click", delNetwork);
+    $(line).find(".button-more-network").on("click", moreNetwork);
     line.appendTo("#networks");
 
     return line;
@@ -499,8 +533,8 @@ function addSchedule() {
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex++);
     });
-    $(line).find(".button-del-schedule").on('click', delSchedule);
-    $(line).find(".button-more-schedule").on('click', moreSchedule);
+    $(line).find(".button-del-schedule").on("click", delSchedule);
+    $(line).find(".button-more-schedule").on("click", moreSchedule);
     line.appendTo("#schedules");
     return line;
 }
@@ -514,7 +548,9 @@ function addSchedule() {
 function initRelays(data) {
 
     var current = $("#relays > div").length;
-    if (current > 0) return;
+    if (current > 0) {
+      return;
+    }
 
     var template = $("#relayTemplate .pure-g")[0];
     for (var i=0; i<data.length; i++) {
@@ -526,8 +562,8 @@ function initRelays(data) {
             onChange: doToggle,
             resizeContainer: true,
             resizeHandle: true,
-            checkedLabel: 'ON',
-            uncheckedLabel: 'OFF'
+            checkedLabel: "ON",
+            uncheckedLabel: "OFF"
         });
 
     }
@@ -537,18 +573,20 @@ function initRelays(data) {
 function initRelayConfig(data) {
 
     var current = $("#relayConfig > div").length;
-    if (current > 0) return;
+    if (current > 0) {
+      return;
+    }
 
     var template = $("#relayConfigTemplate").children();
     for (var i=0; i < data.length; i++) {
         var line = $(template).clone();
         $("span.gpio", line).html(data[i].gpio);
         $("span.id", line).html(i);
-        $("select[name='relayBoot']", line).val(data[i].boot);
-        $("select[name='relayPulse']", line).val(data[i].pulse);
-        $("input[name='relayTime']", line).val(data[i].pulse_ms);
-        $("input[name='mqttGroup']", line).val(data[i].group);
-        $("select[name='mqttGroupInv']", line).val(data[i].group_inv);
+        $("select[name='"relayBoot"']", line).val(data[i].boot);
+        $("select[name='"relayPulse"']", line).val(data[i].pulse);
+        $("input[name='"relayTime"']", line).val(data[i].pulse_ms);
+        $("input[name='"mqttGroup"']", line).val(data[i].group);
+        $("select[name='"mqttGroupInv"']", line).val(data[i].group_inv);
         line.appendTo("#relayConfig");
     }
 
@@ -562,7 +600,9 @@ function initMagnitudes(data) {
 
     // check if already initialized
     var done = $("#magnitudes > div").length;
-    if (done > 0) return;
+    if (done > 0) {
+      return;
+    }
 
     // add templates
     var template = $("#magnitudeTemplate").children();
@@ -578,7 +618,9 @@ function initMagnitudes(data) {
 
 function getManifest(sensor_id) {
     for (i in manifest) {
-        if (manifest[i].sensor_id == sensor_id) return manifest[i];
+        if (manifest[i].sensor_id ===sensor_id) {
+          return manifest[i];
+        }
     }
     return null;
 }
@@ -591,7 +633,9 @@ function initColorRGB() {
 
     // check if already initialized
     var done = $("#colors > div").length;
-    if (done > 0) return;
+    if (done > 0) {
+      return;
+    }
 
     // add template
     var template = $("#colorRGBTemplate").children();
@@ -599,19 +643,19 @@ function initColorRGB() {
     line.appendTo("#colors");
 
     // init color wheel
-    $('input[name="color"]').wheelColorPicker({
-        sliders: 'wrgbp'
-    }).on('sliderup', function() {
-        var value = $(this).wheelColorPicker('getValue', 'css');
-        websock.send(JSON.stringify({'action': 'color', 'data' : {'rgb': value}}));
+    $("input[name='color']").wheelColorPicker({
+        sliders: "wrgbp"
+    }).on("sliderup", function() {
+        var value = $(this).wheelColorPicker("getValue", "css");
+        websock.send(JSON.stringify({"action": "color", "data" : {"rgb": value}}));
     });
 
     // init bright slider
-    $('#brightness').on("change", function() {
+    $("#brightness").on("change", function() {
         var value = $(this).val();
         var parent = $(this).parents(".pure-g");
         $("span", parent).html(value);
-        websock.send(JSON.stringify({'action': 'color', 'data' : {'brightness': value}}));
+        websock.send(JSON.stringify({"action": "color", "data" : {"brightness": value}}));
     });
 
 }
@@ -620,7 +664,9 @@ function initColorHSV() {
 
     // check if already initialized
     var done = $("#colors > div").length;
-    if (done > 0) return;
+    if (done > 0) {
+      return;
+    }
 
     // add template
     var template = $("#colorHSVTemplate").children();
@@ -628,12 +674,12 @@ function initColorHSV() {
     line.appendTo("#colors");
 
     // init color wheel
-    $('input[name="color"]').wheelColorPicker({
-        sliders: 'whsvp'
-    }).on('sliderup', function() {
-        var color = $(this).wheelColorPicker('getColor');
+    $("input[name='color']").wheelColorPicker({
+        sliders: "whsvp"
+    }).on("sliderup", function() {
+        var color = $(this).wheelColorPicker("getColor");
         var value = parseInt(color.h * 360) + "," + parseInt(color.s * 100) + "," + parseInt(color.v * 100);
-        websock.send(JSON.stringify({'action': 'color', 'data' : {'hsv': value}}));
+        websock.send(JSON.stringify({"action": "color", "data" : {"hsv": value}}));
     });
 
 }
@@ -642,7 +688,9 @@ function initChannels(num) {
 
     // check if already initialized
     var done = $("#channels > div").length > 0;
-    if (done) return;
+    if (done) {
+      return;
+    }
 
     // does it have color channels?
     var colors = $("#colors > div").length > 0;
@@ -667,7 +715,7 @@ function initChannels(num) {
             var value = $(this).val();
             var parent = $(this).parents(".pure-g");
             $("span", parent).html(value);
-            websock.send(JSON.stringify({'action': 'channel', 'data' : { 'id': id, 'value': value }}));
+            websock.send(JSON.stringify({"action": "channel", "data" : { "id": id, "value": value }}));
         });
         $("label", line).html("Channel " + (channel_id + 1));
 
@@ -694,9 +742,9 @@ function addRfbNode() {
         $(this).attr("data-status", status ? 1 : 0);
         status = !status;
     });
-    $(line).find(".button-rfb-learn").on('click', rfbLearn);
-    $(line).find(".button-rfb-forget").on('click', rfbForget);
-    $(line).find(".button-rfb-send").on('click', rfbSend);
+    $(line).find(".button-rfb-learn").on("click", rfbLearn);
+    $(line).find(".button-rfb-forget").on("click", rfbForget);
+    $(line).find(".button-rfb-send").on("click", rfbSend);
     line.appendTo("#rfbNodes");
 
     return line;
@@ -705,19 +753,19 @@ function addRfbNode() {
 function rfbLearn() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({'action': 'rfblearn', 'data' : {'id' : input.attr("data-id"), 'status': input.attr("data-status")}}));
+    websock.send(JSON.stringify({"action": "rfblearn", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
 }
 
 function rfbForget() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({'action': 'rfbforget', 'data' : {'id' : input.attr("data-id"), 'status': input.attr("data-status")}}));
+    websock.send(JSON.stringify({"action": "rfbforget", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
 }
 
 function rfbSend() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({'action': 'rfbsend', 'data' : {'id' : input.attr("data-id"), 'status': input.attr("data-status"), 'data': input.val()}}));
+    websock.send(JSON.stringify({"action": "rfbsend", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status"), "data": input.val()}}));
 }
 
 // -----------------------------------------------------------------------------
@@ -747,7 +795,7 @@ function processData(data) {
         // Web mode
         // ---------------------------------------------------------------------
 
-        if (key == "webMode") {
+        if (key ==="webMode") {
             password = data.webMode == 1;
             $("#layout").toggle(data.webMode == 0);
             $("#password").toggle(data.webMode == 1);
@@ -757,8 +805,8 @@ function processData(data) {
         // Actions
         // ---------------------------------------------------------------------
 
-        if (key == "action") {
-            if (data.action == "reload") doReload(1000);
+        if (key === "action") {
+            if (data.action === "reload") doReload(1000);
             return;
         }
 
@@ -766,16 +814,16 @@ function processData(data) {
         // RFBridge
         // ---------------------------------------------------------------------
 
-        if (key == "rfbCount") {
+        if (key === "rfbCount") {
             for (var i=0; i<data.rfbCount; i++) addRfbNode();
             return;
         }
 
-        if (key == "rfb") {
+        if (key === "rfb") {
             var nodes = data.rfb;
             for (var i in nodes) {
                 var node = nodes[i];
-                $("input[name=rfbcode][data-id=" + node["id"] + "][data-status=" + node["status"] + "]").val(node["data"]);
+                $("input[name='rfbcode'][data-id='" + node["id"] + "'][data-status='" + node["status"] + "']").val(node["data"]);
             }
             return;
         }
@@ -784,13 +832,13 @@ function processData(data) {
         // Lights
         // ---------------------------------------------------------------------
 
-        if (key == "rgb") {
+        if (key === "rgb") {
             initColorRGB();
-            $("input[name='color']").wheelColorPicker('setValue', data[key], true);
+            $("input[name='color']").wheelColorPicker("setValue", data[key], true);
             return;
         }
 
-        if (key == "hsv") {
+        if (key === "hsv") {
             initColorHSV();
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
             var chunks = data[key].split(",");
@@ -798,17 +846,17 @@ function processData(data) {
             obj.h = chunks[0] / 360;
             obj.s = chunks[1] / 100;
             obj.v = chunks[2] / 100;
-            $("input[name='color']").wheelColorPicker('setColor', obj);
+            $("input[name='color']").wheelColorPicker("setColor", obj);
             return;
         }
 
-        if (key == "brightness") {
+        if (key === "brightness") {
             $("#brightness").val(data[key]);
             $("span.brightness").html(data[key]);
             return;
         }
 
-        if (key == "channels") {
+        if (key === "channels") {
             var len = data[key].length;
             initChannels(len);
             for (var i=0; i<len; i++) {
@@ -818,7 +866,7 @@ function processData(data) {
             return;
         }
 
-        if (key == "useWhite") {
+        if (key === "useWhite") {
             useWhite = data[key];
         }
 
@@ -826,19 +874,19 @@ function processData(data) {
         // Sensors & Magnitudes
         // ---------------------------------------------------------------------
 
-        if (key == "magnitudes") {
+        if (key === "magnitudes") {
             initMagnitudes(data[key]);
             for (var i=0; i<data[key].length; i++) {
                 var error = data[key][i].error || 0;
                 var text = (error == 0) ?
                     data[key][i].value + data[key][i].units
                     : magnitudeError(error);
-                $("input[name=magnitude][data=" + i + "]").val(text);
+                $("input[name='magnitude'][data='" + i + "']").val(text);
             }
             return;
         }
 
-        if (key == "manifest") {
+        if (key === "manifest") {
             manifest = data[key];
         }
 
@@ -846,17 +894,17 @@ function processData(data) {
         // WiFi
         // ---------------------------------------------------------------------
 
-        if (key == "maxNetworks") {
+        if (key === "maxNetworks") {
             maxNetworks = parseInt(data.maxNetworks);
             return;
         }
 
-        if (key == "wifi") {
+        if (key === "wifi") {
             for (var i in data.wifi) {
                 var line = addNetwork();
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
-                    $("input[name=" + key + "]", line).val(wifi[key]);
+                    $("input[name='" + key + "']", line).val(wifi[key]);
                 });
             }
             return;
@@ -866,19 +914,19 @@ function processData(data) {
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
-        if (key == "maxSchedules") {
+        if (key === "maxSchedules") {
             maxSchedules = parseInt(data.maxSchedules);
             return;
         }
 
-        if (key == "schedule") {
+        if (key === "schedule") {
             var schedule = data.schedule;
             for (var i in schedule) {
                 var line = addSchedule();
                 var schedule = data.schedule[i];
                 Object.keys(schedule).forEach(function(key) {
-                    $("input[name=" + key + "]", line).val(schedule[key]);
-                    $("select[name=" + key + "]", line).prop("value", schedule[key]);
+                    $("input[name='" + key + "']", line).val(schedule[key]);
+                    $("select[name='" + key + "']", line).prop("value", schedule[key]);
                 });
             }
             return;
@@ -888,7 +936,7 @@ function processData(data) {
         // Relays
         // ---------------------------------------------------------------------
 
-        if (key == "relayStatus") {
+        if (key === "relayStatus") {
             initRelays(data[key]);
             for (var i in data[key]) {
 
@@ -907,7 +955,7 @@ function processData(data) {
         }
 
         // Relay configuration
-        if (key == "relayConfig") {
+        if (key === "relayConfig") {
             initRelayConfig(data[key]);
             return;
         }
@@ -917,13 +965,13 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Domoticz - Relays
-        if (key == "dczRelays") {
+        if (key === "dczRelays") {
             createRelayList(data[key], "dczRelays", "dczRelayTemplate");
             return;
         }
 
         // Domoticz - Magnitudes
-        if (key == "dczMagnitudes") {
+        if (key === "dczMagnitudes") {
             createMagnitudeList(data[key], "dczMagnitudes", "dczMagnitudeTemplate");
             return;
         }
@@ -933,13 +981,13 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Thingspeak - Relays
-        if (key == "tspkRelays") {
+        if (key === "tspkRelays") {
             createRelayList(data[key], "tspkRelays", "tspkRelayTemplate");
             return;
         }
 
         // Thingspeak - Magnitudes
-        if (key == "tspkMagnitudes") {
+        if (key === "tspkMagnitudes") {
             createMagnitudeList(data[key], "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
         }
@@ -949,36 +997,36 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Messages
-        if (key == "message") {
+        if (key === "message") {
             window.alert(messages[data.message]);
             return;
         }
 
         // Enable options
         var position = key.indexOf("Visible");
-        if (position > 0 && position == key.length - 7) {
+        if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
             $(".module-" + module).show();
             return;
         }
 
         // Pre-process
-        if (key == "network") {
+        if (key === "network") {
             data.network = data.network.toUpperCase();
         }
-        if (key == "mqttStatus") {
+        if (key === "mqttStatus") {
             data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
         }
-        if (key == "ntpStatus") {
+        if (key === "ntpStatus") {
             data.ntpStatus = data.ntpStatus ? "SYNC'D" : "NOT SYNC'D";
         }
-        if (key == "uptime") {
+        if (key === "uptime") {
             var uptime  = parseInt(data[key]);
             var seconds = uptime % 60; uptime = parseInt(uptime / 60);
             var minutes = uptime % 60; uptime = parseInt(uptime / 60);
             var hours   = uptime % 24; uptime = parseInt(uptime / 24);
             var days    = uptime;
-            data[key] = days + 'd ' + zeroPad(hours, 2) + 'h ' + zeroPad(minutes, 2) + 'm ' + zeroPad(seconds, 2) + 's';
+            data[key] = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
         }
 
         // ---------------------------------------------------------------------
@@ -986,13 +1034,13 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Look for INPUTs
-        var element = $("input[name=" + key + "]");
+        var element = $("input[name='" + key + "']");
         if (element.length > 0) {
-            if (element.attr('type') == 'checkbox') {
+            if (element.attr("type") === "checkbox") {
                 element
                     .prop("checked", data[key])
                     .iphoneStyle("refresh");
-            } else if (element.attr('type') == 'radio') {
+            } else if (element.attr("type") === "radio") {
                 element.val([data[key]]);
             } else {
                 var pre = element.attr("pre") || "";
@@ -1003,7 +1051,7 @@ function processData(data) {
         }
 
         // Look for SPANs
-        var element = $("span[name=" + key + "]");
+        var element = $("span[name='" + key + "']");
         if (element.length > 0) {
             var pre = element.attr("pre") || "";
             var post = element.attr("post") || "";
@@ -1012,7 +1060,7 @@ function processData(data) {
         }
 
         // Look for SELECTs
-        var element = $("select[name=" + key + "]");
+        var element = $("select[name='" + key + "']");
         if (element.length > 0) {
             element.val(data[key]);
             return;
@@ -1021,7 +1069,7 @@ function processData(data) {
     });
 
     // Auto generate an APIKey if none defined yet
-    if ($("input[name='apiKey']").val() == "") {
+    if ($("input[name='apiKey']").val() === "") {
         generateAPIKey();
     }
 
@@ -1032,7 +1080,7 @@ function processData(data) {
 function hasChanged() {
 
     var newValue, originalValue;
-    if ($(this).attr('type') == 'checkbox') {
+    if ($(this).attr("type") === "checkbox") {
         newValue = $(this).prop("checked")
         originalValue = $(this).attr("original") == "true";
     } else {
@@ -1042,34 +1090,27 @@ function hasChanged() {
     var hasChanged = $(this).attr("hasChanged") || 0;
     var action = $(this).attr("action");
 
-    if (typeof originalValue == 'undefined') return;
-    if (action == 'none') return;
+    if (typeof originalValue === "undefined") {return;}
+    if (action === "none") {return;}
 
-    if (newValue != originalValue) {
-        if (hasChanged == 0) {
+    if (newValue !== originalValue) {
+        if (hasChanged === 0) {
             ++numChanged;
-            if (action == "reconnect") ++numReconnect;
-            if (action == "reboot") ++numReboot;
-            if (action == "reload") ++numReload;
+            if (action === "reconnect") ++numReconnect;
+            if (action === "reboot") ++numReboot;
+            if (action === "reload") ++numReload;
             $(this).attr("hasChanged", 1);
         }
     } else {
-        if (hasChanged == 1) {
+        if (hasChanged === 1) {
             --numChanged;
-            if (action == "reconnect") --numReconnect;
-            if (action == "reboot") --numReboot;
-            if (action == "reload") --numReload;
+            if (action === "reconnect") --numReconnect;
+            if (action === "reboot") --numReboot;
+            if (action === "reload") --numReload;
             $(this).attr("hasChanged", 0);
         }
     }
 
-}
-
-function resetOriginals() {
-    $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
-    })
-    numReboot = numReconnect = numReload = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -1078,17 +1119,17 @@ function resetOriginals() {
 
 function connect(host) {
 
-    if (typeof host === 'undefined') {
-        host = window.location.href.replace('#', '');
+    if (typeof host === "undefined") {
+        host = window.location.href.replace("#", "");
     } else {
-        if (host.indexOf("http") != 0) {
-            host = 'http://' + host + '/';
+        if (host.indexOf("http") !== 0) {
+            host = "http://" + host + "/";
         }
     }
-    if (host.indexOf("http") != 0) return;
+    if (host.indexOf("http") !== 0) {return;}
 
     webhost = host;
-    wshost = host.replace('http', 'ws') + 'ws';
+    wshost = host.replace("http", "ws") + "ws";
 
     if (websock) websock.close();
     websock = new WebSocket(wshost);
@@ -1102,37 +1143,37 @@ $(function() {
 
     initMessages();
 
-    $("#menuLink").on('click', toggleMenu);
-    $(".pure-menu-link").on('click', showPanel);
-    $('progress').attr({ value: 0, max: 100 });
+    $("#menuLink").on("click", toggleMenu);
+    $(".pure-menu-link").on("click", showPanel);
+    $("progress").attr({ value: 0, max: 100 });
 
-    $(".button-update").on('click', doUpdate);
-    $(".button-update-password").on('click', doUpdatePassword);
-    $(".button-reboot").on('click', doReboot);
-    $(".button-reconnect").on('click', doReconnect);
-    $(".button-settings-backup").on('click', doBackup);
-    $(".button-settings-restore").on('click', doRestore);
-    $('#uploader').on('change', onFileUpload);
-    $(".button-upgrade").on('click', doUpgrade);
+    $(".button-update").on("click", doUpdate);
+    $(".button-update-password").on("click", doUpdatePassword);
+    $(".button-reboot").on("click", doReboot);
+    $(".button-reconnect").on("click", doReconnect);
+    $(".button-settings-backup").on("click", doBackup);
+    $(".button-settings-restore").on("click", doRestore);
+    $("#uploader").on("change", onFileUpload);
+    $(".button-upgrade").on("click", doUpgrade);
 
-    $(".button-apikey").on('click', generateAPIKey);
-    $(".button-upgrade-browse").on('click', function() {
+    $(".button-apikey").on("click", generateAPIKey);
+    $(".button-upgrade-browse").on("click", function() {
         $("input[name='upgrade']")[0].click();
         return false;
     });
     $("input[name='upgrade']").change(function (){
         var fileName = $(this).val();
-        $("input[name='filename']").val(fileName.replace(/^.*[\\\/]/, ''));
+        $("input[name='filename']").val(fileName.replace(/^.*[\\\/]/, ""));
     });
-    $(".button-add-network").on('click', function() {
+    $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-schedule").on('click', function() {
+    $(".button-add-schedule").on("click", function() {
         $("div.more", addSchedule()).toggle();
     });
 
-    $(document).on('change', 'input', hasChanged);
-    $(document).on('change', 'select', hasChanged);
+    $(document).on("change", "input", hasChanged);
+    $(document).on("change", "select", hasChanged);
 
     connect();
 
