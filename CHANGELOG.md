@@ -3,6 +3,25 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.0] 2018-01-11
+### Added
+- Scheduler (contributed by Stefano Cotterli, thank you!, #131)
+- Added "wifi.scan" command to terminal
+- Added ESPurna Switch board support
+- Added support for python3 in memanalyzer and ota scripts (thanks to Ryan Jarvis)
+- Added BSSID, RSSI, channels and distance to web UI status tab
+- Added mDNS name resolving to MQTT, InfluxDB and NoFUSS modules (#129, disabled by default)
+
+### Fixed
+- Update FauxmoESP library to 2.4.1, solves dependency issue (#388)
+- Fixed hardware definition in Sonoff Basic and Dual R2 causing wrong relay state on boot (#365)
+
+### Changed
+- Removed auto-recursion check in Domoticz module (#379)
+- Rename terminal commands: reset.wifi to wifi.reset, reset.mqtt to mqtt.reset.
+- Update JustWifi library to 1.1.6 (support for multiple SSIDs with the same name)
+- Changed the way Home Assistant module handles disabling auto-discovery (#383)
+
 ## [1.11.4] 2018-01-09
 ### Fixed
 - Fix bug in RF Bridge when RF code contains the stop byte. Check overflow (#357)

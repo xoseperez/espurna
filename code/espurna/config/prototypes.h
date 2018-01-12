@@ -34,6 +34,13 @@ typedef std::function<void(void)> ws_on_after_parse_callback_f;
 void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
 
 // -----------------------------------------------------------------------------
+// WIFI
+// -----------------------------------------------------------------------------
+#include "JustWifi.h"
+typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
+void wifiRegister(wifi_callback_f callback);
+
+// -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;

@@ -41,8 +41,12 @@ template<typename T> bool idbSend(const char * topic, T payload) {
     if (!_idb_enabled) return true;
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return true;
 
-    char host[64];
-    getSetting("idbHost", INFLUXDB_HOST).toCharArray(host, sizeof(host));
+    String h = getSetting("idbHost", INFLUXDB_HOST);
+    #if MDNS_CLIENT_SUPPORT
+        h = mdnsResolve(h);
+    #endif
+    char * host = strdup(h.c_str());
+
     int port = getSetting("idbPort", INFLUXDB_PORT).toInt();
 
     DEBUG_MSG("[INFLUXDB] Sending to %s:%d\n", host, port);

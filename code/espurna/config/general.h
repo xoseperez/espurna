@@ -20,14 +20,15 @@
 //------------------------------------------------------------------------------
 
 #ifdef ESPURNA_CORE
-    #define ALEXA_SUPPORT          0
-    #define DOMOTICZ_SUPPORT       0
-    #define HOMEASSISTANT_SUPPORT  0
-    #define MQTT_SUPPORT           0
-    #define NTP_SUPPORT            0
-    #define WEB_SUPPORT            0
-    #define SENSOR_SUPPORT         0
-    #define I2C_SUPPORT            0
+    #define ALEXA_SUPPORT           0
+    #define SCHEDULER_SUPPORT       0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define WEB_SUPPORT             0
+    #define SENSOR_SUPPORT          0
+    #define I2C_SUPPORT             0
 #endif
 
 //------------------------------------------------------------------------------
@@ -318,6 +319,9 @@ PROGMEM const char* const custom_reset_string[] = {
 //#define WIFI2_SSID              "..."
 //#define WIFI2_PASS              "..."
 
+#define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
+#define WIFI_PROPAGATION_CONST  4           // This is typically something between 2.7 to 4.3 (free space is 2)
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
@@ -372,8 +376,12 @@ PROGMEM const char* const custom_reset_string[] = {
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
 
-#ifndef MDNS_SUPPORT
-#define MDNS_SUPPORT            1           // Publish services using mDNS by default (1.84Kb)
+#ifndef MDNS_SERVER_SUPPORT
+#define MDNS_SERVER_SUPPORT     1           // Publish services using mDNS by default (1.48Kb)
+#endif
+
+#ifndef MDNS_CLIENT_SUPPORT
+#define MDNS_CLIENT_SUPPORT     0           // Resolve mDNS names (3.44Kb)
 #endif
 
 #ifndef LLMNR_SUPPORT
@@ -393,7 +401,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef SPIFFS_SUPPORT
-#define SPIFFS_SUPPORT           0          // Do not add support for SPIFFS by default
+#define SPIFFS_SUPPORT          0           // Do not add support for SPIFFS by default
 #endif
 
 // -----------------------------------------------------------------------------
@@ -424,7 +432,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient
+#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
 #endif
 
 // MQTT OVER SSL
@@ -448,7 +456,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_SSL_FINGERPRINT    ""          // SSL fingerprint of the server
 
 #define MQTT_ENABLED            0           // Do not enable MQTT connection by default
-#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SUPPORT=1 will perform an autodiscover and
+#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
                                             // autoconnect to the first MQTT broker found if none defined
 #define MQTT_SERVER             ""          // Default MQTT broker address
 #define MQTT_USER               ""          // Default MQTT broker usename
@@ -604,7 +612,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
-#define DOMOTICZ_SKIP_TIME      2               // Avoid recursion skipping messages to same IDX within 2 seconds
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
@@ -673,6 +680,22 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // -----------------------------------------------------------------------------
+// SCHEDULER
+// -----------------------------------------------------------------------------
+
+#ifndef SCHEDULER_SUPPORT
+#define SCHEDULER_SUPPORT       1               // Enable scheduler (1.77Kb)
+#endif
+
+#if SCHEDULER_SUPPORT
+#undef NTP_SUPPORT
+#define NTP_SUPPORT             1               // Scheduler needs NTP
+#endif
+
+#define SCHEDULER_UPDATE_SEC    5               // Scheduler perform switch at hh:mm:05
+#define SCHEDULER_MAX_SCHEDULES 10              // Max schedules alowed
+
+// -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
 
@@ -686,7 +709,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
 
 // -----------------------------------------------------------------------------
-// FAUXMO
+// ALEXA
 // -----------------------------------------------------------------------------
 
 // This setting defines whether Alexa support should be built into the firmware

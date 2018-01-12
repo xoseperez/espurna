@@ -233,10 +233,6 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 }
 
-void _mqttConfigure() {
-    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
-}
-
 #endif
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
@@ -347,8 +343,12 @@ void mqttConnect() {
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
-    if (strlen(host) == 0) return;
+    String h = getSetting("mqttServer", MQTT_SERVER);
+    #if MDNS_CLIENT_SUPPORT
+        h = mdnsResolve(h);
+    #endif
+    char * host = strdup(h.c_str());
+
     unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
 
     if (_mqtt_user) free(_mqtt_user);
@@ -483,6 +483,7 @@ void mqttConfigure() {
     _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
     _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
     _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
+    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
 
     // Enable
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
@@ -508,8 +509,9 @@ void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
 
 void mqttSetup() {
 
-    DEBUG_MSG_P(PSTR("[MQTT] Async %s, Autoconnect %s\n"),
+    DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
+        ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
         MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
     );
 
@@ -564,7 +566,7 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
-        wsOnAfterParseRegister(_mqttConfigure);
+        wsOnAfterParseRegister(mqttConfigure);
     #endif
 
 }
