@@ -17,7 +17,7 @@ extern "C" {
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
-WiFiUDP udpDebug;
+WiFiUDP _udp_debug;
 #endif
 
 void debugSend(const char * format, ...) {
@@ -38,10 +38,9 @@ void debugSend(const char * format, ...) {
         #if SYSTEM_CHECK_ENABLED
         if (systemCheck()) {
         #endif
-            udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            udpDebug.write(buffer);
-            udpDebug.endPacket();
-            delay(1);
+            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
+            _udp_debug.write(buffer);
+            _udp_debug.endPacket();
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
@@ -76,10 +75,9 @@ void debugSend_P(PGM_P format_P, ...) {
         #if SYSTEM_CHECK_ENABLED
         if (systemCheck()) {
         #endif
-            udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            udpDebug.write(buffer);
-            udpDebug.endPacket();
-            delay(1);
+            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
+            _udp_debug.write(buffer);
+            _udp_debug.endPacket();
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
