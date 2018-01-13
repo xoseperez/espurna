@@ -182,10 +182,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // This should got to callback as well
             // but first change management has to be in place
             #if MQTT_SUPPORT
-                if (changedMQTT) {
-                    mqttConfigure();
-                    mqttDisconnect();
-                }
+                if (changedMQTT) mqttReset();
             #endif
 
             // Persist settings
