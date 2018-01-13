@@ -106,7 +106,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             // Restore configuration via websockets
             if (strcmp(action, "restore") == 0) {
-                if (settingsRestore(data)) {
+                if (settingsRestoreJson(data)) {
                     wsSend_P(client_id, PSTR("{\"message\": 5}"));
                 } else {
                     wsSend_P(client_id, PSTR("{\"message\": 4}"));

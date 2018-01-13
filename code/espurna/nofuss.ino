@@ -62,6 +62,19 @@ void _nofussConfigure() {
 
 }
 
+#if TERMINAL_SUPPORT
+
+void _nofussInitCommands() {
+
+    settingsRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("+OK\n"));
+        nofussRun();
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+#
 // -----------------------------------------------------------------------------
 
 void nofussRun() {
@@ -134,6 +147,10 @@ void nofussSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_nofussWebSocketOnSend);
         wsOnAfterParseRegister(_nofussConfigure);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _nofussInitCommands();
     #endif
 
 }

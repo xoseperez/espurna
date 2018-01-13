@@ -50,11 +50,14 @@ String mqttSubtopic(char * topic);
 // -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
+#include <Embedis.h>
 template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
-bool settingsRestore(JsonObject& data);
+bool settingsGetJson(JsonObject& data);
+bool settingsRestoreJson(JsonObject& data);
+void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
 
 // -----------------------------------------------------------------------------
 // I2C

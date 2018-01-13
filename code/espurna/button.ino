@@ -112,7 +112,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
     }
     if (action == BUTTON_MODE_FACTORY) {
         DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
-        settingsFactoryReset();
+        resetSettings();
         deferredReset(100, CUSTOM_RESET_FACTORY);
     }
 

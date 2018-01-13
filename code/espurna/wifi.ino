@@ -346,6 +346,25 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
 
 #endif // DEBUG_SUPPORT
 
+#if TERMINAL_SUPPORT
+
+void _wifiInitCommands() {
+
+    settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
+        wifiConfigure();
+        wifiDisconnect();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
+        wifiScan();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+}
+
+#endif
+
 void wifiRegister(wifi_callback_f callback) {
     jw.subscribe(callback);
 }
@@ -367,6 +386,10 @@ void wifiSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
         wsOnAfterParseRegister(wifiConfigure);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _wifiInitCommands();
     #endif
 
 }

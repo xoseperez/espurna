@@ -642,11 +642,43 @@ void relaySetupMQTT() {
 //------------------------------------------------------------------------------
 
 #if INFLUXDB_SUPPORT
+
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
     idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
+
 #endif
+
+
+//------------------------------------------------------------------------------
+// Settings
+//------------------------------------------------------------------------------
+
+#if TERMINAL_SUPPORT
+
+void _relayInitCommands() {
+
+    settingsRegisterCommand(F("RELAY"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        }
+        int id = String(e->argv[1]).toInt();
+        if (e->argc > 2) {
+            int value = String(e->argv[2]).toInt();
+            if (value == 2) {
+                relayToggle(id);
+            } else {
+                relayStatus(id, value == 1);
+            }
+        }
+        DEBUG_MSG_P(PSTR("Status: %s\n"), relayStatus(id) ? "true" : "false");
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
 
 //------------------------------------------------------------------------------
 // Setup
@@ -700,9 +732,11 @@ void relaySetup() {
         relaySetupAPI();
         relaySetupWS();
     #endif
-
     #if MQTT_SUPPORT
         relaySetupMQTT();
+    #endif
+    #if TERMINAL_SUPPORT
+        _relayInitCommands();
     #endif
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());

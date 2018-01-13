@@ -856,6 +856,67 @@ void _lightAPISetup() {
 
 #endif // WEB_SUPPORT
 
+#if TERMINAL_SUPPORT
+
+void _lightInitCommands() {
+
+    settingsRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
+        if (e->argc > 1) {
+            lightBrightness(String(e->argv[1]).toInt());
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("CHANNEL"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        }
+        int id = String(e->argv[1]).toInt();
+        if (e->argc > 2) {
+            int value = String(e->argv[2]).toInt();
+            lightChannel(id, value);
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("COLOR"), [](Embedis* e) {
+        if (e->argc > 1) {
+            String color = String(e->argv[1]);
+            lightColor(color.c_str());
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("KELVIN"), [](Embedis* e) {
+        if (e->argc > 1) {
+            String color = String("K") + String(e->argv[1]);
+            lightColor(color.c_str());
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("MIRED"), [](Embedis* e) {
+        if (e->argc > 1) {
+            String color = String("M") + String(e->argv[1]);
+            lightColor(color.c_str());
+            lightUpdate(true, true);
+        }
+        DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
 unsigned long getIOMux(unsigned long gpio) {
@@ -972,6 +1033,10 @@ void lightSetup() {
 
     #if MQTT_SUPPORT
         mqttRegister(_lightMQTTCallback);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _lightInitCommands();
     #endif
 
 }

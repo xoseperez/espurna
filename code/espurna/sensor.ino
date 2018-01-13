@@ -173,6 +173,26 @@ void _sensorAPISetup() {
 }
 #endif
 
+#if TERMINAL_SUPPORT
+
+void _sensorInitCommands() {
+    settingsRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
+        for (unsigned char i=0; i<_magnitudes.size(); i++) {
+            sensor_magnitude_t magnitude = _magnitudes[i];
+            DEBUG_MSG_P(PSTR("[SENSOR] * %2d: %s @ %s (%s/%d)\n"),
+                i,
+                _magnitudeTopic(magnitude.type).c_str(),
+                magnitude.sensor->slot(magnitude.local).c_str(),
+                _magnitudeTopic(magnitude.type).c_str(),
+                magnitude.global
+            );
+        }
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+}
+
+#endif
+
 void _sensorTick() {
     for (unsigned char i=0; i<_sensors.size(); i++) {
         _sensors[i]->tick();
@@ -587,6 +607,10 @@ void sensorSetup() {
         // API
         _sensorAPISetup();
 
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _sensorInitCommands();
     #endif
 
 }

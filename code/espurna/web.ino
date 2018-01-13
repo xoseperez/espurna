@@ -50,13 +50,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
-
-    unsigned int size = settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-        String key = settingsKeyName(i);
-        String value = getSetting(key);
-        root[key] = value;
-    }
+    settingsGetJson(root);
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
@@ -78,7 +72,7 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
     if (final && (index == 0)) {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.parseObject((char *) data);
-        if (root.success()) _webConfigSuccess = settingsRestore(root);
+        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
         return;
     }
 
@@ -105,7 +99,7 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
         // Parse JSON
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.parseObject((char *) _webConfigBuffer->data());
-        if (root.success()) _webConfigSuccess = settingsRestore(root);
+        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
         delete _webConfigBuffer;
 
     }

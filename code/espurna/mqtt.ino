@@ -507,6 +507,28 @@ void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
     if (!hasSetting("mqttServer")) mqttSetBroker(ip, port);
 }
 
+// -----------------------------------------------------------------------------
+// Comands
+// -----------------------------------------------------------------------------
+
+#if TERMINAL_SUPPORT
+
+void _mqttInitCommands() {
+
+    settingsRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
+        mqttConfigure();
+        mqttDisconnect();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+
+// -----------------------------------------------------------------------------
+// Setup
+// -----------------------------------------------------------------------------
+
 void mqttSetup() {
 
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
@@ -567,6 +589,10 @@ void mqttSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
         wsOnAfterParseRegister(mqttConfigure);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _mqttInitCommands();
     #endif
 
 }
