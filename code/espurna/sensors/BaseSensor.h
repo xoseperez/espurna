@@ -46,6 +46,12 @@ class BaseSensor {
         // Descriptive name of the sensor
         virtual String description() {}
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        virtual String address(unsigned char index) {}
+
+        // Descriptive name of the slot # index
+        virtual String slot(unsigned char index) {};
+
         // Type for slot # index
         virtual unsigned char type(unsigned char index) {}
 
@@ -60,9 +66,6 @@ class BaseSensor {
 
         // Load the configuration manifest
         static void manifest(JsonArray& root) {};
-
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) { return description(); }
 
         // Sensor ID
         unsigned char getID() { return _sensor_id; };

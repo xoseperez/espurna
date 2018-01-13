@@ -55,17 +55,17 @@ void debugSend(const char * format, ...) {
 
 }
 
-void debugSend_P(PGM_P format, ...) {
+void debugSend_P(PGM_P format_P, ...) {
 
-    char f[DEBUG_FORMAT_MAX_LENGTH+1];
-    memcpy_P(f, format, DEBUG_FORMAT_MAX_LENGTH);
+    char format[strlen_P(format_P)+1];
+    memcpy_P(format, format_P, sizeof(format));
 
     va_list args;
-    va_start(args, format);
+    va_start(args, format_P);
     char test[1];
-    int len = ets_vsnprintf(test, 1, f, args) + 1;
+    int len = ets_vsnprintf(test, 1, format, args) + 1;
     char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, f, args);
+    ets_vsnprintf(buffer, len, format, args);
     va_end(args);
 
     #if DEBUG_SERIAL_SUPPORT

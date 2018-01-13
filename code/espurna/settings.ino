@@ -250,6 +250,24 @@ void settingsSetup() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    Embedis::command( F("GPIO"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+        int pin = String(e->argv[1]).toInt();
+        //if (!gpioValid(pin)) {
+        //    DEBUG_MSG_P(PSTR("-ERROR: Invalid GPIO\n"));
+        //    return;
+        //}
+        if (e->argc > 2) {
+            bool state = String(e->argv[2]).toInt() == 1;
+            digitalWrite(pin, state);
+        }
+        DEBUG_MSG_P(PSTR("GPIO %d is %s\n"), pin, digitalRead(pin) == HIGH ? "HIGH" : "LOW");
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     Embedis::command( F("HEAP"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("Free HEAP: %d bytes\n"), getFreeHeap());
         DEBUG_MSG_P(PSTR("+OK\n"));
@@ -290,6 +308,14 @@ void settingsSetup() {
         });
     #endif
 
+    #if MQTT_SUPPORT
+        Embedis::command( F("MQTT.RESET"), [](Embedis* e) {
+            mqttConfigure();
+            mqttDisconnect();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif
+
     #if NOFUSS_SUPPORT
         Embedis::command( F("NOFUSS"), [](Embedis* e) {
             DEBUG_MSG_P(PSTR("+OK\n"));
@@ -319,22 +345,19 @@ void settingsSetup() {
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
-    #if MQTT_SUPPORT
-        Embedis::command( F("RESET.MQTT"), [](Embedis* e) {
-            mqttConfigure();
-            mqttDisconnect();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-    #endif
+    Embedis::command( F("UPTIME"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
 
-    Embedis::command( F("RESET.WIFI"), [](Embedis* e) {
+    Embedis::command( F("WIFI.RESET"), [](Embedis* e) {
         wifiConfigure();
         wifiDisconnect();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    Embedis::command( F("UPTIME"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
+    Embedis::command( F("WIFI.SCAN"), [](Embedis* e) {
+        wifiScan();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

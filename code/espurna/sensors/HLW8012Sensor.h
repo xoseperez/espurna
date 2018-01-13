@@ -162,6 +162,18 @@ class HLW8012Sensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[10];
+            snprintf(buffer, sizeof(buffer), "%i:%i:%i", _sel, _cf, _cf1);
+            return String(buffer);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;

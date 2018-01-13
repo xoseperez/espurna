@@ -100,6 +100,10 @@
                             <a href="#" class="pure-menu-link" data="panel-relay">SWITCHES</a>
                         </li>
 
+                        <li class="pure-menu-item module module-relay">
+                            <a href="#" class="pure-menu-link" data="panel-schedule">SCHEDULE</a>
+                        </li>
+
                         <li class="pure-menu-item module module-color">
                             <a href="#" class="pure-menu-link" data="panel-color">LIGHTS</a>
                         </li>
@@ -114,6 +118,10 @@
 
                         <li class="pure-menu-item module module-idb">
                             <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
+                        </li>
+
+                        <li class="pure-menu-item module module-tspk">
+                            <a href="#" class="pure-menu-link" data="panel-thingspeak">THINGSPEAK</a>
                         </li>
 
                         <li class="pure-menu-item module module-rfb">
@@ -181,6 +189,15 @@
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">Network</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="network"></span></div>
+
+                                    <div class="pure-u-1-2 pure-u-lg-1-4">BSSID</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="bssid"></span></div>
+
+                                    <div class="pure-u-1-2 pure-u-lg-1-4">Channel</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="channel"></span></div>
+
+                                    <div class="pure-u-1-2 pure-u-lg-1-4">RSSI</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="rssi"></span> (<span name="distance" post="m"></span>)</div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">IP</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="deviceip"></span></div>
@@ -324,10 +341,10 @@
                                 <div class="pure-g module module-multirelay">
                                     <label class="pure-u-1 pure-u-lg-1-4">Switch sync mode</label>
                                     <select name="relaySync" class="pure-u-1 pure-u-lg-3-4" tabindex="3">
-                                        <option value="0">No synchonisation</option>
+                                        <option value="0">No synchronisation</option>
                                         <option value="1">Zero or one switches active</option>
                                         <option value="2">One and just one switch active</option>
-                                        <option value="3">All synchonised</option>
+                                        <option value="3">All synchronised</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Define how the different switches should be synchronized.</div>
@@ -526,13 +543,33 @@
 
                             <fieldset>
 
-                                <div id="networks">
-                                </div>
+                                <div id="networks"></div>
 
                                 <button type="button" class="pure-button button-add-network">Add network</button>
 
                             </fieldset>
                         </div>
+                    </div>
+
+                    <div class="panel" id="panel-schedule">
+
+                        <div class="header">
+                            <h1>SCHEDULE</h1>
+                            <h2>Turn switches ON and OFF based on the current time.</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div id="schedules"></div>
+
+                                <button type="button" class="pure-button button-add-schedule">Add schedule</button>
+
+                            </fieldset>
+
+                        </div>
+
                     </div>
 
                     <div class="panel" id="panel-mqtt">
@@ -597,7 +634,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Keep Alive</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" type="number" name="mqttKeep" min="10" max="60" tabindex="28" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="number" name="mqttKeep" min="10" max="3600" tabindex="28" />
                                 </div>
 
                                 <div class="pure-g module module-mqttssl">
@@ -715,14 +752,6 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Anti-recursion time</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24" name="dczSkip" type="number" min="0" max="10" tabindex="31" /></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-1-2 hint">Skip messages from the same IDX for these many seconds</div>
-                                </div>
-
-                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Domoticz IN Topic</label>
                                     <input class="pure-u-1 pure-u-lg-3-4" name="dczTopicIn" type="text" tabindex="31" />
                                 </div>
@@ -738,9 +767,49 @@
                                     <div class="pure-u-1 hint">Set IDX to 0 to disable notifications from that component.</div>
                                 </div>
 
-                                <div id="domoticzRelays"></div>
+                                <div id="dczRelays"></div>
 
-                                <div id="domoticzMagnitudes"></div>
+                                <div id="dczMagnitudes"></div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-thingspeak">
+
+                        <div class="header">
+                            <h1>THINGSPEAK</h1>
+                            <h2>
+                                Send your sensors data to Thinkgspeak.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <legend>General</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable Thingspeak</label></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="tspkEnabled" tabindex="30" /></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="31" />
+                                </div>
+
+                                <legend>Sensors &amp; actuators</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 hint">Enter the field number to send each data to, 0 disable notifications from that component.</div>
+                                </div>
+
+                                <div id="tspkRelays"></div>
+
+                                <div id="tspkMagnitudes"></div>
 
                             </fieldset>
                         </div>
@@ -979,7 +1048,46 @@
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set the Domain Name Server IP to use when using a static IP</div>
 
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
-                <button type="button" class="pure-button button-del-network more">Delete network</button>
+                <button class="pure-button button-del-network more" type="button">Delete network</button>
+
+            </div>
+
+        </div>
+
+        <div id="scheduleTemplate" class="template">
+
+            <div class="pure-g">
+
+                <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
+                <div class="pure-u-1-4 pure-u-lg-1-5">
+                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" size="20" />
+                    <div class="pure-u-1-4 hint center"> h</div>
+                </div>
+                <div class="pure-u-1-4 pure-u-lg-1-5">
+                    <input class="pure-u-2-3" name="schMinute" type="number" min="0" step="1" max="59" />
+                    <div class="pure-u-1-4 hint center"> m</div>
+                </div>
+                <div class="pure-u-0 pure-u-lg-1-3"></div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
+                <div class="pure-u-2-5 pure-u-lg-1-5">
+                    <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" size="15" tabindex="0" value="1,2,3,4,5,6,7" />
+                </div>
+                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">1 for Monday, 2 for Tuesday...</div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">Action</label>
+                <div class="pure-u-1 pure-u-lg-1-5">
+                    <select class="pure-u-1 pure-u-lg-23-24" name="schAction">
+                        <option value="0">Turn OFF</option>
+                        <option value="1">Turn ON</option>
+                        <option value="2">Toggle</option>
+                    </select>
+                </div>
+                <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch"></select>
+                <div class="pure-u-0 pure-u-lg-1-5"></div>
+
+                <div class="pure-u-0 pure-u-lg-1-4"></div>
+                <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
 
             </div>
 
@@ -1028,17 +1136,32 @@
             </div>
         </div>
 
-        <div id="relayIdxTemplate" class="template">
+        <div id="dczRelayTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24 dczRelayIdx" name="dczRelayIdx" type="number" min="0" tabindex="0" data="0" /></div>
             </div>
         </div>
 
-        <div id="magnitudeIdxTemplate" class="template">
+        <div id="dczMagnitudeTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24 center" name="dczMagnitude" type="number" min="0" tabindex="0" data="0" /></div>
+                <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+            </div>
+        </div>
+
+        <div id="tspkRelayTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24" name="tspkRelay" type="number" min="0" max="8" tabindex="0" data="0" /></div>
+            </div>
+        </div>
+
+        <div id="tspkMagnitudeTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-23-24 center" name="tspkMagnitude" type="number" min="0" max="8" tabindex="0" data="0" /></div>
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
             </div>
         </div>

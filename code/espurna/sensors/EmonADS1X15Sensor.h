@@ -203,6 +203,14 @@ class EmonADS1X15Sensor : public EmonSensor {
             return String(buffer);
         }
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[10];
+            unsigned char channel = getChannel(index % _ports);
+            snprintf(buffer, sizeof(buffer), "0x%02X:%i", _address, channel);
+            return String(buffer);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
             if (index < _count) {

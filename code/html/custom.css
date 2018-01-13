@@ -62,14 +62,20 @@
     margin-left: 5px;
 }
 .button-add-network,
+.button-add-schedule,
 .button-rfb-learn {
     background: rgb(28, 184, 65);
 }
-.button-del-network {
+.button-del-network,
+.button-del-schedule {
     background: rgb(202, 60, 60);
-    letter-spacing: 0px;
 }
+.pure-button {
+    letter-spacing: 0;
+}
+
 .button-more-network,
+.button-more-schedule,
 .button-rfb-send {
     background: rgb(223, 117, 20);
 }
@@ -103,10 +109,11 @@ div.hint {
 .break {
     margin-top: 5px;
 }
-#networks .pure-g {
+#networks .pure-g,
+#schedules .pure-g {
     padding: 10px 0 10px 0;
-    margin-bottom: 5px;
-    border-bottom: 2px dashed #e5e5e5;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
 }
 #networks .more {
     display: none;
@@ -197,4 +204,12 @@ span.slider {
 select {
     width: 100%;
     margin-bottom: 10px;
+}
+hr {
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 1em 0;
+    padding: 0;
 }

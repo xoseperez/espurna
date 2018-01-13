@@ -11,6 +11,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 bool _haEnabled = false;
+bool _haSendFlag = false;
 
 // -----------------------------------------------------------------------------
 
@@ -19,21 +20,19 @@ void _haWebSocketOnSend(JsonObject& root) {
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
 }
 
-void _haConfigure() {
-    bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
-    if (enabled != _haEnabled) haSend(enabled);
-    _haEnabled = enabled;
-}
+void _haSend() {
 
-// -----------------------------------------------------------------------------
+    // Pending message to send?
+    if (!_haSendFlag) return;
 
-void haSend(bool add) {
+    // Are we connected?
+    if (!mqttConnected()) return;
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
     String output;
 
-    if (add) {
+    if (_haEnabled) {
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
@@ -84,18 +83,33 @@ void haSend(bool add) {
 
     mqttSendRaw(topic.c_str(), output.c_str());
     mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+    _haSendFlag = false;
 
 }
 
+void _haConfigure() {
+    bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+    _haSendFlag = (enabled != _haEnabled);
+    _haEnabled = enabled;
+    _haSend();
+}
+
+// -----------------------------------------------------------------------------
+
 void haSetup() {
+
     _haConfigure();
+
     #if WEB_SUPPORT
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnAfterParseRegister(_haConfigure);
     #endif
+
+    // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-        if (type == MQTT_CONNECT_EVENT) haSend(_haEnabled);
+        if (type == MQTT_CONNECT_EVENT) _haSend();
     });
+
 }
 
 #endif // HOMEASSISTANT_SUPPORT

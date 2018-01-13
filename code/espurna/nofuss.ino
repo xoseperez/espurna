@@ -27,6 +27,10 @@ void _nofussWebSocketOnSend(JsonObject& root) {
 void _nofussConfigure() {
 
     String nofussServer = getSetting("nofussServer", NOFUSS_SERVER);
+    #if MDNS_CLIENT_SUPPORT
+        nofussServer = mdnsResolve(nofussServer);
+    #endif
+
     if (nofussServer.length() == 0) {
         setSetting("nofussEnabled", 0);
         _nofussEnabled = false;

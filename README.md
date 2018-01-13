@@ -4,25 +4,26 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switch
 It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-> **Current Release Version is 1.11.3**, read the [changelog](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+**Current Release Version is 1.12.0**
 
-> **NOTICE**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+Read the [changes log](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
 
-> **NOTICE**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
+---
 
 ## Features
 
-* *KRACK* vulnerability free (when built against Arduino Core 2.4.0 RC2)
+* *KRACK* vulnerability free (when built against Arduino Core 2.4.0)
 * Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
 * Power saving options
 * Wifi **AP Mode** or **STA mode**
     * Up to 5 different networks can be defined
     * Supports static IP
     * Scans for strongest network if more than one defined
+    * Handles correctly multiple AP with the same SSID
     * Defaults to AP mode (also available after double clicking the main button)
 * Network visibility
-    * Supports mDNS (service reporting and metadata)
-    * Supports NetBIOS, LLMNR and Netbios (when built against Arduino Core 2.4.0 RC2) and SSDP (experimental)
+    * Supports mDNS (service reporting and metadata) both server mode and client mode (.local name resolution)
+    * Supports NetBIOS, LLMNR and Netbios (when built against Arduino Core 2.4.0) and SSDP (experimental)
 * Switch management
     * Support for **push buttons** and **toggle switches**
     * Configurable **status on boot** per switch (always ON, always OFF, same as before or toggle)
@@ -37,6 +38,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Enable/disable pulse mode
     * Change LED notification mode
     * Remote reset the board
+    * Fully configurable in webUI (broker, user, password, QoS, keep alive time, retain flag, client ID)
+* **Scheduler** to automatically turn on, off or toggle any relay at a given time and day
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
@@ -45,13 +48,14 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for lights (color, brightness, on/off state)
     * Supports MQTT auto-discover feature (both switches and lights)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
+* [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
 * Support for different **sensors**
     * Environment
-        * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021** (supports celsius & fahrenheit reporting)
+        * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
         * **SI7021** temperature and humidity sensor
         * **SHT3X** temperature and humidity sensor over I2C (Wemos shield)
-        * **Dallas OneWire sensors** like the DS18B20 (supports celsius & fahrenheit reporting)
+        * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
         * **PMSX003** dust sensor
         * **BH1750** luminosity sensor
@@ -62,6 +66,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **V9261F** power monitor chip
     * Raw analog and digital sensors
     * Simple pulse counter
+    * All temperature sensors support Fahrenheit and Celsius
 * Support for LED lights
     * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
     * RGB and HSV color codes supported
@@ -69,6 +74,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Temperature color supported (in mired and kelvin) via MQTT / REST API
     * Flicker-free PWM management
     * Soft color transitions
+    * Color synchronization between light using MQTT
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
@@ -106,6 +112,31 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Extra long click (>10 seconds) to go back to factory settings (only main button)
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
 
+## Notices
+
+---
+> **2018-01-11**: As of current version (1.12.0) ESPurna is tested using Arduino Core 2.3.0 and it's meant to be built against that version.
+
+---
+> **2017-08-26**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
+
+---
+> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+
+---
+
+## Contribute
+
+There are several ways to contribute to ESpurna development. You can contribute to the repository by doing:
+
+* Pull requests (fixes, enhancements, new features... are very welcome)
+* Documentation (I reckon I'm bad at it)
+* Testing (filing issues or help resolving them, they take a lot of time and sometimes I don't have the required hardware to test them all)
+
+And of course you can always buy me a beer, coffee, tea,... via the donation button below.
+
+[![Donate to ESPurna Project](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+
 ## Documentation
 
 For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xoseperez/espurna/wiki/Home).
@@ -139,7 +170,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
+**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC02, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
 
 ## License
 

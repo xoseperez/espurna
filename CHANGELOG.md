@@ -3,6 +3,50 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.0] 2018-01-11
+### Added
+- Scheduler (contributed by Stefano Cotterli, thank you!, #131)
+- Added "wifi.scan" command to terminal
+- Added ESPurna Switch board support
+- Added support for python3 in memanalyzer and ota scripts (thanks to Ryan Jarvis)
+- Added BSSID, RSSI, channels and distance to web UI status tab
+- Added mDNS name resolving to MQTT, InfluxDB and NoFUSS modules (#129, disabled by default)
+
+### Fixed
+- Update FauxmoESP library to 2.4.1, solves dependency issue (#388)
+- Fixed hardware definition in Sonoff Basic and Dual R2 causing wrong relay state on boot (#365)
+
+### Changed
+- Removed auto-recursion check in Domoticz module (#379)
+- Rename terminal commands: reset.wifi to wifi.reset, reset.mqtt to mqtt.reset.
+- Update JustWifi library to 1.1.6 (support for multiple SSIDs with the same name)
+- Changed the way Home Assistant module handles disabling auto-discovery (#383)
+
+## [1.11.4] 2018-01-09
+### Fixed
+- Fix bug in RF Bridge when RF code contains the stop byte. Check overflow (#357)
+- Fixed typos in code and wiki (Thanks to Ryan Jarvis)
+- Fix bug in magnitude topic and units (#355)
+
+### Added
+- Small core build to allow two-step flashing method for big binaries
+- Thingspeak support (#371, disabled by default)
+- Color synchronization between lights using MQTT (#362)
+- Support for Arilux AL-LC02 (#347)
+- Support for Tarpuna Shield for Wemos D1
+- Build option to disable password checking (#373)
+- Option to report sensor address via MQTT (#377, I2C address, GPIO, Dallas address,...)
+- Added binary size to memanalyzer script
+- Option to specify custom client ID for MQTT connection (#368)
+- Cross-platform ESPurna OTA Manager implemented in python (untested)
+- Terminal command to get or set digital GPIO
+
+### Changed
+- Using 2.3.0 for prebuilt binaries
+- Fix delay in DHT sensor
+- Allow MQTT keep alive value of up to 3600s
+- Changed Sonoff 4CH Pro definitions to support built-in interlock mode (#333)
+
 ## [1.11.3] 2018-01-02
 ### Fixed
 - Fix uninitialized PWM channels bug (#356)

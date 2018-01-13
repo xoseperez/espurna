@@ -128,8 +128,7 @@ void welcome() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[INIT] MANUFACTURER: %s\n"), MANUFACTURER);
-    DEBUG_MSG_P(PSTR("[INIT] DEVICE: %s\n"), DEVICE);
+    DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
 
     #if ALEXA_SUPPORT
@@ -159,7 +158,7 @@ void welcome() {
     #if LLMNR_SUPPORT
         DEBUG_MSG_P(PSTR(" LLMNR"));
     #endif
-    #if MDNS_SUPPORT
+    #if MDNS_SERVER_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS"));
     #endif
     #if NETBIOS_SUPPORT
@@ -173,6 +172,9 @@ void welcome() {
     #endif
     #if RF_SUPPORT
         DEBUG_MSG_P(PSTR(" RF"));
+    #endif
+    #if SCHEDULER_SUPPORT
+        DEBUG_MSG_P(PSTR(" SCHEDULER"));
     #endif
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR(" SENSOR"));
@@ -188,6 +190,9 @@ void welcome() {
     #endif
     #if TERMINAL_SUPPORT
         DEBUG_MSG_P(PSTR(" TERMINAL"));
+    #endif
+    #if THINGSPEAK_SUPPORT
+        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
     #endif
     #if WEB_SUPPORT
         DEBUG_MSG_P(PSTR(" WEB"));
@@ -286,6 +291,7 @@ void setup() {
     if (getSetting("hostname").length() == 0) {
         setSetting("hostname", getIdentifier());
     }
+    setBoardName();
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _loopDelay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
@@ -322,8 +328,8 @@ void setup() {
         mqttSetup();
     #endif
 
-    #if MDNS_SUPPORT
-        mdnsSetup();
+    #if MDNS_SERVER_SUPPORT
+        mdnsServerSetup();
     #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
@@ -357,6 +363,9 @@ void setup() {
     #if INFLUXDB_SUPPORT
         idbSetup();
     #endif
+    #if THINGSPEAK_SUPPORT
+        tspkSetup();
+    #endif
     #if RF_SUPPORT
         rfSetup();
     #endif
@@ -371,6 +380,9 @@ void setup() {
     #endif
     #if SENSOR_SUPPORT
         sensorSetup();
+    #endif
+    #if SCHEDULER_SUPPORT
+        schSetup();
     #endif
 
     // Prepare configuration for version 2.0
@@ -426,6 +438,15 @@ void loop() {
     #endif
     #if SENSOR_SUPPORT
         sensorLoop();
+    #endif
+    #if THINGSPEAK_SUPPORT
+        tspkLoop();
+    #endif
+    #if SCHEDULER_SUPPORT
+        schLoop();
+    #endif
+    #if MDNS_CLIENT_SUPPORT
+        mdnsClientLoop();
     #endif
 
     // Power saving delay

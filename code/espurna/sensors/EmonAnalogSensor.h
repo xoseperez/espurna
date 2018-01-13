@@ -59,6 +59,11 @@ class EmonAnalogSensor : public EmonSensor {
             return String("EMON @ ANALOG @ GPIO0");
         }
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String("0");
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
             _error = SENSOR_ERROR_OK;

@@ -220,6 +220,12 @@ void _wsOnStart(JsonObject& root) {
 
         char chipid[7];
         snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
+        uint8_t * bssid = WiFi.BSSID();
+        char bssid_str[20];
+        snprintf_P(bssid_str, sizeof(bssid_str),
+            PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
+            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
+        );
 
         root["webMode"] = WEB_MODE_NORMAL;
 
@@ -229,6 +235,10 @@ void _wsOnStart(JsonObject& root) {
         root["manufacturer"] = MANUFACTURER;
         root["chipid"] = String(chipid);
         root["mac"] = WiFi.macAddress();
+        root["bssid"] = String(bssid_str);
+        root["channel"] = WiFi.channel();
+        root["rssi"] = WiFi.RSSI();
+        root["distance"] = wifiDistance(WiFi.RSSI());
         root["device"] = DEVICE;
         root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();

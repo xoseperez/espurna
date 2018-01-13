@@ -16,6 +16,22 @@
     type name[] = {__VA_ARGS__};
 
 //------------------------------------------------------------------------------
+// ESPURNA CORE
+//------------------------------------------------------------------------------
+
+#ifdef ESPURNA_CORE
+    #define ALEXA_SUPPORT           0
+    #define SCHEDULER_SUPPORT       0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define WEB_SUPPORT             0
+    #define SENSOR_SUPPORT          0
+    #define I2C_SUPPORT             0
+#endif
+
+//------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
 
@@ -75,7 +91,6 @@
 //------------------------------------------------------------------------------
 
 // General debug options and macros
-#define DEBUG_FORMAT_MAX_LENGTH 80
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
 #if DEBUG_SUPPORT
@@ -180,10 +195,21 @@ PROGMEM const char* const custom_reset_string[] = {
 // BUTTON
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_DEBOUNCE_DELAY
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
+#endif
+
+#ifndef BUTTON_DBLCLICK_DELAY
 #define BUTTON_DBLCLICK_DELAY       500         // Time in ms to wait for a second (or third...) click
+#endif
+
+#ifndef BUTTON_LNGCLICK_DELAY
 #define BUTTON_LNGCLICK_DELAY       1000        // Time in ms holding the button down to get a long click
+#endif
+
+#ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
 
 #define BUTTON_EVENT_NONE           0
 #define BUTTON_EVENT_PRESSED        1
@@ -293,6 +319,9 @@ PROGMEM const char* const custom_reset_string[] = {
 //#define WIFI2_SSID              "..."
 //#define WIFI2_PASS              "..."
 
+#define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
+#define WIFI_PROPAGATION_CONST  4           // This is typically something between 2.7 to 4.3 (free space is 2)
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
@@ -306,7 +335,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 // This is not working at the moment!!
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
 #define WEB_SSL_ENABLED         0           // Use HTTPS web interface
 
 #define WEB_MODE_NORMAL         0
@@ -347,8 +376,12 @@ PROGMEM const char* const custom_reset_string[] = {
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
 
-#ifndef MDNS_SUPPORT
-#define MDNS_SUPPORT            1           // Publish services using mDNS by default (1.84Kb)
+#ifndef MDNS_SERVER_SUPPORT
+#define MDNS_SERVER_SUPPORT     1           // Publish services using mDNS by default (1.48Kb)
+#endif
+
+#ifndef MDNS_CLIENT_SUPPORT
+#define MDNS_CLIENT_SUPPORT     0           // Resolve mDNS names (3.44Kb)
 #endif
 
 #ifndef LLMNR_SUPPORT
@@ -368,7 +401,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef SPIFFS_SUPPORT
-#define SPIFFS_SUPPORT           0          // Do not add support for SPIFFS by default
+#define SPIFFS_SUPPORT          0           // Do not add support for SPIFFS by default
 #endif
 
 // -----------------------------------------------------------------------------
@@ -399,13 +432,13 @@ PROGMEM const char* const custom_reset_string[] = {
 
 
 #ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient
+#define MQTT_USE_ASYNC          1           // Use AysncMQTTClient (1) or PubSubClient (0)
 #endif
 
 // MQTT OVER SSL
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core staging version.
+// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
 //
 // You can use it with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
 // but you might experience hiccups on the web interface, so my recommendation is:
@@ -423,7 +456,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_SSL_FINGERPRINT    ""          // SSL fingerprint of the server
 
 #define MQTT_ENABLED            0           // Do not enable MQTT connection by default
-#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SUPPORT=1 will perform an autodiscover and
+#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
                                             // autoconnect to the first MQTT broker found if none defined
 #define MQTT_SERVER             ""          // Default MQTT broker address
 #define MQTT_USER               ""          // Default MQTT broker usename
@@ -580,7 +613,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
-#define DOMOTICZ_SKIP_TIME      2               // Avoid recursion skipping messages to same IDX within 2 seconds
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
@@ -614,6 +646,57 @@ PROGMEM const char* const custom_reset_string[] = {
 #define INFLUXDB_PASSWORD       ""              // Default password
 
 // -----------------------------------------------------------------------------
+// THINGSPEAK
+// -----------------------------------------------------------------------------
+
+#ifndef THINGSPEAK_SUPPORT
+#define THINGSPEAK_SUPPORT      1               // Enable Thingspeak support by default (2.56Kb)
+#endif
+
+#define THINGSPEAK_ENABLED      0               // Thingspeak disabled by default
+#define THINGSPEAK_APIKEY       ""              // Default API KEY
+
+#define THINGSPEAK_USE_ASYNC    1               // Use AsyncClient instead of WiFiClientSecure
+
+// THINGSPEAK OVER SSL
+// Using THINGSPEAK over SSL works well but generates problems with the web interface,
+// so you should compile it with WEB_SUPPORT to 0.
+// When THINGSPEAK_USE_ASYNC is 1, requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+#define THINGSPEAK_USE_SSL      0               // Use secure connection
+#define THINGSPEAK_FINGERPRINT  "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
+
+#define THINGSPEAK_HOST         "api.thingspeak.com"
+#if THINGSPEAK_USE_SSL
+#define THINGSPEAK_PORT         443
+#else
+#define THINGSPEAK_PORT         80
+#endif
+#define THINGSPEAK_URL          "/update"
+#define THINGSPEAK_MIN_INTERVAL 15000           // Minimum interval between POSTs (in millis)
+
+#ifndef ASYNC_TCP_SSL_ENABLED
+#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
+#undef THINGSPEAK_SUPPORT                       // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#endif
+#endif
+
+// -----------------------------------------------------------------------------
+// SCHEDULER
+// -----------------------------------------------------------------------------
+
+#ifndef SCHEDULER_SUPPORT
+#define SCHEDULER_SUPPORT       1               // Enable scheduler (1.77Kb)
+#endif
+
+#if SCHEDULER_SUPPORT
+#undef NTP_SUPPORT
+#define NTP_SUPPORT             1               // Scheduler needs NTP
+#endif
+
+#define SCHEDULER_UPDATE_SEC    5               // Scheduler perform switch at hh:mm:05
+#define SCHEDULER_MAX_SCHEDULES 10              // Max schedules alowed
+
+// -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
 
@@ -627,7 +710,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
 
 // -----------------------------------------------------------------------------
-// FAUXMO
+// ALEXA
 // -----------------------------------------------------------------------------
 
 // This setting defines whether Alexa support should be built into the firmware

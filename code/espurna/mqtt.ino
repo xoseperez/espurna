@@ -233,10 +233,6 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
 }
 
-void _mqttConfigure() {
-    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
-}
-
 #endif
 
 void _mqttCallback(unsigned int type, const char * topic, const char * payload) {
@@ -319,47 +315,6 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 
 }
 
-#if MQTT_USE_ASYNC
-
-bool mqttFormatFP(const char * fingerprint, unsigned char * bytearray) {
-
-    // check length (20 2-character digits ':' or ' ' separated => 20*2+19 = 59)
-    if (strlen(fingerprint) != 59) return false;
-
-    DEBUG_MSG_P(PSTR("[MQTT] Fingerprint %s\n"), fingerprint);
-
-    // walk the fingerprint
-    for (unsigned int i=0; i<20; i++) {
-        bytearray[i] = strtol(fingerprint + 3*i, NULL, 16);
-    }
-
-    return true;
-
-}
-
-#else
-
-bool mqttFormatFP(const char * fingerprint, char * destination) {
-
-    // check length (20 2-character digits ':' or ' ' separated => 20*2+19 = 59)
-    if (strlen(fingerprint) != 59) return false;
-
-    DEBUG_MSG_P(PSTR("[MQTT] Fingerprint %s\n"), fingerprint);
-
-    // copy it
-    strncpy(destination, fingerprint, 59);
-
-    // walk the fingerprint replacing ':' for ' '
-    for (unsigned char i = 0; i<59; i++) {
-        if (destination[i] == ':') destination[i] = ' ';
-    }
-
-    return true;
-
-}
-
-#endif
-
 void mqttEnabled(bool status) {
     _mqtt_enabled = status;
     setSetting("mqttEnabled", status ? 1 : 0);
@@ -388,8 +343,12 @@ void mqttConnect() {
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
-    if (strlen(host) == 0) return;
+    String h = getSetting("mqttServer", MQTT_SERVER);
+    #if MDNS_CLIENT_SUPPORT
+        h = mdnsResolve(h);
+    #endif
+    char * host = strdup(h.c_str());
+
     unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
 
     if (_mqtt_user) free(_mqtt_user);
@@ -423,7 +382,7 @@ void mqttConnect() {
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 unsigned char fp[20] = {0};
-                if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                if (sslFingerPrintArray(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                     _mqtt.addServerFingerprint(fp);
                 } else {
                     DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
@@ -450,7 +409,7 @@ void mqttConnect() {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 if (_mqtt_client_secure.connect(host, port)) {
                     char fp[60] = {0};
-                    if (mqttFormatFP(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                    if (sslFingerPrintChar(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                         if (_mqtt_client_secure.verify(fp, host)) {
                             _mqtt.setClient(_mqtt_client_secure);
                         } else {
@@ -524,6 +483,7 @@ void mqttConfigure() {
     _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
     _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
     _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
+    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
 
     // Enable
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
@@ -549,8 +509,11 @@ void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
 
 void mqttSetup() {
 
-    DEBUG_MSG_P(PSTR("[MQTT] MQTT_USE_ASYNC = %d\n"), MQTT_USE_ASYNC);
-    DEBUG_MSG_P(PSTR("[MQTT] MQTT_AUTOCONNECT = %d\n"), MQTT_AUTOCONNECT);
+    DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
+        MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
+        ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
+        MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
+    );
 
     #if MQTT_USE_ASYNC
 
@@ -592,8 +555,6 @@ void mqttSetup() {
 
     #else // not MQTT_USE_ASYNC
 
-        DEBUG_MSG_P(PSTR("[MQTT] Using SYNC MQTT library\n"));
-
         _mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {
             _mqttOnMessage(topic, (char *) payload, length);
         });
@@ -605,7 +566,7 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
-        wsOnAfterParseRegister(_mqttConfigure);
+        wsOnAfterParseRegister(mqttConfigure);
     #endif
 
 }
