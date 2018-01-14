@@ -739,7 +739,7 @@ function processData(data) {
 		if ("app_version" in data) {
 			title = title + " " + data.app_version;
 		}
-        $(".pure-menu-heading").html(title);
+        $("span[name=title]").html(title);
         if ("hostname" in data) {
             title = data.hostname + " - " + title;
         }
@@ -1008,7 +1008,6 @@ function processData(data) {
                 var post = element.attr("post") || "";
                 element.val(pre + data[key] + post);
             }
-            return;
         }
 
         // Look for SPANs
@@ -1017,14 +1016,12 @@ function processData(data) {
             var pre = element.attr("pre") || "";
             var post = element.attr("post") || "";
             element.html(pre + data[key] + post);
-            return;
         }
 
         // Look for SELECTs
         var element = $("select[name=" + key + "]");
         if (element.length > 0) {
             element.val(data[key]);
-            return;
         }
 
     });

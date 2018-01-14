@@ -227,3 +227,7 @@ div.loading {
     margin: 8px 0 0 10px;
     display: none;
 }
+#menu span.small {
+    font-size: 60%;
+    padding-left: 9px;
+}
