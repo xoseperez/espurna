@@ -64,15 +64,22 @@ void _wifiScan(uint32_t client_id = 0) {
 
     DEBUG_MSG_P(PSTR("[WIFI] Start scanning\n"));
 
-    String output;
+    #if WEB_SUPPORT
+        String output;
+    #endif
+
     unsigned char result = WiFi.scanNetworks();
 
     if (result == WIFI_SCAN_FAILED) {
         DEBUG_MSG_P(PSTR("[WIFI] Scan failed\n"));
-        output = String("Failed scan");
+        #if WEB_SUPPORT
+            output = String("Failed scan");
+        #endif
     } else if (result == 0) {
         DEBUG_MSG_P(PSTR("[WIFI] No networks found\n"));
-        output = String("No networks found");
+        #if WEB_SUPPORT
+            output = String("No networks found");
+        #endif
     } else {
 
         DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
@@ -100,16 +107,21 @@ void _wifiScan(uint32_t client_id = 0) {
             );
 
             DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), buffer);
-            if (client_id > 0) output = output + String(buffer) + String("<br />");
+
+            #if WEB_SUPPORT
+                if (client_id > 0) output = output + String(buffer) + String("<br />");
+            #endif
 
         }
 
     }
 
-    if (client_id > 0) {
-        output = String("{\"scanResult\": \"") + output + String("\"}");
-        wsSend(client_id, output.c_str());
-    }
+    #if WEB_SUPPORT
+        if (client_id > 0) {
+            output = String("{\"scanResult\": \"") + output + String("\"}");
+            wsSend(client_id, output.c_str());
+        }
+    #endif
 
     WiFi.scanDelete();
 
