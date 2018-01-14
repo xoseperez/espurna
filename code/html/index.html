@@ -72,8 +72,8 @@
             <div id="menu">
                 <div class="pure-menu">
 
-                    <span class="pure-menu-heading" name="title">ESPurna 0.0.0</span>
-                    <span class="pure-menu-heading small" name="hostname">HOSTNAME</span>
+                    <span class="pure-menu-heading" name="hostname">HOSTNAME</span>
+                    <span class="pure-menu-heading small" name="title">ESPurna 0.0.0</span>
 
                     <ul class="pure-menu-list">
 
@@ -257,7 +257,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4" maxlength="14" type="text" action="reboot" tabindex="1" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -616,27 +616,27 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Broker</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttServer" type="text" size="20" tabindex="21" placeholder="IP or address of your broker" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttServer" type="text" tabindex="21" placeholder="IP or address of your broker" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Port</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPort" type="text" size="6" tabindex="22" value="1883" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPort" type="text" tabindex="22" value="1883" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT User</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttUser" type="text" size="20" tabindex="23" placeholder="Leave blank if no user" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttUser" type="text" tabindex="23" placeholder="Leave blank if no user" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPassword" type="password" size="20" tabindex="24" placeholder="Leave blank if no pass" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPassword" type="password" tabindex="24" placeholder="Leave blank if no pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Client ID</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttClientID" type="text" size="20" tabindex="25" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttClientID" type="text" tabindex="25" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -670,7 +670,7 @@
 
                                 <div class="pure-g module module-mqttssl">
                                     <label class="pure-u-1 pure-u-lg-1-4">SSL Fingerprint</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttFP" type="text" size="59" tabindex="30" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttFP" type="text" maxlength="59" tabindex="30" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the fingerprint for the SSL certificate of the server.<br />
@@ -682,7 +682,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Root Topic</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttTopic" type="text" size="20" tabindex="31" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="mqttTopic" type="text" tabindex="31" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaced by the device hostname.<br />
@@ -726,17 +726,17 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">NTP Server #0</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer1" type="text" size="20" tabindex="41" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer1" type="text" tabindex="41" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">NTP Server #1</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer2" type="text" size="20" tabindex="42" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer2" type="text" tabindex="42" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">NTP Server #2</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer3" type="text" size="20" tabindex="43" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer3" type="text" tabindex="43" />
                                 </div>
 
                                 <div class="pure-g">
@@ -954,28 +954,28 @@
 
                                 <div class="pure-g module module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="pwrVoltage" type="text" size="8" tabindex="51" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="pwrVoltage" type="text" tabindex="51" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Mains voltage in your system (in V).</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" size="8" tabindex="52" placeholder="0" />
+                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Ampers (A). If you are using a pure resistive load like a bulb this will the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one fo the power wires to get this value.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Voltage</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedV" type="text" size="8" tabindex="53" placeholder="0" />
+                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedV" type="text" tabindex="53" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Power</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" size="8" tabindex="54" placeholder="0" />
+                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" tabindex="54" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter.</div>
                                 </div>
@@ -1047,29 +1047,29 @@
             <div class="pure-g">
 
                 <label class="pure-u-1 pure-u-lg-1-4">Network SSID</label>
-                <div class="pure-u-5-6 pure-u-lg-2-3"><input name="ssid" type="text" action="reconnect" class="pure-u-23-24" value="" size="8" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
+                <div class="pure-u-5-6 pure-u-lg-2-3"><input name="ssid" type="text" action="reconnect" class="pure-u-23-24" value="" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-1-6 pure-u-lg-1-12"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Password</label>
                 <input class="pure-u-1 pure-u-lg-3-4 more" name="pass" type="password" action="reconnect" value="" tabindex="0" autocomplete="false" />
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Static IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="ip" type="text" action="reconnect" value="" size="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="ip" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Leave empty for DNS negotiation</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Gateway IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="gw" type="text" action="reconnect" value="" size="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="gw" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set when using a static IP</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Network Mask</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="mask" type="text" action="reconnect" value="255.255.255.0" size="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="mask" type="text" action="reconnect" value="255.255.255.0" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Usually 255.255.255.0 for /24 networks</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">DNS IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="dns" type="text" action="reconnect" value="8.8.8.8" size="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="dns" type="text" action="reconnect" value="8.8.8.8" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set the Domain Name Server IP to use when using a static IP</div>
 
@@ -1086,7 +1086,7 @@
 
                 <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" size="20" />
+                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" />
                     <div class="pure-u-1-4 hint center"> h</div>
                 </div>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
@@ -1097,7 +1097,7 @@
 
                 <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
                 <div class="pure-u-2-5 pure-u-lg-1-5">
-                    <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" size="15" tabindex="0" value="1,2,3,4,5,6,7" />
+                    <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" maxlength="15" tabindex="0" value="1,2,3,4,5,6,7" />
                 </div>
                 <div class="pure-u-3-5 pure-u-lg-1-2 hint center">1 for Monday, 2 for Tuesday...</div>
 
