@@ -53,6 +53,7 @@ template<typename T> bool idbSend(const char * topic, T payload) {
     _idb_client.setTimeout(2);
     if (!_idb_client.connect(host, port)) {
         DEBUG_MSG("[INFLUXDB] Connection failed\n");
+        free(host);
         return false;
     }
 
@@ -65,6 +66,7 @@ template<typename T> bool idbSend(const char * topic, T payload) {
         getSetting("idbDatabase", INFLUXDB_DATABASE).c_str(),
         getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
         host, port, strlen(data), data);
+    free(host);
 
     if (_idb_client.printf(request) > 0) {
         while (_idb_client.connected() && _idb_client.available() == 0) delay(1);
