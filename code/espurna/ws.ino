@@ -101,7 +101,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             // Callbacks
             for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
-                (_ws_on_action_callbacks[i])(action, data);
+                (_ws_on_action_callbacks[i])(client_id, action, data);
             }
 
             // Restore configuration via websockets

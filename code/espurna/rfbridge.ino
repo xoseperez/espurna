@@ -60,7 +60,7 @@ void _rfbWebSocketOnSend(JsonObject& root) {
     }
 }
 
-void _rfbWebSocketOnAction(const char * action, JsonObject& data) {
+void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
     if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
     if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());

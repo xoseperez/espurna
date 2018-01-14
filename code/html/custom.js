@@ -386,6 +386,13 @@ function doToggle(element, value) {
     return false;
 }
 
+function doScan() {
+    $("#scanResult").html("");
+    $("div.scan.loading").show();
+    websock.send(JSON.stringify({'action': 'scan', 'data': {}}));
+    return false;
+}
+
 // -----------------------------------------------------------------------------
 // Visualization
 // -----------------------------------------------------------------------------
@@ -726,8 +733,6 @@ function rfbSend() {
 
 function processData(data) {
 
-    console.log(data);
-
     // title
     if ("app_name" in data) {
         var title = data.app_name;
@@ -860,6 +865,10 @@ function processData(data) {
                 });
             }
             return;
+        }
+
+        if (key == "scanResult") {
+            $("div.scan.loading").hide();
         }
 
         // -----------------------------------------------------------------------------
@@ -1110,6 +1119,7 @@ $(function() {
     $(".button-update-password").on('click', doUpdatePassword);
     $(".button-reboot").on('click', doReboot);
     $(".button-reconnect").on('click', doReconnect);
+    $(".button-wifi-scan").on('click', doScan);
     $(".button-settings-backup").on('click', doBackup);
     $(".button-settings-restore").on('click', doRestore);
     $('#uploader').on('change', onFileUpload);

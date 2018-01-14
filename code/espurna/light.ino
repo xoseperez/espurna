@@ -732,7 +732,7 @@ void _lightWebSocketOnSend(JsonObject& root) {
     }
 }
 
-void _lightWebSocketOnAction(const char * action, JsonObject& data) {
+void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
     if (_light_has_color) {
 

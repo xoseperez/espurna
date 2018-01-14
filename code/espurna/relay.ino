@@ -428,7 +428,7 @@ void _relayWebSocketOnStart(JsonObject& root) {
 
 }
 
-void _relayWebSocketOnAction(const char * action, JsonObject& data) {
+void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
     if (strcmp(action, "relay") != 0) return;
 

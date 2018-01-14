@@ -76,6 +76,7 @@
 
 .button-more-network,
 .button-more-schedule,
+.button-wifi-scan,
 .button-rfb-send {
     background: rgb(223, 117, 20);
 }
@@ -212,4 +213,17 @@ hr {
     border-top: 1px solid #eee;
     margin: 1em 0;
     padding: 0;
+}
+#scanResult {
+    margin-top: 10px;
+    font-size: 60%;
+    color: #888;
+    font-family: 'Courier New', monospace;
+}
+div.loading {
+    background-image: url('images/loading.gif');
+    width: 20px;
+    height: 20px;
+    margin: 8px 0 0 10px;
+    display: none;
 }

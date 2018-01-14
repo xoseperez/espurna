@@ -108,9 +108,9 @@ void _settingsHelp() {
     }
 
     // Output the list
-    DEBUG_MSG_P(PSTR("\nAvailable commands:\n\n"));
+    DEBUG_MSG_P(PSTR("Available commands:\n"));
     for (unsigned char i=0; i<commands.size(); i++) {
-        DEBUG_MSG_P(PSTR("* %s\n"), (commands[i]).c_str());
+        DEBUG_MSG_P(PSTR("> %s\n"), (commands[i]).c_str());
     }
 
 }
@@ -143,12 +143,11 @@ void _settingsKeys() {
     }
 
     // Write key-values
-    DEBUG_MSG_P(PSTR("\n"));
+    DEBUG_MSG_P(PSTR("Current settings:\n"));
     for (unsigned int i=0; i<keys.size(); i++) {
         String value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("+%s => %s\n"), (keys[i]).c_str(), value.c_str());
+        DEBUG_MSG_P(PSTR("> %s => %s\n"), (keys[i]).c_str(), value.c_str());
     }
-    DEBUG_MSG_P(PSTR("\n"));
 
     unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - _settingsSize();
     DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());

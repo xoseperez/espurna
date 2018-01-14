@@ -308,6 +308,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_MAX_NETWORKS       5           // Max number of WIFI connection configurations
 #define WIFI_AP_MODE            AP_MODE_ALONE
 #define WIFI_SLEEP_ENABLED      1           // Enable WiFi light sleep
+#define WIFI_SCAN_NETWORKS      1           // Perform a network scan before connecting
 
 // Optional hardcoded configuration (up to 2 different networks)
 //#define WIFI1_SSID              "..."
