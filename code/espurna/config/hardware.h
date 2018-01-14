@@ -64,6 +64,11 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+    // When Wemos relay shield is connected GPIO5 (D1) is used for relay,
+    // so I2C must be remapped to other pins
+    #define I2C_SDA_PIN         12  // D6
+    #define I2C_SCL_PIN         14  // D5
+
 #elif defined(WEMOS_D1_TARPUNA_SHIELD)
 
     // Info
