@@ -3,6 +3,24 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.1] 2018-01-14
+### Added
+- Option to perform a WiFi network scan from web UI
+- Added hostname to web UI side menu (#404)
+- Option to flash multiple devices with ESPurna OTA Manager
+
+### Fixed
+- Fix web UI layout so signature does not overlay buttons (#396)
+- Option to disable network scan and allow connecting to hidden SSID (#392, #399)
+- Fix crash caused by a delay in UDP debugging code (#397)
+- Fix memory leak in influxDB module (#410)
+- Fix typos in web UI (#394, #421)
+
+### Changed
+- Updated to fauxmoESP 2.4.2
+- Changed default I2C GPIO for Wemos D1 (#420)
+- Some terminal commands have changed. See docs or type "help".
+
 ## [1.12.0] 2018-01-11
 ### Added
 - Scheduler (contributed by Stefano Cotterli, thank you!, #131)
