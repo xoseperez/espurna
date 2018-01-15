@@ -720,7 +720,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This setting defines whether Alexa support should be built into the firmware
 #ifndef ALEXA_SUPPORT
-#define ALEXA_SUPPORT           1               // Enable Alexa support by default (9.5Kb)
+#define ALEXA_SUPPORT           1               // Enable Alexa support by default (10.84Kb)
 #endif
 
 // This is default value for the alexaEnabled setting that defines whether
