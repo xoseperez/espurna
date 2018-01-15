@@ -302,6 +302,7 @@ void _wifiInitCommands() {
 
 void _wifiWebSocketOnSend(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
+    root["wifiScan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
     JsonArray& wifi = root.createNestedArray("wifi");
     for (byte i=0; i<WIFI_MAX_NETWORKS; i++) {
         if (!hasSetting("ssid", i)) break;
