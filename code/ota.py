@@ -216,6 +216,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--flags", help="extra flags", default='')
     parser.add_argument("-p", "--password", help="auth password", default='')
     parser.add_argument("-s", "--sort", help="sort devices list by field", default='hostname')
+    parser.add_argument("-y", "--yes", help="do not ask for confirmation", default=0, action='count')
     parser.add_argument("hostnames", nargs='*', help="Hostnames to update")
     args = parser.parse_args()
 
@@ -287,7 +288,9 @@ if __name__ == '__main__':
             print("FLAGS = %s" % board['flags'])
             print("ENV   = %s" % env)
 
-            response = input("\nAre these values right [y/N]: ")
-            print()
-            if response == "y":
+            response = True
+            if args.yes == 0:
+                response = (input("\nAre these values right [y/N]: ") == "y")
+            if response:
+                print()
                 run(board, env)
