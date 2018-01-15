@@ -685,7 +685,7 @@
                                     <input class="pure-u-1 pure-u-lg-3-4" name="mqttTopic" type="text" tabindex="31" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This is the root topic for this device. A trailing slash will be added if not preset. The {identifier} placeholder will be replaced by the device hostname.<br />
+                                        This is the root topic for this device. A trailing slash will be added if not preset. The {hostname} and {mac} placeholders will be replaced by the device hostname and MAC address.<br />
                                         - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
                                         <span class="module module-color">- <strong>&lt;root&gt;/color/set</strong> Set the color using this topic, your can either send an "#RRGGBB" value or "RRR,GGG,BBB".<br /></span>
                                         <span class="module module-color">- <strong>&lt;root&gt;/brightness/set</strong> Set the brighness using a value from 0 to 255.<br /></span>

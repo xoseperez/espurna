@@ -45,7 +45,7 @@ void wifiRegister(wifi_callback_f callback);
 // -----------------------------------------------------------------------------
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
 void mqttRegister(mqtt_callback_f callback);
-String mqttSubtopic(char * topic);
+String mqttTopicKey(char * topic);
 
 // -----------------------------------------------------------------------------
 // Settings

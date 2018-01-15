@@ -81,8 +81,7 @@ void _mqttFlush() {
 
     String output;
     root.printTo(output);
-    String path = _mqtt_topic + String(MQTT_TOPIC_JSON);
-    mqttSendRaw(path.c_str(), output.c_str());
+    mqttSendRaw(mqttTopic(MQTT_TOPIC_JSON, false).c_str(), output.c_str());
 
     for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
         mqtt_message_t element = _mqtt_queue[i];
@@ -127,7 +126,7 @@ void _mqttConnect() {
 
     _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
     _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
-    _mqtt_will = strdup((_mqtt_topic + MQTT_TOPIC_STATUS).c_str());
+    _mqtt_will = strdup(mqttTopic(MQTT_TOPIC_STATUS, false).c_str());
     _mqtt_clientid = strdup(getSetting("mqttClientID", getIdentifier()).c_str());
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
@@ -238,14 +237,20 @@ void _mqttConnect() {
 
 void _mqttConfigure() {
 
-    // Replace identifier
+    // Get base topic
     _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
+    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
+
+    // Placeholders
     _mqtt_topic.replace("{identifier}", getSetting("hostname"));
-    if (!_mqtt_topic.endsWith("/")) _mqtt_topic = _mqtt_topic + "/";
+    _mqtt_topic.replace("{hostname}", getSetting("hostname"));
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    _mqtt_topic.replace("{mac}", mac);
 
     // Getters and setters
-    _mqtt_setter = getSetting("mqttSetter", MQTT_USE_SETTER);
-    _mqtt_getter = getSetting("mqttGetter", MQTT_USE_GETTER);
+    _mqtt_setter = getSetting("mqttSetter", MQTT_SETTER);
+    _mqtt_getter = getSetting("mqttGetter", MQTT_GETTER);
     _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter);
 
     // MQTT options
@@ -332,7 +337,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttSubtopic((char *) topic);
+        String t = mqttTopicKey((char *) topic);
 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
@@ -425,25 +430,37 @@ bool mqttForward() {
     return _mqtt_forward;
 }
 
-String mqttSubtopic(char * topic) {
-    String response;
-    String t = String(topic);
-    if (t.startsWith(_mqtt_topic) && t.endsWith(_mqtt_setter)) {
-        response = t.substring(_mqtt_topic.length(), t.length() - _mqtt_setter.length());
+String mqttTopicKey(char * topic) {
+
+    String pattern = _mqtt_topic + _mqtt_setter;
+    int position = pattern.indexOf("#");
+    if (position == -1) return String();
+    String start = pattern.substring(0, position);
+    String end = pattern.substring(position + 1);
+
+    String response = String(topic);
+    if (response.startsWith(start) && response.endsWith(end)) {
+        response.remove(0, position);
+        response.remove(position + 1);
+    } else {
+        response = String();
     }
+
     return response;
+
 }
 
-String mqttGetTopic(const char * topic, bool set) {
-    String output = _mqtt_topic + String(topic);
-    if (set) output += _mqtt_setter;
+String mqttTopic(const char * topic, bool is_set) {
+    String output = _mqtt_topic;
+    output.replace("#", topic);
+    output += is_set ? _mqtt_setter : _mqtt_getter;
     return output;
 }
 
-String mqttGetTopic(const char * topic, unsigned int index, bool set) {
+String mqttTopic(const char * topic, unsigned int index, bool is_set) {
     char buffer[strlen(topic)+5];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
-    return mqttGetTopic(buffer, set);
+    return mqttTopic(buffer, is_set);
 }
 
 void mqttSendRaw(const char * topic, const char * message) {
@@ -471,8 +488,7 @@ void mqttSend(const char * topic, const char * message, bool force) {
         _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, _mqttFlush);
 
     } else {
-        String path = _mqtt_topic + String(topic) + _mqtt_getter;
-        mqttSendRaw(path.c_str(), message);
+        mqttSendRaw(mqttTopic(topic, false).c_str(), message);
     }
 }
 
@@ -503,8 +519,7 @@ void mqttSubscribeRaw(const char * topic) {
 }
 
 void mqttSubscribe(const char * topic) {
-    String path = _mqtt_topic + String(topic) + _mqtt_setter;
-    mqttSubscribeRaw(path.c_str());
+    mqttSubscribeRaw(mqttTopic(topic, true).c_str());
 }
 
 void mqttUnsubscribeRaw(const char * topic) {

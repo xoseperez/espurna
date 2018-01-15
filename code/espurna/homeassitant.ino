@@ -41,11 +41,11 @@ void _haSend() {
         root["platform"] = "mqtt";
 
         if (relayCount()) {
-            root["state_topic"] = mqttGetTopic(MQTT_TOPIC_RELAY, 0, false);
-            root["command_topic"] = mqttGetTopic(MQTT_TOPIC_RELAY, 0, true);
+            root["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, 0, false);
+            root["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, 0, true);
             root["payload_on"] = String("1");
             root["payload_off"] = String("0");
-            root["availability_topic"] = mqttGetTopic(MQTT_TOPIC_STATUS, false);
+            root["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
             root["payload_available"] = String("1");
             root["payload_not_available"] = String("0");
         }
@@ -53,16 +53,16 @@ void _haSend() {
         #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
             if (lightHasColor()) {
-                root["brightness_state_topic"] = mqttGetTopic(MQTT_TOPIC_BRIGHTNESS, false);
-                root["brightness_command_topic"] = mqttGetTopic(MQTT_TOPIC_BRIGHTNESS, true);
-                root["rgb_state_topic"] = mqttGetTopic(MQTT_TOPIC_COLOR_RGB, false);
-                root["rgb_command_topic"] = mqttGetTopic(MQTT_TOPIC_COLOR_RGB, true);
-                root["color_temp_command_topic"] = mqttGetTopic(MQTT_TOPIC_MIRED, true);
+                root["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
+                root["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
+                root["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
+                root["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
+                root["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
             }
 
             if (lightChannels() > 3) {
-                root["white_value_state_topic"] = mqttGetTopic(MQTT_TOPIC_CHANNEL, 3, false);
-                root["white_value_command_topic"] = mqttGetTopic(MQTT_TOPIC_CHANNEL, 3, true);
+                root["white_value_state_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, false);
+                root["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
             }
 
         #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

@@ -453,31 +453,31 @@ PROGMEM const char* const custom_reset_string[] = {
 // $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
 // $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
 
-#define MQTT_SSL_ENABLED        0           // By default MQTT over SSL will not be enabled
-#define MQTT_SSL_FINGERPRINT    ""          // SSL fingerprint of the server
+#define MQTT_SSL_ENABLED            0               // By default MQTT over SSL will not be enabled
+#define MQTT_SSL_FINGERPRINT        ""              // SSL fingerprint of the server
 
-#define MQTT_ENABLED            0           // Do not enable MQTT connection by default
-#define MQTT_AUTOCONNECT        1           // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
-                                            // autoconnect to the first MQTT broker found if none defined
-#define MQTT_SERVER             ""          // Default MQTT broker address
-#define MQTT_USER               ""          // Default MQTT broker usename
-#define MQTT_PASS               ""          // Default MQTT broker password
-#define MQTT_PORT               1883        // MQTT broker port
-#define MQTT_TOPIC              "{identifier}"     // Default MQTT base topic
-#define MQTT_RETAIN             true        // MQTT retain flag
-#define MQTT_QOS                0           // MQTT QoS value for all messages
-#define MQTT_KEEPALIVE          30          // MQTT keepalive value
+#define MQTT_ENABLED                0               // Do not enable MQTT connection by default
+#define MQTT_AUTOCONNECT            1               // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
+                                                    // autoconnect to the first MQTT broker found if none defined
+#define MQTT_SERVER                 ""              // Default MQTT broker address
+#define MQTT_USER                   ""              // Default MQTT broker usename
+#define MQTT_PASS                   ""              // Default MQTT broker password
+#define MQTT_PORT                   1883            // MQTT broker port
+#define MQTT_TOPIC                  "{hostname}"    // Default MQTT base topic
+#define MQTT_RETAIN                 true            // MQTT retain flag
+#define MQTT_QOS                    0               // MQTT QoS value for all messages
+#define MQTT_KEEPALIVE              30              // MQTT keepalive value
 
-#define MQTT_RECONNECT_DELAY_MIN    5000    // Try to reconnect in 5 seconds upon disconnection
-#define MQTT_RECONNECT_DELAY_STEP   5000    // Increase the reconnect delay in 5 seconds after each failed attempt
-#define MQTT_RECONNECT_DELAY_MAX    120000  // Set reconnect time to 2 minutes at most
+#define MQTT_RECONNECT_DELAY_MIN    5000            // Try to reconnect in 5 seconds upon disconnection
+#define MQTT_RECONNECT_DELAY_STEP   5000            // Increase the reconnect delay in 5 seconds after each failed attempt
+#define MQTT_RECONNECT_DELAY_MAX    120000          // Set reconnect time to 2 minutes at most
 
-#define MQTT_SKIP_RETAINED      1           // Skip retained messages on connection
-#define MQTT_SKIP_TIME          1000        // Skip messages for 1 second anter connection
+#define MQTT_SKIP_RETAINED          1               // Skip retained messages on connection
+#define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
 
-#define MQTT_USE_JSON           0           // Group messages in a JSON body
-#define MQTT_USE_JSON_DELAY     100         // Wait this many ms before grouping messages
-#define MQTT_QUEUE_MAX_SIZE     10          // Size of the MQTT queue when MQTT_USE_JSON is enabled
+#define MQTT_USE_JSON               0               // Group messages in a JSON body
+#define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
+#define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
@@ -527,8 +527,8 @@ PROGMEM const char* const custom_reset_string[] = {
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
 // Since 1.9.0 the default value is "" for getter and "/set" for setter
-#define MQTT_USE_GETTER         ""
-#define MQTT_USE_SETTER         "/set"
+#define MQTT_GETTER             ""
+#define MQTT_SETTER             "/set"
 
 // -----------------------------------------------------------------------------
 // SETTINGS
