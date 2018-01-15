@@ -30,7 +30,6 @@ bool _ledStatus(unsigned char id) {
 
 bool _ledStatus(unsigned char id, bool status) {
     if (id >=_ledCount()) return false;
-    bool s = _leds[id].reverse ? !status : status;
     digitalWrite(_leds[id].pin, _leds[id].reverse ? !status : status);
     return status;
 }
@@ -68,8 +67,6 @@ void _ledWebSocketOnSend(JsonObject& root) {
 
 #if MQTT_SUPPORT
 void _ledMQTTCallback(unsigned int type, const char * topic, const char * payload) {
-
-    static bool isFirstMessage = true;
 
     if (type == MQTT_CONNECT_EVENT) {
         char buffer[strlen(MQTT_TOPIC_LED) + 3];

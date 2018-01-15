@@ -33,7 +33,7 @@ class DHTSensor : public BaseSensor {
         }
 
         ~DHTSensor() {
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
         }
 
         // ---------------------------------------------------------------------
@@ -66,8 +66,8 @@ class DHTSensor : public BaseSensor {
             _count = 0;
 
             // Manage GPIO lock
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
-            _previous = 0xFF;
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            _previous = GPIO_NONE;
             if (!gpioGetLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
@@ -232,15 +232,15 @@ class DHTSensor : public BaseSensor {
         	return uSec;
         }
 
-        unsigned char _gpio;
-        unsigned char _previous = 0xFF;
+        unsigned char _gpio = GPIO_NONE;
+        unsigned char _previous = GPIO_NONE;
         unsigned char _type = DHT_CHIP_DHT22;
 
         unsigned long _last_ok = 0;
         unsigned char _errors = 0;
 
-        double _temperature;
-        unsigned int _humidity;
+        double _temperature = 0;
+        unsigned int _humidity = 0;
 
 };
 

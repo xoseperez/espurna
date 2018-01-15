@@ -49,7 +49,7 @@ template<typename T> bool idbSend(const char * topic, T payload) {
 
     int port = getSetting("idbPort", INFLUXDB_PORT).toInt();
 
-    DEBUG_MSG("[INFLUXDB] Sending to %s:%d\n", host, port);
+    DEBUG_MSG("[INFLUXDB] Sending to %s:%u\n", host, port);
     _idb_client.setTimeout(2);
     if (!_idb_client.connect(host, port)) {
         DEBUG_MSG("[INFLUXDB] Connection failed\n");

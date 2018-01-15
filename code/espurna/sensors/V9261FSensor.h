@@ -20,7 +20,7 @@ class V9261FSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        V9261FSensor(): BaseSensor() {
+        V9261FSensor(): BaseSensor(), _data() {
             _count = 6;
             _sensor_id = SENSOR_V9261F_ID;
         }
@@ -73,7 +73,7 @@ class V9261FSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "V9261F @ SwSerial(%i,NULL)", _pin_rx);
+            snprintf(buffer, sizeof(buffer), "V9261F @ SwSerial(%u,NULL)", _pin_rx);
             return String(buffer);
         }
 

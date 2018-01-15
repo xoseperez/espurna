@@ -93,15 +93,15 @@ void _telnetNewClient(AsyncClient *client) {
             }, 0);
 
             client->onError([i](void *s, AsyncClient *c, int8_t error) {
-                DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%d\n"), c->errorToString(error), error, i);
+                DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), c->errorToString(error), error, i);
             }, 0);
 
             client->onTimeout([i](void *s, AsyncClient *c, uint32_t time) {
-                DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%d at %i\n"), i, time);
+                DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%u at %lu\n"), i, time);
                 c->close();
             }, 0);
 
-            DEBUG_MSG_P(PSTR("[TELNET] Client #%d connected\n"), i);
+            DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
             wifiReconnectCheck();
             return;
 

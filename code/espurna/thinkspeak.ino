@@ -219,7 +219,7 @@ bool tspkEnqueueRelay(unsigned char index, unsigned char status) {
     if (!_tspk_enabled) return true;
     unsigned char id = getSetting("tspkRelay", index, 0).toInt();
     if (id > 0) {
-        char payload[3];
+        char payload[3] = {0};
         itoa(status ? 1 : 0, payload, 10);
         _tspkEnqueue(id, payload);
     }

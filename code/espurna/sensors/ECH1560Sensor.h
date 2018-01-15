@@ -18,7 +18,7 @@ class ECH1560Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        ECH1560Sensor(): BaseSensor() {
+        ECH1560Sensor(): BaseSensor(), _data() {
             _count = 3;
             _sensor_id = SENSOR_ECH1560_ID;
         }
@@ -78,7 +78,7 @@ class ECH1560Sensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "ECH1560 @ GPIO(%i,%i)", _clk, _miso);
+            snprintf(buffer, sizeof(buffer), "ECH1560 @ GPIO(%u,%u)", _clk, _miso);
             return String(buffer);
         }
 
@@ -90,7 +90,7 @@ class ECH1560Sensor : public BaseSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
             char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%i:%i", _clk, _miso);
+            snprintf(buffer, sizeof(buffer), "%u:%u", _clk, _miso);
             return String(buffer);
         }
 

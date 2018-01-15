@@ -158,10 +158,10 @@ void heartbeat() {
     // -------------------------------------------------------------------------
 
     if (serial) {
-        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %ld seconds\n"), uptime_seconds);
-        DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), free_heap);
+        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
+        DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
         #if ADC_VCC_ENABLED
-            DEBUG_MSG_P(PSTR("[MAIN] Power: %d mV\n"), ESP.getVcc());
+            DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
     }
     #if NTP_SUPPORT

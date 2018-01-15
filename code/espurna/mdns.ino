@@ -52,17 +52,17 @@ void mdnsServerSetup() {
     MDNS.addServiceTxt("arduino", "tcp", "app_version", APP_VERSION);
     MDNS.addServiceTxt("arduino", "tcp", "target_board", getBoardName());
     {
-        char buffer[6];
+        char buffer[6] = {0};
         itoa(ESP.getFlashChipRealSize() / 1024, buffer, 10);
         MDNS.addServiceTxt("arduino", "tcp", "mem_size", (const char *) buffer);
     }
     {
-        char buffer[6];
+        char buffer[6] = {0};
         itoa(ESP.getFlashChipSize() / 1024, buffer, 10);
         MDNS.addServiceTxt("arduino", "tcp", "sdk_size", (const char *) buffer);
     }
     {
-        char buffer[6];
+        char buffer[6] = {0};
         itoa(ESP.getFreeSketchSpace(), buffer, 10);
         MDNS.addServiceTxt("arduino", "tcp", "free_space", (const char *) buffer);
     }

@@ -26,7 +26,7 @@ std::vector<button_t> _buttons;
 void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
-    snprintf_P(payload, sizeof(payload), PSTR("%d"), event);
+    itoa(event, payload, 10);
     mqttSend(MQTT_TOPIC_BUTTON, id, payload);
 }
 #endif
@@ -80,7 +80,7 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
 
 void buttonEvent(unsigned int id, unsigned char event) {
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Button #%d event %d\n"), id, event);
+    DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
     if (event == 0) return;
 
     #if MQTT_SUPPORT
@@ -182,7 +182,7 @@ void buttonSetup() {
 
     #endif
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %d\n"), _buttons.size());
+    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
 
 }
 
@@ -191,11 +191,9 @@ void buttonLoop() {
     #ifdef ITEAD_SONOFF_DUAL
 
         if (Serial.available() >= 4) {
-
-            unsigned char value;
             if (Serial.read() == 0xA0) {
                 if (Serial.read() == 0x04) {
-                    value = Serial.read();
+                    unsigned char value = Serial.read();
                     if (Serial.read() == 0xA1) {
 
                         // RELAYs and BUTTONs are synchonized in the SIL F330
@@ -228,7 +226,6 @@ void buttonLoop() {
                     }
                 }
             }
-
         }
 
     #else

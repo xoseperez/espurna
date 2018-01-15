@@ -50,7 +50,7 @@ void debugSend(const char * format, ...) {
         _telnetWrite(buffer, strlen(buffer));
     #endif
 
-    free(buffer);
+    delete[] buffer;
 
 }
 
@@ -87,7 +87,7 @@ void debugSend_P(PGM_P format_P, ...) {
         _telnetWrite(buffer, strlen(buffer));
     #endif
 
-    free(buffer);
+    delete[] buffer;
 
 }
 
@@ -188,9 +188,9 @@ void debugDumpCrashInfo() {
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] Crash at %ld ms\n"), crash_time);
-    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %d\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %d\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
+    DEBUG_MSG_P(PSTR("[DEBUG] Crash at %lu ms\n"), crash_time);
+    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
+    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 
     uint32_t epc1, epc2, epc3, excvaddr, depc;
     EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);

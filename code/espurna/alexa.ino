@@ -76,7 +76,7 @@ void alexaLoop() {
 
     while (!_alexa_dev_changes.empty()) {
         AlexaDevChange& change = _alexa_dev_changes.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%d state: %s\n"), change.device_id, change.state ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s\n"), change.device_id, change.state ? "ON" : "OFF");
         relayStatus(change.device_id, change.state);
         _alexa_dev_changes.pop();
     }

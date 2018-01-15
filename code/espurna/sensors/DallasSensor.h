@@ -41,7 +41,7 @@ class DallasSensor : public BaseSensor {
 
         ~DallasSensor() {
             if (_wire) delete _wire;
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
         }
 
         // ---------------------------------------------------------------------
@@ -69,8 +69,8 @@ class DallasSensor : public BaseSensor {
             _dirty = false;
 
             // Manage GPIO lock
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
-            _previous = 0xFF;
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            _previous = GPIO_NONE;
             if (!gpioGetLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
@@ -311,8 +311,8 @@ class DallasSensor : public BaseSensor {
         } ds_device_t;
         std::vector<ds_device_t> _devices;
 
-        unsigned char _gpio;
-        unsigned char _previous = 0xFF;
+        unsigned char _gpio = GPIO_NONE;
+        unsigned char _previous = GPIO_NONE;
         OneWire * _wire = NULL;
 
 };

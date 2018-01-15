@@ -194,7 +194,7 @@ void i2cSetup() {
         Wire.begin(sda, scl);
     #endif
 
-    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%d for SDA and GPIO%d for SCL\n"), sda, scl);
+    DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);
 
 }
 

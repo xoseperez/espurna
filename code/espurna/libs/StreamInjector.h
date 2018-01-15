@@ -12,7 +12,7 @@ class StreamInjector : public Stream {
 
         typedef std::function<void(uint8_t ch)> writeCallback;
 
-        StreamInjector(Stream& serial) : _stream(serial) {}
+        StreamInjector(Stream& serial) : _stream(serial), _buffer() {}
 
         virtual void callback(writeCallback c) {
             _callback = c;

@@ -79,7 +79,7 @@ class PMSX003Sensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "PMSX003 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
             return String(buffer);
         }
 
@@ -88,9 +88,9 @@ class PMSX003Sensor : public BaseSensor {
             if (index < _count) {
                 _error = SENSOR_ERROR_OK;
                 char buffer[36];
-                if (index == 0) snprintf(buffer, sizeof(buffer), "PM1.0 @ PMSX003 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
-                if (index == 1) snprintf(buffer, sizeof(buffer), "PM2.5 @ PMSX003 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
-                if (index == 2) snprintf(buffer, sizeof(buffer), "PM10 @ PMSX003 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
+                if (index == 0) snprintf(buffer, sizeof(buffer), "PM1.0 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+                if (index == 1) snprintf(buffer, sizeof(buffer), "PM2.5 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+                if (index == 2) snprintf(buffer, sizeof(buffer), "PM10 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
                 return String(buffer);
             }
             _error = SENSOR_ERROR_OUT_OF_RANGE;
@@ -100,7 +100,7 @@ class PMSX003Sensor : public BaseSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
             char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%i:%i", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
             return String(buffer);
         }
 

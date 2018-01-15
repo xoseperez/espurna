@@ -207,7 +207,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         String address(unsigned char index) {
             char buffer[10];
             unsigned char channel = getChannel(index % _ports);
-            snprintf(buffer, sizeof(buffer), "0x%02X:%i", _address, channel);
+            snprintf(buffer, sizeof(buffer), "0x%02X:%u", _address, channel);
             return String(buffer);
         }
 

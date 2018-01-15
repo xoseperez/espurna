@@ -416,13 +416,13 @@ void _sensorInit() {
 
 void _sensorConfigure() {
 
-    double value;
-
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
         #if EMON_ANALOG_SUPPORT
+
             if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
 
+                double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
                 if (value = getSetting("pwrExpectedP", 0).toInt() == 0) {
@@ -442,14 +442,18 @@ void _sensorConfigure() {
 
 
             }
+
         #endif // EMON_ANALOG_SUPPORT
 
         // Force sensor to reload config
         _sensors[i]->begin();
 
         #if HLW8012_SUPPORT
+
+
             if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
 
+                double value;
                 HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
                 if (value = getSetting("pwrExpectedC", 0).toFloat()) {
@@ -484,7 +488,9 @@ void _sensorConfigure() {
                 }
 
             }
+
         #endif // HLW8012_SUPPORT
+
     }
 
     // General sensor settings

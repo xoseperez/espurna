@@ -85,7 +85,7 @@ class MHZ19Sensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
             return String(buffer);
         }
 
@@ -97,7 +97,7 @@ class MHZ19Sensor : public BaseSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
             char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%i:%i", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
             return String(buffer);
         }
 

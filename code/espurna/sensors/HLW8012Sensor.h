@@ -158,7 +158,7 @@ class HLW8012Sensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "HLW8012 @ GPIO(%i,%i,%i)", _sel, _cf, _cf1);
+            snprintf(buffer, sizeof(buffer), "HLW8012 @ GPIO(%u,%u,%u)", _sel, _cf, _cf1);
             return String(buffer);
         }
 
@@ -170,7 +170,7 @@ class HLW8012Sensor : public BaseSensor {
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
             char buffer[10];
-            snprintf(buffer, sizeof(buffer), "%i:%i:%i", _sel, _cf, _cf1);
+            snprintf(buffer, sizeof(buffer), "%u:%u:%u", _sel, _cf, _cf1);
             return String(buffer);
         }
 
@@ -255,10 +255,10 @@ class HLW8012Sensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char _sel;
-        unsigned char _cf;
-        unsigned char _cf1;
-        bool _sel_current;
+        unsigned char _sel = GPIO_NONE;
+        unsigned char _cf = GPIO_NONE;
+        unsigned char _cf1 = GPIO_NONE;
+        bool _sel_current = true;
 
         HLW8012 * _hlw8012 = NULL;
 
@@ -307,7 +307,7 @@ void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsign
     _hlw8012_sensor_instance[index] = instance;
     attachInterrupt(gpio, _hlw8012_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s\n"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -317,7 +317,7 @@ void HLW8012Sensor::_detach(unsigned char gpio) {
     if (_hlw8012_sensor_instance[index]) {
         detachInterrupt(gpio);
         #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s\n"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
         #endif
         _hlw8012_sensor_instance[index] = NULL;
     }
