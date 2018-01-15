@@ -927,6 +927,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
+    #define SERIAL_RX_PORT      Serial
 
     // LEDs
     #define LED1_PIN            5
@@ -954,6 +955,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
+    #define SERIAL_RX_PORT      Serial
 
     // Light
     #define LIGHT_CHANNELS      4

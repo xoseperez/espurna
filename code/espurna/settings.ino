@@ -28,6 +28,13 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
     #endif
 #endif
 
+#if TERMINAL_SUPPORT
+#ifdef SERIAL_RX_PORT
+    char _serial_rx_buffer[SERIAL_RX_BUFFER_SIZE];
+    static unsigned char _serial_rx_pointer = 0;
+#endif
+#endif
+
 bool _settings_save = false;
 
 // -----------------------------------------------------------------------------
@@ -403,14 +410,38 @@ void settingsSetup() {
     DEBUG_MSG_P(PSTR("[SETTINGS] EEPROM size: %d bytes\n"), SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings size: %d bytes\n"), _settingsSize());
 
+    #if TERMINAL_SUPPORT
+        #ifdef SERIAL_RX_PORT
+            SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
+        #endif
+    #endif
+
 }
 
 void settingsLoop() {
+
     if (_settings_save) {
         EEPROM.commit();
         _settings_save = false;
     }
+
     #if TERMINAL_SUPPORT
+
         embedis.process();
-    #endif
+
+        #ifdef SERIAL_RX_PORT
+
+            while (SERIAL_RX_PORT.available() > 0) {
+                char rc = Serial.read();
+                _serial_rx_buffer[_serial_rx_pointer++] = rc;
+                if ((_serial_rx_pointer == SERIAL_RX_BUFFER_SIZE) || (rc == 10)) {
+                    settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
+                    _serial_rx_pointer = 0;
+                }
+            }
+
+        #endif // SERIAL_RX_PORT
+
+    #endif // TERMINAL_SUPPORT
+
 }

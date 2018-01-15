@@ -64,6 +64,17 @@
 #define SERIAL_BAUDRATE         115200          // Default baudrate
 #endif
 
+// Second serial port (used for RX)
+
+//#define SERIAL_RX_PORT        Serial			// This setting is usually defined
+												// in the hardware.h file for those
+												// boards that require it
+
+#ifndef SERIAL_RX_BAUDRATE
+#define SERIAL_RX_BAUDRATE      115200          // Default baudrate
+#endif
+
+#define SERIAL_RX_BUFFER_SIZE   32
 
 //------------------------------------------------------------------------------
 
