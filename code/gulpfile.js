@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+/*eslint quotes: ["error", "single"]*/
+/*eslint-env es6*/
+
 // -----------------------------------------------------------------------------
 // File system builder
 // -----------------------------------------------------------------------------
@@ -57,18 +60,21 @@ var toHeader = function(filename) {
     var data = fs.readFileSync(source);
 
     wstream.write('#define ' + safename + '_len ' + data.length + '\n');
-    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {')
+    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
 
-    for (i=0; i<data.length; i++) {
-        if (i % 20 == 0) wstream.write("\n");
+    for (var i=0; i<data.length; i++) {
+        if (i % 20 == 0) wstream.write('\n');
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i<data.length-1) wstream.write(',');
+        if (i<data.length-1) {
+          wstream.write(',');
+        }
     }
 
-    wstream.write('\n};')
+    wstream.write('\n};');
     wstream.end();
 
 }
+
 
 function htmllintReporter(filepath, issues) {
 	if (issues.length > 0) {
@@ -78,6 +84,7 @@ function htmllintReporter(filepath, issues) {
 		process.exitCode = 1;
 	}
 }
+
 
 gulp.task('build_certs', function() {
     toHeader('server.cer');
@@ -112,6 +119,7 @@ gulp.task('buildfs_inline', function() {
         }))
         .pipe(gzip())
         .pipe(gulp.dest(dataFolder));
-})
+});
+
 
 gulp.task('default', ['buildfs_embeded']);

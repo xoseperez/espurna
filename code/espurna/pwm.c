@@ -209,7 +209,6 @@ _pwm_phases_prep(struct pwm_phase* pwm)
 {
 	uint8_t n, phases;
 
-	uint16_t off_mask = 0;
 	for (n = 0; n < pwm_channels + 2; n++) {
 		pwm[n].ticks = 0;
 		pwm[n].on_mask = 0;
