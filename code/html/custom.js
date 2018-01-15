@@ -427,7 +427,7 @@ function doToggle(element, value) {
 function doScan() {
     $("#scanResult").html("");
     $("div.scan.loading").show();
-    websock.send(JSON.stringify({'action': 'scan', 'data': {}}));
+    websock.send(JSON.stringify({"action": "scan", "data": {}}));
     return false;
 }
 
@@ -641,8 +641,8 @@ function initMagnitudes(data) {
 }
 
 function getManifest(sensor_id) {
-    for (i in manifest) {
-        if (manifest[i].sensor_id ===sensor_id) {
+    for (var i in manifest) {
+        if (manifest[i].sensor_id === sensor_id) {
           return manifest[i];
         }
     }
