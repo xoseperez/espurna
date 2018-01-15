@@ -8,7 +8,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #ifdef ITEAD_SONOFF_RFBRIDGE
 
-#include <vector>
+#include <queue>
 #include <Ticker.h>
 
 // -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ typedef struct {
     byte code[RF_MESSAGE_SIZE];
     byte times;
 } rfb_message_t;
-std::vector<rfb_message_t> _rfb_message_queue;
+static std::queue<rfb_message_t> _rfb_message_queue;
 Ticker _rfbTicker;
 
 // -----------------------------------------------------------------------------
@@ -150,11 +150,11 @@ void _rfbSend(byte * message) {
 void _rfbSend() {
 
     // Check if there is something in the queue
-    if (_rfb_message_queue.size() == 0) return;
+    if (_rfb_message_queue.empty()) return;
 
     // Pop the first element
     rfb_message_t message = _rfb_message_queue.front();
-    _rfb_message_queue.erase(_rfb_message_queue.begin());
+    _rfb_message_queue.pop();
 
     // Send the message
     _rfbSend(message.code);
@@ -162,11 +162,11 @@ void _rfbSend() {
     // If it should be further sent, push it to the stack again
     if (message.times > 1) {
         message.times = message.times - 1;
-        _rfb_message_queue.push_back(message);
+        _rfb_message_queue.push(message);
     }
 
     // if there are still messages in the queue...
-    if (_rfb_message_queue.size() > 0) {
+    if (!_rfb_message_queue.empty()) {
         _rfbTicker.once_ms(RF_SEND_DELAY, _rfbSend);
     }
 
@@ -181,7 +181,7 @@ void _rfbSend(byte * code, int times) {
     rfb_message_t message;
     memcpy(message.code, code, RF_MESSAGE_SIZE);
     message.times = times;
-    _rfb_message_queue.push_back(message);
+    _rfb_message_queue.push(message);
     _rfbSend();
 
 }
@@ -359,6 +359,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
             }
             _learnStatus = (char)payload[0] != '0';
             _rfbLearn();
+            return;
 
         }
 
