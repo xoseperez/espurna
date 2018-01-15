@@ -9,16 +9,17 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #if ALEXA_SUPPORT
 
 #include <fauxmoESP.h>
-
+#include <map>
 fauxmoESP alexa;
 
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------
-
-bool _alexa_change = false;
-unsigned int _alexa_device_id = 0;
-bool _alexa_state = false;
+struct alexa_dev {
+  bool _alexa_change = false;
+  bool _alexa_state = false;
+};
+std::map<unsigned char, alexa_dev> alexa_devices;
 
 void _alexaWebSocketOnSend(JsonObject& root) {
     root["alexaVisible"] = 1;
@@ -57,10 +58,9 @@ void alexaSetup() {
         }
     }
 
-    alexa.onSetState([relays](unsigned char device_id, const char * name, bool state) {
-        _alexa_change = true;
-        _alexa_device_id = device_id;
-        _alexa_state = state;
+    alexa.onSetState([&](unsigned char device_id, const char * name, bool state) {
+        alexa_devices[device_id]._alexa_change = true;
+        alexa_devices[device_id]._alexa_state = state;
     });
 
     alexa.onGetState([relays](unsigned char device_id, const char * name) {
@@ -73,10 +73,12 @@ void alexaLoop() {
 
     alexa.handle();
 
-    if (_alexa_change) {
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%d state: %s\n"), _alexa_device_id, _alexa_state ? "ON" : "OFF");
-        _alexa_change = false;
-        relayStatus(_alexa_device_id, _alexa_state);
+    for (std::map<unsigned char, alexa_dev>::iterator it=alexa_devices.begin(); it!=alexa_devices.end(); ++it) {
+      if (it->second._alexa_change) {
+          DEBUG_MSG_P(PSTR("[ALEXA] Device #%d state: %s\n"), it->first, it->second._alexa_state ? "ON" : "OFF");
+          it->second._alexa_change = false;
+          relayStatus(it->first, it->second._alexa_state);
+      }
     }
 
 }
