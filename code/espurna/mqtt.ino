@@ -389,8 +389,8 @@ String mqttTopicKey(char * topic) {
 
     String response = String(topic);
     if (response.startsWith(start) && response.endsWith(end)) {
-        response.remove(0, position);
-        response.remove(position + 1);
+        response.replace(start, "");
+        response.replace(end, "");
     } else {
         response = String();
     }
