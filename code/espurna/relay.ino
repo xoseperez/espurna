@@ -19,10 +19,10 @@ typedef struct {
     unsigned char pin;          // GPIO pin for the relay
     unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
     unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
-    unsigned long pulse_ms;     // Pulse length in millis
     unsigned long delay_on;     // Delay to turn relay ON
     unsigned long delay_off;    // Delay to turn relay OFF
+    unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    unsigned long pulse_ms;     // Pulse length in millis
 
     // Status variables
 
