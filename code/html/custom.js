@@ -130,7 +130,7 @@ function getData(form) {
 
             // Do not report these fields
             if (name === "filename" || name === "rfbcode" ) {
-              return;
+                return;
             }
 
             // Grab the value
@@ -841,6 +841,10 @@ function processData(data) {
         if (key === "rfbCount") {
             for (i=0; i<data.rfbCount; i++) addRfbNode();
             return;
+        }
+
+        if (key === "rfbrawVisible") {
+            $("input[name='rfbcode']").attr("maxlength", 116);
         }
 
         if (key === "rfb") {

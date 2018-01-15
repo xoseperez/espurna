@@ -15,15 +15,23 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // DEFINITIONS
 // -----------------------------------------------------------------------------
 
-#define RF_MESSAGE_SIZE     9
-#define RF_CODE_START       0xAA
-#define RF_CODE_ACK         0xA0
-#define RF_CODE_LEARN       0xA1
-#define RF_CODE_LEARN_KO    0xA2
-#define RF_CODE_LEARN_OK    0xA3
-#define RF_CODE_RFIN        0xA4
-#define RF_CODE_RFOUT       0xA5
-#define RF_CODE_STOP        0x55
+#define RF_MESSAGE_SIZE         9
+#define RF_MAX_MESSAGE_SIZE     (112+4)
+#define RF_CODE_START           0xAA
+#define RF_CODE_ACK             0xA0
+#define RF_CODE_LEARN           0xA1
+#define RF_CODE_LEARN_KO        0xA2
+#define RF_CODE_LEARN_OK        0xA3
+#define RF_CODE_RFIN            0xA4
+#define RF_CODE_RFOUT           0xA5
+#define RF_CODE_SNIFFING_ON     0xA6
+#define RF_CODE_SNIFFING_OFF    0xA7
+#define RF_CODE_RFOUT_NEW       0xA8
+#define RF_CODE_LEARN_NEW       0xA9
+#define RF_CODE_LEARN_KO_NEW    0xAA
+#define RF_CODE_LEARN_OK_NEW    0xAB
+#define RF_CODE_RFOUT_BUCKET    0xB0
+#define RF_CODE_STOP            0x55
 
 // -----------------------------------------------------------------------------
 // GLOBALS TO THE MODULE
@@ -46,9 +54,38 @@ Ticker _rfbTicker;
 // PRIVATES
 // -----------------------------------------------------------------------------
 
+/*
+ From an hexa char array ("A220EE...") to a byte array (half the size)
+ */
+static int _rfbToArray(const char * in, byte * out, int length = RF_MESSAGE_SIZE * 2) {
+    int n = strlen(in);
+    if (n > RF_MAX_MESSAGE_SIZE*2 || (length > 0 && n != length)) return 0;
+    char tmp[3] = {0,0,0};
+    n /= 2;
+    for (unsigned char p = 0; p<n; p++) {
+        memcpy(tmp, &in[p*2], 2);
+        out[p] = strtol(tmp, NULL, 16);
+    }
+    return n;
+}
+
+/*
+ From a byte array to an hexa char array ("A220EE...", double the size)
+ */
+static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
+    for (unsigned char p = 0; p<n; p++) {
+        sprintf_P(&out[p*2], PSTR("%02X"), in[p]);
+    }
+    return true;
+}
+
+
 void _rfbWebSocketOnSend(JsonObject& root) {
     root["rfbVisible"] = 1;
     root["rfbCount"] = relayCount();
+    #if RF_RAW_SUPPORT
+        root["rfbrawVisible"] = 1;
+    #endif
     JsonArray& rfb = root.createNestedArray("rfb");
     for (byte id=0; id<relayCount(); id++) {
         for (byte status=0; status<2; status++) {
@@ -94,13 +131,17 @@ void _rfbLearn() {
 
 }
 
+void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
+    for (unsigned char j=0; j<n; j++) {
+        Serial.write(message[j]);
+    }
+}
+
 void _rfbSend(byte * message) {
     Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_RFOUT);
-    for (unsigned char j=0; j<RF_MESSAGE_SIZE; j++) {
-        Serial.write(message[j]);
-    }
+    _rfbSendRaw(message);
     Serial.write(RF_CODE_STOP);
     Serial.flush();
     Serial.println();
@@ -144,6 +185,17 @@ void _rfbSend(byte * code, int times) {
     _rfbSend();
 
 }
+
+#if RF_RAW_SUPPORT
+
+void _rfbSendRawOnce(byte *code, int length) {
+    char buffer[length*2];
+    _rfbToChar(code, buffer, length);
+    DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending RAW MESSAGE '%s'\n"), buffer);
+    _rfbSendRaw(code, length);
+}
+
+#endif // RF_RAW_SUPPORT
 
 bool _rfbMatch(char * code, unsigned char& relayID, unsigned char& value) {
 
@@ -279,29 +331,6 @@ bool _rfbSameOnOff(unsigned char id) {
     return _rfbCompare(rfbRetrieve(id, true).c_str(), rfbRetrieve(id, false).c_str());
 }
 
-/*
-From an hexa char array ("A220EE...") to a byte array (half the size)
- */
-bool _rfbToArray(const char * in, byte * out) {
-    if (strlen(in) != RF_MESSAGE_SIZE * 2) return false;
-    char tmp[3] = {0};
-    for (unsigned char p = 0; p<RF_MESSAGE_SIZE; p++) {
-        memcpy(tmp, &in[p*2], 2);
-        out[p] = strtol(tmp, NULL, 16);
-    }
-    return true;
-}
-
-/*
-From a byte array to an hexa char array ("A220EE...", double the size)
- */
-bool _rfbToChar(byte * in, char * out) {
-    for (unsigned char p = 0; p<RF_MESSAGE_SIZE; p++) {
-        sprintf_P(&out[p*2], PSTR("%02X"), in[p]);
-    }
-    return true;
-}
-
 #if MQTT_SUPPORT
 void _rfbMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -310,6 +339,9 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
         mqttSubscribe(buffer);
         mqttSubscribe(MQTT_TOPIC_RFOUT);
+		#if RF_RAW_SUPPORT
+	        mqttSubscribe(MQTT_TOPIC_RFRAW);
+		#endif
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -330,11 +362,17 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
         }
 
-        if (t.equals(MQTT_TOPIC_RFOUT)) {
+        bool isRFOut = t.equals(MQTT_TOPIC_RFOUT);
+        #if RF_RAW_SUPPORT
+            bool isRFRaw = !isRFOut && t.equals(MQTT_TOPIC_RFRAW);
+        #else
+            bool isRFRaw = false;
+        #endif
+
+        if (isRFOut || isRFRaw) {
 
             // The payload may be a code in HEX format ([0-9A-Z]{18}) or
             // the code comma the number of times to transmit it.
-            byte message[RF_MESSAGE_SIZE];
             char * tok = strtok((char *) payload, ",");
 
             // Check if a switch is linked to that message
@@ -349,11 +387,28 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
                 return;
             }
 
-            if (_rfbToArray(tok, message)) {
-                tok = strtok(NULL, ",");
-                byte times = (tok != NULL) ? atoi(tok) : 1;
-                _rfbSend(message, times);
-            }
+            #if RF_RAW_SUPPORT
+
+                byte message[RF_MAX_MESSAGE_SIZE];
+                int len = _rfbToArray(tok, message, 0);
+                if ((len > 0) && (isRFRaw || len != RF_MESSAGE_SIZE)) {
+                    _rfbSendRawOnce(message, len);
+                } else {
+                    tok = strtok(NULL, ",");
+                    byte times = (tok != NULL) ? atoi(tok) : 1;
+                    _rfbSend(message, times);
+                }
+
+            #else // RF_RAW_SUPPORT
+
+                byte message[RF_MESSAGE_SIZE];
+                if (_rfbToArray(tok, message)) {
+                    tok = strtok(NULL, ",");
+                    byte times = (tok != NULL) ? atoi(tok) : 1;
+                    _rfbSend(message, times);
+                }
+
+            #endif // RF_RAW_SUPPORT
 
         }
 
@@ -383,11 +438,33 @@ void rfbStatus(unsigned char id, bool status) {
     String value = rfbRetrieve(id, status);
     if (value.length() > 0) {
         bool same = _rfbSameOnOff(id);
-        byte message[RF_MESSAGE_SIZE];
-        _rfbToArray(value.c_str(), message);
-        unsigned char times = RF_SEND_TIMES;
-        if (same) times = _rfbin ? 0 : 1;
-        _rfbSend(message, times);
+
+        #if RF_RAW_SUPPORT
+
+            byte message[RF_MAX_MESSAGE_SIZE];
+            int len = _rfbToArray(value.c_str(), message, 0);
+            if (len == RF_MESSAGE_SIZE &&               // probably a standard msg
+                (message[0] != RF_CODE_START        ||  // raw would start with 0xAA
+                 message[1] != RF_CODE_RFOUT_BUCKET ||  // followed by 0xB0,
+                 message[2] + 4 != len              ||  // needs a valid length,
+                 message[len-1] != RF_CODE_STOP)) {     // and finish with 0x55
+                 unsigned char times = RF_SEND_TIMES;
+                 if (same) times = _rfbin ? 0 : 1;
+                 _rfbSend(message, times);
+             } else {
+                 _rfbSendRawOnce(message, len);          // send a raw message
+             }
+
+        #else // RF_RAW_SUPPORT
+
+            byte message[RF_MESSAGE_SIZE];
+            _rfbToArray(value.c_str(), message);
+            unsigned char times = RF_SEND_TIMES;
+            if (same) times = _rfbin ? 0 : 1;
+            _rfbSend(message, times);
+
+        #endif // RF_RAW_SUPPORT
+
     }
 }
 

@@ -518,6 +518,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFOUT        "rfout"
 #define MQTT_TOPIC_RFIN         "rfin"
 #define MQTT_TOPIC_RFLEARN      "rflearn"
+#define MQTT_TOPIC_RFRAW        "rfraw"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
@@ -746,6 +747,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RF_SEND_TIMES           4               // How many times to send the message
 #define RF_SEND_DELAY           500             // Interval between sendings in ms
 #define RF_RECEIVE_DELAY        500             // Interval between recieving in ms (avoid debouncing)
+
+#define RF_RAW_SUPPORT          0               // RF raw codes require a specific firmware for the EFM8BB1
+                                                // https://github.com/rhx/RF-Bridge-EFM8BB1
 
 // -----------------------------------------------------------------------------
 // IR
