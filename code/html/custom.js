@@ -37,7 +37,7 @@ function sensorName(id) {
         "SHT3X I2C", "BH1750"
     ];
     if (1 <= id && id <= names.length) {
-      return names[id-1];
+        return names[id-1];
     }
     return null;
 }
@@ -51,7 +51,7 @@ function magnitudeType(type) {
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux"
     ];
     if (1 <= type && type <= types.length) {
-      return types[type-1];
+        return types[type-1];
     }
     return null;
 }
@@ -62,7 +62,7 @@ function magnitudeError(error) {
         "CRC Error", "I2C Error", "GPIO Error"
     ];
     if (0 <= error && error < errors.length) {
-      return errors[error];
+        return errors[error];
     }
     return "Error " + error;
 }
@@ -81,7 +81,9 @@ function checkPassword(str) {
 
 function zeroPad(number, positions) {
     var zeros = "";
-    for (var i = 0; i < positions; i++) zeros += "0";
+    for (var i = 0; i < positions; i++) {
+        zeros += "0";
+    }
     return (zeros + number).slice(-positions);
 }
 
@@ -167,11 +169,11 @@ function getData(form) {
 
 function randomString(length, chars) {
     var mask = "";
-    if (chars.indexOf("a") > -1) mask += "abcdefghijklmnopqrstuvwxyz";
-    if (chars.indexOf("A") > -1) mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    if (chars.indexOf("#") > -1) mask += "0123456789";
-    if (chars.indexOf("@") > -1) mask += "ABCDEF";
-    if (chars.indexOf("!") > -1) mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\";
+    if (chars.indexOf("a") > -1) { mask += "abcdefghijklmnopqrstuvwxyz"; }
+    if (chars.indexOf("A") > -1) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
+    if (chars.indexOf("#") > -1) { mask += "0123456789"; }
+    if (chars.indexOf("@") > -1) { mask += "ABCDEF"; }
+    if (chars.indexOf("!") > -1) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
     var result = "";
     for (var i = length; i > 0; --i) {
         result += mask[Math.round(Math.random() * (mask.length - 1))];
@@ -211,48 +213,6 @@ function doReload(milliseconds) {
     setTimeout(function() {
         window.location.reload();
     }, milliseconds);
-}
-
-function doUpdate() {
-
-    var form = $("#formSave");
-    if (validateForm(form)) {
-
-        // Get data
-        var data = getData(form);
-        websock.send(JSON.stringify({"config": data}));
-
-        // Empty special fields
-        $(".pwrExpected").val(0);
-        $("input[name='pwrResetCalibration']").
-            prop("checked", false).
-            iphoneStyle("refresh");
-
-        // Change handling
-        numChanged = 0;
-        setTimeout(function() {
-
-            var response;
-
-            if (numReboot > 0) {
-                response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-                if (response === true) doReboot(false);
-            } else if (numReconnect > 0) {
-                response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-                if (response === true) doReconnect(false);
-            } else if (numReload > 0) {
-                response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response === true) doReload();
-            }
-
-            resetOriginals();
-
-        }, 1000);
-
-    }
-
-    return false;
-
 }
 
 function doUpgrade() {
@@ -369,6 +329,48 @@ function doReconnect(ask) {
 
     websock.send(JSON.stringify({"action": "reconnect"}));
     doReload(5000);
+    return false;
+
+}
+
+function doUpdate() {
+
+    var form = $("#formSave");
+    if (validateForm(form)) {
+
+        // Get data
+        var data = getData(form);
+        websock.send(JSON.stringify({"config": data}));
+
+        // Empty special fields
+        $(".pwrExpected").val(0);
+        $("input[name='pwrResetCalibration']").
+            prop("checked", false).
+            iphoneStyle("refresh");
+
+        // Change handling
+        numChanged = 0;
+        setTimeout(function() {
+
+            var response;
+
+            if (numReboot > 0) {
+                response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
+                if (response === true) { doReboot(false); }
+            } else if (numReconnect > 0) {
+                response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
+                if (response === true) { doReconnect(false); }
+            } else if (numReload > 0) {
+                response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
+                if (response === true) { doReload(); }
+            }
+
+            resetOriginals();
+
+        }, 1000);
+
+    }
+
     return false;
 
 }
@@ -491,6 +493,16 @@ function createMagnitudeList(data, container, template_name) {
 // Wifi
 // -----------------------------------------------------------------------------
 
+function delNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $(parent).remove();
+}
+
+function moreNetwork() {
+    var parent = $(this).parents(".pure-g");
+    $(".more", parent).toggle();
+}
+
 function addNetwork() {
 
     var numNetworks = $("#networks > div").length;
@@ -512,16 +524,6 @@ function addNetwork() {
 
     return line;
 
-}
-
-function delNetwork() {
-    var parent = $(this).parents(".pure-g");
-    $(parent).remove();
-}
-
-function moreNetwork() {
-    var parent = $(this).parents(".pure-g");
-    $(".more", parent).toggle();
 }
 
 // -----------------------------------------------------------------------------
@@ -1111,8 +1113,8 @@ function hasChanged() {
     var hasChanged = $(this).attr("hasChanged") || 0;
     var action = $(this).attr("action");
 
-    if (typeof originalValue === "undefined") {return;}
-    if (action === "none") {return;}
+    if (typeof originalValue === "undefined") { return; }
+    if (action === "none") { return; }
 
     if (newValue !== originalValue) {
         if (hasChanged === 0) {

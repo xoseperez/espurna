@@ -73,8 +73,7 @@ var toHeader = function(filename) {
     wstream.write('\n};');
     wstream.end();
 
-}
-
+};
 
 function htmllintReporter(filepath, issues) {
 	if (issues.length > 0) {
@@ -83,8 +82,7 @@ function htmllintReporter(filepath, issues) {
 		});
 		process.exitCode = 1;
 	}
-}
-
+};
 
 gulp.task('build_certs', function() {
     toHeader('server.cer');
