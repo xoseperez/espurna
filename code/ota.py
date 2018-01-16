@@ -44,6 +44,7 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
                 'hostname': hostname.upper(),
                 'ip': socket.inet_ntoa(info.address)
             }
+            device['mac'] = info.properties.get('mac', '')
             device['app'] = info.properties.get('app_name', '')
             device['version'] = info.properties.get('app_version', '')
             device['device'] = info.properties.get('target_board', '')
@@ -60,11 +61,12 @@ def list_devices():
     """
     Shows the list of discovered devices
     """
-    output_format="{:>3}  {:<25}{:<25}{:<15}{:<15}{:<30}{:<10}{:<10}{:<10}"
+    output_format="{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<8}  {:<25}  {:<8}  {:<8}  {:<10}"
     print(output_format.format(
         "#",
         "HOSTNAME",
         "IP",
+        "MAC",
         "APP",
         "VERSION",
         "DEVICE",
@@ -72,7 +74,7 @@ def list_devices():
         "SDK_SIZE",
         "FREE_SPACE"
     ))
-    print("-" * 146)
+    print("-" * 139)
 
     index = 0
     for device in devices:
@@ -81,6 +83,7 @@ def list_devices():
             index,
             device.get('hostname', ''),
             device.get('ip', ''),
+            device.get('mac', ''),
             device.get('app', ''),
             device.get('version', ''),
             device.get('device', ''),
