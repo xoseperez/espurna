@@ -435,19 +435,19 @@ function doScan() {
 // Visualization
 // -----------------------------------------------------------------------------
 
-function showPanel() {
-    $(".panel").hide();
-    $("#" + $(this).attr("data")).show();
-    if ($("#layout").hasClass("active")) toggleMenu();
-    $("input[type='checkbox']").
-        iphoneStyle("calculateDimensions").
-        iphoneStyle("refresh");
-}
-
 function toggleMenu() {
     $("#layout").toggleClass("active");
     $("#menu").toggleClass("active");
     $("#menuLink").toggleClass("active");
+}
+
+function showPanel() {
+    $(".panel").hide();
+    $("#" + $(this).attr("data")).show();
+    if ($("#layout").hasClass("active")) { toggleMenu(); }
+    $("input[type='checkbox']").
+        iphoneStyle("calculateDimensions").
+        iphoneStyle("refresh");
 }
 
 // -----------------------------------------------------------------------------
