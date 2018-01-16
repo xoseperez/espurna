@@ -86,12 +86,6 @@ template<typename T> void domoticzSend(const char * key, T value);
 template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue);
 
 // -----------------------------------------------------------------------------
-// InfluxDB
-// -----------------------------------------------------------------------------
-template<typename T> bool idbSend(const char * topic, T payload);
-template<typename T> bool idbSend(const char * topic, unsigned char id, T payload);
-
-// -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
 char * ltrim(char * s);

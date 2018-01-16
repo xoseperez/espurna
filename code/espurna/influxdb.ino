@@ -36,7 +36,7 @@ void _idbConfigure() {
 
 // -----------------------------------------------------------------------------
 
-template<typename T> bool idbSend(const char * topic, T payload) {
+bool idbSend(const char * topic, const char * payload) {
 
     if (!_idb_enabled) return true;
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return true;
@@ -46,43 +46,46 @@ template<typename T> bool idbSend(const char * topic, T payload) {
         h = mdnsResolve(h);
     #endif
     char * host = strdup(h.c_str());
-
-    int port = getSetting("idbPort", INFLUXDB_PORT).toInt();
-
+    unsigned int port = getSetting("idbPort", INFLUXDB_PORT).toInt();
     DEBUG_MSG("[INFLUXDB] Sending to %s:%u\n", host, port);
+
+    bool success = false;
+
     _idb_client.setTimeout(2);
-    if (!_idb_client.connect(host, port)) {
+    if (_idb_client.connect((const char *) host, port)) {
+
+        char data[128];
+        snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
+        DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
+
+        char request[256];
+        snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
+            getSetting("idbDatabase", INFLUXDB_DATABASE).c_str(),
+            getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
+            host, port, strlen(data), data);
+
+        if (_idb_client.printf(request) > 0) {
+            while (_idb_client.connected() && _idb_client.available() == 0) delay(1);
+            while (_idb_client.available()) _idb_client.read();
+            if (_idb_client.connected()) _idb_client.stop();
+            success = true;
+        } else {
+            DEBUG_MSG("[INFLUXDB] Sent failed\n");
+        }
+
+        _idb_client.stop();
+        while (_idb_client.connected()) yield();
+
+    } else {
         DEBUG_MSG("[INFLUXDB] Connection failed\n");
-        free(host);
-        return false;
     }
 
-    char data[128];
-    snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
-    DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
-
-    char request[256];
-    snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
-        getSetting("idbDatabase", INFLUXDB_DATABASE).c_str(),
-        getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
-        host, port, strlen(data), data);
     free(host);
-
-    if (_idb_client.printf(request) > 0) {
-        while (_idb_client.connected() && _idb_client.available() == 0) delay(1);
-        while (_idb_client.available()) _idb_client.read();
-        if (_idb_client.connected()) _idb_client.stop();
-        return true;
-    }
-
-    _idb_client.stop();
-    DEBUG_MSG("[INFLUXDB] Sent failed\n");
-    while (_idb_client.connected()) delay(0);
-    return false;
+    return success;
 
 }
 
-template<typename T> bool idbSend(const char * topic, unsigned char id, T payload) {
+bool idbSend(const char * topic, unsigned char id, const char * payload) {
     char measurement[64];
     snprintf(measurement, sizeof(measurement), "%s,id=%d", topic, id);
     return idbSend(topic, payload);
