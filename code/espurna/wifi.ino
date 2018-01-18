@@ -285,6 +285,11 @@ void _wifiInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
+        createAP();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
         DEBUG_MSG_P(PSTR("+OK\n"));
