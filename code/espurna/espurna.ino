@@ -272,6 +272,9 @@ void welcome() {
     #endif
 
     DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
+
+    if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
+
     DEBUG_MSG_P(PSTR("\n"));
 
 }
