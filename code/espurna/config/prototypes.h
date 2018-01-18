@@ -66,6 +66,13 @@ unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
 bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
 
+void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value);
+uint8_t i2c_read_uint8(uint8_t address, uint8_t reg);
+uint16_t i2c_read_uint16(uint8_t address, uint8_t reg);
+uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg);
+int16_t i2c_read_int16(uint8_t address, uint8_t reg);
+int16_t i2c_read_int16_le(uint8_t address, uint8_t reg);
+
 // -----------------------------------------------------------------------------
 // GPIO
 // -----------------------------------------------------------------------------

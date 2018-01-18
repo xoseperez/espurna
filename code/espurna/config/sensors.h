@@ -141,7 +141,11 @@
 #define BMX280_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
-#define BMX280_MODE                     1       // 1 for forced mode, 3 for normal mode
+#define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
+#define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
+                                                // 3 for 250ms, 4 for 500ms, 5 for 1000ms
+                                                // 6 for 10ms, 7 for 20ms
+#define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)

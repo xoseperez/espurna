@@ -104,6 +104,52 @@ int _i2cClearbus(int sda, int scl) {
 
 }
 
+// ---------------------------------------------------------------------
+// I2C API
+// ---------------------------------------------------------------------
+
+void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
+    Wire.beginTransmission((uint8_t) address);
+    Wire.write((uint8_t) reg);
+    Wire.write((uint8_t) value);
+    Wire.endTransmission();
+}
+
+uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
+    uint8_t value;
+    Wire.beginTransmission((uint8_t) address);
+    Wire.write((uint8_t) reg);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)address, (uint8_t) 1);
+    value = Wire.read();
+    Wire.endTransmission();
+    return value;
+};
+
+uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
+    uint16_t value;
+    Wire.beginTransmission((uint8_t) address);
+    Wire.write((uint8_t) reg);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t) address, (uint8_t) 2);
+    value = (Wire.read() << 8) | Wire.read();
+    Wire.endTransmission();
+    return value;
+};
+
+uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg) {
+    uint16_t temp = i2c_read_uint16(address, reg);
+    return (temp >> 8) | (temp << 8);
+};
+
+int16_t i2c_read_int16(uint8_t address, uint8_t reg) {
+    return (int16_t) i2c_read_uint16(address, reg);
+};
+
+int16_t i2c_read_int16_le(uint8_t address, uint8_t reg) {
+    return (int16_t) i2c_read_uint16_le(address, reg);
+};
+
 // -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
