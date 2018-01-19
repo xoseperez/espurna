@@ -10,12 +10,6 @@
 #include "Arduino.h"
 #include "EmonSensor.h"
 
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
-#include <Wire.h>
-#endif
-
 // ADC121 Registers
 #define ADC121_REG_RESULT       0x00
 #define ADC121_REG_ALERT        0x01
@@ -59,19 +53,7 @@ class EmonADC121Sensor : public EmonSensor {
             if (_address == 0) return;
 
             // Init sensor
-            #if I2C_USE_BRZO
-                uint8_t buffer[2];
-                buffer[0] = ADC121_REG_CONFIG;
-                buffer[1] = 0x00;
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 2, false);
-                brzo_i2c_end_transaction();
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(ADC121_REG_CONFIG);
-                Wire.write(0x00);
-                Wire.endTransmission();
-            #endif
+            _init();
 
             // Just one channel
             _count = _magnitudes;
@@ -159,32 +141,14 @@ class EmonADC121Sensor : public EmonSensor {
         // Protected
         // ---------------------------------------------------------------------
 
+        void _init() {
+            i2c_write_uint8(_address, ADC121_REG_CONFIG, 0);
+        }
+
         unsigned int readADC(unsigned char channel) {
-
             (void) channel;
-
-            unsigned int value;
-
-            #if I2C_USE_BRZO
-                uint8_t buffer[2];
-                buffer[0] = ADC121_REG_RESULT;
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 1, false);
-                brzo_i2c_read(buffer, 2, false);
-                brzo_i2c_end_transaction();
-                value = (buffer[0] & 0x0F) << 8;
-                value |= buffer[1];
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(ADC121_REG_RESULT);
-                Wire.endTransmission();
-                Wire.requestFrom(_address, (unsigned char) 2);
-                value = (Wire.read() & 0x0F) << 8;
-                value = value + Wire.read();
-            #endif
-
+            unsigned int value = i2c_read_uint16(_address, ADC121_REG_RESULT) & 0x0FFF;
             return value;
-
         }
 
 };

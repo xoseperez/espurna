@@ -9,11 +9,6 @@
 
 #include "Arduino.h"
 #include "I2CSensor.h"
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
-#include <Wire.h>
-#endif
 
 #define BH1750_CONTINUOUS_HIGH_RES_MODE     0x10    // Start measurement at 1lx resolution. Measurement time is approx 120ms.
 #define BH1750_CONTINUOUS_HIGH_RES_MODE_2   0x11    // Start measurement at 0.5lx resolution. Measurement time is approx 120ms.
@@ -99,22 +94,10 @@ class BH1750Sensor : public I2CSensor {
     protected:
 
         void _configure() {
-            #if I2C_USE_BRZO
-                uint8_t buffer[1] = {_mode};
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 1, false);
-                brzo_i2c_end_transaction();
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(_mode);
-                Wire.endTransmission();
-            #endif
+            i2c_write_uint8(_address, _mode);
         }
 
         double _read() {
-
-            double level;
-            uint8_t buffer[2];
 
             // For one-shot modes reconfigure sensor & wait for conversion
             if (_mode & 0x20) {
@@ -131,19 +114,7 @@ class BH1750Sensor : public I2CSensor {
 
             }
 
-            #if I2C_USE_BRZO
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_read(buffer, 2, false);
-                brzo_i2c_end_transaction();
-            #else
-                Wire.beginTransmission(_address);
-                Wire.requestFrom(_address, (unsigned char) 2);
-                buffer[0] = Wire.read();
-                buffer[1] = Wire.read();
-                Wire.endTransmission();
-            #endif
-
-            level = buffer[0] * 256 + buffer[1];
+            double level = (double) i2c_read_uint16(_address);
             return level / 1.2;
 
         }

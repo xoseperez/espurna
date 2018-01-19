@@ -108,20 +108,100 @@ int _i2cClearbus(int sda, int scl) {
 // I2C API
 // ---------------------------------------------------------------------
 
-void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
+#if I2C_USE_BRZO
+
+void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_write_uint8(buffer, len, false);
+    brzo_i2c_end_transaction();
+}
+
+void i2c_write_uint8(uint8_t address, uint8_t value) {
+    uint8_t buffer[1] = {value};
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_write_uint8(buffer, 1, false);
+    brzo_i2c_end_transaction();
+}
+
+uint8_t i2c_read_uint8(uint8_t address) {
+    uint8_t buffer[1] = {reg};
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_read(buffer, 1, false);
+    brzo_i2c_end_transaction();
+    return buffer[0];
+};
+
+uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
+    uint8_t buffer[1] = {reg};
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_write_uint8(buffer, 1, false);
+    brzo_i2c_read(buffer, 1, false);
+    brzo_i2c_end_transaction();
+    return buffer[0];
+};
+
+uint16_t i2c_read_uint16(uint8_t address) {
+    uint8_t buffer[2] = {reg, 0};
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_read(buffer, 2, false);
+    brzo_i2c_end_transaction();
+    return (buffer[0] * 256) | buffer[1];
+};
+
+uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
+    uint8_t buffer[2] = {reg, 0};
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_write_uint8(buffer, 1, false);
+    brzo_i2c_read(buffer, 2, false);
+    brzo_i2c_end_transaction();
+    return (buffer[0] * 256) | buffer[1];
+};
+
+void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+    brzo_i2c_start_transaction(address, _i2c_scl_frequency);
+    brzo_i2c_read(buffer, len, false);
+    brzo_i2c_end_transaction();
+}
+
+#else // not I2C_USE_BRZO
+
+void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     Wire.beginTransmission((uint8_t) address);
-    Wire.write((uint8_t) reg);
+    Wire.write(buffer, len);
+    Wire.endTransmission();
+}
+
+void i2c_write_uint8(uint8_t address, uint8_t value) {
+    Wire.beginTransmission((uint8_t) address);
     Wire.write((uint8_t) value);
     Wire.endTransmission();
 }
+
+uint8_t i2c_read_uint8(uint8_t address) {
+    uint8_t value;
+    Wire.beginTransmission((uint8_t) address);
+    Wire.requestFrom((uint8_t) address, (uint8_t) 1);
+    value = Wire.read();
+    Wire.endTransmission();
+    return value;
+};
 
 uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
     uint8_t value;
     Wire.beginTransmission((uint8_t) address);
     Wire.write((uint8_t) reg);
     Wire.endTransmission();
-    Wire.requestFrom((uint8_t)address, (uint8_t) 1);
+    Wire.requestFrom((uint8_t) address, (uint8_t) 1);
     value = Wire.read();
+    Wire.endTransmission();
+    return value;
+};
+
+uint16_t i2c_read_uint16(uint8_t address) {
+    uint16_t value;
+    Wire.beginTransmission((uint8_t) address);
+    Wire.requestFrom((uint8_t) address, (uint8_t) 2);
+    value = (Wire.read() * 256) | Wire.read();
     Wire.endTransmission();
     return value;
 };
@@ -132,14 +212,38 @@ uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
     Wire.write((uint8_t) reg);
     Wire.endTransmission();
     Wire.requestFrom((uint8_t) address, (uint8_t) 2);
-    value = (Wire.read() << 8) | Wire.read();
+    value = (Wire.read() * 256) | Wire.read();
     Wire.endTransmission();
     return value;
 };
 
+void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+    Wire.beginTransmission((uint8_t) address);
+    Wire.requestFrom(address, (uint8_t) len);
+    for (int i=0; i<len; i++) buffer[i] = Wire.read();
+    Wire.endTransmission();
+}
+
+#endif // I2C_USE_BRZO
+
+void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
+    uint8_t buffer[2] = {reg, value};
+    i2c_write_buffer(address, buffer, 2);
+}
+
+void i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value) {
+    uint8_t buffer[3] = {reg, value >> 8, value & 0xFF};
+    i2c_write_buffer(address, buffer, 3);
+}
+
+void i2c_write_uint16(uint8_t address, uint16_t value) {
+    uint8_t buffer[2] = {value >> 8, value & 0xFF};
+    i2c_write_buffer(address, buffer, 2);
+}
+
 uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg) {
     uint16_t temp = i2c_read_uint16(address, reg);
-    return (temp >> 8) | (temp << 8);
+    return (temp / 256) | (temp * 256);
 };
 
 int16_t i2c_read_int16(uint8_t address, uint8_t reg) {

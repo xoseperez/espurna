@@ -9,11 +9,6 @@
 
 #include "Arduino.h"
 #include "I2CSensor.h"
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
-#include <Wire.h>
-#endif
 
 #define SI7021_SCL_FREQUENCY    200
 
@@ -53,21 +48,8 @@ class SI7021Sensor : public I2CSensor {
             if (_address == 0) return;
 
             // Check device
-            #if I2C_USE_BRZO
-                uint8_t buffer[2] = {0xFC, 0xC9};
-                brzo_i2c_start_transaction(_address, SI7021_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 2, false);
-                brzo_i2c_read(buffer, 1, false);
-                brzo_i2c_end_transaction();
-                _chip = buffer[0];
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(0xFC);
-                Wire.write(0xC9);
-                Wire.endTransmission();
-                Wire.requestFrom(_address, (unsigned char) 1);
-                _chip = Wire.read();
-            #endif
+            i2c_write_uint8(_address, 0xFC, 0xC9);
+            _chip = i2c_read_uint8(_address);
 
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
                 i2cReleaseLock(_address);
@@ -104,7 +86,6 @@ class SI7021Sensor : public I2CSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             if (index < _count) {
-                _error = SENSOR_ERROR_OK;
                 double value;
                 if (index == 0) {
                     value = read(SI7021_CMD_TMP_NOHOLD);
@@ -129,17 +110,8 @@ class SI7021Sensor : public I2CSensor {
 
         unsigned int read(uint8_t command) {
 
-            unsigned char bytes = (command == 0xE0) ? 2 : 3;
-
-            #if I2C_USE_BRZO
-                uint8_t buffer[2] = {command, 0x00};
-                brzo_i2c_start_transaction(_address, SI7021_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 1, false);
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(command);
-                Wire.endTransmission();
-            #endif
+            // Request measurement
+            i2c_write_uint8(_address, command);
 
             // When not using clock stretching (*_NOHOLD commands) delay here
             // is needed to wait for the measurement.
@@ -147,28 +119,14 @@ class SI7021Sensor : public I2CSensor {
             unsigned long start = millis();
             while (millis() - start < 50) delay(1);
 
-            #if I2C_USE_BRZO
-                brzo_i2c_read(buffer, 2, false);
-                brzo_i2c_end_transaction();
-                unsigned int msb = buffer[0];
-                unsigned int lsb = buffer[1];
-            #else
-                Wire.requestFrom(_address, bytes);
-                if (Wire.available() != bytes) {
-                    _error = SENSOR_ERROR_CRC;
-                    return 0;
-                }
-                unsigned int msb = Wire.read();
-                unsigned int lsb = Wire.read();
-            #endif
-
             // Clear the last to bits of LSB to 00.
             // According to datasheet LSB of RH is always xxxxxx10
-            lsb &= 0xFC;
+            unsigned int value = i2c_read_uint16(_address) & 0xFFFC;
 
-            unsigned int value = (msb << 8) | lsb;
-
+            // We should be checking there are no pending bytes in the buffer
+            // and raise a CRC error if there are
             _error = SENSOR_ERROR_OK;
+
             return value;
 
         }

@@ -272,7 +272,7 @@
 #define EMON_ADS1X15_I2C_ADDRESS        0x00    // 0x00 means auto
 #define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
-#define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A4=8
+#define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
 
 #if EMON_ADS1X15_SUPPORT
 #undef I2C_SUPPORT
