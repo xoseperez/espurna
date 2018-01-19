@@ -692,6 +692,10 @@ void sensorLoop() {
                         _magnitudes[i].reported = filtered;
                         dtostrf(filtered, 1-sizeof(buffer), decimals, buffer);
 
+                        #if BROKER_SUPPORT
+                            brokerPublish(_magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+                        #endif
+
                         #if MQTT_SUPPORT
 
                             if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {

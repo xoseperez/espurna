@@ -95,7 +95,17 @@ void ntpSetup() {
 }
 
 void ntpLoop() {
+
     now();
+
+    #if BROKER_SUPPORT
+        static unsigned char last_minute = 60;
+        if (ntpSynced() && (minute() != last_minute)) {
+            last_minute = minute();
+            brokerPublish(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+        }
+    #endif
+
 }
 
 #endif // NTP_SUPPORT

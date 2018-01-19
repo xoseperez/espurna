@@ -271,6 +271,9 @@ void info() {
     #if ALEXA_SUPPORT
         DEBUG_MSG_P(PSTR(" ALEXA"));
     #endif
+    #if BROKER_SUPPORT
+        DEBUG_MSG_P(PSTR(" BROKER"));
+    #endif
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
     #endif
@@ -296,7 +299,10 @@ void info() {
         DEBUG_MSG_P(PSTR(" LLMNR"));
     #endif
     #if MDNS_SERVER_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS"));
+        DEBUG_MSG_P(PSTR(" MDNS_SERVER"));
+    #endif
+    #if MDNS_CLIENT_SUPPORT
+        DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
     #endif
     #if NETBIOS_SUPPORT
         DEBUG_MSG_P(PSTR(" NETBIOS"));
