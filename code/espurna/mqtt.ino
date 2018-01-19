@@ -487,7 +487,7 @@ void mqttFlush() {
 
     // Add extra propeties
     #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
-        if (ntpConnected()) root[MQTT_TOPIC_TIME] = ntpDateTime();
+        if (ntpSynced()) root[MQTT_TOPIC_TIME] = ntpDateTime();
     #endif
     #if MQTT_ENQUEUE_MAC
         root[MQTT_TOPIC_MAC] = WiFi.macAddress();

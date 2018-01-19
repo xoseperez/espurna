@@ -9,7 +9,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if SCHEDULER_SUPPORT
 
-#include <NtpClientLib.h>
+#include <TimeLib.h>
 
 #if WEB_SUPPORT
 
@@ -86,22 +86,10 @@ bool _schIsThisWeekday(String weekdays){
 }
 
 int _schMinutesLeft(unsigned char schedule_hour, unsigned char schedule_minute){
-
-    unsigned char now_hour;
-    unsigned char now_minute;
-
-    if (ntpConnected()) {
-        String value = NTP.getTimeDateString();
-        now_hour = value.substring(0, 2).toInt();
-        now_minute = value.substring(3, 5).toInt();
-    } else {
-        time_t t = now();
-        now_hour = hour(t);
-        now_minute = minute(t);
-    }
-
+    time_t t = now();
+    unsigned char now_hour = hour(t);
+    unsigned char now_minute = minute(t);
     return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
-
 }
 
 // -----------------------------------------------------------------------------
@@ -126,15 +114,15 @@ void schLoop() {
     static unsigned long last_update = 0;
     static int update_time = 0;
 
+    // Check time has been sync'ed
+    if (!ntpSynced()) return;
+
     // Check if we should compare scheduled and actual times
     if ((millis() - last_update > update_time) || (last_update == 0)) {
         last_update = millis();
 
         // Calculate next update time
-        unsigned char current_second = ntpConnected() ?
-            NTP.getTimeDateString().substring(6, 8).toInt() :
-            second(now())
-            ;
+        unsigned char current_second = second();
         update_time = (SCHEDULER_UPDATE_SEC + 60 - current_second) * 1000;
 
         for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {

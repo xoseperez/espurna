@@ -22,7 +22,7 @@ Ticker _ntp_delay;
 void _ntpWebSocketOnSend(JsonObject& root) {
     root["time"] = ntpDateTime();
     root["ntpVisible"] = 1;
-    root["ntpStatus"] = ntpConnected();
+    root["ntpStatus"] = ntpSynced();
     root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
     root["ntpServer2"] = getSetting("ntpServer2");
     root["ntpServer3"] = getSetting("ntpServer3");
@@ -50,21 +50,18 @@ void _ntpConfigure() {
 
 // -----------------------------------------------------------------------------
 
-bool ntpConnected() {
+bool ntpSynced() {
     return (timeStatus() == timeSet);
 }
 
 String ntpDateTime() {
-    if (!ntpConnected()) return String("Not set");
-    String value = NTP.getTimeDateString();
-    int hour = value.substring(0, 2).toInt();
-    int minute = value.substring(3, 5).toInt();
-    int second = value.substring(6, 8).toInt();
-    int day = value.substring(9, 11).toInt();
-    int month = value.substring(12, 14).toInt();
-    int year = value.substring(15, 19).toInt();
+    if (!ntpSynced()) return String();
     char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"), year, month, day, hour, minute, second);
+    time_t t = now();
+    snprintf_P(buffer, sizeof(buffer),
+        PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
+        year(t), month(t), day(t), hour(t), minute(t), second(t)
+    );
     return String(buffer);
 }
 
@@ -85,9 +82,7 @@ void ntpSetup() {
         }
     });
 
-    wifiRegister([](justwifi_messages_t code, char * parameter) {
-        if (code == MESSAGE_CONNECTED) _ntpConfigure();
-    });
+    _ntpConfigure();
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ntpWebSocketOnSend);
