@@ -143,7 +143,8 @@
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
 #define EEPROM_CRASH_COUNTER    6               // Address for the crash counter (1 byte)
-#define EEPROM_DATA_END         7               // End of custom EEPROM data block
+#define EEPROM_MESSAGE_ID       7               // Address for the MQTT message id (4 bytes)
+#define EEPROM_DATA_END         11              // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
 // HEARTBEAT
@@ -490,11 +491,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
 #define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 
-// These are the properties that will be send when useJson is true
+// These are the properties that will be sent when useJson is true
 #define MQTT_ENQUEUE_IP             1
 #define MQTT_ENQUEUE_MAC            1
 #define MQTT_ENQUEUE_HOSTNAME       1
 #define MQTT_ENQUEUE_DATETIME       1
+#define MQTT_ENQUEUE_MESSAGE_ID     1
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
 #define MQTT_TOPIC_JSON         "data"
@@ -511,6 +513,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_STATUS       "status"
 #define MQTT_TOPIC_MAC          "mac"
 #define MQTT_TOPIC_RSSI         "rssi"
+#define MQTT_TOPIC_MESSAGE_ID   "id"
 #define MQTT_TOPIC_APP          "app"
 #define MQTT_TOPIC_INTERVAL     "interval"
 #define MQTT_TOPIC_HOSTNAME     "host"
@@ -540,6 +543,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_CONNECT_EVENT      0
 #define MQTT_DISCONNECT_EVENT   1
 #define MQTT_MESSAGE_EVENT      2
+
+#define MQTT_MESSAGE_ID_SHIFT   1000        // Store MQTT message id into EEPROM every these many
 
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash

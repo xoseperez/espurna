@@ -8,6 +8,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MQTT_SUPPORT
 
+#include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
@@ -244,6 +245,48 @@ void _mqttConfigure() {
 
 }
 
+unsigned long _mqttNextMessageId() {
+
+    static unsigned long id = 0;
+
+    // just reboot, get last count from EEPROM
+    if (id == 0) {
+
+        // read id from EEPROM and shift it
+        id = EEPROM.read(EEPROM_MESSAGE_ID);
+        if (id == 0xFF) {
+
+            // There was nothing in EEPROM,
+            // next message is first message
+            id = 0;
+
+        } else {
+
+            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 1);
+            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 2);
+            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 3);
+
+            // Calculate next block and start from there
+            id = MQTT_MESSAGE_ID_SHIFT * (1 + (id / MQTT_MESSAGE_ID_SHIFT));
+
+        }
+
+    }
+
+    // Save to EEPROM every MQTT_MESSAGE_ID_SHIFT
+    if (id % MQTT_MESSAGE_ID_SHIFT == 0) {
+        EEPROM.write(EEPROM_MESSAGE_ID + 0, (id >> 24) & 0xFF);
+        EEPROM.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
+        EEPROM.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
+        EEPROM.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
+        EEPROM.commit();
+    }
+
+    id++;
+    return id;
+
+}
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
@@ -428,6 +471,7 @@ void mqttSendRaw(const char * topic, const char * message) {
 
 void mqttFlush() {
 
+    if (!_mqtt.connected()) return;
     if (_mqtt_queue.size() == 0) return;
 
     DynamicJsonBuffer jsonBuffer;
@@ -451,6 +495,9 @@ void mqttFlush() {
     #endif
     #if MQTT_ENQUEUE_IP
         root[MQTT_TOPIC_IP] = getIP();
+    #endif
+    #if MQTT_ENQUEUE_MESSAGE_ID
+        root[MQTT_TOPIC_MESSAGE_ID] = _mqttNextMessageId();
     #endif
 
     // Send
@@ -477,6 +524,10 @@ void mqttQueueTopic(const char * topic) {
 }
 
 void mqttEnqueue(const char * topic, const char * message) {
+
+    // Queue is not meant to send message "offline"
+    // We must prevent the queue does not get full while offline
+    if (!_mqtt.connected()) return;
 
     // Force flusing the queue if the MQTT_QUEUE_MAX_SIZE has been reached
     if (_mqtt_queue.size() >= MQTT_QUEUE_MAX_SIZE) mqttFlush();
