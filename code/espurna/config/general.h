@@ -496,11 +496,21 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 
 // These are the properties that will be sent when useJson is true
+#ifndef MQTT_ENQUEUE_IP
 #define MQTT_ENQUEUE_IP             1
+#endif
+#ifndef MQTT_ENQUEUE_MAC
 #define MQTT_ENQUEUE_MAC            1
+#endif
+#ifndef MQTT_ENQUEUE_HOSTNAME
 #define MQTT_ENQUEUE_HOSTNAME       1
+#endif
+#ifndef MQTT_ENQUEUE_DATETIME
 #define MQTT_ENQUEUE_DATETIME       1
+#endif
+#ifndef MQTT_ENQUEUE_MESSAGE_ID
 #define MQTT_ENQUEUE_MESSAGE_ID     1
+#endif
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
 #define MQTT_TOPIC_JSON         "data"
@@ -553,8 +563,12 @@ PROGMEM const char* const custom_reset_string[] = {
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
 // Since 1.9.0 the default value is "" for getter and "/set" for setter
+#ifndef MQTT_GETTER
 #define MQTT_GETTER             ""
+#endif
+#ifndef MQTT_SETTER
 #define MQTT_SETTER             "/set"
+#endif
 
 // -----------------------------------------------------------------------------
 // SETTINGS
