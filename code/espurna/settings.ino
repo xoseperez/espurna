@@ -41,13 +41,15 @@ bool _settings_save = false;
 // Reverse engineering EEPROM storage format
 // -----------------------------------------------------------------------------
 
-unsigned long _settingsSize() {
+unsigned long settingsSize() {
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROM.read(pos)) {
         pos = pos - len - 2;
     }
     return SPI_FLASH_SEC_SIZE - pos;
 }
+
+// -----------------------------------------------------------------------------
 
 unsigned int _settingsKeyCount() {
     unsigned count = 0;
@@ -156,7 +158,7 @@ void _settingsKeys() {
         DEBUG_MSG_P(PSTR("> %s => %s\n"), (keys[i]).c_str(), value.c_str());
     }
 
-    unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - _settingsSize();
+    unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
     DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
     DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
@@ -406,9 +408,6 @@ void settingsSetup() {
     );
 
     _settingsInitCommands();
-
-    DEBUG_MSG_P(PSTR("[SETTINGS] EEPROM size: %d bytes\n"), SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("[SETTINGS] Settings size: %d bytes\n"), _settingsSize());
 
     #if TERMINAL_SUPPORT
         #ifdef SERIAL_RX_PORT

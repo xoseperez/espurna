@@ -38,11 +38,17 @@ void espurnaRegisterLoop(void (*callback)()) {
 
 void setup() {
 
+    // -------------------------------------------------------------------------
+    // Basic modules, will always run
+    // -------------------------------------------------------------------------
+
     // Init EEPROM, Serial, SPIFFS and system check
     systemSetup();
 
     // Init persistance and terminal features
     settingsSetup();
+
+    // Hostname & board name initialization
     if (getSetting("hostname").length() == 0) {
         setSetting("hostname", getIdentifier());
     }
@@ -50,10 +56,6 @@ void setup() {
 
     // Show welcome message and system configuration
     info();
-
-    // -------------------------------------------------------------------------
-    // Basic modules, will always run
-    // -------------------------------------------------------------------------
 
     wifiSetup();
     otaSetup();

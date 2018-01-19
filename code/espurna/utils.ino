@@ -403,6 +403,7 @@ void info() {
         DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
 
+    DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
     #if ADC_VCC_ENABLED
         DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
