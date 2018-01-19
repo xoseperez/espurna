@@ -56,11 +56,13 @@ void hardwareSetup() {
 void hardwareLoop() {
 
     // Heartbeat
-    static unsigned long last = 0;
-    if ((last == 0) || (millis() - last > HEARTBEAT_INTERVAL)) {
-        last = millis();
-        heartbeat();
-    }
+    #if HEARTBEAT_ENABLED
+        static unsigned long last = 0;
+        if ((last == 0) || (millis() - last > HEARTBEAT_INTERVAL)) {
+            last = millis();
+            heartbeat();
+        }
+    #endif // HEARTBEAT_ENABLED
 
 }
 
@@ -177,6 +179,11 @@ void setup() {
         schSetup();
     #endif
 
+    // 3rd party code hook
+    #if USE_EXTRA
+        extraSetup();
+    #endif
+
     // Prepare configuration for version 2.0
     migrate();
 
@@ -239,6 +246,11 @@ void loop() {
     #endif
     #if MDNS_CLIENT_SUPPORT
         mdnsClientLoop();
+    #endif
+
+    // 3rd party code hook
+    #if USE_EXTRA
+        extraLoop();
     #endif
 
     // Power saving delay

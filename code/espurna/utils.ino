@@ -94,6 +94,8 @@ unsigned long getUptime() {
 
 }
 
+#if HEARTBEAT_ENABLED
+
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
@@ -200,6 +202,8 @@ void heartbeat() {
     #endif
 
 }
+
+#endif /// HEARTBEAT_ENABLED
 
 unsigned int sectors(size_t size) {
     return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;

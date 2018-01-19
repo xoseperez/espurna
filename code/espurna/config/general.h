@@ -150,6 +150,10 @@
 // HEARTBEAT
 //------------------------------------------------------------------------------
 
+#ifndef HEARTBEAT_ENABLED
+#define HEARTBEAT_ENABLED           1
+#endif
+
 #define HEARTBEAT_INTERVAL          300000      // Interval between heartbeat messages (in ms)
 #define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
 

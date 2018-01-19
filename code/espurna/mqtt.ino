@@ -346,7 +346,9 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
         mqttSubscribe(MQTT_TOPIC_ACTION);
 
         // Send heartbeat messages
-        heartbeat();
+        #if HEARTBEAT_ENABLED
+            heartbeat();
+        #endif
 
     }
 
