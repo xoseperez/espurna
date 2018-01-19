@@ -243,7 +243,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("INFO"), [](Embedis* e) {
-        welcome();
+        info();
         wifiStatus();
         //StreamString s;
         //WiFi.printDiag(s);
