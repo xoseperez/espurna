@@ -184,6 +184,9 @@ void buttonSetup() {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
 
+    // Register loop
+    espurnaRegisterLoop(buttonLoop);
+
 }
 
 void buttonLoop() {

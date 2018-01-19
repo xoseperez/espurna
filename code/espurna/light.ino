@@ -1041,7 +1041,4 @@ void lightSetup() {
 
 }
 
-void lightLoop(){
-}
-
 #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

@@ -68,6 +68,9 @@ void alexaSetup() {
         return relayStatus(device_id);
     });
 
+    // Register loop
+    espurnaRegisterLoop(alexaLoop);
+
 }
 
 void alexaLoop() {

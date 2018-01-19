@@ -61,6 +61,9 @@ void otaSetup() {
 
     ArduinoOTA.begin();
 
+    // Register loop
+    espurnaRegisterLoop(otaLoop);
+
 }
 
 void otaLoop() {

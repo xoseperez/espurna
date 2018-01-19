@@ -474,7 +474,8 @@
 
 #define I2C_CLOCK_STRETCH_TIME          200     // BRZO clock stretch time
 #define I2C_SCL_FREQUENCY               1000    // BRZO SCL frequency
-#define I2C_CLEAR_BUS                   0       // Clear I2C bus at boot
+#define I2C_CLEAR_BUS                   0       // Clear I2C bus on boot
+#define I2C_PERFORM_SCAN                1       // Perform a bus scan on boot
 
 //--------------------------------------------------------------------------------
 // Internal power monitor

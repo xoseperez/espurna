@@ -242,15 +242,22 @@ bool tspkEnabled() {
 }
 
 void tspkSetup() {
+
     _tspkConfigure();
+
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
         wsOnAfterParseRegister(_tspkConfigure);
     #endif
+
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
         THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",
         THINGSPEAK_USE_SSL ? "ENABLED" : "DISABLED"
     );
+
+    // Register loop
+    espurnaRegisterLoop(tspkLoop);
+
 }
 
 void tspkLoop() {

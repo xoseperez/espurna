@@ -20,10 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "config/all.h"
+#include <vector>
+
+std::vector<void (*)()> _loop_callbacks;
 
 // -----------------------------------------------------------------------------
+// REGISTER
+// -----------------------------------------------------------------------------
 
-unsigned long _loopDelay = 0;
+void espurnaRegisterLoop(void (*callback)()) {
+    _loop_callbacks.push_back(callback);
+}
 
 // -----------------------------------------------------------------------------
 // BOOTING
@@ -31,13 +38,8 @@ unsigned long _loopDelay = 0;
 
 void setup() {
 
-    // Init EEPROM, Serial and SPIFFS
-    hardwareSetup();
-
-    // Question system stability
-    #if SYSTEM_CHECK_ENABLED
-        systemCheck(false);
-    #endif
+    // Init EEPROM, Serial, SPIFFS and system check
+    systemSetup();
 
     // Init persistance and terminal features
     settingsSetup();
@@ -46,23 +48,30 @@ void setup() {
     }
     setBoardName();
 
-    // Cache loop delay value to speed things (recommended max 250ms)
-    _loopDelay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
-
     // Show welcome message and system configuration
     info();
 
+    // -------------------------------------------------------------------------
     // Basic modules, will always run
+    // -------------------------------------------------------------------------
+
     wifiSetup();
     otaSetup();
     #if TELNET_SUPPORT
         telnetSetup();
     #endif
 
-    // Do not run the next services if system is flagged stable
+    // -------------------------------------------------------------------------
+    // Check if system is stable
+    // -------------------------------------------------------------------------
+
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) return;
     #endif
+
+    // -------------------------------------------------------------------------
+    // Next modules will be only loaded if system is flagged as stable
+    // -------------------------------------------------------------------------
 
     // Init webserver required before any module that uses API
     #if WEB_SUPPORT
@@ -71,18 +80,22 @@ void setup() {
         apiSetup();
     #endif
 
+    // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
+
     relaySetup();
     buttonSetup();
     ledSetup();
     #if MQTT_SUPPORT
         mqttSetup();
     #endif
-
     #if MDNS_SERVER_SUPPORT
         mdnsServerSetup();
+    #endif
+    #if MDNS_CLIENT_SUPPORT
+        mdnsClientSetup();
     #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
@@ -98,12 +111,7 @@ void setup() {
     #endif
     #if I2C_SUPPORT
         i2cSetup();
-        #if I2C_CLEAR_BUS
-            i2cClearBus();
-        #endif
-        i2cScan();
     #endif
-
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();
     #endif
@@ -152,67 +160,9 @@ void setup() {
 
 void loop() {
 
-    hardwareLoop();
-    settingsLoop();
-    wifiLoop();
-    otaLoop();
-
-    #if SYSTEM_CHECK_ENABLED
-        systemCheckLoop();
-        // Do not run the next services if system is flagged stable
-        if (!systemCheck()) return;
-    #endif
-
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-        lightLoop();
-    #endif
-    relayLoop();
-    buttonLoop();
-    ledLoop();
-    #if MQTT_SUPPORT
-        mqttLoop();
-    #endif
-
-    #ifdef ITEAD_SONOFF_RFBRIDGE
-        rfbLoop();
-    #endif
-    #if SSDP_SUPPORT
-        ssdpLoop();
-    #endif
-    #if NTP_SUPPORT
-        ntpLoop();
-    #endif
-    #if ALEXA_SUPPORT
-        alexaLoop();
-    #endif
-    #if NOFUSS_SUPPORT
-        nofussLoop();
-    #endif
-    #if RF_SUPPORT
-        rfLoop();
-    #endif
-    #if IR_SUPPORT
-        irLoop();
-    #endif
-    #if SENSOR_SUPPORT
-        sensorLoop();
-    #endif
-    #if THINGSPEAK_SUPPORT
-        tspkLoop();
-    #endif
-    #if SCHEDULER_SUPPORT
-        schLoop();
-    #endif
-    #if MDNS_CLIENT_SUPPORT
-        mdnsClientLoop();
-    #endif
-
-    // 3rd party code hook
-    #if USE_EXTRA
-        extraLoop();
-    #endif
-
-    // Power saving delay
-    delay(_loopDelay);
+    // Call registered loop callbacks
+    for (unsigned char i = 0; i < _loop_callbacks.size(); i++) {
+        (_loop_callbacks[i])();
+    }
 
 }

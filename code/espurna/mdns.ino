@@ -118,6 +118,13 @@ String mdnsResolve(String name) {
     return mdnsResolve((char *) name.c_str());
 }
 
+void mdnsClientSetup() {
+
+    // Register loop
+    espurnaRegisterLoop(mdnsClientLoop);
+
+}
+
 void mdnsClientLoop() {
     _mdns_resolver.loop();
 }

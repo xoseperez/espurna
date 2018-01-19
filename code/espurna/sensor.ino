@@ -619,6 +619,9 @@ void sensorSetup() {
         _sensorInitCommands();
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(sensorLoop);
+
 }
 
 void sensorLoop() {

@@ -728,6 +728,8 @@ void relaySetup() {
     _relayBoot();
     relayLoop();
 
+    espurnaRegisterLoop(relayLoop);
+
     #if WEB_SUPPORT
         relaySetupAPI();
         relaySetupWS();

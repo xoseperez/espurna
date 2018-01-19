@@ -31,6 +31,9 @@ void ssdpSetup() {
         });
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(ssdpLoop);
+
 }
 
 void ssdpLoop() {

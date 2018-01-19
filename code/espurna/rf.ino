@@ -101,6 +101,9 @@ void rfSetup() {
         wsOnAfterParseRegister(_rfBuildCodes);
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(rfLoop);
+
 }
 
 #endif

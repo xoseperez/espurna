@@ -196,6 +196,14 @@ void i2cSetup() {
 
     DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);
 
+    #if I2C_CLEAR_BUS
+        i2cClearBus();
+    #endif
+
+    #if I2C_PERFORM_SCAN
+        i2cScan();
+    #endif
+
 }
 
 #endif

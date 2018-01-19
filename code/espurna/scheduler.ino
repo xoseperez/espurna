@@ -116,6 +116,9 @@ void schSetup() {
         wsOnAfterParseRegister(_schConfigure);
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(schLoop);
+
 }
 
 void schLoop() {

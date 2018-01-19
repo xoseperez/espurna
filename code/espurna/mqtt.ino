@@ -729,6 +729,9 @@ void mqttSetup() {
         _mqttInitCommands();
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(mqttLoop);
+
 }
 
 void mqttLoop() {

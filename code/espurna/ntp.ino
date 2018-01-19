@@ -94,6 +94,9 @@ void ntpSetup() {
         wsOnAfterParseRegister(_ntpConfigure);
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(ntpLoop);
+
 }
 
 void ntpLoop() {

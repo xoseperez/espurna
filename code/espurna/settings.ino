@@ -416,6 +416,9 @@ void settingsSetup() {
         #endif
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(settingsLoop);
+
 }
 
 void settingsLoop() {

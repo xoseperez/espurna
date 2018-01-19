@@ -92,8 +92,13 @@ void _irProcessCode(unsigned long code) {
 // -----------------------------------------------------------------------------
 
 void irSetup() {
+
     _ir_recv = new IRrecv(IR_PIN);
     _ir_recv->enableIRIn();
+
+    // Register loop
+    espurnaRegisterLoop(irLoop);
+
 }
 
 void irLoop() {
