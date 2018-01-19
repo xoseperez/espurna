@@ -741,7 +741,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_SUPPORT             1               // Scheduler needs NTP
 #endif
 
-#define SCHEDULER_UPDATE_SEC    5               // Scheduler perform switch at hh:mm:05
 #define SCHEDULER_MAX_SCHEDULES 10              // Max schedules alowed
 
 // -----------------------------------------------------------------------------

@@ -11,6 +11,8 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <TimeLib.h>
 
+// -----------------------------------------------------------------------------
+
 #if WEB_SUPPORT
 
 void _schWebSocketOnSend(JsonObject &root){
@@ -29,6 +31,8 @@ void _schWebSocketOnSend(JsonObject &root){
 }
 
 #endif // WEB_SUPPORT
+
+// -----------------------------------------------------------------------------
 
 void _schConfigure() {
 
@@ -71,7 +75,7 @@ void _schConfigure() {
 
 bool _schIsThisWeekday(String weekdays){
 
-    // Monday = 1, Tuesday = 2 ... Sunday = 7
+    // Convert from Sunday to Monday as day 1
     int w = weekday(now()) - 1;
     if (w == 0) w = 7;
 
@@ -92,6 +96,69 @@ int _schMinutesLeft(unsigned char schedule_hour, unsigned char schedule_minute){
     return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
 }
 
+void _schCheck() {
+
+    // Check schedules
+    for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
+
+        int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
+        if (sch_switch == 0xFF) break;
+
+        String sch_weekdays = getSetting("schWDs", i, "");
+        if (_schIsThisWeekday(sch_weekdays)) {
+
+            int sch_hour = getSetting("schHour", i, 0).toInt();
+            int sch_minute = getSetting("schMinute", i, 0).toInt();
+            int minutes_to_trigger = _schMinutesLeft(sch_hour, sch_minute);
+
+            if (minutes_to_trigger == 0) {
+                int sch_action = getSetting("schAction", i, 0).toInt();
+                if (sch_action == 2) {
+                    relayToggle(sch_switch);
+                } else {
+                    relayStatus(sch_switch, sch_action);
+                }
+                DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), sch_switch);
+
+            // Show minutes to trigger every 15 minutes
+            // or every minute if less than 15 minutes to scheduled time.
+            // This only works for schedules on this same day.
+            // For instance, if your scheduler is set for 00:01 you will only
+            // get one notification before the trigger (at 00:00)
+            } else if (minutes_to_trigger > 0) {
+
+                #if DEBUG_SUPPORT
+                    if ((minutes_to_trigger % 15 == 0) || (minutes_to_trigger < 15)) {
+                        DEBUG_MSG_P(
+                            PSTR("[SCH] %d minutes to trigger schedule #%d\n"),
+                            minutes_to_trigger, sch_switch
+                        );
+                    }
+                #endif
+
+            }
+
+        }
+
+    }
+
+}
+
+void _schLoop() {
+
+    // Check time has been sync'ed
+    if (!ntpSynced()) return;
+
+    // Check schedules every minute at hh:mm:00
+    static unsigned long last_minute = 60;
+    unsigned char current_minute = minute();
+    if (current_minute != last_minute) {
+        last_minute = current_minute;
+        _schCheck();
+    }
+
+}
+
 // -----------------------------------------------------------------------------
 
 void schSetup() {
@@ -105,54 +172,8 @@ void schSetup() {
     #endif
 
     // Register loop
-    espurnaRegisterLoop(schLoop);
+    espurnaRegisterLoop(_schLoop);
 
-}
-
-void schLoop() {
-
-    static unsigned long last_update = 0;
-    static int update_time = 0;
-
-    // Check time has been sync'ed
-    if (!ntpSynced()) return;
-
-    // Check if we should compare scheduled and actual times
-    if ((millis() - last_update > update_time) || (last_update == 0)) {
-        last_update = millis();
-
-        // Calculate next update time
-        unsigned char current_second = second();
-        update_time = (SCHEDULER_UPDATE_SEC + 60 - current_second) * 1000;
-
-        for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-
-            int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
-            if (sch_switch == 0xFF) break;
-
-            String sch_weekdays = getSetting("schWDs", i, "");
-            if (_schIsThisWeekday(sch_weekdays)) {
-
-                int sch_hour = getSetting("schHour", i, 0).toInt();
-                int sch_minute = getSetting("schMinute", i, 0).toInt();
-                int minutes_to_trigger = _schMinutesLeft(sch_hour, sch_minute);
-                if (minutes_to_trigger == 0) {
-                    int sch_action = getSetting("schAction", i, 0).toInt();
-                    if (sch_action == 2) {
-                        relayToggle(sch_switch);
-                    } else {
-                        relayStatus(sch_switch, sch_action);
-                    }
-                    DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), sch_switch);
-                } else if (minutes_to_trigger > 0) {
-                    DEBUG_MSG_P(
-                        PSTR("[SCH] %d minutes to trigger schedule #%d\n"),
-                        minutes_to_trigger, sch_switch
-                    );
-                }
-            }
-        }
-     }
 }
 
 #endif // SCHEDULER_SUPPORT
