@@ -19,7 +19,7 @@ void brokerRegister(void (*callback)(const char *, unsigned char, const char *))
 }
 
 void brokerPublish(const char * topic, unsigned char id, const char * message) {
-    DEBUG_MSG_P(PSTR("[BROKER] Message %s[%u] => %s\n"), topic, id, message);
+    //DEBUG_MSG_P(PSTR("[BROKER] Message %s[%u] => %s\n"), topic, id, message);
     for (unsigned char i=0; i<_broker_callbacks.size(); i++) {
         (_broker_callbacks[i])(topic, id, message);
     }
