@@ -87,6 +87,34 @@ function zeroPad(number, positions) {
     return (zeros + number).slice(-positions);
 }
 
+function loadTimeZones() {
+
+    var time_zones = [
+        -720, -660, -600, -570, -540,
+        -480, -420, -360, -300, -240,
+        -210, -180, -120, -60, 0,
+        60, 120, 180, 210, 240,
+        270, 300, 330, 345, 360,
+        390, 420, 480, 510, 525,
+        540, 570, 600, 630, 660,
+        720, 765, 780, 840
+    ];
+
+    for (var i in time_zones) {
+        var value = parseInt(time_zones[i], 10);
+        var offset = value >= 0 ? value : -value;
+        var text = "GMT" + (value >= 0 ? "+" : "-") +
+            zeroPad(parseInt(offset / 60, 10), 2) + ":" +
+            zeroPad(offset % 60, 2);
+        $("select[name='ntpOffset']").append(
+            $("<option></option>").
+                attr("value",value).
+                text(text)
+        );
+    }
+
+}
+
 function validateForm(form) {
 
     // password
@@ -1169,6 +1197,7 @@ function connect(host) {
 $(function() {
 
     initMessages();
+    loadTimeZones();
 
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);
