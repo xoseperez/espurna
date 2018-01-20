@@ -370,6 +370,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
+#define WS_UPDATE_INTERVAL      30000       // Update clients every 30 seconds
 
 // -----------------------------------------------------------------------------
 // API
@@ -755,6 +756,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
+#define NTP_START_DELAY         1000            // Delay NTP start 1 second
 
 // -----------------------------------------------------------------------------
 // ALEXA

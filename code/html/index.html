@@ -51,7 +51,8 @@
                                     <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="2" autocomplete="false" />
                                 </div>
 
-                                <button class="pure-button button-update-password">Update</button>
+                                <div class="pure-u-0 pure-u-lg-1-4 more"></div>
+                                <button class="pure-button button-update-password" type="button">Update</button>
 
                             </fieldset>
                         </div>
@@ -213,7 +214,7 @@
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="app_build"></span></div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">Current time</div>
-                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="time"></span></div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="now"></span></div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">Uptime</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="uptime"></span></div>
@@ -233,6 +234,8 @@
                                     <div class="pure-u-1-2 pure-u-lg-1-4">NTP Status</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="ntpStatus">NOT AVAILABLE</span></div>
 
+                                    <div class="pure-u-1-2 pure-u-lg-1-4">Last update</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="ago">?</span><span> seconds ago</span></div>
 
                                 </div>
 
@@ -302,12 +305,12 @@
                                 </div>
 
                                 <div class="pure-g module module-alexa">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Alexa integration</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" tabindex="13" /></div>
                                 </div>
 
                                 <div class="pure-g module module-ha">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Home Assistant</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Home Assistant</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" tabindex="14" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -370,7 +373,7 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use colorpicker</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use colorpicker</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -378,7 +381,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use RGB picker</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use RGB picker</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useRGB"  action="reload" tabindex="11" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -386,7 +389,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use white channel</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use white channel</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -394,7 +397,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use gamma correction</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use gamma correction</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useGamma" tabindex="10" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -402,7 +405,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use CSS style</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use CSS style</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="11" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -410,7 +413,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Color transitions</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="12" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -465,12 +468,12 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable HTTP API</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable HTTP API</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="apiEnabled" /></div>
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Real time API</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Real time API</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="apiRealTime" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -493,7 +496,7 @@
                                 </div>
 
                                 <div class="pure-g module module-telnet">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable TELNET</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable TELNET</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="telnetSTA" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -502,7 +505,7 @@
 
 
                                 <div class="pure-g module module-nofuss">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Automatic remote updates (NoFUSS)</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Automatic remote updates (NoFUSS)</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofussEnabled" /></div>
                                 </div>
 
@@ -516,7 +519,7 @@
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Settings</label>
                                     <div class="pure-u-1-2 pure-u-lg-1-8"><button class="pure-button button-settings-backup pure-u-23-24">Backup</button></div>
-                                    <div class="pure-u-1-2 pure-u-lg-1-8"><button class="pure-button button-settings-restore pure-u-23-24">Restore</button></div>
+                                    <div class="pure-u-1-2 pure-u-lg-1-8"><button class="pure-button button-settings-restore pure-u-1">Restore</button></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -547,7 +550,7 @@
                                 <legend>General</legend>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Scan networks</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Scan networks</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="wifiScan" tabindex="1" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -610,7 +613,7 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable MQTT</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable MQTT</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttEnabled" tabindex="30" /></div>
                                 </div>
 
@@ -697,7 +700,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Use JSON payload</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use JSON payload</label>
                                     <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="mqttUseJson" tabindex="32" /></div>
                                     <div class="pure-u-1 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -725,32 +728,22 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Current Time</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="time" type="text" readonly />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Device Current Time</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="now" type="text" readonly />
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">NTP Server #0</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer1" type="text" tabindex="41" />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">NTP Server #1</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer2" type="text" tabindex="42" />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">NTP Server #2</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer3" type="text" tabindex="43" />
+                                    <label class="pure-u-1 pure-u-lg-1-4">NTP Server</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="ntpServer" type="text" tabindex="41" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Time offset</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="44"></select>
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable DST</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ntpDST" /></div>
                                 </div>
 
@@ -775,7 +768,7 @@
                                 <legend>General</legend>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable Domoticz</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable Domoticz</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="dczEnabled" tabindex="30" /></div>
                                 </div>
 
@@ -820,7 +813,7 @@
                                 <legend>General</legend>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable Thingspeak</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable Thingspeak</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="tspkEnabled" tabindex="30" /></div>
                                 </div>
 
@@ -858,7 +851,7 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Enable InfluxDB</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable InfluxDB</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="idbEnabled" tabindex="40" /></div>
                                 </div>
 
@@ -983,7 +976,7 @@
                                 </div>
 
                                 <div class="pure-g module module-hlw module-emon">
-                                    <div class="pure-u-1 pure-u-lg-1-4"><label>Reset calibration</label></div>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="55" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -1124,7 +1117,7 @@
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
-                <div class="pure-u-1 pure-u-lg-1-4"><label>Switch #<span class="id"></span></label></div>
+                <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
                 <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" class="relayStatus pure-u-1 pure-u-lg-1-4" data="0" /></div>
             </div>
         </div>

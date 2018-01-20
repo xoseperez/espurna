@@ -13,6 +13,9 @@ var numReload = 0;
 var useWhite = false;
 var manifest;
 
+var now = 0;
+var ago = 0;
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -70,6 +73,17 @@ function magnitudeError(error) {
 // -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
+
+function keepTime() {
+    if (now === 0) return;
+    var date = new Date(now * 1000);
+    var text = date.toISOString().substring(0, 19).replace("T", " ");
+    $("input[name='now']").val(text);
+    $("span[name='now']").html(text);
+    $("span[name='ago']").html(ago);
+    now++;
+    ago++;
+}
 
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
@@ -1065,6 +1079,12 @@ function processData(data) {
             return;
         }
 
+        if (key === "now") {
+            now = data[key];
+            ago = 0;
+            return;
+        }
+
         // Pre-process
         if (key === "network") {
             data.network = data.network.toUpperCase();
@@ -1198,6 +1218,7 @@ $(function() {
 
     initMessages();
     loadTimeZones();
+    setInterval(function() { keepTime(); }, 1000);
 
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);

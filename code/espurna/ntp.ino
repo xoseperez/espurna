@@ -13,6 +13,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiClient.h>
 #include <Ticker.h>
 
+unsigned long _ntp_start = 0;
 bool _ntp_update = false;
 bool _ntp_configure = false;
 
@@ -21,14 +22,49 @@ bool _ntp_configure = false;
 // -----------------------------------------------------------------------------
 
 void _ntpWebSocketOnSend(JsonObject& root) {
-    root["time"] = ntpDateTime();
     root["ntpVisible"] = 1;
-    root["ntpStatus"] = ntpSynced();
-    root["ntpServer1"] = getSetting("ntpServer1", NTP_SERVER);
-    root["ntpServer2"] = getSetting("ntpServer2");
-    root["ntpServer3"] = getSetting("ntpServer3");
+    root["ntpStatus"] = (timeStatus() == timeSet);
+    root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+    if (ntpSynced()) root["now"] = now();
+}
+
+void _ntpStart() {
+
+    _ntp_start = 0;
+
+    NTP.begin(getSetting("ntpServer", NTP_SERVER));
+    NTP.setInterval(NTP_UPDATE_INTERVAL);
+    _ntpConfigure();
+
+}
+
+void _ntpConfigure() {
+
+    _ntp_configure = false;
+
+    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    int sign = offset > 0 ? 1 : -1;
+    offset = abs(offset);
+    int tz_hours = sign * (offset / 60);
+    int tz_minutes = sign * (offset % 60);
+    if (NTP.getTimeZone() != tz_hours || NTP.getTimeZoneMinutes() != tz_minutes) {
+        NTP.setTimeZone(tz_hours, tz_minutes);
+        _ntp_update = true;
+    }
+
+    bool daylight = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+    if (NTP.getDayLight() != daylight) {
+        NTP.setDayLight(daylight);
+        _ntp_update = true;
+    }
+
+    String server = getSetting("ntpServer", NTP_SERVER);
+    if (!NTP.getNtpServerName().equals(server)) {
+        NTP.setNtpServerName(server);
+    }
+
 }
 
 void _ntpUpdate() {
@@ -43,31 +79,9 @@ void _ntpUpdate() {
 
 }
 
-void _ntpConfigure() {
-
-    _ntp_configure = false;
-
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    int sign = offset > 0 ? 1 : -1;
-    offset = abs(offset);
-
-    NTP.begin(
-        getSetting("ntpServer", 1, NTP_SERVER).c_str(),
-        sign * (offset / 60),
-        getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1,
-        sign * (offset % 60)
-    );
-
-    if (hasSetting("ntpServer", 2)) NTP.setNtpServerName(getSetting("ntpServer", 2).c_str(), 1);
-    if (hasSetting("ntpServer", 3)) NTP.setNtpServerName(getSetting("ntpServer", 3).c_str(), 2);
-    NTP.setInterval(NTP_UPDATE_INTERVAL);
-
-    _ntp_update = true;
-
-}
-
 void _ntpLoop() {
 
+    if (0 < _ntp_start && _ntp_start < millis()) _ntpStart();
     if (_ntp_configure) _ntpConfigure();
     if (_ntp_update) _ntpUpdate();
 
@@ -84,6 +98,9 @@ void _ntpLoop() {
 }
 
 void _ntpBackwards() {
+    moveSetting("ntpServer1", "ntpServer");
+    delSetting("ntpServer2");
+    delSetting("ntpServer3");
     int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     if (-30 < offset && offset < 30) {
         offset *= 60;
@@ -94,7 +111,7 @@ void _ntpBackwards() {
 // -----------------------------------------------------------------------------
 
 bool ntpSynced() {
-    return (timeStatus() == timeSet);
+    return (year() > 2017);
 }
 
 String ntpDateTime() {
@@ -130,7 +147,7 @@ void ntpSetup() {
     });
 
     wifiRegister([](justwifi_messages_t code, char * parameter) {
-        if (code == MESSAGE_CONNECTED) _ntp_configure = true;
+        if (code == MESSAGE_CONNECTED) _ntp_start = millis() + NTP_START_DELAY;
     });
 
     #if WEB_SUPPORT

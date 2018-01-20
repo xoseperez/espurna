@@ -101,55 +101,7 @@ void heartbeat() {
     unsigned long uptime_seconds = getUptime();
     unsigned int free_heap = getFreeHeap();
 
-    // -------------------------------------------------------------------------
-    // MQTT
-    // -------------------------------------------------------------------------
-
     #if MQTT_SUPPORT
-        #if (HEARTBEAT_REPORT_INTERVAL)
-            mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
-        #endif
-        #if (HEARTBEAT_REPORT_APP)
-            mqttSend(MQTT_TOPIC_APP, APP_NAME);
-        #endif
-        #if (HEARTBEAT_REPORT_VERSION)
-            mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
-        #endif
-        #if (HEARTBEAT_REPORT_HOSTNAME)
-            mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_IP)
-            mqttSend(MQTT_TOPIC_IP, getIP().c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_MAC)
-            mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_RSSI)
-            mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_UPTIME)
-            mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_DATETIME) & (NTP_SUPPORT)
-            mqttSend(MQTT_TOPIC_DATETIME, String(ntpDateTime()).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_FREEHEAP)
-            mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_RELAY)
-            relayMQTT();
-        #endif
-        #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
-            lightMQTT();
-        #endif
-        #if (HEARTBEAT_REPORT_VCC)
-        #if ADC_VCC_ENABLED
-            mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-        #endif
-        #endif
-        #if (HEARTBEAT_REPORT_STATUS)
-            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-        #endif
         bool serial = !mqttConnected();
     #else
         bool serial = true;
@@ -165,9 +117,62 @@ void heartbeat() {
         #if ADC_VCC_ENABLED
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
+        #if NTP_SUPPORT
+            if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+        #endif
     }
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+
+    // -------------------------------------------------------------------------
+    // MQTT
+    // -------------------------------------------------------------------------
+
+    #if MQTT_SUPPORT
+        if (!serial) {
+            #if (HEARTBEAT_REPORT_INTERVAL)
+                mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
+            #endif
+            #if (HEARTBEAT_REPORT_APP)
+                mqttSend(MQTT_TOPIC_APP, APP_NAME);
+            #endif
+            #if (HEARTBEAT_REPORT_VERSION)
+                mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
+            #endif
+            #if (HEARTBEAT_REPORT_HOSTNAME)
+                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_IP)
+                mqttSend(MQTT_TOPIC_IP, getIP().c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_MAC)
+                mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_RSSI)
+                mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_UPTIME)
+                mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_DATETIME) && (NTP_SUPPORT)
+                if (ntpSynced())  mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_FREEHEAP)
+                mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_RELAY)
+                relayMQTT();
+            #endif
+            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
+                lightMQTT();
+            #endif
+            #if (HEARTBEAT_REPORT_VCC)
+            #if ADC_VCC_ENABLED
+                mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+            #endif
+            #endif
+            #if (HEARTBEAT_REPORT_STATUS)
+                mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            #endif
+        }
     #endif
 
     // -------------------------------------------------------------------------
@@ -181,24 +186,6 @@ void heartbeat() {
         #if (HEARTBEAT_REPORT_FREEHEAP)
             idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
-    #endif
-
-    // -------------------------------------------------------------------------
-    // WebSockets
-    // -------------------------------------------------------------------------
-    #if WEB_SUPPORT
-    #if NTP_SUPPORT
-    {
-        char buffer[200];
-        snprintf_P(
-            buffer,
-            sizeof(buffer) - 1,
-            PSTR("{\"time\": \"%s\", \"uptime\": %lu, \"heap\": %lu}"),
-            ntpDateTime().c_str(), uptime_seconds, free_heap
-        );
-        wsSend(buffer);
-    }
-    #endif
     #endif
 
 }
@@ -417,7 +404,9 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
 
-    if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
+    #if SYSTEM_CHECK_ENABLED
+        if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
+    #endif
 
     DEBUG_MSG_P(PSTR("\n"));
 
