@@ -104,8 +104,9 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
 #endif // WEB_SUPPORT
 
 void _domoticzConfigure() {
-    _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
-    _domoticzMqttSubscribe(_dcz_enabled);
+    bool enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
+    _dcz_enabled = enabled;
 }
 
 //------------------------------------------------------------------------------
