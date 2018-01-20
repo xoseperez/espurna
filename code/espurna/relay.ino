@@ -390,7 +390,6 @@ void _relayConfigure() {
 #if WEB_SUPPORT
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    Serial.println("_relayWebSocketUpdate");
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char i=0; i<relayCount(); i++) {
         relay.add(_relays[i].target_status);
