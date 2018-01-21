@@ -66,6 +66,8 @@ class SHT3XI2CSensor : public I2CSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
 
+            _error = SENSOR_ERROR_OK;
+            
             unsigned char buffer[6];
 
             #if I2C_USE_BRZO

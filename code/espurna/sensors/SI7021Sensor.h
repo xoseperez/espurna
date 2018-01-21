@@ -93,9 +93,9 @@ class SI7021Sensor : public I2CSensor {
 
             _error = SENSOR_ERROR_UNKNOWN_ID;
             if (_chip == 0) return;
+            _error = SENSOR_ERROR_OK;
 
             double value;
-            _error = SENSOR_ERROR_OK;
 
             value = _read(SI7021_CMD_TMP_NOHOLD);
             if (_error != SENSOR_ERROR_OK) return;

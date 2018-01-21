@@ -80,6 +80,7 @@ class DHTSensor : public BaseSensor {
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
+            _error = SENSOR_ERROR_OK;
             _read();
         }
 

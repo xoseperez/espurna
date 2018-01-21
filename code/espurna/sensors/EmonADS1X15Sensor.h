@@ -241,6 +241,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 #endif
             }
             last = millis();
+            _error = SENSOR_ERROR_OK;
         }
 
         // Current value for slot # index
