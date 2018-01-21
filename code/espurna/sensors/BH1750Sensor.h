@@ -67,9 +67,8 @@ class BH1750Sensor : public I2CSensor {
             _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
-            // Configure
-            _configure();
-            delay(10);
+            // Run configuration on next update
+            _run_configure = true;
 
         }
 
@@ -88,10 +87,16 @@ class BH1750Sensor : public I2CSensor {
             return MAGNITUDE_NONE;
         }
 
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        void pre() {
+            _error = SENSOR_ERROR_OK;
+            _lux = _read();
+        }
+
         // Current value for slot # index
         double value(unsigned char index) {
             _error = SENSOR_ERROR_OK;
-            if (index == 0) return _read();
+            if (index == 0) return _lux;
             _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
@@ -117,7 +122,7 @@ class BH1750Sensor : public I2CSensor {
             uint8_t buffer[2];
 
             // For one-shot modes reconfigure sensor & wait for conversion
-            if (_mode & 0x20) {
+            if (_run_configure) {
 
                 _configure();
 
@@ -128,6 +133,9 @@ class BH1750Sensor : public I2CSensor {
                 unsigned long wait = (_mode & 0x02) ? 24 : 180;
                 unsigned long start = millis();
                 while (millis() - start < wait) delay(1);
+
+                // Keep on running configure each time if one-shot mode
+                _run_configure = _mode & 0x20;
 
             }
 
@@ -143,13 +151,22 @@ class BH1750Sensor : public I2CSensor {
                 Wire.endTransmission();
             #endif
 
+            // Check data
+            if (buffer[0] == 0xFF) {
+                _error = SENSOR_ERROR_CRC;
+                _run_configure = true;
+                return 0;
+            }
+
             level = buffer[0] * 256 + buffer[1];
             return level / 1.2;
 
         }
 
         unsigned char _mode;
+        bool _run_configure = false;
+        double _lux = 0;
 
 };
 
-#endif // SENSOR_SUPPORT && SI7021_SUPPORT
+#endif // SENSOR_SUPPORT && BH1750_SUPPORT
