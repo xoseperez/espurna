@@ -64,6 +64,11 @@
 #define SERIAL_BAUDRATE         115200          // Default baudrate
 #endif
 
+#ifndef DEBUG_ADD_TIMESTAMP
+#define DEBUG_ADD_TIMESTAMP     1               // Add timestamp to debug messages
+                                                // (in millis overflowing every 1000 seconds)
+#endif
+
 // Second serial port (used for RX)
 
 //#define SERIAL_RX_PORT        Serial			// This setting is usually defined
