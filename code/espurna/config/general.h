@@ -64,6 +64,11 @@
 #define SERIAL_BAUDRATE         115200          // Default baudrate
 #endif
 
+#ifndef DEBUG_ADD_TIMESTAMP
+#define DEBUG_ADD_TIMESTAMP     1               // Add timestamp to debug messages
+                                                // (in millis overflowing every 1000 seconds)
+#endif
+
 // Second serial port (used for RX)
 
 //#define SERIAL_RX_PORT        Serial			// This setting is usually defined
@@ -143,11 +148,16 @@
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
 #define EEPROM_CRASH_COUNTER    6               // Address for the crash counter (1 byte)
-#define EEPROM_DATA_END         7               // End of custom EEPROM data block
+#define EEPROM_MESSAGE_ID       7               // Address for the MQTT message id (4 bytes)
+#define EEPROM_DATA_END         11              // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
 // HEARTBEAT
 //------------------------------------------------------------------------------
+
+#ifndef HEARTBEAT_ENABLED
+#define HEARTBEAT_ENABLED           1
+#endif
 
 #define HEARTBEAT_INTERVAL          300000      // Interval between heartbeat messages (in ms)
 #define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
@@ -365,6 +375,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
+#define WS_UPDATE_INTERVAL      30000       // Update clients every 30 seconds
 
 // -----------------------------------------------------------------------------
 // API
@@ -406,6 +417,11 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef SSDP_SUPPORT
 #define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (3.32Kb)
+#endif
+
+#if WEB_SUPPORT == 0
+#undef SSDP_SUPPORT
+#define SSDP_SUPPORT            0           // SSDP support requires web support
 #endif
 
 // -----------------------------------------------------------------------------
@@ -490,11 +506,22 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
 #define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 
-// These are the properties that will be send when useJson is true
+// These are the properties that will be sent when useJson is true
+#ifndef MQTT_ENQUEUE_IP
 #define MQTT_ENQUEUE_IP             1
+#endif
+#ifndef MQTT_ENQUEUE_MAC
 #define MQTT_ENQUEUE_MAC            1
+#endif
+#ifndef MQTT_ENQUEUE_HOSTNAME
 #define MQTT_ENQUEUE_HOSTNAME       1
+#endif
+#ifndef MQTT_ENQUEUE_DATETIME
 #define MQTT_ENQUEUE_DATETIME       1
+#endif
+#ifndef MQTT_ENQUEUE_MESSAGE_ID
+#define MQTT_ENQUEUE_MESSAGE_ID     1
+#endif
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
 #define MQTT_TOPIC_JSON         "data"
@@ -511,6 +538,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_STATUS       "status"
 #define MQTT_TOPIC_MAC          "mac"
 #define MQTT_TOPIC_RSSI         "rssi"
+#define MQTT_TOPIC_MESSAGE_ID   "id"
 #define MQTT_TOPIC_APP          "app"
 #define MQTT_TOPIC_INTERVAL     "interval"
 #define MQTT_TOPIC_HOSTNAME     "host"
@@ -541,11 +569,25 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_DISCONNECT_EVENT   1
 #define MQTT_MESSAGE_EVENT      2
 
+#define MQTT_MESSAGE_ID_SHIFT   1000        // Store MQTT message id into EEPROM every these many
+
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
 // Since 1.9.0 the default value is "" for getter and "/set" for setter
+#ifndef MQTT_GETTER
 #define MQTT_GETTER             ""
+#endif
+#ifndef MQTT_SETTER
 #define MQTT_SETTER             "/set"
+#endif
+
+// -----------------------------------------------------------------------------
+// BROKER
+// -----------------------------------------------------------------------------
+
+#ifndef BROKER_SUPPORT
+#define BROKER_SUPPORT          1           // The broker is a poor-man's pubsub manager
+#endif
 
 // -----------------------------------------------------------------------------
 // SETTINGS
@@ -710,7 +752,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_SUPPORT             1               // Scheduler needs NTP
 #endif
 
-#define SCHEDULER_UPDATE_SEC    5               // Scheduler perform switch at hh:mm:05
 #define SCHEDULER_MAX_SCHEDULES 10              // Max schedules alowed
 
 // -----------------------------------------------------------------------------
@@ -725,6 +766,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
+#define NTP_START_DELAY         1000            // Delay NTP start 1 second
 
 // -----------------------------------------------------------------------------
 // ALEXA

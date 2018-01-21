@@ -571,7 +571,7 @@ void lightMQTT() {
 
     // Channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_channel[i].value);
+        itoa(_light_channel[i].value, buffer, 10);
         mqttSend(MQTT_TOPIC_CHANNEL, i, buffer);
     }
 
@@ -583,6 +583,22 @@ void lightMQTTGroup() {
         char buffer[20];
         _toCSV(buffer, sizeof(buffer), true);
         mqttSendRaw(mqtt_group_color.c_str(), buffer);
+    }
+}
+
+#endif
+
+// -----------------------------------------------------------------------------
+// Broker
+// -----------------------------------------------------------------------------
+
+#if BROKER_SUPPORT
+
+void lightBroker() {
+    char buffer[10];
+    for (unsigned int i=0; i < _light_channel.size(); i++) {
+        itoa(_light_channel[i].value, buffer, 10);
+        brokerPublish(MQTT_TOPIC_CHANNEL, i, buffer);
     }
 }
 
@@ -609,6 +625,11 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     // Configure color transition
     _light_steps_left = _light_use_transitions ? LIGHT_TRANSITION_STEPS : 1;
     _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
+
+    // Report channels to local broker
+    #if BROKER_SUPPORT
+        lightBroker();
+    #endif
 
     // Report color & brightness to MQTT broker
     #if MQTT_SUPPORT
@@ -1039,9 +1060,6 @@ void lightSetup() {
         _lightInitCommands();
     #endif
 
-}
-
-void lightLoop(){
 }
 
 #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

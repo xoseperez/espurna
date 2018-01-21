@@ -232,12 +232,17 @@ void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
 }
 
 void i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value) {
-    uint8_t buffer[3] = {reg, value >> 8, value & 0xFF};
+    uint8_t buffer[3];
+    buffer[0] = reg;
+    buffer[1] = (value >> 8) & 0xFF;
+    buffer[2] = (value >> 0) & 0xFF;
     i2c_write_buffer(address, buffer, 3);
 }
 
 void i2c_write_uint16(uint8_t address, uint16_t value) {
-    uint8_t buffer[2] = {value >> 8, value & 0xFF};
+    uint8_t buffer[2];
+    buffer[0] = (value >> 8) & 0xFF;
+    buffer[1] = (value >> 0) & 0xFF;
     i2c_write_buffer(address, buffer, 2);
 }
 
@@ -345,6 +350,14 @@ void i2cSetup() {
     #endif
 
     DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);
+
+    #if I2C_CLEAR_BUS
+        i2cClearBus();
+    #endif
+
+    #if I2C_PERFORM_SCAN
+        i2cScan();
+    #endif
 
 }
 

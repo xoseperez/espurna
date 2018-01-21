@@ -200,6 +200,16 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
 }
 
+void _wsUpdate(JsonObject& root) {
+    root["heap"] = getFreeHeap();
+    root["uptime"] = getUptime();
+    root["rssi"] = WiFi.RSSI();
+    root["distance"] = wifiDistance(WiFi.RSSI());
+    #if NTP_SUPPORT
+        if (ntpSynced()) root["now"] = now();
+    #endif
+}
+
 void _wsOnStart(JsonObject& root) {
 
     #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
@@ -234,16 +244,14 @@ void _wsOnStart(JsonObject& root) {
         root["mac"] = WiFi.macAddress();
         root["bssid"] = String(bssid_str);
         root["channel"] = WiFi.channel();
-        root["rssi"] = WiFi.RSSI();
-        root["distance"] = wifiDistance(WiFi.RSSI());
         root["device"] = DEVICE;
         root["hostname"] = getSetting("hostname");
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
-        root["uptime"] = getUptime();
-        root["heap"] = getFreeHeap();
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
+
+        _wsUpdate(root);
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
@@ -290,6 +298,15 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
     }
 
+}
+
+void _wsLoop() {
+    static unsigned long last = 0;
+    if (!wsConnected()) return;
+    if (millis() - last > WS_UPDATE_INTERVAL) {
+        last = millis();
+        wsSend(_wsUpdate);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -371,6 +388,7 @@ void wsSetup() {
     #endif
     wsOnSendRegister(_wsOnStart);
     wsOnAfterParseRegister(wsConfigure);
+    espurnaRegisterLoop(_wsLoop);
 }
 
 #endif // WEB_SUPPORT

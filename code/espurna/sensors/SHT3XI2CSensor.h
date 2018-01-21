@@ -61,6 +61,8 @@ class SHT3XI2CSensor : public I2CSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
 
+            _error = SENSOR_ERROR_OK;
+            
             unsigned char buffer[6];
             i2c_write_uint8(_address, 0x2C, 0x06);
             delay(500);

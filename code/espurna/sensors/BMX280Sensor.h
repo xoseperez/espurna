@@ -116,6 +116,7 @@ class BMX280Sensor : public I2CSensor {
                 _error = SENSOR_ERROR_UNKNOWN_ID;
                 return;
             }
+            _error = SENSOR_ERROR_OK;
 
             #if BMX280_MODE == 1
                 _forceRead();

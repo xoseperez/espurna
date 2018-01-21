@@ -94,6 +94,8 @@ class EmonAnalogSensor : public EmonSensor {
                 last = millis();
             #endif
 
+            _error = SENSOR_ERROR_OK;
+
         }
 
         // Current value for slot # index

@@ -1393,9 +1393,12 @@
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
-// Unknown hardware
-// -----------------------------------------------------------------------------
 
-#else
-    #error "UNSUPPORTED HARDWARE!"
+#endif
+
+// -----------------------------------------------------------------------------
+// Check definitions
+// -----------------------------------------------------------------------------
+#if not defined(MANUFACTURER) || not defined(DEVICE)
+    #error "UNSUPPORTED HARDWARE!!"
 #endif

@@ -197,6 +197,8 @@ class MHZ19Sensor : public BaseSensor {
                     _error = SENSOR_ERROR_OUT_OF_RANGE;
                 }
 
+            } else {
+                _error = SENSOR_ERROR_CRC;
             }
 
         }

@@ -447,6 +447,9 @@ void wifiSetup() {
         _wifiInitCommands();
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(wifiLoop);
+
 }
 
 void wifiLoop() {

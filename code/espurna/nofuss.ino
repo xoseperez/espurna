@@ -153,6 +153,9 @@ void nofussSetup() {
         _nofussInitCommands();
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(nofussLoop);
+
 }
 
 void nofussLoop() {

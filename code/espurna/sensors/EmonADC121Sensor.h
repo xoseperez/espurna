@@ -94,6 +94,8 @@ class EmonADC121Sensor : public EmonSensor {
                 last = millis();
             #endif
 
+            _error = SENSOR_ERROR_OK;
+
         }
 
         // Type for slot # index

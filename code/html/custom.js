@@ -13,6 +13,9 @@ var numReload = 0;
 var useWhite = false;
 var manifest;
 
+var now = 0;
+var ago = 0;
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -71,6 +74,17 @@ function magnitudeError(error) {
 // Utils
 // -----------------------------------------------------------------------------
 
+function keepTime() {
+    if (now === 0) return;
+    var date = new Date(now * 1000);
+    var text = date.toISOString().substring(0, 19).replace("T", " ");
+    $("input[name='now']").val(text);
+    $("span[name='now']").html(text);
+    $("span[name='ago']").html(ago);
+    now++;
+    ago++;
+}
+
 // http://www.the-art-of-web.com/javascript/validate-password/
 function checkPassword(str) {
     // at least one lowercase and one uppercase letter or number
@@ -85,6 +99,34 @@ function zeroPad(number, positions) {
         zeros += "0";
     }
     return (zeros + number).slice(-positions);
+}
+
+function loadTimeZones() {
+
+    var time_zones = [
+        -720, -660, -600, -570, -540,
+        -480, -420, -360, -300, -240,
+        -210, -180, -120, -60, 0,
+        60, 120, 180, 210, 240,
+        270, 300, 330, 345, 360,
+        390, 420, 480, 510, 525,
+        540, 570, 600, 630, 660,
+        720, 765, 780, 840
+    ];
+
+    for (var i in time_zones) {
+        var value = parseInt(time_zones[i], 10);
+        var offset = value >= 0 ? value : -value;
+        var text = "GMT" + (value >= 0 ? "+" : "-") +
+            zeroPad(parseInt(offset / 60, 10), 2) + ":" +
+            zeroPad(offset % 60, 2);
+        $("select[name='ntpOffset']").append(
+            $("<option></option>").
+                attr("value",value).
+                text(text)
+        );
+    }
+
 }
 
 function validateForm(form) {
@@ -1037,6 +1079,12 @@ function processData(data) {
             return;
         }
 
+        if (key === "now") {
+            now = data[key];
+            ago = 0;
+            return;
+        }
+
         // Pre-process
         if (key === "network") {
             data.network = data.network.toUpperCase();
@@ -1169,6 +1217,8 @@ function connect(host) {
 $(function() {
 
     initMessages();
+    loadTimeZones();
+    setInterval(function() { keepTime(); }, 1000);
 
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);

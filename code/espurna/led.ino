@@ -167,6 +167,10 @@ void ledSetup() {
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 
+    // Register loop
+    espurnaRegisterLoop(ledLoop);
+
+
 }
 
 void ledLoop() {

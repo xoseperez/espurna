@@ -94,60 +94,14 @@ unsigned long getUptime() {
 
 }
 
+#if HEARTBEAT_ENABLED
+
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
     unsigned int free_heap = getFreeHeap();
 
-    // -------------------------------------------------------------------------
-    // MQTT
-    // -------------------------------------------------------------------------
-
     #if MQTT_SUPPORT
-        #if (HEARTBEAT_REPORT_INTERVAL)
-            mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
-        #endif
-        #if (HEARTBEAT_REPORT_APP)
-            mqttSend(MQTT_TOPIC_APP, APP_NAME);
-        #endif
-        #if (HEARTBEAT_REPORT_VERSION)
-            mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
-        #endif
-        #if (HEARTBEAT_REPORT_HOSTNAME)
-            mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_IP)
-            mqttSend(MQTT_TOPIC_IP, getIP().c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_MAC)
-            mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_RSSI)
-            mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_UPTIME)
-            mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_DATETIME) & (NTP_SUPPORT)
-            mqttSend(MQTT_TOPIC_DATETIME, String(ntpDateTime()).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_FREEHEAP)
-            mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_RELAY)
-            relayMQTT();
-        #endif
-        #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
-            lightMQTT();
-        #endif
-        #if (HEARTBEAT_REPORT_VCC)
-        #if ADC_VCC_ENABLED
-            mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-        #endif
-        #endif
-        #if (HEARTBEAT_REPORT_STATUS)
-            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-        #endif
         bool serial = !mqttConnected();
     #else
         bool serial = true;
@@ -163,9 +117,62 @@ void heartbeat() {
         #if ADC_VCC_ENABLED
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
+        #if NTP_SUPPORT
+            if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+        #endif
     }
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+
+    // -------------------------------------------------------------------------
+    // MQTT
+    // -------------------------------------------------------------------------
+
+    #if MQTT_SUPPORT
+        if (!serial) {
+            #if (HEARTBEAT_REPORT_INTERVAL)
+                mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
+            #endif
+            #if (HEARTBEAT_REPORT_APP)
+                mqttSend(MQTT_TOPIC_APP, APP_NAME);
+            #endif
+            #if (HEARTBEAT_REPORT_VERSION)
+                mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
+            #endif
+            #if (HEARTBEAT_REPORT_HOSTNAME)
+                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_IP)
+                mqttSend(MQTT_TOPIC_IP, getIP().c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_MAC)
+                mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_RSSI)
+                mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_UPTIME)
+                mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_DATETIME) && (NTP_SUPPORT)
+                if (ntpSynced())  mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_FREEHEAP)
+                mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_RELAY)
+                relayMQTT();
+            #endif
+            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
+                lightMQTT();
+            #endif
+            #if (HEARTBEAT_REPORT_VCC)
+            #if ADC_VCC_ENABLED
+                mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+            #endif
+            #endif
+            #if (HEARTBEAT_REPORT_STATUS)
+                mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            #endif
+        }
     #endif
 
     // -------------------------------------------------------------------------
@@ -181,23 +188,227 @@ void heartbeat() {
         #endif
     #endif
 
+}
+
+#endif /// HEARTBEAT_ENABLED
+
+unsigned int sectors(size_t size) {
+    return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+}
+
+void info() {
+
+    DEBUG_MSG_P(PSTR("\n\n"));
+    DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+    DEBUG_MSG_P(PSTR("[INIT] %s\n"), (char *) APP_AUTHOR);
+    DEBUG_MSG_P(PSTR("[INIT] %s\n\n"), (char *) APP_WEBSITE);
+    DEBUG_MSG_P(PSTR("[INIT] CPU chip ID: 0x%06X\n"), ESP.getChipId());
+    DEBUG_MSG_P(PSTR("[INIT] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG_P(PSTR("[INIT] SDK version: %s\n"), ESP.getSdkVersion());
+    DEBUG_MSG_P(PSTR("[INIT] Core version: %s\n"), getCoreVersion().c_str());
+    DEBUG_MSG_P(PSTR("[INIT] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG_P(PSTR("\n"));
+
     // -------------------------------------------------------------------------
-    // WebSockets
+
+    FlashMode_t mode = ESP.getFlashChipMode();
+    DEBUG_MSG_P(PSTR("[INIT] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
+    DEBUG_MSG_P(PSTR("[INIT] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
+    DEBUG_MSG_P(PSTR("\n"));
+    DEBUG_MSG_P(PSTR("[INIT] Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("[INIT] Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
+    DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
+    DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
+    DEBUG_MSG_P(PSTR("[INIT] OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
+    #if SPIFFS_SUPPORT
+        FSInfo fs_info;
+        bool fs = SPIFFS.info(fs_info);
+        if (fs) {
+            DEBUG_MSG_P(PSTR("[INIT] SPIFFS size:       %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
+        }
+    #else
+        DEBUG_MSG_P(PSTR("[INIT] SPIFFS size:       %8u bytes / %4d sectors\n"), 0, 0);
+    #endif
+    DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
+    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("\n"));
+
     // -------------------------------------------------------------------------
-    #if WEB_SUPPORT
+
+    #if SPIFFS_SUPPORT
+        if (fs) {
+            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes\n"), fs_info.totalBytes);
+            DEBUG_MSG_P(PSTR("[INIT]        used size:  %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("[INIT]        block size: %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("[INIT]        max files:  %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("[INIT]        max length: %8u\n"), fs_info.maxPathLength);
+        } else {
+            DEBUG_MSG_P(PSTR("[INIT] No SPIFFS partition\n"));
+        }
+        DEBUG_MSG_P(PSTR("\n"));
+    #endif
+
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
+    DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
+
+    #if ALEXA_SUPPORT
+        DEBUG_MSG_P(PSTR(" ALEXA"));
+    #endif
+    #if BROKER_SUPPORT
+        DEBUG_MSG_P(PSTR(" BROKER"));
+    #endif
+    #if DEBUG_SERIAL_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
+    #endif
+    #if DEBUG_TELNET_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_TELNET"));
+    #endif
+    #if DEBUG_UDP_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
+    #endif
+    #if DOMOTICZ_SUPPORT
+        DEBUG_MSG_P(PSTR(" DOMOTICZ"));
+    #endif
+    #if HOMEASSISTANT_SUPPORT
+        DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
+    #endif
+    #if I2C_SUPPORT
+        DEBUG_MSG_P(PSTR(" I2C"));
+    #endif
+    #if INFLUXDB_SUPPORT
+        DEBUG_MSG_P(PSTR(" INFLUXDB"));
+    #endif
+    #if LLMNR_SUPPORT
+        DEBUG_MSG_P(PSTR(" LLMNR"));
+    #endif
+    #if MDNS_SERVER_SUPPORT
+        DEBUG_MSG_P(PSTR(" MDNS_SERVER"));
+    #endif
+    #if MDNS_CLIENT_SUPPORT
+        DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
+    #endif
+    #if NETBIOS_SUPPORT
+        DEBUG_MSG_P(PSTR(" NETBIOS"));
+    #endif
+    #if NOFUSS_SUPPORT
+        DEBUG_MSG_P(PSTR(" NOFUSS"));
+    #endif
     #if NTP_SUPPORT
-    {
-        char buffer[200];
-        snprintf_P(
-            buffer,
-            sizeof(buffer) - 1,
-            PSTR("{\"time\": \"%s\", \"uptime\": %lu, \"heap\": %lu}"),
-            ntpDateTime().c_str(), uptime_seconds, free_heap
-        );
-        wsSend(buffer);
+        DEBUG_MSG_P(PSTR(" NTP"));
+    #endif
+    #if RF_SUPPORT
+        DEBUG_MSG_P(PSTR(" RF"));
+    #endif
+    #if SCHEDULER_SUPPORT
+        DEBUG_MSG_P(PSTR(" SCHEDULER"));
+    #endif
+    #if SENSOR_SUPPORT
+        DEBUG_MSG_P(PSTR(" SENSOR"));
+    #endif
+    #if SPIFFS_SUPPORT
+        DEBUG_MSG_P(PSTR(" SPIFFS"));
+    #endif
+    #if SSDP_SUPPORT
+        DEBUG_MSG_P(PSTR(" SSDP"));
+    #endif
+    #if TELNET_SUPPORT
+        DEBUG_MSG_P(PSTR(" TELNET"));
+    #endif
+    #if TERMINAL_SUPPORT
+        DEBUG_MSG_P(PSTR(" TERMINAL"));
+    #endif
+    #if THINGSPEAK_SUPPORT
+        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
+    #endif
+    #if WEB_SUPPORT
+        DEBUG_MSG_P(PSTR(" WEB"));
+    #endif
+
+    #if SENSOR_SUPPORT
+
+        DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
+
+        #if ANALOG_SUPPORT
+            DEBUG_MSG_P(PSTR(" ANALOG"));
+        #endif
+        #if BMX280_SUPPORT
+            DEBUG_MSG_P(PSTR(" BMX280"));
+        #endif
+        #if DALLAS_SUPPORT
+            DEBUG_MSG_P(PSTR(" DALLAS"));
+        #endif
+        #if DHT_SUPPORT
+            DEBUG_MSG_P(PSTR(" DHTXX"));
+        #endif
+        #if DIGITAL_SUPPORT
+            DEBUG_MSG_P(PSTR(" DIGITAL"));
+        #endif
+        #if ECH1560_SUPPORT
+            DEBUG_MSG_P(PSTR(" ECH1560"));
+        #endif
+        #if EMON_ADC121_SUPPORT
+            DEBUG_MSG_P(PSTR(" EMON_ADC121"));
+        #endif
+        #if EMON_ADS1X15_SUPPORT
+            DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
+        #endif
+        #if EMON_ANALOG_SUPPORT
+            DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
+        #endif
+        #if EVENTS_SUPPORT
+            DEBUG_MSG_P(PSTR(" EVENTS"));
+        #endif
+        #if HLW8012_SUPPORT
+            DEBUG_MSG_P(PSTR(" HLW8012"));
+        #endif
+        #if MHZ19_SUPPORT
+            DEBUG_MSG_P(PSTR(" MHZ19"));
+        #endif
+        #if PMSX003_SUPPORT
+            DEBUG_MSG_P(PSTR(" PMSX003"));
+        #endif
+        #if SHT3X_I2C_SUPPORT
+            DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
+        #endif
+        #if SI7021_SUPPORT
+            DEBUG_MSG_P(PSTR(" SI7021"));
+        #endif
+        #if V9261F_SUPPORT
+            DEBUG_MSG_P(PSTR(" V9261F"));
+        #endif
+
+    #endif // SENSOR_SUPPORT
+
+    DEBUG_MSG_P(PSTR("\n\n"));
+
+    // -------------------------------------------------------------------------
+
+    unsigned char reason = resetReason();
+    if (reason > 0) {
+        char buffer[32];
+        strcpy_P(buffer, custom_reset_string[reason-1]);
+        DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), buffer);
+    } else {
+        DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
+
+    DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
+    DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
+    #if ADC_VCC_ENABLED
+        DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
     #endif
+
+    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
+
+    #if SYSTEM_CHECK_ENABLED
+        if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
     #endif
+
+    DEBUG_MSG_P(PSTR("\n"));
 
 }
 
@@ -271,50 +482,6 @@ void reset(unsigned char reason) {
 void deferredReset(unsigned long delay, unsigned char reason) {
     _defer_reset.once_ms(delay, reset, reason);
 }
-
-// -----------------------------------------------------------------------------
-
-#if SYSTEM_CHECK_ENABLED
-
-// Call this method on boot with start=true to increase the crash counter
-// Call it again once the system is stable to decrease the counter
-// If the counter reaches SYSTEM_CHECK_MAX then the system is flagged as unstable
-// setting _systemOK = false;
-//
-// An unstable system will only have serial access, WiFi in AP mode and OTA
-
-bool _systemStable = true;
-
-void systemCheck(bool stable) {
-    unsigned char value = EEPROM.read(EEPROM_CRASH_COUNTER);
-    if (stable) {
-        value = 0;
-        DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
-    } else {
-        if (++value > SYSTEM_CHECK_MAX) {
-            _systemStable = false;
-            value = 0;
-            DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
-        }
-    }
-    EEPROM.write(EEPROM_CRASH_COUNTER, value);
-    EEPROM.commit();
-}
-
-bool systemCheck() {
-    return _systemStable;
-}
-
-void systemCheckLoop() {
-    static bool checked = false;
-    if (!checked && (millis() > SYSTEM_CHECK_TIME)) {
-        // Check system as stable
-        systemCheck(true);
-        checked = true;
-    }
-}
-
-#endif
 
 // -----------------------------------------------------------------------------
 

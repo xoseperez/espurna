@@ -728,6 +728,8 @@ void relaySetup() {
     _relayBoot();
     relayLoop();
 
+    espurnaRegisterLoop(relayLoop);
+
     #if WEB_SUPPORT
         relaySetupAPI();
         relaySetupWS();
@@ -759,6 +761,11 @@ void relayLoop(void) {
 
             // Call the provider to perform the action
             _relayProviderStatus(id, status);
+
+            // Send to Broker
+            #if BROKER_SUPPORT
+                brokerPublish(MQTT_TOPIC_RELAY, id, status ? "1" : "0");
+            #endif
 
             // Send MQTT
             #if MQTT_SUPPORT

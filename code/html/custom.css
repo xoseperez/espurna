@@ -1,145 +1,99 @@
+/* -----------------------------------------------------------------------------
+    General
+   -------------------------------------------------------------------------- */
+
 #menu .pure-menu-heading {
     font-size: 100%;
     padding: .5em .5em;
 }
-.header h2 {
-    font-size: 1em;
-}
-.panel  {
-    display: none;
-}
-.footer {
-    padding: 10px;
-    font-size: 80%;
-    color: #999;
-}
-#menu .footer a {
-    text-decoration: none;
-    padding: 0px;
-}
-.content {
-    margin: 0px;
-}
-.page {
-    margin-top: 10px;
-}
-.pure-button {
-    color: white;
-    padding: 8px 8px;
-    border-radius: 4px;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-.main-buttons {
-    margin: 50px auto;
-    text-align: center;
-}
-.main-buttons button {
-    width: 100px;
-    margin: 5px auto;
-}
-.button-update-password,
-.button-update {
-    background: #1f8dd6;
-}
-.button-reboot,
-.button-reconnect,
-.button-ha-del,
-.button-rfb-forget {
-    background: rgb(202, 60, 60);
-}
-.button-upgrade {
-    background: rgb(202, 60, 60);
-    margin-left: 5px;
-}
-.button-upgrade-browse,
-.button-ha-add,
-.button-apikey {
-    background: rgb(0, 202, 0);
-    margin-left: 5px;
-}
-.button-add-network,
-.button-add-schedule,
-.button-rfb-learn {
-    background: rgb(28, 184, 65);
-}
-.button-del-network,
-.button-del-schedule {
-    background: rgb(202, 60, 60);
-}
-.pure-button {
-    letter-spacing: 0;
-}
 
-.button-more-network,
-.button-more-schedule,
-.button-wifi-scan,
-.button-rfb-send {
-    background: rgb(223, 117, 20);
-}
-.button-settings-backup,
-.button-settings-restore {
-    background: rgb(0, 202, 0);
-    margin-bottom: 10px;
-}
 .pure-g {
     margin-bottom: 0px;
 }
+
 .pure-form legend {
     font-weight: bold;
     letter-spacing: 0;
     margin: 10px 0 1em 0;
 }
-.l-box {
-    padding-right: 1px;
+
+.pure-form .pure-g > label {
+    margin: .4em 0 .2em;
 }
+
 .pure-form input {
     margin-bottom: 10px;
 }
+
 .pure-form input[type=text][disabled] {
     color: #777777;
 }
+
+.header h2 {
+    font-size: 1em;
+}
+
+.panel  {
+    display: none;
+}
+
+.content {
+    margin: 0px;
+}
+
+.page {
+    margin-top: 10px;
+}
+
 div.hint {
     font-size: 80%;
     color: #ccc;
     margin: -10px 0 10px 0;
 }
-.break {
-    margin-top: 5px;
-}
-#networks .pure-g,
-#schedules .pure-g {
-    padding: 10px 0 10px 0;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #eee;
-}
-#networks .more {
-    display: none;
-}
+
 legend.module,
 .module {
     display: none;
 }
+
 .template {
     display: none;
 }
+
 input[name=upgrade] {
     display: none;
 }
-#upgrade-progress {
-    display: none;
-    width: 100%;
-    height: 20px;
-    margin-top: 10px;
+
+.panel.block {
+    display: block;
 }
+
+select {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+hr {
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 1em 0;
+    padding: 0;
+}
+
 input.center {
     margin-bottom: 0px;
 }
+
 div.center {
     margin: .5em 0 1em;
 }
+
 .webmode {
     display: none;
 }
+
 #credentials {
     font-size: 200%;
     text-align: center;
@@ -151,6 +105,7 @@ div.center {
     margin-top: -50px;
     margin-left: -200px;
 }
+
 div.state {
     border-top: 1px solid #eee;
     margin-top: 20px;
@@ -165,57 +120,88 @@ div.state {
     font-size: 80%;
     font-weight: bold;
 }
+
 .right {
     text-align: right;
 }
 
+/* -----------------------------------------------------------------------------
+    Buttons
+   -------------------------------------------------------------------------- */
+
+.pure-button {
+    color: white;
+    padding: 8px 8px;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0;
+    margin-bottom: 10px;
+}
+
+.main-buttons {
+    margin: 20px auto;
+    text-align: center;
+}
+.main-buttons button {
+    width: 100px;
+}
+
+.button-reboot,
+.button-reconnect,
+.button-ha-del,
+.button-rfb-forget,
+.button-del-network,
+.button-del-schedule,
+.button-upgrade {
+    background: rgb(192, 0, 0); /* redish */
+}
+
+.button-update,
+.button-update-password,
+.button-add-network,
+.button-add-schedule,
+.button-rfb-learn,
+.button-upgrade-browse,
+.button-ha-add,
+.button-settings-backup,
+.button-settings-restore,
+.button-apikey {
+    background: rgb(0, 192, 0); /* green */
+}
+
+.button-more-network,
+.button-more-schedule,
+.button-wifi-scan,
+.button-rfb-send {
+    background: rgb(255, 128, 0); /* orange */
+}
+
+.button-upgrade-browse,
+.button-ha-add,
+.button-apikey,
+.button-upgrade {
+    margin-left: 5px;
+}
+
+/* -----------------------------------------------------------------------------
+    Sliders
+   -------------------------------------------------------------------------- */
+
 input.slider {
     margin-top: 10px;
 }
+
 span.slider {
     font-size: 70%;
     margin-left: 10px;
     margin-top: 7px;
     letter-spacing: 0;
 }
-#panel-rfb fieldset {
-    margin: 10px 2px;
-    padding: 20px;
-}
-#panel-rfb input {
-    margin-right: 5px;
-}
-#panel-rfb label {
-    padding-top: 5px;
-}
-#panel-rfb input {
-    text-align: center;
-}
-#uploader,
-#downloader {
-    display: none;
-}
-.panel.block {
-    display: block;
-}
-select {
-    width: 100%;
-    margin-bottom: 10px;
-}
-hr {
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 1px solid #eee;
-    margin: 1em 0;
-    padding: 0;
-}
-#scanResult {
-    margin-top: 10px;
-    font-size: 60%;
-    color: #888;
-    font-family: 'Courier New', monospace;
-}
+
+/* -----------------------------------------------------------------------------
+    Loading
+   -------------------------------------------------------------------------- */
+
 div.loading {
     background-image: url('images/loading.gif');
     width: 20px;
@@ -223,7 +209,81 @@ div.loading {
     margin: 8px 0 0 10px;
     display: none;
 }
+
+/* -----------------------------------------------------------------------------
+    Menu
+   -------------------------------------------------------------------------- */
+
 #menu span.small {
     font-size: 60%;
     padding-left: 9px;
+}
+
+#menu div.footer {
+    padding: 10px;
+    font-size: 80%;
+    color: #999;
+}
+#menu div.footer a {
+    text-decoration: none;
+    padding: 0px;
+}
+
+/* -----------------------------------------------------------------------------
+    RF Bridge panel
+   -------------------------------------------------------------------------- */
+
+#panel-rfb fieldset {
+    margin: 10px 2px;
+    padding: 20px;
+}
+
+#panel-rfb input {
+    margin-right: 5px;
+}
+
+#panel-rfb label {
+    padding-top: 5px;
+}
+
+#panel-rfb input {
+    text-align: center;
+}
+
+/* -----------------------------------------------------------------------------
+    Admin panel
+   -------------------------------------------------------------------------- */
+
+#upgrade-progress {
+    display: none;
+    width: 100%;
+    height: 20px;
+    margin-top: 10px;
+}
+
+#uploader,
+#downloader {
+    display: none;
+}
+
+/* -----------------------------------------------------------------------------
+    Wifi panel
+   -------------------------------------------------------------------------- */
+
+#networks .pure-g,
+#schedules .pure-g {
+    padding: 10px 0 10px 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+#networks .more {
+    display: none;
+}
+
+#scanResult {
+    margin-top: 10px;
+    font-size: 60%;
+    color: #888;
+    font-family: 'Courier New', monospace;
 }

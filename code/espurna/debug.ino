@@ -10,6 +10,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <EEPROM.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -19,6 +20,47 @@ extern "C" {
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
 #endif
+
+void _debugSend(char * message) {
+
+    #if DEBUG_ADD_TIMESTAMP
+        static bool add_timestamp = true;
+        char timestamp[10] = {0};
+        if (add_timestamp) snprintf_P(timestamp, sizeof(timestamp), PSTR("[%06lu] "), millis() % 1000000);
+        add_timestamp = (message[strlen(message)-1] == 10);
+    #endif
+
+    #if DEBUG_SERIAL_SUPPORT
+        #if DEBUG_ADD_TIMESTAMP
+            DEBUG_PORT.printf(timestamp);
+        #endif
+        DEBUG_PORT.printf(message);
+    #endif
+
+    #if DEBUG_UDP_SUPPORT
+        #if SYSTEM_CHECK_ENABLED
+        if (systemCheck()) {
+        #endif
+            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
+            #if DEBUG_ADD_TIMESTAMP
+                _udp_debug.write(timestamp);
+            #endif
+            _udp_debug.write(message);
+            _udp_debug.endPacket();
+        #if SYSTEM_CHECK_ENABLED
+        }
+        #endif
+    #endif
+
+    #if DEBUG_TELNET_SUPPORT
+        #if DEBUG_ADD_TIMESTAMP
+            _telnetWrite(timestamp, strlen(timestamp));
+        #endif
+        _telnetWrite(message, strlen(message));
+    #endif
+
+
+}
 
 void debugSend(const char * format, ...) {
 
@@ -30,25 +72,7 @@ void debugSend(const char * format, ...) {
     ets_vsnprintf(buffer, len, format, args);
     va_end(args);
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.printf(buffer);
-    #endif
-
-    #if DEBUG_UDP_SUPPORT
-        #if SYSTEM_CHECK_ENABLED
-        if (systemCheck()) {
-        #endif
-            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            _udp_debug.write(buffer);
-            _udp_debug.endPacket();
-        #if SYSTEM_CHECK_ENABLED
-        }
-        #endif
-    #endif
-
-    #if DEBUG_TELNET_SUPPORT
-        _telnetWrite(buffer, strlen(buffer));
-    #endif
+    _debugSend(buffer);
 
     delete[] buffer;
 
@@ -67,25 +91,7 @@ void debugSend_P(PGM_P format_P, ...) {
     ets_vsnprintf(buffer, len, format, args);
     va_end(args);
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.printf(buffer);
-    #endif
-
-    #if DEBUG_UDP_SUPPORT
-        #if SYSTEM_CHECK_ENABLED
-        if (systemCheck()) {
-        #endif
-            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            _udp_debug.write(buffer);
-            _udp_debug.endPacket();
-        #if SYSTEM_CHECK_ENABLED
-        }
-        #endif
-    #endif
-
-    #if DEBUG_TELNET_SUPPORT
-        _telnetWrite(buffer, strlen(buffer));
-    #endif
+    _debugSend(buffer);
 
     delete[] buffer;
 
