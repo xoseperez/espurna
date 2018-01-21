@@ -277,6 +277,14 @@ AsyncWebServer * webServer() {
     return _server;
 }
 
+unsigned int webPort() {
+    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+        return 443;
+    #else
+        return getSetting("webPort", WEB_PORT).toInt();
+    #endif
+}
+
 void webLog(AsyncWebServerRequest *request) {
     DEBUG_MSG_P(PSTR("[WEBSERVER] Request: %s %s\n"), request->methodToString(), request->url().c_str());
 }
@@ -287,11 +295,7 @@ void webSetup() {
     snprintf_P(_last_modified, sizeof(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Create server
-    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
-    unsigned int port = 443;
-    #else
-    unsigned int port = getSetting("webPort", WEB_PORT).toInt();
-    #endif
+    unsigned int port = webPort();
     _server = new AsyncWebServer(port);
 
     // Rewrites
@@ -323,12 +327,12 @@ void webSetup() {
 
     // Run server
     #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
-    _server->onSslFileRequest(_onCertificate, NULL);
-    _server->beginSecure("server.cer", "server.key", NULL);
+        _server->onSslFileRequest(_onCertificate, NULL);
+        _server->beginSecure("server.cer", "server.key", NULL);
     #else
-    _server->begin();
+        _server->begin();
     #endif
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %d\n"), port);
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
 
 }
 
