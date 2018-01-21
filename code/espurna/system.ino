@@ -11,6 +11,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 unsigned long _loopDelay = 0;
+bool _system_send_heartbeat = false;
 
 // -----------------------------------------------------------------------------
 
@@ -58,6 +59,10 @@ void systemCheckLoop() {
 
 // -----------------------------------------------------------------------------
 
+void systemSendHeartbeat() {
+    _system_send_heartbeat = true;
+}
+
 void systemLoop() {
 
     // Check system stability
@@ -68,7 +73,8 @@ void systemLoop() {
     #if HEARTBEAT_ENABLED
         // Heartbeat
         static unsigned long last = 0;
-        if ((last == 0) || (millis() - last > HEARTBEAT_INTERVAL)) {
+        if (_system_send_heartbeat || (last == 0) || (millis() - last > HEARTBEAT_INTERVAL)) {
+            _system_send_heartbeat = false;
             last = millis();
             heartbeat();
         }

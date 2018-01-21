@@ -345,10 +345,8 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
         // Subscribe to internal action topics
         mqttSubscribe(MQTT_TOPIC_ACTION);
 
-        // Send heartbeat messages
-        #if HEARTBEAT_ENABLED
-            heartbeat();
-        #endif
+        // Flag system to send heartbeat
+        systemSendHeartbeat();
 
     }
 
