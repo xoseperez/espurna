@@ -85,16 +85,11 @@ class PMSX003Sensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                char buffer[36];
-                if (index == 0) snprintf(buffer, sizeof(buffer), "PM1.0 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
-                if (index == 1) snprintf(buffer, sizeof(buffer), "PM2.5 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
-                if (index == 2) snprintf(buffer, sizeof(buffer), "PM10 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
-                return String(buffer);
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return String();
+            char buffer[36] = {0};
+            if (index == 0) snprintf(buffer, sizeof(buffer), "PM1.0 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            if (index == 1) snprintf(buffer, sizeof(buffer), "PM2.5 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            if (index == 2) snprintf(buffer, sizeof(buffer), "PM10 @ PMSX003 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            return String(buffer);
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
@@ -106,13 +101,9 @@ class PMSX003Sensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                if (index == 0) return MAGNITUDE_PM1dot0;
-                if (index == 1) return MAGNITUDE_PM2dot5;
-                if (index == 2) return MAGNITUDE_PM10;
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            if (index == 0) return MAGNITUDE_PM1dot0;
+            if (index == 1) return MAGNITUDE_PM2dot5;
+            if (index == 2) return MAGNITUDE_PM10;
             return MAGNITUDE_NONE;
         }
 
@@ -137,13 +128,9 @@ class PMSX003Sensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                if(index == 0) return _pm1dot0;
-                if(index == 1) return _pm2dot5;
-                if(index == 2) return _pm10;
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            if(index == 0) return _pm1dot0;
+            if(index == 1) return _pm2dot5;
+            if(index == 2) return _pm10;
             return 0;
         }
 

@@ -207,21 +207,17 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                unsigned char magnitude = index / _ports;
-                unsigned char i=0;
-                #if EMON_REPORT_CURRENT
-                    if (magnitude == i++) return MAGNITUDE_CURRENT;
-                #endif
-                #if EMON_REPORT_POWER
-                    if (magnitude == i++) return MAGNITUDE_POWER_APPARENT;
-                #endif
-                #if EMON_REPORT_ENERGY
-                    if (magnitude == i) return MAGNITUDE_ENERGY;
-                #endif
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            unsigned char magnitude = index / _ports;
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (magnitude == i++) return MAGNITUDE_CURRENT;
+            #endif
+            #if EMON_REPORT_POWER
+                if (magnitude == i++) return MAGNITUDE_POWER_APPARENT;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (magnitude == i) return MAGNITUDE_ENERGY;
+            #endif
             return MAGNITUDE_NONE;
         }
 
@@ -240,29 +236,19 @@ class EmonADS1X15Sensor : public EmonSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-
-            if (index < _count) {
-
-                _error = SENSOR_ERROR_OK;
-                unsigned char port = index % _ports;
-                unsigned char magnitude = index / _ports;
-
-                unsigned char i=0;
-                #if EMON_REPORT_CURRENT
-                    if (magnitude == i++) return _current[port];
-                #endif
-                #if EMON_REPORT_POWER
-                    if (magnitude == i++) return _current[port] * _voltage;
-                #endif
-                #if EMON_REPORT_ENERGY
-                    if (magnitude == i) return _energy[port];
-                #endif
-
-            }
-
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            unsigned char port = index % _ports;
+            unsigned char magnitude = index / _ports;
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (magnitude == i++) return _current[port];
+            #endif
+            #if EMON_REPORT_POWER
+                if (magnitude == i++) return _current[port] * _voltage;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (magnitude == i) return _energy[port];
+            #endif
             return 0;
-
         }
 
     protected:

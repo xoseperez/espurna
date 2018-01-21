@@ -90,22 +90,18 @@ class BMX280Sensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                unsigned char i = 0;
-                #if BMX280_TEMPERATURE > 0
-                    if (index == i++) return MAGNITUDE_TEMPERATURE;
-                #endif
-                #if BMX280_PRESSURE > 0
-                    if (index == i++) return MAGNITUDE_PRESSURE;
-                #endif
-                #if BMX280_HUMIDITY > 0
-                    if (_chip == BMX280_CHIP_BME280) {
-                        if (index == i) return MAGNITUDE_HUMIDITY;
-                    }
-                #endif
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            unsigned char i = 0;
+            #if BMX280_TEMPERATURE > 0
+                if (index == i++) return MAGNITUDE_TEMPERATURE;
+            #endif
+            #if BMX280_PRESSURE > 0
+                if (index == i++) return MAGNITUDE_PRESSURE;
+            #endif
+            #if BMX280_HUMIDITY > 0
+                if (_chip == BMX280_CHIP_BME280) {
+                    if (index == i) return MAGNITUDE_HUMIDITY;
+                }
+            #endif
             return MAGNITUDE_NONE;
         }
 
@@ -127,25 +123,19 @@ class BMX280Sensor : public I2CSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                unsigned char i = 0;
-                #if BMX280_TEMPERATURE > 0
-                    if (index == i++) return _temperature;
-                #endif
-                #if BMX280_PRESSURE > 0
-                    if (index == i++) return _pressure / 100;
-                #endif
-                #if BMX280_HUMIDITY > 0
-                    if (_chip == BMX280_CHIP_BME280) {
-                        if (index == i) return _humidity;
-                    }
-                #endif
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            unsigned char i = 0;
+            #if BMX280_TEMPERATURE > 0
+                if (index == i++) return _temperature;
+            #endif
+            #if BMX280_PRESSURE > 0
+                if (index == i++) return _pressure / 100;
+            #endif
+            #if BMX280_HUMIDITY > 0
+                if (_chip == BMX280_CHIP_BME280) {
+                    if (index == i) return _humidity;
+                }
+            #endif
             return 0;
-
         }
 
         // Load the configuration manifest

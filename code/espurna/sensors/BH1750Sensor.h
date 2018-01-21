@@ -76,9 +76,7 @@ class BH1750Sensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_LUX;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -90,9 +88,7 @@ class BH1750Sensor : public I2CSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _lux;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

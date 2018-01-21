@@ -49,12 +49,8 @@ class SHT3XI2CSensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                if (index == 0) return MAGNITUDE_TEMPERATURE;
-                if (index == 1) return MAGNITUDE_HUMIDITY;
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            if (index == 0) return MAGNITUDE_TEMPERATURE;
+            if (index == 1) return MAGNITUDE_HUMIDITY;
             return MAGNITUDE_NONE;
         }
 
@@ -62,7 +58,7 @@ class SHT3XI2CSensor : public I2CSensor {
         void pre() {
 
             _error = SENSOR_ERROR_OK;
-            
+
             unsigned char buffer[6];
             i2c_write_uint8(_address, 0x2C, 0x06);
             delay(500);
@@ -76,10 +72,8 @@ class SHT3XI2CSensor : public I2CSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

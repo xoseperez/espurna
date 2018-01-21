@@ -185,7 +185,6 @@ class DallasSensor : public BaseSensor {
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index < _count) {
                 char buffer[40];
                 uint8_t * address = _devices[index].address;
@@ -197,15 +196,12 @@ class DallasSensor : public BaseSensor {
                 );
                 return String(buffer);
             }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return String();
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index < _count) return MAGNITUDE_TEMPERATURE;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -217,10 +213,7 @@ class DallasSensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
 
-            if (index >= _count) {
-                _error = SENSOR_ERROR_OUT_OF_RANGE;
-                return 0;
-            }
+            if (index >= _count) return 0;
 
             uint8_t * data = _devices[index].data;
 
@@ -257,7 +250,7 @@ class DallasSensor : public BaseSensor {
                 _error = SENSOR_ERROR_CRC;
                 return 0;
             }
-            _error = SENSOR_ERROR_OK;
+
             return value;
 
         }

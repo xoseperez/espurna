@@ -79,17 +79,13 @@ class DigitalSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_DIGITAL;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return (digitalRead(_gpio) == _default) ? 0 : 1;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

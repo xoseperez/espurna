@@ -94,27 +94,23 @@ class V9261FSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
             if (index == 3) return MAGNITUDE_POWER_REACTIVE;
             if (index == 4) return MAGNITUDE_POWER_APPARENT;
             if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _active;
             if (index == 3) return _reactive;
             if (index == 4) return _apparent;
             if (index == 5) return _apparent > 0 ? 100 * _active / _apparent : 100;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
