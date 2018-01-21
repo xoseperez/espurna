@@ -25,6 +25,9 @@
 #define SI7021_CMD_TMP_NOHOLD   0xF3
 #define SI7021_CMD_HUM_NOHOLD   0xF5
 
+PROGMEM const char si7021_chip_si7021_name[] = "SI7021";
+PROGMEM const char si7021_chip_htu21d_name[] = "HTU21D";
+
 class SI7021Sensor : public I2CSensor {
 
     public:
@@ -52,6 +55,76 @@ class SI7021Sensor : public I2CSensor {
             _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
 
+            // Initialize sensor
+            _init();
+
+        }
+
+        // Descriptive name of the sensor
+        String description() {
+            char name[10];
+            strncpy_P(name,
+                _chip == SI7021_CHIP_SI7021 ?
+                    si7021_chip_si7021_name :
+                    si7021_chip_htu21d_name,
+                sizeof(name)
+            );
+            char buffer[25];
+            snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", name, _address);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Type for slot # index
+        unsigned char type(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
+            if (index == 0) return MAGNITUDE_TEMPERATURE;
+            if (index == 1) return MAGNITUDE_HUMIDITY;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return MAGNITUDE_NONE;
+        }
+
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        void pre() {
+
+            _error = SENSOR_ERROR_UNKNOWN_ID;
+            if (_chip == 0) return;
+
+            double value;
+            _error = SENSOR_ERROR_OK;
+
+            value = _read(SI7021_CMD_TMP_NOHOLD);
+            if (_error != SENSOR_ERROR_OK) return;
+            _temperature = (175.72 * value / 65536) - 46.85;
+
+            value = _read(SI7021_CMD_HUM_NOHOLD);
+            if (_error != SENSOR_ERROR_OK) return;
+            value = (125.0 * value / 65536) - 6;
+            _humidity = constrain(value, 0, 100);
+
+        }
+
+        // Current value for slot # index
+        double value(unsigned char index) {
+            _error = SENSOR_ERROR_OK;
+            if (index == 0) return _temperature;
+            if (index == 1) return _humidity;
+            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            return 0;
+        }
+
+    protected:
+
+        // ---------------------------------------------------------------------
+        // Protected
+        // ---------------------------------------------------------------------
+
+        void _init() {
+
             // Check device
             #if I2C_USE_BRZO
                 uint8_t buffer[2] = {0xFC, 0xC9};
@@ -72,62 +145,14 @@ class SI7021Sensor : public I2CSensor {
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
                 i2cReleaseLock(_address);
                 _error = SENSOR_ERROR_UNKNOWN_ID;
+                _count = 0;
             } else {
                 _count = 2;
             }
 
         }
 
-        // Descriptive name of the sensor
-        String description() {
-            char buffer[25];
-            snprintf(buffer, sizeof(buffer), "%s @ I2C (0x%02X)", chipAsString().c_str(), _address);
-            return String(buffer);
-        }
-
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) {
-            return description();
-        };
-
-        // Type for slot # index
-        unsigned char type(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                if (index == 0) return MAGNITUDE_TEMPERATURE;
-                if (index == 1) return MAGNITUDE_HUMIDITY;
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return MAGNITUDE_NONE;
-        }
-
-        // Current value for slot # index
-        double value(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                double value;
-                if (index == 0) {
-                    value = read(SI7021_CMD_TMP_NOHOLD);
-                    value = (175.72 * value / 65536) - 46.85;
-                }
-                if (index == 1) {
-                    value = read(SI7021_CMD_HUM_NOHOLD);
-                    value = (125.0 * value / 65536) - 6;
-                    value = constrain(value, 0, 100);
-                }
-                return value;
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-            return 0;
-        }
-
-    protected:
-
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
-
-        unsigned int read(uint8_t command) {
+        unsigned int _read(uint8_t command) {
 
             unsigned char bytes = (command == 0xE0) ? 2 : 3;
 
@@ -154,10 +179,6 @@ class SI7021Sensor : public I2CSensor {
                 unsigned int lsb = buffer[1];
             #else
                 Wire.requestFrom(_address, bytes);
-                if (Wire.available() != bytes) {
-                    _error = SENSOR_ERROR_CRC;
-                    return 0;
-                }
                 unsigned int msb = Wire.read();
                 unsigned int lsb = Wire.read();
             #endif
@@ -173,13 +194,9 @@ class SI7021Sensor : public I2CSensor {
 
         }
 
-        String chipAsString() {
-            if (_chip == SI7021_CHIP_SI7021) return String("SI7021");
-            if (_chip == SI7021_CHIP_HTU21D) return String("HTU21D");
-            return String("Unknown");
-        }
-
         unsigned char _chip;
+        double _temperature = 0;
+        double _humidity = 0;
 
 };
 
