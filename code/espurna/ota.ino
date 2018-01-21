@@ -37,7 +37,8 @@ void otaSetup() {
     });
 
     ArduinoOTA.onEnd([]() {
-        DEBUG_MSG_P(PSTR("\n[OTA] End\n"));
+        DEBUG_MSG_P(PSTR("\n"));
+        DEBUG_MSG_P(PSTR("[OTA] End\n"));
         #if WEB_SUPPORT
             wsSend_P(PSTR("{\"action\": \"reload\"}"));
         #endif
