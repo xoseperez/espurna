@@ -27,7 +27,7 @@ void _debugSend(char * message) {
         static bool add_timestamp = true;
         char timestamp[10] = {0};
         if (add_timestamp) snprintf_P(timestamp, sizeof(timestamp), PSTR("[%06lu] "), millis() % 1000000);
-        add_timestamp = (message[strlen(message)-1] == 10);
+        add_timestamp = (message[strlen(message)-1] == 10) || (message[strlen(message)-1] == 13);
     #endif
 
     #if DEBUG_SERIAL_SUPPORT
