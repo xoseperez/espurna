@@ -18,14 +18,12 @@
 #define DS_CHIP_DS18B20             0x28
 #define DS_CHIP_DS1825              0x3B
 
+#define DS_DATA_SIZE                9
 #define DS_PARASITE                 1
 #define DS_DISCONNECTED             -127
 
 #define DS_CMD_START_CONVERSION     0x44
 #define DS_CMD_READ_SCRATCHPAD      0xBE
-
-#define DS_ERROR_FAILED_RESET       -2
-#define DS_ERROR_FAILED_READ        -3
 
 class DallasSensor : public BaseSensor {
 
@@ -121,38 +119,35 @@ class DallasSensor : public BaseSensor {
 
                     // Read scratchpad
                     if (_wire->reset() == 0) {
-                        _error = DS_ERROR_FAILED_RESET;
+                        // Force a CRC check error
+                        _devices[index].data[0] = _devices[index].data[0] + 1;
                         return;
                     }
 
                     _wire->select(_devices[index].address);
                     _wire->write(DS_CMD_READ_SCRATCHPAD);
 
-                    uint8_t data[9];
-                    for (unsigned char i = 0; i < 9; i++) {
+                    uint8_t data[DS_DATA_SIZE];
+                    for (unsigned char i = 0; i < DS_DATA_SIZE; i++) {
                         data[i] = _wire->read();
                     }
 
                     #if false
                         Serial.printf("[DS18B20] Data = ");
-                        for (unsigned char i = 0; i < 9; i++) {
+                        for (unsigned char i = 0; i < DS_DATA_SIZE; i++) {
                           Serial.printf("%02X ", data[i]);
                         }
-                        Serial.printf(" CRC = %02X\n", OneWire::crc8(data, 8));
+                        Serial.printf(" CRC = %02X\n", OneWire::crc8(data, DS_DATA_SIZE-1));
                     #endif
 
 
                     if (_wire->reset() != 1) {
-                        _error = DS_ERROR_FAILED_READ;
+                        // Force a CRC check error
+                        _devices[index].data[0] = _devices[index].data[0] + 1;
                         return;
                     }
 
-                    if (OneWire::crc8(data, 8) != data[8]) {
-                        _error = SENSOR_ERROR_CRC;
-                        return;
-                    }
-
-                    memcpy(_devices[index].data, data, 9);
+                    memcpy(_devices[index].data, data, DS_DATA_SIZE);
 
                 }
 
@@ -216,6 +211,11 @@ class DallasSensor : public BaseSensor {
             if (index >= _count) return 0;
 
             uint8_t * data = _devices[index].data;
+
+            if (OneWire::crc8(data, DS_DATA_SIZE-1) != data[DS_DATA_SIZE-1]) {
+                _error = SENSOR_ERROR_CRC;
+                return 0;
+            }
 
             // Registers
             // byte 0: temperature LSB
@@ -305,7 +305,7 @@ class DallasSensor : public BaseSensor {
 
         typedef struct {
             uint8_t address[8];
-            uint8_t data[9];
+            uint8_t data[DS_DATA_SIZE];
         } ds_device_t;
         std::vector<ds_device_t> _devices;
 
