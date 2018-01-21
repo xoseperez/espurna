@@ -414,6 +414,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (3.32Kb)
 #endif
 
+#if WEB_SUPPORT == 0
+#undef SSDP_SUPPORT
+#define SSDP_SUPPORT            0           // SSDP support requires web support
+#endif
+
 // -----------------------------------------------------------------------------
 // SPIFFS
 // -----------------------------------------------------------------------------
