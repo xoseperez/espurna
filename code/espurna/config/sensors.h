@@ -114,7 +114,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef BH1750_SUPPORT
-#define BH1750_SUPPORT                  1
+#define BH1750_SUPPORT                  0
 #endif
 
 #ifndef BH1750_ADDRESS
