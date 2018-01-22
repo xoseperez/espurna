@@ -146,6 +146,9 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
             rfbStatus(id, status);
         #endif
 
+        // Update the pulse counter if the relay is already in the non-normal state (#454)
+        relayPulse(id);
+
     } else {
 
         unsigned int current_time = millis();
