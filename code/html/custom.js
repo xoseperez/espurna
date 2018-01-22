@@ -151,7 +151,7 @@ function validateForm(form) {
 // These fields will always be a list of values
 var is_group = [
     "ssid", "pass", "gw", "mask", "ip", "dns",
-    "schSwitch","schAction","schHour","schMinute","schWDs",
+    "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
     "relayBoot", "relayPulse", "relayTime",
     "mqttGroup", "mqttGroupInv",
     "dczRelayIdx", "dczMagnitude",
@@ -1001,6 +1001,7 @@ function processData(data) {
                 Object.keys(schedule).forEach(function(key) {
                     $("input[name='" + key + "']", line).val(schedule[key]);
                     $("select[name='" + key + "']", line).prop("value", schedule[key]);
+                    $(":checkbox", line).prop("checked", schedule[key]);
                 });
             }
             return;
@@ -1246,9 +1247,7 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-schedule").on("click", function() {
-        $("div.more", addSchedule()).toggle();
-    });
+    $(".button-add-schedule").on("click", addSchedule);
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

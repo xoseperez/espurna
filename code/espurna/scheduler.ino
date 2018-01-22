@@ -22,10 +22,11 @@ void _schWebSocketOnSend(JsonObject &root){
     for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!hasSetting("schSwitch", i)) break;
         JsonObject &scheduler = sch.createNestedObject();
-        scheduler["schSwitch"] = getSetting("schSwitch", i, "");
-        scheduler["schAction"] = getSetting("schAction", i, "");
-        scheduler["schHour"] = getSetting("schHour", i, "");
-        scheduler["schMinute"] = getSetting("schMinute", i, "");
+        scheduler["schEnabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
+        scheduler["schSwitch"] = getSetting("schSwitch", i, 0).toInt();
+        scheduler["schAction"] = getSetting("schAction", i, 0).toInt();
+        scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
+        scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
         scheduler["schWDs"] = getSetting("schWDs", i, "");
     }
 }
@@ -45,6 +46,7 @@ void _schConfigure() {
 
         if (delete_flag) {
 
+            delSetting("schEnabled", i);
             delSetting("schSwitch", i);
             delSetting("schAction", i);
             delSetting("schHour", i);
@@ -55,14 +57,16 @@ void _schConfigure() {
 
             #if DEBUG_SUPPORT
 
+                int sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
                 int sch_action = getSetting("schAction", i, 0).toInt();
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
                 String sch_weekdays = getSetting("schWDs", i, "");
                 DEBUG_MSG_P(
-                    PSTR("[SCH] Schedule #%d: %s switch #%d at %02d:%02d on %s\n"),
+                    PSTR("[SCH] Schedule #%d: %s switch #%d at %02d:%02d on %s%s\n"),
                     i, sch_action == 0 ? "turn OFF" : sch_action == 1 ? "turn ON" : "toggle", sch_switch,
-                    sch_hour, sch_minute, (char *) sch_weekdays.c_str()
+                    sch_hour, sch_minute, (char *) sch_weekdays.c_str(),
+                    sch_enabled ? "" : " (disabled)"
                 );
 
             #endif // DEBUG_SUPPORT
@@ -103,6 +107,9 @@ void _schCheck() {
 
         int sch_switch = getSetting("schSwitch", i, 0xFF).toInt();
         if (sch_switch == 0xFF) break;
+
+        // Skip disabled schedules
+        if (getSetting("schEnabled", i, 1).toInt() == 0) continue;
 
         String sch_weekdays = getSetting("schWDs", i, "");
         if (_schIsThisWeekday(sch_weekdays)) {
