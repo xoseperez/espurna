@@ -5,8 +5,6 @@ WebSocketIncommingBuffer
 Code by Hermann Kraus (https://bitbucket.org/hermr2d2/)
 and slightly modified.
 
-https://bitbucket.org/xoseperez/espurna/pull-requests/30/safer-buffer-handling-for-websocket-data
-
 */
 
 #pragma once

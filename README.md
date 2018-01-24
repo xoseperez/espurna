@@ -6,7 +6,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 **Current Release Version is 1.12.1**
 
-Read the [changes log](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELOG.md).
 
 ---
 
