@@ -32,7 +32,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
     * Support for **MQTT groups** to sync switches between devices
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
-    * **SSL/TLS support** (not on regular builds, see #64)
+    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64))
     * Switch on/off and toggle relays, group topics (sync relays between different devices)
     * Report button event notifications
     * Enable/disable pulse mode
@@ -120,7 +120,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
 >What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
 >
 >* **Code** has, of course been migrated completely
->* **Issues** are all on GutHub already **but** all issues and comments show up as reporter by me. The original reported is referenced inside the body of the issue (or comment) with a link to her profile at Bitbucket and a link to her profile at GitHub if it happens to be the same username. I **suggest all reporters subscribe to the issues they originally filed** (search for your BitBucket username to list them).
+>* **Issues** are all on GitHub already **but** all issues and comments show up as reported by me. The original reporter is referenced inside the body of the issue (or comment) with a link to his/her profile at Bitbucket and a link to his/her profile at GitHub if it happens to be the same username. I **suggest all reporters to subscribe to the issues they originally filed** (search for your BitBucket username to list them).
 >* **Pull requests** historic has not been migrated. At the moment of the migration all pull-requests have been either merged or declined. Of course, those PR merged are in the code base, but the historic and comments in the PR pages will be lost.
 >* **Documentation** it's on it way, first step will be to migrate existing wiki, maybe with a new TOC structure
 >* **Watchers**, **Forks**, I'm afraid they are all gone. Visit the new repop home and click on the "Watch" button on the top right. And as you do it click also on the "Star" button too :)
@@ -134,7 +134,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
 > **2017-08-26**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
 
 ---
-> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue [#187](https://github.com/xoseperez/espurna/issues/187).
 
 ---
 
