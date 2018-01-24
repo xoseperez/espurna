@@ -59,6 +59,7 @@
 //#define ARILUX_AL_LC11
 //#define ARILUX_AL_LC02
 //#define WEMOS_D1_TARPUNA_SHIELD
+//#define MAGICHOME_LED_CONTROLLER_23
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
