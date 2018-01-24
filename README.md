@@ -120,7 +120,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
 >What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
 >
 >* **Code** has, of course been migrated completely
->* **Issues** are all on GutHub already **but** all issues and comments show up as reporter by me. The original reported is referenced inside the body of the issue (or comment) with a link to her profile at Bitbucket and a link to her profile at GitHub if it happens to be the same username. I **suggest all reporters subscribe to the issues they originally filed** (search for your BitBucket username to list them).
+>* **Issues** are all on GitHub already **but** all issues and comments show up as reported by me. The original reporter is referenced inside the body of the issue (or comment) with a link to his/her profile at Bitbucket and a link to his/her profile at GitHub if it happens to be the same username. I **suggest all reporters to subscribe to the issues they originally filed** (search for your BitBucket username to list them).
 >* **Pull requests** historic has not been migrated. At the moment of the migration all pull-requests have been either merged or declined. Of course, those PR merged are in the code base, but the historic and comments in the PR pages will be lost.
 >* **Documentation** it's on it way, first step will be to migrate existing wiki, maybe with a new TOC structure
 >* **Watchers**, **Forks**, I'm afraid they are all gone. Visit the new repop home and click on the "Watch" button on the top right. And as you do it click also on the "Star" button too :)
