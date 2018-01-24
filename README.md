@@ -13,7 +13,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
 ## Features
 
 * *KRACK* vulnerability free (when built against Arduino Core 2.4.0)
-* Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
+* Support for **multiple ESP8266-based boards** ([check list](https://github.com/xoseperez/espurna/wiki/Hardware))
 * Power saving options
 * Wifi **AP Mode** or **STA mode**
     * Up to 5 different networks can be defined
@@ -115,6 +115,19 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
 ## Notices
 
 ---
+> **2018-01-24**: This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
+>
+>What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
+>
+>* **Code** has, of course been migrated completely
+>* **Issues** are all on GutHub already **but** all issues and comments show up as reporter by me. The original reported is referenced inside the body of the issue (or comment) with a link to her profile at Bitbucket and a link to her profile at GitHub if it happens to be the same username. I **suggest all reporters subscribe to the issues they originally filed** (search for your BitBucket username to list them).
+>* **Pull requests** historic has not been migrated. At the moment of the migration all pull-requests have been either merged or declined. Of course, those PR merged are in the code base, but the historic and comments in the PR pages will be lost.
+>* **Documentation** it's on it way, first step will be to migrate existing wiki, maybe with a new TOC structure
+>* **Watchers**, **Forks**, I'm afraid they are all gone. Visit the new repop home and click on the "Watch" button on the top right. And as you do it click also on the "Star" button too :)
+>
+>I apologize for any inconvenience this migration may have caused. I have decided to do it the hard way.
+
+---
 > **2018-01-11**: As of current version (1.12.0) ESPurna is tested using Arduino Core 2.3.0 and it's meant to be built against that version.
 
 ---
@@ -139,11 +152,11 @@ And of course you can always buy me a beer, coffee, tea,... via the donation but
 
 ## Documentation
 
-For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xoseperez/espurna/wiki/Home).
+For more information please refer to the [ESPurna Wiki](https://github.com/xoseperez/espurna/wiki).
 
 ## Supported hardware
 
-Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://bitbucket.org/xoseperez/espurna/wiki/Hardware).
+Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://github.com/xoseperez/espurna/wiki/Hardware).
 
 ||||
 |---|---|---|
