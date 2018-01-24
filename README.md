@@ -32,7 +32,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
     * Support for **MQTT groups** to sync switches between devices
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
-    * **SSL/TLS support** (not on regular builds, see #64)
+    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64))
     * Switch on/off and toggle relays, group topics (sync relays between different devices)
     * Report button event notifications
     * Enable/disable pulse mode
@@ -134,7 +134,7 @@ Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELO
 > **2017-08-26**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
 
 ---
-> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue [#187](https://github.com/xoseperez/espurna/issues/187).
 
 ---
 
