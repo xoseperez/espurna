@@ -8,4 +8,8 @@ cache:
 install:
     - pip install -U platformio
 script:
-    - platformio run -e itead-sonoff-basic
+    - cd code ; platformio run -e itead-sonoff-basic
+branches:
+    only:
+        - master
+        - dev
