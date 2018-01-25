@@ -7,6 +7,7 @@ cache:
         - "~/.platformio"
 install:
     - pip install -U platformio
+    - cd code ; npm install --only=dev ; cd ..
 script:
     - cd code ; platformio run -e itead-sonoff-basic
 branches:

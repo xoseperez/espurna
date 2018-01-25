@@ -1,12 +1,13 @@
 # ESPurna Firmware
 
-ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches.
-It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
+ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.12.1**
-
-Read the [changes log](https://github.com/xoseperez/espurna/blob/master/CHANGELOG.md).
+[![version](https://badge.fury.io/gh/xoseperez%2Fespurna.svg)](CHANGELOG.md)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=master)](https://travis-ci.org/xoseperez/espurna)
+[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
+[![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+[![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
 
@@ -148,7 +149,7 @@ There are several ways to contribute to ESpurna development. You can contribute 
 
 And of course you can always buy me a beer, coffee, tea,... via the donation button below.
 
-[![Donate to ESPurna Project](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+[![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 
 ## Documentation
 
