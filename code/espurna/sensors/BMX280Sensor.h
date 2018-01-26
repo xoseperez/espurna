@@ -108,6 +108,11 @@ class BMX280Sensor : public I2CSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         virtual void pre() {
 
+            if (_run_init) {
+                i2cClearBus();
+                _init();
+            }
+
             if (_chip == 0) {
                 _error = SENSOR_ERROR_UNKNOWN_ID;
                 return;
@@ -117,7 +122,12 @@ class BMX280Sensor : public I2CSensor {
             #if BMX280_MODE == 1
                 _forceRead();
             #endif
-            _read();
+
+            _error = _read();
+
+            if (_error != SENSOR_ERROR_OK) {
+                _run_init = true;
+            }
 
         }
 
@@ -190,8 +200,10 @@ class BMX280Sensor : public I2CSensor {
                 _chip = 0;
                 i2cReleaseLock(_address);
                 _error = SENSOR_ERROR_UNKNOWN_ID;
+                return;
             }
 
+            _count = 0;
             #if BMX280_TEMPERATURE > 0
                 ++_count;
             #endif
@@ -220,6 +232,7 @@ class BMX280Sensor : public I2CSensor {
             i2c_write_uint8(_address, BMX280_REGISTER_CONTROL, data);
 
             _measurement_delay = _measurementTime();
+            _run_init = false;
 
         }
 
@@ -284,10 +297,11 @@ class BMX280Sensor : public I2CSensor {
 
         }
 
-        void _read() {
+        unsigned char _read() {
 
             #if BMX280_TEMPERATURE > 0
                 int32_t adc_T = i2c_read_uint16(_address, BMX280_REGISTER_TEMPDATA);
+                if (0xFFFF == adc_T) return SENSOR_ERROR_I2C;
                 adc_T <<= 8;
                 adc_T |= i2c_read_uint8(_address, BMX280_REGISTER_TEMPDATA+2);
                 adc_T >>= 4;
@@ -315,6 +329,7 @@ class BMX280Sensor : public I2CSensor {
                 int64_t var1, var2, p;
 
                 int32_t adc_P = i2c_read_uint16(_address, BMX280_REGISTER_PRESSUREDATA);
+                if (0xFFFF == adc_P) return SENSOR_ERROR_I2C;
                 adc_P <<= 8;
                 adc_P |= i2c_read_uint8(_address, BMX280_REGISTER_PRESSUREDATA+2);
                 adc_P >>= 4;
@@ -343,6 +358,7 @@ class BMX280Sensor : public I2CSensor {
             if (_chip == BMX280_CHIP_BME280) {
 
                 int32_t adc_H = i2c_read_uint16(_address, BMX280_REGISTER_HUMIDDATA);
+                if (0xFFFF == adc_H) return SENSOR_ERROR_I2C;
 
                 int32_t v_x1_u32r;
 
@@ -365,12 +381,15 @@ class BMX280Sensor : public I2CSensor {
             }
             #endif
 
+            return SENSOR_ERROR_OK;
+
         }
 
         // ---------------------------------------------------------------------
 
         unsigned char _chip;
         unsigned long _measurement_delay;
+        bool _run_init = false;
         double _temperature = 0;
         double _pressure = 0;
         double _humidity = 0;

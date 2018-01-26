@@ -70,6 +70,7 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
 unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
 bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
+void i2cClearBus();
 
 void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len);
 void i2c_write_uint8(uint8_t address, uint8_t value);
