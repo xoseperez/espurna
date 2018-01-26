@@ -27,6 +27,7 @@ Ticker _light_transition_ticker;
 typedef struct {
     unsigned char pin;
     bool reverse;
+    bool state;
     unsigned char value;        // target or nominal value
     unsigned char shadow;       // represented value
     double current;             // transition value
@@ -381,7 +382,7 @@ void _shadow() {
     // Transitions
     unsigned char target;
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        if (_light_state) {
+        if (_light_state && _light_channel[i].state) {
             target = _light_channel[i].value;
             if ((_light_brightness < LIGHT_MAX_BRIGHTNESS) && _light_has_color && (i < 3)) {
                 target *= ((float) _light_brightness / LIGHT_MAX_BRIGHTNESS);
@@ -658,6 +659,14 @@ void lightSave() {
     _lightColorSave();
 }
 #endif
+
+void lightState(unsigned char i, bool state) {
+    _light_channel[i].state = state;
+}
+
+bool lightState(unsigned char i) {
+    return _light_channel[i].state;
+}
 
 void lightState(bool state) {
     _light_state = state;
@@ -1027,6 +1036,7 @@ void lightSetup() {
             io_info[i][1] = getIOFunc(_light_channel[i].pin);
             io_info[i][2] = _light_channel[i].pin;
             pinMode(_light_channel[i].pin, OUTPUT);
+            _light_channel[i].state = true;
         }
         pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
         pwm_start();
