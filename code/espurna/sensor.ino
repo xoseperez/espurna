@@ -40,27 +40,9 @@ double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 // Private
 // -----------------------------------------------------------------------------
 
-String _magnitudeTopic(unsigned char type) {
-    char buffer[16] = {0};
-    if (type < MAGNITUDE_MAX) strncpy_P(buffer, magnitude_topics[type], sizeof(buffer));
-    return String(buffer);
-}
-
 unsigned char _magnitudeDecimals(unsigned char type) {
     if (type < MAGNITUDE_MAX) return pgm_read_byte(magnitude_decimals + type);
     return 0;
-}
-
-String _magnitudeUnits(unsigned char type) {
-    char buffer[8] = {0};
-    if (type < MAGNITUDE_MAX) {
-        if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
-            strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
-        } else {
-            strncpy_P(buffer, magnitude_units[type], sizeof(buffer));
-        }
-    }
-    return String(buffer);
 }
 
 double _magnitudeProcess(unsigned char type, double value) {
@@ -91,7 +73,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
         element["index"] = int(magnitude.global);
         element["type"] = int(magnitude.type);
         element["value"] = String(buffer);
-        element["units"] = _magnitudeUnits(magnitude.type);
+        element["units"] = magnitudeUnits(magnitude.type);
         element["description"] = magnitude.sensor->slot(magnitude.local);
         element["error"] = magnitude.sensor->error();
 
@@ -158,7 +140,7 @@ void _sensorAPISetup() {
 
         sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
 
-        String topic = _magnitudeTopic(magnitude.type);
+        String topic = magnitudeTopic(magnitude.type);
         if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) topic = topic + "/" + String(magnitude.global);
 
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
@@ -181,9 +163,9 @@ void _sensorInitCommands() {
             sensor_magnitude_t magnitude = _magnitudes[i];
             DEBUG_MSG_P(PSTR("[SENSOR] * %2d: %s @ %s (%s/%d)\n"),
                 i,
-                _magnitudeTopic(magnitude.type).c_str(),
+                magnitudeTopic(magnitude.type).c_str(),
                 magnitude.sensor->slot(magnitude.local).c_str(),
-                _magnitudeTopic(magnitude.type).c_str(),
+                magnitudeTopic(magnitude.type).c_str(),
                 magnitude.global
             );
         }
@@ -546,7 +528,7 @@ void _magnitudesInit() {
             new_magnitude.filter->resize(_sensor_report_every);
             _magnitudes.push_back(new_magnitude);
 
-            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), _magnitudeTopic(type).c_str(), _counts[type]);
+            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
 
             _counts[type] = _counts[type] + 1;
 
@@ -588,6 +570,38 @@ unsigned char magnitudeIndex(unsigned char index) {
         return int(_magnitudes[index].global);
     }
     return 0;
+}
+
+String magnitudeTopic(unsigned char type) {
+    char buffer[16] = {0};
+    if (type < MAGNITUDE_MAX) strncpy_P(buffer, magnitude_topics[type], sizeof(buffer));
+    return String(buffer);
+}
+
+String magnitudeTopicIndex(unsigned char index) {
+    char topic[32] = {0};
+    if (index < _magnitudes.size()) {
+        sensor_magnitude_t magnitude = _magnitudes[index];
+        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+            snprintf(topic, sizeof(topic), "%s/%u", magnitudeTopic(magnitude.type).c_str(), magnitude.global);
+        } else {
+            snprintf(topic, sizeof(topic), "%s", magnitudeTopic(magnitude.type).c_str());
+        }
+    }
+    return String(topic);
+}
+
+
+String magnitudeUnits(unsigned char type) {
+    char buffer[8] = {0};
+    if (type < MAGNITUDE_MAX) {
+        if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
+            strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
+        } else {
+            strncpy_P(buffer, magnitude_units[type], sizeof(buffer));
+        }
+    }
+    return String(buffer);
 }
 
 // -----------------------------------------------------------------------------
@@ -671,9 +685,9 @@ void sensorLoop() {
                     dtostrf(current, 1-sizeof(buffer), decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
-                        _magnitudeTopic(magnitude.type).c_str(),
+                        magnitudeTopic(magnitude.type).c_str(),
                         buffer,
-                        _magnitudeUnits(magnitude.type).c_str()
+                        magnitudeUnits(magnitude.type).c_str()
                     );
                 }
                 #endif // SENSOR_DEBUG
@@ -693,20 +707,16 @@ void sensorLoop() {
                         dtostrf(filtered, 1-sizeof(buffer), decimals, buffer);
 
                         #if BROKER_SUPPORT
-                            brokerPublish(_magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+                            brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
                         #endif
 
                         #if MQTT_SUPPORT
 
-                            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                mqttSend(_magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
-                            } else {
-                                mqttSend(_magnitudeTopic(magnitude.type).c_str(), buffer);
-                            }
+                            mqttSend(magnitudeTopicIndex(i).c_str(), buffer);
 
                             #if SENSOR_PUBLISH_ADDRESSES
                                 char topic[32];
-                                snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, _magnitudeTopic(magnitude.type).c_str());
+                                snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
                                 if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
                                     mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
                                 } else {
@@ -718,9 +728,9 @@ void sensorLoop() {
 
                         #if INFLUXDB_SUPPORT
                             if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                idbSend(_magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+                                idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
                             } else {
-                                idbSend(_magnitudeTopic(magnitude.type).c_str(), buffer);
+                                idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
                             }
                         #endif // INFLUXDB_SUPPORT
 

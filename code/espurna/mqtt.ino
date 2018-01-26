@@ -135,6 +135,7 @@ void _mqttConnect() {
         DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
         DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
         DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
+        DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
         DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
 
         _mqtt.connect();
@@ -192,6 +193,7 @@ void _mqttConnect() {
             DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
             DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
+            DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
             DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
 
         }

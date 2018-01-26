@@ -416,7 +416,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #ifndef SSDP_SUPPORT
-#define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (3.32Kb)
+#define SSDP_SUPPORT            1           // Publish device using SSDP protocol by default (4.59Kb)
+#endif
+
+#ifndef SSDP_DEVICE_TYPE
+#define SSDP_DEVICE_TYPE        "upnp:rootdevice"
+//#define SSDP_DEVICE_TYPE        "urn:schemas-upnp-org:device:BinaryLight:1"
 #endif
 
 #if WEB_SUPPORT == 0

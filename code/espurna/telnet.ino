@@ -49,6 +49,13 @@ unsigned char _telnetWrite(void *data, size_t len) {
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
 
+    // Skip first message since it's always garbage
+    static bool first = true;
+    if (first) {
+        first = false;
+        return;
+    }
+
     // Capture close connection
     char * p = (char *) data;
     if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {

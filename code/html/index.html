@@ -146,7 +146,7 @@
                         &copy; 2016-2018<br />
                         Xose Pérez<br/>
                         <a href="http://tinkerman.cat" target="_blank">http://tinkerman.cat</a><br/>
-                        <a href="https://bitbucket.org/xoseperez/espurna" target="_blank">ESPurna @ Bitbucket</a><br/>
+                        <a href="https://github.com/xoseperez/espurna" target="_blank">ESPurna @ GitHub</a><br/>
                         GPLv3 license<br/>
                     </div>
 
@@ -1083,11 +1083,11 @@
                 <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
                     <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" />
-                    <div class="pure-u-1-4 hint center"> h</div>
+                    <div class="pure-u-1-4 hint center">&nbsp;h</div>
                 </div>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
                     <input class="pure-u-2-3" name="schMinute" type="number" min="0" step="1" max="59" />
-                    <div class="pure-u-1-4 hint center"> m</div>
+                    <div class="pure-u-1-4 hint center">&nbsp;m</div>
                 </div>
                 <div class="pure-u-0 pure-u-lg-1-3"></div>
 
@@ -1095,7 +1095,7 @@
                 <div class="pure-u-2-5 pure-u-lg-1-5">
                     <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" maxlength="15" tabindex="0" value="1,2,3,4,5,6,7" />
                 </div>
-                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">1 for Monday, 2 for Tuesday...</div>
+                <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday...</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4">Action</label>
                 <div class="pure-u-1 pure-u-lg-1-5">
@@ -1107,6 +1107,9 @@
                 </div>
                 <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch"></select>
                 <div class="pure-u-0 pure-u-lg-1-5"></div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
+                <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schEnabled" /></div>
 
                 <div class="pure-u-0 pure-u-lg-1-4"></div>
                 <button class="pure-button button-del-schedule" type="button">Delete schedule</button>

@@ -1,19 +1,20 @@
 # ESPurna Firmware
 
-ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches.
-It was originally developed with the **[IteadStudio Sonoff](https://www.itead.cc/sonoff-wifi-wireless-switch.html)** in mind but now it supports a growing number of ESP8266-based boards.
+ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-**Current Release Version is 1.12.1**
-
-Read the [changes log](https://bitbucket.org/xoseperez/espurna/src/master/CHANGELOG.md).
+[![version](https://badge.fury.io/gh/xoseperez%2Fespurna.svg)](CHANGELOG.md)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=master)](https://travis-ci.org/xoseperez/espurna)
+[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
+[![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+[![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
 
 ## Features
 
 * *KRACK* vulnerability free (when built against Arduino Core 2.4.0)
-* Support for **multiple ESP8266-based boards** ([check list](https://bitbucket.org/xoseperez/espurna/wiki/Hardware))
+* Support for **multiple ESP8266-based boards** ([check list](https://github.com/xoseperez/espurna/wiki/Hardware))
 * Power saving options
 * Wifi **AP Mode** or **STA mode**
     * Up to 5 different networks can be defined
@@ -32,7 +33,7 @@ Read the [changes log](https://bitbucket.org/xoseperez/espurna/src/master/CHANGE
     * Support for **MQTT groups** to sync switches between devices
     * Support for **delayed ON/OFF**
 * **MQTT** enabled
-    * **SSL/TLS support** (not on regular builds, see #64)
+    * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64))
     * Switch on/off and toggle relays, group topics (sync relays between different devices)
     * Report button event notifications
     * Enable/disable pulse mode
@@ -115,13 +116,26 @@ Read the [changes log](https://bitbucket.org/xoseperez/espurna/src/master/CHANGE
 ## Notices
 
 ---
+> **2018-01-24**: This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
+>
+>What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
+>
+>* **Code** has, of course been migrated completely
+>* **Issues** are all on GitHub already **but** all issues and comments show up as reported by me. The original reporter is referenced inside the body of the issue (or comment) with a link to his/her profile at Bitbucket and a link to his/her profile at GitHub if it happens to be the same username. I **suggest all reporters to subscribe to the issues they originally filed** (search for your BitBucket username to list them).
+>* **Pull requests** historic has not been migrated. At the moment of the migration all pull-requests have been either merged or declined. Of course, those PR merged are in the code base, but the historic and comments in the PR pages will be lost.
+>* **Documentation** it's on it way, first step will be to migrate existing wiki, maybe with a new TOC structure
+>* **Watchers**, **Forks**, I'm afraid they are all gone. Visit the new repop home and click on the "Watch" button on the top right. And as you do it click also on the "Star" button too :)
+>
+>I apologize for any inconvenience this migration may have caused. I have decided to do it the hard way.
+
+---
 > **2018-01-11**: As of current version (1.12.0) ESPurna is tested using Arduino Core 2.3.0 and it's meant to be built against that version.
 
 ---
 > **2017-08-26**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
 
 ---
-> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue #187.
+> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue [#187](https://github.com/xoseperez/espurna/issues/187).
 
 ---
 
@@ -135,15 +149,15 @@ There are several ways to contribute to ESpurna development. You can contribute 
 
 And of course you can always buy me a beer, coffee, tea,... via the donation button below.
 
-[![Donate to ESPurna Project](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+[![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 
 ## Documentation
 
-For more information please refer to the [ESPurna Wiki](https://bitbucket.org/xoseperez/espurna/wiki/Home).
+For more information please refer to the [ESPurna Wiki](https://github.com/xoseperez/espurna/wiki).
 
 ## Supported hardware
 
-Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://bitbucket.org/xoseperez/espurna/wiki/Hardware).
+Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://github.com/xoseperez/espurna/wiki/Hardware).
 
 ||||
 |---|---|---|

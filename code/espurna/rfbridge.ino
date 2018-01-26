@@ -48,7 +48,8 @@ typedef struct {
     byte times;
 } rfb_message_t;
 static std::queue<rfb_message_t> _rfb_message_queue;
-Ticker _rfbTicker;
+Ticker _rfb_ticker;
+bool _rfb_ticker_active = false;
 
 // -----------------------------------------------------------------------------
 // PRIVATES
@@ -166,29 +167,35 @@ void _rfbSend() {
     }
 
     // if there are still messages in the queue...
-    if (!_rfb_message_queue.empty()) {
-        _rfbTicker.once_ms(RF_SEND_DELAY, _rfbSend);
+    if (_rfb_message_queue.empty()) {
+        _rfb_ticker.detach();
+        _rfb_ticker_active = false;
     }
 
 }
 
-void _rfbSend(byte * code, int times) {
+void _rfbSend(byte * code, unsigned char times) {
 
     char buffer[RF_MESSAGE_SIZE];
     _rfbToChar(code, buffer);
-    DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending MESSAGE '%s' %d time(s)\n"), buffer, times);
+    DEBUG_MSG_P(PSTR("[RFBRIDGE] Enqueuing MESSAGE '%s' %d time(s)\n"), buffer, times);
 
     rfb_message_t message;
     memcpy(message.code, code, RF_MESSAGE_SIZE);
     message.times = times;
     _rfb_message_queue.push(message);
-    _rfbSend();
+
+    // Enable the ticker if not running
+    if (!_rfb_ticker_active) {
+        _rfb_ticker_active = true;
+        _rfb_ticker.attach_ms(RF_SEND_DELAY, _rfbSend);
+    }
 
 }
 
 #if RF_RAW_SUPPORT
 
-void _rfbSendRawOnce(byte *code, int length) {
+void _rfbSendRawOnce(byte *code, unsigned char length) {
     char buffer[length*2];
     _rfbToChar(code, buffer, length);
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending RAW MESSAGE '%s'\n"), buffer);
@@ -304,10 +311,10 @@ void _rfbReceive() {
         //DEBUG_MSG_P(PSTR("[RFBRIDGE] Received 0x%02X\n"), c);
 
         if (receiving) {
-            if (c == RF_CODE_STOP && (_uartpos == 1 || _uartpos == 10)) {
+            if (c == RF_CODE_STOP && (_uartpos == 1 || _uartpos == RF_MESSAGE_SIZE + 1)) {
                 _rfbDecode();
                 receiving = false;
-            } else if (_uartpos < 10) {
+            } else if (_uartpos <= RF_MESSAGE_SIZE) {
                 _uartbuf[_uartpos++] = c;
             } else {
                 // wrong message, should have received a RF_CODE_STOP

@@ -37,7 +37,8 @@ void otaSetup() {
     });
 
     ArduinoOTA.onEnd([]() {
-        DEBUG_MSG_P(PSTR("\n[OTA] End\n"));
+        DEBUG_MSG_P(PSTR("\n"));
+        DEBUG_MSG_P(PSTR("[OTA] End\n"));
         #if WEB_SUPPORT
             wsSend_P(PSTR("{\"action\": \"reload\"}"));
         #endif
@@ -45,7 +46,7 @@ void otaSetup() {
     });
 
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%%%          \r"), (progress / (total / 100)));
+        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), (progress / (total / 100)));
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
