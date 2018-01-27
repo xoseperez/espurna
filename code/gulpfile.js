@@ -2,7 +2,7 @@
 
 ESP8266 file system builder
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,9 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-/*eslint quotes: ["error", "single"]*/
-/*eslint-env es6*/
-
 // -----------------------------------------------------------------------------
 // File system builder
 // -----------------------------------------------------------------------------
@@ -35,84 +32,94 @@ const gzip = require('gulp-gzip');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
+<<<<<<< Updated upstream
+=======
 const htmllint = require('gulp-htmllint');
 const gutil = require('gulp-util');
 const csslint = require('gulp-csslint');
+const i18n = require('gulp-international');
+
+// -----------------------------------------------------------------------------
+>>>>>>> Stashed changes
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
 
-String.prototype.replaceAll = function(search, replacement) {
-    var target = this;
-    return target.split(search).join(replacement);
-};
+// -----------------------------------------------------------------------------
 
-var toHeader = function(filename) {
+const map = require('map-stream');
 
-    var source = dataFolder + filename;
-    var destination = staticFolder + filename + '.h';
-    var safename = filename.replaceAll('.', '_');
+var buildHeaderFile = function() {
 
-    var wstream = fs.createWriteStream(destination);
-    wstream.on('error', function (err) {
-        console.log(err);
-    });
+    String.prototype.replaceAll = function(search, replacement) {
+        var target = this;
+        return target.split(search).join(replacement);
+    };
 
-    var data = fs.readFileSync(source);
+    return map(function(file, cb) {
 
+        var parts = file.path.split("/");
+        var filename = parts[parts.length - 1];
+        var destination = staticFolder + filename + ".h";
+        var safename = filename.replaceAll('.', '_');
+
+        var wstream = fs.createWriteStream(destination);
+        wstream.on('error', function (err) {
+            console.log(err);
+        });
+
+<<<<<<< Updated upstream
     wstream.write('#define ' + safename + '_len ' + data.length + '\n');
-    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
+    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {')
 
-    for (var i=0; i<data.length; i++) {
-        if (i % 20 == 0) wstream.write('\n');
+    for (i=0; i<data.length; i++) {
+        if (i % 20 == 0) wstream.write("\n");
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i<data.length-1) {
-          wstream.write(',');
-        }
+        if (i<data.length-1) wstream.write(',');
     }
 
-    wstream.write('\n};');
+    wstream.write('\n};')
     wstream.end();
+=======
+        var data = fs.readFileSync(file.path);
 
-};
+        wstream.write('#define ' + safename + '_len ' + data.length + '\n');
+        wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
 
-function htmllintReporter(filepath, issues) {
-	if (issues.length > 0) {
-		issues.forEach(function (issue) {
-			gutil.log(gutil.colors.cyan('[gulp-htmllint] ') + gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') + gutil.colors.red('(' + issue.code + ') ' + issue.msg));
-		});
-		process.exitCode = 1;
-	}
-};
+        for (var i=0; i<data.length; i++) {
+            if (i % 20 == 0) wstream.write('\n');
+            wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
+            if (i<data.length-1) {
+              wstream.write(',');
+            }
+        }
+
+        wstream.write('\n};');
+        wstream.end();
+
+        cb(0, file);
+
+   });
+>>>>>>> Stashed changes
+
+}
 
 gulp.task('build_certs', function() {
     toHeader('server.cer');
     toHeader('server.key');
 });
 
-gulp.task('csslint', function() {
-    gulp.src('html/*.css')
-        .pipe(csslint({ids: false}))
-        .pipe(csslint.formatter());
-});
-
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
-    toHeader('index.html.gz');
+    gulp.src(dataFolder + 'index.*')
+        .pipe(buildHeaderFile());
 });
 
 gulp.task('buildfs_inline', function() {
     return gulp.src('html/*.html')
-        .pipe(htmllint({
-            'failOnError': true,
-            'rules': {
-                'id-class-style': false,
-                'label-req-for': false,
-            }
-        }, htmllintReporter))
         .pipe(favicon())
         .pipe(inline({
             base: 'html/',
-            js: [uglify],
+            js: uglify,
             css: [cleancss, inlineImages],
             disabledTypes: ['svg', 'img']
         }))
@@ -122,9 +129,14 @@ gulp.task('buildfs_inline', function() {
             minifyCSS: true,
             minifyJS: true
         }))
+        .pipe(i18n({
+            warn: true,
+            whitelist: ['ca_ES'],
+            filename: '${name}.${lang}.${ext}',
+            locales: './html/locales/'
+        }))
         .pipe(gzip())
         .pipe(gulp.dest(dataFolder));
-});
-
+})
 
 gulp.task('default', ['buildfs_embeded']);
