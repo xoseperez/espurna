@@ -235,6 +235,17 @@ void ledLoop() {
             _ledStatus(i, status);
         }
 
+        if (_ledMode(i) == LED_MODE_STATUS) {
+            bool status = false;
+            for (unsigned char k=0; k<relayCount(); k++) {
+                if (relayStatus(k)) {
+                    status = true;
+                    break;
+                }
+            }
+            _ledStatus(i, status);
+        }
+
         if (_ledMode(i) == LED_MODE_ON) {
             _ledStatus(i, true);
         }

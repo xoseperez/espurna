@@ -1001,7 +1001,7 @@ void lightSetup() {
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
         for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
-            _light_channel.push_back((channel_t) {0, false, 0, 0, 0});
+            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0});
         }
 
     #endif
@@ -1009,23 +1009,23 @@ void lightSetup() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 
         #ifdef LIGHT_CH1_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH1_PIN, LIGHT_CH1_INVERSE, 0, 0, 0});
+            _light_channel.push_back((channel_t) {LIGHT_CH1_PIN, LIGHT_CH1_INVERSE, true, 0, 0, 0});
         #endif
 
         #ifdef LIGHT_CH2_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH2_PIN, LIGHT_CH2_INVERSE, 0, 0, 0});
+            _light_channel.push_back((channel_t) {LIGHT_CH2_PIN, LIGHT_CH2_INVERSE, true, 0, 0, 0});
         #endif
 
         #ifdef LIGHT_CH3_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH3_PIN, LIGHT_CH3_INVERSE, 0, 0, 0});
+            _light_channel.push_back((channel_t) {LIGHT_CH3_PIN, LIGHT_CH3_INVERSE, true, 0, 0, 0});
         #endif
 
         #ifdef LIGHT_CH4_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH4_PIN, LIGHT_CH4_INVERSE, 0, 0, 0});
+            _light_channel.push_back((channel_t) {LIGHT_CH4_PIN, LIGHT_CH4_INVERSE, true, 0, 0, 0});
         #endif
 
         #ifdef LIGHT_CH5_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH5_PIN, LIGHT_CH5_INVERSE, 0, 0, 0});
+            _light_channel.push_back((channel_t) {LIGHT_CH5_PIN, LIGHT_CH5_INVERSE, true, 0, 0, 0});
         #endif
 
         uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
@@ -1036,7 +1036,6 @@ void lightSetup() {
             io_info[i][1] = getIOFunc(_light_channel[i].pin);
             io_info[i][2] = _light_channel[i].pin;
             pinMode(_light_channel[i].pin, OUTPUT);
-            _light_channel[i].state = true;
         }
         pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
         pwm_start();

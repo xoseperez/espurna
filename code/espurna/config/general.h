@@ -319,6 +319,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LED_MODE_MIXED          5       // A mixed between WIFI and FINDME
 #define LED_MODE_ON             6       // LED always ON
 #define LED_MODE_OFF            7       // LED always OFF
+#define LED_MODE_STATUS         8       // If any relay is ON, LED will be ON, otherwise OFF
 
 // -----------------------------------------------------------------------------
 // WIFI

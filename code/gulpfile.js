@@ -37,6 +37,7 @@ const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
 const gutil = require('gulp-util');
+const csslint = require('gulp-csslint');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
@@ -87,6 +88,12 @@ function htmllintReporter(filepath, issues) {
 gulp.task('build_certs', function() {
     toHeader('server.cer');
     toHeader('server.key');
+});
+
+gulp.task('csslint', function() {
+    gulp.src('html/*.css')
+        .pipe(csslint({ids: false}))
+        .pipe(csslint.formatter());
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {

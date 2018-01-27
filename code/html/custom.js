@@ -21,14 +21,14 @@ var ago = 0;
 // -----------------------------------------------------------------------------
 
 function initMessages() {
-    messages[ 1] = "Remote update started";
-    messages[ 2] = "OTA update started";
-    messages[ 3] = "Error parsing data!";
-    messages[ 4] = "The file does not look like a valid configuration backup or is corrupted";
-    messages[ 5] = "Changes saved. You should reboot your board now";
-    messages[ 7] = "Passwords do not match!";
-    messages[ 8] = "Changes saved";
-    messages[ 9] = "No changes detected";
+    messages[1]  = "Remote update started";
+    messages[2]  = "OTA update started";
+    messages[3]  = "Error parsing data!";
+    messages[4]  = "The file does not look like a valid configuration backup or is corrupted";
+    messages[5]  = "Changes saved. You should reboot your board now";
+    messages[7]  = "Passwords do not match!";
+    messages[8]  = "Changes saved";
+    messages[9]  = "No changes detected";
     messages[10] = "Session expired, please reload page...";
 }
 
@@ -40,7 +40,7 @@ function sensorName(id) {
         "SHT3X I2C", "BH1750"
     ];
     if (1 <= id && id <= names.length) {
-        return names[id-1];
+        return names[id - 1];
     }
     return null;
 }
@@ -54,7 +54,7 @@ function magnitudeType(type) {
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux"
     ];
     if (1 <= type && type <= types.length) {
-        return types[type-1];
+        return types[type - 1];
     }
     return null;
 }
@@ -75,7 +75,7 @@ function magnitudeError(error) {
 // -----------------------------------------------------------------------------
 
 function keepTime() {
-    if (now === 0) return;
+    if (now === 0) { return; }
     var date = new Date(now * 1000);
     var text = date.toISOString().substring(0, 19).replace("T", " ");
     $("input[name='now']").val(text);
@@ -123,8 +123,7 @@ function loadTimeZones() {
         $("select[name='ntpOffset']").append(
             $("<option></option>").
                 attr("value",value).
-                text(text)
-        );
+                text(text));
     }
 
 }
@@ -971,10 +970,10 @@ function processData(data) {
 
         if (key === "wifi") {
             for (i in data.wifi) {
-                var line = addNetwork();
+                var nwk_line = addNetwork();
                 var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
-                    $("input[name='" + key + "']", line).val(wifi[key]);
+                    $("input[name='" + key + "']", nwk_line).val(wifi[key]);
                 });
             }
             return;
@@ -994,14 +993,13 @@ function processData(data) {
         }
 
         if (key === "schedule") {
-            var schedule = data.schedule;
-            for (i in schedule) {
-                var line = addSchedule();
+            for (i in data.schedule) {
+                var sch_line = addSchedule();
                 var schedule = data.schedule[i];
                 Object.keys(schedule).forEach(function(key) {
-                    $("input[name='" + key + "']", line).val(schedule[key]);
-                    $("select[name='" + key + "']", line).prop("value", schedule[key]);
-                    $(":checkbox", line).prop("checked", schedule[key]);
+                    $("input[name='" + key + "']", sch_line).val(schedule[key]);
+                    $("select[name='" + key + "']", sch_line).prop("value", schedule[key]);
+                    $(":checkbox", sch_line).prop("checked", schedule[key]);
                 });
             }
             return;
@@ -1113,33 +1111,33 @@ function processData(data) {
         var post;
 
         // Look for INPUTs
-        var element = $("input[name='" + key + "']");
-        if (element.length > 0) {
-            if (element.attr("type") === "checkbox") {
-                element.
+        var input = $("input[name='" + key + "']");
+        if (input.length > 0) {
+            if (input.attr("type") === "checkbox") {
+                input.
                     prop("checked", data[key]).
                     iphoneStyle("refresh");
-            } else if (element.attr("type") === "radio") {
-                element.val([data[key]]);
+            } else if (input.attr("type") === "radio") {
+                input.val([data[key]]);
             } else {
-                pre = element.attr("pre") || "";
-                post = element.attr("post") || "";
-                element.val(pre + data[key] + post);
+                pre = input.attr("pre") || "";
+                post = input.attr("post") || "";
+                input.val(pre + data[key] + post);
             }
         }
 
         // Look for SPANs
-        var element = $("span[name='" + key + "']");
-        if (element.length > 0) {
-            pre = element.attr("pre") || "";
-            post = element.attr("post") || "";
-            element.html(pre + data[key] + post);
+        var span = $("span[name='" + key + "']");
+        if (span.length > 0) {
+            pre = span.attr("pre") || "";
+            post = span.attr("post") || "";
+            span.html(pre + data[key] + post);
         }
 
         // Look for SELECTs
-        var element = $("select[name='" + key + "']");
-        if (element.length > 0) {
-            element.val(data[key]);
+        var select = $("select[name='" + key + "']");
+        if (select.length > 0) {
+            select.val(data[key]);
         }
 
     });
