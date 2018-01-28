@@ -8,7 +8,6 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <EEPROM.h>
 #include <vector>
-#include "spi_flash.h"
 #include "libs/EmbedisWrap.h"
 #include <Stream.h>
 
