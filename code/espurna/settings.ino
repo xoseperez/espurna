@@ -435,7 +435,7 @@ void settingsLoop() {
             while (SERIAL_RX_PORT.available() > 0) {
                 char rc = Serial.read();
                 _serial_rx_buffer[_serial_rx_pointer++] = rc;
-                if ((_serial_rx_pointer == SERIAL_RX_BUFFER_SIZE) || (rc == 10)) {
+                if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
                     settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
                     _serial_rx_pointer = 0;
                 }
