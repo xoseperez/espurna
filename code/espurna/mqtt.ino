@@ -214,6 +214,7 @@ void _mqttConfigure() {
 
     // Get base topic
     _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
+    if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
 
     // Placeholders
