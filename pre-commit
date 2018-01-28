@@ -19,32 +19,47 @@ import sys
 import re
 import subprocess
 
-README = os.path.dirname(os.path.realpath(__file__)) + "/../../README.md"
+BASE = os.path.dirname(os.path.realpath(__file__)) + "/../../"
+README = BASE + "README.md"
 remote = subprocess.check_output(["git", "remote", "-v"]).strip().split('\n')[0]
 parts = re.split('[/\.: ]', remote)
 REPO = parts[ len(parts) - 3]
 USER = parts[ len(parts) - 4]
-BRANCH=subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
 
-branch_mark = "![branch]"
+def getVersion():
+    file_name = BASE + "code/espurna/config/version.h"
+    lines = open(file_name).readlines()
+    for line in lines:
+        if "APP_VERSION" in line:
+            parts = line.split('"')
+            return parts[1]
+    return "unknown"
+VERSION = getVersion()
+
+version = "[![version](https://img.shields.io/badge/version-{VERSION}-brightgreen.svg)](CHANGELOG.md)\n".format(
+    VERSION = VERSION
+)
+
 branch = "![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)\n".format(
-        BRANCH=BRANCH
-    )
+    BRANCH = BRANCH
+)
 
-travis_mark = "![travis]"
 travis = "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]" \
     "(https://travis-ci.org/{USER}/{REPO})\n".format(
-        USER=USER,
-        REPO=REPO,
-        BRANCH=BRANCH
-    )
+    USER = USER,
+    REPO = REPO,
+    BRANCH = BRANCH
+)
 
 lines = open(README).readlines()
 with open(README, "w") as fh:
     for line in lines:
-        if travis_mark in line:
+        if "![travis]" in line:
             fh.write(travis)
-        elif branch_mark in line:
+        elif "![version]" in line:
+            fh.write(version)
+        elif "![branch]" in line:
             fh.write(branch)
         else:
             fh.write(line)
