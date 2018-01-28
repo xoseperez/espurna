@@ -1,0 +1,52 @@
+#!/usr/bin/python
+"""
+
+Referencing current branch in github README.md [1]
+This pre-commit hook [2] updates the README.md file's
+Travis badge with the current branch. Based on [4].
+
+[1] http://stackoverflow.com/questions/18673694/referencing-current-branch-in-github-readme-md
+[2] http://www.git-scm.com/book/en/v2/Customizing-Git-Git-Hooks
+[3] https://docs.travis-ci.com/user/status-images/
+[4] https://gist.github.com/dandye/dfe0870a6a1151c89ed9
+
+Copy this file to .git/hooks/
+
+"""
+
+import os
+import sys
+import re
+import subprocess
+
+README = os.path.dirname(os.path.realpath(__file__)) + "/../../README.md"
+remote = subprocess.check_output(["git", "remote", "-v"]).strip().split('\n')[0]
+parts = re.split('[/\.: ]', remote)
+REPO = parts[ len(parts) - 3]
+USER = parts[ len(parts) - 4]
+BRANCH=subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+
+branch_mark = "![branch]"
+branch = "![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)\n".format(
+        BRANCH=BRANCH
+    )
+
+travis_mark = "![travis]"
+travis = "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]" \
+    "(https://travis-ci.org/{USER}/{REPO})\n".format(
+        USER=USER,
+        REPO=REPO,
+        BRANCH=BRANCH
+    )
+
+lines = open(README).readlines()
+with open(README, "w") as fh:
+    for line in lines:
+        if travis_mark in line:
+            fh.write(travis)
+        elif branch_mark in line:
+            fh.write(branch)
+        else:
+            fh.write(line)
+
+subprocess.check_output(["git", "add", README ])
