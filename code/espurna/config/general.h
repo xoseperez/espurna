@@ -417,7 +417,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #ifndef SSDP_SUPPORT
-#define SSDP_SUPPORT            1           // Publish device using SSDP protocol by default (4.59Kb)
+#define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (4.59Kb)
+                                            // Not compatible with ALEXA_SUPPORT at the moment
 #endif
 
 #ifndef SSDP_DEVICE_TYPE
