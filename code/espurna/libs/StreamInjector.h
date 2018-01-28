@@ -4,7 +4,7 @@
 
 #pragma once
 
-#define STREAM_INJECTOR_BUFFER_SIZE     32
+#include <Stream.h>
 
 class StreamInjector : public Stream {
 
@@ -12,7 +12,13 @@ class StreamInjector : public Stream {
 
         typedef std::function<void(uint8_t ch)> writeCallback;
 
-        StreamInjector(Stream& serial) : _stream(serial), _buffer() {}
+        StreamInjector(Stream& serial, size_t buflen = 128) : _stream(serial), _buffer_size(buflen) {
+            char * _buffer = new char[buflen];
+        }
+
+        ~StreamInjector() {
+            delete[] _buffer;
+        }
 
         virtual void callback(writeCallback c) {
             _callback = c;
@@ -28,7 +34,7 @@ class StreamInjector : public Stream {
             if (ch == -1) {
                 if (_buffer_read != _buffer_write) {
                     ch = _buffer[_buffer_read];
-                    _buffer_read = (_buffer_read + 1) % STREAM_INJECTOR_BUFFER_SIZE;
+                    _buffer_read = (_buffer_read + 1) % _buffer_size;
                 }
             }
             return ch;
@@ -37,7 +43,7 @@ class StreamInjector : public Stream {
         virtual int available() {
             unsigned int bytes = _stream.available();
             if (_buffer_read > _buffer_write) {
-                bytes += (_buffer_write - _buffer_read + STREAM_INJECTOR_BUFFER_SIZE);
+                bytes += (_buffer_write - _buffer_read + _buffer_size);
             } else if (_buffer_read < _buffer_write) {
                 bytes += (_buffer_write - _buffer_read);
             }
@@ -62,14 +68,15 @@ class StreamInjector : public Stream {
         virtual void inject(char *data, size_t len) {
             for (int i=0; i<len; i++) {
                 _buffer[_buffer_write] = data[i];
-                _buffer_write = (_buffer_write + 1) % STREAM_INJECTOR_BUFFER_SIZE;
+                _buffer_write = (_buffer_write + 1) % _buffer_size;
             }
         }
 
     private:
 
         Stream& _stream;
-        unsigned char _buffer[STREAM_INJECTOR_BUFFER_SIZE];
+        char * _buffer;
+        unsigned char _buffer_size;
         unsigned char _buffer_write = 0;
         unsigned char _buffer_read = 0;
         writeCallback _callback = NULL;

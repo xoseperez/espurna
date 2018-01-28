@@ -79,8 +79,6 @@
 #define SERIAL_RX_BAUDRATE      115200          // Default baudrate
 #endif
 
-#define SERIAL_RX_BUFFER_SIZE   32
-
 //------------------------------------------------------------------------------
 
 // UDP debug log
@@ -124,8 +122,10 @@
 //------------------------------------------------------------------------------
 
 #ifndef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT         1               // Enable terminal commands (0.97Kb)
+#define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
 #endif
+
+#define TERMINAL_BUFFER_SIZE     128            // Max size for commands commands
 
 //------------------------------------------------------------------------------
 // SYSTEM CHECK

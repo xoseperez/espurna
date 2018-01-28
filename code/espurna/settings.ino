@@ -7,30 +7,29 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <EEPROM.h>
+#include <vector>
 #include "spi_flash.h"
 #include "libs/EmbedisWrap.h"
-#include <vector>
-#include <StreamString.h>
+#include <Stream.h>
+
+#ifdef DEBUG_PORT
+    #define EMBEDIS_PORT    DEBUG_PORT
+#else
+    #define EMBEDIS_PORT    Serial
+#endif
 
 #if TELNET_SUPPORT
     #include "libs/StreamInjector.h"
-    #ifdef DEBUG_PORT
-        StreamInjector _serial = StreamInjector(DEBUG_PORT);
-    #else
-        StreamInjector _serial = StreamInjector(Serial);
-    #endif
-    EmbedisWrap embedis(_serial);
-#else
-    #ifdef DEBUG_PORT
-        EmbedisWrap embedis(DEBUG_PORT);
-    #else
-        EmbedisWrap embedis(_serial);
-    #endif
+    StreamInjector _serial = StreamInjector(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
+    #undef EMBEDIS_PORT
+    #define EMBEDIS_PORT    _serial
 #endif
+
+EmbedisWrap embedis(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
 
 #if TERMINAL_SUPPORT
 #ifdef SERIAL_RX_PORT
-    char _serial_rx_buffer[SERIAL_RX_BUFFER_SIZE];
+    char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
     static unsigned char _serial_rx_pointer = 0;
 #endif
 #endif
