@@ -14,6 +14,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
 AsyncServer * _telnetServer;
 AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
+bool _telnetFirst = true;
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -50,9 +51,8 @@ unsigned char _telnetWrite(void *data, size_t len) {
 void _telnetData(unsigned char clientId, void *data, size_t len) {
 
     // Skip first message since it's always garbage
-    static bool first = true;
-    if (first) {
-        first = false;
+    if (_telnetFirst) {
+        _telnetFirst = false;
         return;
     }
 
@@ -109,6 +109,7 @@ void _telnetNewClient(AsyncClient *client) {
             }, 0);
 
             DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+            _telnetFirst = true;
             wifiReconnectCheck();
             return;
 
