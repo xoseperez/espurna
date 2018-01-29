@@ -10,10 +10,6 @@ install:
 - cd code ; npm install --only=dev ; cd ..
 script:
 - cd code ; ./build.sh
-branches:
-  only:
-  - master
-  - dev
 deploy:
   provider: releases
   api_key:
@@ -22,7 +18,6 @@ deploy:
   file: firmware/*/*.bin
   skip_cleanup: true
   on:
-    all_branches: true
     tags: true
 notifications:
   pushover:
