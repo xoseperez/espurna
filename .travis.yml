@@ -22,7 +22,7 @@ deploy:
   file: firmware/*/*.bin
   skip_cleanup: true
   on:
-    branch: master
+    all_branches: true
     tags: true
 notifications:
   pushover:
