@@ -13,7 +13,7 @@ class StreamInjector : public Stream {
         typedef std::function<void(uint8_t ch)> writeCallback;
 
         StreamInjector(Stream& serial, size_t buflen = 128) : _stream(serial), _buffer_size(buflen) {
-            char * _buffer = new char[buflen];
+            _buffer = new char[buflen];
         }
 
         ~StreamInjector() {
