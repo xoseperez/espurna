@@ -3,6 +3,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.3] 2018-01-29
+### Fixed
+- Fix telnet crash due to local reference ([#487](https://github.com/xoseperez/espurna/issues/487))
+
 ## [1.12.2] 2018-01-29
 ### Added
 - Repository migrated over to GitHub
