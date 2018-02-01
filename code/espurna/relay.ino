@@ -611,7 +611,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Check relay topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
         if (t.startsWith(MQTT_TOPIC_RELAY)) {
 
             // Get value

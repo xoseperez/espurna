@@ -354,7 +354,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
 
         // Check if should go into learn mode
         if (t.startsWith(MQTT_TOPIC_RFLEARN)) {

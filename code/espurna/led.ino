@@ -77,7 +77,7 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
         if (!t.startsWith(MQTT_TOPIC_LED)) return;
 
         // Get led ID
