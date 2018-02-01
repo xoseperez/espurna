@@ -215,11 +215,12 @@ void _mqttConfigure() {
     // Get base topic
     _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
-    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
 
     // Placeholders
     _mqtt_topic.replace("{identifier}", getSetting("hostname"));
     _mqtt_topic.replace("{hostname}", getSetting("hostname"));
+    _mqtt_topic.replace("{magnitude}", "#");
+    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
     String mac = WiFi.macAddress();
     mac.replace(":", "");
     _mqtt_topic.replace("{mac}", mac);
