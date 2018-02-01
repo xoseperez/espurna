@@ -1422,6 +1422,23 @@
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+// Generic DHT
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_DHT)
+
+  	// Info
+  	#define MANUFACTURER          "GENERIC"
+  	#define DEVICE                "DHT"
+
+  	// Sensor
+  	#ifndef DHT_SUPPORT
+  	#define DHT_SUPPORT           1
+  	#endif
+  	#define DHT_PIN               2
+  	#define DHT_TYPE              DHT_CHIP_DHT11
+
+// -----------------------------------------------------------------------------
 
 #endif
 
