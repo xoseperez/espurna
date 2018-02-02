@@ -39,7 +39,7 @@ echo "--------------------------------------------------------------"
 echo "Building web interface..."
 node node_modules/gulp/bin/gulp.js || exit
 
-# Build all the required firmwares
+# Build all the required firmware images
 echo "--------------------------------------------------------------"
 echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
