@@ -125,6 +125,74 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
 }
 
+/**
+ * Walks the relay vector processing only those relays
+ * that have to change to the requested mode
+ * @bool mode Requested mode
+ */
+void _relayProcess(bool mode) {
+
+    unsigned int current_time = millis();
+
+    for (unsigned char id = 0; id < _relays.size(); id++) {
+
+        bool target = _relays[id].target_status;
+
+        // Only process the relays we have to change
+        if (target == _relays[id].current_status) continue;
+
+        // Only process the relays we have change to the requested mode
+        if (target != mode) continue;
+
+        // Only process if the change_time has arrived
+        if (current_time < _relays[id].change_time) continue;
+
+        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
+
+        // Call the provider to perform the action
+        _relayProviderStatus(id, target);
+
+        // Send to Broker
+        #if BROKER_SUPPORT
+            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+        #endif
+
+        // Send MQTT
+        #if MQTT_SUPPORT
+            relayMQTT(id);
+        #endif
+
+        if (!_relayRecursive) {
+            relayPulse(id);
+            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
+            #if WEB_SUPPORT
+                wsSend(_relayWebSocketUpdate);
+            #endif
+        }
+
+        #if DOMOTICZ_SUPPORT
+            domoticzSendRelay(id);
+        #endif
+
+        #if INFLUXDB_SUPPORT
+            relayInfluxDB(id);
+        #endif
+
+        #if THINGSPEAK_SUPPORT
+            tspkEnqueueRelay(id, target);
+            tspkFlush();
+        #endif
+
+        // Flag relay-based LEDs to update status
+        ledUpdate(true);
+
+        _relays[id].report = false;
+        _relays[id].group_report = false;
+
+    }
+
+}
+
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
@@ -709,6 +777,11 @@ void _relayInitCommands() {
 // Setup
 //------------------------------------------------------------------------------
 
+void _relayLoop() {
+    _relayProcess(false);
+    _relayProcess(true);
+}
+
 void relaySetup() {
 
     // Dummy relays for AI Light, Magic Home LED Controller, H801,
@@ -751,9 +824,9 @@ void relaySetup() {
     _relayBackwards();
     _relayConfigure();
     _relayBoot();
-    relayLoop();
+    _relayLoop();
 
-    espurnaRegisterLoop(relayLoop);
+    espurnaRegisterLoop(_relayLoop);
 
     #if WEB_SUPPORT
         relaySetupAPI();
@@ -767,65 +840,5 @@ void relaySetup() {
     #endif
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
-
-}
-
-void relayLoop(void) {
-
-    unsigned char id;
-
-    for (id = 0; id < _relays.size(); id++) {
-
-        unsigned int current_time = millis();
-        bool status = _relays[id].target_status;
-
-        if ((_relays[id].current_status != status)
-            && (current_time >= _relays[id].change_time)) {
-
-            DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, status ? "ON" : "OFF");
-
-            // Call the provider to perform the action
-            _relayProviderStatus(id, status);
-
-            // Send to Broker
-            #if BROKER_SUPPORT
-                brokerPublish(MQTT_TOPIC_RELAY, id, status ? "1" : "0");
-            #endif
-
-            // Send MQTT
-            #if MQTT_SUPPORT
-                relayMQTT(id);
-            #endif
-
-            if (!_relayRecursive) {
-                relayPulse(id);
-                _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
-                #if WEB_SUPPORT
-                    wsSend(_relayWebSocketUpdate);
-                #endif
-            }
-
-            #if DOMOTICZ_SUPPORT
-                domoticzSendRelay(id);
-            #endif
-
-            #if INFLUXDB_SUPPORT
-                relayInfluxDB(id);
-            #endif
-
-            #if THINGSPEAK_SUPPORT
-                tspkEnqueueRelay(id, status);
-                tspkFlush();
-            #endif
-
-            // Flag relay-based LEDs to update status
-            ledUpdate(true);
-
-            _relays[id].report = false;
-            _relays[id].group_report = false;
-
-        }
-
-    }
 
 }
