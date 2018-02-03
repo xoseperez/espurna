@@ -84,7 +84,9 @@ uint8_t genericInputState(uint8_t input) {
 
     for (unsigned int i=0; i < _inputs.size(); i++) {
         if (input == _inputs[i].input->getInputNumber()) {
-            _inputs[i].input->getInputState();
+            retVal = _inputs[i].input->getInputState();
+            break;
         }
     }
+    return retVal;
 }
