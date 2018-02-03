@@ -7,6 +7,7 @@
 // Hardware
 //--------------------------------------------------------------------------------
 
+//#define YUNSHAN_1CH_IN_RELAY
 //#define NODEMCU_LOLIN
 //#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
