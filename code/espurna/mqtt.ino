@@ -38,7 +38,7 @@ bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
-unsigned char _mqtt_keepalive = MQTT_KEEPALIVE;
+unsigned long _mqtt_keepalive = MQTT_KEEPALIVE;
 String _mqtt_topic;
 String _mqtt_topic_json;
 String _mqtt_setter;
