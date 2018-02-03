@@ -24,7 +24,26 @@
 // Development boards
 // -----------------------------------------------------------------------------
 
-#if defined(NODEMCU_LOLIN)
+#if defined(YUNSHAN_1CH_IN_RELAY)
+    // Info
+    #define MANUFACTURER        "YUNSHAN"
+    #define DEVICE              "1CH_IN_RELAY"
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Inputs
+    #define INPUT1_PIN          5
+    #define INPUT1_MODE         GEN_INPUT_SET_PULLUP | GEN_INPUT_DEFAULT_HIGH
+    #define INPUT1_FILTER       100
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_WIFI
+
+#elif defined(NODEMCU_LOLIN)
 
     // Info
     #define MANUFACTURER        "NODEMCU"
