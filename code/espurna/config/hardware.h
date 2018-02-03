@@ -38,6 +38,11 @@
     #define INPUT1_MODE         GEN_INPUT_SET_PULLUP | GEN_INPUT_DEFAULT_HIGH
     #define INPUT1_FILTER       100
 
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_WIFI
+
 #elif defined(NODEMCU_LOLIN)
 
     // Info
