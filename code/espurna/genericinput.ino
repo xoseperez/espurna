@@ -68,6 +68,9 @@ void genericInputSetup() {
     _inputs.push_back({new InputFilter(8,INPUT8_PIN, INPUT8_MODE, INPUT8_FILTER), 0, 0});
     #endif
 
+    // Register loop
+    espurnaRegisterLoop(genericInputLoop);
+
 }
 
 void genericInputLoop() {

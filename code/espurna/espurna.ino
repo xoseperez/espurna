@@ -90,6 +90,7 @@ void setup() {
     relaySetup();
     buttonSetup();
     ledSetup();
+    genericInputSetup();
     #if MQTT_SUPPORT
         mqttSetup();
     #endif

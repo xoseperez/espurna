@@ -99,15 +99,7 @@ unsigned char InputFilter::loop() {
         _status = pinstate;
       }
       else {
-          unsigned long duration = 0;
-          unsigned long time = millis();
-          if (_start > time) {    // millis overflow
-            duration = 0xFFFFFFFF - _start + time;
-          }
-          else {
-            duration = time - _start;
-          }
-          if (duration >= _filter) {
+          if ((millis() - _start) >= _filter) {
             _status = pinstate;
             trigger_event = true;
           }
