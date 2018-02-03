@@ -297,7 +297,7 @@
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This setting defines the behaviour of the main LED in the board.<br />
-                                        When in "WiFi status" it will blink at 1Hz when trying to connect. If successfully connected if will briefly blink every 5 seconds if in STA mode or every second if in AP mode.<br />
+                                        When in "WiFi status" it will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.<br />
                                         When in "MQTT managed" mode you will be able to set the LED state sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).<br />
                                         When in "Find me" mode the LED will be ON when all relays are OFF. This is meant to locate switches at night.<br />
                                         When in "Status" mode the LED will be ON whenever any relay is ON, and OFF otherwise. This is global status notification.<br />
@@ -961,7 +961,7 @@
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb this will the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one fo the power wires to get this value.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw">
