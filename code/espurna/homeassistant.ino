@@ -18,6 +18,7 @@ bool _haSendFlag = false;
 void _haWebSocketOnSend(JsonObject& root) {
     root["haVisible"] = 1;
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
+    root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
 }
 
 #if SENSOR_SUPPORT
