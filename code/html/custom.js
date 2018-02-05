@@ -3,6 +3,7 @@ var password = false;
 var maxNetworks;
 var maxSchedules;
 var messages = [];
+var free_size = 0;
 var webhost;
 
 var numChanged = 0;
@@ -256,57 +257,93 @@ function doReload(milliseconds) {
     }, milliseconds);
 }
 
+/**
+ * Check a file object to see if it is a valid firmware image
+ * The file first two bytes should be E901
+ * @param  {file}       file        File object
+ * @param  {Function}   callback    Function to call back with the result
+ */
+function checkFirmware(file, callback) {
+
+    var reader = new FileReader();
+
+    reader.onloadend = function(evt) {
+        if (evt.target.readyState == FileReader.DONE) {
+            var data = evt.target.result;
+            callback(data.charCodeAt(0) == 0xe9 && data.charCodeAt(1) == 0x01);
+        }
+    };
+
+    var blob = file.slice(0, 2);
+    reader.readAsBinaryString(blob);
+
+}
+
 function doUpgrade() {
 
-    var contents = $("input[name='upgrade']")[0].files[0];
-    if (typeof contents === "undefined") {
+    var file = $("input[name='upgrade']")[0].files[0];
+
+    if (typeof file === "undefined") {
         alert("First you have to select a file from your computer.");
         return false;
     }
-    var filename = $("input[name='upgrade']").val().split("\\").pop();
 
-    var data = new FormData();
-    data.append("upgrade", contents, filename);
+    if (file.size > free_size) {
+        alert("Image it too large to fit in the available space for OTA. Consider doing a two-step update.");
+        return false;
+    }
 
-    $.ajax({
+    checkFirmware(file, function(ok) {
 
-        // Your server script to process the upload
-        url: webhost + "upgrade",
-        type: "POST",
-
-        // Form data
-        data: data,
-
-        // Tell jQuery not to process data or worry about content-type
-        // You *must* include these options!
-        cache: false,
-        contentType: false,
-        processData: false,
-
-        success: function(data, text) {
-            $("#upgrade-progress").hide();
-            if (data === "OK") {
-                alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
-                doReload(5000);
-            } else {
-                alert("There was an error trying to upload the new image, please try again (" + data + ").");
-            }
-        },
-
-        // Custom XMLHttpRequest
-        xhr: function() {
-            $("#upgrade-progress").show();
-            var myXhr = $.ajaxSettings.xhr();
-            if (myXhr.upload) {
-                // For handling the progress of the upload
-                myXhr.upload.addEventListener("progress", function(e) {
-                    if (e.lengthComputable) {
-                        $("progress").attr({ value: e.loaded, max: e.total });
-                    }
-                } , false);
-            }
-            return myXhr;
+        if (!ok) {
+            alert("The file does not seem to be a valid firmware image.");
+            return false;
         }
+
+        var data = new FormData();
+        data.append("upgrade", file, file.name);
+
+        $.ajax({
+
+            // Your server script to process the upload
+            url: webhost + "upgrade",
+            type: "POST",
+
+            // Form data
+            data: data,
+
+            // Tell jQuery not to process data or worry about content-type
+            // You *must* include these options!
+            cache: false,
+            contentType: false,
+            processData: false,
+
+            success: function(data, text) {
+                $("#upgrade-progress").hide();
+                if (data === "OK") {
+                    alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
+                    doReload(5000);
+                } else {
+                    alert("There was an error trying to upload the new image, please try again (" + data + ").");
+                }
+            },
+
+            // Custom XMLHttpRequest
+            xhr: function() {
+                $("#upgrade-progress").show();
+                var myXhr = $.ajaxSettings.xhr();
+                if (myXhr.upload) {
+                    // For handling the progress of the upload
+                    myXhr.upload.addEventListener("progress", function(e) {
+                        if (e.lengthComputable) {
+                            $("progress").attr({ value: e.loaded, max: e.total });
+                        }
+                    } , false);
+                }
+                return myXhr;
+            }
+
+        });
 
     });
 
@@ -1084,6 +1121,10 @@ function processData(data) {
             return;
         }
 
+        if (key == "free_size") {
+            free_size = parseInt(data[key]);
+        }
+
         // Pre-process
         if (key === "network") {
             data.network = data.network.toUpperCase();
@@ -1239,8 +1280,8 @@ $(function() {
         return false;
     });
     $("input[name='upgrade']").change(function (){
-        var fileName = $(this).val();
-        $("input[name='filename']").val(fileName.replace(/^.*[\\\/]/, ""));
+        var file = this.files[0];
+        $("input[name='filename']").val(file.name);
     });
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
