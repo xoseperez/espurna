@@ -446,7 +446,6 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #define OTA_PORT                8266        // OTA port
-#define OTA_TERMINAL            0           // Enable OTA from terminal
 #define OTA_GITHUB_FP           "D79F076110B39293E349AC89845B0380C19E2F8B"
 
 // -----------------------------------------------------------------------------
