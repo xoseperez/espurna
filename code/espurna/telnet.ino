@@ -71,7 +71,14 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 void _telnetNewClient(AsyncClient *client) {
 
     if (client->localIP() != WiFi.softAPIP()) {
-        bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+
+        // Telnet is always available for the ESPurna Core image
+        #ifdef ESPURNA_CORE
+            bool telnetSTA = true;
+        #else
+            bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+        #endif
+
         if (!telnetSTA) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
             client->onDisconnect([](void *s, AsyncClient *c) {
@@ -81,6 +88,7 @@ void _telnetNewClient(AsyncClient *client) {
             client->close(true);
             return;
         }
+
     }
 
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
