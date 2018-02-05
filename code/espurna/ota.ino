@@ -7,6 +7,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include "ArduinoOTA.h"
+#include <ESP8266httpUpdate.h>
 
 // -----------------------------------------------------------------------------
 // OTA
@@ -20,14 +21,82 @@ void _otaConfigure() {
     #endif
 }
 
+#if TERMINAL_SUPPORT
+
+void _otaFrom(const char * url) {
+
+    DEBUG_MSG_P(PSTR("[OTA] Downloading from '%s'\n"), url);
+    #if WEB_SUPPORT
+        wsSend_P(PSTR("{\"message\": 2}"));
+    #endif
+
+    ESPhttpUpdate.rebootOnUpdate(false);
+    t_httpUpdate_return ret = ESPhttpUpdate.update(url);
+
+    switch(ret) {
+
+        case HTTP_UPDATE_FAILED:
+            DEBUG_MSG_P(
+                PSTR("[OTA] Error (%d): %s\n"),
+                ESPhttpUpdate.getLastError(),
+                ESPhttpUpdate.getLastErrorString().c_str()
+            );
+            break;
+
+        case HTTP_UPDATE_NO_UPDATES:
+            DEBUG_MSG_P(PSTR("[OTA] No updates available\n"));
+            break;
+
+        case HTTP_UPDATE_OK:
+            DEBUG_MSG_P(PSTR("[OTA] Done, restarting...\n"));
+            #if WEB_SUPPORT
+                wsSend_P(PSTR("{\"action\": \"reload\"}"));
+            #endif
+            deferredReset(100, CUSTOM_RESET_OTA);
+            break;
+
+    }
+
+}
+
+void _otaInitCommands() {
+
+    settingsRegisterCommand(F("OTA"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("+OK\n"));
+            String url = String(e->argv[1]);
+            _otaFrom(url.c_str());
+        }
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+
+void _otaLoop() {
+    ArduinoOTA.handle();
+}
+
 // -----------------------------------------------------------------------------
 
 void otaSetup() {
 
     _otaConfigure();
+
     #if WEB_SUPPORT
         wsOnAfterParseRegister(_otaConfigure);
     #endif
+
+    #if TERMINAL_SUPPORT
+        _otaInitCommands();
+    #endif
+
+    // Register loop
+    espurnaRegisterLoop(_otaLoop);
+
+    // -------------------------------------------------------------------------
 
     ArduinoOTA.onStart([]() {
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
@@ -38,7 +107,7 @@ void otaSetup() {
 
     ArduinoOTA.onEnd([]() {
         DEBUG_MSG_P(PSTR("\n"));
-        DEBUG_MSG_P(PSTR("[OTA] End\n"));
+        DEBUG_MSG_P(PSTR("[OTA] Done, restarting...\n"));
         #if WEB_SUPPORT
             wsSend_P(PSTR("{\"action\": \"reload\"}"));
         #endif
@@ -62,11 +131,4 @@ void otaSetup() {
 
     ArduinoOTA.begin();
 
-    // Register loop
-    espurnaRegisterLoop(otaLoop);
-
-}
-
-void otaLoop() {
-    ArduinoOTA.handle();
 }
