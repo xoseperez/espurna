@@ -7,7 +7,6 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include "ArduinoOTA.h"
-#include <ESP8266httpUpdate.h>
 
 // -----------------------------------------------------------------------------
 // OTA
@@ -21,7 +20,9 @@ void _otaConfigure() {
     #endif
 }
 
-#if TERMINAL_SUPPORT
+#if TERMINAL_SUPPORT && OTA_TERMINAL
+
+#include <ESP8266httpUpdate.h>
 
 void _otaFrom(const char * url) {
 
@@ -80,7 +81,7 @@ void _otaInitCommands() {
 
 }
 
-#endif // TERMINAL_SUPPORT
+#endif // TERMINAL_SUPPORT && OTA_TERMINAL
 
 void _otaLoop() {
     ArduinoOTA.handle();
@@ -96,7 +97,7 @@ void otaSetup() {
         wsOnAfterParseRegister(_otaConfigure);
     #endif
 
-    #if TERMINAL_SUPPORT
+    #if TERMINAL_SUPPORT && OTA_TERMINAL
         _otaInitCommands();
     #endif
 
