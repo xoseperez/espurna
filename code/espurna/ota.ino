@@ -31,7 +31,14 @@ void _otaFrom(const char * url) {
     #endif
 
     ESPhttpUpdate.rebootOnUpdate(false);
-    t_httpUpdate_return ret = ESPhttpUpdate.update(url);
+    t_httpUpdate_return ret;
+    if (strncmp(url, "https", 5) == 0) {
+        String fp = getSetting("otafp", OTA_GITHUB_FP);
+        DEBUG_MSG_P(PSTR("[OTA] Using fingerprint: '%s'\n"), fp.c_str());
+        ret = ESPhttpUpdate.update(url, APP_VERSION, fp.c_str());
+    } else {
+        ret = ESPhttpUpdate.update(url, APP_VERSION);
+    }
 
     switch(ret) {
 
