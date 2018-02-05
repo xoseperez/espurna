@@ -259,7 +259,7 @@ function doReload(milliseconds) {
 
 /**
  * Check a file object to see if it is a valid firmware image
- * The file first two bytes should be E901
+ * The file first byte should be 0xE9
  * @param  {file}       file        File object
  * @param  {Function}   callback    Function to call back with the result
  */
@@ -269,12 +269,11 @@ function checkFirmware(file, callback) {
 
     reader.onloadend = function(evt) {
         if (evt.target.readyState == FileReader.DONE) {
-            var data = evt.target.result;
-            callback(data.charCodeAt(0) == 0xe9 && data.charCodeAt(1) == 0x01);
+            callback(evt.target.result.charCodeAt(0) == 0xE9);
         }
     };
 
-    var blob = file.slice(0, 2);
+    var blob = file.slice(0, 1);
     reader.readAsBinaryString(blob);
 
 }
