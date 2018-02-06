@@ -21,6 +21,8 @@
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
 
+typedef std::function<void(unsigned char, const char *)> TSensorCallback;
+
 class BaseSensor {
 
     public:
@@ -79,8 +81,12 @@ class BaseSensor {
         // Number of available slots
         unsigned char count() { return _count; }
 
+        // Hook for event callback
+        void onEvent(TSensorCallback fn) { _callback = fn; };
+
     protected:
 
+        TSensorCallback _callback = NULL;
         unsigned char _sensor_id = 0x00;
         int _error = 0;
         bool _dirty = true;
