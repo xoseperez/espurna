@@ -4,5 +4,6 @@
 .piolibdeps
 .vscode/c_cpp_properties.json
 core_version.h
+build.h
 .pioenvs
 .piolibdeps
