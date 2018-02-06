@@ -34,6 +34,7 @@ void _otaLoop() {
 AsyncClient * _ota_client;
 char * _ota_host;
 char * _ota_url;
+unsigned int _ota_port = 80;
 unsigned long _ota_size = 0;
 
 const char OTA_REQUEST_TEMPLATE[] PROGMEM =
@@ -51,6 +52,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     if (_ota_url) free(_ota_url);
     _ota_host = strdup(host);
     _ota_url = strdup(url);
+    _ota_port = port;
     _ota_size = 0;
 
     if (_ota_client == NULL) {
@@ -119,6 +121,18 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     }, NULL);
 
     _ota_client->onConnect([](void * arg, AsyncClient * client) {
+
+        #if ASYNC_TCP_SSL_ENABLED
+            if (443 == _ota_port) {
+                uint8_t fp[20] = {0};
+                sslFingerPrintArray(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp);
+                SSL * ssl = _ota_client->getSSL();
+                if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
+                    DEBUG_MSG_P(PSTR("[OTA] Warning: certificate doesn't match\n"));
+                }
+            }
+        #endif
+
         DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_url);
         char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(_ota_url) + strlen(_ota_host)];
         snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_url, _ota_host);
@@ -127,7 +141,12 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     }, NULL);
 
 
-    bool connected = _ota_client->connect(host, port);
+    #if ASYNC_TCP_SSL_ENABLED
+        bool connected = _ota_client->connect(host, port, 443 == port);
+    #else
+        bool connected = _ota_client->connect(host, port);
+    #endif
+
     if (!connected) {
         DEBUG_MSG_P(PSTR("[OTA] Connection failed\n"));
         _ota_client->close(true);
