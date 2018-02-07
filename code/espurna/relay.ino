@@ -77,6 +77,15 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #endif
 
+    #if RELAY_PROVIDER == RELAY_PROVIDER_STM
+        Serial.flush();
+        Serial.write(0xA0);
+        Serial.write(id + 1);
+        Serial.write(status);
+        Serial.write(0xA1 + status + id);
+        Serial.flush();
+    #endif
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // If the number of relays matches the number of light channels
