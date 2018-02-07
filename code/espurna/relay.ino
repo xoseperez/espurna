@@ -394,7 +394,11 @@ void _relayBoot() {
         }
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
-        _relays[i].change_time = millis();
+        #ifdef RELAY_PROVIDER_STM
+            _relays[i].change_time = millis() + 3000 + 1000 * i;
+        #else
+            _relays[i].change_time = millis();
+        #endif
         bit <<= 1;
     }
 
