@@ -12,7 +12,6 @@ var numReconnect = 0;
 var numReload = 0;
 
 var useWhite = false;
-var manifest;
 
 var now = 0;
 var ago = 0;
@@ -116,7 +115,7 @@ function loadTimeZones() {
     ];
 
     for (var i in time_zones) {
-        var value = parseInt(time_zones[i], 10);
+        var value = time_zones[i];
         var offset = value >= 0 ? value : -value;
         var text = "GMT" + (value >= 0 ? "+" : "-") +
             zeroPad(parseInt(offset / 60, 10), 2) + ":" +
@@ -360,7 +359,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateForm(form)) {
-        sendConfig(getData(form))
+        sendConfig(getData(form));
     }
     return false;
 }
@@ -537,7 +536,7 @@ function createRelayList(data, container, template_name) {
     if (current > 0) { return; }
 
     var template = $("#" + template_name + " .pure-g")[0];
-    for (var i=0; i<data.length; i++) {
+    for (var i in data) {
         var line = $(template).clone();
         $("label", line).html("Switch #" + i);
         $("input", line).attr("tabindex", 40 + i).val(data[i]);
@@ -552,7 +551,7 @@ function createMagnitudeList(data, container, template_name) {
     if (current > 0) { return; }
 
     var template = $("#" + template_name + " .pure-g")[0];
-    for (var i=0; i<data.length; i++) {
+    for (var i in data) {
         var magnitude = data[i];
         var line = $(template).clone();
         $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
@@ -672,7 +671,7 @@ function initRelayConfig(data) {
     if (current > 0) { return; }
 
     var template = $("#relayConfigTemplate").children();
-    for (var i=0; i < data.length; i++) {
+    for (var i in data) {
         var relay = data[i];
         var line = $(template).clone();
         $("span.gpio", line).html(relay.gpio);
@@ -699,7 +698,7 @@ function initMagnitudes(data) {
 
     // add templates
     var template = $("#magnitudeTemplate").children();
-    for (var i=0; i<data.length; i++) {
+    for (var i in data) {
         var magnitude = data[i];
         var line = $(template).clone();
         $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
@@ -708,15 +707,6 @@ function initMagnitudes(data) {
         line.appendTo("#magnitudes");
     }
 
-}
-
-function getManifest(sensor_id) {
-    for (var i in manifest) {
-        if (manifest[i].sensor_id === sensor_id) {
-            return manifest[i];
-        }
-    }
-    return null;
 }
 
 // -----------------------------------------------------------------------------
@@ -866,8 +856,6 @@ function addRfbNode() {
 
 function processData(data) {
 
-    console.log(data);
-
     // title
     if ("app_name" in data) {
         var title = data.app_name;
@@ -884,13 +872,14 @@ function processData(data) {
     Object.keys(data).forEach(function(key) {
 
         var i;
+        var value = data[key];
 
         // ---------------------------------------------------------------------
         // Web mode
         // ---------------------------------------------------------------------
 
         if (key === "webMode") {
-            password = (1 === data.webMode);
+            password = (1 === value);
             $("#layout").toggle(!password);
             $("#password").toggle(password);
         }
@@ -921,7 +910,7 @@ function processData(data) {
             var nodes = data.rfb;
             for (i in nodes) {
                 var node = nodes[i];
-                $("input[name='rfbcode'][data-id='" + node["id"] + "'][data-status='" + node["status"] + "']").val(node["data"]);
+                $("input[name='rfbcode'][data-id='" + node.id + "'][data-status='" + node.status + "']").val(node.data);
             }
             return;
         }
@@ -932,14 +921,14 @@ function processData(data) {
 
         if (key === "rgb") {
             initColorRGB();
-            $("input[name='color']").wheelColorPicker("setValue", data[key], true);
+            $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
         if (key === "hsv") {
             initColorHSV();
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
-            var chunks = data[key].split(",");
+            var chunks = value.split(",");
             var obj = {};
             obj.h = chunks[0] / 360;
             obj.s = chunks[1] / 100;
@@ -949,23 +938,24 @@ function processData(data) {
         }
 
         if (key === "brightness") {
-            $("#brightness").val(data[key]);
-            $("span.brightness").html(data[key]);
+            $("#brightness").val(value);
+            $("span.brightness").html(value);
             return;
         }
 
         if (key === "channels") {
-            var len = data[key].length;
+            var len = value.length;
             initChannels(len);
-            for (i=0; i<len; i++) {
-                $("input.slider[data=" + i + "]").val(data[key][i]);
-                $("span.slider[data=" + i + "]").html(data[key][i]);
+            for (i in value) {
+                var ch = value[i];
+                $("input.slider[data=" + i + "]").val(ch);
+                $("span.slider[data=" + i + "]").html(ch);
             }
             return;
         }
 
         if (key === "useWhite") {
-            useWhite = data[key];
+            useWhite = value;
         }
 
         // ---------------------------------------------------------------------
@@ -973,19 +963,16 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if (key === "magnitudes") {
-            initMagnitudes(data[key]);
-            for (i=0; i<data[key].length; i++) {
-                var error = data[key][i].error || 0;
-                var text = (error === 0) ?
-                    data[key][i].value + data[key][i].units :
+            initMagnitudes(value);
+            for (i in value) {
+                var magnitude = value[i];
+                var error = magnitude.error || 0;
+                var text = (0 === error) ?
+                    magnitude.value + magnitude.units :
                     magnitudeError(error);
                 $("input[name='magnitude'][data='" + i + "']").val(text);
             }
             return;
-        }
-
-        if (key === "manifest") {
-            manifest = data[key];
         }
 
         // ---------------------------------------------------------------------
@@ -993,14 +980,14 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if (key === "maxNetworks") {
-            maxNetworks = parseInt(data.maxNetworks, 10);
+            maxNetworks = parseInt(value, 10);
             return;
         }
 
         if (key === "wifi") {
-            for (i in data.wifi) {
+            for (i in value) {
+                var wifi = value[i];
                 var nwk_line = addNetwork();
-                var wifi = data.wifi[i];
                 Object.keys(wifi).forEach(function(key) {
                     $("input[name='" + key + "']", nwk_line).val(wifi[key]);
                 });
@@ -1017,18 +1004,21 @@ function processData(data) {
         // -----------------------------------------------------------------------------
 
         if (key === "maxSchedules") {
-            maxSchedules = parseInt(data.maxSchedules, 10);
+            maxSchedules = parseInt(value, 10);
             return;
         }
 
         if (key === "schedule") {
-            for (i in data.schedule) {
+            for (i in value) {
+                var schedule = value[i];
                 var sch_line = addSchedule();
-                var schedule = data.schedule[i];
                 Object.keys(schedule).forEach(function(key) {
-                    $("input[name='" + key + "']", sch_line).val(schedule[key]);
-                    $("select[name='" + key + "']", sch_line).prop("value", schedule[key]);
-                    $(":checkbox", sch_line).prop("checked", schedule[key]);
+                    var sch_value = schedule[key];
+                    $("input[name='" + key + "']", sch_line).val(sch_value);
+                    $("select[name='" + key + "']", sch_line).prop("value", sch_value);
+                    $(":checkbox[name='" + key + "']", sch_line).
+                        prop("checked", sch_value).
+                        iphoneStyle("refresh");
                 });
             }
             return;
@@ -1039,12 +1029,12 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if (key === "relayStatus") {
-            initRelays(data[key]);
-            for (i in data[key]) {
+            initRelays(value);
+            for (i in value) {
 
                 // Set the status for each relay
                 $("input.relayStatus[data='" + i + "']").
-                    prop("checked", data[key][i]).
+                    prop("checked", value[i]).
                     iphoneStyle("refresh");
 
             }
@@ -1053,7 +1043,7 @@ function processData(data) {
 
         // Relay configuration
         if (key === "relayConfig") {
-            initRelayConfig(data[key]);
+            initRelayConfig(value);
             return;
         }
 
@@ -1063,13 +1053,13 @@ function processData(data) {
 
         // Domoticz - Relays
         if (key === "dczRelays") {
-            createRelayList(data[key], "dczRelays", "dczRelayTemplate");
+            createRelayList(value, "dczRelays", "dczRelayTemplate");
             return;
         }
 
         // Domoticz - Magnitudes
         if (key === "dczMagnitudes") {
-            createMagnitudeList(data[key], "dczMagnitudes", "dczMagnitudeTemplate");
+            createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
             return;
         }
 
@@ -1079,13 +1069,13 @@ function processData(data) {
 
         // Thingspeak - Relays
         if (key === "tspkRelays") {
-            createRelayList(data[key], "tspkRelays", "tspkRelayTemplate");
+            createRelayList(value, "tspkRelays", "tspkRelayTemplate");
             return;
         }
 
         // Thingspeak - Magnitudes
         if (key === "tspkMagnitudes") {
-            createMagnitudeList(data[key], "tspkMagnitudes", "tspkMagnitudeTemplate");
+            createMagnitudeList(value, "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
         }
 
@@ -1095,7 +1085,7 @@ function processData(data) {
 
         // Messages
         if (key === "message") {
-            window.alert(messages[data.message]);
+            window.alert(messages[value]);
             return;
         }
 
@@ -1108,32 +1098,32 @@ function processData(data) {
         }
 
         if (key === "now") {
-            now = data[key];
+            now = value;
             ago = 0;
             return;
         }
 
         if (key == "free_size") {
-            free_size = parseInt(data[key], 10);
+            free_size = parseInt(value, 10);
         }
 
         // Pre-process
         if (key === "network") {
-            data.network = data.network.toUpperCase();
+            data.network = value.toUpperCase();
         }
         if (key === "mqttStatus") {
-            data.mqttStatus = data.mqttStatus ? "CONNECTED" : "NOT CONNECTED";
+            data.mqttStatus = value ? "CONNECTED" : "NOT CONNECTED";
         }
         if (key === "ntpStatus") {
-            data.ntpStatus = data.ntpStatus ? "SYNC'D" : "NOT SYNC'D";
+            data.ntpStatus = value ? "SYNC'D" : "NOT SYNC'D";
         }
         if (key === "uptime") {
-            var uptime  = parseInt(data[key], 10);
+            var uptime  = parseInt(value, 10);
             var seconds = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var minutes = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var hours   = uptime % 24; uptime = parseInt(uptime / 24, 10);
             var days    = uptime;
-            data[key] = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
+            data.key = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
         }
 
         // ---------------------------------------------------------------------
@@ -1148,14 +1138,14 @@ function processData(data) {
         if (input.length > 0) {
             if (input.attr("type") === "checkbox") {
                 input.
-                    prop("checked", data[key]).
+                    prop("checked", value).
                     iphoneStyle("refresh");
             } else if (input.attr("type") === "radio") {
-                input.val([data[key]]);
+                input.val([value]);
             } else {
                 pre = input.attr("pre") || "";
                 post = input.attr("post") || "";
-                input.val(pre + data[key] + post);
+                input.val(pre + value + post);
             }
         }
 
@@ -1164,13 +1154,13 @@ function processData(data) {
         if (span.length > 0) {
             pre = span.attr("pre") || "";
             post = span.attr("post") || "";
-            span.html(pre + data[key] + post);
+            span.html(pre + value + post);
         }
 
         // Look for SELECTs
         var select = $("select[name='" + key + "']");
         if (select.length > 0) {
-            select.val(data[key]);
+            select.val(value);
         }
 
     });
