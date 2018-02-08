@@ -277,6 +277,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_PROVIDER_DUAL     1
 #define RELAY_PROVIDER_LIGHT    2
 #define RELAY_PROVIDER_RFBRIDGE 3
+#define RELAY_PROVIDER_STM      4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_BOOT_MODE         RELAY_BOOT_OFF
