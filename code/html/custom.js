@@ -243,6 +243,14 @@ function getJson(str) {
 // Actions
 // -----------------------------------------------------------------------------
 
+function sendAction(action, data) {
+    websock.send(JSON.stringify({action: action, data: data}));
+}
+
+function sendConfig(data) {
+    websock.send(JSON.stringify({config: data}));
+}
+
 function resetOriginals() {
     $("input,select").each(function() {
         $(this).attr("original", $(this).val());
@@ -295,7 +303,7 @@ function doUpgrade() {
 
         if (!ok) {
             alert("The file does not seem to be a valid firmware image.");
-            return false;
+            return;
         }
 
         var data = new FormData();
@@ -352,8 +360,7 @@ function doUpgrade() {
 function doUpdatePassword() {
     var form = $("#formPassword");
     if (validateForm(form)) {
-        var data = getData(form);
-        websock.send(JSON.stringify({"config": data}));
+        sendConfig(getData(form))
     }
     return false;
 }
@@ -380,7 +387,7 @@ function doAction(question, action) {
         }
     }
 
-    websock.send(JSON.stringify({"action": action}));
+    sendAction(action);
     doReload(5000);
     return false;
 
@@ -410,8 +417,7 @@ function doUpdate() {
     if (validateForm(form)) {
 
         // Get data
-        var data = getData(form);
-        websock.send(JSON.stringify({"config": data}));
+        sendConfig(getData(form));
 
         // Empty special fields
         $(".pwrExpected").val(0);
@@ -455,21 +461,21 @@ function onFileUpload(event) {
 
     var inputFiles = this.files;
     if (typeof inputFiles === "undefined" || inputFiles.length === 0) {
-      return false;
+        return false;
     }
     var inputFile = inputFiles[0];
     this.value = "";
 
     var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore this settings?");
     if (response === false) {
-      return false;
+        return false;
     }
 
     var reader = new FileReader();
     reader.onload = function(e) {
         var data = getJson(e.target.result);
         if (data) {
-            websock.send(JSON.stringify({"action": "restore", "data": data}));
+            sendAction("restore", data);
         } else {
             alert(messages[4]);
         }
@@ -490,15 +496,15 @@ function doRestore() {
 }
 
 function doToggle(element, value) {
-    var relayID = parseInt(element.attr("data"), 10);
-    websock.send(JSON.stringify({"action": "relay", "data": { "id": relayID, "status": value ? 1 : 0 }}));
+    var id = parseInt(element.attr("data"), 10);
+    sendAction("relay", {id: id, status: value ? 1 : 0 });
     return false;
 }
 
 function doScan() {
     $("#scanResult").html("");
     $("div.scan.loading").show();
-    websock.send(JSON.stringify({"action": "scan", "data": {}}));
+    sendAction("scan");
     return false;
 }
 
@@ -528,9 +534,7 @@ function showPanel() {
 function createRelayList(data, container, template_name) {
 
     var current = $("#" + container + " > div").length;
-    if (current > 0) {
-      return;
-    }
+    if (current > 0) { return; }
 
     var template = $("#" + template_name + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
@@ -545,9 +549,7 @@ function createRelayList(data, container, template_name) {
 function createMagnitudeList(data, container, template_name) {
 
     var current = $("#" + container + " > div").length;
-    if (current > 0) {
-      return;
-    }
+    if (current > 0) { return; }
 
     var template = $("#" + template_name + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
@@ -637,9 +639,7 @@ function addSchedule() {
 function initRelays(data) {
 
     var current = $("#relays > div").length;
-    if (current > 0) {
-      return;
-    }
+    if (current > 0) { return; }
 
     var template = $("#relayTemplate .pure-g")[0];
     for (var i=0; i<data.length; i++) {
@@ -669,9 +669,7 @@ function initRelays(data) {
 function initRelayConfig(data) {
 
     var current = $("#relayConfig > div").length;
-    if (current > 0) {
-      return;
-    }
+    if (current > 0) { return; }
 
     var template = $("#relayConfigTemplate").children();
     for (var i=0; i < data.length; i++) {
@@ -697,9 +695,7 @@ function initMagnitudes(data) {
 
     // check if already initialized
     var done = $("#magnitudes > div").length;
-    if (done > 0) {
-      return;
-    }
+    if (done > 0) { return; }
 
     // add templates
     var template = $("#magnitudeTemplate").children();
@@ -717,7 +713,7 @@ function initMagnitudes(data) {
 function getManifest(sensor_id) {
     for (var i in manifest) {
         if (manifest[i].sensor_id === sensor_id) {
-          return manifest[i];
+            return manifest[i];
         }
     }
     return null;
@@ -731,9 +727,7 @@ function initColorRGB() {
 
     // check if already initialized
     var done = $("#colors > div").length;
-    if (done > 0) {
-      return;
-    }
+    if (done > 0) { return; }
 
     // add template
     var template = $("#colorRGBTemplate").children();
@@ -745,7 +739,7 @@ function initColorRGB() {
         sliders: "wrgbp"
     }).on("sliderup", function() {
         var value = $(this).wheelColorPicker("getValue", "css");
-        websock.send(JSON.stringify({"action": "color", "data" : {"rgb": value}}));
+        sendAction("color", {rgb: value});
     });
 
     // init bright slider
@@ -753,7 +747,7 @@ function initColorRGB() {
         var value = $(this).val();
         var parent = $(this).parents(".pure-g");
         $("span", parent).html(value);
-        websock.send(JSON.stringify({"action": "color", "data" : {"brightness": value}}));
+        sendAction("color", {brightness: value});
     });
 
 }
@@ -762,9 +756,7 @@ function initColorHSV() {
 
     // check if already initialized
     var done = $("#colors > div").length;
-    if (done > 0) {
-      return;
-    }
+    if (done > 0) { return; }
 
     // add template
     var template = $("#colorHSVTemplate").children();
@@ -777,7 +769,7 @@ function initColorHSV() {
     }).on("sliderup", function() {
         var color = $(this).wheelColorPicker("getColor");
         var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
-        websock.send(JSON.stringify({"action": "color", "data" : {"hsv": value}}));
+        sendAction("color", {hsv: value});
     });
 
 }
@@ -786,9 +778,7 @@ function initChannels(num) {
 
     // check if already initialized
     var done = $("#channels > div").length > 0;
-    if (done) {
-        return;
-    }
+    if (done) { return; }
 
     // does it have color channels?
     var colors = $("#colors > div").length > 0;
@@ -808,7 +798,7 @@ function initChannels(num) {
         var value = $(this).val();
         var parent = $(this).parents(".pure-g");
         $("span", parent).html(value);
-        websock.send(JSON.stringify({"action": "channel", "data" : { "id": id, "value": value }}));
+        sendAction("channel", {id: id, value: value});
     };
 
     // add templates
@@ -834,19 +824,19 @@ function initChannels(num) {
 function rfbLearn() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({"action": "rfblearn", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
+    sendAction("rfblearn", {id: input.attr("data-id"), status: input.attr("data-status")});
 }
 
 function rfbForget() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({"action": "rfbforget", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
+    sendAction("rfbforget", {id: input.attr("data-id"), status: input.attr("data-status")});
 }
 
 function rfbSend() {
     var parent = $(this).parents(".pure-g");
     var input = $("input", parent);
-    websock.send(JSON.stringify({"action": "rfbsend", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status"), "data": input.val()}}));
+    sendAction("rfbsend", {id: input.attr("data-id"), status: input.attr("data-status"), data: input.val()});
 }
 
 function addRfbNode() {
@@ -875,6 +865,8 @@ function addRfbNode() {
 // -----------------------------------------------------------------------------
 
 function processData(data) {
+
+    console.log(data);
 
     // title
     if ("app_name" in data) {
@@ -1122,7 +1114,7 @@ function processData(data) {
         }
 
         if (key == "free_size") {
-            free_size = parseInt(data[key]);
+            free_size = parseInt(data[key], 10);
         }
 
         // Pre-process
@@ -1241,16 +1233,16 @@ function connect(host) {
             host = "http://" + host + "/";
         }
     }
-    if (host.indexOf("http") !== 0) {return;}
+    if (host.indexOf("http") !== 0) { return; }
 
     webhost = host;
     wshost = host.replace("http", "ws") + "ws";
 
-    if (websock) websock.close();
+    if (websock) { websock.close(); }
     websock = new WebSocket(wshost);
     websock.onmessage = function(evt) {
         var data = getJson(evt.data);
-        if (data) processData(data);
+        if (data) { processData(data); }
     };
 }
 

@@ -63,7 +63,7 @@ var toHeader = function(filename) {
             wstream.write('\n');
         }
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i<data.length-1) {
+        if (i < (data.length - 1)) {
           wstream.write(',');
         }
     }
@@ -76,7 +76,11 @@ var toHeader = function(filename) {
 var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
 		issues.forEach(function (issue) {
-			gutil.log(gutil.colors.cyan('[gulp-htmllint] ') + gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') + gutil.colors.red('(' + issue.code + ') ' + issue.msg));
+			gutil.log(
+                gutil.colors.cyan('[gulp-htmllint] ') +
+                gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') +
+                gutil.colors.red('(' + issue.code + ') ' + issue.msg)
+            );
 		});
 		process.exitCode = 1;
 	}
@@ -88,9 +92,9 @@ gulp.task('build_certs', function() {
 });
 
 gulp.task('csslint', function() {
-    gulp.src('html/*.css')
-        .pipe(csslint({ids: false}))
-        .pipe(csslint.formatter());
+    gulp.src('html/*.css').
+        pipe(csslint({ids: false})).
+        pipe(csslint.formatter());
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
@@ -98,29 +102,29 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 });
 
 gulp.task('buildfs_inline', function() {
-    return gulp.src('html/*.html')
-        .pipe(htmllint({
+    return gulp.src('html/*.html').
+        pipe(htmllint({
             'failOnError': true,
             'rules': {
                 'id-class-style': false,
                 'label-req-for': false,
             }
-        }, htmllintReporter))
-        .pipe(favicon())
-        .pipe(inline({
+        }, htmllintReporter)).
+        pipe(favicon()).
+        pipe(inline({
             base: 'html/',
             js: [uglify],
             css: [cleancss, inlineImages],
             disabledTypes: ['svg', 'img']
-        }))
-        .pipe(htmlmin({
+        })).
+        pipe(htmlmin({
             collapseWhitespace: true,
             removeComments: true,
             minifyCSS: true,
             minifyJS: true
-        }))
-        .pipe(gzip())
-        .pipe(gulp.dest(dataFolder));
+        })).
+        pipe(gzip()).
+        pipe(gulp.dest(dataFolder));
 });
 
 
