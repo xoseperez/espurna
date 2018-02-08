@@ -150,20 +150,15 @@ function validateForm(form) {
 
 function getValue(element) {
 
-    var value;
-
     if ($(element).attr("type") === "checkbox") {
-        value = $(element).is(":checked") ? 1 : 0;
+        return $(element).is(":checked") ? 1 : 0;
     } else if ($(element).attr("type") === "radio") {
         if (!$(element).is(":checked")) {
-            return;
+            return null;
         }
-        value = $(element).val();
-    } else {
-        value = $(element).val();
     }
 
-    return value;
+    return $(element).val();
 
 }
 
@@ -202,7 +197,9 @@ function getData(form) {
     $("input,select", form).each(function() {
         var name = $(this).attr("name");
         var value = getValue(this);
-        addValue(data, name, value);
+        if (null !== value) {
+            addValue(data, name, value);
+        }
     });
 
     // Post process
@@ -376,7 +373,6 @@ function doAction(question, action) {
 
     checkChanges();
 
-    ask = (typeof ask === "undefined") ? true : ask;
     if (question) {
         var response = window.confirm(question);
         if (false === response) {
@@ -555,10 +551,11 @@ function createMagnitudeList(data, container, template_name) {
 
     var template = $("#" + template_name + " .pure-g")[0];
     for (var i=0; i<data.length; i++) {
+        var magnitude = data[i];
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data[i].type) + " #" + parseInt(data[i].index, 10));
-        $("div.hint", line).html(data[i].name);
-        $("input", line).attr("tabindex", 40 + i).val(data[i].idx);
+        $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
+        $("div.hint", line).html(magnitude.name);
+        $("input", line).attr("tabindex", 40 + i).val(magnitude.idx);
         line.appendTo("#" + container);
     }
 
@@ -678,14 +675,15 @@ function initRelayConfig(data) {
 
     var template = $("#relayConfigTemplate").children();
     for (var i=0; i < data.length; i++) {
+        var relay = data[i];
         var line = $(template).clone();
-        $("span.gpio", line).html(data[i].gpio);
+        $("span.gpio", line).html(relay.gpio);
         $("span.id", line).html(i);
-        $("select[name='relayBoot']", line).val(data[i].boot);
-        $("select[name='relayPulse']", line).val(data[i].pulse);
-        $("input[name='relayTime']", line).val(data[i].pulse_ms);
-        $("input[name='mqttGroup']", line).val(data[i].group);
-        $("select[name='mqttGroupInv']", line).val(data[i].group_inv);
+        $("select[name='relayBoot']", line).val(relay.boot);
+        $("select[name='relayPulse']", line).val(relay.pulse);
+        $("input[name='relayTime']", line).val(relay.pulse_ms);
+        $("input[name='mqttGroup']", line).val(relay.group);
+        $("select[name='mqttGroupInv']", line).val(relay.group_inv);
         line.appendTo("#relayConfig");
     }
 
@@ -706,9 +704,10 @@ function initMagnitudes(data) {
     // add templates
     var template = $("#magnitudeTemplate").children();
     for (var i=0; i<data.length; i++) {
+        var magnitude = data[i];
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data[i].type) + " #" + parseInt(data[i].index, 10));
-        $("div.hint", line).html(data[i].description);
+        $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
+        $("div.hint", line).html(magnitude.description);
         $("input", line).attr("data", i);
         line.appendTo("#magnitudes");
     }
@@ -800,7 +799,7 @@ function initChannels(num) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
-        };
+        }
     }
     var start = num - max;
 
@@ -810,7 +809,7 @@ function initChannels(num) {
         var parent = $(this).parents(".pure-g");
         $("span", parent).html(value);
         websock.send(JSON.stringify({"action": "channel", "data" : { "id": id, "value": value }}));
-    }
+    };
 
     // add templates
     var template = $("#channelTemplate").children();
@@ -898,10 +897,10 @@ function processData(data) {
         // Web mode
         // ---------------------------------------------------------------------
 
-        if (key ==="webMode") {
-            password = data.webMode == 1;
-            $("#layout").toggle(data.webMode === 0);
-            $("#password").toggle(data.webMode === 1);
+        if (key === "webMode") {
+            password = (1 === data.webMode);
+            $("#layout").toggle(!password);
+            $("#password").toggle(password);
         }
 
         // ---------------------------------------------------------------------
@@ -909,7 +908,7 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if (key === "action") {
-            if (data.action === "reload") doReload(1000);
+            if (data.action === "reload") { doReload(1000); }
             return;
         }
 
@@ -918,7 +917,7 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if (key === "rfbCount") {
-            for (i=0; i<data.rfbCount; i++) addRfbNode();
+            for (i=0; i<data.rfbCount; i++) { addRfbNode(); }
             return;
         }
 
