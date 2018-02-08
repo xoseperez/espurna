@@ -75,7 +75,7 @@ function magnitudeError(error) {
 // -----------------------------------------------------------------------------
 
 function keepTime() {
-    if (now === 0) { return; }
+    if (0 === now) { return; }
     var date = new Date(now * 1000);
     var text = date.toISOString().substring(0, 19).replace("T", " ");
     $("input[name='now']").val(text);
@@ -274,8 +274,8 @@ function checkFirmware(file, callback) {
     var reader = new FileReader();
 
     reader.onloadend = function(evt) {
-        if (evt.target.readyState === FileReader.DONE) {
-            callback(evt.target.result.charCodeAt(0) === 0xE9);
+        if (FileReader.DONE === evt.target.readyState) {
+            callback(0xE9 === evt.target.result.charCodeAt(0));
         }
     };
 
@@ -325,7 +325,7 @@ function doUpgrade() {
 
             success: function(data, text) {
                 $("#upgrade-progress").hide();
-                if (data === "OK") {
+                if ("OK" === data) {
                     alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
                     doReload(5000);
                 } else {
@@ -386,7 +386,7 @@ function doAction(question, action) {
         }
     }
 
-    sendAction(action);
+    sendAction(action, {});
     doReload(5000);
     return false;
 
@@ -432,13 +432,13 @@ function doUpdate() {
 
             if (numReboot > 0) {
                 response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-                if (response === true) { doReboot(false); }
+                if (response) { doReboot(false); }
             } else if (numReconnect > 0) {
                 response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-                if (response === true) { doReconnect(false); }
+                if (response) { doReconnect(false); }
             } else if (numReload > 0) {
                 response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response === true) { doReload(0); }
+                if (response) { doReload(0); }
             }
 
             resetOriginals();
@@ -466,7 +466,7 @@ function onFileUpload(event) {
     this.value = "";
 
     var response = window.confirm("Previous settings will be overwritten. Are you sure you want to restore this settings?");
-    if (response === false) {
+    if (!response) {
         return false;
     }
 
@@ -503,7 +503,7 @@ function doToggle(element, value) {
 function doScan() {
     $("#scanResult").html("");
     $("div.scan.loading").show();
-    sendAction("scan");
+    sendAction("scan", {});
     return false;
 }
 
@@ -878,7 +878,7 @@ function processData(data) {
         // Web mode
         // ---------------------------------------------------------------------
 
-        if (key === "webMode") {
+        if ("webMode" === key) {
             password = (1 === value);
             $("#layout").toggle(!password);
             $("#password").toggle(password);
@@ -888,8 +888,8 @@ function processData(data) {
         // Actions
         // ---------------------------------------------------------------------
 
-        if (key === "action") {
-            if (data.action === "reload") { doReload(1000); }
+        if ("action" === key) {
+            if ("reload" === data.action) { doReload(1000); }
             return;
         }
 
@@ -897,16 +897,16 @@ function processData(data) {
         // RFBridge
         // ---------------------------------------------------------------------
 
-        if (key === "rfbCount") {
+        if ("rfbCount" === key) {
             for (i=0; i<data.rfbCount; i++) { addRfbNode(); }
             return;
         }
 
-        if (key === "rfbrawVisible") {
+        if ("rfbrawVisible" === key) {
             $("input[name='rfbcode']").attr("maxlength", 116);
         }
 
-        if (key === "rfb") {
+        if ("rfb" === key) {
             var nodes = data.rfb;
             for (i in nodes) {
                 var node = nodes[i];
@@ -919,13 +919,13 @@ function processData(data) {
         // Lights
         // ---------------------------------------------------------------------
 
-        if (key === "rgb") {
+        if ("rgb" === key) {
             initColorRGB();
             $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
-        if (key === "hsv") {
+        if ("hsv" === key) {
             initColorHSV();
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
             var chunks = value.split(",");
@@ -937,13 +937,13 @@ function processData(data) {
             return;
         }
 
-        if (key === "brightness") {
+        if ("brightness" === key) {
             $("#brightness").val(value);
             $("span.brightness").html(value);
             return;
         }
 
-        if (key === "channels") {
+        if ("channels" === key) {
             var len = value.length;
             initChannels(len);
             for (i in value) {
@@ -954,7 +954,7 @@ function processData(data) {
             return;
         }
 
-        if (key === "useWhite") {
+        if ("useWhite" === key) {
             useWhite = value;
         }
 
@@ -962,7 +962,7 @@ function processData(data) {
         // Sensors & Magnitudes
         // ---------------------------------------------------------------------
 
-        if (key === "magnitudes") {
+        if ("magnitudes" === key) {
             initMagnitudes(value);
             for (i in value) {
                 var magnitude = value[i];
@@ -979,12 +979,12 @@ function processData(data) {
         // WiFi
         // ---------------------------------------------------------------------
 
-        if (key === "maxNetworks") {
+        if ("maxNetworks" === key) {
             maxNetworks = parseInt(value, 10);
             return;
         }
 
-        if (key === "wifi") {
+        if ("wifi" === key) {
             for (i in value) {
                 var wifi = value[i];
                 var nwk_line = addNetwork();
@@ -995,7 +995,7 @@ function processData(data) {
             return;
         }
 
-        if (key == "scanResult") {
+        if ("scanResult" === key) {
             $("div.scan.loading").hide();
         }
 
@@ -1003,12 +1003,12 @@ function processData(data) {
         // Relays scheduler
         // -----------------------------------------------------------------------------
 
-        if (key === "maxSchedules") {
+        if ("maxSchedules" === key) {
             maxSchedules = parseInt(value, 10);
             return;
         }
 
-        if (key === "schedule") {
+        if ("schedule" === key) {
             for (i in value) {
                 var schedule = value[i];
                 var sch_line = addSchedule();
@@ -1028,7 +1028,7 @@ function processData(data) {
         // Relays
         // ---------------------------------------------------------------------
 
-        if (key === "relayStatus") {
+        if ("relayStatus" === key) {
             initRelays(value);
             for (i in value) {
 
@@ -1042,7 +1042,7 @@ function processData(data) {
         }
 
         // Relay configuration
-        if (key === "relayConfig") {
+        if ("relayConfig" === key) {
             initRelayConfig(value);
             return;
         }
@@ -1052,13 +1052,13 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Domoticz - Relays
-        if (key === "dczRelays") {
+        if ("dczRelays" === key) {
             createRelayList(value, "dczRelays", "dczRelayTemplate");
             return;
         }
 
         // Domoticz - Magnitudes
-        if (key === "dczMagnitudes") {
+        if ("dczMagnitudes" === key) {
             createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
             return;
         }
@@ -1068,13 +1068,13 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Thingspeak - Relays
-        if (key === "tspkRelays") {
+        if ("tspkRelays" === key) {
             createRelayList(value, "tspkRelays", "tspkRelayTemplate");
             return;
         }
 
         // Thingspeak - Magnitudes
-        if (key === "tspkMagnitudes") {
+        if ("tspkMagnitudes" === key) {
             createMagnitudeList(value, "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
         }
@@ -1084,7 +1084,7 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         // Messages
-        if (key === "message") {
+        if ("message" === key) {
             window.alert(messages[value]);
             return;
         }
@@ -1097,33 +1097,33 @@ function processData(data) {
             return;
         }
 
-        if (key === "now") {
+        if ("now" === key) {
             now = value;
             ago = 0;
             return;
         }
 
-        if (key == "free_size") {
+        if ("free_size" === key) {
             free_size = parseInt(value, 10);
         }
 
         // Pre-process
-        if (key === "network") {
-            data.network = value.toUpperCase();
+        if ("network" === key) {
+            value = value.toUpperCase();
         }
-        if (key === "mqttStatus") {
-            data.mqttStatus = value ? "CONNECTED" : "NOT CONNECTED";
+        if ("mqttStatus" === key) {
+            value = value ? "CONNECTED" : "NOT CONNECTED";
         }
-        if (key === "ntpStatus") {
-            data.ntpStatus = value ? "SYNC'D" : "NOT SYNC'D";
+        if ("ntpStatus" === key) {
+            value = value ? "SYNC'D" : "NOT SYNC'D";
         }
-        if (key === "uptime") {
+        if ("uptime" === key) {
             var uptime  = parseInt(value, 10);
             var seconds = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var minutes = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var hours   = uptime % 24; uptime = parseInt(uptime / 24, 10);
             var days    = uptime;
-            data.key = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
+            value = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
         }
 
         // ---------------------------------------------------------------------
@@ -1179,7 +1179,7 @@ function hasChanged() {
     var newValue, originalValue;
     if ($(this).attr("type") === "checkbox") {
         newValue = $(this).prop("checked");
-        originalValue = $(this).attr("original") == "true";
+        originalValue = ($(this).attr("original") === "true");
     } else {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
@@ -1188,22 +1188,22 @@ function hasChanged() {
     var action = $(this).attr("action");
 
     if (typeof originalValue === "undefined") { return; }
-    if (action === "none") { return; }
+    if ("none" === action) { return; }
 
     if (newValue !== originalValue) {
-        if (hasChanged === 0) {
+        if (0 === hasChanged) {
             ++numChanged;
-            if (action === "reconnect") ++numReconnect;
-            if (action === "reboot") ++numReboot;
-            if (action === "reload") ++numReload;
+            if ("reconnect" === action) { ++numReconnect };
+            if ("reboot" === action) { ++numReboot };
+            if ("reload" === action) { ++numReload };
             $(this).attr("hasChanged", 1);
         }
     } else {
-        if (hasChanged === 1) {
+        if (1 === hasChanged) {
             --numChanged;
-            if (action === "reconnect") --numReconnect;
-            if (action === "reboot") --numReboot;
-            if (action === "reload") --numReload;
+            if ("reconnect" === action) { --numReconnect };
+            if ("reboot" === action) { --numReboot };
+            if ("reload" === action) { --numReload };
             $(this).attr("hasChanged", 0);
         }
     }
