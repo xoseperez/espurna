@@ -148,17 +148,51 @@ function validateForm(form) {
 
 }
 
-// These fields will always be a list of values
-var is_group = [
-    "ssid", "pass", "gw", "mask", "ip", "dns",
-    "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
-    "relayBoot", "relayPulse", "relayTime",
-    "mqttGroup", "mqttGroupInv",
-    "dczRelayIdx", "dczMagnitude",
-    "tspkRelay", "tspkMagnitude",
-    "ledMode",
-    "adminPass"
-];
+function getValue(element) {
+
+    var value;
+
+    if ($(element).attr("type") === "checkbox") {
+        value = $(element).is(":checked") ? 1 : 0;
+    } else if ($(element).attr("type") === "radio") {
+        if (!$(element).is(":checked")) {
+            return;
+        }
+        value = $(element).val();
+    } else {
+        value = $(element).val();
+    }
+
+    return value;
+
+}
+
+function addValue(data, name, value) {
+
+    // These fields will always be a list of values
+    var is_group = [
+        "ssid", "pass", "gw", "mask", "ip", "dns",
+        "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
+        "relayBoot", "relayPulse", "relayTime",
+        "mqttGroup", "mqttGroupInv",
+        "dczRelayIdx", "dczMagnitude",
+        "tspkRelay", "tspkMagnitude",
+        "ledMode",
+        "adminPass"
+    ];
+
+    if (name in data) {
+        if (!Array.isArray(data[name])) {
+            data[name] = [data[name]];
+        }
+        data[name].push(value);
+    } else if (is_group.indexOf(name) >= 0) {
+        data[name] = [value];
+    } else {
+        data[name] = value;
+    }
+
+}
 
 function getData(form) {
 
@@ -166,51 +200,15 @@ function getData(form) {
 
     // Populate data
     $("input,select", form).each(function() {
-
         var name = $(this).attr("name");
-        if (name) {
-
-            var value = "";
-
-            // Do not report these fields
-            if (name === "filename" || name === "rfbcode" ) {
-                return;
-            }
-
-            // Grab the value
-            if ($(this).attr("type") === "checkbox") {
-                value = $(this).is(":checked") ? 1 : 0;
-            } else if ($(this).attr("type") === "radio") {
-                if (!$(this).is(":checked")) {
-                    return;
-                }
-                value = $(this).val();
-            } else {
-                value = $(this).val();
-            }
-
-            // Build the object
-            if (name in data) {
-                if (!Array.isArray(data[name])) {
-                    data[name] = [data[name]];
-                }
-                data[name].push(value);
-            } else if (is_group.indexOf(name) >= 0) {
-                data[name] = [value];
-            } else {
-                data[name] = value;
-            }
-
-        }
-
+        var value = getValue(this);
+        addValue(data, name, value);
     });
 
     // Post process
-    if ("schSwitch" in data) {
-        data["schSwitch"].push(0xFF);
-    } else {
-        data["schSwitch"] = [0xFF];
-    }
+    addValue(data, "schSwitch", 0xFF);
+    delete data["filename"];
+    delete data["rfbcode"];
 
     return data;
 
@@ -272,8 +270,8 @@ function checkFirmware(file, callback) {
     var reader = new FileReader();
 
     reader.onloadend = function(evt) {
-        if (evt.target.readyState == FileReader.DONE) {
-            callback(evt.target.result.charCodeAt(0) == 0xE9);
+        if (evt.target.readyState === FileReader.DONE) {
+            callback(evt.target.result.charCodeAt(0) === 0xE9);
         }
     };
 
@@ -363,55 +361,50 @@ function doUpdatePassword() {
     return false;
 }
 
-function doReboot(ask) {
-
-    var response;
-
-    ask = (typeof ask === "undefined") ? true : ask;
+function checkChanges() {
 
     if (numChanged > 0) {
-        response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
-        if (response === true) {
-            return doUpdate();
+        var response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
+        if (response) {
+            doUpdate();
         }
     }
 
-    if (ask) {
-        response = window.confirm("Are you sure you want to reboot the device?");
-        if (response === false) {
+}
+
+function doAction(question, action) {
+
+    checkChanges();
+
+    ask = (typeof ask === "undefined") ? true : ask;
+    if (question) {
+        var response = window.confirm(question);
+        if (false === response) {
             return false;
         }
     }
 
-    websock.send(JSON.stringify({"action": "reboot"}));
+    websock.send(JSON.stringify({"action": action}));
     doReload(5000);
     return false;
 
 }
 
+function doReboot(ask) {
+
+    var question = (typeof ask === "undefined" || false === ask) ?
+        null :
+        "Are you sure you want to reboot the device?";
+    return doAction(question, "reboot");
+
+}
+
 function doReconnect(ask) {
 
-    var response;
-
-    ask = (typeof ask === "undefined") ? true : ask;
-
-    if (numChanged > 0) {
-        response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
-        if (response === true) {
-            return doUpdate();
-        }
-    }
-
-    if (ask) {
-        response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
-        if (response === false) {
-            return false;
-        }
-    }
-
-    websock.send(JSON.stringify({"action": "reconnect"}));
-    doReload(5000);
-    return false;
+    var question = (typeof ask === "undefined" || false === ask) ?
+        null :
+        "Are you sure you want to disconnect from the current WIFI network?";
+    return doAction(question, "reconnect");
 
 }
 
@@ -795,7 +788,7 @@ function initChannels(num) {
     // check if already initialized
     var done = $("#channels > div").length > 0;
     if (done) {
-      return;
+        return;
     }
 
     // does it have color channels?
@@ -806,7 +799,7 @@ function initChannels(num) {
     if (colors) {
         max = num % 3;
         if ((max > 0) & useWhite) {
-            max--
+            max--;
         };
     }
     var start = num - max;
