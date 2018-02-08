@@ -1193,17 +1193,17 @@ function hasChanged() {
     if (newValue !== originalValue) {
         if (0 === hasChanged) {
             ++numChanged;
-            if ("reconnect" === action) { ++numReconnect };
-            if ("reboot" === action) { ++numReboot };
-            if ("reload" === action) { ++numReload };
+            if ("reconnect" === action) { ++numReconnect; }
+            if ("reboot" === action) { ++numReboot; }
+            if ("reload" === action) { ++numReload; }
             $(this).attr("hasChanged", 1);
         }
     } else {
         if (1 === hasChanged) {
             --numChanged;
-            if ("reconnect" === action) { --numReconnect };
-            if ("reboot" === action) { --numReboot };
-            if ("reload" === action) { --numReload };
+            if ("reconnect" === action) { --numReconnect; }
+            if ("reboot" === action) { --numReboot; }
+            if ("reload" === action) { --numReload; }
             $(this).attr("hasChanged", 0);
         }
     }
