@@ -166,8 +166,10 @@ function getData(form) {
 
     // Populate data
     $("input,select", form).each(function() {
+
         var name = $(this).attr("name");
         if (name) {
+
             var value = "";
 
             // Do not report these fields
@@ -179,7 +181,9 @@ function getData(form) {
             if ($(this).attr("type") === "checkbox") {
                 value = $(this).is(":checked") ? 1 : 0;
             } else if ($(this).attr("type") === "radio") {
-                if (!$(this).is(":checked")) {return;}
+                if (!$(this).is(":checked")) {
+                    return;
+                }
                 value = $(this).val();
             } else {
                 value = $(this).val();
@@ -187,7 +191,9 @@ function getData(form) {
 
             // Build the object
             if (name in data) {
-                if (!Array.isArray(data[name])) data[name] = [data[name]];
+                if (!Array.isArray(data[name])) {
+                    data[name] = [data[name]];
+                }
                 data[name].push(value);
             } else if (is_group.indexOf(name) >= 0) {
                 data[name] = [value];
@@ -196,6 +202,7 @@ function getData(form) {
             }
 
         }
+
     });
 
     // Post process
@@ -249,12 +256,9 @@ function resetOriginals() {
 }
 
 function doReload(milliseconds) {
-    milliseconds = (typeof milliseconds == "undefined") ?
-        0 :
-        parseInt(milliseconds, 10);
     setTimeout(function() {
         window.location.reload();
-    }, milliseconds);
+    }, parseInt(milliseconds, 10));
 }
 
 /**
@@ -363,19 +367,19 @@ function doReboot(ask) {
 
     var response;
 
-    ask = (typeof ask == "undefined") ? true : ask;
+    ask = (typeof ask === "undefined") ? true : ask;
 
     if (numChanged > 0) {
         response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
         if (response === true) {
-          return doUpdate();
+            return doUpdate();
         }
     }
 
     if (ask) {
         response = window.confirm("Are you sure you want to reboot the device?");
         if (response === false) {
-          return false;
+            return false;
         }
     }
 
@@ -386,21 +390,22 @@ function doReboot(ask) {
 }
 
 function doReconnect(ask) {
+
     var response;
 
-    ask = (typeof ask == "undefined") ? true : ask;
+    ask = (typeof ask === "undefined") ? true : ask;
 
     if (numChanged > 0) {
         response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
         if (response === true) {
-          return doUpdate();
+            return doUpdate();
         }
     }
 
     if (ask) {
         response = window.confirm("Are you sure you want to disconnect from the current WIFI network?");
         if (response === false) {
-          return false;
+            return false;
         }
     }
 
@@ -439,7 +444,7 @@ function doUpdate() {
                 if (response === true) { doReconnect(false); }
             } else if (numReload > 0) {
                 response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response === true) { doReload(); }
+                if (response === true) { doReload(0); }
             }
 
             resetOriginals();
@@ -460,7 +465,7 @@ function doBackup() {
 function onFileUpload(event) {
 
     var inputFiles = this.files;
-    if (inputFiles === undefined || inputFiles.length === 0) {
+    if (typeof inputFiles === "undefined" || inputFiles.length === 0) {
       return false;
     }
     var inputFile = inputFiles[0];
@@ -800,9 +805,19 @@ function initChannels(num) {
     var max = num;
     if (colors) {
         max = num % 3;
-        if ((max > 0) & useWhite) max--;
+        if ((max > 0) & useWhite) {
+            max--
+        };
     }
     var start = num - max;
+
+    var onChannelSliderChange = function() {
+        var id = $(this).attr("data");
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        websock.send(JSON.stringify({"action": "channel", "data" : { "id": id, "value": value }}));
+    }
 
     // add templates
     var template = $("#channelTemplate").children();
@@ -811,13 +826,7 @@ function initChannels(num) {
         var channel_id = start + i;
         var line = $(template).clone();
         $("span.slider", line).attr("data", channel_id);
-        $("input.slider", line).attr("data", channel_id).on("change", function() {
-            var id = $(this).attr("data");
-            var value = $(this).val();
-            var parent = $(this).parents(".pure-g");
-            $("span", parent).html(value);
-            websock.send(JSON.stringify({"action": "channel", "data" : { "id": id, "value": value }}));
-        });
+        $("input.slider", line).attr("data", channel_id).on("change", onChannelSliderChange);
         $("label", line).html("Channel " + (channel_id + 1));
 
         line.appendTo("#channels");
@@ -829,6 +838,24 @@ function initChannels(num) {
 // -----------------------------------------------------------------------------
 // RFBridge
 // -----------------------------------------------------------------------------
+
+function rfbLearn() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({"action": "rfblearn", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
+}
+
+function rfbForget() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({"action": "rfbforget", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
+}
+
+function rfbSend() {
+    var parent = $(this).parents(".pure-g");
+    var input = $("input", parent);
+    websock.send(JSON.stringify({"action": "rfbsend", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status"), "data": input.val()}}));
+}
 
 function addRfbNode() {
 
@@ -849,24 +876,6 @@ function addRfbNode() {
     line.appendTo("#rfbNodes");
 
     return line;
-}
-
-function rfbLearn() {
-    var parent = $(this).parents(".pure-g");
-    var input = $("input", parent);
-    websock.send(JSON.stringify({"action": "rfblearn", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
-}
-
-function rfbForget() {
-    var parent = $(this).parents(".pure-g");
-    var input = $("input", parent);
-    websock.send(JSON.stringify({"action": "rfbforget", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status")}}));
-}
-
-function rfbSend() {
-    var parent = $(this).parents(".pure-g");
-    var input = $("input", parent);
-    websock.send(JSON.stringify({"action": "rfbsend", "data" : {"id" : input.attr("data-id"), "status": input.attr("data-status"), "data": input.val()}}));
 }
 
 // -----------------------------------------------------------------------------
