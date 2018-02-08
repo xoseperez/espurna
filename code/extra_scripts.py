@@ -6,7 +6,7 @@ Import("env")
 # Utils
 # ------------------------------------------------------------------------------
 
-class Color:
+class Color(object):
     BLACK = '\x1b[1;30m'
     RED = '\x1b[1;31m'
     GREEN = '\x1b[1;32m'
@@ -32,7 +32,7 @@ def clr(color, text):
 # ------------------------------------------------------------------------------
 
 def check_size(source, target, env):
-    time.sleep(1)
+    time.sleep(2)
     size = target[0].get_size()
     print clr(Color.LIGHT_BLUE, "Binary size: %s bytes" % size)
     #if size > 512000:
