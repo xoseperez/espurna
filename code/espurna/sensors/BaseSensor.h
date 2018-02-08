@@ -10,8 +10,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#define GPIO_NONE                   0x99
-
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up

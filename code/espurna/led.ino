@@ -124,28 +124,28 @@ void ledUpdate(bool value) {
 
 void ledSetup() {
 
-    #ifdef LED1_PIN
+    #if LED1_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE, LED1_RELAY });
     #endif
-    #ifdef LED2_PIN
+    #if LED2_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE, LED2_RELAY });
     #endif
-    #ifdef LED3_PIN
+    #if LED3_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE, LED3_RELAY });
     #endif
-    #ifdef LED4_PIN
+    #if LED4_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY });
     #endif
-    #ifdef LED5_PIN
+    #if LED5_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY });
     #endif
-    #ifdef LED6_PIN
+    #if LED6_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY });
     #endif
-    #ifdef LED7_PIN
+    #if LED7_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY });
     #endif
-    #ifdef LED8_PIN
+    #if LED8_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY });
     #endif
 

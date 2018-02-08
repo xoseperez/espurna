@@ -27,11 +27,11 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 EmbedisWrap embedis(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
 
 #if TERMINAL_SUPPORT
-#ifdef SERIAL_RX_PORT
+#if SERIAL_RX_ENABLED
     char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
     static unsigned char _serial_rx_pointer = 0;
-#endif
-#endif
+#endif // SERIAL_RX_ENABLED
+#endif // TERMINAL_SUPPORT
 
 bool _settings_save = false;
 
@@ -408,10 +408,10 @@ void settingsSetup() {
     _settingsInitCommands();
 
     #if TERMINAL_SUPPORT
-        #ifdef SERIAL_RX_PORT
-            SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
-        #endif
-    #endif
+    #if SERIAL_RX_ENABLED
+        SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
+    #endif // SERIAL_RX_ENABLED
+    #endif // TERMINAL_SUPPORT
 
     // Register loop
     espurnaRegisterLoop(settingsLoop);
@@ -429,7 +429,7 @@ void settingsLoop() {
 
         embedis.process();
 
-        #ifdef SERIAL_RX_PORT
+        #if SERIAL_RX_ENABLED
 
             while (SERIAL_RX_PORT.available() > 0) {
                 char rc = Serial.read();
@@ -440,7 +440,7 @@ void settingsLoop() {
                 }
             }
 
-        #endif // SERIAL_RX_PORT
+        #endif // SERIAL_RX_ENABLED
 
     #endif // TERMINAL_SUPPORT
 

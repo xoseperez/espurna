@@ -73,9 +73,15 @@
 
 // Second serial port (used for RX)
 
-//#define SERIAL_RX_PORT        Serial			// This setting is usually defined
+#ifndef SERIAL_RX_ENABLED
+#define SERIAL_RX_ENABLED       0               // Secondary serial port for RX
+#endif
+
+#ifndef SERIAL_RX_PORT
+#define SERIAL_RX_PORT          Serial			// This setting is usually defined
 												// in the hardware.h file for those
 												// boards that require it
+#endif
 
 #ifndef SERIAL_RX_BAUDRATE
 #define SERIAL_RX_BAUDRATE      115200          // Default baudrate
@@ -335,15 +341,43 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_SLEEP_ENABLED      1           // Enable WiFi light sleep
 #define WIFI_SCAN_NETWORKS      1           // Perform a network scan before connecting
 
-// Optional hardcoded configuration (up to 2 different networks)
-//#define WIFI1_SSID              "..."
-//#define WIFI1_PASS              "..."
-//#define WIFI1_IP                "192.168.1.201"
-//#define WIFI1_GW                "192.168.1.1"
-//#define WIFI1_MASK              "255.255.255.0"
-//#define WIFI1_DNS               "8.8.8.8"
-//#define WIFI2_SSID              "..."
-//#define WIFI2_PASS              "..."
+// Optional hardcoded configuration (up to 2 networks)
+#ifndef WIFI1_SSID
+#define WIFI1_SSID              ""
+#endif
+#ifndef WIFI1_PASS
+#define WIFI1_PASS              ""
+#endif
+#ifndef WIFI1_IP
+#define WIFI1_IP                ""
+#endif
+#ifndef WIFI1_GW
+#define WIFI1_GW                ""
+#endif
+#ifndef WIFI1_MASK
+#define WIFI1_MASK              ""
+#endif
+#ifndef WIFI1_DNS
+#define WIFI1_DNS               ""
+#endif
+#ifndef WIFI2_SSID
+#define WIFI2_SSID              ""
+#endif
+#ifndef WIFI2_PASS
+#define WIFI2_PASS              ""
+#endif
+#ifndef WIFI2_IP
+#define WIFI2_IP                ""
+#endif
+#ifndef WIFI2_GW
+#define WIFI2_GW                ""
+#endif
+#ifndef WIFI2_MASK
+#define WIFI2_MASK              ""
+#endif
+#ifndef WIFI2_DNS
+#define WIFI2_DNS               ""
+#endif
 
 #define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
 #define WIFI_PROPAGATION_CONST  4           // This is typically something between 2.7 to 4.3 (free space is 2)

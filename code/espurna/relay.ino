@@ -799,7 +799,7 @@ void relaySetup() {
 
     // Dummy relays for AI Light, Magic Home LED Controller, H801,
     // Sonoff Dual and Sonoff RF Bridge
-    #ifdef DUMMY_RELAY_COUNT
+    #if DUMMY_RELAY_COUNT > 0
 
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
             _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL});
@@ -807,28 +807,28 @@ void relaySetup() {
 
     #else
 
-        #ifdef RELAY1_PIN
+        #if RELAY1_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
         #endif
-        #ifdef RELAY2_PIN
+        #if RELAY2_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
         #endif
-        #ifdef RELAY3_PIN
+        #if RELAY3_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
         #endif
-        #ifdef RELAY4_PIN
+        #if RELAY4_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
         #endif
-        #ifdef RELAY5_PIN
+        #if RELAY5_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
         #endif
-        #ifdef RELAY6_PIN
+        #if RELAY6_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
         #endif
-        #ifdef RELAY7_PIN
+        #if RELAY7_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
         #endif
-        #ifdef RELAY8_PIN
+        #if RELAY8_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
         #endif
 

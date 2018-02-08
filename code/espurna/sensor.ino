@@ -413,7 +413,7 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedP", 0).toInt() == 0) {
+                if (value = (getSetting("pwrExpectedP", 0).toInt() == 0)) {
                     value = getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat();
                     if (value > 0) sensor->setCurrentRatio(0, value);
                 } else {
