@@ -77,6 +77,15 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #endif
 
+    #if RELAY_PROVIDER == RELAY_PROVIDER_STM
+        Serial.flush();
+        Serial.write(0xA0);
+        Serial.write(id + 1);
+        Serial.write(status);
+        Serial.write(0xA1 + status + id);
+        Serial.flush();
+    #endif
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // If the number of relays matches the number of light channels
@@ -453,7 +462,11 @@ void _relayBoot() {
         }
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
-        _relays[i].change_time = millis();
+        #ifdef RELAY_PROVIDER_STM
+            _relays[i].change_time = millis() + 3000 + 1000 * i;
+        #else
+            _relays[i].change_time = millis();
+        #endif
         bit <<= 1;
     }
 

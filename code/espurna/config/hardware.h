@@ -1394,6 +1394,20 @@
 
 // -----------------------------------------------------------------------------
 
+#elif defined(STM_RELAY)
+
+    // Info
+    #define MANUFACTURER            "STM_RELAY"
+    #define DEVICE                  "2CH"
+
+    // Relays
+    #define DUMMY_RELAY_COUNT       2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_STM
+
+    // Remove UART noise on serial line
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
+
 #endif
 
 // -----------------------------------------------------------------------------
