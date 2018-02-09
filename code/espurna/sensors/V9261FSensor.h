@@ -10,7 +10,9 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#include <SoftwareSerial.h>
+extern "C" {
+    #include "libs/softuart.h"
+}
 
 class V9261FSensor : public BaseSensor {
 
@@ -23,10 +25,6 @@ class V9261FSensor : public BaseSensor {
         V9261FSensor(): BaseSensor(), _data() {
             _count = 6;
             _sensor_id = SENSOR_V9261F_ID;
-        }
-
-        ~V9261FSensor() {
-            if (_serial) delete _serial;
         }
 
         // ---------------------------------------------------------------------
@@ -63,10 +61,8 @@ class V9261FSensor : public BaseSensor {
             if (!_dirty) return;
             _dirty = false;
 
-            if (_serial) delete _serial;
-
-            _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32);
-            _serial->begin(V9261F_BAUDRATE);
+            Softuart_SetPinRx(&_serial, _pin_rx);
+            Softuart_Init(&_serial, V9261F_BAUDRATE, _inverted);
 
         }
 
@@ -120,6 +116,12 @@ class V9261FSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
+        void _flush() {
+            while (Softuart_Available(&_serial)) {
+                Softuart_Read(&_serial);
+            }
+        }
+
         void _read() {
 
             static unsigned char state = 0;
@@ -129,24 +131,22 @@ class V9261FSensor : public BaseSensor {
 
             if (state == 0) {
 
-                while (_serial->available()) {
-                    _serial->flush();
-                    found = true;
-                    last = millis();
-                }
+                _flush();
+                found = true;
+                last = millis();
 
                 if (found && (millis() - last > V9261F_SYNC_INTERVAL)) {
-                    _serial->flush();
+                    _flush();
                     index = 0;
                     state = 1;
                 }
 
             } else if (state == 1) {
 
-                while (_serial->available()) {
-                    _serial->read();
+                while (Softuart_Available(&_serial)) {
+                    Softuart_Read(&_serial);
                     if (index++ >= 7) {
-                        _serial->flush();
+                        _flush();
                         index = 0;
                         state = 2;
                     }
@@ -154,10 +154,10 @@ class V9261FSensor : public BaseSensor {
 
             } else if (state == 2) {
 
-                while (_serial->available()) {
-                    _data[index] = _serial->read();
+                while (Softuart_Available(&_serial)) {
+                    _data[index] = Softuart_Read(&_serial);
                     if (index++ >= 19) {
-                        _serial->flush();
+                        _flush();
                         last = millis();
                         state = 3;
                     }
@@ -210,10 +210,8 @@ class V9261FSensor : public BaseSensor {
 
             } else if (state == 4) {
 
-                while (_serial->available()) {
-                    _serial->flush();
-                    last = millis();
-                }
+                _flush();
+                last = millis();
 
                 if (millis() - last > V9261F_SYNC_INTERVAL) {
                     state = 1;
@@ -236,7 +234,7 @@ class V9261FSensor : public BaseSensor {
 
         unsigned int _pin_rx = V9261F_PIN;
         bool _inverted = V9261F_PIN_INVERSE;
-        SoftwareSerial * _serial = NULL;
+        Softuart _serial;
 
         double _active = 0;
         double _reactive = 0;
