@@ -85,11 +85,42 @@ String _settingsKeyName(unsigned int index) {
 
 }
 
+std::vector<String> _settingsKeys() {
+
+    // Get sorted list of keys
+    std::vector<String> keys;
+
+    //unsigned int size = settingsKeyCount();
+    unsigned int size = _settingsKeyCount();
+    for (unsigned int i=0; i<size; i++) {
+
+        //String key = settingsKeyName(i);
+        String key = _settingsKeyName(i);
+        bool inserted = false;
+        for (unsigned char j=0; j<keys.size(); j++) {
+
+            // Check if we have to insert it before the current element
+            if (keys[j].compareTo(key) > 0) {
+                keys.insert(keys.begin() + j, key);
+                inserted = true;
+                break;
+            }
+
+        }
+
+        // If we could not insert it, just push it at the end
+        if (!inserted) keys.push_back(key);
+
+    }
+
+    return keys;
+}
+
 // -----------------------------------------------------------------------------
 // Commands
 // -----------------------------------------------------------------------------
 
-void _settingsHelp() {
+void _settingsHelpCommand() {
 
     // Get sorted list of commands
     std::vector<String> commands;
@@ -122,32 +153,10 @@ void _settingsHelp() {
 
 }
 
-void _settingsKeys() {
+void _settingsKeysCommand() {
 
     // Get sorted list of keys
-    std::vector<String> keys;
-    //unsigned int size = settingsKeyCount();
-    unsigned int size = _settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-
-        //String key = settingsKeyName(i);
-        String key = _settingsKeyName(i);
-        bool inserted = false;
-        for (unsigned char j=0; j<keys.size(); j++) {
-
-            // Check if we have to insert it before the current element
-            if (keys[j].compareTo(key) > 0) {
-                keys.insert(keys.begin() + j, key);
-                inserted = true;
-                break;
-            }
-
-        }
-
-        // If we could not insert it, just push it at the end
-        if (!inserted) keys.push_back(key);
-
-    }
+    std::vector<String> keys = _settingsKeys();
 
     // Write key-values
     DEBUG_MSG_P(PSTR("Current settings:\n"));
@@ -162,14 +171,14 @@ void _settingsKeys() {
 
 }
 
-void _settingsFactoryReset() {
+void _settingsFactoryResetCommand() {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROM.write(i, 0xFF);
     }
     EEPROM.commit();
 }
 
-void _settingsDump(bool ascii) {
+void _settingsDumpCommand(bool ascii) {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         if (i % 16 == 0) DEBUG_MSG_P(PSTR("\n[%04X] "), i);
         byte c = EEPROM.read(i);
@@ -191,14 +200,14 @@ void _settingsInitCommands() {
     #endif
 
     settingsRegisterCommand(F("COMMANDS"), [](Embedis* e) {
-        _settingsHelp();
+        _settingsHelpCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
         bool ascii = false;
         if (e->argc == 2) ascii = String(e->argv[1]).toInt() == 1;
-        _settingsDump(ascii);
+        _settingsDumpCommand(ascii);
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
@@ -210,7 +219,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
-        _settingsFactoryReset();
+        _settingsFactoryResetCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -238,7 +247,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("HELP"), [](Embedis* e) {
-        _settingsHelp();
+        _settingsHelpCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -252,7 +261,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("KEYS"), [](Embedis* e) {
-        _settingsKeys();
+        _settingsKeysCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -323,7 +332,7 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    _settingsFactoryReset();
+    _settingsFactoryResetCommand();
 }
 
 // -----------------------------------------------------------------------------
@@ -367,11 +376,13 @@ bool settingsRestoreJson(JsonObject& data) {
 
 bool settingsGetJson(JsonObject& root) {
 
-    unsigned int size = _settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-        String key = _settingsKeyName(i);
-        String value = getSetting(key);
-        root[key] = value;
+    // Get sorted list of keys
+    std::vector<String> keys = _settingsKeys();
+
+    // Add the key-values to the json object
+    for (unsigned int i=0; i<keys.size(); i++) {
+        String value = getSetting(keys[i]);
+        root[keys[i]] = value;
     }
 
 }

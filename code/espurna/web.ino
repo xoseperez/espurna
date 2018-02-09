@@ -45,17 +45,19 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     webLog(request);
     if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
 
-    AsyncJsonResponse * response = new AsyncJsonResponse();
-    JsonObject& root = response->getRoot();
+    AsyncResponseStream *response = request->beginResponseStream("text/json");
 
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
     settingsGetJson(root);
+    root.prettyPrintTo(*response);
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
-    response->setLength();
+
     request->send(response);
 
 }
