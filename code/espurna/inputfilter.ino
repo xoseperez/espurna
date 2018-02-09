@@ -84,7 +84,7 @@ uint8_t InputFilter::getInputState() {
 // ------------------------------------------
 unsigned char InputFilter::loop() {
 
-    bool trigger_event;
+    bool trigger_event = false;
     unsigned char event = GIE_NONE;
     bool pinstate = digitalRead(_pin);
 

@@ -1,7 +1,7 @@
 
 
 #include <vector>
-//#include "inputfilter.h"
+#include "config/inputfilter.h"
 
 typedef struct {
     InputFilter * input;
