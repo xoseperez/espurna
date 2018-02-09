@@ -12,7 +12,7 @@ Copyright (C) 2018 by Thomas Stärk
 // -----------------------------------------------------------------------------
 
 #include <Arduino.h>
-//#include "inputfilter.h"
+#include "config/inputfilter.h"
 
 InputFilter::InputFilter(uint8_t input, uint8_t pin, uint8_t mode, unsigned long filter){
     _init(input, pin, mode, filter);
@@ -84,7 +84,7 @@ uint8_t InputFilter::getInputState() {
 // ------------------------------------------
 unsigned char InputFilter::loop() {
 
-    bool trigger_event = false;
+    bool trigger_event;
     unsigned char event = GIE_NONE;
     bool pinstate = digitalRead(_pin);
 
