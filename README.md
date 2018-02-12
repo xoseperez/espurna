@@ -54,7 +54,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Sonoff RF Bridge** support
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)
-    * Support for https://github.com/rhx/RF-Bridge-EFM8BB1 custom firmware
+    * Support for https://github.com/Portisch/RF-Bridge-EFM8BB1 custom firmware
 * Support for different **sensors**
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
