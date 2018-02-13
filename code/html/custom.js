@@ -459,6 +459,30 @@ function doRestore() {
     return false;
 }
 
+function doFactoryReset() {
+    var response;
+
+    ask = (typeof ask == "undefined") ? true : ask;
+
+    if (numChanged > 0) {
+        response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
+        if (response === true) {
+          return doUpdate();
+        }
+    }
+
+    if (ask) {
+        response = window.confirm("Are you sure you want to restore to factory settings?");
+        if (response === false) {
+          return false;
+        }
+    }
+
+    websock.send(JSON.stringify({"action": "factory_reset"}));
+    doReload(5000);
+    return false;
+}
+
 function doToggle(element, value) {
     var relayID = parseInt(element.attr("data"), 10);
     websock.send(JSON.stringify({"action": "relay", "data": { "id": relayID, "status": value ? 1 : 0 }}));
@@ -1230,6 +1254,7 @@ $(function() {
     $(".button-wifi-scan").on("click", doScan);
     $(".button-settings-backup").on("click", doBackup);
     $(".button-settings-restore").on("click", doRestore);
+    $(".button-settings-factory").on("click", doFactoryReset);
     $("#uploader").on("change", onFileUpload);
     $(".button-upgrade").on("click", doUpgrade);
 
