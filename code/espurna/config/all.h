@@ -8,9 +8,6 @@
 	(Define USE_CUSTOM_H on commandline for platformio:
 	export PLATFORMIO_BUILD_FLAGS="'-DUSE_CUSTOM_H'" )
 */
-#ifdef USE_CUSTOM_H
-#include "custom.h"
-#endif
 
 #include "version.h"
 #include "arduino.h"
@@ -22,4 +19,8 @@
 
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"
+#endif
+
+#ifdef USE_CUSTOM_H
+#include "custom.h"
 #endif
