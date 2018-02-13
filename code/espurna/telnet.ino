@@ -117,6 +117,14 @@ void _telnetNewClient(AsyncClient *client) {
             }, 0);
 
             DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+
+            // If there is no terminal support automatically dump info and crash data
+            #if TERMINAL_SUPPORT == 0
+                info();
+                wifiStatus();
+                debugDumpCrashInfo();
+            #endif
+
             _telnetFirst = true;
             wifiReconnectCheck();
             return;
