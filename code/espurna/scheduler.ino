@@ -120,11 +120,17 @@ void _schCheck() {
             int minutes_to_trigger = _schMinutesLeft(sch_hour, sch_minute);
 
             if (minutes_to_trigger == 0) {
-                int sch_action = getSetting("schAction", i, 0).toInt();
-                if (sch_action == 2) {
-                    relayToggle(sch_switch);
+                int sch_brightness = getSetting("schBrightness", i, -1).toInt();
+                if (sch_brightness > -1) {
+                    lightChannel(sch_switch, sch_brightness);
+                    lightUpdate(true, true);
                 } else {
-                    relayStatus(sch_switch, sch_action);
+                    int sch_action = getSetting("schAction", i, 0).toInt();
+                    if (sch_action == 2) {
+                        relayToggle(sch_switch);
+                    } else {
+                        relayStatus(sch_switch, sch_action);
+                    }
                 }
                 DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), sch_switch);
 
