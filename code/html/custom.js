@@ -460,24 +460,10 @@ function doRestore() {
 }
 
 function doFactoryReset() {
-    var response;
-
-    ask = (typeof ask == "undefined") ? true : ask;
-
-    if (numChanged > 0) {
-        response = window.confirm("Some changes have not been saved yet, do you want to save them first?");
-        if (response === true) {
-          return doUpdate();
-        }
+    var response = window.confirm("Are you sure you want to restore to factory settings?");
+    if (response === false) {
+        return false;
     }
-
-    if (ask) {
-        response = window.confirm("Are you sure you want to restore to factory settings?");
-        if (response === false) {
-          return false;
-        }
-    }
-
     websock.send(JSON.stringify({"action": "factory_reset"}));
     doReload(5000);
     return false;
