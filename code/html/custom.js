@@ -166,7 +166,7 @@ function addValue(data, name, value) {
     // These fields will always be a list of values
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
+        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupInv",
         "dczRelayIdx", "dczMagnitude",
@@ -612,14 +612,14 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function addSchedule() {
+function addSchedule(event) {
     var numSchedules = $("#schedules > div").length;
     if (numSchedules >= maxSchedules) {
         alert("Max number of schedules reached");
         return null;
     }
     var tabindex = 200 + numSchedules * 10;
-    var template = $("#scheduleTemplate").children();
+    var template = $("#" + event.data.schType + "ScheduleTemplate").children();
     var line = $(template).clone();
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex);
@@ -802,6 +802,9 @@ function initChannels(num) {
         $("label", line).html("Channel " + (channel_id + 1));
 
         line.appendTo("#channels");
+
+        $("select.islight").append(
+            $("<option></option>").attr("value",i).text("Light #" + i));
 
     }
 
@@ -1011,7 +1014,8 @@ function processData(data) {
         if ("schedule" === key) {
             for (i in value) {
                 var schedule = value[i];
-                var sch_line = addSchedule();
+                var sch_line = addSchedule({ data: {schType: schedule['schType'] }});
+
                 Object.keys(schedule).forEach(function(key) {
                     var sch_value = schedule[key];
                     $("input[name='" + key + "']", sch_line).val(sch_value);
@@ -1268,7 +1272,8 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-schedule").on("click", addSchedule);
+    $(".button-add-switch-schedule").on("click", { schType: "switch" }, addSchedule);
+    $(".button-add-light-schedule").on("click", { schType: "light" }, addSchedule);
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

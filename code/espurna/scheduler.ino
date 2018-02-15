@@ -26,6 +26,7 @@ void _schWebSocketOnSend(JsonObject &root){
         scheduler["schEnabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
         scheduler["schSwitch"] = getSetting("schSwitch", i, 0).toInt();
         scheduler["schAction"] = getSetting("schAction", i, 0).toInt();
+        scheduler["schType"] = getSetting("schType", i, 0);
         scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
         scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
         scheduler["schWDs"] = getSetting("schWDs", i, "");
@@ -53,6 +54,7 @@ void _schConfigure() {
             delSetting("schHour", i);
             delSetting("schMinute", i);
             delSetting("schWDs", i);
+            delSetting("schType", i);
 
         } else {
 
@@ -120,12 +122,14 @@ void _schCheck() {
             int minutes_to_trigger = _schMinutesLeft(sch_hour, sch_minute);
 
             if (minutes_to_trigger == 0) {
-                int sch_brightness = getSetting("schBrightness", i, -1).toInt();
-                if (sch_brightness > -1) {
+                if (getSetting("schType", i, "") == "light") {
+                    int sch_brightness = getSetting("schAction", i, -1).toInt();
+                    DEBUG_MSG_P(PSTR("[SCH] Switching light %d to %d\n"), sch_switch, sch_brightness);
                     lightChannel(sch_switch, sch_brightness);
                     lightUpdate(true, true);
                 } else {
                     int sch_action = getSetting("schAction", i, 0).toInt();
+                    DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
                     if (sch_action == 2) {
                         relayToggle(sch_switch);
                     } else {
