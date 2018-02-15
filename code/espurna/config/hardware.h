@@ -33,10 +33,17 @@
     #define RELAY1_PIN          4
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_PRESS       BUTTON_MODE_ON
+    #define BUTTON1_CLICK       BUTTON_MODE_OFF
+
     // Inputs
-    #define INPUT1_PIN          5
-    #define INPUT1_MODE         GEN_INPUT_SET_PULLUP | GEN_INPUT_DEFAULT_HIGH
-    #define INPUT1_FILTER       100
+//    #define INPUT1_PIN          5
+//    #define INPUT1_MODE         GEN_INPUT_SET_PULLUP | GEN_INPUT_DEFAULT_HIGH
+//    #define INPUT1_FILTER       100
 
     // LEDs
     #define LED1_PIN            2
