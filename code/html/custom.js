@@ -1021,7 +1021,7 @@ function processData(data) {
         if ("schedule" === key) {
             for (i in value) {
                 var schedule = value[i];
-                var sch_line = addSchedule({ data: {schType: schedule['schType'] }});
+                var sch_line = addSchedule({ data: {schType: schedule["schType"] }});
 
                 Object.keys(schedule).forEach(function(key) {
                     var sch_value = schedule[key];
