@@ -125,8 +125,10 @@ void _schCheck() {
                 if (getSetting("schType", i, "") == "light") {
                     int sch_brightness = getSetting("schAction", i, -1).toInt();
                     DEBUG_MSG_P(PSTR("[SCH] Switching light %d to %d\n"), sch_switch, sch_brightness);
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE                    
                     lightChannel(sch_switch, sch_brightness);
                     lightUpdate(true, true);
+#endif                    
                 } else {
                     int sch_action = getSetting("schAction", i, 0).toInt();
                     DEBUG_MSG_P(PSTR("[SCH] Switching switch %d to %d\n"), sch_switch, sch_action);
