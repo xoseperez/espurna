@@ -619,14 +619,21 @@ function addSchedule(event) {
         return null;
     }
     var tabindex = 200 + numSchedules * 10;
-    var template = $("#" + event.data.schType + "ScheduleTemplate").children();
+    var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
+
+    template = $("#" + event.data.schType + "ActionTemplate").children();
+    var actionLine = template.clone();
+    $(line).find("#schActionDiv").append(actionLine);
+
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex);
         tabindex++;
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
+    var ena = $(line).find(":checkbox");
+    ena.prop("checked", false).iphoneStyle("refresh");
     line.appendTo("#schedules");
     return line;
 }
@@ -1091,6 +1098,15 @@ function processData(data) {
         if ("message" === key) {
             window.alert(messages[value]);
             return;
+        }
+
+
+        if ("colorVisible" === key) {
+            $(".button-add-light-schedule").show();
+        }
+
+        if ("relayVisible" === key) {
+            $(".button-add-switch-schedule").show();
         }
 
         // Enable options
