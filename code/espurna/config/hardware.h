@@ -914,35 +914,6 @@
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
 
-#elif defined(MAGICHOME_LED_CONTROLLER_23)
-
-    // Info
-    #define MANUFACTURER        "MAGICHOME"
-    #define DEVICE              "LED_CONTROLLER_23"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
-
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
-
-    // Light
-    #define LIGHT_CHANNELS      4
-    #define LIGHT_CH1_PIN       12      // RED
-    #define LIGHT_CH2_PIN       5       // GREEN
-    #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH4_PIN       15      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-
-    // IR
-    #define IR_SUPPORT          1
-    #define IR_PIN              4
-    #define IR_BUTTON_SET       1
-
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
@@ -956,7 +927,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
-    #define SERIAL_RX_PORT      Serial
+    #define SERIAL_RX_ENABLED   1
 
     // LEDs
     #define LED1_PIN            5
@@ -984,7 +955,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
-    #define SERIAL_RX_PORT      Serial
+    #define SERIAL_RX_ENABLED   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1422,6 +1393,20 @@
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+
+#elif defined(STM_RELAY)
+
+    // Info
+    #define MANUFACTURER            "STM_RELAY"
+    #define DEVICE                  "2CH"
+
+    // Relays
+    #define DUMMY_RELAY_COUNT       2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_STM
+
+    // Remove UART noise on serial line
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
 
 #endif
 

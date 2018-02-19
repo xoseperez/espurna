@@ -45,7 +45,7 @@ void wifiRegister(wifi_callback_f callback);
 // -----------------------------------------------------------------------------
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
 void mqttRegister(mqtt_callback_f callback);
-String mqttTopicKey(char * topic);
+String mqttMagnitude(char * topic);
 
 // -----------------------------------------------------------------------------
 // Broker

@@ -252,6 +252,9 @@ void info() {
 
     // -------------------------------------------------------------------------
 
+    #ifdef APP_BUILD_FLAGS
+        DEBUG_MSG_P(PSTR("[INIT] BUILD_FLAGS: %s\n"), APP_BUILD_FLAGS);
+    #endif
     DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
 

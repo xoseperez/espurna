@@ -55,6 +55,10 @@ h2 {
     margin: -10px 0 10px 0;
 }
 
+.hint a {
+    color:inherit;
+}
+
 legend.module,
 .module {
     display: none;

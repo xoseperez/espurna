@@ -6,7 +6,7 @@ Import("env")
 # Utils
 # ------------------------------------------------------------------------------
 
-class Color:
+class Color(object):
     BLACK = '\x1b[1;30m'
     RED = '\x1b[1;31m'
     GREEN = '\x1b[1;32m'
@@ -32,15 +32,28 @@ def clr(color, text):
 # ------------------------------------------------------------------------------
 
 def check_size(source, target, env):
-    time.sleep(1)
+    time.sleep(2)
     size = target[0].get_size()
     print clr(Color.LIGHT_BLUE, "Binary size: %s bytes" % size)
     #if size > 512000:
     #    print clr(Color.LIGHT_RED, "File too large for OTA!")
     #    Exit(1)
 
+def add_build_flags(source, target, env):
+    build_h = "espurna/config/build.h"
+    build_flags = env['BUILD_FLAGS'][0]
+    lines = open(build_h).readlines()
+    with open(build_h, "w") as fh:
+        for line in lines:
+            if "APP_BUILD_FLAGS" in line:
+                fh.write("#define APP_BUILD_FLAGS \"%s\"" % build_flags)
+            else:
+                fh.write(line)
+
+
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
 
+env.AddPreAction("$BUILD_DIR/src/espurna.ino.o", add_build_flags)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)

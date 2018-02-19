@@ -17,6 +17,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 void _schWebSocketOnSend(JsonObject &root){
 
+    root["schVisible"] = 1;
     root["maxScheduled"] = SCHEDULER_MAX_SCHEDULES;
     JsonArray &sch = root.createNestedArray("schedule");
     for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
