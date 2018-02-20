@@ -35,9 +35,7 @@ void _recvWithEndMarker() {
 
 void _sendNewData() {
   if (newData == true && MQTT_SUPPORT) {
-    #if MQTT_SUPPORT
        mqttSend(MQTT_TOPIC_UARTIN, receivedChars); // publish: UART -> mqtt bus
-    #endif
     newData = false;
   }
 }
@@ -46,20 +44,17 @@ void _sendNewData() {
 void _UARTtoMQTTMqttCallback(unsigned int type, const char * topic, const char * payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_UARTOUT);
-        DEBUG_MSG_P(PSTR("[UARTtoMQTT] MQTT Subscribe topic:\n"), MQTT_TOPIC_UARTOUT);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
         String t = mqttTopicKey((char *) topic);
-        //DEBUG_MSG_P(PSTR("[UARTtoMQTT] t= :\n"), t);
-
         bool isUARTOut = t.equals(MQTT_TOPIC_UARTOUT);
 
         if (isUARTOut) {
-          //send the received MQTT message to Serial
-
+          Serial.print(payload);
+          Serial.println();
         }
 
     }
