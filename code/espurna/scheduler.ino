@@ -18,7 +18,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 void _schWebSocketOnSend(JsonObject &root){
 
     root["schVisible"] = 1;
-    root["maxScheduled"] = SCHEDULER_MAX_SCHEDULES;
+    root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
     JsonArray &sch = root.createNestedArray("schedule");
     for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
         if (!hasSetting("schSwitch", i)) break;
@@ -138,7 +138,7 @@ void _schCheck() {
                         relayStatus(sch_switch, sch_action);
                     }
                 }
-                DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), sch_switch);
+                DEBUG_MSG_P(PSTR("[SCH] Schedule #%d TRIGGERED!!\n"), i);
 
             // Show minutes to trigger every 15 minutes
             // or every minute if less than 15 minutes to scheduled time.
@@ -155,13 +155,9 @@ void _schCheck() {
                         );
                     }
                 #endif
-
             }
-
         }
-
     }
-
 }
 
 void _schLoop() {
@@ -176,7 +172,6 @@ void _schLoop() {
         last_minute = current_minute;
         _schCheck();
     }
-
 }
 
 // -----------------------------------------------------------------------------
