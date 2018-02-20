@@ -1422,6 +1422,25 @@
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+#elif defined(UARTtoMQTT)
+
+    // Info
+    #define MANUFACTURER        "Albert"
+    #define DEVICE              "UARTtoMQTT_experiment"
+    #define SERIAL_BAUDRATE     115200
+
+    // Remove UART noise on serial line
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // LEDs
+    #define LED1_PIN            1
+    #define LED1_PIN_INVERSE    1
+// -----------------------------------------------------------------------------
 
 #endif
 
