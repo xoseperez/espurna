@@ -1,0 +1,90 @@
+#ifdef UARTtoMQTT
+
+#include <queue>
+#include <Ticker.h>
+
+// -----------------------------------------------------------------------------
+// GLOBALS TO THE MODULE
+// -----------------------------------------------------------------------------
+const byte numChars = 100;
+char receivedChars[numChars]; // an array to store the received data
+boolean newData = false;
+
+void _recvWithEndMarker() {
+  static byte ndx = 0;
+  char endMarker = '\n';
+  char rc;
+ 
+  while (Serial.available() > 0 && newData == false) {
+    rc = Serial.read();
+
+    if (rc != endMarker) {
+      receivedChars[ndx] = rc;
+      ndx++;
+      if (ndx >= numChars) {
+        ndx = numChars - 1;
+      }
+    }
+    else {
+      receivedChars[ndx] = '\0'; // terminate the string
+      ndx = 0;
+      newData = true;
+    }
+  }
+}
+
+void _sendNewData() {
+  if (newData == true && MQTT_SUPPORT) {
+    #if MQTT_SUPPORT
+       mqttSend(MQTT_TOPIC_UARTIN, receivedChars); // publish: UART -> mqtt bus
+    #endif
+    newData = false;
+  }
+}
+
+#if MQTT_SUPPORT
+void _UARTtoMQTTMqttCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_UARTOUT);
+        DEBUG_MSG_P(PSTR("[UARTtoMQTT] MQTT Subscribe topic:\n"), MQTT_TOPIC_UARTOUT);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+
+        // Match topic
+        String t = mqttTopicKey((char *) topic);
+        //DEBUG_MSG_P(PSTR("[UARTtoMQTT] t= :\n"), t);
+
+        bool isUARTOut = t.equals(MQTT_TOPIC_UARTOUT);
+
+        if (isUARTOut) {
+          //send the received MQTT message to Serial
+
+        }
+
+    }
+
+}
+#endif
+
+// -----------------------------------------------------------------------------
+// SETUP & LOOP
+// -----------------------------------------------------------------------------
+
+void UARTtoMQTTSetup() {
+
+    #if MQTT_SUPPORT
+        mqttRegister(_UARTtoMQTTMqttCallback);
+    #endif
+
+    // Register oop
+    espurnaRegisterLoop(UARTtoMQTTLoop);
+
+}
+
+void UARTtoMQTTLoop() {
+     _recvWithEndMarker();
+     _sendNewData();
+}
+
+#endif
