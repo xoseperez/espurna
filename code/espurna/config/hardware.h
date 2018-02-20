@@ -1438,7 +1438,7 @@
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // LEDs
-    #define LED1_PIN            1
+    #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 // -----------------------------------------------------------------------------
 
