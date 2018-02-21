@@ -1,8 +1,5 @@
 #ifdef UARTtoMQTT
 
-#include <queue>
-#include <Ticker.h>
-
 // -----------------------------------------------------------------------------
 // GLOBALS TO THE MODULE
 // -----------------------------------------------------------------------------
@@ -33,11 +30,18 @@ void _recvWithEndMarker() {
   }
 }
 
-void _sendNewData() {
+void _uartSendUARTtoMQTT() {
   if (newData == true && MQTT_SUPPORT) {
-       mqttSend(MQTT_TOPIC_UARTIN, receivedChars); // publish: UART -> mqtt bus
+    DEBUG_MSG_P(PSTR("[UARTtoMQTT] Send data over MQTT: %s\n"), receivedChars);
+    mqttSend(MQTT_TOPIC_UARTIN, receivedChars); // publish: UART -> mqtt bus
     newData = false;
   }
+}
+
+void _uartSendMQTTtoUART(const char * message) {
+  DEBUG_MSG_P(PSTR("[UARTtoMQTT] Send data over UART: %s\n"), message);
+  Serial.print(message);
+  Serial.println();
 }
 
 #if MQTT_SUPPORT
@@ -53,8 +57,7 @@ void _UARTtoMQTTMqttCallback(unsigned int type, const char * topic, const char *
         bool isUARTOut = t.equals(MQTT_TOPIC_UARTOUT);
 
         if (isUARTOut) {
-          Serial.print(payload);
-          Serial.println();
+          _uartSendMQTTtoUART(payload);
         }
 
     }
@@ -79,7 +82,7 @@ void UARTtoMQTTSetup() {
 
 void UARTtoMQTTLoop() {
      _recvWithEndMarker();
-     _sendNewData();
+     _uartSendUARTtoMQTT();
 }
 
 #endif
