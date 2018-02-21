@@ -59,9 +59,7 @@ void _UARTtoMQTTMqttCallback(unsigned int type, const char * topic, const char *
         if (isUARTOut) {
           _uartSendMQTTtoUART(payload);
         }
-
     }
-
 }
 #endif
 
