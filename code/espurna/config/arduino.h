@@ -60,7 +60,6 @@
 //#define ARILUX_AL_LC02
 //#define WEMOS_D1_TARPUNA_SHIELD
 //#define MAGICHOME_LED_CONTROLLER_23
-#define UARTtoMQTT
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -91,6 +90,7 @@
 //#define TERMINAL_SUPPORT       0
 //#define THINGSPEAK_SUPPORT     0
 //#define WEB_SUPPORT            0
+#define UART_MQTT_SUPPORT      1
 
 //--------------------------------------------------------------------------------
 // Sensors (values below are non-default values)
