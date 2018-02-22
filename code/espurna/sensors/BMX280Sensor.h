@@ -341,7 +341,7 @@ class BMX280Sensor : public I2CSensor {
                 var1 = ((var1 * var1 * (int64_t)_bmx280_calib.dig_P3)>>8) +
                     ((var1 * (int64_t)_bmx280_calib.dig_P2)<<12);
                 var1 = (((((int64_t)1)<<47)+var1))*((int64_t)_bmx280_calib.dig_P1)>>33;
-                if (var1 == 0) return;  // avoid exception caused by division by zero
+                if (var1 == 0) return SENSOR_ERROR_I2C;  // avoid exception caused by division by zero
 
                 p = 1048576 - adc_P;
                 p = (((p<<31) - var2)*3125) / var1;

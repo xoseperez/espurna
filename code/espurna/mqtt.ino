@@ -38,7 +38,7 @@ bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
-unsigned char _mqtt_keepalive = MQTT_KEEPALIVE;
+unsigned long _mqtt_keepalive = MQTT_KEEPALIVE;
 String _mqtt_topic;
 String _mqtt_topic_json;
 String _mqtt_setter;
@@ -215,11 +215,12 @@ void _mqttConfigure() {
     // Get base topic
     _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
-    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
 
     // Placeholders
     _mqtt_topic.replace("{identifier}", getSetting("hostname"));
     _mqtt_topic.replace("{hostname}", getSetting("hostname"));
+    _mqtt_topic.replace("{magnitude}", "#");
+    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
     String mac = WiFi.macAddress();
     mac.replace(":", "");
     _mqtt_topic.replace("{mac}", mac);
@@ -356,7 +357,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
@@ -425,7 +426,13 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 // Public API
 // -----------------------------------------------------------------------------
 
-String mqttTopicKey(char * topic) {
+/**
+    Returns the magnitude part of a topic
+
+    @param topic the full MQTT topic
+    @return String object with the magnitude part.
+*/
+String mqttMagnitude(char * topic) {
 
     String pattern = _mqtt_topic + _mqtt_setter;
     int position = pattern.indexOf("#");
@@ -433,28 +440,45 @@ String mqttTopicKey(char * topic) {
     String start = pattern.substring(0, position);
     String end = pattern.substring(position + 1);
 
-    String response = String(topic);
-    if (response.startsWith(start) && response.endsWith(end)) {
-        response.replace(start, "");
-        response.replace(end, "");
+    String magnitude = String(topic);
+    if (magnitude.startsWith(start) && magnitude.endsWith(end)) {
+        magnitude.replace(start, "");
+        magnitude.replace(end, "");
     } else {
-        response = String();
+        magnitude = String();
     }
 
-    return response;
+    return magnitude;
 
 }
 
-String mqttTopic(const char * topic, bool is_set) {
+/**
+    Returns a full MQTT topic from the magnitude
+
+    @param magnitude the magnitude part of the topic.
+    @param is_set whether to build a command topic (true)
+        or a state topic (false).
+    @return String full MQTT topic.
+*/
+String mqttTopic(const char * magnitude, bool is_set) {
     String output = _mqtt_topic;
-    output.replace("#", topic);
+    output.replace("#", magnitude);
     output += is_set ? _mqtt_setter : _mqtt_getter;
     return output;
 }
 
-String mqttTopic(const char * topic, unsigned int index, bool is_set) {
-    char buffer[strlen(topic)+5];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
+/**
+    Returns a full MQTT topic from the magnitude
+
+    @param magnitude the magnitude part of the topic.
+    @param index index of the magnitude when more than one such magnitudes.
+    @param is_set whether to build a command topic (true)
+        or a state topic (false).
+    @return String full MQTT topic.
+*/
+String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
+    char buffer[strlen(magnitude)+5];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), magnitude, index);
     return mqttTopic(buffer, is_set);
 }
 

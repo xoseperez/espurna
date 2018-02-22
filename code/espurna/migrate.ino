@@ -698,21 +698,6 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
-        #elif defined(MAGICHOME_LED_CONTROLLER_23)
-
-            setSetting("board", 53);
-            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
-            setSetting("chGPIO", 0, 12);
-            setSetting("chGPIO", 1, 5);
-            setSetting("chGPIO", 2, 13);
-            setSetting("chGPIO", 3, 15);
-            setSetting("chLogic", 0, 0);
-            setSetting("chLogic", 1, 0);
-            setSetting("chLogic", 2, 0);
-            setSetting("chLogic", 3, 0);
-            setSetting("relays", 1);
-
         #else
 
             // Allow users to define new settings without migration config

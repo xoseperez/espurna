@@ -396,6 +396,12 @@ void _sensorInit() {
 
 }
 
+void _sensorCallback(unsigned char i, unsigned char type, const char * payload) {
+
+    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, payload);
+
+}
+
 void _sensorConfigure() {
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
@@ -407,7 +413,7 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedP", 0).toInt() == 0) {
+                if (value = (getSetting("pwrExpectedP", 0).toInt() == 0)) {
                     value = getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat();
                     if (value > 0) sensor->setCurrentRatio(0, value);
                 } else {
@@ -429,6 +435,11 @@ void _sensorConfigure() {
 
         // Force sensor to reload config
         _sensors[i]->begin();
+
+        // Hook callback
+        _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
+            _sensorCallback(i, type, payload);
+        });
 
         #if HLW8012_SUPPORT
 
