@@ -133,16 +133,22 @@ void _rfbLearn() {
 }
 
 void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
+    Serial.write(RF_CODE_START);
+    Serial.write(RF_CODE_RFOUT_BUCKET);
     for (unsigned char j=0; j<n; j++) {
         Serial.write(message[j]);
     }
+    Serial.write(RF_CODE_STOP);
 }
 
 void _rfbSend(byte * message) {
     Serial.println();
     Serial.write(RF_CODE_START);
     Serial.write(RF_CODE_RFOUT);
-    _rfbSendRaw(message);
+    const unsigned char n = RF_MESSAGE_SIZE;
+    for (unsigned char j=0; j<n; j++) {
+        Serial.write(message[j]);
+    }
     Serial.write(RF_CODE_STOP);
     Serial.flush();
     Serial.println();
