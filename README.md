@@ -125,6 +125,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 ## Notices
 
 ---
+>* **energy branch ** gnk implementation for SCT030 energy monitor
 > **2018-01-24**: This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
 >
 >What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
