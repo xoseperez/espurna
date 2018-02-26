@@ -33,8 +33,9 @@ unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
-unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
+unsigned char _sensor_power_units = SENSOR_POWER_UNITS;
 unsigned char _sensor_energy_units = SENSOR_ENERGY_UNITS;
+unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 
 // -----------------------------------------------------------------------------
@@ -42,19 +43,43 @@ double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 // -----------------------------------------------------------------------------
 
 unsigned char _magnitudeDecimals(unsigned char type) {
+
+    // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
+
+    if (type == MAGNITUDE_ENERGY ||
+        type == MAGNITUDE_ENERGY_DELTA) {
+        if (_sensor_energy_units == ENERGY_KWH) return 3;
+    }
+    if (type == MAGNITUDE_POWER_ACTIVE ||
+        type == MAGNITUDE_POWER_APPARENT ||
+        type == MAGNITUDE_POWER_REACTIVE) {
+        if (_sensor_power_units == POWER_KILOWATTS) return 3;
+    }
     if (type < MAGNITUDE_MAX) return pgm_read_byte(magnitude_decimals + type);
     return 0;
+
 }
 
 double _magnitudeProcess(unsigned char type, double value) {
+
+    // Hardcoded conversions (these should be linked to the unit, instead of the magnitude)
+
     if (type == MAGNITUDE_TEMPERATURE) {
         if (_sensor_temperature_units == TMP_FAHRENHEIT) value = value * 1.8 + 32;
         value = value + _sensor_temperature_correction;
     }
-    if (type == MAGNITUDE_ENERGY || type == MAGNITUDE_ENERGY_DELTA) {
+    if (type == MAGNITUDE_ENERGY ||
+        type == MAGNITUDE_ENERGY_DELTA) {
         if (_sensor_energy_units == ENERGY_KWH) value = value  / 3600000;
     }
+    if (type == MAGNITUDE_POWER_ACTIVE ||
+        type == MAGNITUDE_POWER_APPARENT ||
+        type == MAGNITUDE_POWER_REACTIVE) {
+        if (_sensor_power_units == POWER_KILOWATTS) value = value  / 1000;
+    }
+
     return roundTo(value, _magnitudeDecimals(type));
+
 }
 
 // -----------------------------------------------------------------------------
@@ -98,6 +123,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
                 root["emonVisible"] = 1;
+                root["pwrVisible"] = 1;
                 root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
             }
         #endif
@@ -105,6 +131,19 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
                 root["hlwVisible"] = 1;
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if V9261F_SUPPORT
+            if (sensor->getID() == SENSOR_V9261F_ID) {
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if ECH1560_SUPPORT
+            if (sensor->getID() == SENSOR_ECH1560_ID) {
+                root["pwrVisible"] = 1;
             }
         #endif
 
@@ -113,8 +152,9 @@ void _sensorWebSocketStart(JsonObject& root) {
     if (_magnitudes.size() > 0) {
         root["sensorsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
-        root["tmpUnits"] = _sensor_temperature_units;
+        root["powerUnits"] = _sensor_power_units;
         root["energyUnits"] = _sensor_energy_units;
+        root["tmpUnits"] = _sensor_temperature_units;
         root["tmpCorrection"] = _sensor_temperature_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
@@ -495,8 +535,9 @@ void _sensorConfigure() {
     _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
     _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
     _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
+    _sensor_power_units = getSetting("powerUnits", SENSOR_POWER_UNITS).toInt();
     _sensor_energy_units = getSetting("energyUnits", SENSOR_ENERGY_UNITS).toInt();
+    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
 
     // Update filter sizes
@@ -614,10 +655,14 @@ String magnitudeUnits(unsigned char type) {
     if (type < MAGNITUDE_MAX) {
         if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
             strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
-        } else if ((type == MAGNITUDE_ENERGY) && (_sensor_energy_units == ENERGY_KWH)) {
+        } else if (
+            (type == MAGNITUDE_ENERGY || type == MAGNITUDE_ENERGY_DELTA) &&
+            (_sensor_energy_units == ENERGY_KWH)) {
             strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
-        } else if ((type == MAGNITUDE_ENERGY_DELTA) && (_sensor_energy_units == ENERGY_KWH)) {
-            strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
+        } else if (
+            (type == MAGNITUDE_POWER_ACTIVE || type == MAGNITUDE_POWER_APPARENT || type == MAGNITUDE_POWER_REACTIVE) &&
+            (_sensor_power_units == POWER_KILOWATTS)) {
+            strncpy_P(buffer, magnitude_kw, sizeof(buffer));
         } else {
             strncpy_P(buffer, magnitude_units[type], sizeof(buffer));
         }

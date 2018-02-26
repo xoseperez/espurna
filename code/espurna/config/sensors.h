@@ -39,6 +39,9 @@
 // UNITS
 //------------------------------------------------------------------------------
 
+#define POWER_WATTS             0
+#define POWER_KILOWATTS         1
+
 #define ENERGY_JOULES           0
 #define ENERGY_KWH              1
 
@@ -51,6 +54,10 @@
 
 #ifndef SENSOR_ENERGY_UNITS
 #define SENSOR_ENERGY_UNITS                 ENERGY_JOULES   // Energy units (ENERGY_JOULES | ENERGY_KWH)
+#endif
+
+#ifndef SENSOR_POWER_UNITS
+#define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
 #endif
 
 //--------------------------------------------------------------------------------
@@ -518,7 +525,7 @@
 PROGMEM const unsigned char magnitude_decimals[] = {
     0,
     1, 0, 2,
-    3, 0, 0, 0, 0, 0, 3, 3,
+    3, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0,
     0, 0, 0,
     0, 0
@@ -563,6 +570,7 @@ PROGMEM const char magnitude_hectopascals[] = "hPa";
 PROGMEM const char magnitude_amperes[] = "A";
 PROGMEM const char magnitude_volts[] = "V";
 PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_kw[] = "kW";
 PROGMEM const char magnitude_joules[] = "J";
 PROGMEM const char magnitude_kwh[] = "kWh";
 PROGMEM const char magnitude_ugm3[] = "µg/m3";
