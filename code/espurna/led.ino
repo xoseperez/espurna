@@ -191,7 +191,7 @@ void ledLoop() {
 
         }
 
-        if (_ledMode(i) == LED_MODE_MIXED) {
+        if (_ledMode(i) == LED_MODE_FINDME_WIFI) {
 
             if (wifiConnected()) {
                 if (relayStatus(_leds[i].relay-1)) {
@@ -205,6 +205,28 @@ void ledLoop() {
                         _ledBlink(i, 100, 900);
                     } else {
                         _ledBlink(i, 100, 4900);
+                    }
+                }
+            } else {
+                _ledBlink(i, 500, 500);
+            }
+
+        }
+
+        if (_ledMode(i) == LED_MODE_RELAY_WIFI) {
+
+            if (wifiConnected()) {
+                if (relayStatus(_leds[i].relay-1)) {
+                    if (WiFi.getMode() == WIFI_AP) {
+                        _ledBlink(i, 100, 900);
+                    } else {
+                        _ledBlink(i, 100, 4900);
+                    }
+                } else {
+                    if (WiFi.getMode() == WIFI_AP) {
+                        _ledBlink(i, 900, 100);
+                    } else {
+                        _ledBlink(i, 4900, 100);
                     }
                 }
             } else {
@@ -235,7 +257,7 @@ void ledLoop() {
             _ledStatus(i, status);
         }
 
-        if (_ledMode(i) == LED_MODE_STATUS) {
+        if (_ledMode(i) == LED_MODE_RELAY) {
             bool status = false;
             for (unsigned char k=0; k<relayCount(); k++) {
                 if (relayStatus(k)) {

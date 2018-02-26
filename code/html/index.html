@@ -286,10 +286,11 @@
                                     <label class="pure-u-1 pure-u-lg-1-4">LED mode</label>
                                     <select name="ledMode0" class="pure-u-1 pure-u-lg-1-4" tabindex="7">
                                         <option value="1">WiFi status</option>
+                                        <option value="8">Relay status</option>
                                         <option value="0">MQTT managed</option>
                                         <option value="4">Find me</option>
-                                        <option value="8">Status</option>
-                                        <option value="5">Mixed</option>
+                                        <option value="9">Relay &amp; WiFi</option>
+                                        <option value="5">Find me &amp; WiFi</option>
                                         <option value="6">Always ON</option>
                                         <option value="7">Always OFF</option>
                                     </select>
@@ -298,10 +299,11 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This setting defines the behaviour of the main LED in the board.<br />
                                         When in "WiFi status" it will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.<br />
+                                        When in "Relay status" mode the LED will be ON whenever any relay is ON, and OFF otherwise. This is global status notification.<br />
                                         When in "MQTT managed" mode you will be able to set the LED state sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).<br />
                                         When in "Find me" mode the LED will be ON when all relays are OFF. This is meant to locate switches at night.<br />
-                                        When in "Status" mode the LED will be ON whenever any relay is ON, and OFF otherwise. This is global status notification.<br />
-                                        When in "Mixed" mode it will follow the WiFi status but will stay mostly on when relays are OFF, and mostly OFF when any of them is ON.<br />
+                                        When in "Relay &amp; WiFi" mode it will follow the WiFi status but will stay mostly off when relays are OFF, and mostly ON when any of them is ON.<br />
+                                        When in "Find me &amp; WiFi" mode is the opposite of the "Relay &amp; WiFi", it will follow the WiFi status but will stay mostly on when relays are OFF, and mostly OFF when any of them is ON.<br />
                                         "Always ON" and "Always OFF" modes are self-explanatory.
                                     </div>
                                 </div>
