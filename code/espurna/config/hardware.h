@@ -1424,19 +1424,6 @@
     #define RELAY8_PIN          15
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
-#endif
-
-#if defined(UART_MQTT_SUPPORT)
-    // Set baudrate on serial line
-    #define SERIAL_BAUDRATE     115200
-
-    // MQTT support is mandatory
-	#define MQTT_SUPPORT           1
-
-    // Remove UART noise on serial line
-    #define TERMINAL_SUPPORT        0
-    #define DEBUG_SERIAL_SUPPORT    0
-
 #elif defined(STM_RELAY)
 
     // Info

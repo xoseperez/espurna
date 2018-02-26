@@ -490,6 +490,26 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
 
 // -----------------------------------------------------------------------------
+// UART <-> MQTT
+// -----------------------------------------------------------------------------
+
+#ifndef UART_MQTT_SUPPORT
+#define UART_MQTT_SUPPORT       0           // No support by default
+#endif
+
+#define UART_MQTT_PORT          Serial      // Serial port
+#define UART_MQTT_BAUDRATE      115200      // Serial speed
+#define UART_MQTT_BUFFER_SIZE   100         // UART buffer size
+
+#if UART_MQTT_SUPPORT
+#define MQTT_SUPPORT            1
+#undef TERMINAL_SUPPORT
+#define TERMINAL_SUPPORT        0
+#undef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT    0
+#endif
+
+// -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
 

@@ -148,7 +148,7 @@ void setup() {
         schSetup();
     #endif
     #ifdef UART_MQTT_SUPPORT
-        uart_mqttSetup();
+        uartmqttSetup();
     #endif
 
 
