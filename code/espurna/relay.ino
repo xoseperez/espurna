@@ -141,7 +141,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
  */
 void _relayProcess(bool mode) {
 
-    unsigned int current_time = millis();
+    unsigned long current_time = millis();
 
     for (unsigned char id = 0; id < _relays.size(); id++) {
 
@@ -462,7 +462,7 @@ void _relayBoot() {
         }
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
-        #ifdef RELAY_PROVIDER_STM
+        #if RELAY_PROVIDER == RELAY_PROVIDER_STM
             _relays[i].change_time = millis() + 3000 + 1000 * i;
         #else
             _relays[i].change_time = millis();
