@@ -5,6 +5,7 @@
 #menu .pure-menu-heading {
     font-size: 100%;
     padding: .5em .5em;
+    white-space: normal;
 }
 
 .pure-g {
