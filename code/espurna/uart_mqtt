@@ -1,0 +1,86 @@
+#ifdef UART_MQTT_SUPPORT
+
+// -----------------------------------------------------------------------------
+// GLOBALS TO THE MODULE
+// -----------------------------------------------------------------------------
+const byte numChars = 100;
+char receivedChars[numChars]; // an array to store the received data
+boolean newData = false;
+
+void _recvWithEndMarker() {
+  static byte ndx = 0;
+  char endMarker = '\n';
+  char rc;
+ 
+  while (Serial.available() > 0 && newData == false) {
+    rc = Serial.read();
+
+    if (rc != endMarker) {
+      receivedChars[ndx] = rc;
+      ndx++;
+      if (ndx >= numChars) {
+        ndx = numChars - 1;
+      }
+    }
+    else {
+      receivedChars[ndx] = '\0'; // terminate the string
+      ndx = 0;
+      newData = true;
+    }
+  }
+}
+
+void _uartSendUART_MQTT() {
+  if (newData == true && MQTT_SUPPORT) {
+    DEBUG_MSG_P(PSTR("[UART_MQTT] Send data over MQTT: %s\n"), receivedChars);
+    mqttSend(MQTT_TOPIC_UARTIN, receivedChars); // publish: UART -> mqtt bus
+    newData = false;
+  }
+}
+
+void _uartSendMQTT_UART(const char * message) {
+  DEBUG_MSG_P(PSTR("[UART_MQTT] Send data over UART: %s\n"), message);
+  Serial.print(message);
+  Serial.println();
+}
+
+#if MQTT_SUPPORT
+void _UART_MQTTMqttCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_UARTOUT);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+
+        // Match topic
+        String t = mqttTopicKey((char *) topic);
+        bool isUARTOut = t.equals(MQTT_TOPIC_UARTOUT);
+
+        if (isUARTOut) {
+          _uartSendMQTT_UART(payload);
+        }
+    }
+}
+#endif
+
+// -----------------------------------------------------------------------------
+// SETUP & LOOP
+// -----------------------------------------------------------------------------
+
+void uart_mqttSetup() {
+
+    #if MQTT_SUPPORT
+        mqttRegister(_UART_MQTTMqttCallback);
+    #endif
+
+    // Register oop
+    espurnaRegisterLoop(UART_MQTTLoop);
+
+}
+
+void UART_MQTTLoop() {
+     _recvWithEndMarker();
+     _uartSendUART_MQTT();
+}
+
+#endif
