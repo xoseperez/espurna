@@ -34,6 +34,7 @@ bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
+unsigned char _sensor_energy_units = SENSOR_ENERGY_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 
 // -----------------------------------------------------------------------------
@@ -49,6 +50,9 @@ double _magnitudeProcess(unsigned char type, double value) {
     if (type == MAGNITUDE_TEMPERATURE) {
         if (_sensor_temperature_units == TMP_FAHRENHEIT) value = value * 1.8 + 32;
         value = value + _sensor_temperature_correction;
+    }
+    if (type == MAGNITUDE_ENERGY || type == MAGNITUDE_ENERGY_DELTA) {
+        if (_sensor_energy_units == ENERGY_KWH) value = value  / 3600000;
     }
     return roundTo(value, _magnitudeDecimals(type));
 }
@@ -110,6 +114,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         root["sensorsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
         root["tmpUnits"] = _sensor_temperature_units;
+        root["energyUnits"] = _sensor_energy_units;
         root["tmpCorrection"] = _sensor_temperature_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
@@ -491,6 +496,7 @@ void _sensorConfigure() {
     _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
     _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
     _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
+    _sensor_energy_units = getSetting("energyUnits", SENSOR_ENERGY_UNITS).toInt();
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
 
     // Update filter sizes
@@ -608,6 +614,10 @@ String magnitudeUnits(unsigned char type) {
     if (type < MAGNITUDE_MAX) {
         if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
             strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
+        } else if ((type == MAGNITUDE_ENERGY) && (_sensor_energy_units == ENERGY_KWH)) {
+            strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
+        } else if ((type == MAGNITUDE_ENERGY_DELTA) && (_sensor_energy_units == ENERGY_KWH)) {
+            strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
         } else {
             strncpy_P(buffer, magnitude_units[type], sizeof(buffer));
         }

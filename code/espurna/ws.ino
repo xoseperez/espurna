@@ -255,8 +255,6 @@ void _wsOnStart(JsonObject& root) {
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-        root["tmpUnits"] = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-        root["tmpCorrection"] = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
 
     }
 
