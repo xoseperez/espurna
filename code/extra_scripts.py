@@ -1,5 +1,8 @@
 #!/usr/bin/env python
+from subprocess import call
+import os
 import time
+
 Import("env")
 
 # ------------------------------------------------------------------------------
@@ -31,6 +34,11 @@ def clr(color, text):
 # Callbacks
 # ------------------------------------------------------------------------------
 
+def cpp_check(source, target, env):
+    print("Started cppcheck...\n")
+    call(["cppcheck", os.getcwd()+"/espurna", "--force", "--enable=all"])
+    print("Finished cppcheck...\n")
+
 def check_size(source, target, env):
     time.sleep(2)
     size = target[0].get_size()
@@ -55,5 +63,6 @@ def add_build_flags(source, target, env):
 # Hooks
 # ------------------------------------------------------------------------------
 
+#env.AddPreAction("buildprog", cpp_check)
 env.AddPreAction("$BUILD_DIR/src/espurna.ino.o", add_build_flags)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
