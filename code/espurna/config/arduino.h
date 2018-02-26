@@ -54,6 +54,7 @@
 //#define ARILUX_E27
 //#define XENON_SM_PW702U
 //#define AUTHOMETION_LYT8266
+//#define KMC_70011
 //#define GENERIC_8CH
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC11

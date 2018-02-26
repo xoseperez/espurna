@@ -698,6 +698,19 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(KMC_70011)
+
+            setSetting("board", 53);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+
         #else
 
             // Allow users to define new settings without migration config

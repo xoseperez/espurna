@@ -1365,6 +1365,38 @@
     #define LIGHT_ENABLE_PIN    15
 
 // -----------------------------------------------------------------------------
+// KMC 70011
+// https://www.amazon.com/KMC-Monitoring-Required-Control-Compatible/dp/B07313TH7B
+// -----------------------------------------------------------------------------
+
+#elif defined(KMC_70011)
+
+    // Info
+    #define MANUFACTURER        "KMC"
+    #define DEVICE              "70011"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     12
+    #define HLW8012_CF1_PIN     5
+    #define HLW8012_CF_PIN      4
+
+// -----------------------------------------------------------------------------
 // Generic 8CH
 // -----------------------------------------------------------------------------
 
