@@ -95,6 +95,13 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         if (strcmp(action, "reboot") == 0) deferredReset(100, CUSTOM_RESET_WEB);
         if (strcmp(action, "reconnect") == 0) _web_defer.once_ms(100, wifiDisconnect);
+        
+        if (strcmp(action, "factory_reset") == 0)
+        {
+            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+            resetSettings();
+            deferredReset(100, CUSTOM_RESET_FACTORY);
+        }
 
         JsonObject& data = root["data"];
         if (data.success()) {

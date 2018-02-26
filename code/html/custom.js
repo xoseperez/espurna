@@ -494,6 +494,16 @@ function doRestore() {
     return false;
 }
 
+function doFactoryReset() {
+    var response = window.confirm("Are you sure you want to restore to factory settings?");
+    if (response === false) {
+        return false;
+    }
+    websock.send(JSON.stringify({"action": "factory_reset"}));
+    doReload(5000);
+    return false;
+}
+
 function doToggle(element, value) {
     var id = parseInt(element.attr("data"), 10);
     sendAction("relay", {id: id, status: value ? 1 : 0 });
@@ -1253,6 +1263,7 @@ $(function() {
     $(".button-wifi-scan").on("click", doScan);
     $(".button-settings-backup").on("click", doBackup);
     $(".button-settings-restore").on("click", doRestore);
+    $(".button-settings-factory").on("click", doFactoryReset);
     $("#uploader").on("change", onFileUpload);
     $(".button-upgrade").on("click", doUpgrade);
 
