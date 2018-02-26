@@ -34,7 +34,7 @@ class AnalogSensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() {
-            return String("ANALOG @ GPIO0");
+            return String("ANALOG @ TOUT");
         }
 
         // Descriptive name of the slot # index
