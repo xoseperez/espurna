@@ -513,6 +513,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
 #define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 
+#define MQTT_DISCONNECT_RELAY_DEFAULT   1           // 0 - do nothing, 1 - reset relays to OFF in case of MQTT disconnection
+
 // These are the properties that will be sent when useJson is true
 #ifndef MQTT_ENQUEUE_IP
 #define MQTT_ENQUEUE_IP             1
