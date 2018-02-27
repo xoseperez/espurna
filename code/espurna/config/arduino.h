@@ -60,6 +60,7 @@
 //#define ARILUX_AL_LC02
 //#define WEMOS_D1_TARPUNA_SHIELD
 //#define MAGICHOME_LED_CONTROLLER_23
+//#define GIZWITS_WITTY_CLOUD
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -96,6 +97,7 @@
 //--------------------------------------------------------------------------------
 
 //#define ANALOG_SUPPORT         1
+//#define GL55XX_SUPPORT         1
 //#define BH1750_SUPPORT         1
 //#define BMX280_SUPPORT         1
 //#define DALLAS_SUPPORT         1
