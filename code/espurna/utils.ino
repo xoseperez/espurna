@@ -327,6 +327,9 @@ void info() {
     #if THINGSPEAK_SUPPORT
         DEBUG_MSG_P(PSTR(" THINGSPEAK"));
     #endif
+    #if UART_MQTT_SUPPORT
+        DEBUG_MSG_P(PSTR(" UART_MQTT"));
+    #endif
     #if WEB_SUPPORT
         DEBUG_MSG_P(PSTR(" WEB"));
     #endif
