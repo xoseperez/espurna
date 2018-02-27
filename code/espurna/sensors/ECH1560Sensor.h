@@ -75,6 +75,11 @@ class ECH1560Sensor : public BaseSensor {
 
         }
 
+        // Loop-like method, call it in your main loop
+        void tick() {
+            if (_dosync) _sync();
+        }
+
         // Descriptive name of the sensor
         String description() {
             char buffer[25];
