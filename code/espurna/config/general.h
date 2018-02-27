@@ -506,12 +506,14 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_RECONNECT_DELAY_STEP   5000            // Increase the reconnect delay in 5 seconds after each failed attempt
 #define MQTT_RECONNECT_DELAY_MAX    120000          // Set reconnect time to 2 minutes at most
 
-#define MQTT_SKIP_RETAINED          1               // Skip retained messages on connection
-#define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
+#define MQTT_SKIP_RETAINED          0               // Skip retained messages on connection, default: 1
+#define MQTT_SKIP_TIME              0               // Skip messages for 1 second anter connection, default: 1000
 
 #define MQTT_USE_JSON               0               // Group messages in a JSON body
 #define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
 #define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
+
+#define MQTT_DISCONNECT_RELAY_DEFAULT   1           // 0 - do nothing, 1 - reset relays to OFF in case of MQTT disconnection
 
 // These are the properties that will be sent when useJson is true
 #ifndef MQTT_ENQUEUE_IP
