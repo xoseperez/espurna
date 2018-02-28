@@ -497,7 +497,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define UART_MQTT_SUPPORT       0           // No support by default
 #endif
 
-#define UART_MQTT_PORT          Serial      // Serial port
+#define UART_MQTT_USE_SOFT      0           // Use SoftwareSerial
+#define UART_MQTT_HW_PORT       Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
+#define UART_MQTT_RX_PIN        4           // RX PIN (if UART_MQTT_USE_SOFT == 1)
+#define UART_MQTT_TX_PIN        5           // TX PIN (if UART_MQTT_USE_SOFT == 1)
 #define UART_MQTT_BAUDRATE      115200      // Serial speed
 #define UART_MQTT_BUFFER_SIZE   100         // UART buffer size
 

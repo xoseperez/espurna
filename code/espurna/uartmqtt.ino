@@ -12,6 +12,14 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 char _uartmqttBuffer[UART_MQTT_BUFFER_SIZE];
 bool _uartmqttNewData = false;
 
+#if UART_MQTT_USE_SOFT
+    #include <SoftwareSerial.h>
+    SoftwareSerial _uart_mqtt_serial(UART_MQTT_RX_PIN, UART_MQTT_TX_PIN, false, UART_MQTT_BUFFER_SIZE);
+    #define UART_MQTT_PORT  _uart_mqtt_serial
+#else
+    #define UART_MQTT_PORT  UART_MQTT_HW_PORT
+#endif
+
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
@@ -75,8 +83,8 @@ void _uartmqttMQTTCallback(unsigned int type, const char * topic, const char * p
 // -----------------------------------------------------------------------------
 
 void _uartmqttLoop() {
-     _uartmqttReceiveUART();
-     _uartmqttSendMQTT();
+    _uartmqttReceiveUART();
+    _uartmqttSendMQTT();
 }
 
 void uartmqttSetup() {
