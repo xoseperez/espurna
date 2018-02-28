@@ -849,6 +849,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // -----------------------------------------------------------------------------
 // RFBRIDGE
+// This module is not compatible with RF_SUPPORT=1
 // -----------------------------------------------------------------------------
 
 #define RF_SEND_TIMES           4               // How many times to send the message
@@ -1010,6 +1011,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // Custom RF module
 // Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Enable support by passing RF_SUPPORT=1 build flag
+// This module is not compatible with RFBRIDGE
 //--------------------------------------------------------------------------------
 
 #ifndef RF_SUPPORT
@@ -1020,5 +1022,5 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RF_PIN                      14
 #endif
 
-#define RF_CHANNEL                  31
-#define RF_DEVICE                   1
+#define RF_DEBOUNCE                 500
+#define RF_LEARN_TIMEOUT            60000
