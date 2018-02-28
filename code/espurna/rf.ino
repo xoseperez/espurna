@@ -75,24 +75,18 @@ void rfSetup() {
     RemoteReceiver::disable();
     DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
 
-    static WiFiEventHandler e1 = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
-        RemoteReceiver::disable();
-        DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
-    });
+    wifiRegister([](justwifi_messages_t code, char * parameter) {
 
-    static WiFiEventHandler e2 = WiFi.onSoftAPModeStationDisconnected([](const WiFiEventSoftAPModeStationDisconnected& event) {
-        RemoteReceiver::disable();
-        DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
-        });
+        if (code == MESSAGE_CONNECTED || code == MESSAGE_ACCESSPOINT_CREATED) {
+            RemoteReceiver::enable();
+            DEBUG_MSG_P(PSTR("[RF] Enabled\n"));
+        }
 
-    static WiFiEventHandler e3 = WiFi.onStationModeConnected([](const WiFiEventStationModeConnected& event) {
-        RemoteReceiver::enable();
-        DEBUG_MSG_P(PSTR("[RF] Enabled\n"));
-    });
+        if (code == MESSAGE_DISCONNECTED)
+            RemoteReceiver::disable();
+            DEBUG_MSG_P(PSTR("[RF] Disabled\n"));
+        }
 
-    static WiFiEventHandler e4 = WiFi.onSoftAPModeStationConnected([](const WiFiEventSoftAPModeStationConnected& event) {
-        RemoteReceiver::enable();
-        DEBUG_MSG_P(PSTR("[RF] Enabled\n"));
     });
 
     #if WEB_SUPPORT
