@@ -66,6 +66,7 @@ class V9261FSensor : public BaseSensor {
             if (_serial) delete _serial;
 
             _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32);
+            _serial->enableIntTx(false);
             _serial->begin(V9261F_BAUDRATE);
 
         }
