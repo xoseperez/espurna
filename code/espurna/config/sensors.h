@@ -82,6 +82,7 @@
 #define SENSOR_SI7021_ID                    0x15
 #define SENSOR_SHT3X_I2C_ID                 0x16
 #define SENSOR_BH1750_ID                    0x17
+#define SENSOR_PZEM004T_ID                  0x18
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -399,6 +400,32 @@
 
 #define PMS_RX_PIN                      13
 #define PMS_TX_PIN                      15
+
+//------------------------------------------------------------------------------
+// PZEM004T based power monitor
+// Enable support by passing PZEM004T_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PZEM004T_SUPPORT
+#define PZEM004T_SUPPORT                1
+#endif
+
+#ifndef PZEM004T_USE_SOFT
+#define PZEM004T_USE_SOFT               1       // Use software serial
+#endif
+
+#ifndef PZEM004T_RX_PIN
+#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_TX_PIN
+#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_HW_PORT
+#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#endif
+
 
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor

@@ -377,6 +377,9 @@ void info() {
         #if PMSX003_SUPPORT
             DEBUG_MSG_P(PSTR(" PMSX003"));
         #endif
+        #if PZEM004T_SUPPORT
+            DEBUG_MSG_P(PSTR(" PZEM004T"));
+        #endif
         #if SHT3X_I2C_SUPPORT
             DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
         #endif

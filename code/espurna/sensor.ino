@@ -147,6 +147,12 @@ void _sensorWebSocketStart(JsonObject& root) {
             }
         #endif
 
+        #if PZEM004T_SUPPORT
+            if (sensor->getID() == SENSOR_PZEM004T_ID) {
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
     }
 
     if (_magnitudes.size() > 0) {
@@ -410,6 +416,19 @@ void _sensorInit() {
         PMSX003Sensor * sensor = new PMSX003Sensor();
         sensor->setRX(PMS_RX_PIN);
         sensor->setTX(PMS_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PZEM004T_SUPPORT
+    {
+        PZEM004TSensor * sensor = new PZEM004TSensor();
+        #if PZEM004T_USE_SOFT
+            sensor->setRX(PZEM004T_RX_PIN);
+            sensor->setTX(PZEM004T_TX_PIN);
+        #else
+            sensor->setSerial(& PZEM004T_HW_PORT);
+        #endif
         _sensors.push_back(sensor);
     }
     #endif
