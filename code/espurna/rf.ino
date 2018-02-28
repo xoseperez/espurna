@@ -56,7 +56,6 @@ void _rfBuildCodes() {
 // -----------------------------------------------------------------------------
 
 void rfLoop() {
-    return;
     if (rfCode == 0) return;
     DEBUG_MSG_P(PSTR("[RF] Received code: %lu\n"), rfCode);
     if (rfCode == rfCodeON) relayStatus(0, true);
