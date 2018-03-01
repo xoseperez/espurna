@@ -34,6 +34,17 @@ def clr(color, text):
 # Callbacks
 # ------------------------------------------------------------------------------
 
+def remove_float_support():
+
+    flags = " ".join(env['LINKFLAGS'])
+    flags = flags.replace("-u _printf_float", "")
+    flags = flags.replace("-u _scanf_float", "")
+    newflags = flags.split()
+
+    env.Replace(
+        LINKFLAGS = newflags
+    )
+
 def cpp_check(source, target, env):
     print("Started cppcheck...\n")
     call(["cppcheck", os.getcwd()+"/espurna", "--force", "--enable=all"])
@@ -62,6 +73,8 @@ def add_build_flags(source, target, env):
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
+
+remove_float_support()
 
 #env.AddPreAction("buildprog", cpp_check)
 env.AddPreAction("$BUILD_DIR/src/espurna.ino.o", add_build_flags)
