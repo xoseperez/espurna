@@ -270,6 +270,7 @@ void _wsOnStart(JsonObject& root) {
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
+        root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
 
     }
 
@@ -388,7 +389,12 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
 
 void wsConfigure() {
     #if USE_PASSWORD
-        _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+        bool auth = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
+        if (auth) {
+            _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+        } else {
+            _ws.setAuthentication("", "");
+        }
     #endif
 }
 

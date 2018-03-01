@@ -405,6 +405,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
+#define WS_AUTHENTICATION       1           // WS authentication ON by default (see #507)
 #define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
 #define WS_UPDATE_INTERVAL      30000       // Update clients every 30 seconds
