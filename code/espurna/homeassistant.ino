@@ -112,10 +112,10 @@ void _haSendSwitch(unsigned char i) {
         root.printTo(output);
     }
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_NONE
-        String component = String("switch");
-    #else
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String component = String("light");
+    #else
+        String component = String("switch");
     #endif
 
     String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
