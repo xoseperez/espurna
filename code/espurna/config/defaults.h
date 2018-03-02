@@ -2,9 +2,36 @@
 // Hardware default values
 // -----------------------------------------------------------------------------
 
+#define GPIO_NONE           0x99
+
 // -----------------------------------------------------------------------------
 // Buttons
 // -----------------------------------------------------------------------------
+
+#ifndef BUTTON1_PIN
+#define BUTTON1_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON2_PIN
+#define BUTTON2_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON3_PIN
+#define BUTTON3_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON4_PIN
+#define BUTTON4_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON5_PIN
+#define BUTTON5_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON6_PIN
+#define BUTTON6_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON7_PIN
+#define BUTTON7_PIN         GPIO_NONE
+#endif
+#ifndef BUTTON8_PIN
+#define BUTTON8_PIN         GPIO_NONE
+#endif
 
 #ifndef BUTTON1_PRESS
 #define BUTTON1_PRESS       BUTTON_MODE_NONE
@@ -160,6 +187,35 @@
 // Relays
 // -----------------------------------------------------------------------------
 
+#ifndef DUMMY_RELAY_COUNT
+#define DUMMY_RELAY_COUNT     0
+#endif
+
+#ifndef RELAY1_PIN
+#define RELAY1_PIN            GPIO_NONE
+#endif
+#ifndef RELAY2_PIN
+#define RELAY2_PIN            GPIO_NONE
+#endif
+#ifndef RELAY3_PIN
+#define RELAY3_PIN            GPIO_NONE
+#endif
+#ifndef RELAY4_PIN
+#define RELAY4_PIN            GPIO_NONE
+#endif
+#ifndef RELAY5_PIN
+#define RELAY5_PIN            GPIO_NONE
+#endif
+#ifndef RELAY6_PIN
+#define RELAY6_PIN            GPIO_NONE
+#endif
+#ifndef RELAY7_PIN
+#define RELAY7_PIN            GPIO_NONE
+#endif
+#ifndef RELAY8_PIN
+#define RELAY8_PIN            GPIO_NONE
+#endif
+
 #ifndef RELAY1_TYPE
 #define RELAY1_TYPE           RELAY_TYPE_NORMAL
 #endif
@@ -175,7 +231,7 @@
 #ifndef RELAY5_TYPE
 #define RELAY5_TYPE           RELAY_TYPE_NORMAL
 #endif
-#ifndef RELAY6_TYPE     
+#ifndef RELAY6_TYPE
 #define RELAY6_TYPE           RELAY_TYPE_NORMAL
 #endif
 #ifndef RELAY7_TYPE
@@ -186,28 +242,28 @@
 #endif
 
 #ifndef RELAY1_RESET_PIN
-#define RELAY1_RESET_PIN      0
+#define RELAY1_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY2_RESET_PIN
-#define RELAY2_RESET_PIN      0
+#define RELAY2_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY3_RESET_PIN
-#define RELAY3_RESET_PIN      0
+#define RELAY3_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY4_RESET_PIN
-#define RELAY4_RESET_PIN      0
+#define RELAY4_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY5_RESET_PIN
-#define RELAY5_RESET_PIN      0
+#define RELAY5_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY6_RESET_PIN
-#define RELAY6_RESET_PIN      0
+#define RELAY6_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY7_RESET_PIN
-#define RELAY7_RESET_PIN      0
+#define RELAY7_RESET_PIN      GPIO_NONE
 #endif
 #ifndef RELAY8_RESET_PIN
-#define RELAY8_RESET_PIN      0
+#define RELAY8_RESET_PIN      GPIO_NONE
 #endif
 
 #ifndef RELAY1_DELAY_ON
@@ -263,6 +319,31 @@
 // -----------------------------------------------------------------------------
 // LEDs
 // -----------------------------------------------------------------------------
+
+#ifndef LED1_PIN
+#define LED1_PIN            GPIO_NONE
+#endif
+#ifndef LED2_PIN
+#define LED2_PIN            GPIO_NONE
+#endif
+#ifndef LED3_PIN
+#define LED3_PIN            GPIO_NONE
+#endif
+#ifndef LED4_PIN
+#define LED4_PIN            GPIO_NONE
+#endif
+#ifndef LED5_PIN
+#define LED5_PIN            GPIO_NONE
+#endif
+#ifndef LED6_PIN
+#define LED6_PIN            GPIO_NONE
+#endif
+#ifndef LED7_PIN
+#define LED7_PIN            GPIO_NONE
+#endif
+#ifndef LED8_PIN
+#define LED8_PIN            GPIO_NONE
+#endif
 
 #ifndef LED1_MODE
 #define LED1_MODE           LED_MODE_WIFI

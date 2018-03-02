@@ -47,6 +47,7 @@ void _debugSend(char * message) {
             #endif
             _udp_debug.write(message);
             _udp_debug.endPacket();
+            delay(1); // https://github.com/xoseperez/espurna/issues/438
         #if SYSTEM_CHECK_ENABLED
         }
         #endif

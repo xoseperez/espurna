@@ -698,20 +698,18 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
-        #elif defined(MAGICHOME_LED_CONTROLLER_23)
+        #elif defined(KMC_70011)
 
             setSetting("board", 53);
-            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
-            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
-            setSetting("chGPIO", 0, 12);
-            setSetting("chGPIO", 1, 5);
-            setSetting("chGPIO", 2, 13);
-            setSetting("chGPIO", 3, 15);
-            setSetting("chLogic", 0, 0);
-            setSetting("chLogic", 1, 0);
-            setSetting("chLogic", 2, 0);
-            setSetting("chLogic", 3, 0);
-            setSetting("relays", 1);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
 
         #else
 

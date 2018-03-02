@@ -7,33 +7,31 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <EEPROM.h>
-#include "spi_flash.h"
-#include "libs/EmbedisWrap.h"
 #include <vector>
-#include <StreamString.h>
+#include "libs/EmbedisWrap.h"
+#include <Stream.h>
+
+#ifdef DEBUG_PORT
+    #define EMBEDIS_PORT    DEBUG_PORT
+#else
+    #define EMBEDIS_PORT    Serial
+#endif
 
 #if TELNET_SUPPORT
     #include "libs/StreamInjector.h"
-    #ifdef DEBUG_PORT
-        StreamInjector _serial = StreamInjector(DEBUG_PORT);
-    #else
-        StreamInjector _serial = StreamInjector(Serial);
-    #endif
-    EmbedisWrap embedis(_serial);
-#else
-    #ifdef DEBUG_PORT
-        EmbedisWrap embedis(DEBUG_PORT);
-    #else
-        EmbedisWrap embedis(_serial);
-    #endif
+    StreamInjector _serial = StreamInjector(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
+    #undef EMBEDIS_PORT
+    #define EMBEDIS_PORT    _serial
 #endif
 
+EmbedisWrap embedis(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
+
 #if TERMINAL_SUPPORT
-#ifdef SERIAL_RX_PORT
-    char _serial_rx_buffer[SERIAL_RX_BUFFER_SIZE];
+#if SERIAL_RX_ENABLED
+    char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
     static unsigned char _serial_rx_pointer = 0;
-#endif
-#endif
+#endif // SERIAL_RX_ENABLED
+#endif // TERMINAL_SUPPORT
 
 bool _settings_save = false;
 
@@ -87,11 +85,42 @@ String _settingsKeyName(unsigned int index) {
 
 }
 
+std::vector<String> _settingsKeys() {
+
+    // Get sorted list of keys
+    std::vector<String> keys;
+
+    //unsigned int size = settingsKeyCount();
+    unsigned int size = _settingsKeyCount();
+    for (unsigned int i=0; i<size; i++) {
+
+        //String key = settingsKeyName(i);
+        String key = _settingsKeyName(i);
+        bool inserted = false;
+        for (unsigned char j=0; j<keys.size(); j++) {
+
+            // Check if we have to insert it before the current element
+            if (keys[j].compareTo(key) > 0) {
+                keys.insert(keys.begin() + j, key);
+                inserted = true;
+                break;
+            }
+
+        }
+
+        // If we could not insert it, just push it at the end
+        if (!inserted) keys.push_back(key);
+
+    }
+
+    return keys;
+}
+
 // -----------------------------------------------------------------------------
 // Commands
 // -----------------------------------------------------------------------------
 
-void _settingsHelp() {
+void _settingsHelpCommand() {
 
     // Get sorted list of commands
     std::vector<String> commands;
@@ -124,32 +153,10 @@ void _settingsHelp() {
 
 }
 
-void _settingsKeys() {
+void _settingsKeysCommand() {
 
     // Get sorted list of keys
-    std::vector<String> keys;
-    //unsigned int size = settingsKeyCount();
-    unsigned int size = _settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-
-        //String key = settingsKeyName(i);
-        String key = _settingsKeyName(i);
-        bool inserted = false;
-        for (unsigned char j=0; j<keys.size(); j++) {
-
-            // Check if we have to insert it before the current element
-            if (keys[j].compareTo(key) > 0) {
-                keys.insert(keys.begin() + j, key);
-                inserted = true;
-                break;
-            }
-
-        }
-
-        // If we could not insert it, just push it at the end
-        if (!inserted) keys.push_back(key);
-
-    }
+    std::vector<String> keys = _settingsKeys();
 
     // Write key-values
     DEBUG_MSG_P(PSTR("Current settings:\n"));
@@ -164,14 +171,14 @@ void _settingsKeys() {
 
 }
 
-void _settingsFactoryReset() {
+void _settingsFactoryResetCommand() {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROM.write(i, 0xFF);
     }
     EEPROM.commit();
 }
 
-void _settingsDump(bool ascii) {
+void _settingsDumpCommand(bool ascii) {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         if (i % 16 == 0) DEBUG_MSG_P(PSTR("\n[%04X] "), i);
         byte c = EEPROM.read(i);
@@ -193,14 +200,14 @@ void _settingsInitCommands() {
     #endif
 
     settingsRegisterCommand(F("COMMANDS"), [](Embedis* e) {
-        _settingsHelp();
+        _settingsHelpCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
         bool ascii = false;
         if (e->argc == 2) ascii = String(e->argv[1]).toInt() == 1;
-        _settingsDump(ascii);
+        _settingsDumpCommand(ascii);
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
@@ -212,7 +219,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
-        _settingsFactoryReset();
+        _settingsFactoryResetCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -240,7 +247,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("HELP"), [](Embedis* e) {
-        _settingsHelp();
+        _settingsHelpCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -254,7 +261,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("KEYS"), [](Embedis* e) {
-        _settingsKeys();
+        _settingsKeysCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -325,7 +332,7 @@ void saveSettings() {
 }
 
 void resetSettings() {
-    _settingsFactoryReset();
+    _settingsFactoryResetCommand();
 }
 
 // -----------------------------------------------------------------------------
@@ -369,11 +376,13 @@ bool settingsRestoreJson(JsonObject& data) {
 
 bool settingsGetJson(JsonObject& root) {
 
-    unsigned int size = _settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-        String key = _settingsKeyName(i);
-        String value = getSetting(key);
-        root[key] = value;
+    // Get sorted list of keys
+    std::vector<String> keys = _settingsKeys();
+
+    // Add the key-values to the json object
+    for (unsigned int i=0; i<keys.size(); i++) {
+        String value = getSetting(keys[i]);
+        root[keys[i]] = value;
     }
 
 }
@@ -410,10 +419,10 @@ void settingsSetup() {
     _settingsInitCommands();
 
     #if TERMINAL_SUPPORT
-        #ifdef SERIAL_RX_PORT
-            SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
-        #endif
-    #endif
+    #if SERIAL_RX_ENABLED
+        SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
+    #endif // SERIAL_RX_ENABLED
+    #endif // TERMINAL_SUPPORT
 
     // Register loop
     espurnaRegisterLoop(settingsLoop);
@@ -431,18 +440,18 @@ void settingsLoop() {
 
         embedis.process();
 
-        #ifdef SERIAL_RX_PORT
+        #if SERIAL_RX_ENABLED
 
             while (SERIAL_RX_PORT.available() > 0) {
                 char rc = Serial.read();
                 _serial_rx_buffer[_serial_rx_pointer++] = rc;
-                if ((_serial_rx_pointer == SERIAL_RX_BUFFER_SIZE) || (rc == 10)) {
+                if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
                     settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
                     _serial_rx_pointer = 0;
                 }
             }
 
-        #endif // SERIAL_RX_PORT
+        #endif // SERIAL_RX_ENABLED
 
     #endif // TERMINAL_SUPPORT
 

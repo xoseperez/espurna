@@ -16,22 +16,6 @@
     type name[] = {__VA_ARGS__};
 
 //------------------------------------------------------------------------------
-// ESPURNA CORE
-//------------------------------------------------------------------------------
-
-#ifdef ESPURNA_CORE
-    #define ALEXA_SUPPORT           0
-    #define SCHEDULER_SUPPORT       0
-    #define DOMOTICZ_SUPPORT        0
-    #define HOMEASSISTANT_SUPPORT   0
-    #define MQTT_SUPPORT            0
-    #define NTP_SUPPORT             0
-    #define WEB_SUPPORT             0
-    #define SENSOR_SUPPORT          0
-    #define I2C_SUPPORT             0
-#endif
-
-//------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
 
@@ -71,15 +55,19 @@
 
 // Second serial port (used for RX)
 
-//#define SERIAL_RX_PORT        Serial			// This setting is usually defined
+#ifndef SERIAL_RX_ENABLED
+#define SERIAL_RX_ENABLED       0               // Secondary serial port for RX
+#endif
+
+#ifndef SERIAL_RX_PORT
+#define SERIAL_RX_PORT          Serial			// This setting is usually defined
 												// in the hardware.h file for those
 												// boards that require it
+#endif
 
 #ifndef SERIAL_RX_BAUDRATE
 #define SERIAL_RX_BAUDRATE      115200          // Default baudrate
 #endif
-
-#define SERIAL_RX_BUFFER_SIZE   32
 
 //------------------------------------------------------------------------------
 
@@ -124,8 +112,10 @@
 //------------------------------------------------------------------------------
 
 #ifndef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT         1               // Enable terminal commands (0.97Kb)
+#define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
 #endif
+
+#define TERMINAL_BUFFER_SIZE     128            // Max size for commands commands
 
 //------------------------------------------------------------------------------
 // SYSTEM CHECK
@@ -275,6 +265,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_PROVIDER_DUAL     1
 #define RELAY_PROVIDER_LIGHT    2
 #define RELAY_PROVIDER_RFBRIDGE 3
+#define RELAY_PROVIDER_STM      4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_BOOT_MODE         RELAY_BOOT_OFF
@@ -301,13 +292,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_SAVE_DELAY        1000
 
 //------------------------------------------------------------------------------
-// I18N
-//------------------------------------------------------------------------------
-
-#define TMP_CELSIUS             0
-#define TMP_FAHRENHEIT          1
-
-//------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
 
@@ -316,10 +300,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LED_MODE_FOLLOW         2       // LED will follow state of linked relay (check RELAY#_LED)
 #define LED_MODE_FOLLOW_INVERSE 3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
 #define LED_MODE_FINDME         4       // LED will be ON if all relays are OFF
-#define LED_MODE_MIXED          5       // A mixed between WIFI and FINDME
+#define LED_MODE_FINDME_WIFI    5       // A mixture between WIFI and FINDME
 #define LED_MODE_ON             6       // LED always ON
 #define LED_MODE_OFF            7       // LED always OFF
-#define LED_MODE_STATUS         8       // If any relay is ON, LED will be ON, otherwise OFF
+#define LED_MODE_RELAY          8       // If any relay is ON, LED will be ON, otherwise OFF
+#define LED_MODE_RELAY_WIFI     9       // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -332,15 +317,43 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI_SLEEP_ENABLED      1           // Enable WiFi light sleep
 #define WIFI_SCAN_NETWORKS      1           // Perform a network scan before connecting
 
-// Optional hardcoded configuration (up to 2 different networks)
-//#define WIFI1_SSID              "..."
-//#define WIFI1_PASS              "..."
-//#define WIFI1_IP                "192.168.1.201"
-//#define WIFI1_GW                "192.168.1.1"
-//#define WIFI1_MASK              "255.255.255.0"
-//#define WIFI1_DNS               "8.8.8.8"
-//#define WIFI2_SSID              "..."
-//#define WIFI2_PASS              "..."
+// Optional hardcoded configuration (up to 2 networks)
+#ifndef WIFI1_SSID
+#define WIFI1_SSID              ""
+#endif
+#ifndef WIFI1_PASS
+#define WIFI1_PASS              ""
+#endif
+#ifndef WIFI1_IP
+#define WIFI1_IP                ""
+#endif
+#ifndef WIFI1_GW
+#define WIFI1_GW                ""
+#endif
+#ifndef WIFI1_MASK
+#define WIFI1_MASK              ""
+#endif
+#ifndef WIFI1_DNS
+#define WIFI1_DNS               ""
+#endif
+#ifndef WIFI2_SSID
+#define WIFI2_SSID              ""
+#endif
+#ifndef WIFI2_PASS
+#define WIFI2_PASS              ""
+#endif
+#ifndef WIFI2_IP
+#define WIFI2_IP                ""
+#endif
+#ifndef WIFI2_GW
+#define WIFI2_GW                ""
+#endif
+#ifndef WIFI2_MASK
+#define WIFI2_MASK              ""
+#endif
+#ifndef WIFI2_DNS
+#define WIFI2_DNS               ""
+#endif
 
 #define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
 #define WIFI_PROPAGATION_CONST  4           // This is typically something between 2.7 to 4.3 (free space is 2)
@@ -374,6 +387,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 
+#define WS_AUTHENTICATION       1           // WS authentication ON by default (see #507)
 #define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
 #define WS_UPDATE_INTERVAL      30000       // Update clients every 30 seconds
@@ -417,7 +431,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #ifndef SSDP_SUPPORT
-#define SSDP_SUPPORT            1           // Publish device using SSDP protocol by default (4.59Kb)
+#define SSDP_SUPPORT            0           // Publish device using SSDP protocol by default (4.59Kb)
+                                            // Not compatible with ALEXA_SUPPORT at the moment
 #endif
 
 #ifndef SSDP_DEVICE_TYPE
@@ -443,6 +458,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #define OTA_PORT                8266        // OTA port
+#define OTA_GITHUB_FP           "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
 
 // -----------------------------------------------------------------------------
 // NOFUSS
@@ -455,6 +471,29 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NOFUSS_ENABLED          0           // Do not perform NoFUSS updates by default
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
+
+// -----------------------------------------------------------------------------
+// UART <-> MQTT
+// -----------------------------------------------------------------------------
+
+#ifndef UART_MQTT_SUPPORT
+#define UART_MQTT_SUPPORT       0           // No support by default
+#endif
+
+#define UART_MQTT_USE_SOFT      0           // Use SoftwareSerial
+#define UART_MQTT_HW_PORT       Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
+#define UART_MQTT_RX_PIN        4           // RX PIN (if UART_MQTT_USE_SOFT == 1)
+#define UART_MQTT_TX_PIN        5           // TX PIN (if UART_MQTT_USE_SOFT == 1)
+#define UART_MQTT_BAUDRATE      115200      // Serial speed
+#define UART_MQTT_BUFFER_SIZE   100         // UART buffer size
+
+#if UART_MQTT_SUPPORT
+#define MQTT_SUPPORT            1
+#undef TERMINAL_SUPPORT
+#define TERMINAL_SUPPORT        0
+#undef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT    0
+#endif
 
 // -----------------------------------------------------------------------------
 // MQTT
@@ -510,7 +549,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define MQTT_USE_JSON               0               // Group messages in a JSON body
 #define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
-#define MQTT_QUEUE_MAX_SIZE         10              // Size of the MQTT queue when MQTT_USE_JSON is enabled
+#define MQTT_QUEUE_MAX_SIZE         20              // Size of the MQTT queue when MQTT_USE_JSON is enabled
 
 // These are the properties that will be sent when useJson is true
 #ifndef MQTT_ENQUEUE_IP
@@ -553,6 +592,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFIN         "rfin"
 #define MQTT_TOPIC_RFLEARN      "rflearn"
 #define MQTT_TOPIC_RFRAW        "rfraw"
+#define MQTT_TOPIC_UARTIN       "uartin"
+#define MQTT_TOPIC_UARTOUT      "uartout"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
@@ -771,6 +812,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
 #define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
+#define NTP_SYNC_INTERVAL       60              // NTP initial check every minute
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
 #define NTP_START_DELAY         1000            // Delay NTP start 1 second
 
@@ -790,6 +832,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // -----------------------------------------------------------------------------
 // RFBRIDGE
+// This module is not compatible with RF_SUPPORT=1
 // -----------------------------------------------------------------------------
 
 #define RF_SEND_TIMES           4               // How many times to send the message
@@ -951,6 +994,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // Custom RF module
 // Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Enable support by passing RF_SUPPORT=1 build flag
+// This module is not compatible with RFBRIDGE
 //--------------------------------------------------------------------------------
 
 #ifndef RF_SUPPORT
@@ -961,5 +1005,5 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RF_PIN                      14
 #endif
 
-#define RF_CHANNEL                  31
-#define RF_DEVICE                   1
+#define RF_DEBOUNCE                 500
+#define RF_LEARN_TIMEOUT            60000

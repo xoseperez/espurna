@@ -3,6 +3,55 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.3] 2018-01-29
+### Fixed
+- Fix telnet crash due to local reference ([#487](https://github.com/xoseperez/espurna/issues/487))
+
+## [1.12.2] 2018-01-29
+### Added
+- Repository migrated over to GitHub
+- Travis CI build test and deploy
+- Pre-commit hook to change README.md file depending on the branch
+- {hostname} and {mac} placeholders for MQTT root topic
+- Added support for timezones with minutes ([#265](https://github.com/xoseperez/espurna/issues/265))
+- SSDP support ([#282](https://github.com/xoseperez/espurna/issues/282), [#423](https://github.com/xoseperez/espurna/issues/423), disabled by default since current implementation is not compatible with Alexa [#479](https://github.com/xoseperez/espurna/issues/479))
+- HA auto-discover for multi-relay boards and sensors ([#392](https://github.com/xoseperez/espurna/issues/392), [#465](https://github.com/xoseperez/espurna/issues/465))
+- Reset the pulse timeout every time an MQTT message is sent with the non-normal payload value ([#454](https://github.com/xoseperez/espurna/issues/454))
+- Option to disable schedules without deleting them ([#453](https://github.com/xoseperez/espurna/issues/453))
+- Added LED_MODE_STATUS ([#458](https://github.com/xoseperez/espurna/issues/458))
+- Support to set on/off state per channel using switches ([#457](https://github.com/xoseperez/espurna/issues/457))
+- Added support for MagicHome LED Controller 2.3
+- Alexa message queue (thanks to Qubeck)
+- Secondary Serial RX port for H801 and H802 boards ([#386](https://github.com/xoseperez/espurna/issues/386), thanks to Pablo Pousada Rial)
+- Added compatibility with https://github.com/rhx/RF-Bridge-EFM8BB1 to RF Bridge (Thanks to Rene Hexel)
+- Added message queue to RF Bridge
+- Added MAC to mDNS text fields
+- Added wifi.ap command to go into AP mode
+- Added message id on MQTT JSON payloads
+- Added hooks for 3rd party code (custom modules)
+- Local broker to broadcast messages internally
+- Added timestamp to debug output
+- Common I2C interface to abstract backend library (Wire or Brzo I2C)
+- Added espurnaLoopRegister
+
+### Fixed
+- Fixed support for 4CH Pro different modes ([#333](https://github.com/xoseperez/espurna/issues/333))
+- Fixed several sensor modules to enable hot-unplug-plug ([#398](https://github.com/xoseperez/espurna/issues/398))
+- Fixed crash when calling idbSend from an MQTT callback ([#410](https://github.com/xoseperez/espurna/issues/410))
+- Checking trailing slash in mqttTopic ([#422](https://github.com/xoseperez/espurna/issues/422))
+- Fixed pulse and pulse_ms order in relay_t structure ([#424](https://github.com/xoseperez/espurna/issues/424))
+- Use same buffer size across all terminal-realted classes/methods. Set to 128 chars ([#477](https://github.com/xoseperez/espurna/issues/477), [#478](https://github.com/xoseperez/espurna/issues/478))
+- Fix WiFi scan status in web UI
+- Several code quality fixes (thanks to Lazar Obradovic)
+- Fixed error message on first command over telnet
+
+### Changed
+- BMX280 sensor module now doesn't depend on third party libraries
+- Changed time management in ntp, mqtt and scheduler modules
+
+## Deprecated
+- {identifier} placeholder for MQTT root topic
+
 ## [1.12.1] 2018-01-14
 ### Added
 - Option to perform a WiFi network scan from web UI

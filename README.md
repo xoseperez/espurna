@@ -3,9 +3,10 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://badge.fury.io/gh/xoseperez%2Fespurna.svg)](CHANGELOG.md)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=master)](https://travis-ci.org/xoseperez/espurna)
-[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
+[![version](https://img.shields.io/badge/version-1.12.4a-brightgreen.svg)](CHANGELOG.md)
+![branch](https://img.shields.io/badge/branch-dev-orange.svg)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
@@ -47,9 +48,13 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * [**Home Assistant**](https://home-assistant.io/) integration via MQTT
     * Support for switches (on/off)
     * Support for lights (color, brightness, on/off state)
-    * Supports MQTT auto-discover feature (both switches and lights)
+    * Supports MQTT auto-discover feature (switches, lights and sensors)
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
+* **Sonoff RF Bridge** support
+    * Multiple virtual switches (tested with up to 16)
+    * MQTT-to-RF two-way bridge (no need to learn codes)
+    * Support for https://github.com/Portisch/RF-Bridge-EFM8BB1 custom firmware
 * Support for different **sensors**
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
@@ -76,6 +81,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Flicker-free PWM management
     * Soft color transitions
     * Color synchronization between light using MQTT
+    * Option to have separate switches for each channel
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
@@ -103,6 +109,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Telnet support**
     * Enable/disable via the web UI
     * Show debug info and allows to run terminal commands
+* **NTP** for time synchronization
+    * Supports worldwide time zones
+    * Compatible with DST
 * **Unstable system check**
     * Detects unstable system (crashes on boot continuously) and defaults to a stable system
     * Only WiFi AP, OTA and Telnet available if system is flagged as unstable
@@ -184,7 +193,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC02, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch.
+**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC02, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch, Magic Home LED Controller 2.3.
 
 ## License
 
