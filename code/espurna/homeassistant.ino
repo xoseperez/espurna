@@ -152,7 +152,7 @@ String _haGetConfig() {
 
         _haSendSwitch(i, config, type);
 
-        output += "\n" + type + ":\n";
+        output += type + ":\n";
         bool first = true;
         for (auto kv : config) {
             if (first) {
@@ -176,7 +176,7 @@ String _haGetConfig() {
 
             _haSendMagnitude(i, config);
 
-            output += "\nsensor:\n";
+            output += "sensor:\n";
             bool first = true;
             for (auto kv : config) {
                 if (first) {
