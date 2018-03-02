@@ -407,7 +407,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef PZEM004T_SUPPORT
-#define PZEM004T_SUPPORT                1
+#define PZEM004T_SUPPORT                0
 #endif
 
 #ifndef PZEM004T_USE_SOFT
@@ -676,6 +676,11 @@ PROGMEM const char* const magnitude_units[] = {
     #include <SoftwareSerial.h>
     #include <PMS.h>
     #include "../sensors/PMSX003Sensor.h"
+#endif
+
+#if PZEM004T_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/PZEM004TSensor.h"
 #endif
 
 #if SI7021_SUPPORT
