@@ -21,14 +21,12 @@ bool _haSendFlag = false;
 
 void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
-    if (_haEnabled) {
-        unsigned char type = magnitudeType(i);
-        config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
-        config["platform"] = "mqtt";
-        config["device_class"] = "sensor";
-        config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-        config["unit_of_measurement"] = magnitudeUnits(type);
-    }
+    unsigned char type = magnitudeType(i);
+    config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
+    config["platform"] = "mqtt";
+    config["device_class"] = "sensor";
+    config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
+    config["unit_of_measurement"] = magnitudeUnits(type);
 
 }
 
@@ -36,18 +34,19 @@ void _haSendMagnitudes() {
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& config = jsonBuffer.createObject();
-
-        _haSendMagnitude(i, config);
-
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/sensor/" +
             getSetting("hostname") + "_" + String(i) +
             "/config";
 
         String output;
-        if (config.size() > 0) config.printTo(output);
+        if (_haEnabled) {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& config = jsonBuffer.createObject();
+            _haSendMagnitude(i, config);
+            config.printTo(output);
+        }
+
         mqttSendRaw(topic.c_str(), output.c_str());
         mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
 
@@ -61,68 +60,58 @@ void _haSendMagnitudes() {
 // SWITCHES & LIGHTS
 // -----------------------------------------------------------------------------
 
-void _haSendSwitch(unsigned char i, JsonObject& config, String &type) {
+void _haSendSwitch(unsigned char i, JsonObject& config) {
 
-    if (_haEnabled) {
-
-        String name = getSetting("hostname");
-        if (relayCount() > 1) {
-            name += String(" #") + String(i);
-        }
-
-        config["name"] = name;
-        config["platform"] = "mqtt";
-
-        if (relayCount()) {
-            config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
-            config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
-            config["payload_on"] = String("1");
-            config["payload_off"] = String("0");
-            config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-            config["payload_available"] = String("1");
-            config["payload_not_available"] = String("0");
-        }
-
-        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
-            if (i == 0) {
-
-                if (lightHasColor()) {
-                    config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
-                    config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
-                    config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
-                    config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
-                    config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
-                }
-
-                if (lightChannels() > 3) {
-                    config["white_value_state_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, false);
-                    config["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
-                }
-
-            }
-
-        #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
+    String name = getSetting("hostname");
+    if (relayCount() > 1) {
+        name += String(" #") + String(i);
     }
 
-    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
-        type = String("light");
-    #else
-        type = String("switch");
-    #endif
+    config["name"] = name;
+    config["platform"] = "mqtt";
+
+    if (relayCount()) {
+        config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
+        config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
+        config["payload_on"] = String("1");
+        config["payload_off"] = String("0");
+        config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
+        config["payload_available"] = String("1");
+        config["payload_not_available"] = String("0");
+    }
+
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
+        if (i == 0) {
+
+            if (lightHasColor()) {
+                config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
+                config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
+                config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
+                config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
+                config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
+            }
+
+            if (lightChannels() > 3) {
+                config["white_value_state_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, false);
+                config["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
+            }
+
+        }
+
+    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 }
 
 void _haSendSwitches() {
 
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
+        String type = String("light");
+    #else
+        String type = String("switch");
+    #endif
+
     for (unsigned char i=0; i<relayCount(); i++) {
-
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& config = jsonBuffer.createObject();
-        String type;
-
-        _haSendSwitch(i, config, type);
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/" + type +
@@ -130,7 +119,13 @@ void _haSendSwitches() {
             "/config";
 
         String output;
-        if (config.size() > 0) config.printTo(output);
+        if (_haEnabled) {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& config = jsonBuffer.createObject();
+            _haSendSwitch(i, config);
+            config.printTo(output);
+        }
+
         mqttSendRaw(topic.c_str(), output.c_str());
         mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
 
@@ -144,13 +139,17 @@ String _haGetConfig() {
 
     String output;
 
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
+        String type = String("light");
+    #else
+        String type = String("switch");
+    #endif
+
     for (unsigned char i=0; i<relayCount(); i++) {
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& config = jsonBuffer.createObject();
-        String type;
-
-        _haSendSwitch(i, config, type);
+        _haSendSwitch(i, config);
 
         output += type + ":\n";
         bool first = true;
@@ -173,7 +172,6 @@ String _haGetConfig() {
 
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
-
             _haSendMagnitude(i, config);
 
             output += "sensor:\n";
