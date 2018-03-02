@@ -160,6 +160,7 @@ div.state {
 .button-rfb-learn,
 .button-upgrade-browse,
 .button-ha-add,
+.button-ha-config,
 .button-settings-backup,
 .button-settings-restore,
 .button-apikey {
@@ -278,6 +279,7 @@ span.slider {
     display: none;
 }
 
+#haConfig,
 #scanResult {
     color: #888;
     font-family: 'Courier New', monospace;

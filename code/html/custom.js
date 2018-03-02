@@ -517,6 +517,12 @@ function doScan() {
     return false;
 }
 
+function doHAConfig() {
+    $("#haConfig").html("");
+    sendAction("haconfig", {});
+    return false;
+}
+
 // -----------------------------------------------------------------------------
 // Visualization
 // -----------------------------------------------------------------------------
@@ -1261,6 +1267,7 @@ $(function() {
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);
+    $(".button-ha-config").on("click", doHAConfig);
     $(".button-settings-backup").on("click", doBackup);
     $(".button-settings-restore").on("click", doRestore);
     $(".button-settings-factory").on("click", doFactoryReset);
