@@ -7,7 +7,7 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#ifdef UART_MQTT_SUPPORT
+#if UART_MQTT_SUPPORT
 
 char _uartmqttBuffer[UART_MQTT_BUFFER_SIZE];
 bool _uartmqttNewData = false;
@@ -100,4 +100,4 @@ void uartmqttSetup() {
 
 }
 
-#endif
+#endif // UART_MQTT_SUPPORT
