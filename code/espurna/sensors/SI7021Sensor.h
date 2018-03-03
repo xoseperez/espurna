@@ -121,9 +121,17 @@ class SI7021Sensor : public I2CSensor {
             _chip = i2c_read_uint8(_address);
 
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
-                i2cReleaseLock(_address);
-                _error = SENSOR_ERROR_UNKNOWN_ID;
+
                 _count = 0;
+                i2cReleaseLock(_address);
+                _previous_address = 0;
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+
+                // Setting _address to 0 forces auto-discover
+                // This might be necessary at this stage if there is a
+                // different sensor in the hardcoded address
+                _address = 0;
+
             } else {
                 _count = 2;
             }
