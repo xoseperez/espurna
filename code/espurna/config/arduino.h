@@ -60,6 +60,7 @@
 //#define ARILUX_AL_LC11
 //#define ARILUX_AL_LC02
 //#define WEMOS_D1_TARPUNA_SHIELD
+//#define GIZWITS_WITTY_CLOUD
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

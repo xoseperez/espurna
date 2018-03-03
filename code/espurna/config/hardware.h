@@ -1391,6 +1391,39 @@
 
     #define LIGHT_ENABLE_PIN    15
 
+#elif defined(GIZWITS_WITTY_CLOUD)
+
+    // Info
+    #define MANUFACTURER        "GIZWITS"
+    #define DEVICE              "WITTY_CLOUD"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define ANALOG_SUPPORT      1
+
+    // LEDs
+    #define LED1_PIN            2      // BLUE build-in
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       15       // RED
+    #define LIGHT_CH2_PIN       12       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // KMC 70011
 // https://www.amazon.com/KMC-Monitoring-Required-Control-Compatible/dp/B07313TH7B
