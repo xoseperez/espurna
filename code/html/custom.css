@@ -5,6 +5,7 @@
 #menu .pure-menu-heading {
     font-size: 100%;
     padding: .5em .5em;
+    white-space: normal;
 }
 
 .pure-g {
@@ -53,6 +54,10 @@ h2 {
     color: #ccc;
     font-size: 80%;
     margin: -10px 0 10px 0;
+}
+
+.hint a {
+    color:inherit;
 }
 
 legend.module,
@@ -143,7 +148,8 @@ div.state {
 .button-rfb-forget,
 .button-del-network,
 .button-del-schedule,
-.button-upgrade {
+.button-upgrade,
+.button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
 }
 
@@ -154,6 +160,7 @@ div.state {
 .button-rfb-learn,
 .button-upgrade-browse,
 .button-ha-add,
+.button-ha-config,
 .button-settings-backup,
 .button-settings-restore,
 .button-apikey {
@@ -272,6 +279,7 @@ span.slider {
     display: none;
 }
 
+#haConfig,
 #scanResult {
     color: #888;
     font-family: 'Courier New', monospace;

@@ -155,7 +155,7 @@ def input_board():
     # Choose the board
     try:
         index = int(input("Choose the board you want to flash (empty if none of these): "))
-    except:
+    except ValueError:
         index = 0
     if index < 0 or len(devices) < index:
         print("Board number must be between 1 and %s\n" % str(len(devices)))
@@ -175,7 +175,7 @@ def input_board():
         print()
         try:
             index = int(input("Choose the board type you want to flash: "))
-        except:
+        except ValueError:
             index = 0
         if index < 1 or len(boards) < index:
             print("Board number must be between 1 and %s\n" % str(len(boards)))
@@ -186,17 +186,13 @@ def input_board():
     if board.get('size', 0) == 0:
         try:
             board['size'] = int(input("Board memory size (1 for 1M, 4 for 4M): "))
-        except:
+        except ValueError:
             print("Wrong memory size")
             return None
 
     # Choose IP of none before
     if len(board.get('ip', '')) == 0:
-        try:
-            board['ip'] = input("IP of the device to flash (empty for 192.168.4.1): ") or "192.168.4.1"
-        except:
-            print("Wrong IP")
-            return None
+        board['ip'] = input("IP of the device to flash (empty for 192.168.4.1): ") or "192.168.4.1"
 
     return board
 

@@ -74,7 +74,7 @@ void _nofussInitCommands() {
 }
 
 #endif // TERMINAL_SUPPORT
-#
+
 // -----------------------------------------------------------------------------
 
 void nofussRun() {

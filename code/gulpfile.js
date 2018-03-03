@@ -36,22 +36,17 @@ const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
-const gutil = require('gulp-util');
+const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
 
-String.prototype.replaceAll = function(search, replacement) {
-    var target = this;
-    return target.split(search).join(replacement);
-};
-
 var toHeader = function(filename) {
 
     var source = dataFolder + filename;
     var destination = staticFolder + filename + '.h';
-    var safename = filename.replaceAll('.', '_');
+    var safename = filename.split('.').join('_');
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
@@ -64,9 +59,11 @@ var toHeader = function(filename) {
     wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
 
     for (var i=0; i<data.length; i++) {
-        if (i % 20 == 0) wstream.write('\n');
+        if (0 === (i % 20)) {
+            wstream.write('\n');
+        }
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i<data.length-1) {
+        if (i < (data.length - 1)) {
           wstream.write(',');
         }
     }
@@ -76,10 +73,17 @@ var toHeader = function(filename) {
 
 };
 
-function htmllintReporter(filepath, issues) {
+var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
 		issues.forEach(function (issue) {
-			gutil.log(gutil.colors.cyan('[gulp-htmllint] ') + gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') + gutil.colors.red('(' + issue.code + ') ' + issue.msg));
+			log.info(
+                '[gulp-htmllint] ' +
+                filepath + ' [' +
+                issue.line + ',' +
+                issue.column + ']: ' +
+                '(' + issue.code + ') ' +
+                issue.msg
+            );
 		});
 		process.exitCode = 1;
 	}
@@ -91,9 +95,9 @@ gulp.task('build_certs', function() {
 });
 
 gulp.task('csslint', function() {
-    gulp.src('html/*.css')
-        .pipe(csslint({ids: false}))
-        .pipe(csslint.formatter());
+    gulp.src('html/*.css').
+        pipe(csslint({ids: false})).
+        pipe(csslint.formatter());
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
@@ -101,29 +105,29 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 });
 
 gulp.task('buildfs_inline', function() {
-    return gulp.src('html/*.html')
-        .pipe(htmllint({
+    return gulp.src('html/*.html').
+        pipe(htmllint({
             'failOnError': true,
             'rules': {
                 'id-class-style': false,
                 'label-req-for': false,
             }
-        }, htmllintReporter))
-        .pipe(favicon())
-        .pipe(inline({
+        }, htmllintReporter)).
+        pipe(favicon()).
+        pipe(inline({
             base: 'html/',
             js: [uglify],
             css: [cleancss, inlineImages],
             disabledTypes: ['svg', 'img']
-        }))
-        .pipe(htmlmin({
+        })).
+        pipe(htmlmin({
             collapseWhitespace: true,
             removeComments: true,
             minifyCSS: true,
             minifyJS: true
-        }))
-        .pipe(gzip())
-        .pipe(gulp.dest(dataFolder));
+        })).
+        pipe(gzip()).
+        pipe(gulp.dest(dataFolder));
 });
 
 

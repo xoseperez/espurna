@@ -93,8 +93,22 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
-        if (strcmp(action, "reboot") == 0) deferredReset(100, CUSTOM_RESET_WEB);
-        if (strcmp(action, "reconnect") == 0) _web_defer.once_ms(100, wifiDisconnect);
+        if (strcmp(action, "reboot") == 0) {
+            deferredReset(100, CUSTOM_RESET_WEB);
+            return;
+        }
+
+        if (strcmp(action, "reconnect") == 0) {
+            _web_defer.once_ms(100, wifiDisconnect);
+            return;
+        }
+
+        if (strcmp(action, "factory_reset") == 0) {
+            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+            resetSettings();
+            deferredReset(100, CUSTOM_RESET_FACTORY);
+            return;
+        }
 
         JsonObject& data = root["data"];
         if (data.success()) {
@@ -112,6 +126,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     wsSend_P(client_id, PSTR("{\"message\": 4}"));
                 }
             }
+
+            return;
 
         }
 
@@ -204,7 +220,6 @@ void _wsUpdate(JsonObject& root) {
     root["heap"] = getFreeHeap();
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
-    root["distance"] = wifiDistance(WiFi.RSSI());
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
@@ -255,8 +270,7 @@ void _wsOnStart(JsonObject& root) {
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-        root["tmpUnits"] = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-        root["tmpCorrection"] = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+        root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
 
     }
 
@@ -375,7 +389,12 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
 
 void wsConfigure() {
     #if USE_PASSWORD
-        _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+        bool auth = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
+        if (auth) {
+            _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
+        } else {
+            _ws.setAuthentication("", "");
+        }
     #endif
 }
 

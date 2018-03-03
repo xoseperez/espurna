@@ -171,44 +171,29 @@ bool _wifiClean(unsigned char num) {
 // Inject hardcoded networks
 void _wifiInject() {
 
-    #ifdef WIFI1_SSID
-        if (getSetting("ssid", 0, "").length() == 0) setSetting("ssid", 0, WIFI1_SSID);
-    #endif
-    #ifdef WIFI1_PASS
-        if (getSetting("pass", 0, "").length() == 0) setSetting("pass", 0, WIFI1_PASS);
-    #endif
-    #ifdef WIFI1_IP
-        if (getSetting("ip", 0, "").length() == 0) setSetting("ip", 0, WIFI1_IP);
-    #endif
-    #ifdef WIFI1_GW
-        if (getSetting("gw", 0, "").length() == 0) setSetting("gw", 0, WIFI1_GW);
-    #endif
-    #ifdef WIFI1_MASK
-        if (getSetting("mask", 0, "").length() == 0) setSetting("mask", 0, WIFI1_MASK);
-    #endif
-    #ifdef WIFI1_DNS
-        if (getSetting("dns", 0, "").length() == 0) setSetting("dns", 0, WIFI1_DNS);
-    #endif
+    if (strlen(WIFI1_SSID)) {
 
-    #ifdef WIFI2_SSID
-        if (getSetting("ssid", 1, "").length() == 0) setSetting("ssid", 1, WIFI2_SSID);
-    #endif
-    #ifdef WIFI2_PASS
-        if (getSetting("pass", 1, "").length() == 0) setSetting("pass", 1, WIFI2_PASS);
-    #endif
-    #ifdef WIFI2_IP
-        if (getSetting("ip", 1, "").length() == 0) setSetting("ip", 1, WIFI2_IP);
-    #endif
-    #ifdef WIFI2_GW
-        if (getSetting("gw", 1, "").length() == 0) setSetting("gw", 1, WIFI2_GW);
-    #endif
-    #ifdef WIFI2_MASK
-        if (getSetting("mask", 1, "").length() == 0) setSetting("mask", 1, WIFI2_MASK);
-    #endif
-    #ifdef WIFI2_DNS
-        if (getSetting("dns", 1, "").length() == 0) setSetting("dns", 1, WIFI2_DNS);
-    #endif
+        if (!hasSetting("ssid", 0)) {
+            setSetting("ssid", 0, WIFI1_SSID);
+            setSetting("pass", 0, WIFI1_PASS);
+            setSetting("ip", 0, WIFI1_IP);
+            setSetting("gw", 0, WIFI1_GW);
+            setSetting("mask", 0, WIFI1_MASK);
+            setSetting("dns", 0, WIFI1_DNS);
+        }
 
+        if (strlen(WIFI2_SSID)) {
+            if (!hasSetting("ssid", 1)) {
+                setSetting("ssid", 1, WIFI2_SSID);
+                setSetting("pass", 1, WIFI2_PASS);
+                setSetting("ip", 1, WIFI2_IP);
+                setSetting("gw", 1, WIFI2_GW);
+                setSetting("mask", 1, WIFI2_MASK);
+                setSetting("dns", 1, WIFI2_DNS);
+            }
+        }
+
+    }
 }
 
 #if DEBUG_SUPPORT
@@ -343,11 +328,6 @@ String getNetwork() {
         return jw.getAPSSID();
     }
     return WiFi.SSID();
-}
-
-double wifiDistance(int rssi) {
-    double exponent = (double) (WIFI_RSSI_1M - rssi) / WIFI_PROPAGATION_CONST / 10.0;
-    return round(pow(10, exponent));
 }
 
 bool wifiConnected() {

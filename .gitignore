@@ -8,7 +8,6 @@ firmware*
 .gcc-flags.json
 .sconsign.dblite
 credentials.h
-.build
 node_modules
 code/utils
 custom.h

@@ -102,7 +102,7 @@
                             <a href="#" class="pure-menu-link" data="panel-relay">SWITCHES</a>
                         </li>
 
-                        <li class="pure-menu-item module module-relay">
+                        <li class="pure-menu-item module module-sch">
                             <a href="#" class="pure-menu-link" data="panel-schedule">SCHEDULE</a>
                         </li>
 
@@ -118,6 +118,10 @@
                             <a href="#" class="pure-menu-link" data="panel-domoticz">DOMOTICZ</a>
                         </li>
 
+                        <li class="pure-menu-item module module-ha">
+                            <a href="#" class="pure-menu-link" data="panel-ha">HASS</a>
+                        </li>
+
                         <li class="pure-menu-item module module-idb">
                             <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
                         </li>
@@ -127,7 +131,7 @@
                         </li>
 
                         <li class="pure-menu-item module module-rfb">
-                            <a href="#" class="pure-menu-link" data="panel-rfb">RFBRIDGE</a>
+                            <a href="#" class="pure-menu-link" data="panel-rfb">RF</a>
                         </li>
 
                         <li class="pure-menu-item">
@@ -199,7 +203,7 @@
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="channel"></span></div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">RSSI</div>
-                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="rssi"></span> (<span name="distance" post="m"></span>)</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="rssi"></span></div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">IP</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="deviceip"></span></div>
@@ -264,7 +268,7 @@
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface clicking the "Reconnect" button.
+                                        This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
                                     </div>
                                 </div>
 
@@ -286,10 +290,11 @@
                                     <label class="pure-u-1 pure-u-lg-1-4">LED mode</label>
                                     <select name="ledMode0" class="pure-u-1 pure-u-lg-1-4" tabindex="7">
                                         <option value="1">WiFi status</option>
+                                        <option value="8">Relay status</option>
                                         <option value="0">MQTT managed</option>
                                         <option value="4">Find me</option>
-                                        <option value="8">Status</option>
-                                        <option value="5">Mixed</option>
+                                        <option value="9">Relay &amp; WiFi</option>
+                                        <option value="5">Find me &amp; WiFi</option>
                                         <option value="6">Always ON</option>
                                         <option value="7">Always OFF</option>
                                     </select>
@@ -297,11 +302,12 @@
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This setting defines the behaviour of the main LED in the board.<br />
-                                        When in "WiFi status" it will blink at 1Hz when trying to connecting. If successfully connected if will briefly lit every 5 seconds if in STA mode or every second if in AP mode.<br />
+                                        When in "WiFi status" it will blink at 1Hz when trying to connect. If successfully connected it will briefly blink every 5 seconds if in STA mode or every second if in AP mode.<br />
+                                        When in "Relay status" mode the LED will be ON whenever any relay is ON, and OFF otherwise. This is global status notification.<br />
                                         When in "MQTT managed" mode you will be able to set the LED state sending a message to "&lt;base_topic&gt;/led/0/set" with a payload of 0, 1 or 2 (to toggle it).<br />
                                         When in "Find me" mode the LED will be ON when all relays are OFF. This is meant to locate switches at night.<br />
-                                        When in "Status" mode the LED will be ON whenever any relay is ON, and OFF otherwise. This is global status notification.<br />
-                                        When in "Mixed" mode it will follow the WiFi status but will stay mostly on when relays are OFF, and mostly OFF when any of them is ON.<br />
+                                        When in "Relay &amp; WiFi" mode it will follow the WiFi status but will stay mostly off when relays are OFF, and mostly ON when any of them is ON.<br />
+                                        When in "Find me &amp; WiFi" mode is the opposite of the "Relay &amp; WiFi", it will follow the WiFi status but will stay mostly on when relays are OFF, and mostly OFF when any of them is ON.<br />
                                         "Always ON" and "Always OFF" modes are self-explanatory.
                                     </div>
                                 </div>
@@ -309,22 +315,6 @@
                                 <div class="pure-g module module-alexa">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" tabindex="13" /></div>
-                                </div>
-
-                                <div class="pure-g module module-ha">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Home Assistant</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" tabindex="14" /></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
-                                        When using a colour light you might want to disable CSS style so Home Assistant can parse the color.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g module module-ha">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Home Assistant Prefix</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="haPrefix" type="text" tabindex="15" />
                                 </div>
 
                             </fieldset>
@@ -375,11 +365,11 @@
                             <fieldset>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Use colorpicker</label>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use color</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use color picker for the first 3 channels as RGB.<br />Will only work if the device has at least 3 dimmable channels.<br />Reload the page to update the web interface.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use the first three channels as RGB channels. This will also enable the color picker in the web UI. Will only work if the device has at least 3 dimmable channels.<br />Reload the page to update the web interface.</div>
                                 </div>
 
                                 <div class="pure-g">
@@ -470,6 +460,11 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable WS Auth</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="wsAuth" /></div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Enable HTTP API</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="apiEnabled" /></div>
                                 </div>
@@ -521,7 +516,8 @@
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Settings</label>
                                     <div class="pure-u-1-2 pure-u-lg-1-8"><button class="pure-button button-settings-backup pure-u-23-24">Backup</button></div>
-                                    <div class="pure-u-1-2 pure-u-lg-1-8"><button class="pure-button button-settings-restore pure-u-1">Restore</button></div>
+                                    <div class="pure-u-1-2 pure-u-lg-1-8"><button class="pure-button button-settings-restore pure-u-23-24">Restore</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-1-4"><button class="pure-button button-settings-factory pure-u-1">Factory Reset</button></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -529,6 +525,8 @@
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
                                     <div class=" pure-u-1-4 pure-u-lg-1-8"><button class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
                                     <div class=" pure-u-1-4 pure-u-lg-1-8"><button class="pure-button button-upgrade pure-u-23-24">Upgrade</button></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-0 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
                                     <input name="upgrade" type="file" tabindex="16" />
@@ -569,7 +567,7 @@
 
                                 <div class="pure-g">
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <span class="pure-u-1 pure-u-lg-3-4 terminal" id="scanResult" name="scanResult"></span>
+                                    <span class="pure-u-1 pure-u-lg-3-4" id="scanResult" name="scanResult"></span>
                                 </div>
 
                                 <legend>Networks</legend>
@@ -710,7 +708,7 @@
                                         All messages (except the device status) will be included in a JSON payload along with the timestamp and hostname
                                         and sent under the <strong>&lt;root&gt;/data</strong> topic.<br />
                                         Messages will be queued and sent after 100ms, so different messages could be merged into a single payload.<br />
-                                        Subscribtions will still be done to single topics.
+                                        Subscriptions will still be done to single topics.
                                     </div>
                                 </div>
 
@@ -799,6 +797,61 @@
                         </div>
 
                     </div>
+
+                    <div class="panel" id="panel-ha">
+
+                        <div class="header">
+                            <h1>HOME ASSISTANT</h1>
+                            <h2>
+                                Add this device to your Home Assistant.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+                            <fieldset>
+
+                                <legend>Discover</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Discover</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" tabindex="14" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
+                                        When using a colour light you might want to disable CSS style so Home Assistant can parse the color.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Prefix</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="haPrefix" type="text" tabindex="15" />
+                                </div>
+
+                                <legend>Configuration</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Configuration</label>
+                                    <div class="pure-u-1-4 pure-u-lg-3-4"><button class="pure-button button-ha-config pure-u-1-3">Show</button></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        These are the settings you should copy to your Home Assistant "configuration.yaml" file.
+                                        If any of the sections below (switch, light, sensor) already exists, do not dupplicate it,
+                                        simply copy the contents of the section below the ones already present.
+                                    </div>
+                                </div>
+                                <div class="pure-g">
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><span id="haConfig" name="haConfig"></span></div>
+                                </div>
+
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+
 
                     <div class="panel" id="panel-thingspeak">
 
@@ -930,6 +983,22 @@
                                     </div>
                                 </div>
 
+                                <div class="pure-g module module-pwr">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Power units</label>
+                                    <select name="powerUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
+                                        <option value="0">Watts (W)</option>
+                                        <option value="1">Kilowatts (kW)</option>
+                                    </select>
+                                </div>
+
+                                <div class="pure-g module module-hlw module-emon">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
+                                    <select name="energyUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
+                                        <option value="0">Joules (J)</option>
+                                        <option value="1">Kilowatts·hour (kWh)</option>
+                                    </select>
+                                </div>
+
                                 <div class="pure-g module module-temperature">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
                                     <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
@@ -961,7 +1030,7 @@
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Ampers (A). If you are using a pure resistive load like a bulb this will the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one fo the power wires to get this value.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw">
@@ -994,11 +1063,12 @@
                     <div class="panel" id="panel-rfb">
 
                         <div class="header">
-                            <h1>RFBRIDGE</h1>
+                            <h1>RADIO FREQUENCY</h1>
                             <h2>
-                                Sonoff 433 RF Bridge Configuration<br /><br />
-                                To learn a new code click <strong>LEARN</strong>, the Sonoff RFBridge will beep, then press a button on the remote, the RFBridge will then double beep and the new code should show up. If the device double beeps but the code does not update it has not been properly learnt. Keep trying.<br /><br />
-                                Modify or create new codes manually (18 characters) and then click <strong>SAVE</strong> to store them in the device memory. If your controlled device uses the same code to switch ON and OFF, learn the code with the ON button and copy paste it to the OFF input box, then click SAVE on the last one to store the value.<br /><br />
+                                Sonoff 433 RF Bridge &amp; RF Link Configuration<br /><br />
+                                This page allows you to configure the RF codes for the Sonoff RFBridge 433 and also for a basic RF receiver.<br /><br />
+                                To learn a new code click <strong>LEARN</strong> (the Sonoff RFBridge will beep) then press a button on the remote, the new code should show up (and the RFBridge will double beep). If the device double beeps but the code does not update it has not been properly learnt. Keep trying.<br /><br />
+                                Modify or create new codes manually and then click <strong>SAVE</strong> to store them in the device memory. If your controlled device uses the same code to switch ON and OFF, learn the code with the ON button and copy paste it to the OFF input box, then click SAVE on the last one to store the value.<br /><br />
                                 Delete any code clicking the <strong>FORGET</strong> button.
                                 <span class="module module-rfbraw"><br /><br />You can also specify 116-chars long RAW codes. Raw codes require a <a target="_blank" href="https://github.com/rhx/RF-Bridge-EFM8BB1">specific firmware for for the EFM8BB1</a>.</span>
                             </h2>

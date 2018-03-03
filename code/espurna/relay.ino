@@ -77,6 +77,15 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #endif
 
+    #if RELAY_PROVIDER == RELAY_PROVIDER_STM
+        Serial.flush();
+        Serial.write(0xA0);
+        Serial.write(id + 1);
+        Serial.write(status);
+        Serial.write(0xA1 + status + id);
+        Serial.flush();
+    #endif
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // If the number of relays matches the number of light channels
@@ -122,6 +131,74 @@ void _relayProviderStatus(unsigned char id, bool status) {
             digitalWrite(_relays[id].reset_pin, LOW);
         }
     #endif
+
+}
+
+/**
+ * Walks the relay vector processing only those relays
+ * that have to change to the requested mode
+ * @bool mode Requested mode
+ */
+void _relayProcess(bool mode) {
+
+    unsigned long current_time = millis();
+
+    for (unsigned char id = 0; id < _relays.size(); id++) {
+
+        bool target = _relays[id].target_status;
+
+        // Only process the relays we have to change
+        if (target == _relays[id].current_status) continue;
+
+        // Only process the relays we have change to the requested mode
+        if (target != mode) continue;
+
+        // Only process if the change_time has arrived
+        if (current_time < _relays[id].change_time) continue;
+
+        DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
+
+        // Call the provider to perform the action
+        _relayProviderStatus(id, target);
+
+        // Send to Broker
+        #if BROKER_SUPPORT
+            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+        #endif
+
+        // Send MQTT
+        #if MQTT_SUPPORT
+            relayMQTT(id);
+        #endif
+
+        if (!_relayRecursive) {
+            relayPulse(id);
+            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
+            #if WEB_SUPPORT
+                wsSend(_relayWebSocketUpdate);
+            #endif
+        }
+
+        #if DOMOTICZ_SUPPORT
+            domoticzSendRelay(id);
+        #endif
+
+        #if INFLUXDB_SUPPORT
+            relayInfluxDB(id);
+        #endif
+
+        #if THINGSPEAK_SUPPORT
+            tspkEnqueueRelay(id, target);
+            tspkFlush();
+        #endif
+
+        // Flag relay-based LEDs to update status
+        ledUpdate(true);
+
+        _relays[id].report = false;
+        _relays[id].group_report = false;
+
+    }
 
 }
 
@@ -385,7 +462,11 @@ void _relayBoot() {
         }
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
-        _relays[i].change_time = millis();
+        #if RELAY_PROVIDER == RELAY_PROVIDER_STM
+            _relays[i].change_time = millis() + 3000 + 1000 * i;
+        #else
+            _relays[i].change_time = millis();
+        #endif
         bit <<= 1;
     }
 
@@ -512,7 +593,7 @@ void relaySetupAPI() {
 
         apiRegister(key,
             [relayID](char * buffer, size_t len) {
-				snprintf_P(buffer, len, PSTR("%d"), relayStatus(relayID) ? 1 : 0);
+				snprintf_P(buffer, len, PSTR("%d"), _relays[relayID].target_status ? 1 : 0);
             },
             [relayID](const char * payload) {
 
@@ -611,7 +692,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Check relay topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
         if (t.startsWith(MQTT_TOPIC_RELAY)) {
 
             // Get value
@@ -709,11 +790,16 @@ void _relayInitCommands() {
 // Setup
 //------------------------------------------------------------------------------
 
+void _relayLoop() {
+    _relayProcess(false);
+    _relayProcess(true);
+}
+
 void relaySetup() {
 
     // Dummy relays for AI Light, Magic Home LED Controller, H801,
     // Sonoff Dual and Sonoff RF Bridge
-    #ifdef DUMMY_RELAY_COUNT
+    #if DUMMY_RELAY_COUNT > 0
 
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
             _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL});
@@ -721,28 +807,28 @@ void relaySetup() {
 
     #else
 
-        #ifdef RELAY1_PIN
+        #if RELAY1_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
         #endif
-        #ifdef RELAY2_PIN
+        #if RELAY2_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
         #endif
-        #ifdef RELAY3_PIN
+        #if RELAY3_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
         #endif
-        #ifdef RELAY4_PIN
+        #if RELAY4_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
         #endif
-        #ifdef RELAY5_PIN
+        #if RELAY5_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
         #endif
-        #ifdef RELAY6_PIN
+        #if RELAY6_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
         #endif
-        #ifdef RELAY7_PIN
+        #if RELAY7_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
         #endif
-        #ifdef RELAY8_PIN
+        #if RELAY8_PIN != GPIO_NONE
             _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
         #endif
 
@@ -751,9 +837,9 @@ void relaySetup() {
     _relayBackwards();
     _relayConfigure();
     _relayBoot();
-    relayLoop();
+    _relayLoop();
 
-    espurnaRegisterLoop(relayLoop);
+    espurnaRegisterLoop(_relayLoop);
 
     #if WEB_SUPPORT
         relaySetupAPI();
@@ -767,65 +853,5 @@ void relaySetup() {
     #endif
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
-
-}
-
-void relayLoop(void) {
-
-    unsigned char id;
-
-    for (id = 0; id < _relays.size(); id++) {
-
-        unsigned int current_time = millis();
-        bool status = _relays[id].target_status;
-
-        if ((_relays[id].current_status != status)
-            && (current_time >= _relays[id].change_time)) {
-
-            DEBUG_MSG_P(PSTR("[RELAY] #%d set to %s\n"), id, status ? "ON" : "OFF");
-
-            // Call the provider to perform the action
-            _relayProviderStatus(id, status);
-
-            // Send to Broker
-            #if BROKER_SUPPORT
-                brokerPublish(MQTT_TOPIC_RELAY, id, status ? "1" : "0");
-            #endif
-
-            // Send MQTT
-            #if MQTT_SUPPORT
-                relayMQTT(id);
-            #endif
-
-            if (!_relayRecursive) {
-                relayPulse(id);
-                _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
-                #if WEB_SUPPORT
-                    wsSend(_relayWebSocketUpdate);
-                #endif
-            }
-
-            #if DOMOTICZ_SUPPORT
-                domoticzSendRelay(id);
-            #endif
-
-            #if INFLUXDB_SUPPORT
-                relayInfluxDB(id);
-            #endif
-
-            #if THINGSPEAK_SUPPORT
-                tspkEnqueueRelay(id, status);
-                tspkFlush();
-            #endif
-
-            // Flag relay-based LEDs to update status
-            ledUpdate(true);
-
-            _relays[id].report = false;
-            _relays[id].group_report = false;
-
-        }
-
-    }
 
 }

@@ -15,10 +15,6 @@
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                             // even if just one sensor (0 for backwards compatibility)
 
-#ifndef SENSOR_TEMPERATURE_UNITS
-#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
-#endif
-
 #ifndef SENSOR_TEMPERATURE_CORRECTION
 #define SENSOR_TEMPERATURE_CORRECTION       0.0             // Offset correction
 #endif
@@ -38,6 +34,31 @@
 
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
+
+//------------------------------------------------------------------------------
+// UNITS
+//------------------------------------------------------------------------------
+
+#define POWER_WATTS             0
+#define POWER_KILOWATTS         1
+
+#define ENERGY_JOULES           0
+#define ENERGY_KWH              1
+
+#define TMP_CELSIUS             0
+#define TMP_FAHRENHEIT          1
+
+#ifndef SENSOR_TEMPERATURE_UNITS
+#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#endif
+
+#ifndef SENSOR_ENERGY_UNITS
+#define SENSOR_ENERGY_UNITS                 ENERGY_JOULES   // Energy units (ENERGY_JOULES | ENERGY_KWH)
+#endif
+
+#ifndef SENSOR_POWER_UNITS
+#define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
+#endif
 
 //--------------------------------------------------------------------------------
 // Sensor ID
@@ -549,7 +570,9 @@ PROGMEM const char magnitude_hectopascals[] = "hPa";
 PROGMEM const char magnitude_amperes[] = "A";
 PROGMEM const char magnitude_volts[] = "V";
 PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_kw[] = "kW";
 PROGMEM const char magnitude_joules[] = "J";
+PROGMEM const char magnitude_kwh[] = "kWh";
 PROGMEM const char magnitude_ugm3[] = "µg/m3";
 PROGMEM const char magnitude_ppm[] = "ppm";
 PROGMEM const char magnitude_lux[] = "lux";
