@@ -118,6 +118,10 @@
                             <a href="#" class="pure-menu-link" data="panel-domoticz">DOMOTICZ</a>
                         </li>
 
+                        <li class="pure-menu-item module module-ha">
+                            <a href="#" class="pure-menu-link" data="panel-ha">HASS</a>
+                        </li>
+
                         <li class="pure-menu-item module module-idb">
                             <a href="#" class="pure-menu-link" data="panel-idb">INFLUXDB</a>
                         </li>
@@ -311,22 +315,6 @@
                                 <div class="pure-g module module-alexa">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" tabindex="13" /></div>
-                                </div>
-
-                                <div class="pure-g module module-ha">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Home Assistant</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" tabindex="14" /></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
-                                        When using a colour light you might want to disable CSS style so Home Assistant can parse the color.
-                                    </div>
-                                </div>
-
-                                <div class="pure-g module module-ha">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Home Assistant Prefix</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="haPrefix" type="text" tabindex="15" />
                                 </div>
 
                             </fieldset>
@@ -579,7 +567,7 @@
 
                                 <div class="pure-g">
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <span class="pure-u-1 pure-u-lg-3-4 terminal" id="scanResult" name="scanResult"></span>
+                                    <span class="pure-u-1 pure-u-lg-3-4" id="scanResult" name="scanResult"></span>
                                 </div>
 
                                 <legend>Networks</legend>
@@ -809,6 +797,61 @@
                         </div>
 
                     </div>
+
+                    <div class="panel" id="panel-ha">
+
+                        <div class="header">
+                            <h1>HOME ASSISTANT</h1>
+                            <h2>
+                                Add this device to your Home Assistant.
+                            </h2>
+                        </div>
+
+                        <div class="page">
+                            <fieldset>
+
+                                <legend>Discover</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Discover</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="haEnabled" tabindex="14" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
+                                        When using a colour light you might want to disable CSS style so Home Assistant can parse the color.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Prefix</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="haPrefix" type="text" tabindex="15" />
+                                </div>
+
+                                <legend>Configuration</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Configuration</label>
+                                    <div class="pure-u-1-4 pure-u-lg-3-4"><button class="pure-button button-ha-config pure-u-1-3">Show</button></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        These are the settings you should copy to your Home Assistant "configuration.yaml" file.
+                                        If any of the sections below (switch, light, sensor) already exists, do not dupplicate it,
+                                        simply copy the contents of the section below the ones already present.
+                                    </div>
+                                </div>
+                                <div class="pure-g">
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><span id="haConfig" name="haConfig"></span></div>
+                                </div>
+
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+
 
                     <div class="panel" id="panel-thingspeak">
 

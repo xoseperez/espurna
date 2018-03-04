@@ -711,6 +711,22 @@ void migrate() {
             setSetting("cf1GPIO", 5);
             setSetting("cfGPIO", 4);
 
+        #elif defined(GIZWITS_WITTY_CLOUD)
+
+            setSetting("board", 54);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 4);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 15);
+            setSetting("chGPIO", 1, 12);
+            setSetting("chGPIO", 2, 13);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("relays", 1);
+
         #else
 
             // Allow users to define new settings without migration config

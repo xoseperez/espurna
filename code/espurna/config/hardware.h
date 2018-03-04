@@ -21,10 +21,37 @@
 // Besides, other hardware specific information should be stated here
 
 // -----------------------------------------------------------------------------
+// ESPurna Core
+// -----------------------------------------------------------------------------
+
+#if defined(ESPURNA_CORE)
+
+    // This is a special device targeted to generate a light-weight binary image
+    // meant to be able to do two-step-updates:
+    // https://github.com/xoseperez/espurna/wiki/TwoStepUpdates
+
+    // Info
+    #define MANUFACTURER            "ESPRESSIF"
+    #define DEVICE                  "ESPURNA_CORE"
+
+    // Disable non-core modules
+    #define ALEXA_SUPPORT           0
+    #define BROKER_SUPPORT          0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define I2C_SUPPORT             0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define SCHEDULER_SUPPORT       0
+    #define SENSOR_SUPPORT          0
+    #define THINGSPEAK_SUPPORT      0
+    #define WEB_SUPPORT             0
+
+// -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
 
-#if defined(NODEMCU_LOLIN)
+#elif defined(NODEMCU_LOLIN)
 
     // Info
     #define MANUFACTURER        "NODEMCU"
@@ -476,12 +503,14 @@
     // and disables any possibly harmful combination with S6 set to 0.
     // If you are sure you will only use S6 to 1 you can comment the
     // BUTTON1_LNGCLICK and BUTTON1_LNGLNGCLICK options below to recover the
-    // AP mode and factory reset functionalities.
+    // reset mode and factory reset functionalities, or link other actions like
+    // AP mode in the commented line below.
 
     #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON1_CLICK       BUTTON_MODE_NONE
     #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
     #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    //#define BUTTON1_LNGCLICK    BUTTON_MODE_AP
     #define BUTTON1_LNGLNGCLICK BUTTON_MODE_NONE
     #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON2_CLICK       BUTTON_MODE_NONE
@@ -1363,6 +1392,39 @@
     #define LIGHT_CH4_INVERSE   0
 
     #define LIGHT_ENABLE_PIN    15
+
+#elif defined(GIZWITS_WITTY_CLOUD)
+
+    // Info
+    #define MANUFACTURER        "GIZWITS"
+    #define DEVICE              "WITTY_CLOUD"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define ANALOG_SUPPORT      1
+
+    // LEDs
+    #define LED1_PIN            2      // BLUE build-in
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       15       // RED
+    #define LIGHT_CH2_PIN       12       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // KMC 70011

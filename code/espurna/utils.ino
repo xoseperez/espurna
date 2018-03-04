@@ -336,7 +336,8 @@ void info() {
 
     #if SENSOR_SUPPORT
 
-        DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
+        DEBUG_MSG_P(PSTR("\n"));
+        DEBUG_MSG_P(PSTR("[INIT] SENSORS:"));
 
         #if ANALOG_SUPPORT
             DEBUG_MSG_P(PSTR(" ANALOG"));

@@ -147,7 +147,7 @@ void setup() {
     #if SCHEDULER_SUPPORT
         schSetup();
     #endif
-    #ifdef UART_MQTT_SUPPORT
+    #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif
 

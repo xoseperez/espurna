@@ -36,7 +36,7 @@ const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
-const gutil = require('gulp-util');
+const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 
 const dataFolder = 'espurna/data/';
@@ -76,10 +76,13 @@ var toHeader = function(filename) {
 var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
 		issues.forEach(function (issue) {
-			gutil.log(
-                gutil.colors.cyan('[gulp-htmllint] ') +
-                gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') +
-                gutil.colors.red('(' + issue.code + ') ' + issue.msg)
+			log.info(
+                '[gulp-htmllint] ' +
+                filepath + ' [' +
+                issue.line + ',' +
+                issue.column + ']: ' +
+                '(' + issue.code + ') ' +
+                issue.msg
             );
 		});
 		process.exitCode = 1;
