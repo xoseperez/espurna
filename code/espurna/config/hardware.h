@@ -503,12 +503,14 @@
     // and disables any possibly harmful combination with S6 set to 0.
     // If you are sure you will only use S6 to 1 you can comment the
     // BUTTON1_LNGCLICK and BUTTON1_LNGLNGCLICK options below to recover the
-    // AP mode and factory reset functionalities.
+    // reset mode and factory reset functionalities, or link other actions like
+    // AP mode in the commented line below.
 
     #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON1_CLICK       BUTTON_MODE_NONE
     #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
     #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    //#define BUTTON1_LNGCLICK    BUTTON_MODE_AP
     #define BUTTON1_LNGLNGCLICK BUTTON_MODE_NONE
     #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON2_CLICK       BUTTON_MODE_NONE
