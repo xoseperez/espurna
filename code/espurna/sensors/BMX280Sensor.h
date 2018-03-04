@@ -67,14 +67,9 @@ class BMX280Sensor : public I2CSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-
             if (!_dirty) return;
-            _dirty = false;
-            _chip = 0;
-
-            // Init
             _init();
-
+            _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
@@ -190,6 +185,9 @@ class BMX280Sensor : public I2CSensor {
             // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
             delay(10);
 
+            // No chip ID by default
+            _chip = 0;
+
             // I2C auto-discover
             _address = _begin_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
             if (_address == 0) return;
@@ -242,6 +240,7 @@ class BMX280Sensor : public I2CSensor {
 
             _measurement_delay = _measurementTime();
             _run_init = false;
+            _ready = true;
 
         }
 

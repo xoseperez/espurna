@@ -70,8 +70,11 @@ class BaseSensor {
         // Sensor ID
         unsigned char getID() { return _sensor_id; };
 
-        // Return sensor status (true for ready)
-        bool status() { return _error == 0; }
+        // Return status (true if no errors)
+        bool status() { return 0 == _error; }
+
+        // Return ready status (true for ready)
+        bool ready() { return _ready; }
 
         // Return sensor last internal error
         int error() { return _error; }
@@ -89,6 +92,7 @@ class BaseSensor {
         int _error = 0;
         bool _dirty = true;
         unsigned char _count = 0;
+        bool _ready = false;
 
 };
 

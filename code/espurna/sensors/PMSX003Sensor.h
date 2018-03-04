@@ -62,7 +62,6 @@ class PMSX003Sensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_serial) delete _serial;
             if (_pms) delete _pms;
@@ -74,6 +73,8 @@ class PMSX003Sensor : public BaseSensor {
             _pms->passiveMode();
 
             _startTime = millis();
+            _ready = true;
+            _dirty = false;
 
         }
 

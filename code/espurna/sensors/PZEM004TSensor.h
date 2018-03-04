@@ -70,7 +70,6 @@ class PZEM004TSensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_pzem) delete _pzem;
             if (_serial == NULL) {
@@ -79,6 +78,9 @@ class PZEM004TSensor : public BaseSensor {
                 _pzem = PZEM004T(_serial);
             }
             _pzem->setAddress(_ip);
+
+            _ready = true;
+            _dirty = false;
 
         }
 

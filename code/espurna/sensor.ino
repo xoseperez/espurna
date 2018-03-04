@@ -28,6 +28,7 @@ typedef struct {
 
 std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
+bool _sensors_ready = false;
 
 unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
@@ -254,7 +255,7 @@ void _sensorPost() {
 // Sensor initialization
 // -----------------------------------------------------------------------------
 
-void _sensorInit() {
+void _sensorLoad() {
 
     /*
 
@@ -461,14 +462,18 @@ void _sensorInit() {
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, const char * payload) {
-
     DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, payload);
-
 }
 
-void _sensorConfigure() {
+void _sensorInit() {
+
+    _sensors_ready = true;
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        // Do not process and already initialized sensor
+        if (_sensors[i]->ready()) continue;
+        DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
 
         #if EMON_ANALOG_SUPPORT
 
@@ -499,6 +504,14 @@ void _sensorConfigure() {
 
         // Force sensor to reload config
         _sensors[i]->begin();
+        if (!_sensors[i]->ready()) {
+            if (_sensors[i]->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
+            _sensors_ready = false;
+            continue;
+        }
+
+        // Initialize magnitudes
+        _magnitudesInit(_sensors[i]);
 
         // Hook callback
         _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
@@ -550,6 +563,44 @@ void _sensorConfigure() {
 
     }
 
+}
+
+void _magnitudesInit(BaseSensor * sensor) {
+
+
+    for (unsigned char k=0; k<sensor->count(); k++) {
+
+        unsigned char type = sensor->type(k);
+
+        sensor_magnitude_t new_magnitude;
+        new_magnitude.sensor = sensor;
+        new_magnitude.local = k;
+        new_magnitude.type = type;
+        new_magnitude.global = _counts[type];
+        new_magnitude.current = 0;
+        new_magnitude.filtered = 0;
+        new_magnitude.reported = 0;
+        new_magnitude.min_change = 0;
+        if (type == MAGNITUDE_DIGITAL) {
+            new_magnitude.filter = new MaxFilter();
+        } else if (type == MAGNITUDE_EVENTS) {
+            new_magnitude.filter = new MovingAverageFilter();
+        } else {
+            new_magnitude.filter = new MedianFilter();
+        }
+        new_magnitude.filter->resize(_sensor_report_every);
+        _magnitudes.push_back(new_magnitude);
+
+        DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
+
+        _counts[type] = _counts[type] + 1;
+
+    }
+
+}
+
+void _sensorConfigure() {
+
     // General sensor settings
     _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
     _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
@@ -570,48 +621,6 @@ void _sensorConfigure() {
     delSetting("pwrExpectedV");
     delSetting("pwrResetCalibration");
     //saveSettings();
-
-}
-
-void _magnitudesInit() {
-
-    for (unsigned char i=0; i<_sensors.size(); i++) {
-
-        BaseSensor * sensor = _sensors[i];
-
-        DEBUG_MSG_P(PSTR("[SENSOR] %s\n"), sensor->description().c_str());
-        if (sensor->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), sensor->error());
-
-        for (unsigned char k=0; k<sensor->count(); k++) {
-
-            unsigned char type = sensor->type(k);
-
-            sensor_magnitude_t new_magnitude;
-            new_magnitude.sensor = sensor;
-            new_magnitude.local = k;
-            new_magnitude.type = type;
-            new_magnitude.global = _counts[type];
-            new_magnitude.current = 0;
-            new_magnitude.filtered = 0;
-            new_magnitude.reported = 0;
-            new_magnitude.min_change = 0;
-            if (type == MAGNITUDE_DIGITAL) {
-                new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_EVENTS) {
-                new_magnitude.filter = new MovingAverageFilter();
-            } else {
-                new_magnitude.filter = new MedianFilter();
-            }
-            new_magnitude.filter->resize(_sensor_report_every);
-            _magnitudes.push_back(new_magnitude);
-
-            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
-
-            _counts[type] = _counts[type] + 1;
-
-        }
-
-    }
 
 }
 
@@ -694,13 +703,11 @@ String magnitudeUnits(unsigned char type) {
 void sensorSetup() {
 
     // Load sensors
+    _sensorLoad();
     _sensorInit();
 
     // Configure stored values
     _sensorConfigure();
-
-    // Load magnitudes
-    _magnitudesInit();
 
     #if WEB_SUPPORT
 
@@ -725,8 +732,14 @@ void sensorSetup() {
 
 void sensorLoop() {
 
-    static unsigned long last_update = 0;
-    static unsigned long report_count = 0;
+    // Check if we still have uninitialized sensors
+    static unsigned long last_init = 0;
+    if (!_sensors_ready) {
+        if (millis() - last_init > SENSOR_INIT_INTERVAL) {
+            last_init = millis();
+            _sensorInit();
+        }
+    }
 
     if (_magnitudes.size() == 0) return;
 
@@ -734,6 +747,8 @@ void sensorLoop() {
     _sensorTick();
 
     // Check if we should read new data
+    static unsigned long last_update = 0;
+    static unsigned long report_count = 0;
     if (millis() - last_update > _sensor_read_interval) {
 
         last_update = millis();

@@ -64,7 +64,6 @@ class DallasSensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // Manage GPIO lock
             if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
@@ -93,6 +92,8 @@ class DallasSensor : public BaseSensor {
             } else {
                 _previous = _gpio;
             }
+            _ready = true;
+            _dirty = false;
 
         }
 

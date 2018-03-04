@@ -72,7 +72,6 @@ class MHZ19Sensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_serial) delete _serial;
 
@@ -80,6 +79,9 @@ class MHZ19Sensor : public BaseSensor {
             _serial->enableIntTx(false);
             _serial->begin(9600);
             calibrateAuto(false);
+
+            _ready = true;
+            _dirty = false;
 
         }
 

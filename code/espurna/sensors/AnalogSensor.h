@@ -30,6 +30,7 @@ class AnalogSensor : public BaseSensor {
         // Initialization method, must be idempotent
         void begin() {
             pinMode(0, INPUT);
+            _ready = true;
         }
 
         // Descriptive name of the sensor

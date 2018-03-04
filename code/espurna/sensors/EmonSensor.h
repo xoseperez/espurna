@@ -109,6 +109,10 @@ class EmonSensor : public I2CSensor {
                 }
             #endif
 
+            _ready = true;
+            _dirty = false;
+
+
         }
 
     protected:

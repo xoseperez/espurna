@@ -41,18 +41,9 @@ class SI7021Sensor : public I2CSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-
             if (!_dirty) return;
-            _dirty = false;
-
-            // I2C auto-discover
-            unsigned char addresses[] = {0x40};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
-
-            // Initialize sensor
             _init();
-
+            _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
@@ -116,6 +107,11 @@ class SI7021Sensor : public I2CSensor {
 
         void _init() {
 
+            // I2C auto-discover
+            unsigned char addresses[] = {0x40};
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
+
             // Check device
             i2c_write_uint8(_address, 0xFC, 0xC9);
             _chip = i2c_read_uint8(_address);
@@ -135,6 +131,8 @@ class SI7021Sensor : public I2CSensor {
             } else {
                 _count = 2;
             }
+
+            _ready = true;
 
         }
 

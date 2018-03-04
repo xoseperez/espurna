@@ -58,6 +58,7 @@ class DigitalSensor : public BaseSensor {
         // Initialization method, must be idempotent
         void begin() {
             pinMode(_gpio, _mode);
+            _ready = true;
         }
 
         // Descriptive name of the sensor
