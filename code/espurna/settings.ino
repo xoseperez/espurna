@@ -218,6 +218,16 @@ void _settingsInitCommands() {
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
 
+    settingsRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
+        i2cScan();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("I2C.CLEAR"), [](Embedis* e) {
+        i2cClearBus();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
         _settingsFactoryResetCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
