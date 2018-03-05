@@ -3,6 +3,57 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.4] 2018-03-05
+### Fixed
+- Adding a 1ms delay after UDP send to avoid loosing packets ([#438](https://github.com/xoseperez/espurna/issues/438))
+- Fixed void return in BMX280 sensor ([#489](https://github.com/xoseperez/espurna/issues/489))
+- Fix MQTT keep alive cannot be more than 255 seconds ([#515](https://github.com/xoseperez/espurna/issues/515))
+- Do not show scheduler tab in Web UI if build without scheduler support ([#527](https://github.com/xoseperez/espurna/issues/527))
+- Fix inline documentation for Sonoff 4CH Pro button modes ([#551](https://github.com/xoseperez/espurna/issues/551))
+- Prevent resending messages from rfin in RF Bridge ([#561](https://github.com/xoseperez/espurna/issues/561))
+- Fix AnalogSensor description ([#601](https://github.com/xoseperez/espurna/issues/601))
+- Fixed missing setting in HASS WS callback (thanks to Maxim Prokhorov)
+- ECH1560 call sync from tick method
+- Fixed several issues reported by codacy
+
+### Added
+- UART to MQTT module (thanks to Albert Weterings, [#529](https://github.com/xoseperez/espurna/issues/529))
+- Added option to show HASS configuration code in ESPurna web UI ([#616](https://github.com/xoseperez/espurna/issues/616))
+- OTA upgrade via terminal (using 'ota' command, with SSL support)
+- Added I2C scan and clear commands to terminal (only when I2C enabled)
+- Added new relay & wifi led mode ([#604](https://github.com/xoseperez/espurna/issues/604))
+- Option to enable/disable web auth from web UI
+- Added "Reset to factory settings" in web UI (thanks to Teo Pavel, [#569](https://github.com/xoseperez/espurna/issues/569))
+- Added {magnitude} placeholder to MQTT root topic
+- Option to report energy in kWh and power in kW ([#523](https://github.com/xoseperez/espurna/issues/523))
+- Check upgrade file size and signature in web UI
+- Automatically dump info on telnet connection if TERMINAL_SUPPORT is disabled
+- Two different ESPURNA_CORE images for 1MB and 4MB boards, freeing GPIOs ([#557](https://github.com/xoseperez/espurna/issues/557))
+- Initial support for PZEM004T sensor (still beta)
+- Support for STM_RELAY board (thanks to Maciej Czerniak)
+- Support for KMC 70011 energy monitor (thanks to Wayne Manion, [#598](https://github.com/xoseperez/espurna/issues/598))
+- Support for Wifi Stecker Shuko device (thanks to @Geitde, [#622](https://github.com/xoseperez/espurna/issues/622))
+- Support for GizWits Witty Cloud device (thanks to Theonedemon)
+
+### Changed
+- BMX280 changes to allow for hot-plug ([#353](https://github.com/xoseperez/espurna/issues/353))
+- Increase the initial check interval for NTP ([#452](https://github.com/xoseperez/espurna/issues/452))
+- Force turning relays off before turning others on when synced ([#491](https://github.com/xoseperez/espurna/issues/491))
+- Publish slampher as light to Home Assistant ([#494](https://github.com/xoseperez/espurna/issues/494))
+- Force API to return the target status of the relay ([#548](https://github.com/xoseperez/espurna/issues/548))
+- Increasing max number of messages in JSON payload to 20 ([#588](https://github.com/xoseperez/espurna/issues/588))
+- Change copy from 'Use colorpicker' to 'Use color'. Better hint. ([#590](https://github.com/xoseperez/espurna/issues/590))
+- Completely reworked the RF module to use the same web UI as the RFBridge module to learn new codes ([#594](https://github.com/xoseperez/espurna/issues/594))
+- Several spelling and grammar changes by Lee Marlow
+- Always enabled telnet access in ESPURNA_CORE image
+- Updated ESPSoftwareSerial, ESPAsyncTCP and ESPAsyncWebServer libraries
+
+### Removed
+- Remove dependency from gulp-util ([#493](https://github.com/xoseperez/espurna/issues/493))
+- Removed specific support for Magic Home LED Controller 2.3 ([#512](https://github.com/xoseperez/espurna/issues/512))
+- Disabled floating point support when building against Arduino Core 2.4.0 with PIO
+- Removed WiFi distance calculation
+
 ## [1.12.3] 2018-01-29
 ### Fixed
 - Fix telnet crash due to local reference ([#487](https://github.com/xoseperez/espurna/issues/487))
