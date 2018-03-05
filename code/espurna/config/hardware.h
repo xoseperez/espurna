@@ -1459,6 +1459,38 @@
     #define HLW8012_CF_PIN      4
 
 // -----------------------------------------------------------------------------
+// Euromate (?) Wifi Stecker Shuko
+// https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko/p/2291706
+// Thanks to @Geitde
+// -----------------------------------------------------------------------------
+
+#elif defined(EUROMATE_WIFI_STECKER_SCHUKO)
+
+    // Info
+    #define MANUFACTURER        "EUROMATE"
+    #define DEVICE              "WIFI_STECKER_SCHUKO"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    // #define RELAY1_PIN       12
+    // #define RELAY1_TYPE      RELAY_TYPE_LATCHED_INVERSE
+    // #define RELAY1_RESET_PIN 5
+
+    // Hack: drive GPIO12 low and use GPIO5 as normal relay pin:
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define LED2_PIN            12 /* DUMMY: exploit default off state for GPIO12=low */
+    #define LED2_PIN_INVERSE    0
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // Generic 8CH
 // -----------------------------------------------------------------------------
 
