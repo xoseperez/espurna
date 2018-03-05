@@ -37,7 +37,7 @@ fi
 # Recreate web interface
 echo "--------------------------------------------------------------"
 echo "Building web interface..."
-node node_modules/gulp/bin/gulp.js || exit
+node node_modules/gulp/bin/gulp.js || exit 1
 
 # Build all the required firmware images
 echo "--------------------------------------------------------------"
@@ -45,7 +45,7 @@ echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
 for environment in $environments; do
     echo "* espurna-$version-$environment.bin"
-    platformio run --silent --environment $environment || exit
+    platformio run --silent --environment $environment || exit 1
     mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
 done
 echo "--------------------------------------------------------------"
