@@ -511,7 +511,34 @@ void _sensorInit() {
         }
 
         // Initialize magnitudes
-        _magnitudesInit(_sensors[i]);
+        for (unsigned char k=0; k<_sensors[i]->count(); k++) {
+
+            unsigned char type = _sensors[i]->type(k);
+
+            sensor_magnitude_t new_magnitude;
+            new_magnitude.sensor = _sensors[i];
+            new_magnitude.local = k;
+            new_magnitude.type = type;
+            new_magnitude.global = _counts[type];
+            new_magnitude.current = 0;
+            new_magnitude.filtered = 0;
+            new_magnitude.reported = 0;
+            new_magnitude.min_change = 0;
+            if (type == MAGNITUDE_DIGITAL) {
+                new_magnitude.filter = new MaxFilter();
+            } else if (type == MAGNITUDE_EVENTS) {
+                new_magnitude.filter = new MovingAverageFilter();
+            } else {
+                new_magnitude.filter = new MedianFilter();
+            }
+            new_magnitude.filter->resize(_sensor_report_every);
+            _magnitudes.push_back(new_magnitude);
+
+            DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
+
+            _counts[type] = _counts[type] + 1;
+
+        }
 
         // Hook callback
         _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
@@ -560,40 +587,6 @@ void _sensorInit() {
             }
 
         #endif // HLW8012_SUPPORT
-
-    }
-
-}
-
-void _magnitudesInit(BaseSensor * sensor) {
-
-
-    for (unsigned char k=0; k<sensor->count(); k++) {
-
-        unsigned char type = sensor->type(k);
-
-        sensor_magnitude_t new_magnitude;
-        new_magnitude.sensor = sensor;
-        new_magnitude.local = k;
-        new_magnitude.type = type;
-        new_magnitude.global = _counts[type];
-        new_magnitude.current = 0;
-        new_magnitude.filtered = 0;
-        new_magnitude.reported = 0;
-        new_magnitude.min_change = 0;
-        if (type == MAGNITUDE_DIGITAL) {
-            new_magnitude.filter = new MaxFilter();
-        } else if (type == MAGNITUDE_EVENTS) {
-            new_magnitude.filter = new MovingAverageFilter();
-        } else {
-            new_magnitude.filter = new MedianFilter();
-        }
-        new_magnitude.filter->resize(_sensor_report_every);
-        _magnitudes.push_back(new_magnitude);
-
-        DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
-
-        _counts[type] = _counts[type] + 1;
 
     }
 
