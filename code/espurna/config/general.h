@@ -243,68 +243,69 @@ PROGMEM const char* const custom_reset_string[] = {
 // RELAY
 //------------------------------------------------------------------------------
 
-#define RELAY_BOOT_OFF          0
-#define RELAY_BOOT_ON           1
-#define RELAY_BOOT_SAME         2
-#define RELAY_BOOT_TOGGLE       3
+#define RELAY_BOOT_OFF              0
+#define RELAY_BOOT_ON               1
+#define RELAY_BOOT_SAME             2
+#define RELAY_BOOT_TOGGLE           3
 
-#define RELAY_TYPE_NORMAL       0
-#define RELAY_TYPE_INVERSE      1
-#define RELAY_TYPE_LATCHED      2
+#define RELAY_TYPE_NORMAL           0
+#define RELAY_TYPE_INVERSE          1
+#define RELAY_TYPE_LATCHED          2
+#define RELAY_TYPE_LATCHED_INVERSE  3
 
-#define RELAY_SYNC_ANY          0
-#define RELAY_SYNC_NONE_OR_ONE  1
-#define RELAY_SYNC_ONE          2
-#define RELAY_SYNC_SAME         3
+#define RELAY_SYNC_ANY              0
+#define RELAY_SYNC_NONE_OR_ONE      1
+#define RELAY_SYNC_ONE              2
+#define RELAY_SYNC_SAME             3
 
-#define RELAY_PULSE_NONE        0
-#define RELAY_PULSE_OFF         1
-#define RELAY_PULSE_ON          2
+#define RELAY_PULSE_NONE            0
+#define RELAY_PULSE_OFF             1
+#define RELAY_PULSE_ON              2
 
-#define RELAY_PROVIDER_RELAY    0
-#define RELAY_PROVIDER_DUAL     1
-#define RELAY_PROVIDER_LIGHT    2
-#define RELAY_PROVIDER_RFBRIDGE 3
-#define RELAY_PROVIDER_STM      4
+#define RELAY_PROVIDER_RELAY        0
+#define RELAY_PROVIDER_DUAL         1
+#define RELAY_PROVIDER_LIGHT        2
+#define RELAY_PROVIDER_RFBRIDGE     3
+#define RELAY_PROVIDER_STM          4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
-#define RELAY_BOOT_MODE         RELAY_BOOT_OFF
+#define RELAY_BOOT_MODE             RELAY_BOOT_OFF
 
 // 0 means ANY, 1 zero or one and 2 one and only one
-#define RELAY_SYNC         		RELAY_SYNC_ANY
+#define RELAY_SYNC                  RELAY_SYNC_ANY
 
 // Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
-#define RELAY_PULSE_MODE     	RELAY_PULSE_NONE
+#define RELAY_PULSE_MODE            RELAY_PULSE_NONE
 
 // Default pulse time in seconds
-#define RELAY_PULSE_TIME        1.0
+#define RELAY_PULSE_TIME            1.0
 
 // Relay requests flood protection window - in seconds
-#define RELAY_FLOOD_WINDOW      3
+#define RELAY_FLOOD_WINDOW          3
 
 // Allowed actual relay changes inside requests flood protection window
-#define RELAY_FLOOD_CHANGES     5
+#define RELAY_FLOOD_CHANGES         5
 
 // Pulse with in milliseconds for a latched relay
-#define RELAY_LATCHING_PULSE    10
+#define RELAY_LATCHING_PULSE        10
 
 // Do not save relay state after these many milliseconds
-#define RELAY_SAVE_DELAY        1000
+#define RELAY_SAVE_DELAY            1000
 
 //------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
 
-#define LED_MODE_MQTT           0       // LED will be managed from MQTT (OFF by default)
-#define LED_MODE_WIFI           1       // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW         2       // LED will follow state of linked relay (check RELAY#_LED)
-#define LED_MODE_FOLLOW_INVERSE 3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
-#define LED_MODE_FINDME         4       // LED will be ON if all relays are OFF
-#define LED_MODE_FINDME_WIFI    5       // A mixture between WIFI and FINDME
-#define LED_MODE_ON             6       // LED always ON
-#define LED_MODE_OFF            7       // LED always OFF
-#define LED_MODE_RELAY          8       // If any relay is ON, LED will be ON, otherwise OFF
-#define LED_MODE_RELAY_WIFI     9       // A mixture between WIFI and RELAY, the reverse of MIXED
+#define LED_MODE_MQTT               0       // LED will be managed from MQTT (OFF by default)
+#define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
+#define LED_MODE_FOLLOW             2       // LED will follow state of linked relay (check RELAY#_LED)
+#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
+#define LED_MODE_FINDME             4       // LED will be ON if all relays are OFF
+#define LED_MODE_FINDME_WIFI        5       // A mixture between WIFI and FINDME
+#define LED_MODE_ON                 6       // LED always ON
+#define LED_MODE_OFF                7       // LED always OFF
+#define LED_MODE_RELAY              8       // If any relay is ON, LED will be ON, otherwise OFF
+#define LED_MODE_RELAY_WIFI         9       // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // WIFI
