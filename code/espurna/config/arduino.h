@@ -54,18 +54,21 @@
 //#define ARILUX_E27
 //#define XENON_SM_PW702U
 //#define AUTHOMETION_LYT8266
+//#define KMC_70011
 //#define GENERIC_8CH
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC11
 //#define ARILUX_AL_LC02
 //#define WEMOS_D1_TARPUNA_SHIELD
-//#define MAGICHOME_LED_CONTROLLER_23
+//#define GIZWITS_WITTY_CLOUD
+//#define EUROMATE_WIFI_STECKER_SCHUKO
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
 //#define ALEXA_SUPPORT          0
+//#define BROKER_SUPPORT         0
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
@@ -77,7 +80,6 @@
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
 //#define MDNS_SERVER_SUPPORT    0
 //#define MDNS_CLIENT_SUPPORT    1
-//#define BROKER_SUPPORT         0
 //#define MQTT_SUPPORT           0
 //#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
 //#define NOFUSS_SUPPORT         1
@@ -89,6 +91,7 @@
 //#define TELNET_SUPPORT         0
 //#define TERMINAL_SUPPORT       0
 //#define THINGSPEAK_SUPPORT     0
+//#define UART_MQTT_SUPPORT      1
 //#define WEB_SUPPORT            0
 
 //--------------------------------------------------------------------------------
@@ -109,6 +112,7 @@
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define PMSX003_SUPPORT        1
+//#define PZEM004T_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define V9261F_SUPPORT         1

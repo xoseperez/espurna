@@ -147,7 +147,6 @@ class EmonADS1X15Sensor : public EmonSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // Discover
             unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};

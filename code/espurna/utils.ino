@@ -252,6 +252,9 @@ void info() {
 
     // -------------------------------------------------------------------------
 
+    #ifdef APP_BUILD_FLAGS
+        DEBUG_MSG_P(PSTR("[INIT] BUILD_FLAGS: %s\n"), APP_BUILD_FLAGS);
+    #endif
     DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
 
@@ -324,13 +327,17 @@ void info() {
     #if THINGSPEAK_SUPPORT
         DEBUG_MSG_P(PSTR(" THINGSPEAK"));
     #endif
+    #if UART_MQTT_SUPPORT
+        DEBUG_MSG_P(PSTR(" UART_MQTT"));
+    #endif
     #if WEB_SUPPORT
         DEBUG_MSG_P(PSTR(" WEB"));
     #endif
 
     #if SENSOR_SUPPORT
 
-        DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
+        DEBUG_MSG_P(PSTR("\n"));
+        DEBUG_MSG_P(PSTR("[INIT] SENSORS:"));
 
         #if ANALOG_SUPPORT
             DEBUG_MSG_P(PSTR(" ANALOG"));
@@ -370,6 +377,9 @@ void info() {
         #endif
         #if PMSX003_SUPPORT
             DEBUG_MSG_P(PSTR(" PMSX003"));
+        #endif
+        #if PZEM004T_SUPPORT
+            DEBUG_MSG_P(PSTR(" PZEM004T"));
         #endif
         #if SHT3X_I2C_SUPPORT
             DEBUG_MSG_P(PSTR(" SHT3X_I2C"));

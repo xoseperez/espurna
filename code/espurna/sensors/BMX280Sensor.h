@@ -67,18 +67,9 @@ class BMX280Sensor : public I2CSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-
             if (!_dirty) return;
-            _dirty = false;
-            _chip = 0;
-
-            // I2C auto-discover
-            _address = _begin_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
-            if (_address == 0) return;
-
-            // Init
             _init();
-
+            _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
@@ -194,13 +185,29 @@ class BMX280Sensor : public I2CSensor {
             // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
             delay(10);
 
+            // No chip ID by default
+            _chip = 0;
+
+            // I2C auto-discover
+            _address = _begin_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
+            if (_address == 0) return;
+
             // Check sensor correctly initialized
             _chip = i2c_read_uint8(_address, BMX280_REGISTER_CHIPID);
             if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
+
                 _chip = 0;
                 i2cReleaseLock(_address);
+                _previous_address = 0;
                 _error = SENSOR_ERROR_UNKNOWN_ID;
+
+                // Setting _address to 0 forces auto-discover
+                // This might be necessary at this stage if there is a
+                // different sensor in the hardcoded address
+                _address = 0;
+
                 return;
+
             }
 
             _count = 0;
@@ -233,6 +240,7 @@ class BMX280Sensor : public I2CSensor {
 
             _measurement_delay = _measurementTime();
             _run_init = false;
+            _ready = true;
 
         }
 
@@ -341,7 +349,7 @@ class BMX280Sensor : public I2CSensor {
                 var1 = ((var1 * var1 * (int64_t)_bmx280_calib.dig_P3)>>8) +
                     ((var1 * (int64_t)_bmx280_calib.dig_P2)<<12);
                 var1 = (((((int64_t)1)<<47)+var1))*((int64_t)_bmx280_calib.dig_P1)>>33;
-                if (var1 == 0) return;  // avoid exception caused by division by zero
+                if (var1 == 0) return SENSOR_ERROR_I2C;  // avoid exception caused by division by zero
 
                 p = 1048576 - adc_P;
                 p = (((p<<31) - var2)*3125) / var1;

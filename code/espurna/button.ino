@@ -22,14 +22,14 @@ typedef struct {
 std::vector<button_t> _buttons;
 
 #if MQTT_SUPPORT
-#ifdef MQTT_TOPIC_BUTTON
+
 void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
     itoa(event, payload, 10);
     mqttSend(MQTT_TOPIC_BUTTON, id, payload);
 }
-#endif
+
 #endif
 
 int buttonFromRelay(unsigned int relayID) {
@@ -84,9 +84,7 @@ void buttonEvent(unsigned int id, unsigned char event) {
     if (event == 0) return;
 
     #if MQTT_SUPPORT
-    #ifdef MQTT_TOPIC_BUTTON
         buttonMQTT(id, event);
-    #endif
     #endif
 
     unsigned char action = buttonAction(id, event);
@@ -131,49 +129,49 @@ void buttonSetup() {
 
         unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
 
-        #ifdef BUTTON1_PIN
+        #if BUTTON1_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON1_RELAY});
         }
         #endif
-        #ifdef BUTTON2_PIN
+        #if BUTTON2_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON2_RELAY});
         }
         #endif
-        #ifdef BUTTON3_PIN
+        #if BUTTON3_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON3_RELAY});
         }
         #endif
-        #ifdef BUTTON4_PIN
+        #if BUTTON4_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON4_RELAY});
         }
         #endif
-        #ifdef BUTTON5_PIN
+        #if BUTTON5_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON5_PIN, BUTTON5_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON5_RELAY});
         }
         #endif
-        #ifdef BUTTON6_PIN
+        #if BUTTON6_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON6_PIN, BUTTON6_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON6_RELAY});
         }
         #endif
-        #ifdef BUTTON7_PIN
+        #if BUTTON7_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON7_PIN, BUTTON7_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON7_RELAY});
         }
         #endif
-        #ifdef BUTTON8_PIN
+        #if BUTTON8_PIN != GPIO_NONE
         {
             unsigned int actions = buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK);
             _buttons.push_back({new DebounceEvent(BUTTON8_PIN, BUTTON8_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON8_RELAY});

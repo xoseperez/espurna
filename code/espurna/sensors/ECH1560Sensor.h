@@ -67,12 +67,19 @@ class ECH1560Sensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             pinMode(_clk, INPUT);
             pinMode(_miso, INPUT);
             _enableInterrupts(true);
 
+            _dirty = false;
+            _ready = true;
+
+        }
+
+        // Loop-like method, call it in your main loop
+        void tick() {
+            if (_dosync) _sync();
         }
 
         // Descriptive name of the sensor

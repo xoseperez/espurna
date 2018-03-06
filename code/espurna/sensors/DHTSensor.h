@@ -75,6 +75,7 @@ class DHTSensor : public BaseSensor {
             _previous = _gpio;
 
             _count = 2;
+            _ready = true;
 
         }
 

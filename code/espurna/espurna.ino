@@ -147,6 +147,10 @@ void setup() {
     #if SCHEDULER_SUPPORT
         schSetup();
     #endif
+    #if UART_MQTT_SUPPORT
+        uartmqttSetup();
+    #endif
+
 
     // 3rd party code hook
     #if USE_EXTRA

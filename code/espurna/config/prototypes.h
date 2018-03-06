@@ -45,7 +45,7 @@ void wifiRegister(wifi_callback_f callback);
 // -----------------------------------------------------------------------------
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
 void mqttRegister(mqtt_callback_f callback);
-String mqttTopicKey(char * topic);
+String mqttMagnitude(char * topic);
 
 // -----------------------------------------------------------------------------
 // Broker
@@ -67,10 +67,11 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
 // -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
-unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
+void i2cScan();
+void i2cClearBus();
 bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
-void i2cClearBus();
+unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
 
 void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len);
 void i2c_write_uint8(uint8_t address, uint8_t value);

@@ -31,12 +31,14 @@ class SHT3XI2CSensor : public I2CSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // I2C auto-discover
             unsigned char addresses[] = {0x45};
             _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
+
+            _ready = true;
+            _dirty = false;
 
         }
 

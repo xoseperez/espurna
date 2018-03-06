@@ -77,7 +77,7 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
         if (!t.startsWith(MQTT_TOPIC_LED)) return;
 
         // Get led ID
@@ -124,28 +124,28 @@ void ledUpdate(bool value) {
 
 void ledSetup() {
 
-    #ifdef LED1_PIN
+    #if LED1_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE, LED1_RELAY });
     #endif
-    #ifdef LED2_PIN
+    #if LED2_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE, LED2_RELAY });
     #endif
-    #ifdef LED3_PIN
+    #if LED3_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE, LED3_RELAY });
     #endif
-    #ifdef LED4_PIN
+    #if LED4_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY });
     #endif
-    #ifdef LED5_PIN
+    #if LED5_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY });
     #endif
-    #ifdef LED6_PIN
+    #if LED6_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY });
     #endif
-    #ifdef LED7_PIN
+    #if LED7_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY });
     #endif
-    #ifdef LED8_PIN
+    #if LED8_PIN != GPIO_NONE
         _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY });
     #endif
 
@@ -191,7 +191,7 @@ void ledLoop() {
 
         }
 
-        if (_ledMode(i) == LED_MODE_MIXED) {
+        if (_ledMode(i) == LED_MODE_FINDME_WIFI) {
 
             if (wifiConnected()) {
                 if (relayStatus(_leds[i].relay-1)) {
@@ -205,6 +205,28 @@ void ledLoop() {
                         _ledBlink(i, 100, 900);
                     } else {
                         _ledBlink(i, 100, 4900);
+                    }
+                }
+            } else {
+                _ledBlink(i, 500, 500);
+            }
+
+        }
+
+        if (_ledMode(i) == LED_MODE_RELAY_WIFI) {
+
+            if (wifiConnected()) {
+                if (relayStatus(_leds[i].relay-1)) {
+                    if (WiFi.getMode() == WIFI_AP) {
+                        _ledBlink(i, 100, 900);
+                    } else {
+                        _ledBlink(i, 100, 4900);
+                    }
+                } else {
+                    if (WiFi.getMode() == WIFI_AP) {
+                        _ledBlink(i, 900, 100);
+                    } else {
+                        _ledBlink(i, 4900, 100);
                     }
                 }
             } else {
@@ -235,7 +257,7 @@ void ledLoop() {
             _ledStatus(i, status);
         }
 
-        if (_ledMode(i) == LED_MODE_STATUS) {
+        if (_ledMode(i) == LED_MODE_RELAY) {
             bool status = false;
             for (unsigned char k=0; k<relayCount(); k++) {
                 if (relayStatus(k)) {

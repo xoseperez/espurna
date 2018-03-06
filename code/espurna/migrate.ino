@@ -698,20 +698,46 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
-        #elif defined(MAGICHOME_LED_CONTROLLER_23)
+        #elif defined(KMC_70011)
 
             setSetting("board", 53);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+
+        #elif defined(GIZWITS_WITTY_CLOUD)
+
+            setSetting("board", 54);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 4);
             setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
             setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
-            setSetting("chGPIO", 0, 12);
-            setSetting("chGPIO", 1, 5);
+            setSetting("chGPIO", 0, 15);
+            setSetting("chGPIO", 1, 12);
             setSetting("chGPIO", 2, 13);
-            setSetting("chGPIO", 3, 15);
             setSetting("chLogic", 0, 0);
             setSetting("chLogic", 1, 0);
             setSetting("chLogic", 2, 0);
-            setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
+
+        #elif defined(EUROMATE_WIFI_STECKER_SCHUKO)
+
+            setSetting("board", 55);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 0);
+            setSetting("ledGPIO", 1, 12);
+            setSetting("ledLogic", 1, 0);
+            setSetting("btnGPIO", 0, 14);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
         #else
 

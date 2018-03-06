@@ -55,7 +55,6 @@ class BH1750Sensor : public I2CSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // I2C auto-discover
             unsigned char addresses[] = {0x23, 0x5C};
@@ -64,6 +63,8 @@ class BH1750Sensor : public I2CSensor {
 
             // Run configuration on next update
             _run_configure = true;
+            _ready = true;
+            _dirty = false;
 
         }
 

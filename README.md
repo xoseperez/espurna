@@ -3,10 +3,10 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8266 based smart switches and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.12.3-brightgreen.svg)](CHANGELOG.md)
-![branch](https://img.shields.io/badge/branch-master-orange.svg)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=master)](https://travis-ci.org/xoseperez/espurna)
-[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
+[![version](https://img.shields.io/badge/version-1.12.4-brightgreen.svg)](CHANGELOG.md)
+![branch](https://img.shields.io/badge/branch-dev-orange.svg)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
@@ -45,10 +45,11 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
-* [**Home Assistant**](https://home-assistant.io/) integration via MQTT
+* [**Home Assistant**](https://home-assistant.io/) integration
     * Support for switches (on/off)
     * Support for lights (color, brightness, on/off state)
     * Supports MQTT auto-discover feature (switches, lights and sensors)
+    * Integration via MQTT Discover or copy-pasting configuration code
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
 * **Sonoff RF Bridge** support
@@ -72,7 +73,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **V9261F** power monitor chip
     * Raw analog and digital sensors
     * Simple pulse counter
-    * All temperature sensors support Fahrenheit and Celsius
+    * Support for different units (Fahrenheit or Celsius, Watts or Kilowatts, Joules or kWh)
 * Support for LED lights
     * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
     * RGB and HSV color codes supported
@@ -82,6 +83,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Soft color transitions
     * Color synchronization between light using MQTT
     * Option to have separate switches for each channel
+* Support for simple 433MHz RF receivers
+* Support for UART-to-MQTT bidirectional bridge
 * Fast asynchronous **HTTP Server**
     * Configurable port
     * Basic authentication
@@ -115,6 +118,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Unstable system check**
     * Detects unstable system (crashes on boot continuously) and defaults to a stable system
     * Only WiFi AP, OTA and Telnet available if system is flagged as unstable
+* Configurable LED notifications based on WiFi status, relays status or MQTT messages.
 * Button interface
     * Click to toggle relays
     * Double click to enter AP mode (only main button)
@@ -193,7 +197,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|||
 |**EXS Wifi Relay v3.1**|||
 
-**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC02, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch, Magic Home LED Controller 2.3.
+**Other supported boards:** Itead Sonoff LED, Itead Sonoff Dual R2, Huacanxing H802, WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6, Arilux AL-LC01, Arilux AL-LC02, Arilux AL-LC06, Arilux AL-LC11, Arilux E27 light bulb, Xenon SM-PW702U, Authometion LYT8266, YJZK 2-gang switch, Magic Home LED Controller 2.3, STM_RELAY, KMC 70011 energy monitor, Wifi Stecker Shuko, GizWits Witty Cloud.
 
 ## License
 

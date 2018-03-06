@@ -7,6 +7,7 @@
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
 #define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
 #define SENSOR_READ_MAX_INTERVAL            3600            // Maximum read interval
+#define SENSOR_INIT_INTERVAL                10000           // Try to re-init non-ready sensors every 10s
 
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
 #define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
@@ -14,10 +15,6 @@
 
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                             // even if just one sensor (0 for backwards compatibility)
-
-#ifndef SENSOR_TEMPERATURE_UNITS
-#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
-#endif
 
 #ifndef SENSOR_TEMPERATURE_CORRECTION
 #define SENSOR_TEMPERATURE_CORRECTION       0.0             // Offset correction
@@ -43,6 +40,31 @@
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
 
+//------------------------------------------------------------------------------
+// UNITS
+//------------------------------------------------------------------------------
+
+#define POWER_WATTS             0
+#define POWER_KILOWATTS         1
+
+#define ENERGY_JOULES           0
+#define ENERGY_KWH              1
+
+#define TMP_CELSIUS             0
+#define TMP_FAHRENHEIT          1
+
+#ifndef SENSOR_TEMPERATURE_UNITS
+#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#endif
+
+#ifndef SENSOR_ENERGY_UNITS
+#define SENSOR_ENERGY_UNITS                 ENERGY_JOULES   // Energy units (ENERGY_JOULES | ENERGY_KWH)
+#endif
+
+#ifndef SENSOR_POWER_UNITS
+#define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
+#endif
+
 //--------------------------------------------------------------------------------
 // Sensor ID
 // These should remain over time, do not modify them, only add new ones at the end
@@ -65,6 +87,7 @@
 #define SENSOR_SI7021_ID                    0x15
 #define SENSOR_SHT3X_I2C_ID                 0x16
 #define SENSOR_BH1750_ID                    0x17
+#define SENSOR_PZEM004T_ID                  0x18
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -384,6 +407,32 @@
 #define PMS_TX_PIN                      15
 
 //------------------------------------------------------------------------------
+// PZEM004T based power monitor
+// Enable support by passing PZEM004T_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PZEM004T_SUPPORT
+#define PZEM004T_SUPPORT                0
+#endif
+
+#ifndef PZEM004T_USE_SOFT
+#define PZEM004T_USE_SOFT               1       // Use software serial
+#endif
+
+#ifndef PZEM004T_RX_PIN
+#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_TX_PIN
+#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_HW_PORT
+#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#endif
+
+
+//------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
 // Enable support by passing SHT3X_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -553,7 +602,9 @@ PROGMEM const char magnitude_hectopascals[] = "hPa";
 PROGMEM const char magnitude_amperes[] = "A";
 PROGMEM const char magnitude_volts[] = "V";
 PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_kw[] = "kW";
 PROGMEM const char magnitude_joules[] = "J";
+PROGMEM const char magnitude_kwh[] = "kWh";
 PROGMEM const char magnitude_ugm3[] = "µg/m3";
 PROGMEM const char magnitude_ppm[] = "ppm";
 PROGMEM const char magnitude_lux[] = "lux";
@@ -630,6 +681,11 @@ PROGMEM const char* const magnitude_units[] = {
     #include <SoftwareSerial.h>
     #include <PMS.h>
     #include "../sensors/PMSX003Sensor.h"
+#endif
+
+#if PZEM004T_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/PZEM004TSensor.h"
 #endif
 
 #if SI7021_SUPPORT

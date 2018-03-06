@@ -62,17 +62,19 @@ class PMSX003Sensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_serial) delete _serial;
             if (_pms) delete _pms;
 
             _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 32);
+            _serial->enableIntTx(false);
             _serial->begin(9600);
             _pms = new PMS(* _serial);
             _pms->passiveMode();
 
             _startTime = millis();
+            _ready = true;
+            _dirty = false;
 
         }
 

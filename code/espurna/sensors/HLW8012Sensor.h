@@ -153,6 +153,8 @@ class HLW8012Sensor : public BaseSensor {
                 });
             #endif
 
+            _ready = true;
+
         }
 
         // Descriptive name of the sensor

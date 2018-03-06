@@ -16,8 +16,8 @@ bool _dcz_enabled = false;
 // Private methods
 //------------------------------------------------------------------------------
 
-int _domoticzRelay(unsigned int idx) {
-    for (int relayID=0; relayID<relayCount(); relayID++) {
+unsigned char _domoticzRelay(unsigned int idx) {
+    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
         if (domoticzIdx(relayID) == idx) {
             return relayID;
         }
@@ -60,11 +60,11 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
             }
 
             // IDX
-            unsigned long idx = root["idx"];
-            int relayID = _domoticzRelay(idx);
+            unsigned int idx = root["idx"];
+            unsigned char relayID = _domoticzRelay(idx);
             if (relayID >= 0) {
-                unsigned long value = root["nvalue"];
-                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %lu for IDX %lu\n"), value, idx);
+                unsigned char value = root["nvalue"];
+                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
                 relayStatus(relayID, value == 1);
             }
 
@@ -84,7 +84,7 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
     JsonArray& relays = root.createNestedArray("dczRelays");
-    for (byte i=0; i<relayCount(); i++) {
+    for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
 
@@ -127,16 +127,16 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
     domoticzSend(key, nvalue, "");
 }
 
-void domoticzSendRelay(unsigned int relayID) {
+void domoticzSendRelay(unsigned char relayID) {
     if (!_dcz_enabled) return;
     char buffer[15];
-    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%lu"), relayID);
+    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
 }
 
-int domoticzIdx(unsigned int relayID) {
+unsigned int domoticzIdx(unsigned char relayID) {
     char buffer[15];
-    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%lu"), relayID);
+    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     return getSetting(buffer).toInt();
 }
 

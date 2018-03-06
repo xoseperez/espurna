@@ -52,6 +52,14 @@ travis = "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]" 
     BRANCH = BRANCH
 )
 
+codacy = "[![codacy](https://img.shields.io/codacy/grade/{HASH}/{BRANCH}.svg)]" \
+    "(https://www.codacy.com/app/{USER}/{REPO}/dashboard)\n".format(
+    HASH = "c9496e25cf07434cba786b462cb15f49",
+    USER = USER,
+    REPO = REPO,
+    BRANCH = BRANCH
+)
+
 lines = open(README).readlines()
 with open(README, "w") as fh:
     for line in lines:
@@ -61,6 +69,8 @@ with open(README, "w") as fh:
             fh.write(version)
         elif "![branch]" in line:
             fh.write(branch)
+        elif "![codacy]" in line:
+            fh.write(codacy)
         else:
             fh.write(line)
 

@@ -21,10 +21,37 @@
 // Besides, other hardware specific information should be stated here
 
 // -----------------------------------------------------------------------------
+// ESPurna Core
+// -----------------------------------------------------------------------------
+
+#if defined(ESPURNA_CORE)
+
+    // This is a special device targeted to generate a light-weight binary image
+    // meant to be able to do two-step-updates:
+    // https://github.com/xoseperez/espurna/wiki/TwoStepUpdates
+
+    // Info
+    #define MANUFACTURER            "ESPRESSIF"
+    #define DEVICE                  "ESPURNA_CORE"
+
+    // Disable non-core modules
+    #define ALEXA_SUPPORT           0
+    #define BROKER_SUPPORT          0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define I2C_SUPPORT             0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define SCHEDULER_SUPPORT       0
+    #define SENSOR_SUPPORT          0
+    #define THINGSPEAK_SUPPORT      0
+    #define WEB_SUPPORT             0
+
+// -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
 
-#if defined(NODEMCU_LOLIN)
+#elif defined(NODEMCU_LOLIN)
 
     // Info
     #define MANUFACTURER        "NODEMCU"
@@ -476,12 +503,14 @@
     // and disables any possibly harmful combination with S6 set to 0.
     // If you are sure you will only use S6 to 1 you can comment the
     // BUTTON1_LNGCLICK and BUTTON1_LNGLNGCLICK options below to recover the
-    // AP mode and factory reset functionalities.
+    // reset mode and factory reset functionalities, or link other actions like
+    // AP mode in the commented line below.
 
     #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON1_CLICK       BUTTON_MODE_NONE
     #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
     #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    //#define BUTTON1_LNGCLICK    BUTTON_MODE_AP
     #define BUTTON1_LNGLNGCLICK BUTTON_MODE_NONE
     #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON2_CLICK       BUTTON_MODE_NONE
@@ -914,35 +943,6 @@
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
 
-#elif defined(MAGICHOME_LED_CONTROLLER_23)
-
-    // Info
-    #define MANUFACTURER        "MAGICHOME"
-    #define DEVICE              "LED_CONTROLLER_23"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
-
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
-
-    // Light
-    #define LIGHT_CHANNELS      4
-    #define LIGHT_CH1_PIN       12      // RED
-    #define LIGHT_CH2_PIN       5       // GREEN
-    #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH4_PIN       15      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-
-    // IR
-    #define IR_SUPPORT          1
-    #define IR_PIN              4
-    #define IR_BUTTON_SET       1
-
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
@@ -956,7 +956,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
-    #define SERIAL_RX_PORT      Serial
+    #define SERIAL_RX_ENABLED   1
 
     // LEDs
     #define LED1_PIN            5
@@ -984,7 +984,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
-    #define SERIAL_RX_PORT      Serial
+    #define SERIAL_RX_ENABLED   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1393,6 +1393,103 @@
 
     #define LIGHT_ENABLE_PIN    15
 
+#elif defined(GIZWITS_WITTY_CLOUD)
+
+    // Info
+    #define MANUFACTURER        "GIZWITS"
+    #define DEVICE              "WITTY_CLOUD"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define ANALOG_SUPPORT      1
+
+    // LEDs
+    #define LED1_PIN            2      // BLUE build-in
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       15       // RED
+    #define LIGHT_CH2_PIN       12       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// KMC 70011
+// https://www.amazon.com/KMC-Monitoring-Required-Control-Compatible/dp/B07313TH7B
+// -----------------------------------------------------------------------------
+
+#elif defined(KMC_70011)
+
+    // Info
+    #define MANUFACTURER        "KMC"
+    #define DEVICE              "70011"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     12
+    #define HLW8012_CF1_PIN     5
+    #define HLW8012_CF_PIN      4
+
+// -----------------------------------------------------------------------------
+// Euromate (?) Wifi Stecker Shuko
+// https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko/p/2291706
+// Thanks to @Geitde
+// -----------------------------------------------------------------------------
+
+#elif defined(EUROMATE_WIFI_STECKER_SCHUKO)
+
+    // Info
+    #define MANUFACTURER        "EUROMATE"
+    #define DEVICE              "WIFI_STECKER_SCHUKO"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    // #define RELAY1_PIN       12
+    // #define RELAY1_TYPE      RELAY_TYPE_LATCHED_INVERSE
+    // #define RELAY1_RESET_PIN 5
+
+    // Hack: drive GPIO12 low and use GPIO5 as normal relay pin:
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define LED2_PIN            12 /* DUMMY: exploit default off state for GPIO12=low */
+    #define LED2_PIN_INVERSE    0
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    0
+
 // -----------------------------------------------------------------------------
 // Generic 8CH
 // -----------------------------------------------------------------------------
@@ -1421,7 +1518,19 @@
     #define RELAY8_PIN          15
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
-// -----------------------------------------------------------------------------
+#elif defined(STM_RELAY)
+
+    // Info
+    #define MANUFACTURER            "STM_RELAY"
+    #define DEVICE                  "2CH"
+
+    // Relays
+    #define DUMMY_RELAY_COUNT       2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_STM
+
+    // Remove UART noise on serial line
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
 
 #endif
 
