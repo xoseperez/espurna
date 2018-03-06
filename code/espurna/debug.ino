@@ -195,7 +195,7 @@ void debugDumpCrashInfo() {
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] Crash at %lu ms\n"), crash_time);
+    DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
     DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
     DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 

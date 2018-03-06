@@ -123,6 +123,7 @@ void _telnetNewClient(AsyncClient *client) {
                 info();
                 wifiStatus();
                 debugDumpCrashInfo();
+                debugClearCrashInfo();
             #endif
 
             _telnetFirst = true;
