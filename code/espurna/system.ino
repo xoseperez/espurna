@@ -85,12 +85,13 @@ void systemLoop() {
 
     // Increase temporary loop counter
     static unsigned long load_counter_temp = 0;
-    static unsigned long load_counter = 0;
-    static unsigned long load_counter_max = 1;
     static unsigned long last_loadcheck = 0;
 
     load_counter_temp++;
     if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
+      static unsigned long load_counter = 0;
+      static unsigned long load_counter_max = 1;
+
       load_counter = load_counter_temp;
       load_counter_temp = 0;
       if (load_counter > load_counter_max) {
