@@ -222,7 +222,7 @@ void _settingsInitCommands() {
     #if I2C_SUPPORT
 
         settingsRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
-            _settingsI2CScanCommand();
+            i2cScan();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
 
