@@ -26,6 +26,9 @@ bool _system_send_heartbeat = false;
 
 bool _systemStable = true;
 
+// Calculated load average 0 to 100;
+unsigned short int _load_average = 100;
+
 void systemCheck(bool stable) {
     unsigned char value = EEPROM.read(EEPROM_CRASH_COUNTER);
     if (stable) {
@@ -72,13 +75,30 @@ void systemLoop() {
 
     #if HEARTBEAT_ENABLED
         // Heartbeat
-        static unsigned long last = 0;
-        if (_system_send_heartbeat || (last == 0) || (millis() - last > HEARTBEAT_INTERVAL)) {
+        static unsigned long last_hbeat = 0;
+        if (_system_send_heartbeat || (last_hbeat == 0) || (millis() - last_hbeat > HEARTBEAT_INTERVAL)) {
             _system_send_heartbeat = false;
-            last = millis();
+            last_hbeat = millis();
             heartbeat();
         }
     #endif // HEARTBEAT_ENABLED
+
+    // Increase temporary loop counter
+    static unsigned long load_counter_temp = 0;
+    static unsigned long load_counter = 0;
+    static unsigned long load_counter_max = 1;
+    static unsigned long last_loadcheck = 0;
+
+    load_counter_temp++;
+    if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
+      load_counter = load_counter_temp;
+      load_counter_temp = 0;
+      if (load_counter > load_counter_max) {
+        load_counter_max = load_counter;
+      }
+      _load_average = 100 - (100 * load_counter / load_counter_max);
+      last_loadcheck = millis();
+    }
 
     // Power saving delay
     delay(_loopDelay);
@@ -119,4 +139,8 @@ void systemSetup() {
     // Register Loop
     espurnaRegisterLoop(systemLoop);
 
+}
+
+unsigned long getLoadAverage() {
+  return _load_average;
 }

@@ -169,6 +169,12 @@
 #define HEARTBEAT_REPORT_INTERVAL   0
 
 //------------------------------------------------------------------------------
+// Load average
+//------------------------------------------------------------------------------
+#define LOADAVG_INTERVAL        30000   // Interval between calculating load average (in ms)
+#define LOADAVG_REPORT          1       // Should we report Load average over MQTT?
+
+//------------------------------------------------------------------------------
 // RESET
 //------------------------------------------------------------------------------
 
@@ -595,6 +601,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFRAW        "rfraw"
 #define MQTT_TOPIC_UARTIN       "uartin"
 #define MQTT_TOPIC_UARTOUT      "uartout"
+#define MQTT_TOPIC_LOADAVG      "loadavg"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"

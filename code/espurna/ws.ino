@@ -220,6 +220,7 @@ void _wsUpdate(JsonObject& root) {
     root["heap"] = getFreeHeap();
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
+    root["loadaverage"] = getLoadAverage();
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
