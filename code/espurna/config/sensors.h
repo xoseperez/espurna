@@ -626,7 +626,6 @@ PROGMEM const char* const magnitude_units[] = {
 #endif
 
 #if BMX280_SUPPORT
-    #include <SparkFunBME280.h>
     #include "../sensors/BMX280Sensor.h"
 #endif
 
