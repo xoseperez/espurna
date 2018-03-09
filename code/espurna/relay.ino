@@ -660,13 +660,20 @@ void relayMQTT() {
 }
 
 void relayStatusWrap(unsigned char id, unsigned char value, bool is_group_topic) {
-    // Action to perform
-    if (value == 0) {
-        relayStatus(id, false, mqttForward(), !is_group_topic);
-    } else if (value == 1) {
-        relayStatus(id, true, mqttForward(), !is_group_topic);
-    } else if (value == 2) {
-        relayToggle(id, true, true);
+    switch (value) {
+        case 0:
+            relayStatus(id, false, mqttForward(), !is_group_topic);
+            break;
+        case 1:
+            relayStatus(id, true, mqttForward(), !is_group_topic);
+            break;
+        case 2:
+            relayToggle(id, true, true);
+            break;
+        default:
+            _relays[id].report = true;
+            relayMQTT(id);
+            break;
     }
 }
 
