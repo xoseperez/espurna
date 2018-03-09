@@ -1532,6 +1532,10 @@
     #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
 
+// -----------------------------------------------------------------------------
+// TEST boards (do not use!!)
+// -----------------------------------------------------------------------------
+
 #elif defined(TRAVIS01)
 
     // Info
@@ -1605,6 +1609,7 @@
 // -----------------------------------------------------------------------------
 // Check definitions
 // -----------------------------------------------------------------------------
+
 #if not defined(MANUFACTURER) || not defined(DEVICE)
     #error "UNSUPPORTED HARDWARE!!"
 #endif
