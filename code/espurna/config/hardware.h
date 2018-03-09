@@ -1532,6 +1532,74 @@
     #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
 
+#elif defined(TRAVIS01)
+
+    // Info
+    #define MANUFACTURER            "TravisCI"
+    #define DEVICE                  "Virtual board 01"
+
+    // Some buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Some relays
+    #define RELAY1_PIN          1
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Some LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // A bit of I2C
+    #define I2C_SDA_PIN         3
+    #define I2C_SCL_PIN         4
+    // and, as they say in "From Dusk till Dawn":
+    // This is a sensor blow out!
+    // Alright, we got white sensor, black sensor, spanish sensor, yellow sensor. We got hot sensor, cold sensor.
+    // We got wet sensor. We got smelly sensor. We got hairy sensor, bloody sensor. We got snapping sensor.
+    // We got silk sensor, velvet sensor, naugahyde sensor. We even got horse sensor, dog sensor, chicken sensor.
+    // C'mon, you want sensor, come on in sensor lovers!
+    // If we don’t got it, you don't want it!
+    #define BH1750_SUPPORT        1
+    #define BMX280_SUPPORT        1
+    #define SHT3X_I2C_SUPPORT     1
+    #define EMON_ADC121_SUPPORT   1
+    #define EMON_ADS1X15_SUPPORT  1
+    #define SHT3X_I2C_SUPPORT     1
+    #define SI7021_SUPPORT        1
+
+
+    // A bit of lights.
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_CHANNELS      1
+    #define LIGHT_CH1_PIN       5
+    #define LIGHT_CH1_INVERSE   0
+
+    // A bit of HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     6
+    #define HLW8012_CF1_PIN     7
+    #define HLW8012_CF_PIN      8
+
+    // A bit of Dallas
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          9
+
+    // And some ECH1560
+    #ifndef ECH1560_SUPPORT
+    #define ECH1560_SUPPORT     1
+    #endif
+    #define ECH1560_CLK_PIN     10
+    #define ECH1560_MISO_PIN    11
+    #define ECH1560_INVERTED    12
+
 #endif
 
 // -----------------------------------------------------------------------------
