@@ -24,6 +24,10 @@
 #define TEMPERATURE_MIN_CHANGE              0.0             // Minimum temperature change to report
 #endif
 
+#ifndef SENSOR_HUMIDITY_CORRECTION
+#define SENSOR_HUMIDITY_CORRECTION          0.0             // Offset correction
+#endif
+
 #ifndef HUMIDITY_MIN_CHANGE
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif

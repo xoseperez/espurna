@@ -38,6 +38,7 @@ unsigned char _sensor_power_units = SENSOR_POWER_UNITS;
 unsigned char _sensor_energy_units = SENSOR_ENERGY_UNITS;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
+double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
 
 // -----------------------------------------------------------------------------
 // Private
@@ -69,6 +70,11 @@ double _magnitudeProcess(unsigned char type, double value) {
         if (_sensor_temperature_units == TMP_FAHRENHEIT) value = value * 1.8 + 32;
         value = value + _sensor_temperature_correction;
     }
+
+    if (type == MAGNITUDE_HUMIDITY) {
+        value = value + _sensor_humidity_correction;
+    }
+
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
         if (_sensor_energy_units == ENERGY_KWH) value = value  / 3600000;
@@ -163,6 +169,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         root["energyUnits"] = _sensor_energy_units;
         root["tmpUnits"] = _sensor_temperature_units;
         root["tmpCorrection"] = _sensor_temperature_correction;
+        root["humCorrection"] = _sensor_humidity_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
     }
@@ -602,6 +609,7 @@ void _sensorConfigure() {
     _sensor_energy_units = getSetting("energyUnits", SENSOR_ENERGY_UNITS).toInt();
     _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+    _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION).toFloat();
 
     // Update filter sizes
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
