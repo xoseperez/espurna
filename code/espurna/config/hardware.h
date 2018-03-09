@@ -1542,20 +1542,20 @@
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 01"
 
-    // Some buttons
+    // Some buttons - pin 0
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
-    // Some relays
+    // Some relays - pin 1
     #define RELAY1_PIN          1
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // Some LEDs
+    // Some LEDs - pin 2
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-    // A bit of I2C
+    // A bit of I2C - pins 3,4
     #define I2C_SDA_PIN         3
     #define I2C_SCL_PIN         4
     // and, as they say in "From Dusk till Dawn":
@@ -1574,7 +1574,7 @@
     #define SI7021_SUPPORT        1
 
 
-    // A bit of lights.
+    // A bit of lights - pin 5
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
@@ -1582,7 +1582,7 @@
     #define LIGHT_CH1_PIN       5
     #define LIGHT_CH1_INVERSE   0
 
-    // A bit of HLW8012
+    // A bit of HLW8012 - pins 6,7,8
     #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT     1
     #endif
@@ -1590,19 +1590,61 @@
     #define HLW8012_CF1_PIN     7
     #define HLW8012_CF_PIN      8
 
-    // A bit of Dallas
+    // A bit of Dallas - pin 9
     #ifndef DALLAS_SUPPORT
     #define DALLAS_SUPPORT      1
     #endif
     #define DALLAS_PIN          9
 
-    // And some ECH1560
+    // A bit of ECH1560 - pins 10,11, 12
     #ifndef ECH1560_SUPPORT
     #define ECH1560_SUPPORT     1
     #endif
     #define ECH1560_CLK_PIN     10
     #define ECH1560_MISO_PIN    11
     #define ECH1560_INVERTED    12
+
+#elif defined(TRAVIS02)
+
+    // Relay provider dual
+    #define MANUFACTURER            "TravisCI"
+    #define DEVICE                  "Virtual board 02"
+
+    // A bit of DHT - pin 1
+    #ifndef DHT_SUPPORT
+    #define DHT_SUPPORT         1
+    #endif
+    #define DHT_PIN             1
+
+    // Relay type dual  - pins 2,3
+    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
+    #define RELAY1_PIN          2
+    #define RELAY2_PIN          3
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // IR - pin 4
+    #define IR_SUPPORT          1
+    #define IR_PIN              4
+    #define IR_BUTTON_SET       1
+
+#elif defined(TRAVIS03)
+
+    // Relay provider light/my92XX
+    #define MANUFACTURER            "TravisCI"
+    #define DEVICE                  "Virtual board 03"
+
+    // MY9231 Light - pins 1,2
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
+    #define MY92XX_CHIPS        2
+    #define MY92XX_DI_PIN       1
+    #define MY92XX_DCKI_PIN     2
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      4, 3, 5, 0, 1
 
 #endif
 
