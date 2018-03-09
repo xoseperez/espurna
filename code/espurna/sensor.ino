@@ -72,7 +72,7 @@ double _magnitudeProcess(unsigned char type, double value) {
     }
 
     if (type == MAGNITUDE_HUMIDITY) {
-        value = value + _sensor_humidity_correction;
+        value = constrain(value + _sensor_humidity_correction, 0, 100);
     }
 
     if (type == MAGNITUDE_ENERGY ||
@@ -97,6 +97,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
     char buffer[10];
     bool hasTemperature = false;
+    bool hasHumidity = false;
 
     JsonArray& list = root.createNestedArray("magnitudes");
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
@@ -114,10 +115,12 @@ void _sensorWebSocketSendData(JsonObject& root) {
         element["error"] = magnitude.sensor->error();
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
+        if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
 
     }
 
     if (hasTemperature) root["temperatureVisible"] = 1;
+    if (hasHumidity) root["humidityVisible"] = 1;
 
 }
 
