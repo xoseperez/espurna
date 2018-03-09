@@ -441,6 +441,7 @@ void _relayWebSocketOnStart(JsonObject& root) {
         #if MQTT_SUPPORT
             line["group"] = getSetting("mqttGroup", i, "");
             line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
+            line["disc_react"] = getSetting("mqttDisconnectReaction",i,0).toInt();
         #endif
     }
 
@@ -566,7 +567,6 @@ void relayMQTT(unsigned char id) {
             mqttSendRaw(t.c_str(), status ? "1" : "0");
         }
     }
-
 }
 
 void relayMQTT() {
@@ -654,12 +654,16 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     }
 
-    if (type == MQTT_DISCONNECT_EVENT)
-    {
-        if (MQTT_DISCONNECT_RELAY_DEFAULT == 1){
-            for (unsigned int i=0; i < _relays.size(); i++){
+    if (type == MQTT_DISCONNECT_EVENT) {
+        for (unsigned int i=0; i < _relays.size(); i++){
+            int reaction = getSetting("mqttDisconnectReaction",i,0).toInt();
+            if (reaction == 1) {     // switch relay OFF
                 DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection\n"), i);
                 relayStatusWrap(i, false, false);
+            }
+            else if(reaction == 2) { // switch relay ON
+                DEBUG_MSG_P(PSTR("[RELAY] Set relay (%d) due to MQTT disconnection\n"), i);
+                relayStatusWrap(i, true, false);
             }
         }
 

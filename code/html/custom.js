@@ -152,7 +152,7 @@ var is_group = [
     "ssid", "pass", "gw", "mask", "ip", "dns",
     "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
     "relayBoot", "relayPulse", "relayTime",
-    "mqttGroup", "mqttGroupInv",
+    "mqttGroup", "mqttGroupInv", "mqttDisconnectReaction",
     "dczRelayIdx", "dczMagnitude",
     "tspkRelay", "tspkMagnitude",
     "ledMode",
