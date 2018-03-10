@@ -221,6 +221,7 @@ void _wsUpdate(JsonObject& root) {
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
     root["loadaverage"] = getLoadAverage();
+    root["vcc"] = ESP.getVcc();
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
@@ -327,7 +328,7 @@ void _wsLoop() {
 }
 
 // -----------------------------------------------------------------------------
-// Piblic API
+// Public API
 // -----------------------------------------------------------------------------
 
 bool wsConnected() {
@@ -363,11 +364,32 @@ void wsSend(const char * payload) {
     }
 }
 
+/*
 void wsSend_P(PGM_P payload) {
     if (_ws.count() > 0) {
         char buffer[strlen_P(payload)];
         strcpy_P(buffer, payload);
         _ws.textAll(buffer);
+    }
+}
+*/
+
+void wsSend_P(PGM_P format_P, ...) {
+    if (_ws.count() > 0) {
+        char format[strlen_P(format_P)+1];
+        memcpy_P(format, format_P, sizeof(format));
+
+        va_list args;
+        va_start(args, format_P);
+        char test[1];
+        int len = ets_vsnprintf(test, 1, format, args) + 1;
+        char * buffer = new char[len];
+        ets_vsnprintf(buffer, len, format, args);
+        va_end(args);
+
+        _ws.textAll(buffer);
+
+        delete[] buffer;
     }
 }
 

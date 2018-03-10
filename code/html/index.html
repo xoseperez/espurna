@@ -190,6 +190,9 @@
                                     <div class="pure-u-1-2 pure-u-lg-1-4">Chip ID</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="chipid"></span></div>
 
+                                    <div class="pure-u-1-2 pure-u-lg-1-4">Vcc</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="vcc"></span></div>
+
                                     <div class="pure-u-1-2 pure-u-lg-1-4">MAC</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="mac"></span></div>
 
@@ -224,7 +227,7 @@
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="uptime"></span></div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">Load average</div>
-                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="loadaverage"></span>%</div>
+                                    <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="loadaverage"></span><span>%</span></div>
 
                                     <div class="pure-u-1-2 pure-u-lg-1-4">Free heap</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="heap" post=" bytes"></span></div>
@@ -241,9 +244,13 @@
                                     <div class="pure-u-1-2 pure-u-lg-1-4">NTP Status</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="ntpStatus">NOT AVAILABLE</span></div>
 
-                                    <div class="pure-u-1-2 pure-u-lg-1-4">Last update</div>
+                                    <div class="pure-u-1-2 pure-u-lg-1-4">Last NTP update</div>
                                     <div class="pure-u-11-24 pure-u-lg-17-24"><span class="right" name="ago">?</span><span> seconds ago</span></div>
 
+                                </div>
+
+                                <div class="pure-g">
+                                    <textarea class="pure-u-1" readonly id="weblog" name="weblog" wrap="off"></textarea>
                                 </div>
 
                             </fieldset>

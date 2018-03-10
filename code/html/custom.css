@@ -286,3 +286,14 @@ span.slider {
     font-size: 60%;
     margin-top: 10px;
 }
+
+/* -----------------------------------------------------------------------------
+    Logs
+   -------------------------------------------------------------------------- */
+#weblog {
+  font-family: 'Courier New', monospace;
+  font-size: 60%;
+  resize: none;
+  height: 300px;
+  line-height: 100%;
+}

@@ -60,6 +60,14 @@ void _debugSend(char * message) {
         _telnetWrite(message, strlen(message));
     #endif
 
+    #if DEBUG_WEB_SUPPORT
+        #if DEBUG_ADD_TIMESTAMP
+            wsSend_P(PSTR("{\"weblog\": \"%s %s\"}"), timestamp, message);
+        #else
+            wsSend_P(PSTR("{\"weblog\": \"%s\"}"), message);
+        #endif
+    #endif
+
 
 }
 
