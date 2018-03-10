@@ -652,6 +652,7 @@ function initRelayConfig(data) {
         $("input[name='relayTime']", line).val(data[i].pulse_ms);
         $("input[name='mqttGroup']", line).val(data[i].group);
         $("select[name='mqttGroupInv']", line).val(data[i].group_inv);
+        $("select[name='mqttDisconnectReaction']", line).val(data[i].disc_react);
         line.appendTo("#relayConfig");
     }
 
