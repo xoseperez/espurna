@@ -84,8 +84,8 @@ class ECH1560Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() {
-            char buffer[25];
-            snprintf(buffer, sizeof(buffer), "ECH1560 @ GPIO(%u,%u)", _clk, _miso);
+            char buffer[35];
+            snprintf(buffer, sizeof(buffer), "ECH1560 (CLK,SDO) @ GPIO(%u,%u)", _clk, _miso);
             return String(buffer);
         }
 
@@ -126,7 +126,7 @@ class ECH1560Sensor : public BaseSensor {
 
                 _clk_count = 0;
 
-                // register how long the ClkHigh is high to evaluate if we are at the part wher clk goes high for 1-2 ms
+                // register how long the ClkHigh is high to evaluate if we are at the part where clk goes high for 1-2 ms
                 while (digitalRead(_clk) == HIGH) {
                     _clk_count += 1;
                     delayMicroseconds(30);  //can only use delayMicroseconds in an interrupt.
@@ -188,17 +188,17 @@ class ECH1560Sensor : public BaseSensor {
             while (_bits_count < 40); // skip the uninteresting 5 first bytes
             _bits_count = 0;
 
-            while (_bits_count < 24) { // loop through the next 3 Bytes (6-8) and save byte 6 and 7 in Ba and Bb
+            while (_bits_count < 24) { // loop through the next 3 Bytes (6-8) and save byte 6 and 7 in byte1 and byte2
 
                 if (_nextbit) {
 
-                    if (_bits_count < 9) { // first Byte/8 bits in Ba
+                    if (_bits_count < 9) { // first Byte/8 bits in byte1
 
                         byte1 = byte1 << 1;
                         if (digitalRead(_miso) == HIGH) byte1 |= 1;
                         _nextbit = false;
 
-                    } else if (_bits_count < 17) { // bit 9-16 is byte 7, stor in Bb
+                    } else if (_bits_count < 17) { // bit 9-16 is byte 7, store in byte2
 
                         byte2 = byte2 << 1;
                         if (digitalRead(_miso) == HIGH) byte2 |= 1;
@@ -210,9 +210,9 @@ class ECH1560Sensor : public BaseSensor {
 
             }
 
-            if (byte2 != 3) { // if bit Bb is not 3, we have reached the important part, U is allready in Ba and Bb and next 8 Bytes will give us the Power.
+            if (byte2 != 3) { // if bit byte2 is not 3, we have reached the important part, U is allready in byte1 and byte2 and next 8 Bytes will give us the Power.
 
-                // voltage = 2 * (Ba + Bb / 255)
+                // voltage = 2 * (byte1 + byte2 / 255)
                 _voltage = 2.0 * ((float) byte1 + (float) byte2 / 255.0);
 
                 // power:
@@ -224,7 +224,7 @@ class ECH1560Sensor : public BaseSensor {
                 byte2 = 0;
                 byte3 = 0;
 
-                while (_bits_count < 24) { //store byte 6, 7 and 8 in Ba and Bb & Bc.
+                while (_bits_count < 24) { //store byte 6, 7 and 8 in byte1 and byte2 & byte3.
 
                     if (_nextbit) {
 
@@ -256,7 +256,7 @@ class ECH1560Sensor : public BaseSensor {
                     byte3 = 255 - byte3;
                 }
 
-                // power = (Ba*255+Bb+Bc/255)/2
+                // power = (byte1*255+byte2+byte3/255)/2
                 _apparent = ( (float) byte1 * 255 + (float) byte2 + (float) byte3 / 255.0) / 2;
                 _current = _apparent / _voltage;
 
@@ -264,9 +264,13 @@ class ECH1560Sensor : public BaseSensor {
 
             }
 
-            // If Bb is not 3 or something else than 0, something is wrong!
-            if (byte2 == 0) _dosync = false;
-
+            // If byte2 is not 3 or something else than 0, something is wrong!
+            if (byte2 == 0) {
+                _dosync = false;
+            #if SENSOR_DEBUG
+                DEBUG_MSG_P(PSTR("Nothing connected, or out of sync!\n"));
+            #endif
+            }
         }
 
         // ---------------------------------------------------------------------
