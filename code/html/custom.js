@@ -1252,11 +1252,10 @@ function connect(host) {
     if (websock) { websock.close(); }
     websock = new WebSocket(wshost);
     websock.onmessage = function(evt) {
-        var data = getJson(evt.data
-            .replace(/\n/g, "\\n")
-            .replace(/\r/g, "\\r")
-            .replace(/\t/g, "\\t"));
-        if (data) { processData(data); }
+        var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+        if (data) {
+            processData(data);
+        }
     };
 }
 
