@@ -19,10 +19,6 @@
 
 */
 
-#ifdef USE_CUSTOM_H
-#include "custom.h"
-#endif
-
 #include "version.h"
 #include "arduino.h"
 #include "hardware.h"
@@ -36,3 +32,7 @@
 #endif
 
 #include "build.h"
+
+#ifdef USE_CUSTOM_H
+#include "custom.h"
+#endif
