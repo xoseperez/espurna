@@ -1105,6 +1105,11 @@ function processData(data) {
             return;
         }
 
+        if ("weblog" === key) {
+            document.getElementById("weblog").value += value;
+            return;
+        }
+
         // Enable options
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
@@ -1247,8 +1252,10 @@ function connect(host) {
     if (websock) { websock.close(); }
     websock = new WebSocket(wshost);
     websock.onmessage = function(evt) {
-        var data = getJson(evt.data);
-        if (data) { processData(data); }
+        var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+        if (data) {
+            processData(data);
+        }
     };
 }
 

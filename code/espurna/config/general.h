@@ -94,6 +94,17 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef DEBUG_WEB_SUPPORT
+#define DEBUG_WEB_SUPPORT    WEB_SUPPORT  // Enable web debug log if web is enabled too
+#endif
+
+#if DEBUG_WEB_SUPPORT
+#undef WEB_SUPPORT
+#define WEB_SUPPORT             1         // Chicken and egg :)
+#endif
+
+//------------------------------------------------------------------------------
+
 // General debug options and macros
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
