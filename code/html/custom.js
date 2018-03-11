@@ -179,7 +179,7 @@ function addValue(data, name, value) {
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
         "relayBoot", "relayPulse", "relayTime",
-        "mqttGroup", "mqttGroupInv",
+        "mqttGroup", "mqttGroupInv", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
@@ -716,6 +716,7 @@ function initRelayConfig(data) {
         $("input[name='relayTime']", line).val(relay.pulse_ms);
         $("input[name='mqttGroup']", line).val(relay.group);
         $("select[name='mqttGroupInv']", line).val(relay.group_inv);
+        $("select[name='relayOnDisc']", line).val(relay.on_disc);
         line.appendTo("#relayConfig");
     }
 
