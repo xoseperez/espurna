@@ -63,6 +63,7 @@ template<typename T> String getSetting(const String& key, unsigned int index, T 
 bool settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
 void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
+void settingsInject(void *data, size_t len);
 
 // -----------------------------------------------------------------------------
 // I2C

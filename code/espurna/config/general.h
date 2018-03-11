@@ -95,13 +95,15 @@
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT    WEB_SUPPORT  // Enable web debug log if web is enabled too
+#define DEBUG_WEB_SUPPORT       WEB_SUPPORT  // Enable web debug log if web is enabled too
 #endif
 
 #if DEBUG_WEB_SUPPORT
 #undef WEB_SUPPORT
-#define WEB_SUPPORT             1         // Chicken and egg :)
+#define WEB_SUPPORT             1           // Chicken and egg :)
 #endif
+
+#define DEBUG_WEB_ENABLED       1           // Enable debug output by default
 
 //------------------------------------------------------------------------------
 

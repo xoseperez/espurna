@@ -138,6 +138,10 @@
                             <a href="#" class="pure-menu-link" data="panel-admin">ADMIN</a>
                         </li>
 
+                        <li class="pure-menu-item module module-dbg">
+                            <a href="#" class="pure-menu-link" data="panel-dbg">DEBUG</a>
+                        </li>
+
                     </ul>
 
                     <div class="main-buttons">
@@ -180,6 +184,7 @@
                                 <div id="magnitudes"></div>
 
                                 <div class="pure-u-1 pure-u-lg-1-2 state">
+
                                     <div class="pure-u-1-2">Manufacturer</div>
                                     <div class="pure-u-11-24"><span class="right" name="manufacturer"></span></div>
 
@@ -207,16 +212,16 @@
                                     <div class="pure-u-1-2">Load average</div>
                                     <div class="pure-u-11-24"><span class="right" name="loadaverage"></span><span>%</span></div>
 
-                                    <div class="pure-u-1-2">Vcc</div>
+                                    <div class="pure-u-1-2">VCC</div>
                                     <div class="pure-u-11-24"><span class="right" name="vcc"></span><span>mV</span></div>
-
 
                                     <div class="pure-u-1-2">MQTT Status</div>
                                     <div class="pure-u-11-24"><span class="right" name="mqttStatus">NOT AVAILABLE</span></div>
 
                                 </div>
 
-                                <div class="pure-u-1 pure-u-lg-11-24">
+                                <div class="pure-u-1 pure-u-lg-11-24 state">
+
                                     <div class="pure-u-1-2">Wifi MAC</div>
                                     <div class="pure-u-11-24"><span class="right" name="mac"></span></div>
 
@@ -249,14 +254,6 @@
 
                                     <div class="pure-u-1-2">Last update</div>
                                     <div class="pure-u-11-24"><span class="right" name="ago">?</span><span> seconds ago</span></div>
-                                </div>
-
-                                <div class="header">
-                                    <h2>Debug log</h2>
-                                </div>
-
-                                <div class="pure-g">
-                                    <textarea class="pure-u-1" readonly id="weblog" name="weblog" wrap="off"></textarea>
                                 </div>
 
                             </fieldset>
@@ -582,8 +579,7 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <span class="pure-u-1 pure-u-lg-3-4" id="scanResult" name="scanResult"></span>
+                                    <span class="pure-u-1 terminal" id="scanResult" name="scanResult"></span>
                                 </div>
 
                                 <legend>Networks</legend>
@@ -857,8 +853,7 @@
                                     </div>
                                 </div>
                                 <div class="pure-g">
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><span id="haConfig" name="haConfig"></span></div>
+                                    <span class="pure-u-1 terminal" id="haConfig" name="haConfig"></span>
                                 </div>
 
 
@@ -953,6 +948,37 @@
                                 </div>
 
                             </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-dbg">
+
+                        <div class="header">
+                            <h1>DEBUG LOG</h1>
+                            <h2>
+                                Shows debug messages from the device
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div class="pure-g module module-telnet">
+                                    <div class="pure-u-1 hint">
+                                        Write a command and click send to execute it on the device. The output will be shown in the debug text area below.
+                                    </div>
+                                    <input name="dbgcmd" class="pure-u-3-4" type="text" tabindex="2" />
+                                    <div class=" pure-u-1-4 pure-u-lg-1-4"><button class="pure-button button-dbgcmd pure-u-23-24">Send</button></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <textarea class="pure-u-1 terminal" id="weblog" name="weblog" wrap="off" readonly></textarea>
+                                </div>
+
+                            </fieldset>
+
                         </div>
 
                     </div>

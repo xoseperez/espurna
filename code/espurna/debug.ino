@@ -62,14 +62,15 @@ void _debugSend(char * message) {
 
     #if DEBUG_WEB_SUPPORT
         #if DEBUG_ADD_TIMESTAMP
-            wsSend_P(PSTR("{\"weblog\": \"%s %s\"}"), timestamp, message);
+            wsSend_P(PSTR("{\"weblog\": \"%s%s\"}"), timestamp, message);
         #else
             wsSend_P(PSTR("{\"weblog\": \"%s\"}"), message);
         #endif
     #endif
 
-
 }
+
+// -----------------------------------------------------------------------------
 
 void debugSend(const char * format, ...) {
 
@@ -105,6 +106,27 @@ void debugSend_P(PGM_P format_P, ...) {
     delete[] buffer;
 
 }
+
+#if DEBUG_WEB_SUPPORT
+
+void debugSetup() {
+
+    wsOnSendRegister([](JsonObject& root) {
+        root["dbgVisible"] = 1;
+    });
+
+    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
+        if (strcmp(action, "dbgcmd") == 0) {
+            const char* command = data.get<const char*>("command");
+            char buffer[strlen(command) + 2];
+            snprintf(buffer, sizeof(buffer), "%s\n", command);
+            settingsInject((void*) buffer, strlen(buffer));
+        }
+    });
+
+}
+
+#endif // DEBUG_WEB_SUPPORT
 
 // -----------------------------------------------------------------------------
 // Save crash info

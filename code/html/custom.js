@@ -74,6 +74,17 @@ function magnitudeError(error) {
 // Utils
 // -----------------------------------------------------------------------------
 
+$.fn.enterKey = function (fnc) {
+    return this.each(function () {
+        $(this).keypress(function (ev) {
+            var keycode = (ev.keyCode ? ev.keyCode : ev.which);
+            if (keycode == '13') {
+                fnc.call(this, ev);
+            }
+        })
+    })
+}
+
 function keepTime() {
     if (0 === now) { return; }
     var date = new Date(now * 1000);
@@ -520,6 +531,14 @@ function doScan() {
 function doHAConfig() {
     $("#haConfig").html("");
     sendAction("haconfig", {});
+    return false;
+}
+
+function doDebugCommand() {
+    var el = $("input[name='dbgcmd']");
+    var command = el.val();
+    el.val("");
+    sendAction("dbgcmd", {command: command});
     return false;
 }
 
@@ -1013,6 +1032,15 @@ function processData(data) {
 
         if ("scanResult" === key) {
             $("div.scan.loading").hide();
+            $("#scanResult").show();
+        }
+
+        // -----------------------------------------------------------------------------
+        // Home Assistant
+        // -----------------------------------------------------------------------------
+
+        if ("haConfig" === key) {
+            $("#haConfig").show();
         }
 
         // -----------------------------------------------------------------------------
@@ -1106,7 +1134,8 @@ function processData(data) {
         }
 
         if ("weblog" === key) {
-            document.getElementById("weblog").value += value;
+            $("#weblog").append(value);
+            $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
         }
 
@@ -1275,6 +1304,8 @@ $(function() {
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);
     $(".button-ha-config").on("click", doHAConfig);
+    $(".button-dbgcmd").on("click", doDebugCommand);
+    $("input[name='dbgcmd']").enterKey(doDebugCommand);
     $(".button-settings-backup").on("click", doBackup);
     $(".button-settings-restore").on("click", doRestore);
     $(".button-settings-factory").on("click", doFactoryReset);

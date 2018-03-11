@@ -275,7 +275,6 @@ void _wsOnStart(JsonObject& root) {
 
         root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
 
-
     }
 
 }
@@ -363,16 +362,6 @@ void wsSend(const char * payload) {
         _ws.textAll(payload);
     }
 }
-
-/*
-void wsSend_P(PGM_P payload) {
-    if (_ws.count() > 0) {
-        char buffer[strlen_P(payload)];
-        strcpy_P(buffer, payload);
-        _ws.textAll(buffer);
-    }
-}
-*/
 
 void wsSend_P(PGM_P format_P, ...) {
     if (_ws.count() > 0) {
