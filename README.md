@@ -190,8 +190,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|
 |![Itead S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Power meters based on V9261F and ECH1560](images/devices/generic-v9261f.jpg)|
 |**Itead S20**|**WorkChoice EcoPlug**|**Power meters based on V9261F and ECH1560**|
-|![Shuko Wifi Plug](images/devices/shuko-wifi-plug.jpg)|![KMC 70011 /w power meter](images/devices/kmc-70011.jpg)||
-|**Shuko Wifi Plug**|**KMC 70011 /w power meter**||
+|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![KMC 70011 /w power meter](images/devices/kmc-70011.jpg)||
+|**Schuko Wifi Plug**|**KMC 70011 /w power meter**||
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)||
 |**Itead Sonoff Touch**|**Itead Sonoff T1**||
 |![Itead Slampher](images/devices/itead-slampher.jpg)|||
@@ -214,7 +214,7 @@ Here is the list of supported hardware. For more information please refer to the
 **Other supported boards:**
 WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6
 Arilux E27 light bulb, Xenon SM-PW702U, YJZK 2-gang switch
-STM_RELAY, Maxcio 15A, HEYGO HY02, Yidian 16A
+STM_RELAY, Maxcio W-US002S, HEYGO HY02, YiDian XS-SSA05
 
 ## License
 
