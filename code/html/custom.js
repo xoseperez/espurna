@@ -77,12 +77,12 @@ function magnitudeError(error) {
 $.fn.enterKey = function (fnc) {
     return this.each(function () {
         $(this).keypress(function (ev) {
-            var keycode = (ev.keyCode ? ev.keyCode : ev.which);
-            if (keycode == '13') {
+            var keycode = parseInt(ev.keyCode ? ev.keyCode : ev.which, 10);
+            if (13 === keycode) {
                 fnc.call(this, ev);
             }
-        })
-    })
+        });
+    });
 }
 
 function keepTime() {

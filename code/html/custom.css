@@ -121,12 +121,13 @@ div.state {
     text-align: right;
 }
 
-.terminal {
-    font-family: 'Courier New', monospace !important;
-    font-size: 80%  !important;
-    line-height: 100%  !important;
-    background-color: #000  !important;
-    color: #0F0 !important;
+.pure-g span.terminal,
+.pure-g textarea.terminal {
+    font-family: 'Courier New', monospace;
+    font-size: 80%;
+    line-height: 100%;
+    background-color: #000;
+    color: #0F0;
 }
 
 /* -----------------------------------------------------------------------------
