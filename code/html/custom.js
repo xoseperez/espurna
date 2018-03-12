@@ -542,6 +542,11 @@ function doDebugCommand() {
     return false;
 }
 
+function doDebugClear() {
+    $("#weblog").text("");
+    return false;
+}
+
 // -----------------------------------------------------------------------------
 // Visualization
 // -----------------------------------------------------------------------------
@@ -1006,14 +1011,6 @@ function processData(data) {
             useWhite = value;
         }
 
-        if ("colorVisible" === key) {
-            $(".button-add-light-schedule").show();
-        }
-
-        if ("relayVisible" === key) {
-            $(".button-add-switch-schedule").show();
-        }
-
         // ---------------------------------------------------------------------
         // Sensors & Magnitudes
         // ---------------------------------------------------------------------
@@ -1329,6 +1326,7 @@ $(function() {
     $(".button-ha-config").on("click", doHAConfig);
     $(".button-dbgcmd").on("click", doDebugCommand);
     $("input[name='dbgcmd']").enterKey(doDebugCommand);
+    $(".button-dbg-clear").on("click", doDebugClear);
     $(".button-settings-backup").on("click", doBackup);
     $(".button-settings-restore").on("click", doRestore);
     $(".button-settings-factory").on("click", doFactoryReset);

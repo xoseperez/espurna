@@ -4,9 +4,9 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smar
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
 [![version](https://img.shields.io/badge/version-1.12.5a-brightgreen.svg)](CHANGELOG.md)
-![branch](https://img.shields.io/badge/branch-wysiwyng-pwm-dimmer-orange.svg)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=wysiwyng-pwm-dimmer)](https://travis-ci.org/xoseperez/espurna)
-[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/wysiwyng-pwm-dimmer.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+![branch](https://img.shields.io/badge/branch-dev-orange.svg)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 

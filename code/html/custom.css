@@ -156,6 +156,7 @@ div.state {
 .button-rfb-forget,
 .button-del-network,
 .button-del-schedule,
+.button-dbg-clear,
 .button-upgrade,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
@@ -307,4 +308,5 @@ span.slider {
 
 #weblog {
     height: 400px;
+    margin-bottom: 10px;
 }
