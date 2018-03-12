@@ -1475,10 +1475,9 @@
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
 
-    // Relays
-    // #define RELAY1_PIN       12
-    // #define RELAY1_TYPE      RELAY_TYPE_LATCHED_INVERSE
-    // #define RELAY1_RESET_PIN 5
+    // The relay in the device is not a bistable (latched) relay.
+    // The device is reported to have a flip-flop circuit to drive the relay
+    // So @Geitde hack is still the only possible
 
     // Hack: drive GPIO12 low and use GPIO5 as normal relay pin:
     #define RELAY1_PIN          5
