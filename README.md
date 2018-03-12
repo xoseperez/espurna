@@ -7,6 +7,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 ![branch](https://img.shields.io/badge/branch-dev-orange.svg)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
@@ -60,7 +61,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)
     * Support for https://github.com/Portisch/RF-Bridge-EFM8BB1 custom firmware
-* Support for different **sensors**
+* Support for [different **sensors**](Sensors)
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
@@ -82,7 +83,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * MY92XX-based light bulbs and PWM LED strips (dimmers) up to 5 channels (RGB, cold white and warm white, for instance)
     * RGB and HSV color codes supported
     * Manage channels individually
-    * Temperature color supported (in mired and kelvin) via MQTT / REST API
+    * Temperature color supported (in [mired](https://en.wikipedia.org/wiki/Mired) and [kelvin](https://en.wikipedia.org/wiki/Color_temperature)) via MQTT / REST API
     * Flicker-free PWM management
     * Soft color transitions
     * Color synchronization between light using MQTT
@@ -133,6 +134,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 ## Notices
 
 ---
+> **2018-05-09**: Default branch in GitHub is now the development branch "dev". The stable branch (the one used to create the binaries) is "[master](https://github.com/xoseperez/espurna/tree/master)".
+
+---
 > **2018-01-24**: This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
 >
 >What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
@@ -141,7 +145,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 >* **Issues** are all on GitHub already **but** all issues and comments show up as reported by me. The original reporter is referenced inside the body of the issue (or comment) with a link to his/her profile at Bitbucket and a link to his/her profile at GitHub if it happens to be the same username. I **suggest all reporters to subscribe to the issues they originally filed** (search for your BitBucket username to list them).
 >* **Pull requests** historic has not been migrated. At the moment of the migration all pull-requests have been either merged or declined. Of course, those PR merged are in the code base, but the historic and comments in the PR pages will be lost.
 >* **Documentation** it's on it way, first step will be to migrate existing wiki, maybe with a new TOC structure
->* **Watchers**, **Forks**, I'm afraid they are all gone. Visit the new repop home and click on the "Watch" button on the top right. And as you do it click also on the "Star" button too :)
+>* **Watchers**, **Forks**, I'm afraid they are all gone. Visit the new repo home and click on the "Watch" button on the top right. And as you do it click also on the "Star" button too :)
 >
 >I apologize for any inconvenience this migration may have caused. I have decided to do it the hard way.
 
