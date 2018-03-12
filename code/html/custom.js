@@ -177,7 +177,7 @@ function addValue(data, name, value) {
     // These fields will always be a list of values
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schHour","schMinute","schWDs",
+        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
@@ -647,7 +647,7 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function addSchedule() {
+function addSchedule(event) {
     var numSchedules = $("#schedules > div").length;
     if (numSchedules >= maxSchedules) {
         alert("Max number of schedules reached");
@@ -656,12 +656,21 @@ function addSchedule() {
     var tabindex = 200 + numSchedules * 10;
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
+
+    var type = (1 === event.data.schType) ? "switch" : "light";
+
+    template = $("#" + type + "ActionTemplate").children();
+    var actionLine = template.clone();
+    $(line).find("#schActionDiv").append(actionLine);
+
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex);
         tabindex++;
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
+    var ena = $(line).find(":checkbox");
+    ena.prop("checked", false).iphoneStyle("refresh");
     line.appendTo("#schedules");
     return line;
 }
@@ -839,6 +848,9 @@ function initChannels(num) {
 
         line.appendTo("#channels");
 
+        $("select.islight").append(
+            $("<option></option>").attr("value",i).text("Channel #" + i));
+
     }
 
 }
@@ -994,6 +1006,14 @@ function processData(data) {
             useWhite = value;
         }
 
+        if ("colorVisible" === key) {
+            $(".button-add-light-schedule").show();
+        }
+
+        if ("relayVisible" === key) {
+            $(".button-add-switch-schedule").show();
+        }
+
         // ---------------------------------------------------------------------
         // Sensors & Magnitudes
         // ---------------------------------------------------------------------
@@ -1056,7 +1076,8 @@ function processData(data) {
         if ("schedule" === key) {
             for (i in value) {
                 var schedule = value[i];
-                var sch_line = addSchedule();
+                var sch_line = addSchedule({ data: {schType: schedule["schType"] }});
+
                 Object.keys(schedule).forEach(function(key) {
                     var sch_value = schedule[key];
                     $("input[name='" + key + "']", sch_line).val(sch_value);
@@ -1134,6 +1155,7 @@ function processData(data) {
             return;
         }
 
+        // Web log
         if ("weblog" === key) {
             $("#weblog").append(value);
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
@@ -1325,7 +1347,8 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-schedule").on("click", addSchedule);
+    $(".button-add-switch-schedule").on("click", { schType: "1" }, addSchedule);
+    $(".button-add-light-schedule").on("click", { schType: "2" }, addSchedule);
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

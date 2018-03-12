@@ -811,16 +811,19 @@ PROGMEM const char* const custom_reset_string[] = {
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
+#define SCHEDULER_TYPE_SWITCH       1
+#define SCHEDULER_TYPE_DIM          2
+
 #ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT       1               // Enable scheduler (1.77Kb)
+#define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
 #endif
 
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
-#define NTP_SUPPORT             1               // Scheduler needs NTP
+#define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
-#define SCHEDULER_MAX_SCHEDULES 10              // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
 
 // -----------------------------------------------------------------------------
 // NTP

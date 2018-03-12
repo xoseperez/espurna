@@ -164,7 +164,6 @@ div.state {
 .button-update,
 .button-update-password,
 .button-add-network,
-.button-add-schedule,
 .button-rfb-learn,
 .button-upgrade-browse,
 .button-ha-add,
@@ -174,6 +173,12 @@ div.state {
 .button-dbgcmd,
 .button-apikey {
     background: rgb(0, 192, 0); /* green */
+}
+
+.button-add-switch-schedule,
+.button-add-light-schedule {
+    background: rgb(0, 192, 0); /* green */
+    display: none;
 }
 
 .button-more-network,

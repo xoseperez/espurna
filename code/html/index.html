@@ -605,7 +605,8 @@
 
                                 <div id="schedules"></div>
 
-                                <button type="button" class="pure-button button-add-schedule">Add schedule</button>
+                                <button type="button" class="pure-button button-add-switch-schedule">Add switch schedule</button>
+                                <button type="button" class="pure-button button-add-light-schedule">Add channel schedule</button>
 
                             </fieldset>
 
@@ -1207,11 +1208,11 @@
 
                 <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" />
+                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" value="0" />
                     <div class="pure-u-1-4 hint center">&nbsp;h</div>
                 </div>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schMinute" type="number" min="0" step="1" max="59" />
+                    <input class="pure-u-2-3" name="schMinute" type="number" min="0" step="1" max="59" value="0" />
                     <div class="pure-u-1-4 hint center">&nbsp;m</div>
                 </div>
                 <div class="pure-u-0 pure-u-lg-1-3"></div>
@@ -1222,25 +1223,37 @@
                 </div>
                 <div class="pure-u-3-5 pure-u-lg-1-2 hint center">&nbsp;1 for Monday, 2 for Tuesday...</div>
 
-                <label class="pure-u-1 pure-u-lg-1-4">Action</label>
-                <div class="pure-u-1 pure-u-lg-1-5">
-                    <select class="pure-u-1 pure-u-lg-23-24" name="schAction">
-                        <option value="0">Turn OFF</option>
-                        <option value="1">Turn ON</option>
-                        <option value="2">Toggle</option>
-                    </select>
+                <div id="schActionDiv" class="pure-u-1">
                 </div>
-                <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch"></select>
-                <div class="pure-u-0 pure-u-lg-1-5"></div>
 
                 <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
                 <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schEnabled" /></div>
 
                 <div class="pure-u-0 pure-u-lg-1-4"></div>
                 <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
-
             </div>
+        </div>
 
+        <div id="switchActionTemplate" class="template">
+            <label class="pure-u-1 pure-u-lg-1-4">Action</label>
+            <div class="pure-u-1 pure-u-lg-1-5">
+                <select class="pure-u-1 pure-u-lg-23-24" name="schAction">
+                    <option value="0">Turn OFF</option>
+                    <option value="1">Turn ON</option>
+                    <option value="2">Toggle</option>
+                </select>
+            </div>
+            <select class="pure-u-1 pure-u-lg-1-5 isrelay" name="schSwitch"></select>
+            <input type="hidden" name="schType" value="1">
+        </div>
+
+        <div id="lightActionTemplate" class="template">
+            <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
+            <div class="pure-u-1 pure-u-lg-1-5">
+                <input class="pure-u-2-3" name="schAction" type="number" min="0" step="1" max="255" value="0" />
+            </div>
+            <select class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch"></select>
+            <input type="hidden" name="schType" value="2">
         </div>
 
         <div id="relayTemplate" class="template">

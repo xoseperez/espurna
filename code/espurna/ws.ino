@@ -363,22 +363,11 @@ void wsSend(const char * payload) {
     }
 }
 
-void wsSend_P(PGM_P format_P, ...) {
+void wsSend_P(PGM_P payload) {
     if (_ws.count() > 0) {
-        char format[strlen_P(format_P)+1];
-        memcpy_P(format, format_P, sizeof(format));
-
-        va_list args;
-        va_start(args, format_P);
-        char test[1];
-        int len = ets_vsnprintf(test, 1, format, args) + 1;
-        char * buffer = new char[len];
-        ets_vsnprintf(buffer, len, format, args);
-        va_end(args);
-
+        char buffer[strlen_P(payload)];
+        strcpy_P(buffer, payload);
         _ws.textAll(buffer);
-
-        delete[] buffer;
     }
 }
 

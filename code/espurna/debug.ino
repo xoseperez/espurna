@@ -61,11 +61,15 @@ void _debugSend(char * message) {
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            wsSend_P(PSTR("{\"weblog\": \"%s%s\"}"), timestamp, message);
-        #else
-            wsSend_P(PSTR("{\"weblog\": \"%s\"}"), message);
-        #endif
+        if (wsConnected()) {
+            char buffer[strlen(message) + 24];
+            #if DEBUG_ADD_TIMESTAMP
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s%s\"}"), timestamp, message);
+            #else
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), message);
+            #endif
+            wsSend(buffer);
+        }
     #endif
 
 }
