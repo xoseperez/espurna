@@ -36,6 +36,7 @@ void _ntpStart() {
 
     NTP.begin(getSetting("ntpServer", NTP_SERVER));
     NTP.setInterval(NTP_SYNC_INTERVAL, NTP_UPDATE_INTERVAL);
+    NTP.setNTPTimeout(NTP_TIMEOUT);
     _ntpConfigure();
 
 }
