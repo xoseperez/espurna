@@ -59,7 +59,7 @@ bool idbSend(const char * topic, const char * payload) {
         DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
 
         char request[256];
-        snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n\r\n%s",
+        snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%u\r\nContent-Length: %d\r\n\r\n%s",
             getSetting("idbDatabase", INFLUXDB_DATABASE).c_str(),
             getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
             host, port, strlen(data), data);

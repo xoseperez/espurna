@@ -83,7 +83,7 @@ $.fn.enterKey = function (fnc) {
             }
         });
     });
-}
+};
 
 function keepTime() {
     if (0 === now) { return; }
@@ -1296,7 +1296,7 @@ function connect(host) {
     if (host.indexOf("http") !== 0) { return; }
 
     webhost = host;
-    wshost = host.replace("http", "ws") + "ws";
+    var wshost = host.replace("http", "ws") + "ws";
 
     if (websock) { websock.close(); }
     websock = new WebSocket(wshost);

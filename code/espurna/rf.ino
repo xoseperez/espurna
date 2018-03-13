@@ -117,10 +117,9 @@ void _rfWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 
 void rfLoop() {
 
-    static unsigned long last = 0;
-
     if (_rfModem->available()) {
 
+        static unsigned long last = 0;
         if (millis() - last > RF_DEBOUNCE) {
             last = millis();
 

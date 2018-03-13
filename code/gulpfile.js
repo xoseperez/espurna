@@ -50,7 +50,7 @@ var toHeader = function(filename) {
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
-        console.log(err);
+        log.error(err);
     });
 
     var data = fs.readFileSync(source);
