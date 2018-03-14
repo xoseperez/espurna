@@ -210,7 +210,7 @@ Here is the list of supported hardware. For more information please refer to the
 |**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x)**|**Huacanxing H801/802**|
 |![Itead Sonoff SV](images/devices/itead-sonoff-sv.jpg)|![Itead 1CH Inching](images/devices/itead-1ch-inching.jpg)|![Itead Motor Clockwise/Anticlockwise](images/devices/itead-motor.jpg)|
 |**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
-|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.png)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
+|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
 |![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)||
 |**Wemos D1 Mini Relay Shield**|**Witty Cloud**||
