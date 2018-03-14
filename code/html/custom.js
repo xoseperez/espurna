@@ -559,9 +559,9 @@ function toggleMenu() {
 
 function showPanel() {
     $(".panel").hide();
-    $("#" + $(this).attr("data")).show();
     if ($("#layout").hasClass("active")) { toggleMenu(); }
-    $("input[type='checkbox']").
+    $("#" + $(this).attr("data")).show().
+        find("input[type='checkbox']").
         iphoneStyle("calculateDimensions").
         iphoneStyle("refresh");
 }
@@ -674,9 +674,13 @@ function addSchedule(event) {
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
-    var ena = $(line).find(":checkbox");
-    ena.prop("checked", false).iphoneStyle("refresh");
     line.appendTo("#schedules");
+
+    $(line).find("input[type='checkbox']").
+        prop("checked", false).
+        iphoneStyle("calculateDimensions").
+        iphoneStyle("refresh");
+
     return line;
 }
 
