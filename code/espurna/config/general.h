@@ -842,6 +842,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_SYNC_INTERVAL       60              // NTP initial check every minute
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
 #define NTP_START_DELAY         1000            // Delay NTP start 1 second
+#define NTP_DST_REGION          0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
 
 // -----------------------------------------------------------------------------
 // ALEXA
