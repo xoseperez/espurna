@@ -701,7 +701,7 @@ function initRelays(data) {
         $(".id", line).html(i);
         $("input", line).attr("data", i);
         line.appendTo("#relays");
-        $(":checkbox", line).iphoneStyle({
+        $("input[type='checkbox']", line).iphoneStyle({
             onChange: doToggle,
             resizeContainer: true,
             resizeHandle: true,
@@ -1083,7 +1083,7 @@ function processData(data) {
                     var sch_value = schedule[key];
                     $("input[name='" + key + "']", sch_line).val(sch_value);
                     $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $(":checkbox[name='" + key + "']", sch_line).
+                    $("input[type='checkbox'][name='" + key + "']", sch_line).
                         prop("checked", sch_value).
                         iphoneStyle("refresh");
                 });
