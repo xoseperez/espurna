@@ -27,7 +27,7 @@ void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload);
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain 
 }
 
 #endif
