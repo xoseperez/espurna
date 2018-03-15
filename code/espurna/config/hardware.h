@@ -1532,6 +1532,63 @@
     #define DEBUG_SERIAL_SUPPORT    0
 
 // -----------------------------------------------------------------------------
+// Tonbux Powerstrip02
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_POWERSTRIP02)
+
+    // Info
+    #define MANUFACTURER        "Tonbux"
+    #define DEVICE              "Powerstrip02"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       0
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY2_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY3_PIN          12
+    #define RELAY3_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY4_PIN          14
+    #define RELAY4_TYPE         RELAY_TYPE_INVERSE
+    // Not a relay. USB ports on/off
+    #define RELAY5_PIN          16
+    #define RELAY5_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // 1 blue led
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            3   // 3 red leds
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Lingan SWA1
+// -----------------------------------------------------------------------------
+
+#elif defined(LINGAN_SWA1)
+
+    // Info
+    #define MANUFACTURER        "LINGAN"
+    #define DEVICE              "SWA1"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 

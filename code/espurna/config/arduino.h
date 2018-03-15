@@ -62,6 +62,8 @@
 //#define WEMOS_D1_TARPUNA_SHIELD
 //#define GIZWITS_WITTY_CLOUD
 //#define EUROMATE_WIFI_STECKER_SCHUKO
+//#define TONBUX_POWERSTRIP02
+//#define LINGAN_SWA1
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
