@@ -161,9 +161,9 @@ function validateForm(form) {
 function getValue(element) {
 
     if ($(element).attr("type") === "checkbox") {
-        return $(element).is(":checked") ? 1 : 0;
+        return $(element).prop("checked") ? 1 : 0;
     } else if ($(element).attr("type") === "radio") {
-        if (!$(element).is(":checked")) {
+        if (!$(element).prop("checked")) {
             return null;
         }
     }
