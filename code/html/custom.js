@@ -161,9 +161,9 @@ function validateForm(form) {
 function getValue(element) {
 
     if ($(element).attr("type") === "checkbox") {
-        return $(element).is(":checked") ? 1 : 0;
+        return $(element).prop("checked") ? 1 : 0;
     } else if ($(element).attr("type") === "radio") {
-        if (!$(element).is(":checked")) {
+        if (!$(element).prop("checked")) {
             return null;
         }
     }
@@ -559,9 +559,9 @@ function toggleMenu() {
 
 function showPanel() {
     $(".panel").hide();
-    $("#" + $(this).attr("data")).show();
     if ($("#layout").hasClass("active")) { toggleMenu(); }
-    $("input[type='checkbox']").
+    $("#" + $(this).attr("data")).show().
+        find("input[type='checkbox']").
         iphoneStyle("calculateDimensions").
         iphoneStyle("refresh");
 }
@@ -674,9 +674,13 @@ function addSchedule(event) {
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
-    var ena = $(line).find(":checkbox");
-    ena.prop("checked", false).iphoneStyle("refresh");
     line.appendTo("#schedules");
+
+    $(line).find("input[type='checkbox']").
+        prop("checked", false).
+        iphoneStyle("calculateDimensions").
+        iphoneStyle("refresh");
+
     return line;
 }
 
@@ -697,7 +701,7 @@ function initRelays(data) {
         $(".id", line).html(i);
         $("input", line).attr("data", i);
         line.appendTo("#relays");
-        $(":checkbox", line).iphoneStyle({
+        $("input[type='checkbox']", line).iphoneStyle({
             onChange: doToggle,
             resizeContainer: true,
             resizeHandle: true,
@@ -1079,7 +1083,7 @@ function processData(data) {
                     var sch_value = schedule[key];
                     $("input[name='" + key + "']", sch_line).val(sch_value);
                     $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $(":checkbox[name='" + key + "']", sch_line).
+                    $("input[type='checkbox'][name='" + key + "']", sch_line).
                         prop("checked", sch_value).
                         iphoneStyle("refresh");
                 });
