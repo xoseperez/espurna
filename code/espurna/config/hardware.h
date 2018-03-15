@@ -1561,9 +1561,32 @@
 
     // LEDs
     #define LED1_PIN            0   // 1 blue led
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
     #define LED2_PIN            3   // 3 red leds
-    #define LED2_PIN_INVERSE    0
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Lingan SWA1
+// -----------------------------------------------------------------------------
+
+#elif defined(LINGAN_SWA1)
+
+    // Info
+    #define MANUFACTURER        "LINGAN"
+    #define DEVICE              "SWA1"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

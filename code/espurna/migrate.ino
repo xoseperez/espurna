@@ -759,6 +759,16 @@ void migrate() {
             setSetting("btnGPIO", 0, 5);
             setSetting("btnRelay", 0, 0);
 
+        #elif defined(LINGAN_SWA1)
+
+            setSetting("board", 57);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
