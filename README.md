@@ -12,8 +12,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
-
-> **2018-05-09**: Default branch in GitHub is now the development branch "dev". The stable branch (the one used to create the binaries) is "[master](https://github.com/xoseperez/espurna/tree/master)".
+> **2018-03-09**:<br>
+> * Default branch in GitHub is now the development branch "dev".<br>
+> * The stable branch (the one used to create the [binary releases](https://github.com/xoseperez/espurna/releases)) is "[master](https://github.com/xoseperez/espurna/tree/master)".
 
 ---
 
@@ -60,7 +61,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 * **Sonoff RF Bridge** support
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)
-    * Support for https://github.com/Portisch/RF-Bridge-EFM8BB1 custom firmware
+    * Support for [https://github.com/Portisch/RF-Bridge-EFM8BB1](https://github.com/Portisch/RF-Bridge-EFM8BB1) custom firmware
 * Support for [different **sensors**](Sensors)
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
@@ -134,7 +135,9 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 ## Notices
 
 ---
-> **2018-05-09**: Default branch in GitHub is now the development branch "dev". The stable branch (the one used to create the binaries) is "[master](https://github.com/xoseperez/espurna/tree/master)".
+> **2018-03-09**:<br>
+> * Default branch in GitHub is now the development branch "dev".<br>
+> * The stable branch (the one used to create the [binary releases](https://github.com/xoseperez/espurna/releases)) is "[master](https://github.com/xoseperez/espurna/tree/master)".
 
 ---
 > **2018-01-24**: This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
@@ -194,31 +197,37 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**|
 |![Itead S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Power meters based on V9261F and ECH1560](images/devices/generic-v9261f.jpg)|
 |**Itead S20**|**WorkChoice EcoPlug**|**Power meters based on V9261F and ECH1560**|
-|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![KMC 70011 /w power meter](images/devices/kmc-70011.jpg)||
-|**Schuko Wifi Plug**|**KMC 70011 /w power meter**||
+|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![KMC 70011](images/devices/kmc-70011.jpg)|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)|
+|**Schuko Wifi Plug**|**KMC 70011**|**Xenon SM-PW702U**|
+|![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
+|**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
+|![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|
+|**WiOn 50055**|**LINGAN SWA1**|**Tonbux PowerStrip02**
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)||
 |**Itead Sonoff Touch**|**Itead Sonoff T1**||
 |![Itead Slampher](images/devices/itead-slampher.jpg)|||
 |**Itead Slampher**|||
 |![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|
 |**Itead Sonoff B1**|**AI-Thinker Wifi Light / Noduino OpenLight**|**Authometion LYT8266**|
-|![Itead Sonoff LED](images/devices/itead-sonoff-led.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)||
-|**Itead Sonoff LED**|**Itead BN-SZ01**||
+|![Arilux E27](images/devices/arilux-e27.jpg)|![Itead Sonoff LED](images/devices/itead-sonoff-led.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|
+|**Arilux E27**|**Itead Sonoff LED**|**Itead BN-SZ01**|
 |![Arilux AL-LC01 (RGB)](images/devices/arilux-al-lc01.jpg)|![Arilux AL-LC02 (RGBW)](images/devices/arilux-al-lc02.jpg)|![Arilux AL-LC06 (RGBWWCW)](images/devices/arilux-al-lc06.jpg)|
 |**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**Arilux AL-LC06 (RGBWWCW)**|
 |![Arilux AL-LC11 (RGBWWW) & RF](images/devices/arilux-al-lc11.jpg)|![MagicHome LED Controller (1.0 and 2.x)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801/802](images/devices/huacanxing-h801.jpg)|
 |**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x)**|**Huacanxing H801/802**|
+|![InterMitTech QuinLED 2.6](images/devices/intermittech-quinled-2.6.jpg)||
+|**InterMitTech QuinLED 2.6**||
 |![Itead Sonoff SV](images/devices/itead-sonoff-sv.jpg)|![Itead 1CH Inching](images/devices/itead-1ch-inching.jpg)|![Itead Motor Clockwise/Anticlockwise](images/devices/itead-motor.jpg)|
 |**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
 |![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
-|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)||
-|**Wemos D1 Mini Relay Shield**|**Witty Cloud**||
+|![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
+|**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
+|||
+|**YJZK 2-gang switch**|**STM_RELAY**||
 
 **Other supported boards:**
-WiOn 50055, ManCaveMade ESP-Live, InterMitTech QuinLED 2.6
-Arilux E27 light bulb, Xenon SM-PW702U, YJZK 2-gang switch
-STM_RELAY, Maxcio W-US002S, HEYGO HY02, YiDian XS-SSA05
+*TODO*
 
 ## License
 
