@@ -536,7 +536,7 @@ void mqttFlush() {
     // Send
     String output;
     root.printTo(output);
-    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str());
+    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
 
     // Clear queue
     for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {

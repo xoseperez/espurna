@@ -1538,8 +1538,8 @@
 #elif defined(TONBUX_POWERSTRIP02)
 
     // Info
-    #define MANUFACTURER        "Tonbux"
-    #define DEVICE              "Powerstrip02"
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "POWERSTRIP02"
 
     // Buttons
     #define BUTTON1_PIN         5
