@@ -7,3 +7,4 @@ core_version.h
 .pioenvs
 .piolibdeps
 .DS_Store
+.python-version

@@ -61,8 +61,8 @@
 
 #ifndef SERIAL_RX_PORT
 #define SERIAL_RX_PORT          Serial			// This setting is usually defined
-												// in the hardware.h file for those
-												// boards that require it
+                                            // in the hardware.h file for those
+                                            // boards that require it
 #endif
 
 #ifndef SERIAL_RX_BAUDRATE
@@ -139,8 +139,10 @@
 #endif
 
 #define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
+#ifndef SYSTEM_CHECK_MAX
 #define SYSTEM_CHECK_MAX        5               // After this many crashes on boot
                                                 // the system is flagged as unstable
+#endif
 
 //------------------------------------------------------------------------------
 // EEPROM
