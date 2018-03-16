@@ -106,6 +106,10 @@
                             <a href="#" class="pure-menu-link" data="panel-mqtt">MQTT</a>
                         </li>
 
+                        <li class="pure-menu-item module module-uartmqtt">
+                            <a href="#" class="pure-menu-link" data="panel-uartmqtt">UART MQTT</a>
+                        </li>
+
                         <li class="pure-menu-item module module-ntp">
                             <a href="#" class="pure-menu-link" data="panel-ntp">NTP</a>
                         </li>
@@ -754,6 +758,60 @@
                                         and sent under the <strong>&lt;root&gt;/data</strong> topic.<br />
                                         Messages will be queued and sent after 100ms, so different messages could be merged into a single payload.<br />
                                         Subscriptions will still be done to single topics.
+                                    </div>
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="panel-uartmqtt">
+
+                        <div class="header">
+                            <h1>UART MQTT</h1>
+                            <h2>
+                                Configure receiving and sending UART data via MQTT
+                            </h2>
+                        </div>
+                        <div class="page">
+                            <fieldset>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable</label>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="uartmqttEnabled" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        - Send data to <strong>&lt;root&gt;/uartout/set</strong><br/>
+                                        - Subscribe to <strong>&lt;root&gt;/uartin</strong><br/>
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Baudrate</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="uartmqttBaudrate" type="text" value="115200" />
+                                </div>
+
+                                <div id="uartmqttPins" class="pure-g module module-uartmqttPins"></div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Hexlify</label>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="uartmqttHexlify" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Sent and received data will be treated as HEX encoded string<br/>
+                                        e.g. <strong>45535055524E41</strong> will be received on <strong>uartin</strong> when <strong>ESPURNA</strong> is sent by the UART<br/>
+                                        If not set, received and sent strings will be treated as ASCII even if they are not printable.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Termination byte</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="number" min="-1" max="255" name="uartmqttTermination" />
+                                    <div class="pure-u-1 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Decimal value. -1 to disable. Process UART data only when specified byte is encountered.<br/>
+                                        e.g. When set to <strong>10</strong>, UART data 45 10 53 10 50 10 will output 3 messages to <strong>uartin</strong> - 4510, 5310 and 5010
                                     </div>
                                 </div>
 
@@ -1432,6 +1490,24 @@
                     <input class="pure-u-1 pure-u-lg-23-24 center" type="text" name="magnitude" data="256" readonly />
                 </div>
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
+            </div>
+        </div>
+
+        <div id="gpioPinTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4"></label>
+                <select class="pure-u-1 pure-u-lg-1-4">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                </select>
             </div>
         </div>
 

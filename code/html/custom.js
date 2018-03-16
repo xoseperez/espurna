@@ -953,6 +953,23 @@ function addRfbNode() {
 }
 
 // -----------------------------------------------------------------------------
+// UART <-> MQTT
+// -----------------------------------------------------------------------------
+function createUartMqttPins() {
+    var template = $("#gpioPinTemplate").children();
+
+    var rx = $(template).clone();
+    $("label", rx).html("RX Pin");
+    $(rx).find("select").attr("name", "uartmqttRxGPIO");
+    $(rx).appendTo("#uartmqttPins");
+
+    var tx = $(template).clone();
+    $("label", tx).html("TX Pin");
+    $(tx).find("select").attr("name", "uartmqttTxGPIO");
+    $(tx).appendTo("#uartmqttPins");
+}
+
+// -----------------------------------------------------------------------------
 // Processing
 // -----------------------------------------------------------------------------
 
@@ -1202,6 +1219,13 @@ function processData(data) {
         if ("tspkMagnitudes" === key) {
             createMagnitudeList(value, "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
+        }
+
+        // ---------------------------------------------------------------------
+        // UART <-> MQTT
+        // ---------------------------------------------------------------------
+        if ("uartmqttPinsVisible" === key) {
+           createUartMqttPins();
         }
 
         // ---------------------------------------------------------------------

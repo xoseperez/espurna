@@ -491,6 +491,10 @@
 #define UART_MQTT_SUPPORT           0           // No support by default
 #endif
 
+#ifndef UART_MQTT_ENABLED
+#define UART_MQTT_ENABLED           0           // Not enabled by default
+#endif
+
 #ifndef UART_MQTT_USE_SOFT
 #define UART_MQTT_USE_SOFT          0           // Use SoftwareSerial
 #endif
@@ -512,10 +516,20 @@
 #endif
 
 #ifndef UART_MQTT_TERMINATION
-#define UART_MQTT_TERMINATION      '\n'         // Termination character
+#define UART_MQTT_TERMINATION      '\n'         // Termination character, -1 to disable
 #endif
 
-#define UART_MQTT_BUFFER_SIZE       100         // UART buffer size
+#ifndef UART_MQTT_BUFFER_SIZE
+#define UART_MQTT_BUFFER_SIZE   128         // UART local buffer size
+#endif
+
+#ifndef UART_MQTT_RX_BUFFER_SIZE
+#define UART_MQTT_RX_BUFFER_SIZE   256      // UART RX buffer size
+#endif
+
+#ifndef UART_MQTT_HEXLIFY
+#define UART_MQTT_HEXLIFY       1           // Receive and send data as hex strings
+#endif
 
 // -----------------------------------------------------------------------------
 // MQTT
