@@ -1458,6 +1458,8 @@
     #define HLW8012_CF1_PIN     5
     #define HLW8012_CF_PIN      4
 
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
+
 // -----------------------------------------------------------------------------
 // Euromate (?) Wifi Stecker Shuko
 // https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko/p/2291706
