@@ -8,13 +8,10 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
+<br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
+[![gitter](https://img.shields.io/gitter/room/tinkermant-cat/espurna.svg)](https://gitter.im/tinkerman-cat/espurna)
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
-
----
-> **2018-03-09**:<br>
-> * Default branch in GitHub is now the development branch "dev".<br>
-> * The stable branch (the one used to create the [binary releases](https://github.com/xoseperez/espurna/releases)) is "[master](https://github.com/xoseperez/espurna/tree/master)".
 
 ---
 
@@ -135,12 +132,13 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 ## Notices
 
 ---
-> **2018-03-09**:<br>
-> * Default branch in GitHub is now the development branch "dev".<br>
-> * The stable branch (the one used to create the [binary releases](https://github.com/xoseperez/espurna/releases)) is "[master](https://github.com/xoseperez/espurna/tree/master)".
+> **2018-03-09**<br />
+> Default branch in GitHub is now the development branch "dev".<br>
+> The stable branch (the one used to create the [binary releases](https://github.com/xoseperez/espurna/releases)) is "[master](https://github.com/xoseperez/espurna/tree/master)".
 
 ---
-> **2018-01-24**: This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
+> **2018-01-24**<br />
+> This repository has been migrated from Bitbucket to GitHub. There were a number of reason to migrate the repository to GitHub. I like Bitbucket and I'm still using it for a lot of projects, but ESPurna has grown and its community as well. Some users have complain about Bitbucket not being enough community-focused. This change is mainly aimed to use a platform with greater acceptance on the open-source community and tools better suited to them (to you), like the possibility to contribute to the documentation in an easy way.
 >
 >What happened with all the info in Bitbucket? Well, most of it has been ported to GitHub, albeit with some quirks:
 >
@@ -153,13 +151,16 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 >I apologize for any inconvenience this migration may have caused. I have decided to do it the hard way.
 
 ---
-> **2018-01-11**: As of current version (1.12.0) ESPurna is tested using Arduino Core 2.3.0 and it's meant to be built against that version.
+> **2018-01-11**<br />
+> As of current version (1.12.0) ESPurna is tested using Arduino Core 2.3.0 and it's meant to be built against that version.
 
 ---
-> **2017-08-26**: since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
+> **2017-08-26**<br />
+> Since version 1.9.0 the default **MQTT topics for commands have changed**. They all now end with "/set". This means you will have to change your controller software (Node-RED or alike) to send messages to -for instance- "/home/living/light/relay/0/set". The device will publish its state in "/home/living/light/relay/0" like before.
 
 ---
-> **2017-07-24**: Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue [#187](https://github.com/xoseperez/espurna/issues/187).
+> **2017-07-24**<br />
+> Default flash layout changed in 1.8.3, as an unpredicted consequence devices will not be able to persist/retrieve configuration if flashed with 1.8.3 via **OTA** from **PlatformIO**. Please check issue [#187](https://github.com/xoseperez/espurna/issues/187).
 
 ---
 
