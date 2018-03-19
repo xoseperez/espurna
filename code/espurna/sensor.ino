@@ -481,36 +481,9 @@ void _sensorInit() {
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
-        // Do not process and already initialized sensor
+        // Do not process an already initialized sensor
         if (_sensors[i]->ready()) continue;
         DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
-
-        #if EMON_ANALOG_SUPPORT
-
-            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-
-                double value;
-                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-
-                if (value = (getSetting("pwrExpectedP", 0).toInt() == 0)) {
-                    value = getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat();
-                    if (value > 0) sensor->setCurrentRatio(0, value);
-                } else {
-                    sensor->expectedPower(0, value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio(0));
-                }
-
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
-                    sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-                    delSetting("pwrRatioC");
-                }
-
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
-
-
-            }
-
-        #endif // EMON_ANALOG_SUPPORT
 
         // Force sensor to reload config
         _sensors[i]->begin();
@@ -555,44 +528,34 @@ void _sensorInit() {
             _sensorCallback(i, type, payload);
         });
 
-        #if HLW8012_SUPPORT
+        // Custom initializations
 
+        #if EMON_ANALOG_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
+                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
+                sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
+                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+            }
+
+        #endif // EMON_ANALOG_SUPPORT
+
+        #if HLW8012_SUPPORT
 
             if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
 
-                double value;
                 HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
-                    sensor->expectedCurrent(value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio());
-                } else {
-                    value = getSetting("pwrRatioC", 0).toFloat();
-                    if (value > 0) sensor->setCurrentRatio(value);
-                }
+                double value;
 
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
-                    sensor->expectedVoltage(value);
-                    setSetting("pwrRatioV", sensor->getVoltageRatio());
-                } else {
-                    value = getSetting("pwrRatioV", 0).toFloat();
-                    if (value > 0) sensor->setVoltageRatio(value);
-                }
+                value = getSetting("pwrRatioC", 0).toFloat();
+                if (value > 0) sensor->setCurrentRatio(value);
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
-                    sensor->expectedPower(value);
-                    setSetting("pwrRatioP", sensor->getPowerRatio());
-                } else {
-                    value = getSetting("pwrRatioP", 0).toFloat();
-                    if (value > 0) sensor->setPowerRatio(value);
-                }
+                value = getSetting("pwrRatioV", 0).toFloat();
+                if (value > 0) sensor->setVoltageRatio(value);
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
-                    sensor->resetRatios();
-                    delSetting("pwrRatioC");
-                    delSetting("pwrRatioV");
-                    delSetting("pwrRatioP");
-                }
+                value = getSetting("pwrRatioP", 0).toFloat();
+                if (value > 0) sensor->setPowerRatio(value);
 
             }
 
@@ -614,6 +577,68 @@ void _sensorConfigure() {
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
     _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION).toFloat();
 
+    // Specific sensor settings
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        #if EMON_ANALOG_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
+
+                double value;
+                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
+
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                    sensor->expectedPower(0, value);
+                    setSetting("pwrRatioC", sensor->getCurrentRatio(0));
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+                    delSetting("pwrRatioC");
+                }
+
+                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+
+            }
+
+        #endif // EMON_ANALOG_SUPPORT
+
+        #if HLW8012_SUPPORT
+
+
+            if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
+
+                double value;
+                HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
+
+                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                    sensor->expectedCurrent(value);
+                    setSetting("pwrRatioC", sensor->getCurrentRatio());
+                }
+
+                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                    sensor->expectedVoltage(value);
+                    setSetting("pwrRatioV", sensor->getVoltageRatio());
+                }
+
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                    sensor->expectedPower(value);
+                    setSetting("pwrRatioP", sensor->getPowerRatio());
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    sensor->resetRatios();
+                    delSetting("pwrRatioC");
+                    delSetting("pwrRatioV");
+                    delSetting("pwrRatioP");
+                }
+
+            }
+
+        #endif // HLW8012_SUPPORT
+
+    }
+
     // Update filter sizes
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
         _magnitudes[i].filter->resize(_sensor_report_every);
@@ -624,7 +649,7 @@ void _sensorConfigure() {
     delSetting("pwrExpectedC");
     delSetting("pwrExpectedV");
     delSetting("pwrResetCalibration");
-    //saveSettings();
+    saveSettings();
 
 }
 
