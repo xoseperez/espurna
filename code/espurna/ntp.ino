@@ -80,7 +80,9 @@ void _ntpUpdate() {
         wsSend(_ntpWebSocketOnSend);
     #endif
 
-    DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+    if (strlen(ntpDateTime().c_str())) {
+        DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+    }
 
 }
 
