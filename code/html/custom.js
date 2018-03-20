@@ -662,7 +662,7 @@ function addSchedule(event) {
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = (1 === event.data.schType) ? "switch" : "light";
+    var type = ("1" === event.data.schType) ? "switch" : "light";
 
     template = $("#" + type + "ActionTemplate").children();
     var actionLine = template.clone();
