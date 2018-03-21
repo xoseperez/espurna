@@ -137,6 +137,9 @@ void heartbeat() {
             #if (HEARTBEAT_REPORT_VERSION)
                 mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
             #endif
+            #if (HEARTBEAT_REPORT_BOARD)
+                mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
+            #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
             #endif

@@ -181,6 +181,7 @@
 #define HEARTBEAT_REPORT_HOSTNAME   1
 #define HEARTBEAT_REPORT_APP        1
 #define HEARTBEAT_REPORT_VERSION    1
+#define HEARTBEAT_REPORT_BOARD      1
 #define HEARTBEAT_REPORT_INTERVAL   0
 
 //------------------------------------------------------------------------------
@@ -617,6 +618,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_UARTIN       "uartin"
 #define MQTT_TOPIC_UARTOUT      "uartout"
 #define MQTT_TOPIC_LOADAVG      "loadavg"
+#define MQTT_TOPIC_BOARD        "board"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
