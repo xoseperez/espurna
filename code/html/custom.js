@@ -662,7 +662,7 @@ function addSchedule(event) {
     var template = $("#scheduleTemplate").children();
     var line = $(template).clone();
 
-    var type = ("1" === event.data.schType) ? "switch" : "light";
+    var type = (1 === event.data.schType) ? "switch" : "light";
 
     template = $("#" + type + "ActionTemplate").children();
     var actionLine = template.clone();
@@ -1349,8 +1349,8 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-switch-schedule").on("click", { schType: "1" }, addSchedule);
-    $(".button-add-light-schedule").on("click", { schType: "2" }, addSchedule);
+    $(".button-add-switch-schedule").on("click", { schType: 1 }, addSchedule);
+    $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);
