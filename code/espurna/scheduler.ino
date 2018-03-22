@@ -26,7 +26,7 @@ void _schWebSocketOnSend(JsonObject &root){
         scheduler["schEnabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
         scheduler["schSwitch"] = getSetting("schSwitch", i, 0).toInt();
         scheduler["schAction"] = getSetting("schAction", i, 0).toInt();
-        scheduler["schType"] = getSetting("schType", i, 0);
+        scheduler["schType"] = getSetting("schType", i, 0).toInt();
         scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
         scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
         scheduler["schWDs"] = getSetting("schWDs", i, "");
