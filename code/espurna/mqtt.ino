@@ -55,8 +55,9 @@ unsigned long _mqtt_connected_at = 0;
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 typedef struct {
+    char parent = -1;
     char * topic;
-    char * message;
+    char * message = NULL;
 } mqtt_message_t;
 std::vector<mqtt_message_t> _mqtt_queue;
 Ticker _mqtt_flush_ticker;
@@ -502,77 +503,6 @@ void mqttSendRaw(const char * topic, const char * message) {
     mqttSendRaw (topic, message, _mqtt_retain);
 }
 
-void mqttFlush() {
-
-    if (!_mqtt.connected()) return;
-    if (_mqtt_queue.size() == 0) return;
-
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-
-    // Add enqueued messages
-    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
-        mqtt_message_t element = _mqtt_queue[i];
-        root[element.topic] = element.message;
-    }
-
-    // Add extra propeties
-    #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
-        if (ntpSynced()) root[MQTT_TOPIC_TIME] = ntpDateTime();
-    #endif
-    #if MQTT_ENQUEUE_MAC
-        root[MQTT_TOPIC_MAC] = WiFi.macAddress();
-    #endif
-    #if MQTT_ENQUEUE_HOSTNAME
-        root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname");
-    #endif
-    #if MQTT_ENQUEUE_IP
-        root[MQTT_TOPIC_IP] = getIP();
-    #endif
-    #if MQTT_ENQUEUE_MESSAGE_ID
-        root[MQTT_TOPIC_MESSAGE_ID] = _mqttNextMessageId();
-    #endif
-
-    // Send
-    String output;
-    root.printTo(output);
-    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
-
-    // Clear queue
-    for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
-        mqtt_message_t element = _mqtt_queue[i];
-        free(element.topic);
-        free(element.message);
-    }
-    _mqtt_queue.clear();
-
-}
-
-void mqttQueueTopic(const char * topic) {
-    String t = mqttTopic(topic, false);
-    if (!t.equals(_mqtt_topic_json)) {
-        mqttFlush();
-        _mqtt_topic_json = t;
-    }
-}
-
-void mqttEnqueue(const char * topic, const char * message) {
-
-    // Queue is not meant to send message "offline"
-    // We must prevent the queue does not get full while offline
-    if (!_mqtt.connected()) return;
-
-    // Force flusing the queue if the MQTT_QUEUE_MAX_SIZE has been reached
-    if (_mqtt_queue.size() >= MQTT_QUEUE_MAX_SIZE) mqttFlush();
-
-    // Enqueue new message
-    mqtt_message_t element;
-    element.topic = strdup(topic);
-    element.message = strdup(message);
-    _mqtt_queue.push_back(element);
-
-}
-
 void mqttSend(const char * topic, const char * message, bool force, bool retain) {
 
     bool useJson = force ? false : _mqtt_use_json;
@@ -617,6 +547,109 @@ void mqttSend(const char * topic, unsigned int index, const char * message, bool
 
 void mqttSend(const char * topic, unsigned int index, const char * message) {
     mqttSend(topic, index, message, false);
+}
+
+// -----------------------------------------------------------------------------
+
+unsigned char _mqttBuildTree(JsonObject& root, int parent = -1) {
+
+    unsigned char count = 0;
+
+    // Add enqueued messages
+    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        if (element.parent == parent) {
+            ++count;
+            JsonObject& elements = root.createNestedObject(element.topic);
+            unsigned char num = _mqttBuildTree(elements, i);
+            if (0 == num) {
+                root.set(element.topic, element.message);
+            }
+        }
+    }
+
+    return count;
+
+}
+
+void mqttFlush() {
+
+    if (!_mqtt.connected()) return;
+    if (_mqtt_queue.size() == 0) return;
+
+    // Build tree recursively
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    _mqttBuildTree(root);
+
+    // Add extra propeties
+    #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
+        if (ntpSynced()) root[MQTT_TOPIC_TIME] = ntpDateTime();
+    #endif
+    #if MQTT_ENQUEUE_MAC
+        root[MQTT_TOPIC_MAC] = WiFi.macAddress();
+    #endif
+    #if MQTT_ENQUEUE_HOSTNAME
+        root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname");
+    #endif
+    #if MQTT_ENQUEUE_IP
+        root[MQTT_TOPIC_IP] = getIP();
+    #endif
+    #if MQTT_ENQUEUE_MESSAGE_ID
+        root[MQTT_TOPIC_MESSAGE_ID] = _mqttNextMessageId();
+    #endif
+
+    // Send
+    String output;
+    root.printTo(output);
+    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
+
+    // Clear queue
+    for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        free(element.topic);
+        if (element.message) {
+            free(element.message);
+        }
+    }
+    _mqtt_queue.clear();
+
+}
+
+void mqttQueueTopic(const char * topic) {
+    String t = mqttTopic(topic, false);
+    if (!t.equals(_mqtt_topic_json)) {
+        mqttFlush();
+        _mqtt_topic_json = t;
+    }
+}
+
+int8_t mqttEnqueue(const char * topic, const char * message, int8_t parent) {
+
+    // Queue is not meant to send message "offline"
+    // We must prevent the queue does not get full while offline
+    if (!_mqtt.connected()) return -1;
+
+    // Force flusing the queue if the MQTT_QUEUE_MAX_SIZE has been reached
+    if (_mqtt_queue.size() >= MQTT_QUEUE_MAX_SIZE) mqttFlush();
+
+    int8_t index = _mqtt_queue.size();
+
+    // Enqueue new message
+    mqtt_message_t element;
+    element.parent = parent;
+    element.topic = strdup(topic);
+    if (NULL != message) {
+        element.message = strdup(message);
+    }
+    _mqtt_queue.push_back(element);
+
+    return index;
+
+}
+
+int8_t mqttEnqueue(const char * topic, const char * message) {
+    return mqttEnqueue(topic, message, -1);
 }
 
 // -----------------------------------------------------------------------------
