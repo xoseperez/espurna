@@ -772,7 +772,6 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-
 // -----------------------------------------------------------------------------
 // YJZK
 // -----------------------------------------------------------------------------
@@ -1258,7 +1257,6 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
-
 #elif defined(ARILUX_AL_LC02)
 
     // Info
@@ -1301,7 +1299,6 @@
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
 
-
 #elif defined(ARILUX_AL_LC11)
 
     // Info
@@ -1323,7 +1320,6 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
-
 
 #elif defined(ARILUX_E27)
 
@@ -1589,6 +1585,98 @@
     // LEDs
     #define LED1_PIN            4
     #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// HEYGO HY02
+// -----------------------------------------------------------------------------
+
+#elif defined(HEYGO_HY02)
+
+    // Info
+    #define MANUFACTURER		"HEYGO"
+    #define DEVICE				"HY02"
+
+    // Buttons
+    #define BUTTON1_PIN			13
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			12
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			0
+    #define LED1_PIN_INVERSE	0
+    #define LED2_PIN            15
+    #define LED2_PIN_INVERSE    0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     3
+    #define HLW8012_CF1_PIN     14
+    #define HLW8012_CF_PIN      5
+
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
+
+// -----------------------------------------------------------------------------
+// Maxcio W-US002S
+// -----------------------------------------------------------------------------
+
+#elif defined(MAXCIO_WUS002S)
+
+    // Info
+    #define MANUFACTURER		"MAXCIO"
+    #define DEVICE				"WUS002S"
+
+	// Buttons
+    #define BUTTON1_PIN			2
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			13
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			3
+    #define LED1_PIN_INVERSE	0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT		1
+    #endif
+    #define HLW8012_SEL_PIN		12
+    #define HLW8012_CF1_PIN		5
+    #define HLW8012_CF_PIN		4
+
+    #define HLW8012_CURRENT_R               0.002            // Current resistor
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
+
+// -----------------------------------------------------------------------------
+// YiDian XS-SSA05
+// -----------------------------------------------------------------------------
+
+#elif defined(YIDIAN_XSSSA05)
+
+    // Info
+    #define MANUFACTURER		"YIDIAN"
+    #define DEVICE				"XSSSA05"
+
+    // Buttons
+    #define BUTTON1_PIN			13
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			12
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			4
+    #define LED1_PIN_INVERSE	0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
