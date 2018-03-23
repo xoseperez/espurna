@@ -159,7 +159,7 @@ void _schCheck() {
                     if ((minutes_to_trigger % 15 == 0) || (minutes_to_trigger < 15)) {
                         DEBUG_MSG_P(
                             PSTR("[SCH] %d minutes to trigger schedule #%d\n"),
-                            minutes_to_trigger, sch_switch
+                            minutes_to_trigger, i
                         );
                     }
                 #endif
