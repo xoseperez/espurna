@@ -1515,6 +1515,10 @@
     #define RELAY8_PIN          15
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
+// -----------------------------------------------------------------------------
+// STM RELAY
+// -----------------------------------------------------------------------------
+
 #elif defined(STM_RELAY)
 
     // Info
@@ -1704,7 +1708,8 @@
     // A bit of I2C - pins 3,4
     #define I2C_SDA_PIN         3
     #define I2C_SCL_PIN         4
-    // and, as they say in "From Dusk till Dawn":
+
+    // And, as they say in "From Dusk till Dawn":
     // This is a sensor blow out!
     // Alright, we got white sensor, black sensor, spanish sensor, yellow sensor. We got hot sensor, cold sensor.
     // We got wet sensor. We got smelly sensor. We got hairy sensor, bloody sensor. We got snapping sensor.
