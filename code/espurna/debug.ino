@@ -61,12 +61,16 @@ void _debugSend(char * message) {
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        if (wsConnected()) {
-            char buffer[strlen(message) + 24];
+        if (wsConnected() && (getFreeHeap() > 10000)) {
+            String m = String(message);
+            m.replace("\"", "&quot;");
+            m.replace("{", "&#123");
+            m.replace("}", "&#125");
+            char buffer[m.length() + 24];
             #if DEBUG_ADD_TIMESTAMP
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s%s\"}"), timestamp, message);
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s%s\"}"), timestamp, m.c_str());
             #else
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), message);
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), m.c_str());
             #endif
             wsSend(buffer);
         }
