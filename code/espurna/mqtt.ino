@@ -55,7 +55,7 @@ unsigned long _mqtt_connected_at = 0;
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 typedef struct {
-    char parent = -1;
+    unsigned char parent = 255;
     char * topic;
     char * message = NULL;
 } mqtt_message_t;
@@ -551,7 +551,7 @@ void mqttSend(const char * topic, unsigned int index, const char * message) {
 
 // -----------------------------------------------------------------------------
 
-unsigned char _mqttBuildTree(JsonObject& root, int parent = -1) {
+unsigned char _mqttBuildTree(JsonObject& root, char parent) {
 
     unsigned char count = 0;
 
@@ -580,7 +580,7 @@ void mqttFlush() {
     // Build tree recursively
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
-    _mqttBuildTree(root);
+    _mqttBuildTree(root, 255);
 
     // Add extra propeties
     #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
@@ -624,7 +624,7 @@ void mqttQueueTopic(const char * topic) {
     }
 }
 
-int8_t mqttEnqueue(const char * topic, const char * message, int8_t parent) {
+int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent) {
 
     // Queue is not meant to send message "offline"
     // We must prevent the queue does not get full while offline
@@ -649,7 +649,7 @@ int8_t mqttEnqueue(const char * topic, const char * message, int8_t parent) {
 }
 
 int8_t mqttEnqueue(const char * topic, const char * message) {
-    return mqttEnqueue(topic, message, -1);
+    return mqttEnqueue(topic, message, 255);
 }
 
 // -----------------------------------------------------------------------------
