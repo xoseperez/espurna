@@ -469,6 +469,14 @@ void _sensorLoad() {
     }
     #endif
 
+    #if AM2320_SUPPORT
+    {
+        AM2320Sensor * sensor = new AM2320Sensor();
+        sensor->setAddress(AM2320_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, const char * payload) {
