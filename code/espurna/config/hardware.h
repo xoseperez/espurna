@@ -1606,20 +1606,8 @@
     #define RELAY1_TYPE			RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			0
+    #define LED1_PIN			4
     #define LED1_PIN_INVERSE	0
-    #define LED2_PIN            15
-    #define LED2_PIN_INVERSE    0
-
-    // HLW8012
-    #ifndef HLW8012_SUPPORT
-    #define HLW8012_SUPPORT     1
-    #endif
-    #define HLW8012_SEL_PIN     3
-    #define HLW8012_CF1_PIN     14
-    #define HLW8012_CF_PIN      5
-
-    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
 
 // -----------------------------------------------------------------------------
 // Maxcio W-US002S
@@ -1677,6 +1665,69 @@
     // LEDs
     #define LED1_PIN			4
     #define LED1_PIN_INVERSE	0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     3
+    #define HLW8012_CF1_PIN     14
+    #define HLW8012_CF_PIN      5
+
+    #define HLW8012_CURRENT_R               0.001            // Current resistor
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
+
+// -----------------------------------------------------------------------------
+// TONBUX XS-SSA06
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_XSSSA06)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "XSSSA06"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          15
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // R - 8 rgb led ring
+    #define LED1_PIN_INVERSE    0
+    #define LED2_PIN            5   // G
+    #define LED2_PIN_INVERSE    0
+    #define LED3_PIN            2   // B
+    #define LED3_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// GREEN ESP8266 RELAY MODULE
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180323113846&SearchText=Green+ESP8266
+// -----------------------------------------------------------------------------
+
+#elif defined(GREEN_ESP8266RELAY)
+
+    // Info
+    #define MANUFACTURER        "GREEN"
+    #define DEVICE              "ESP8266RELAY"
+
+    // Buttons
+    // Not a button but input via Optocoupler
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

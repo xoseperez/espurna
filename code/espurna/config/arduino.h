@@ -64,6 +64,11 @@
 //#define EUROMATE_WIFI_STECKER_SCHUKO
 //#define TONBUX_POWERSTRIP02
 //#define LINGAN_SWA1
+//#define HEYGO_HY02
+//#define MAXCIO_WUS002S
+//#define YIDIAN_XSSSA05
+//#define TONBUX_XSSSA06
+//#define GREEN_ESP8266RELAY
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -100,6 +105,7 @@
 // Sensors (values below are non-default values)
 //--------------------------------------------------------------------------------
 
+//#define AM2320_SUPPORT         1
 //#define ANALOG_SUPPORT         1
 //#define BH1750_SUPPORT         1
 //#define BMX280_SUPPORT         1

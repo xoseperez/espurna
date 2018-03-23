@@ -88,6 +88,7 @@
 #define SENSOR_SHT3X_I2C_ID                 0x16
 #define SENSOR_BH1750_ID                    0x17
 #define SENSOR_PZEM004T_ID                  0x18
+#define SENSOR_AM2320_ID					0x19
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -493,6 +494,24 @@
 #define V9261F_VOLTAGE_FACTOR           4160651.0
 #define V9261F_POWER_FACTOR             153699.0
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
+
+//------------------------------------------------------------------------------
+// AM2320 Humidity & Temperature sensor over I2C
+// Enable support by passing AM2320_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef AM2320_SUPPORT
+#define AM2320_SUPPORT                  0
+#endif
+
+#ifndef AM2320_ADDRESS
+#define AM2320_ADDRESS                  0x00    // 0x00 means auto
+#endif
+
+#if AM2320_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
 
 // =============================================================================
 // Sensor helpers configuration
