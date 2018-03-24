@@ -300,6 +300,9 @@ void info() {
     #if MDNS_CLIENT_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
     #endif
+    #if MQTT_SUPPORT
+        DEBUG_MSG_P(PSTR(" MQTT"));
+    #endif
     #if NETBIOS_SUPPORT
         DEBUG_MSG_P(PSTR(" NETBIOS"));
     #endif
