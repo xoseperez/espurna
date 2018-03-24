@@ -434,6 +434,9 @@ function doUpdate() {
         $("input[name='pwrResetCalibration']").
             prop("checked", false).
             iphoneStyle("refresh");
+        $("input[name='pwrResetE']").
+            prop("checked", false).
+            iphoneStyle("refresh");
 
         // Change handling
         numChanged = 0;

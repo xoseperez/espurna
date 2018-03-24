@@ -597,11 +597,33 @@ void _sensorConfigure() {
                     delSetting("pwrRatioC");
                 }
 
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                }
+
                 sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
 
             }
 
         #endif // EMON_ANALOG_SUPPORT
+
+        #if EMON_ADC121_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_EMON_ADC121_ID) {
+                EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                }
+            }
+        #endif
+
+        #if EMON_ADS1X15_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_EMON_ADS1X15_ID) {
+                EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                }
+            }
+        #endif
 
         #if HLW8012_SUPPORT
 
@@ -624,6 +646,10 @@ void _sensorConfigure() {
                 if (value = getSetting("pwrExpectedP", 0).toInt()) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
+                }
+
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
                 }
 
                 if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
@@ -649,6 +675,7 @@ void _sensorConfigure() {
     delSetting("pwrExpectedC");
     delSetting("pwrExpectedV");
     delSetting("pwrResetCalibration");
+    delSetting("pwrResetE");
     saveSettings();
 
 }

@@ -42,6 +42,12 @@ class EmonSensor : public I2CSensor {
             _dirty = true;
         }
 
+        void resetEnergy() {
+            for (unsigned char i=0; i<_channels; i++) {
+                _energy[i] = 0;
+            }
+        }
+
         // ---------------------------------------------------------------------
 
         void setVoltage(double voltage) {
