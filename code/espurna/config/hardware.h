@@ -11,11 +11,11 @@
 //   - BUTTON_SWITCH: button event is fired when pressed or released
 //   - BUTTON_DEFAULT_HIGH: there is a pull up in place
 //   - BUTTON_SET_PULLUP: set pullup by software
-// RELAY#_PIN: GPIO for the n-th relay (1-based, up to 4 relays)
+// RELAY#_PIN: GPIO for the n-th relay (1-based, up to 8 relays)
 // RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-// LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
+// LED#_PIN: GPIO for the n-th LED (1-based, up to 8 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
-// LED#_MODE: Check hardware.h for LED_MODE_%
+// LED#_MODE: Check general.h for LED_MODE_%
 // LED#_RELAY: Linked relay (1-based)
 //
 // Besides, other hardware specific information should be stated here
