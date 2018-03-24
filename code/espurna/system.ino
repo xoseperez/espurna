@@ -13,6 +13,9 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 unsigned long _loopDelay = 0;
 bool _system_send_heartbeat = false;
 
+// Calculated load average 0 to 100;
+unsigned short int _load_average = 100;
+
 // -----------------------------------------------------------------------------
 
 #if SYSTEM_CHECK_ENABLED
@@ -25,9 +28,6 @@ bool _system_send_heartbeat = false;
 // An unstable system will only have serial access, WiFi in AP mode and OTA
 
 bool _systemStable = true;
-
-// Calculated load average 0 to 100;
-unsigned short int _load_average = 100;
 
 void systemCheck(bool stable) {
     unsigned char value = EEPROM.read(EEPROM_CRASH_COUNTER);
