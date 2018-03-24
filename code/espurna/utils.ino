@@ -389,6 +389,12 @@ void info() {
         #if V9261F_SUPPORT
             DEBUG_MSG_P(PSTR(" V9261F"));
         #endif
+        #if AM2320_SUPPORT
+            DEBUG_MSG_P(PSTR(" AM2320_I2C"));
+        #endif
+        #if GUVAS12SD_SUPPORT
+            DEBUG_MSG_P(PSTR(" GUVAS12SD"));
+        #endif
 
     #endif // SENSOR_SUPPORT
 

@@ -751,13 +751,13 @@ void migrate() {
             setSetting("relayType", 1, RELAY_TYPE_INVERSE);
             setSetting("relayType", 2, RELAY_TYPE_INVERSE);
             setSetting("relayType", 3, RELAY_TYPE_INVERSE);
-            setSetting("relayType", 4, RELAY_TYPE_NORMAL);
-            setSetting("ledGPIO", 0, 0);
-            setSetting("ledLogic", 0, 0);
-            setSetting("ledGPIO", 1, 3);
-            setSetting("ledLogic", 1, 0);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);  // Not a relay. USB ports on/off
+            setSetting("ledGPIO", 0, 0);    // 1 blue led
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 3);    // 3 red leds
+            setSetting("ledLogic", 1, 1);
             setSetting("btnGPIO", 0, 5);
-            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 0, 1);
 
         #elif defined(LINGAN_SWA1)
 
@@ -773,12 +773,12 @@ void migrate() {
 
             setSetting("board", 58);
             setSetting("ledGPIO", 0, 0);
-            setSetting("ledLogic", 0, 0);
+            setSetting("ledLogic", 0, 1);
             setSetting("ledGPIO", 1, 15);
             setSetting("ledLogic", 1, 0);
             setSetting("btnGPIO", 0, 13);
             setSetting("btnRelay", 0, 0);
-            setSetting("relayGPIO", 0, 12);
+            setSetting("relayGPIO", 0, 15);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("selGPIO", 3);
             setSetting("cf1GPIO", 14);
@@ -800,11 +800,35 @@ void migrate() {
         #elif defined(YIDIAN_XSSSA05)
 
             setSetting("board", 60);
-            setSetting("ledGPIO", 0, 4);
+            setSetting("ledGPIO", 0, 0);
             setSetting("ledLogic", 0, 0);
+            setSetting("ledGPIO", 1, 5);
+            setSetting("ledLogic", 1, 0);
+            setSetting("ledGPIO", 2, 2);
+            setSetting("ledLogic", 2, 0);
             setSetting("btnGPIO", 0, 13);
             setSetting("btnRelay", 0, 0);
-            setSetting("relayGPIO", 0, 12);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(TONBUX_XSSSA06)
+
+            setSetting("board", 61);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(GREEN_ESP8266RELAY)
+
+            setSetting("board", 62);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
         #else
