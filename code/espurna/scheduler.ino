@@ -17,20 +17,25 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 void _schWebSocketOnSend(JsonObject &root){
 
-    root["schVisible"] = 1;
-    root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
-    JsonArray &sch = root.createNestedArray("schedule");
-    for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-        if (!hasSetting("schSwitch", i)) break;
-        JsonObject &scheduler = sch.createNestedObject();
-        scheduler["schEnabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
-        scheduler["schSwitch"] = getSetting("schSwitch", i, 0).toInt();
-        scheduler["schAction"] = getSetting("schAction", i, 0).toInt();
-        scheduler["schType"] = getSetting("schType", i, 0).toInt();
-        scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
-        scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
-        scheduler["schWDs"] = getSetting("schWDs", i, "");
+    if (relayCount() > 0) {
+
+        root["schVisible"] = 1;
+        root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
+        JsonArray &sch = root.createNestedArray("schedule");
+        for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
+            if (!hasSetting("schSwitch", i)) break;
+            JsonObject &scheduler = sch.createNestedObject();
+            scheduler["schEnabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
+            scheduler["schSwitch"] = getSetting("schSwitch", i, 0).toInt();
+            scheduler["schAction"] = getSetting("schAction", i, 0).toInt();
+            scheduler["schType"] = getSetting("schType", i, 0).toInt();
+            scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
+            scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
+            scheduler["schWDs"] = getSetting("schWDs", i, "");
+        }
+
     }
+
 }
 
 #endif // WEB_SUPPORT
