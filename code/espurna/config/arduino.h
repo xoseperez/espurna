@@ -64,6 +64,9 @@
 //#define EUROMATE_WIFI_STECKER_SCHUKO
 //#define TONBUX_POWERSTRIP02
 //#define LINGAN_SWA1
+//#define HEYGO_HY02
+//#define MAXCIO_WUS002S
+//#define YIDIAN_XSSSA05
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

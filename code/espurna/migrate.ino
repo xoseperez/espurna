@@ -769,6 +769,44 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(HEYGO_HY02)
+
+            setSetting("board", 58);
+            setSetting("ledGPIO", 0, 0);
+            setSetting("ledLogic", 0, 0);
+            setSetting("ledGPIO", 1, 15);
+            setSetting("ledLogic", 1, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 3);
+            setSetting("cf1GPIO", 14);
+            setSetting("cfGPIO", 5);
+
+        #elif defined(MAXCIO_WUS002S)
+
+            setSetting("board", 59);
+            setSetting("ledGPIO", 0, 3);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 2);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 13);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+
+        #elif defined(YIDIAN_XSSSA05)
+
+            setSetting("board", 60);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

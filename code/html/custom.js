@@ -1349,8 +1349,8 @@ $(function() {
     $(".button-add-network").on("click", function() {
         $(".more", addNetwork()).toggle();
     });
-    $(".button-add-switch-schedule").on("click", { schType: "1" }, addSchedule);
-    $(".button-add-light-schedule").on("click", { schType: "2" }, addSchedule);
+    $(".button-add-switch-schedule").on("click", { schType: 1 }, addSchedule);
+    $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

@@ -802,7 +802,7 @@ void _relayInitCommands() {
                 relayStatus(id, value == 1);
             }
         }
-        DEBUG_MSG_P(PSTR("Status: %s\n"), relayStatus(id) ? "true" : "false");
+        DEBUG_MSG_P(PSTR("Status: %s\n"), _relays[id].target_status ? "true" : "false");
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
