@@ -30,6 +30,10 @@
     color: #777777;
 }
 
+.header > h1 {
+    line-height: 100%;
+}
+
 h2 {
     font-size: 1em;
 }
