@@ -15,6 +15,14 @@ String getIdentifier() {
     return String(buffer);
 }
 
+void setDefaultHostname() {
+    if (strlen(HOSTNAME) > 0) {
+        setSetting("hostname", HOSTNAME);
+    } else {
+        setSetting("hostname", getIdentifier());
+    }
+}
+
 void setBoardName() {
     #ifndef ESPURNA_CORE
         setSetting("boardName", DEVICE_NAME);

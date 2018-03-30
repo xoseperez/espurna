@@ -50,7 +50,7 @@ void setup() {
 
     // Hostname & board name initialization
     if (getSetting("hostname").length() == 0) {
-        setSetting("hostname", getIdentifier());
+        setDefaultHostname();
     }
     setBoardName();
 
