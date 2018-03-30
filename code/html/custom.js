@@ -79,7 +79,7 @@ $.fn.enterKey = function (fnc) {
         $(this).keypress(function (ev) {
             var keycode = parseInt(ev.keyCode ? ev.keyCode : ev.which, 10);
             if (13 === keycode) {
-                fnc.call(this, ev);
+                return fnc.call(this, ev);
             }
         });
     });
