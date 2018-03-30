@@ -110,6 +110,18 @@ int _i2cClearbus(int sda, int scl) {
 
 #if I2C_USE_BRZO
 
+// simple i2c device wakeup
+void i2c_wakeup(uint8_t address) {
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_end_transaction();
+}
+
+uint8_t i2c_write_buffer_ret(uint8_t address, uint8_t * buffer, size_t len) {
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_write_uint8(buffer, len, false);
+    return brzo_i2c_end_transaction();
+}
+
 void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
     brzo_i2c_write_uint8(buffer, len, false);
@@ -164,6 +176,18 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
 }
 
 #else // not I2C_USE_BRZO
+
+// simple i2c device wakeup
+void i2c_wakeup(uint8_t address) {
+    Wire.beginTransmission((uint8_t) address);
+    Wire.endTransmission();
+}
+
+uint8_t i2c_write_buffer_ret(uint8_t address, uint8_t * buffer, size_t len) {
+    Wire.beginTransmission((uint8_t) address);
+    Wire.write(buffer, len);
+    return Wire.endTransmission();
+}
 
 void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     Wire.beginTransmission((uint8_t) address);
@@ -229,6 +253,14 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
 void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
     uint8_t buffer[2] = {reg, value};
     i2c_write_buffer(address, buffer, 2);
+}
+
+uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value, uint8_t value2) {
+    uint8_t buffer[3];
+    buffer[0] = reg;
+    buffer[1] = value;
+    buffer[2] = value2;
+    return i2c_write_buffer_ret(address, buffer, 3);
 }
 
 void i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value) {

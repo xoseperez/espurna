@@ -67,6 +67,8 @@
 //#define HEYGO_HY02
 //#define MAXCIO_WUS002S
 //#define YIDIAN_XSSSA05
+//#define TONBUX_XSSSA06
+//#define GREEN_ESP8266RELAY
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -103,6 +105,7 @@
 // Sensors (values below are non-default values)
 //--------------------------------------------------------------------------------
 
+//#define AM2320_SUPPORT         1
 //#define ANALOG_SUPPORT         1
 //#define BH1750_SUPPORT         1
 //#define BMX280_SUPPORT         1
@@ -114,6 +117,7 @@
 //#define EMON_ADS1X15_SUPPORT   1
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
+//#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define PMSX003_SUPPORT        1
