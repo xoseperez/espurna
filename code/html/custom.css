@@ -129,7 +129,7 @@ div.state {
 }
 
 .pure-g span.terminal,
-.pure-g ul.terminal {
+.pure-g textarea.terminal {
     font-family: 'Courier New', monospace;
     font-size: 80%;
     line-height: 100%;
@@ -316,8 +316,5 @@ span.slider {
 
 #weblog {
     height: 400px;
-    padding: 0.5em 0.6em;
     margin-bottom: 10px;
-    list-style: none;
-    overflow-y: scroll;
 }
