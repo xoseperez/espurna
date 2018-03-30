@@ -1161,7 +1161,7 @@ function processData(data) {
 
         // Web log
         if ("weblog" === key) {
-            $("#weblog").append(value);
+            $("<li></li>").addClass("weblog-event").text(value).appendTo("#weblog");
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
         }
