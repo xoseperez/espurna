@@ -30,6 +30,13 @@
     color: #777777;
 }
 
+@media screen and (max-width: 32em) {
+    .header > h1 {
+        line-height: 100%;
+        font-size: 2em;
+    }
+}
+
 h2 {
     font-size: 1em;
 }
