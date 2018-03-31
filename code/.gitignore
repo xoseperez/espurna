@@ -1,10 +1,10 @@
 .clang_complete
+core_version.h
+custom.h
+.DS_Store
 .gcc-flags.json
 .pioenvs
 .piolibdeps
-.vscode/c_cpp_properties.json
-core_version.h
-.pioenvs
-.piolibdeps
-.DS_Store
 .python-version
+.travis.yml
+.vscode
