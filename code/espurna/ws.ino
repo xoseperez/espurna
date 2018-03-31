@@ -220,7 +220,7 @@ void _wsUpdate(JsonObject& root) {
     root["heap"] = getFreeHeap();
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
-    root["loadaverage"] = getLoadAverage();
+    root["loadaverage"] = systemLoadAverage();
     root["vcc"] = ESP.getVcc();
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
@@ -272,7 +272,6 @@ void _wsOnStart(JsonObject& root) {
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-
         root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
 
     }

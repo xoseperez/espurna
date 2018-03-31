@@ -70,6 +70,11 @@ unsigned long systemLoopDelay() {
     return _loop_delay;
 }
 
+
+unsigned long systemLoadAverage() {
+    return _load_average;
+}
+
 void systemLoop() {
 
     // -------------------------------------------------------------------------
@@ -159,8 +164,4 @@ void systemSetup() {
     // Register Loop
     espurnaRegisterLoop(systemLoop);
 
-}
-
-unsigned long getLoadAverage() {
-    return _load_average;
 }

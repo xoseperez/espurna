@@ -184,7 +184,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
             #endif
             #if (LOADAVG_REPORT)
-                mqttSend(MQTT_TOPIC_LOADAVG, String(getLoadAverage()).c_str());
+                mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
             #endif
         }
     #endif
@@ -349,6 +349,9 @@ void info() {
         DEBUG_MSG_P(PSTR("\n"));
         DEBUG_MSG_P(PSTR("[INIT] SENSORS:"));
 
+        #if AM2320_SUPPORT
+            DEBUG_MSG_P(PSTR(" AM2320_I2C"));
+        #endif
         #if ANALOG_SUPPORT
             DEBUG_MSG_P(PSTR(" ANALOG"));
         #endif
@@ -379,6 +382,9 @@ void info() {
         #if EVENTS_SUPPORT
             DEBUG_MSG_P(PSTR(" EVENTS"));
         #endif
+        #if GUVAS12SD_SUPPORT
+            DEBUG_MSG_P(PSTR(" GUVAS12SD"));
+        #endif
         #if HLW8012_SUPPORT
             DEBUG_MSG_P(PSTR(" HLW8012"));
         #endif
@@ -399,12 +405,6 @@ void info() {
         #endif
         #if V9261F_SUPPORT
             DEBUG_MSG_P(PSTR(" V9261F"));
-        #endif
-        #if AM2320_SUPPORT
-            DEBUG_MSG_P(PSTR(" AM2320_I2C"));
-        #endif
-        #if GUVAS12SD_SUPPORT
-            DEBUG_MSG_P(PSTR(" GUVAS12SD"));
         #endif
 
     #endif // SENSOR_SUPPORT
