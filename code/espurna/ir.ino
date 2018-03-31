@@ -47,7 +47,7 @@ void _irProcessCode(unsigned long code) {
 
                 if (button_mode == IR_BUTTON_MODE_BRIGHTER) {
                     lightBrightnessStep(button_value ? 1 : -1);
-                    delay(150); //debounce
+                    nice_delay(150); //debounce
                 }
 
                 if (button_mode == IR_BUTTON_MODE_RGB) {

@@ -318,7 +318,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 setConfigRegistry(channel, true, false);
                 setConfigRegistry(channel, false, false);
                 setConfigRegistry(channel, false, true);
-                delay(10);
+                nice_delay(10);
                 readADC(channel);
                 previous = channel;
             }

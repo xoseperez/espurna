@@ -10,7 +10,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
-unsigned long _loopDelay = 0;
+unsigned long _loop_delay = 0;
 bool _system_send_heartbeat = false;
 
 // Calculated load average 0 to 100;
@@ -66,12 +66,23 @@ void systemSendHeartbeat() {
     _system_send_heartbeat = true;
 }
 
+unsigned long systemLoopDelay() {
+    return _loop_delay;
+}
+
 void systemLoop() {
 
+    // -------------------------------------------------------------------------
     // Check system stability
+    // -------------------------------------------------------------------------
+
     #if SYSTEM_CHECK_ENABLED
         systemCheckLoop();
     #endif
+
+    // -------------------------------------------------------------------------
+    // Heartbeat
+    // -------------------------------------------------------------------------
 
     #if HEARTBEAT_ENABLED
         // Heartbeat
@@ -83,26 +94,33 @@ void systemLoop() {
         }
     #endif // HEARTBEAT_ENABLED
 
-    // Increase temporary loop counter
-    static unsigned long load_counter_temp = 0;
+    // -------------------------------------------------------------------------
+    // Load Average calculation
+    // -------------------------------------------------------------------------
+
     static unsigned long last_loadcheck = 0;
-
+    static unsigned long load_counter_temp = 0;
+    static unsigned long load_counter = 0;
+    static unsigned long load_counter_max = 1;
     load_counter_temp++;
-    if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
-      static unsigned long load_counter = 0;
-      static unsigned long load_counter_max = 1;
 
-      load_counter = load_counter_temp;
-      load_counter_temp = 0;
-      if (load_counter > load_counter_max) {
-        load_counter_max = load_counter;
-      }
-      _load_average = 100 - (100 * load_counter / load_counter_max);
-      last_loadcheck = millis();
+    if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
+
+        load_counter = load_counter_temp;
+        load_counter_temp = 0;
+        if (load_counter > load_counter_max) {
+            load_counter_max = load_counter;
+        }
+        _load_average = 100 - (100 * load_counter / load_counter_max);
+        last_loadcheck = millis();
+
     }
 
+    // -------------------------------------------------------------------------
     // Power saving delay
-    delay(_loopDelay);
+    // -------------------------------------------------------------------------
+
+    delay(_loop_delay);
 
 }
 
@@ -135,7 +153,8 @@ void systemSetup() {
     #endif
 
     // Cache loop delay value to speed things (recommended max 250ms)
-    _loopDelay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
+    _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
+    _loop_delay = constrain(_loop_delay, 0, 300);
 
     // Register Loop
     espurnaRegisterLoop(systemLoop);
@@ -143,5 +162,5 @@ void systemSetup() {
 }
 
 unsigned long getLoadAverage() {
-  return _load_average;
+    return _load_average;
 }

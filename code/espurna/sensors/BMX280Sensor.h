@@ -183,7 +183,7 @@ class BMX280Sensor : public I2CSensor {
         void _init() {
 
             // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
-            delay(10);
+            nice_delay(10);
 
             // No chip ID by default
             _chip = 0;
@@ -301,7 +301,7 @@ class BMX280Sensor : public I2CSensor {
             value = (value & 0xFC) + 0x01;
             i2c_write_uint8(_address, BMX280_REGISTER_CONTROL, value);
 
-            delay(_measurement_delay);
+            nice_delay(_measurement_delay);
 
         }
 

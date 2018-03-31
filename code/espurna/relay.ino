@@ -127,7 +127,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
             } else {
                 digitalWrite(_relays[id].reset_pin, pulse);
             }
-            delay(RELAY_LATCHING_PULSE);
+            nice_delay(RELAY_LATCHING_PULSE);
             digitalWrite(_relays[id].pin, !pulse);
             digitalWrite(_relays[id].reset_pin, !pulse);
         }

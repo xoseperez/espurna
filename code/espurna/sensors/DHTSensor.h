@@ -140,13 +140,13 @@ class DHTSensor : public BaseSensor {
         	if (++_errors > DHT_MAX_ERRORS) {
                 _errors = 0;
                 digitalWrite(_gpio, HIGH);
-                delay(250);
+                nice_delay(250);
             }
             pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
             if (_type == DHT_CHIP_DHT11) {
-                delay(20);
+                nice_delay(20);
             } else {
                 delayMicroseconds(500);
             }

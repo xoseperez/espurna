@@ -32,7 +32,7 @@ int _i2cClearbus(int sda, int scl) {
     pinMode(sda, INPUT_PULLUP);
     pinMode(scl, INPUT_PULLUP);
 
-    delay(2500);
+    nice_delay(2500);
     // Wait 2.5 secs. This is strictly only necessary on the first power
     // up of the DS3231 module to allow it to initialize properly,
     // but is also assists in reliable programming of FioV3 boards as it gives the
@@ -68,7 +68,7 @@ int _i2cClearbus(int sda, int scl) {
         int counter = 20;
         while (scl_low && (counter > 0)) {
             counter--;
-            delay(100);
+            nice_delay(100);
             scl_low = (digitalRead(scl) == LOW);
         }
 

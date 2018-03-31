@@ -125,7 +125,7 @@ class GUVAS12SDSensor : public BaseSensor {
             #else
                 for (unsigned int i=0; i < UV_SAMPLE_RATE; i++) {
                     _average += analogRead(0);
-                    delay(2);
+                    nice_delay(2);
                 }
                 _average = (_average / UV_SAMPLE_RATE);
             #endif
