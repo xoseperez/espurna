@@ -106,6 +106,11 @@ def get_boards():
             boards.append(m.group(1))
     return sorted(boards)
 
+def get_device_size(device):
+    if device.get('mem_size', 0) == device.get('sdk_size', 0):
+        return int(device.get('mem_size', 0) / 1024
+    return 0
+
 def get_empty_board():
     """
     Returns the empty structure of a board to flash
@@ -123,8 +128,25 @@ def get_board_by_index(index):
         board['hostname'] = device.get('hostname')
         board['board'] = device.get('device', '')
         board['ip'] = device.get('ip', '')
-        board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
+        board['size'] = get_device_size(device)
     return board
+
+def get_board_by_mac(mac):
+    """
+    Returns the required data to flash a given board
+    """
+    hostname = hostname.lower()
+    for device in devices:
+        if device.get('mac', '').lower() == mac:
+            board = {}
+            board['hostname'] = device.get('hostname')
+            board['board'] = device.get('device')
+            board['ip'] = device.get('ip')
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
+                return None
+            return board
+    return None
 
 def get_board_by_hostname(hostname):
     """
@@ -136,13 +158,9 @@ def get_board_by_hostname(hostname):
             board = {}
             board['hostname'] = device.get('hostname')
             board['board'] = device.get('device')
-            if not board['board']:
-                return None
             board['ip'] = device.get('ip')
-            if not board['ip']:
-                return None
-            board['size'] = int(device.get('sdk_size', 0)) / 1024
-            if board['size'] == 0:
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
                 return None
             return board
     return None
