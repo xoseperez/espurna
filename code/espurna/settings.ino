@@ -285,6 +285,12 @@ void _settingsInitCommands() {
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
+    settingsRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
+        EEPROM.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
+        DEBUG_MSG_P(PSTR("+OK\n"));
+        deferredReset(100, CUSTOM_RESET_TERMINAL);
+    });
+
     settingsRegisterCommand(F("UPTIME"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
         DEBUG_MSG_P(PSTR("+OK\n"));
