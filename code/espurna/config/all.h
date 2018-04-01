@@ -34,5 +34,3 @@
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"
 #endif
-
-#include "build.h"

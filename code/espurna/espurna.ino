@@ -50,7 +50,7 @@ void setup() {
 
     // Hostname & board name initialization
     if (getSetting("hostname").length() == 0) {
-        setSetting("hostname", getIdentifier());
+        setDefaultHostname();
     }
     setBoardName();
 
@@ -80,6 +80,9 @@ void setup() {
         webSetup();
         wsSetup();
         apiSetup();
+        #if DEBUG_WEB_SUPPORT
+            debugSetup();
+        #endif
     #endif
 
     // lightSetup must be called before relaySetup

@@ -1,6 +1,6 @@
 {
   "name": "esp8266-filesystem-builder",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Gulp based build system for ESP8266 file system files",
   "main": "gulpfile.js",
   "author": "Xose Pérez <xose.perez@gmail.com>",
@@ -10,7 +10,7 @@
     "fancy-log": "^1.3.2",
     "gulp": "^3.9.1",
     "gulp-base64-favicon": "^1.0.2",
-    "gulp-clean-css": "^3.4.2",
+    "gulp-crass": "^0.2.2",
     "gulp-css-base64": "^1.3.4",
     "gulp-csslint": "^1.0.0",
     "gulp-gzip": "^1.4.0",

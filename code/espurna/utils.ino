@@ -15,6 +15,14 @@ String getIdentifier() {
     return String(buffer);
 }
 
+void setDefaultHostname() {
+    if (strlen(HOSTNAME) > 0) {
+        setSetting("hostname", HOSTNAME);
+    } else {
+        setSetting("hostname", getIdentifier());
+    }
+}
+
 void setBoardName() {
     #ifndef ESPURNA_CORE
         setSetting("boardName", DEVICE_NAME);
@@ -32,6 +40,7 @@ String getCoreVersion() {
             version = String(ARDUINO_ESP8266_RELEASE);
         }
     #endif
+    version.replace("_", ".");
     return version;
 }
 
@@ -137,6 +146,9 @@ void heartbeat() {
             #if (HEARTBEAT_REPORT_VERSION)
                 mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
             #endif
+            #if (HEARTBEAT_REPORT_BOARD)
+                mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
+            #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
             #endif
@@ -171,6 +183,9 @@ void heartbeat() {
             #endif
             #if (HEARTBEAT_REPORT_STATUS)
                 mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            #endif
+            #if (LOADAVG_REPORT)
+                mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
             #endif
         }
     #endif
@@ -221,24 +236,17 @@ void info() {
     DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
     DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
     DEBUG_MSG_P(PSTR("[INIT] OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
-    #if SPIFFS_SUPPORT
-        FSInfo fs_info;
-        bool fs = SPIFFS.info(fs_info);
-        if (fs) {
-            DEBUG_MSG_P(PSTR("[INIT] SPIFFS size:       %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
-        }
-    #else
-        DEBUG_MSG_P(PSTR("[INIT] SPIFFS size:       %8u bytes / %4d sectors\n"), 0, 0);
-    #endif
     DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /   4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
     #if SPIFFS_SUPPORT
+        FSInfo fs_info;
+        bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes\n"), fs_info.totalBytes);
+            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
             DEBUG_MSG_P(PSTR("[INIT]        used size:  %8u bytes\n"), fs_info.usedBytes);
             DEBUG_MSG_P(PSTR("[INIT]        block size: %8u bytes\n"), fs_info.blockSize);
             DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
@@ -252,9 +260,6 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    #ifdef APP_BUILD_FLAGS
-        DEBUG_MSG_P(PSTR("[INIT] BUILD_FLAGS: %s\n"), APP_BUILD_FLAGS);
-    #endif
     DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
 
@@ -293,6 +298,9 @@ void info() {
     #endif
     #if MDNS_CLIENT_SUPPORT
         DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
+    #endif
+    #if MQTT_SUPPORT
+        DEBUG_MSG_P(PSTR(" MQTT"));
     #endif
     #if NETBIOS_SUPPORT
         DEBUG_MSG_P(PSTR(" NETBIOS"));
@@ -339,6 +347,9 @@ void info() {
         DEBUG_MSG_P(PSTR("\n"));
         DEBUG_MSG_P(PSTR("[INIT] SENSORS:"));
 
+        #if AM2320_SUPPORT
+            DEBUG_MSG_P(PSTR(" AM2320_I2C"));
+        #endif
         #if ANALOG_SUPPORT
             DEBUG_MSG_P(PSTR(" ANALOG"));
         #endif
@@ -368,6 +379,9 @@ void info() {
         #endif
         #if EVENTS_SUPPORT
             DEBUG_MSG_P(PSTR(" EVENTS"));
+        #endif
+        #if GUVAS12SD_SUPPORT
+            DEBUG_MSG_P(PSTR(" GUVAS12SD"));
         #endif
         #if HLW8012_SUPPORT
             DEBUG_MSG_P(PSTR(" HLW8012"));
@@ -412,7 +426,7 @@ void info() {
         DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
     #endif
 
-    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
+    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));

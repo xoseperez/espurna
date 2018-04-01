@@ -60,8 +60,25 @@ void _debugSend(char * message) {
         _telnetWrite(message, strlen(message));
     #endif
 
+    #if DEBUG_WEB_SUPPORT
+        if (wsConnected() && (getFreeHeap() > 10000)) {
+            String m = String(message);
+            m.replace("\"", "&quot;");
+            m.replace("{", "&#123");
+            m.replace("}", "&#125");
+            char buffer[m.length() + 24];
+            #if DEBUG_ADD_TIMESTAMP
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s%s\"}"), timestamp, m.c_str());
+            #else
+                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), m.c_str());
+            #endif
+            wsSend(buffer);
+        }
+    #endif
 
 }
+
+// -----------------------------------------------------------------------------
 
 void debugSend(const char * format, ...) {
 
@@ -97,6 +114,27 @@ void debugSend_P(PGM_P format_P, ...) {
     delete[] buffer;
 
 }
+
+#if DEBUG_WEB_SUPPORT
+
+void debugSetup() {
+
+    wsOnSendRegister([](JsonObject& root) {
+        root["dbgVisible"] = 1;
+    });
+
+    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
+        if (strcmp(action, "dbgcmd") == 0) {
+            const char* command = data.get<const char*>("command");
+            char buffer[strlen(command) + 2];
+            snprintf(buffer, sizeof(buffer), "%s\n", command);
+            settingsInject((void*) buffer, strlen(buffer));
+        }
+    });
+
+}
+
+#endif // DEBUG_WEB_SUPPORT
 
 // -----------------------------------------------------------------------------
 // Save crash info
@@ -195,7 +233,7 @@ void debugDumpCrashInfo() {
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] Crash at %lu ms\n"), crash_time);
+    DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
     DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
     DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 

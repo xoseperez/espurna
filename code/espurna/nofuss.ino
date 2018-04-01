@@ -135,7 +135,7 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
-            delay(100);
+            nice_delay(100);
         }
 
         if (code == NOFUSS_END) {

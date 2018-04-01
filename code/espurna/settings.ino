@@ -195,6 +195,7 @@ void _settingsInitCommands() {
     #if DEBUG_SUPPORT
         settingsRegisterCommand(F("CRASH"), [](Embedis* e) {
             debugDumpCrashInfo();
+            debugClearCrashInfo();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
@@ -221,7 +222,7 @@ void _settingsInitCommands() {
     #if I2C_SUPPORT
 
         settingsRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
-            _settingsI2CScanCommand();
+            i2cScan();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
 
@@ -280,6 +281,12 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("+OK\n"));
+        deferredReset(100, CUSTOM_RESET_TERMINAL);
+    });
+
+    settingsRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
+        EEPROM.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
         DEBUG_MSG_P(PSTR("+OK\n"));
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });

@@ -27,6 +27,7 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+    root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
     if (ntpSynced()) root["now"] = now();
 }
 
@@ -36,6 +37,7 @@ void _ntpStart() {
 
     NTP.begin(getSetting("ntpServer", NTP_SERVER));
     NTP.setInterval(NTP_SYNC_INTERVAL, NTP_UPDATE_INTERVAL);
+    NTP.setNTPTimeout(NTP_TIMEOUT);
     _ntpConfigure();
 
 }
@@ -65,6 +67,9 @@ void _ntpConfigure() {
         NTP.setNtpServerName(server);
     }
 
+    uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    NTP.setDSTZone(dst_region);
+
 }
 
 void _ntpUpdate() {
@@ -75,7 +80,9 @@ void _ntpUpdate() {
         wsSend(_ntpWebSocketOnSend);
     #endif
 
-    DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+    if (strlen(ntpDateTime().c_str())) {
+        DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+    }
 
 }
 

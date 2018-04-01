@@ -17,7 +17,7 @@ typedef struct {
     // Configuration variables
 
     unsigned char pin;          // GPIO pin for the relay
-    unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
+    unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
     unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
     unsigned long delay_on;     // Delay to turn relay ON
     unsigned long delay_off;    // Delay to turn relay OFF
@@ -118,17 +118,18 @@ void _relayProviderStatus(unsigned char id, bool status) {
             digitalWrite(_relays[id].pin, status);
         } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
             digitalWrite(_relays[id].pin, !status);
-        } else if (_relays[id].type == RELAY_TYPE_LATCHED) {
-            digitalWrite(_relays[id].pin, LOW);
-            digitalWrite(_relays[id].reset_pin, LOW);
+        } else if (_relays[id].type == RELAY_TYPE_LATCHED || _relays[id].type == RELAY_TYPE_LATCHED_INVERSE) {
+            bool pulse = RELAY_TYPE_LATCHED ? HIGH : LOW;
+            digitalWrite(_relays[id].pin, !pulse);
+            digitalWrite(_relays[id].reset_pin, !pulse);
             if (status) {
-                digitalWrite(_relays[id].pin, HIGH);
+                digitalWrite(_relays[id].pin, pulse);
             } else {
-                digitalWrite(_relays[id].reset_pin, HIGH);
+                digitalWrite(_relays[id].reset_pin, pulse);
             }
-            delay(RELAY_LATCHING_PULSE);
-            digitalWrite(_relays[id].pin, LOW);
-            digitalWrite(_relays[id].reset_pin, LOW);
+            nice_delay(RELAY_LATCHING_PULSE);
+            digitalWrite(_relays[id].pin, !pulse);
+            digitalWrite(_relays[id].reset_pin, !pulse);
         }
     #endif
 
@@ -483,7 +484,9 @@ void _relayBoot() {
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
         pinMode(_relays[i].pin, OUTPUT);
-        if (_relays[i].type == RELAY_TYPE_LATCHED) pinMode(_relays[i].reset_pin, OUTPUT);
+        if (_relays[i].type == RELAY_TYPE_LATCHED || _relays[i].type == RELAY_TYPE_LATCHED_INVERSE) {
+            pinMode(_relays[i].reset_pin, OUTPUT);
+        }
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
         _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
     }
@@ -522,6 +525,7 @@ void _relayWebSocketOnStart(JsonObject& root) {
         #if MQTT_SUPPORT
             line["group"] = getSetting("mqttGroup", i, "");
             line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
+            line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
         #endif
     }
 
@@ -647,7 +651,6 @@ void relayMQTT(unsigned char id) {
             mqttSendRaw(t.c_str(), status ? "1" : "0");
         }
     }
-
 }
 
 void relayMQTT() {
@@ -657,13 +660,20 @@ void relayMQTT() {
 }
 
 void relayStatusWrap(unsigned char id, unsigned char value, bool is_group_topic) {
-    // Action to perform
-    if (value == 0) {
-        relayStatus(id, false, mqttForward(), !is_group_topic);
-    } else if (value == 1) {
-        relayStatus(id, true, mqttForward(), !is_group_topic);
-    } else if (value == 2) {
-        relayToggle(id, true, true);
+    switch (value) {
+        case 0:
+            relayStatus(id, false, mqttForward(), !is_group_topic);
+            break;
+        case 1:
+            relayStatus(id, true, mqttForward(), !is_group_topic);
+            break;
+        case 2:
+            relayToggle(id, true, true);
+            break;
+        default:
+            _relays[id].report = true;
+            relayMQTT(id);
+            break;
     }
 }
 
@@ -735,6 +745,20 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     }
 
+    if (type == MQTT_DISCONNECT_EVENT) {
+        for (unsigned int i=0; i < _relays.size(); i++){
+            int reaction = getSetting("relayOnDisc", i, 0).toInt();
+            if (1 == reaction) {     // switch relay OFF
+                DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection\n"), i);
+                relayStatusWrap(i, false, false);
+            } else if(2 == reaction) { // switch relay ON
+                DEBUG_MSG_P(PSTR("[RELAY] Set relay (%d) due to MQTT disconnection\n"), i);
+                relayStatusWrap(i, true, false);
+            }
+        }
+
+    }
+
 }
 
 void relaySetupMQTT() {
@@ -778,7 +802,7 @@ void _relayInitCommands() {
                 relayStatus(id, value == 1);
             }
         }
-        DEBUG_MSG_P(PSTR("Status: %s\n"), relayStatus(id) ? "true" : "false");
+        DEBUG_MSG_P(PSTR("Status: %s\n"), _relays[id].target_status ? "true" : "false");
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

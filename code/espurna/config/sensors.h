@@ -24,14 +24,32 @@
 #define TEMPERATURE_MIN_CHANGE              0.0             // Minimum temperature change to report
 #endif
 
+#ifndef SENSOR_HUMIDITY_CORRECTION
+#define SENSOR_HUMIDITY_CORRECTION          0.0             // Offset correction
+#endif
+
 #ifndef HUMIDITY_MIN_CHANGE
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
-#define HUMIDITY_NORMAL                     0
-#define HUMIDITY_COMFORTABLE                1
-#define HUMIDITY_DRY                        2
-#define HUMIDITY_WET                        3
+// American Society of Heating, Refrigerating and Air-Conditioning Engineers suggests a range of 45% - 55% humidity to manage health effects and illnesses.
+// Comfortable: 30% - 60%
+// Recommended: 45% - 55%
+// High       : 55% - 80%
+#define HUMIDITY_NORMAL                     0               // > %30
+#define HUMIDITY_COMFORTABLE                1               // > %45
+#define HUMIDITY_DRY                        2               // < %30
+#define HUMIDITY_WET                        3               // > %70
+
+// United States Environmental Protection Agency - UV Index Scale
+// One UV Index unit is equivalent to 25 milliWatts per square meter.
+#define UV_INDEX_LOW                        0               // 0 to 2 means low danger from the sun's UV rays for the average person.
+#define UV_INDEX_MODERATE                   1               // 3 to 5 means moderate risk of harm from unprotected sun exposure.
+#define UV_INDEX_HIGH                       2               // 6 to 7 means high risk of harm from unprotected sun exposure. Protection against skin and eye damage is needed.
+#define UV_INDEX_VERY_HIGH                  3               // 8 to 10 means very high risk of harm from unprotected sun exposure.
+                                                            // Take extra precautions because unprotected skin and eyes will be damaged and can burn quickly.
+#define UV_INDEX_EXTREME                    4               // 11 or more means extreme risk of harm from unprotected sun exposure.
+                                                            // Take all precautions because unprotected skin and eyes can burn in minutes.
 
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
@@ -84,6 +102,8 @@
 #define SENSOR_SHT3X_I2C_ID                 0x16
 #define SENSOR_BH1750_ID                    0x17
 #define SENSOR_PZEM004T_ID                  0x18
+#define SENSOR_AM2320_ID                    0x19
+#define SENSOR_GUVAS12SD_ID                 0x20
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -109,8 +129,9 @@
 #define MAGNITUDE_PM10                      17
 #define MAGNITUDE_CO2                       18
 #define MAGNITUDE_LUX                       19
+#define MAGNITUDE_UV                        20
 
-#define MAGNITUDE_MAX                       20
+#define MAGNITUDE_MAX                       21
 
 // =============================================================================
 // Specific data for each sensor
@@ -490,6 +511,37 @@
 #define V9261F_POWER_FACTOR             153699.0
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
 
+//------------------------------------------------------------------------------
+// AM2320 Humidity & Temperature sensor over I2C
+// Enable support by passing AM2320_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef AM2320_SUPPORT
+#define AM2320_SUPPORT                  0
+#endif
+
+#ifndef AM2320_ADDRESS
+#define AM2320_ADDRESS                  0x00    // 0x00 means auto
+#endif
+
+#if AM2320_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+//------------------------------------------------------------------------------
+// GUVAS12SD UV Sensor (analog)
+// Enable support by passing GUVAS12SD_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef GUVAS12SD_SUPPORT
+#define GUVAS12SD_SUPPORT               0
+#endif
+
+#ifndef GUVAS12SD_PIN
+#define GUVAS12SD_PIN                   14
+#endif
+
 // =============================================================================
 // Sensor helpers configuration
 // =============================================================================
@@ -500,7 +552,7 @@
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
-    || SI7021_SUPPORT || V9261F_SUPPORT
+    || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT || GUVAS12SD_SUPPORT
 #define SENSOR_SUPPORT                      1
 #else
 #define SENSOR_SUPPORT                      0
@@ -579,6 +631,7 @@ PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
 PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_co2_topic[] = "co2";
 PROGMEM const char magnitude_lux_topic[] = "lux";
+PROGMEM const char magnitude_uv_topic[] = "uv";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
@@ -587,7 +640,7 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
     magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
-    magnitude_co2_topic, magnitude_lux_topic
+    magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -604,6 +657,7 @@ PROGMEM const char magnitude_kwh[] = "kWh";
 PROGMEM const char magnitude_ugm3[] = "µg/m3";
 PROGMEM const char magnitude_ppm[] = "ppm";
 PROGMEM const char magnitude_lux[] = "lux";
+PROGMEM const char magnitude_uv[] = "uv";
 
 PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_celsius, magnitude_percentage,
@@ -612,7 +666,7 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_percentage, magnitude_joules, magnitude_joules,
     magnitude_empty, magnitude_empty, magnitude_empty,
     magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
-    magnitude_ppm, magnitude_lux
+    magnitude_ppm, magnitude_lux, magnitude_uv
 };
 
 #include "../sensors/BaseSensor.h"
@@ -626,7 +680,6 @@ PROGMEM const char* const magnitude_units[] = {
 #endif
 
 #if BMX280_SUPPORT
-    #include <SparkFunBME280.h>
     #include "../sensors/BMX280Sensor.h"
 #endif
 
@@ -695,6 +748,14 @@ PROGMEM const char* const magnitude_units[] = {
 #if V9261F_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
+#endif
+
+#if AM2320_SUPPORT
+    #include "../sensors/AM2320Sensor.h"
+#endif
+
+#if GUVAS12SD_SUPPORT
+    #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT

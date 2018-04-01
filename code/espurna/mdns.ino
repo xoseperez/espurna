@@ -67,9 +67,6 @@ void mdnsServerSetup() {
         itoa(ESP.getFreeSketchSpace(), buffer, 10);
         MDNS.addServiceTxt("arduino", "tcp", "free_space", (const char *) buffer);
     }
-    #ifdef APP_BUILD_FLAGS
-        //MDNS.addServiceTxt("arduino", "tcp", "build_flags", APP_BUILD_FLAGS);
-    #endif
 
     wifiRegister([](justwifi_messages_t code, char * parameter) {
 

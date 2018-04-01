@@ -5,7 +5,10 @@ echo "--------------------------------------------------------------"
 echo "ESPURNA FIRMWARE BUILDER"
 
 # Available environments
-available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | sed 's/\[env://' | sed 's/\]/ /' | sort)
+travis=$(grep env: platformio.ini | grep travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
+available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | grep -v travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
+
+# Parameters
 environments=$@
 if [ "$environments" == "list" ]; then
     echo "--------------------------------------------------------------"
@@ -18,7 +21,16 @@ fi
 
 # Environments to build
 if [ $# -eq 0 ]; then
+
     environments=$available
+
+    # Hook to build travis test envs
+    if [[ "${TRAVIS_BRANCH}" != "" ]]; then
+        if [[ ${TRAVIS_BRANCH} != "master" ]]; then
+            environments=$travis
+        fi
+    fi
+
 fi
 
 # Get current version

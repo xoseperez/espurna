@@ -220,6 +220,8 @@ void _wsUpdate(JsonObject& root) {
     root["heap"] = getFreeHeap();
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
+    root["loadaverage"] = systemLoadAverage();
+    root["vcc"] = ESP.getVcc();
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
@@ -265,6 +267,8 @@ void _wsOnStart(JsonObject& root) {
         root["deviceip"] = getIP();
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
+        root["sdk"] = ESP.getSdkVersion();
+        root["core"] = getCoreVersion();
 
         _wsUpdate(root);
 
@@ -324,7 +328,7 @@ void _wsLoop() {
 }
 
 // -----------------------------------------------------------------------------
-// Piblic API
+// Public API
 // -----------------------------------------------------------------------------
 
 bool wsConnected() {

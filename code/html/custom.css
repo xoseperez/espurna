@@ -30,6 +30,13 @@
     color: #777777;
 }
 
+@media screen and (max-width: 32em) {
+    .header > h1 {
+        line-height: 100%;
+        font-size: 2em;
+    }
+}
+
 h2 {
     font-size: 1em;
 }
@@ -121,6 +128,15 @@ div.state {
     text-align: right;
 }
 
+.pure-g span.terminal,
+.pure-g textarea.terminal {
+    font-family: 'Courier New', monospace;
+    font-size: 80%;
+    line-height: 100%;
+    background-color: #000;
+    color: #0F0;
+}
+
 /* -----------------------------------------------------------------------------
     Buttons
    -------------------------------------------------------------------------- */
@@ -148,6 +164,7 @@ div.state {
 .button-rfb-forget,
 .button-del-network,
 .button-del-schedule,
+.button-dbg-clear,
 .button-upgrade,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
@@ -156,15 +173,21 @@ div.state {
 .button-update,
 .button-update-password,
 .button-add-network,
-.button-add-schedule,
 .button-rfb-learn,
 .button-upgrade-browse,
 .button-ha-add,
 .button-ha-config,
 .button-settings-backup,
 .button-settings-restore,
+.button-dbgcmd,
 .button-apikey {
     background: rgb(0, 192, 0); /* green */
+}
+
+.button-add-switch-schedule,
+.button-add-light-schedule {
+    background: rgb(0, 192, 0); /* green */
+    display: none;
 }
 
 .button-more-network,
@@ -175,6 +198,7 @@ div.state {
 }
 
 .button-upgrade-browse,
+.button-dbgcmd,
 .button-ha-add,
 .button-apikey,
 .button-upgrade {
@@ -281,8 +305,16 @@ span.slider {
 
 #haConfig,
 #scanResult {
-    color: #888;
-    font-family: 'Courier New', monospace;
-    font-size: 60%;
     margin-top: 10px;
+    display: none;
+    padding: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+    Logs
+   -------------------------------------------------------------------------- */
+
+#weblog {
+    height: 400px;
+    margin-bottom: 10px;
 }

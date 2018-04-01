@@ -55,8 +55,9 @@ unsigned long _mqtt_connected_at = 0;
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 typedef struct {
+    unsigned char parent = 255;
     char * topic;
-    char * message;
+    char * message = NULL;
 } mqtt_message_t;
 std::vector<mqtt_message_t> _mqtt_queue;
 Ticker _mqtt_flush_ticker;
@@ -303,16 +304,16 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttEnabled"] = mqttEnabled();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
-    root["mqttUser"] = getSetting("mqttUser");
+    root["mqttUser"] = getSetting("mqttUser", MQTT_USER);
     root["mqttClientID"] = getSetting("mqttClientID");
-    root["mqttPassword"] = getSetting("mqttPassword");
+    root["mqttPassword"] = getSetting("mqttPassword", MQTT_PASS);
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
         root["mqttsslVisible"] = 1;
-        root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
-        root["mqttFP"] = getSetting("mqttFP");
+        root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
     root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
@@ -484,16 +485,91 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
 
 // -----------------------------------------------------------------------------
 
-void mqttSendRaw(const char * topic, const char * message) {
+void mqttSendRaw(const char * topic, const char * message, bool retain) {
+
     if (_mqtt.connected()) {
         #if MQTT_USE_ASYNC
-            unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, _mqtt_retain, message);
+            unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, retain, message);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
         #else
-            _mqtt.publish(topic, message, _mqtt_retain);
+            _mqtt.publish(topic, message, retain);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
     }
+}
+
+
+void mqttSendRaw(const char * topic, const char * message) {
+    mqttSendRaw (topic, message, _mqtt_retain);
+}
+
+void mqttSend(const char * topic, const char * message, bool force, bool retain) {
+
+    bool useJson = force ? false : _mqtt_use_json;
+
+    // Equeue message
+    if (useJson) {
+
+        // Set default queue topic
+        mqttQueueTopic(MQTT_TOPIC_JSON);
+
+        // Enqueue new message
+        mqttEnqueue(topic, message);
+
+        // Reset flush timer
+        _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, mqttFlush);
+
+    // Send it right away
+    } else {
+        mqttSendRaw(mqttTopic(topic, false).c_str(), message, retain);
+
+    }
+
+}
+
+void mqttSend(const char * topic, const char * message, bool force) {
+    mqttSend(topic, message, force, _mqtt_retain);
+}
+
+void mqttSend(const char * topic, const char * message) {
+    mqttSend(topic, message, false);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
+    char buffer[strlen(topic)+5];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
+    mqttSend(buffer, message, force, retain);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
+    mqttSend(topic, index, message, force, _mqtt_retain);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message) {
+    mqttSend(topic, index, message, false);
+}
+
+// -----------------------------------------------------------------------------
+
+unsigned char _mqttBuildTree(JsonObject& root, char parent) {
+
+    unsigned char count = 0;
+
+    // Add enqueued messages
+    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        if (element.parent == parent) {
+            ++count;
+            JsonObject& elements = root.createNestedObject(element.topic);
+            unsigned char num = _mqttBuildTree(elements, i);
+            if (0 == num) {
+                root.set(element.topic, element.message);
+            }
+        }
+    }
+
+    return count;
+
 }
 
 void mqttFlush() {
@@ -501,14 +577,10 @@ void mqttFlush() {
     if (!_mqtt.connected()) return;
     if (_mqtt_queue.size() == 0) return;
 
+    // Build tree recursively
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
-
-    // Add enqueued messages
-    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
-        mqtt_message_t element = _mqtt_queue[i];
-        root[element.topic] = element.message;
-    }
+    _mqttBuildTree(root, 255);
 
     // Add extra propeties
     #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
@@ -530,13 +602,15 @@ void mqttFlush() {
     // Send
     String output;
     root.printTo(output);
-    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str());
+    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
 
     // Clear queue
     for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
         mqtt_message_t element = _mqtt_queue[i];
         free(element.topic);
-        free(element.message);
+        if (element.message) {
+            free(element.message);
+        }
     }
     _mqtt_queue.clear();
 
@@ -550,59 +624,32 @@ void mqttQueueTopic(const char * topic) {
     }
 }
 
-void mqttEnqueue(const char * topic, const char * message) {
+int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent) {
 
     // Queue is not meant to send message "offline"
     // We must prevent the queue does not get full while offline
-    if (!_mqtt.connected()) return;
+    if (!_mqtt.connected()) return -1;
 
     // Force flusing the queue if the MQTT_QUEUE_MAX_SIZE has been reached
     if (_mqtt_queue.size() >= MQTT_QUEUE_MAX_SIZE) mqttFlush();
 
+    int8_t index = _mqtt_queue.size();
+
     // Enqueue new message
     mqtt_message_t element;
+    element.parent = parent;
     element.topic = strdup(topic);
-    element.message = strdup(message);
+    if (NULL != message) {
+        element.message = strdup(message);
+    }
     _mqtt_queue.push_back(element);
 
-}
-
-void mqttSend(const char * topic, const char * message, bool force) {
-
-    bool useJson = force ? false : _mqtt_use_json;
-
-    // Equeue message
-    if (useJson) {
-
-        // Set default queue topic
-        mqttQueueTopic(MQTT_TOPIC_JSON);
-
-        // Enqueue new message
-        mqttEnqueue(topic, message);
-
-        // Reset flush timer
-        _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, mqttFlush);
-
-    // Send it right away
-    } else {
-        mqttSendRaw(mqttTopic(topic, false).c_str(), message);
-
-    }
+    return index;
 
 }
 
-void mqttSend(const char * topic, const char * message) {
-    mqttSend(topic, message, false);
-}
-
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
-    char buffer[strlen(topic)+5];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
-    mqttSend(buffer, message, force);
-}
-
-void mqttSend(const char * topic, unsigned int index, const char * message) {
-    mqttSend(topic, index, message, false);
+int8_t mqttEnqueue(const char * topic, const char * message) {
+    return mqttEnqueue(topic, message, 255);
 }
 
 // -----------------------------------------------------------------------------

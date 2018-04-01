@@ -61,8 +61,8 @@
 
 #ifndef SERIAL_RX_PORT
 #define SERIAL_RX_PORT          Serial			// This setting is usually defined
-												// in the hardware.h file for those
-												// boards that require it
+                                                // in the hardware.h file for those
+                                                // boards that require it
 #endif
 
 #ifndef SERIAL_RX_BAUDRATE
@@ -91,6 +91,19 @@
 #undef TELNET_SUPPORT
 #define TELNET_SUPPORT          1
 #endif
+
+//------------------------------------------------------------------------------
+
+#ifndef DEBUG_WEB_SUPPORT
+#define DEBUG_WEB_SUPPORT       WEB_SUPPORT  // Enable web debug log if web is enabled too
+#endif
+
+#if DEBUG_WEB_SUPPORT
+#undef WEB_SUPPORT
+#define WEB_SUPPORT             1           // Chicken and egg :)
+#endif
+
+#define DEBUG_WEB_ENABLED       1           // Enable debug output by default
 
 //------------------------------------------------------------------------------
 
@@ -126,8 +139,10 @@
 #endif
 
 #define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
+#ifndef SYSTEM_CHECK_MAX
 #define SYSTEM_CHECK_MAX        5               // After this many crashes on boot
                                                 // the system is flagged as unstable
+#endif
 
 //------------------------------------------------------------------------------
 // EEPROM
@@ -166,7 +181,14 @@
 #define HEARTBEAT_REPORT_HOSTNAME   1
 #define HEARTBEAT_REPORT_APP        1
 #define HEARTBEAT_REPORT_VERSION    1
+#define HEARTBEAT_REPORT_BOARD      1
 #define HEARTBEAT_REPORT_INTERVAL   0
+
+//------------------------------------------------------------------------------
+// Load average
+//------------------------------------------------------------------------------
+#define LOADAVG_INTERVAL        30000   // Interval between calculating load average (in ms)
+#define LOADAVG_REPORT          1       // Should we report Load average over MQTT?
 
 //------------------------------------------------------------------------------
 // RESET
@@ -243,68 +265,69 @@ PROGMEM const char* const custom_reset_string[] = {
 // RELAY
 //------------------------------------------------------------------------------
 
-#define RELAY_BOOT_OFF          0
-#define RELAY_BOOT_ON           1
-#define RELAY_BOOT_SAME         2
-#define RELAY_BOOT_TOGGLE       3
+#define RELAY_BOOT_OFF              0
+#define RELAY_BOOT_ON               1
+#define RELAY_BOOT_SAME             2
+#define RELAY_BOOT_TOGGLE           3
 
-#define RELAY_TYPE_NORMAL       0
-#define RELAY_TYPE_INVERSE      1
-#define RELAY_TYPE_LATCHED      2
+#define RELAY_TYPE_NORMAL           0
+#define RELAY_TYPE_INVERSE          1
+#define RELAY_TYPE_LATCHED          2
+#define RELAY_TYPE_LATCHED_INVERSE  3
 
-#define RELAY_SYNC_ANY          0
-#define RELAY_SYNC_NONE_OR_ONE  1
-#define RELAY_SYNC_ONE          2
-#define RELAY_SYNC_SAME         3
+#define RELAY_SYNC_ANY              0
+#define RELAY_SYNC_NONE_OR_ONE      1
+#define RELAY_SYNC_ONE              2
+#define RELAY_SYNC_SAME             3
 
-#define RELAY_PULSE_NONE        0
-#define RELAY_PULSE_OFF         1
-#define RELAY_PULSE_ON          2
+#define RELAY_PULSE_NONE            0
+#define RELAY_PULSE_OFF             1
+#define RELAY_PULSE_ON              2
 
-#define RELAY_PROVIDER_RELAY    0
-#define RELAY_PROVIDER_DUAL     1
-#define RELAY_PROVIDER_LIGHT    2
-#define RELAY_PROVIDER_RFBRIDGE 3
-#define RELAY_PROVIDER_STM      4
+#define RELAY_PROVIDER_RELAY        0
+#define RELAY_PROVIDER_DUAL         1
+#define RELAY_PROVIDER_LIGHT        2
+#define RELAY_PROVIDER_RFBRIDGE     3
+#define RELAY_PROVIDER_STM          4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
-#define RELAY_BOOT_MODE         RELAY_BOOT_OFF
+#define RELAY_BOOT_MODE             RELAY_BOOT_OFF
 
 // 0 means ANY, 1 zero or one and 2 one and only one
-#define RELAY_SYNC         		RELAY_SYNC_ANY
+#define RELAY_SYNC                  RELAY_SYNC_ANY
 
 // Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
-#define RELAY_PULSE_MODE     	RELAY_PULSE_NONE
+#define RELAY_PULSE_MODE            RELAY_PULSE_NONE
 
 // Default pulse time in seconds
-#define RELAY_PULSE_TIME        1.0
+#define RELAY_PULSE_TIME            1.0
 
 // Relay requests flood protection window - in seconds
-#define RELAY_FLOOD_WINDOW      3
+#define RELAY_FLOOD_WINDOW          3
 
 // Allowed actual relay changes inside requests flood protection window
-#define RELAY_FLOOD_CHANGES     5
+#define RELAY_FLOOD_CHANGES         5
 
 // Pulse with in milliseconds for a latched relay
-#define RELAY_LATCHING_PULSE    10
+#define RELAY_LATCHING_PULSE        10
 
 // Do not save relay state after these many milliseconds
-#define RELAY_SAVE_DELAY        1000
+#define RELAY_SAVE_DELAY            1000
 
 //------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
 
-#define LED_MODE_MQTT           0       // LED will be managed from MQTT (OFF by default)
-#define LED_MODE_WIFI           1       // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW         2       // LED will follow state of linked relay (check RELAY#_LED)
-#define LED_MODE_FOLLOW_INVERSE 3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
-#define LED_MODE_FINDME         4       // LED will be ON if all relays are OFF
-#define LED_MODE_FINDME_WIFI    5       // A mixture between WIFI and FINDME
-#define LED_MODE_ON             6       // LED always ON
-#define LED_MODE_OFF            7       // LED always OFF
-#define LED_MODE_RELAY          8       // If any relay is ON, LED will be ON, otherwise OFF
-#define LED_MODE_RELAY_WIFI     9       // A mixture between WIFI and RELAY, the reverse of MIXED
+#define LED_MODE_MQTT               0       // LED will be managed from MQTT (OFF by default)
+#define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
+#define LED_MODE_FOLLOW             2       // LED will follow state of linked relay (check RELAY#_LED)
+#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
+#define LED_MODE_FINDME             4       // LED will be ON if all relays are OFF
+#define LED_MODE_FINDME_WIFI        5       // A mixture between WIFI and FINDME
+#define LED_MODE_ON                 6       // LED always ON
+#define LED_MODE_OFF                7       // LED always OFF
+#define LED_MODE_RELAY              8       // If any relay is ON, LED will be ON, otherwise OFF
+#define LED_MODE_RELAY_WIFI         9       // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -594,6 +617,8 @@ PROGMEM const char* const custom_reset_string[] = {
 #define MQTT_TOPIC_RFRAW        "rfraw"
 #define MQTT_TOPIC_UARTIN       "uartin"
 #define MQTT_TOPIC_UARTOUT      "uartout"
+#define MQTT_TOPIC_LOADAVG      "loadavg"
+#define MQTT_TOPIC_BOARD        "board"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
@@ -790,16 +815,19 @@ PROGMEM const char* const custom_reset_string[] = {
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
+#define SCHEDULER_TYPE_SWITCH       1
+#define SCHEDULER_TYPE_DIM          2
+
 #ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT       1               // Enable scheduler (1.77Kb)
+#define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
 #endif
 
 #if SCHEDULER_SUPPORT
 #undef NTP_SUPPORT
-#define NTP_SUPPORT             1               // Scheduler needs NTP
+#define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
-#define SCHEDULER_MAX_SCHEDULES 10              // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
 
 // -----------------------------------------------------------------------------
 // NTP
@@ -810,11 +838,13 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
+#define NTP_TIMEOUT             2000            // Set NTP request timeout to 2 seconds (issue #452)
 #define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #define NTP_SYNC_INTERVAL       60              // NTP initial check every minute
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
 #define NTP_START_DELAY         1000            // Delay NTP start 1 second
+#define NTP_DST_REGION          0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
 
 // -----------------------------------------------------------------------------
 // ALEXA

@@ -32,7 +32,7 @@ int _i2cClearbus(int sda, int scl) {
     pinMode(sda, INPUT_PULLUP);
     pinMode(scl, INPUT_PULLUP);
 
-    delay(2500);
+    nice_delay(2500);
     // Wait 2.5 secs. This is strictly only necessary on the first power
     // up of the DS3231 module to allow it to initialize properly,
     // but is also assists in reliable programming of FioV3 boards as it gives the
@@ -68,7 +68,7 @@ int _i2cClearbus(int sda, int scl) {
         int counter = 20;
         while (scl_low && (counter > 0)) {
             counter--;
-            delay(100);
+            nice_delay(100);
             scl_low = (digitalRead(scl) == LOW);
         }
 
@@ -110,17 +110,22 @@ int _i2cClearbus(int sda, int scl) {
 
 #if I2C_USE_BRZO
 
-void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+void i2c_wakeup(uint8_t address) {
     brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
-    brzo_i2c_write_uint8(buffer, len, false);
     brzo_i2c_end_transaction();
 }
 
-void i2c_write_uint8(uint8_t address, uint8_t value) {
+uint8_t i2c_write_uint8(uint8_t address, uint8_t value) {
     uint8_t buffer[1] = {value};
     brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
     brzo_i2c_write_uint8(buffer, 1, false);
-    brzo_i2c_end_transaction();
+    return brzo_i2c_end_transaction();
+}
+
+uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+    brzo_i2c_start_transaction(_address, _i2c_scl_frequency);
+    brzo_i2c_write_uint8(buffer, len, false);
+    return brzo_i2c_end_transaction();
 }
 
 uint8_t i2c_read_uint8(uint8_t address) {
@@ -165,16 +170,21 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
 
 #else // not I2C_USE_BRZO
 
-void i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+void i2c_wakeup(uint8_t address) {
     Wire.beginTransmission((uint8_t) address);
-    Wire.write(buffer, len);
     Wire.endTransmission();
 }
 
-void i2c_write_uint8(uint8_t address, uint8_t value) {
+uint8_t i2c_write_uint8(uint8_t address, uint8_t value) {
     Wire.beginTransmission((uint8_t) address);
     Wire.write((uint8_t) value);
-    Wire.endTransmission();
+    return Wire.endTransmission();
+}
+
+uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
+    Wire.beginTransmission((uint8_t) address);
+    Wire.write(buffer, len);
+    return Wire.endTransmission();
 }
 
 uint8_t i2c_read_uint8(uint8_t address) {
@@ -226,24 +236,29 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
 
 #endif // I2C_USE_BRZO
 
-void i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
+uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
     uint8_t buffer[2] = {reg, value};
-    i2c_write_buffer(address, buffer, 2);
+    return i2c_write_buffer(address, buffer, 2);
 }
 
-void i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value) {
+uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value1, uint8_t value2) {
+    uint8_t buffer[3] = {reg, value1, value2};
+    return i2c_write_buffer(address, buffer, 3);
+}
+
+uint8_t i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value) {
     uint8_t buffer[3];
     buffer[0] = reg;
     buffer[1] = (value >> 8) & 0xFF;
     buffer[2] = (value >> 0) & 0xFF;
-    i2c_write_buffer(address, buffer, 3);
+    return i2c_write_buffer(address, buffer, 3);
 }
 
-void i2c_write_uint16(uint8_t address, uint16_t value) {
+uint8_t i2c_write_uint16(uint8_t address, uint16_t value) {
     uint8_t buffer[2];
     buffer[0] = (value >> 8) & 0xFF;
     buffer[1] = (value >> 0) & 0xFF;
-    i2c_write_buffer(address, buffer, 2);
+    return i2c_write_buffer(address, buffer, 2);
 }
 
 uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg) {

@@ -63,7 +63,7 @@ class SHT3XI2CSensor : public I2CSensor {
 
             unsigned char buffer[6];
             i2c_write_uint8(_address, 0x2C, 0x06);
-            delay(500);
+            nice_delay(500);
             i2c_read_buffer(_address, buffer, 6);
 
             // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
