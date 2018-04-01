@@ -40,6 +40,7 @@ String getCoreVersion() {
             version = String(ARDUINO_ESP8266_RELEASE);
         }
     #endif
+    version.replace("_", ".");
     return version;
 }
 

@@ -267,6 +267,8 @@ void _wsOnStart(JsonObject& root) {
         root["deviceip"] = getIP();
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
+        root["sdk"] = ESP.getSdkVersion();
+        root["core"] = getCoreVersion();
 
         _wsUpdate(root);
 
