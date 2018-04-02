@@ -8,6 +8,7 @@
 # -------------------------------------------------------------------------------
 from __future__ import print_function
 
+import shutil
 import argparse
 import re
 import socket
@@ -26,8 +27,7 @@ except NameError:
 # -------------------------------------------------------------------------------
 
 devices = []
-description = "ESPurna OTA Manager v0.1"
-
+description = "ESPurna OTA Manager v0.2"
 
 # -------------------------------------------------------------------------------
 
@@ -214,13 +214,20 @@ def input_board():
 
     return board
 
+def boardname(board):
+    return board.get('hostname', board['ip'])
+
+def store(device, env):
+    source = ".pioenvs/%s/firmware.elf" % env
+    destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+    shutil.move(source, destination)
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
     command = "export ESPURNA_IP=\"%s\"; export ESPURNA_BOARD=\"%s\"; export ESPURNA_AUTH=\"%s\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s -t upload"
     command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
     subprocess.check_call(command, shell=True)
-
+    store(device, env)
 
 # -------------------------------------------------------------------------------
 
@@ -298,7 +305,7 @@ if __name__ == '__main__':
 
             # Summary
             print()
-            print("HOST  = %s" % board.get('hostname', board['ip']))
+            print("HOST  = %s" % boardname(board))
             print("IP    = %s" % board['ip'])
             print("BOARD = %s" % board['board'])
             print("AUTH  = %s" % board['auth'])
