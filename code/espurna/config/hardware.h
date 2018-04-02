@@ -1730,6 +1730,44 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// Henrique Gravina ESPIKE
+// https://github.com/Henriquegravina/Espike
+// -----------------------------------------------------------------------------
+
+#elif defined(IKE_ESPIKE)
+
+    #define MANUFACTURER            "IKE"
+    #define DEVICE                  "ESPIKE"
+
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+
+    #define BUTTON1_PIN             13
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON2_PIN             12
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON3_PIN             14
+    #define BUTTON3_RELAY           2
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define RELAY1_PIN              4
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN              5
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    #define RELAY3_PIN              16
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 

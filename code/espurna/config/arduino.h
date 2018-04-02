@@ -69,6 +69,7 @@
 //#define YIDIAN_XSSSA05
 //#define TONBUX_XSSSA06
 //#define GREEN_ESP8266RELAY
+//#define IKE_ESPIKE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

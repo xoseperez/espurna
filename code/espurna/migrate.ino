@@ -831,6 +831,24 @@ void migrate() {
             setSetting("relayGPIO", 0, 4);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(IKE_ESPIKE)
+
+            setSetting("board", 63);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnGPIO", 1, 12);
+            setSetting("btnRelay", 1, 1);
+            setSetting("btnGPIO", 2, 13);
+            setSetting("btnRelay", 2, 2);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_INVERSE);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 1, RELAY_TYPE_INVERSE);
+            setSetting("relayGPIO", 2, 16);
+            setSetting("relayType", 2, RELAY_TYPE_INVERSE);
+
         #else
 
             // Allow users to define new settings without migration config
