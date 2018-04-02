@@ -256,6 +256,7 @@ void _wsOnStart(JsonObject& root) {
         root["app_name"] = APP_NAME;
         root["app_version"] = APP_VERSION;
         root["app_build"] = buildTime();
+        root["app_revision"] = APP_REVISION;
         root["manufacturer"] = MANUFACTURER;
         root["chipid"] = String(chipid);
         root["mac"] = WiFi.macAddress();
