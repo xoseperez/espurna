@@ -405,9 +405,7 @@ void wifiRegister(wifi_callback_f callback) {
 
 void wifiSetup() {
 
-    #if WIFI_SLEEP_ENABLED
-        wifi_set_sleep_type(LIGHT_SLEEP_T);
-    #endif
+    WiFi.setSleepMode(WIFI_SLEEP_MODE);
 
     _wifiInject();
     _wifiConfigure();
