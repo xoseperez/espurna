@@ -739,6 +739,12 @@ void lightBrightnessStep(int steps) {
 
 #if WEB_SUPPORT
 
+bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, "light", 5) == 0) return true;
+    if (strncmp(key, "use", 3) == 0) return true;
+    return false;
+}
+
 void _lightWebSocketOnSend(JsonObject& root) {
     root["colorVisible"] = 1;
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
@@ -1056,6 +1062,7 @@ void lightSetup() {
         _lightAPISetup();
         wsOnSendRegister(_lightWebSocketOnSend);
         wsOnActionRegister(_lightWebSocketOnAction);
+        wsOnReceiveRegister(_lightWebSocketOnReceive);
         wsOnAfterParseRegister([]() {
             #if LIGHT_SAVE_ENABLED == 0
                 lightSave();

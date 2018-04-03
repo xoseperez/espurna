@@ -21,6 +21,12 @@ bool _ntp_configure = false;
 // NTP
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _ntpWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "ntp", 3) == 0);
+}
+
 void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpVisible"] = 1;
     root["ntpStatus"] = (timeStatus() == timeSet);
@@ -30,6 +36,8 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
     if (ntpSynced()) root["now"] = now();
 }
+
+#endif
 
 void _ntpStart() {
 
@@ -159,6 +167,7 @@ void ntpSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ntpWebSocketOnSend);
+        wsOnReceiveRegister(_ntpWebSocketOnReceive);
         wsOnAfterParseRegister([]() { _ntp_configure = true; });
     #endif
 

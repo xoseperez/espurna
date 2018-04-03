@@ -224,6 +224,10 @@ void _haConfigure() {
 
 #if WEB_SUPPORT
 
+bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "ha", 2) == 0);
+}
+
 void _haWebSocketOnSend(JsonObject& root) {
     root["haVisible"] = 1;
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
@@ -275,6 +279,7 @@ void haSetup() {
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnAfterParseRegister(_haConfigure);
         wsOnActionRegister(_haWebSocketOnAction);
+        wsOnReceiveRegister(_haWebSocketOnReceive);
     #endif
 
     // On MQTT connect check if we have something to send

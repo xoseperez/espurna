@@ -21,6 +21,7 @@ Ticker _web_defer;
 std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
 std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
 std::vector<ws_on_after_parse_callback_f> _ws_on_after_parse_callbacks;
+std::vector<ws_on_receive_callback_f> _ws_on_receive_callbacks;
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -170,6 +171,19 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 continue;
             }
 
+            // Check if key has to be processed
+            bool found = false;
+            for (unsigned char i = 0; i < _ws_on_receive_callbacks.size(); i++) {
+                found |= (_ws_on_receive_callbacks[i])(key.c_str(), value);
+                // TODO: remove this to call all OnReceiveCallbacks with the
+                // current key/value
+                if (found) break;
+            }
+            if (!found) {
+                delSetting(key);
+                continue;
+            }
+
             // Store values
             if (value.is<JsonArray&>()) {
                 if (_wsStore(key, value.as<JsonArray&>())) changed = true;
@@ -225,6 +239,14 @@ void _wsUpdate(JsonObject& root) {
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
+}
+
+bool _wsOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, "ws", 2) == 0) return true;
+    if (strncmp(key, "admin", 5) == 0) return true;
+    if (strncmp(key, "hostname", 8) == 0) return true;
+    if (strncmp(key, "webPort", 7) == 0) return true;
+    return false;
 }
 
 void _wsOnStart(JsonObject& root) {
@@ -340,6 +362,10 @@ void wsOnSendRegister(ws_on_send_callback_f callback) {
     _ws_on_send_callbacks.push_back(callback);
 }
 
+void wsOnReceiveRegister(ws_on_receive_callback_f callback) {
+    _ws_on_receive_callbacks.push_back(callback);
+}
+
 void wsOnActionRegister(ws_on_action_callback_f callback) {
     _ws_on_action_callbacks.push_back(callback);
 }
@@ -411,6 +437,7 @@ void wsSetup() {
         mqttRegister(_wsMQTTCallback);
     #endif
     wsOnSendRegister(_wsOnStart);
+    wsOnReceiveRegister(_wsOnReceive);
     wsOnAfterParseRegister(wsConfigure);
     espurnaRegisterLoop(_wsLoop);
 }

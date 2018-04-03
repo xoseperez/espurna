@@ -16,6 +16,10 @@ SyncClient _idb_client;
 
 // -----------------------------------------------------------------------------
 
+bool _idbWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "idb", 3) == 0);
+}
+
 void _idbWebSocketOnSend(JsonObject& root) {
     root["idbVisible"] = 1;
     root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
@@ -100,6 +104,7 @@ void idbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
         wsOnAfterParseRegister(_idbConfigure);
+        wsOnReceiveRegister(_idbWebSocketOnReceive);
     #endif
 }
 

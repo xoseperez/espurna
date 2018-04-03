@@ -498,6 +498,10 @@ void _relayConfigure() {
 
 #if WEB_SUPPORT
 
+bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "relay", 5) == 0);
+}
+
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char i=0; i<relayCount(); i++) {
@@ -577,6 +581,7 @@ void relaySetupWS() {
     wsOnSendRegister(_relayWebSocketOnStart);
     wsOnActionRegister(_relayWebSocketOnAction);
     wsOnAfterParseRegister(_relayConfigure);
+    wsOnReceiveRegister(_relayWebSocketOnReceive);
 }
 
 #endif // WEB_SUPPORT
