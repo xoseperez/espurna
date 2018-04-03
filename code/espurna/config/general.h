@@ -766,7 +766,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // -----------------------------------------------------------------------------
 
 #ifndef INFLUXDB_SUPPORT
-#define INFLUXDB_SUPPORT        0               // Enable InfluxDB support by default (4.38Kb)
+#define INFLUXDB_SUPPORT        0               // Disable InfluxDB support by default (4.38Kb)
 #endif
 
 #define INFLUXDB_ENABLED        0               // InfluxDB disabled by default
