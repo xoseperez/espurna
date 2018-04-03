@@ -16,6 +16,10 @@
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                             // even if just one sensor (0 for backwards compatibility)
 
+#ifndef SENSOR_POWER_CHECK_STATUS
+#define SENSOR_POWER_CHECK_STATUS           1               // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
+#endif
+
 #ifndef SENSOR_TEMPERATURE_CORRECTION
 #define SENSOR_TEMPERATURE_CORRECTION       0.0             // Offset correction
 #endif
