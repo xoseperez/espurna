@@ -36,6 +36,7 @@ std::vector<channel_t> _light_channel;
 
 bool _light_state = false;
 bool _light_use_transitions = false;
+unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_gamma = false;
@@ -624,7 +625,7 @@ unsigned char lightWhiteChannels() {
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Configure color transition
-    _light_steps_left = _light_use_transitions ? LIGHT_TRANSITION_STEPS : 1;
+    _light_steps_left = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
     _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
 
     // Report channels to local broker
@@ -745,6 +746,7 @@ void _lightWebSocketOnSend(JsonObject& root) {
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
+    root["lightTime"] = _light_transition_time;
     root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
     bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
     root["useRGB"] = useRGB;
@@ -987,6 +989,7 @@ void _lightConfigure() {
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
     _light_use_transitions = getSetting("useTransitions", LIGHT_USE_TRANSITIONS).toInt() == 1;
+    _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME).toInt();
 
 }
 
