@@ -108,6 +108,7 @@
 #define SENSOR_PZEM004T_ID                  0x18
 #define SENSOR_AM2320_ID                    0x19
 #define SENSOR_GUVAS12SD_ID                 0x20
+#define SENSOR_CSE7766_ID                   0x21
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -235,6 +236,30 @@
 #ifndef DHT_TYPE
 #define DHT_TYPE                        DHT_CHIP_DHT22
 #endif
+
+//------------------------------------------------------------------------------
+// CSE7766 based power sensor
+// Enable support by passing CSE7766_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef CSE7766_SUPPORT
+#define CSE7766_SUPPORT                 1
+#endif
+
+#ifndef CSE7766_PIN
+#define CSE7766_PIN                     1       // TX pin from the CSE7766
+#endif
+
+#ifndef CSE7766_PIN_INVERSE
+#define CSE7766_PIN_INVERSE             0       // Signal is inverted
+#endif
+
+#define CSE7766_SYNC_INTERVAL           300     // Safe time between transmissions (ms)
+#define CSE7766_BAUDRATE                4800    // UART baudrate
+
+#define CSE7766_V1R                     1.0     // 1mR current resistor
+#define CSE7766_V2R                     1.0     // 1M voltage resistor
+
 
 //------------------------------------------------------------------------------
 // Digital sensor
@@ -556,7 +581,8 @@
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
-    || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT || GUVAS12SD_SUPPORT
+    || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT \
+    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT
 #define SENSOR_SUPPORT                      1
 #else
 #define SENSOR_SUPPORT                      0
@@ -685,6 +711,11 @@ PROGMEM const char* const magnitude_units[] = {
 
 #if BMX280_SUPPORT
     #include "../sensors/BMX280Sensor.h"
+#endif
+
+#if CSE7766_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/CSE7766Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
