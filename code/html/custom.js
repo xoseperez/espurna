@@ -1358,6 +1358,8 @@ $(function() {
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);
 
+    // don't autoconnect when opening from filesystem
+    if (window.location.protocol === "file:") { return; }
     connect();
 
 });
