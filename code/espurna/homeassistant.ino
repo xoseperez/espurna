@@ -97,6 +97,12 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
                 config["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
             }
 
+            if (lightUseCct()) {
+                config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
+                config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
+                config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
+            }
+
         }
 
     #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

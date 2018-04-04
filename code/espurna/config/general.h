@@ -728,6 +728,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 
+#define LIGHT_USE_CCT           0           // Use channel 4+5 for cold and warm white
+#define LIGHT_CCT_MIN           20          // Kelvin/100 for lower limit (warm)
+#define LIGHT_CCT_MAX           64          // Kelvin/100 for upper limit (cold)
+
 // -----------------------------------------------------------------------------
 // DOMOTICZ
 // -----------------------------------------------------------------------------
