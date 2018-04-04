@@ -86,7 +86,7 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
         }
         if (count == 2 ) {
             DEBUG_MSG_P(PSTR("[BUTTON] : DBLCLICK"));
-            return BUTTON_MODE_NONE;
+            return BUTTON_EVENT_DBLCLICK;
         }
         DEBUG_MSG_P(PSTR("[BUTTON] : CLICK"));
         return BUTTON_EVENT_CLICK;
