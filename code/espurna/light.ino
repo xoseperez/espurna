@@ -39,6 +39,7 @@ bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 bool _light_has_color = false;
 bool _light_use_white = false;
+bool _light_use_cct = false;
 bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned int _light_brightness = LIGHT_MAX_BRIGHTNESS;
@@ -110,7 +111,7 @@ void _fromRGB(const char * rgb) {
     // it's a temperature in mireds
     } else if (p[0] == 'M') {
 
-        if (_light_has_color) {
+        if (_light_has_color || _light_use_cct) {
             unsigned long mireds = atol(p + 1);
             _fromMireds(mireds);
         }
@@ -118,7 +119,7 @@ void _fromRGB(const char * rgb) {
     // it's a temperature in kelvin
     } else if (p[0] == 'K') {
 
-        if (_light_has_color) {
+        if (_light_has_color || _light_use_cct) {
             unsigned long kelvin = atol(p + 1);
             _fromKelvin(kelvin);
         }
@@ -326,26 +327,42 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin) {
 
-    // Check we have RGB channels
-    if (!_light_has_color) return;
+    //Set Colortemp only on dual white, when available
+    if (_light_use_cct) {
+        DEBUG_MSG_P(PSTR("[LIGHT] Kelvin (%d)\n"), kelvin);
+        unsigned int cold_white = (kelvin == LIGHT_CCT_MAX)
+            ? LIGHT_MAX_VALUE
+            : LIGHT_MAX_VALUE * ((kelvin - LIGHT_CCT_MIN) / ((float) LIGHT_CCT_MAX - LIGHT_CCT_MIN));
+        unsigned int warm_white = LIGHT_MAX_VALUE - cold_white;
+        DEBUG_MSG_P(PSTR("[LIGHT] Warm White (%d)\n"), warm_white);
+        DEBUG_MSG_P(PSTR("[LIGHT] Cold White (%d)\n"), cold_white);
+        //Save values
+        _light_channel[3].value = constrain(cold_white, 0, LIGHT_MAX_VALUE);
+        _light_channel[4].value = constrain(warm_white, 0, LIGHT_MAX_VALUE);
+    } else {
+    
+        // Check we have RGB channels
+        if (!_light_has_color) return;
 
-    // Calculate colors
-    unsigned int red = (kelvin <= 66)
-        ? LIGHT_MAX_VALUE
-        : 329.698727446 * pow((kelvin - 60), -0.1332047592);
-    unsigned int green = (kelvin <= 66)
-        ? 99.4708025861 * log(kelvin) - 161.1195681661
-        : 288.1221695283 * pow(kelvin, -0.0755148492);
-    unsigned int blue = (kelvin >= 66)
-        ? LIGHT_MAX_VALUE
-        : ((kelvin <= 19)
-            ? 0
-            : 138.5177312231 * log(kelvin - 10) - 305.0447927307);
+        // Calculate colors
+        unsigned int red = (kelvin <= 66)
+            ? LIGHT_MAX_VALUE
+            : 329.698727446 * pow((kelvin - 60), -0.1332047592);
+        unsigned int green = (kelvin <= 66)
+            ? 99.4708025861 * log(kelvin) - 161.1195681661
+            : 288.1221695283 * pow(kelvin, -0.0755148492);
+        unsigned int blue = (kelvin >= 66)
+            ? LIGHT_MAX_VALUE
+            : ((kelvin <= 19)
+                ? 0
+                : 138.5177312231 * log(kelvin - 10) - 305.0447927307);
 
-    // Save values
-    _light_channel[0].value = constrain(red, 0, LIGHT_MAX_VALUE);
-    _light_channel[1].value = constrain(green, 0, LIGHT_MAX_VALUE);
-    _light_channel[2].value = constrain(blue, 0, LIGHT_MAX_VALUE);
+        // Save values
+        _light_channel[0].value = constrain(red, 0, LIGHT_MAX_VALUE);
+        _light_channel[1].value = constrain(green, 0, LIGHT_MAX_VALUE);
+        _light_channel[2].value = constrain(blue, 0, LIGHT_MAX_VALUE);
+    
+    }
 
 }
 
@@ -475,6 +492,11 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             mqttSubscribe(MQTT_TOPIC_COLOR); // DEPRECATE
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
+        }
+        if (_light_use_cct){
+            mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
+            mqttSubscribe(MQTT_TOPIC_MIRED);
+            mqttSubscribe(MQTT_TOPIC_KELVIN);
         }
 
         // Group color
@@ -618,6 +640,10 @@ bool lightHasColor() {
     return _light_has_color;
 }
 
+bool lightUseCct() {
+    return _light_use_cct;
+}
+
 unsigned char lightWhiteChannels() {
     return _light_channel.size() % 3;
 }
@@ -750,6 +776,7 @@ void _lightWebSocketOnSend(JsonObject& root) {
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
+    root["useCct"] = _light_use_cct;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
     root["lightTime"] = _light_transition_time;
@@ -991,6 +1018,12 @@ void _lightConfigure() {
     if (_light_use_white && (_light_channel.size() < 4)) {
         _light_use_white = false;
         setSetting("useWhite", _light_use_white);
+    }
+
+    _light_use_cct = getSetting("useCct", LIGHT_USE_CCT).toInt() == 1;
+    if (_light_use_cct && (_light_channel.size() < 4)) {
+        _light_use_cct = false;
+        setSetting("useCct", _light_use_cct);
     }
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
