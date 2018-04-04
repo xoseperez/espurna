@@ -75,14 +75,39 @@ unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned l
 
 uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
     if (event == EVENT_PRESSED) return BUTTON_EVENT_PRESSED;
-    if (event == EVENT_CHANGED) return BUTTON_EVENT_CLICK;
+    if (event == EVENT_CHANGED) {
+        if (count > BUTTON_LNGLNGCLICK_CNT ) {
+            DEBUG_MSG_P(PSTR("[BUTTON] : LNGLNGCLICK"));
+            return BUTTON_EVENT_LNGLNGCLICK;
+        }
+        if (count > BUTTON_LNGCLICK_CNT ) {
+            DEBUG_MSG_P(PSTR("[BUTTON] : LNGCLICK"));
+            return BUTTON_EVENT_LNGCLICK;
+        }
+        if (count == 2 ) {
+            DEBUG_MSG_P(PSTR("[BUTTON] : DBLCLICK"));
+            return BUTTON_MODE_NONE;
+        }
+        DEBUG_MSG_P(PSTR("[BUTTON] : CLICK"));
+        return BUTTON_EVENT_CLICK;
+    }
     if (event == EVENT_RELEASED) {
         if (count == 1) {
-            if (length > BUTTON_LNGLNGCLICK_DELAY) return BUTTON_EVENT_LNGLNGCLICK;
-            if (length > BUTTON_LNGCLICK_DELAY) return BUTTON_EVENT_LNGCLICK;
+            if (length > BUTTON_LNGLNGCLICK_DELAY) {
+                DEBUG_MSG_P(PSTR("[BUTTON] : LNGLNGCLICK"));
+                return BUTTON_EVENT_LNGLNGCLICK;
+            }
+            if (length > BUTTON_LNGCLICK_DELAY) {
+                DEBUG_MSG_P(PSTR("[BUTTON] : LNGCLICK"));
+                return BUTTON_EVENT_LNGCLICK;
+            }
+            DEBUG_MSG_P(PSTR("[BUTTON] : CLICK"));
             return BUTTON_EVENT_CLICK;
         }
-        if (count == 2) return BUTTON_EVENT_DBLCLICK;
+        if (count == 2) {
+            DEBUG_MSG_P(PSTR("[BUTTON] : DBLCLICK"));
+            return BUTTON_EVENT_DBLCLICK;
+        }
     }
 }
 

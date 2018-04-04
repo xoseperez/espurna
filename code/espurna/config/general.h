@@ -244,6 +244,14 @@ PROGMEM const char* const custom_reset_string[] = {
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
+#ifndef BUTTON_LNGCLICK_CNT
+#define BUTTON_LNGCLICK_CNT         5          // Number of switch toggles (within BUTTON_DBLCLICK_DELAY timeframe) to get a long click event for switch type
+#endif
+
+#ifndef BUTTON_LNGLNGCLICK_CNT
+#define BUTTON_LNGLNGCLICK_CNT      10         // Number of switch toggles (within BUTTON_DBLCLICK_DELAY timeframe) to get a long-long click event for switch type
+#endif
+
 #define BUTTON_EVENT_NONE           0
 #define BUTTON_EVENT_PRESSED        1
 #define BUTTON_EVENT_RELEASED       2
