@@ -12,9 +12,6 @@
 #define USE_PASSWORD            1           // Insecurity caution! Disabling this will disable password querying completely.
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
-#define ARRAYINIT(type, name, ...) \
-    type name[] = {__VA_ARGS__};
-
 //------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
@@ -75,33 +72,15 @@
 // To receive the message son the destination computer use nc:
 // nc -ul 8113
 
+#ifndef DEBUG_TELNET_SUPPORT
+#define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
+#endif
+
 #ifndef DEBUG_UDP_SUPPORT
 #define DEBUG_UDP_SUPPORT       0               // Enable UDP debug log
 #endif
 #define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
 #define DEBUG_UDP_PORT          8113
-
-//------------------------------------------------------------------------------
-
-#ifndef DEBUG_TELNET_SUPPORT
-#define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
-#endif
-
-#if DEBUG_TELNET_SUPPORT
-#undef TELNET_SUPPORT
-#define TELNET_SUPPORT          1
-#endif
-
-//------------------------------------------------------------------------------
-
-#ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT       WEB_SUPPORT  // Enable web debug log if web is enabled too
-#endif
-
-#if DEBUG_WEB_SUPPORT
-#undef WEB_SUPPORT
-#define WEB_SUPPORT             1           // Chicken and egg :)
-#endif
 
 #define DEBUG_WEB_ENABLED       1           // Enable debug output by default
 
@@ -109,16 +88,6 @@
 
 // General debug options and macros
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
-
-#if DEBUG_SUPPORT
-    #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
-    #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
-#endif
-
-#ifndef DEBUG_MSG
-    #define DEBUG_MSG(...)
-    #define DEBUG_MSG_P(...)
-#endif
 
 //------------------------------------------------------------------------------
 // TERMINAL
@@ -191,40 +160,6 @@
 #define LOADAVG_REPORT          1       // Should we report Load average over MQTT?
 
 //------------------------------------------------------------------------------
-// RESET
-//------------------------------------------------------------------------------
-
-#define CUSTOM_RESET_HARDWARE   1               // Reset from hardware button
-#define CUSTOM_RESET_WEB        2               // Reset from web interface
-#define CUSTOM_RESET_TERMINAL   3               // Reset from terminal
-#define CUSTOM_RESET_MQTT       4               // Reset via MQTT
-#define CUSTOM_RESET_RPC        5               // Reset via RPC (HTTP)
-#define CUSTOM_RESET_OTA        6               // Reset after successful OTA update
-#define CUSTOM_RESET_HTTP       7               // Reset via HTTP GET
-#define CUSTOM_RESET_NOFUSS     8               // Reset after successful NOFUSS update
-#define CUSTOM_RESET_UPGRADE    9               // Reset after update from web interface
-#define CUSTOM_RESET_FACTORY    10              // Factory reset from terminal
-
-#define CUSTOM_RESET_MAX        10
-
-PROGMEM const char custom_reset_hardware[] = "Hardware button";
-PROGMEM const char custom_reset_web[] = "Reboot from web interface";
-PROGMEM const char custom_reset_terminal[] = "Reboot from terminal";
-PROGMEM const char custom_reset_mqtt[] = "Reboot from MQTT";
-PROGMEM const char custom_reset_rpc[] = "Reboot from RPC";
-PROGMEM const char custom_reset_ota[] = "Reboot after successful OTA update";
-PROGMEM const char custom_reset_http[] = "Reboot from HTTP";
-PROGMEM const char custom_reset_nofuss[] = "Reboot after successful NoFUSS update";
-PROGMEM const char custom_reset_upgrade[] = "Reboot after successful web update";
-PROGMEM const char custom_reset_factory[] = "Factory reset";
-PROGMEM const char* const custom_reset_string[] = {
-    custom_reset_hardware, custom_reset_web, custom_reset_terminal,
-    custom_reset_mqtt, custom_reset_rpc, custom_reset_ota,
-    custom_reset_http, custom_reset_nofuss, custom_reset_upgrade,
-    custom_reset_factory
-};
-
-//------------------------------------------------------------------------------
 // BUTTON
 //------------------------------------------------------------------------------
 
@@ -244,51 +179,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
-#define BUTTON_EVENT_NONE           0
-#define BUTTON_EVENT_PRESSED        1
-#define BUTTON_EVENT_RELEASED       2
-#define BUTTON_EVENT_CLICK          2
-#define BUTTON_EVENT_DBLCLICK       3
-#define BUTTON_EVENT_LNGCLICK       4
-#define BUTTON_EVENT_LNGLNGCLICK    5
-
-#define BUTTON_MODE_NONE            0
-#define BUTTON_MODE_TOGGLE          1
-#define BUTTON_MODE_ON              2
-#define BUTTON_MODE_OFF             3
-#define BUTTON_MODE_AP              4
-#define BUTTON_MODE_RESET           5
-#define BUTTON_MODE_PULSE           6
-#define BUTTON_MODE_FACTORY         7
-
 //------------------------------------------------------------------------------
 // RELAY
 //------------------------------------------------------------------------------
-
-#define RELAY_BOOT_OFF              0
-#define RELAY_BOOT_ON               1
-#define RELAY_BOOT_SAME             2
-#define RELAY_BOOT_TOGGLE           3
-
-#define RELAY_TYPE_NORMAL           0
-#define RELAY_TYPE_INVERSE          1
-#define RELAY_TYPE_LATCHED          2
-#define RELAY_TYPE_LATCHED_INVERSE  3
-
-#define RELAY_SYNC_ANY              0
-#define RELAY_SYNC_NONE_OR_ONE      1
-#define RELAY_SYNC_ONE              2
-#define RELAY_SYNC_SAME             3
-
-#define RELAY_PULSE_NONE            0
-#define RELAY_PULSE_OFF             1
-#define RELAY_PULSE_ON              2
-
-#define RELAY_PROVIDER_RELAY        0
-#define RELAY_PROVIDER_DUAL         1
-#define RELAY_PROVIDER_LIGHT        2
-#define RELAY_PROVIDER_RFBRIDGE     3
-#define RELAY_PROVIDER_STM          4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF
@@ -314,20 +207,6 @@ PROGMEM const char* const custom_reset_string[] = {
 // Do not save relay state after these many milliseconds
 #define RELAY_SAVE_DELAY            1000
 
-//------------------------------------------------------------------------------
-// LED
-//------------------------------------------------------------------------------
-
-#define LED_MODE_MQTT               0       // LED will be managed from MQTT (OFF by default)
-#define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW             2       // LED will follow state of linked relay (check RELAY#_LED)
-#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
-#define LED_MODE_FINDME             4       // LED will be ON if all relays are OFF
-#define LED_MODE_FINDME_WIFI        5       // A mixture between WIFI and FINDME
-#define LED_MODE_ON                 6       // LED always ON
-#define LED_MODE_OFF                7       // LED always OFF
-#define LED_MODE_RELAY              8       // If any relay is ON, LED will be ON, otherwise OFF
-#define LED_MODE_RELAY_WIFI         9       // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -426,14 +305,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 
 // -----------------------------------------------------------------------------
-// UI
-// -----------------------------------------------------------------------------
-
-#define UI_TAG_INPUT            0
-#define UI_TAG_CHECKBOX         1
-#define UI_TAG_SELECT           2
-
-// -----------------------------------------------------------------------------
 // MDNS / LLMNR / NETBIOS / SSDP
 // -----------------------------------------------------------------------------
 
@@ -463,10 +334,6 @@ PROGMEM const char* const custom_reset_string[] = {
 //#define SSDP_DEVICE_TYPE        "urn:schemas-upnp-org:device:BinaryLight:1"
 #endif
 
-#if WEB_SUPPORT == 0
-#undef SSDP_SUPPORT
-#define SSDP_SUPPORT            0           // SSDP support requires web support
-#endif
 
 // -----------------------------------------------------------------------------
 // SPIFFS
@@ -509,14 +376,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define UART_MQTT_TX_PIN        5           // TX PIN (if UART_MQTT_USE_SOFT == 1)
 #define UART_MQTT_BAUDRATE      115200      // Serial speed
 #define UART_MQTT_BUFFER_SIZE   100         // UART buffer size
-
-#if UART_MQTT_SUPPORT
-#define MQTT_SUPPORT            1
-#undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT        0
-#undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT    0
-#endif
 
 // -----------------------------------------------------------------------------
 // MQTT
@@ -674,11 +533,6 @@ PROGMEM const char* const custom_reset_string[] = {
 // LIGHT
 // -----------------------------------------------------------------------------
 
-// Available light providers (do not change)
-#define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_MY92XX   1 // works with MY9291 and MY9231
-#define LIGHT_PROVIDER_DIMMER   2
-
 // LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
 // They have to be defined for each device in the hardware.h file.
 // If 3 or more channels first 3 will be considered RGB.
@@ -738,11 +592,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
-#if DOMOTICZ_SUPPORT
-#undef MQTT_SUPPORT
-#define MQTT_SUPPORT            1               // If Domoticz enabled enable MQTT
-#endif
-
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
@@ -753,11 +602,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef HOMEASSISTANT_SUPPORT
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
-#endif
-
-#if HOMEASSISTANT_SUPPORT
-#undef MQTT_SUPPORT
-#define MQTT_SUPPORT            1               // If Home Assistant enabled enable MQTT
 #endif
 
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
@@ -807,26 +651,12 @@ PROGMEM const char* const custom_reset_string[] = {
 #define THINGSPEAK_URL          "/update"
 #define THINGSPEAK_MIN_INTERVAL 15000           // Minimum interval between POSTs (in millis)
 
-#ifndef ASYNC_TCP_SSL_ENABLED
-#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
-#undef THINGSPEAK_SUPPORT                       // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
-#endif
-#endif
-
 // -----------------------------------------------------------------------------
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
-#define SCHEDULER_TYPE_SWITCH       1
-#define SCHEDULER_TYPE_DIM          2
-
 #ifndef SCHEDULER_SUPPORT
 #define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
-#endif
-
-#if SCHEDULER_SUPPORT
-#undef NTP_SUPPORT
-#define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
 #define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
@@ -890,20 +720,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #ifndef IR_BUTTON_SET
 #define IR_BUTTON_SET           1               // IR button set to use (see below)
 #endif
-
-// IR Button modes
-#define IR_BUTTON_MODE_NONE         0
-#define IR_BUTTON_MODE_RGB          1
-#define IR_BUTTON_MODE_HSV          2
-#define IR_BUTTON_MODE_BRIGHTER     3
-#define IR_BUTTON_MODE_STATE        4
-#define IR_BUTTON_MODE_EFFECT       5
-
-#define LIGHT_EFFECT_SOLID          0
-#define LIGHT_EFFECT_FLASH          1
-#define LIGHT_EFFECT_STROBE         2
-#define LIGHT_EFFECT_FADE           3
-#define LIGHT_EFFECT_SMOOTH         4
 
 //Remote Buttons SET 1 (for the original Remote shipped with the controller)
 #if IR_SUPPORT

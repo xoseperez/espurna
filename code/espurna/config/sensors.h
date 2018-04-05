@@ -36,40 +36,9 @@
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
-// American Society of Heating, Refrigerating and Air-Conditioning Engineers suggests a range of 45% - 55% humidity to manage health effects and illnesses.
-// Comfortable: 30% - 60%
-// Recommended: 45% - 55%
-// High       : 55% - 80%
-#define HUMIDITY_NORMAL                     0               // > %30
-#define HUMIDITY_COMFORTABLE                1               // > %45
-#define HUMIDITY_DRY                        2               // < %30
-#define HUMIDITY_WET                        3               // > %70
-
-// United States Environmental Protection Agency - UV Index Scale
-// One UV Index unit is equivalent to 25 milliWatts per square meter.
-#define UV_INDEX_LOW                        0               // 0 to 2 means low danger from the sun's UV rays for the average person.
-#define UV_INDEX_MODERATE                   1               // 3 to 5 means moderate risk of harm from unprotected sun exposure.
-#define UV_INDEX_HIGH                       2               // 6 to 7 means high risk of harm from unprotected sun exposure. Protection against skin and eye damage is needed.
-#define UV_INDEX_VERY_HIGH                  3               // 8 to 10 means very high risk of harm from unprotected sun exposure.
-                                                            // Take extra precautions because unprotected skin and eyes will be damaged and can burn quickly.
-#define UV_INDEX_EXTREME                    4               // 11 or more means extreme risk of harm from unprotected sun exposure.
-                                                            // Take all precautions because unprotected skin and eyes can burn in minutes.
-
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
 
-//------------------------------------------------------------------------------
-// UNITS
-//------------------------------------------------------------------------------
-
-#define POWER_WATTS             0
-#define POWER_KILOWATTS         1
-
-#define ENERGY_JOULES           0
-#define ENERGY_KWH              1
-
-#define TMP_CELSIUS             0
-#define TMP_FAHRENHEIT          1
 
 #ifndef SENSOR_TEMPERATURE_UNITS
 #define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
@@ -83,63 +52,6 @@
 #define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
 #endif
 
-//--------------------------------------------------------------------------------
-// Sensor ID
-// These should remain over time, do not modify them, only add new ones at the end
-//--------------------------------------------------------------------------------
-
-#define SENSOR_DHTXX_ID                     0x01
-#define SENSOR_DALLAS_ID                    0x02
-#define SENSOR_EMON_ANALOG_ID               0x03
-#define SENSOR_EMON_ADC121_ID               0x04
-#define SENSOR_EMON_ADS1X15_ID              0x05
-#define SENSOR_HLW8012_ID                   0x06
-#define SENSOR_V9261F_ID                    0x07
-#define SENSOR_ECH1560_ID                   0x08
-#define SENSOR_ANALOG_ID                    0x09
-#define SENSOR_DIGITAL_ID                   0x10
-#define SENSOR_EVENTS_ID                    0x11
-#define SENSOR_PMSX003_ID                   0x12
-#define SENSOR_BMX280_ID                    0x13
-#define SENSOR_MHZ19_ID                     0x14
-#define SENSOR_SI7021_ID                    0x15
-#define SENSOR_SHT3X_I2C_ID                 0x16
-#define SENSOR_BH1750_ID                    0x17
-#define SENSOR_PZEM004T_ID                  0x18
-#define SENSOR_AM2320_ID                    0x19
-#define SENSOR_GUVAS12SD_ID                 0x20
-#define SENSOR_CSE7766_ID                   0x21
-#define SENSOR_TMP3X_ID                     0x22
-#define SENSOR_HCSR04_ID                    0x23
-
-//--------------------------------------------------------------------------------
-// Magnitudes
-//--------------------------------------------------------------------------------
-
-#define MAGNITUDE_NONE                      0
-#define MAGNITUDE_TEMPERATURE               1
-#define MAGNITUDE_HUMIDITY                  2
-#define MAGNITUDE_PRESSURE                  3
-#define MAGNITUDE_CURRENT                   4
-#define MAGNITUDE_VOLTAGE                   5
-#define MAGNITUDE_POWER_ACTIVE              6
-#define MAGNITUDE_POWER_APPARENT            7
-#define MAGNITUDE_POWER_REACTIVE            8
-#define MAGNITUDE_POWER_FACTOR              9
-#define MAGNITUDE_ENERGY                    10
-#define MAGNITUDE_ENERGY_DELTA              11
-#define MAGNITUDE_ANALOG                    12
-#define MAGNITUDE_DIGITAL                   13
-#define MAGNITUDE_EVENTS                    14
-#define MAGNITUDE_PM1dot0                   15
-#define MAGNITUDE_PM2dot5                   16
-#define MAGNITUDE_PM10                      17
-#define MAGNITUDE_CO2                       18
-#define MAGNITUDE_LUX                       19
-#define MAGNITUDE_UV                        20
-#define MAGNITUDE_DISTANCE                  21
-
-#define MAGNITUDE_MAX                       22
 
 // =============================================================================
 // Specific data for each sensor
@@ -154,10 +66,6 @@
 #define ANALOG_SUPPORT                  0
 #endif
 
-#if ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
-#endif
 
 //------------------------------------------------------------------------------
 // BH1750
@@ -175,10 +83,6 @@
 
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
 
-#if BH1750_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
 
 //------------------------------------------------------------------------------
 // BME280/BMP280
@@ -201,11 +105,6 @@
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
-
-#if BMX280_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
 
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
@@ -331,11 +230,6 @@
 
 #define EMON_ADC121_I2C_ADDRESS         0x00    // 0x00 means auto
 
-#if EMON_ADC121_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
 // Enable support by passing EMON_ADS1X15_SUPPORT=1 build flag
@@ -350,11 +244,6 @@
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
 #define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
 
-#if EMON_ADS1X15_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
 // Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
@@ -362,11 +251,6 @@
 
 #ifndef EMON_ANALOG_SUPPORT
 #define EMON_ANALOG_SUPPORT             0       // Do not build support by default
-#endif
-
-#if EMON_ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -511,11 +395,6 @@
 #define SHT3X_I2C_ADDRESS               0x00    // 0x00 means auto
 #endif
 
-#if SHT3X_I2C_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // SI7021 temperature & humidity sensor
 // Enable support by passing SI7021_SUPPORT=1 build flag
@@ -527,11 +406,6 @@
 
 #ifndef SI7021_ADDRESS
 #define SI7021_ADDRESS                  0x00    // 0x00 means auto
-#endif
-
-#if SI7021_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
 #endif
 
 //------------------------------------------------------------------------------
@@ -591,11 +465,6 @@
 #define AM2320_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
-#if AM2320_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // GUVAS12SD UV Sensor (analog)
 // Enable support by passing GUVAS12SD_SUPPORT=1 build flag
@@ -610,7 +479,7 @@
 #endif
 
 // =============================================================================
-// Sensor helpers configuration
+// Sensor helpers configuration - can't move to dependencies.h
 // =============================================================================
 
 #ifndef SENSOR_SUPPORT
@@ -670,78 +539,6 @@
 //--------------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT
-
-PROGMEM const unsigned char magnitude_decimals[] = {
-    0,
-    1, 0, 2,
-    3, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0, 0,
-    2, 3
-};
-
-PROGMEM const char magnitude_unknown_topic[] = "unknown";
-PROGMEM const char magnitude_temperature_topic[] =  "temperature";
-PROGMEM const char magnitude_humidity_topic[] = "humidity";
-PROGMEM const char magnitude_pressure_topic[] = "pressure";
-PROGMEM const char magnitude_current_topic[] = "current";
-PROGMEM const char magnitude_voltage_topic[] = "voltage";
-PROGMEM const char magnitude_active_power_topic[] = "power";
-PROGMEM const char magnitude_apparent_power_topic[] = "apparent";
-PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
-PROGMEM const char magnitude_power_factor_topic[] = "factor";
-PROGMEM const char magnitude_energy_topic[] = "energy";
-PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
-PROGMEM const char magnitude_analog_topic[] = "analog";
-PROGMEM const char magnitude_digital_topic[] = "digital";
-PROGMEM const char magnitude_events_topic[] = "events";
-PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
-PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
-PROGMEM const char magnitude_pm10_topic[] = "pm10";
-PROGMEM const char magnitude_co2_topic[] = "co2";
-PROGMEM const char magnitude_lux_topic[] = "lux";
-PROGMEM const char magnitude_uv_topic[] = "uv";
-PROGMEM const char magnitude_distance_topic[] = "distance";
-
-PROGMEM const char* const magnitude_topics[] = {
-    magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
-    magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
-    magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
-    magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
-    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
-    magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic,
-    magnitude_distance_topic
-};
-
-PROGMEM const char magnitude_empty[] = "";
-PROGMEM const char magnitude_celsius[] =  "C";
-PROGMEM const char magnitude_fahrenheit[] =  "F";
-PROGMEM const char magnitude_percentage[] = "%";
-PROGMEM const char magnitude_hectopascals[] = "hPa";
-PROGMEM const char magnitude_amperes[] = "A";
-PROGMEM const char magnitude_volts[] = "V";
-PROGMEM const char magnitude_watts[] = "W";
-PROGMEM const char magnitude_kw[] = "kW";
-PROGMEM const char magnitude_joules[] = "J";
-PROGMEM const char magnitude_kwh[] = "kWh";
-PROGMEM const char magnitude_ugm3[] = "µg/m3";
-PROGMEM const char magnitude_ppm[] = "ppm";
-PROGMEM const char magnitude_lux[] = "lux";
-PROGMEM const char magnitude_uv[] = "uv";
-PROGMEM const char magnitude_distance[] = "m";
-
-PROGMEM const char* const magnitude_units[] = {
-    magnitude_empty, magnitude_celsius, magnitude_percentage,
-    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
-    magnitude_watts, magnitude_watts, magnitude_watts,
-    magnitude_percentage, magnitude_joules, magnitude_joules,
-    magnitude_empty, magnitude_empty, magnitude_empty,
-    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
-    magnitude_ppm, magnitude_lux, magnitude_uv,
-    magnitude_distance
-};
 
 #include "../sensors/BaseSensor.h"
 
