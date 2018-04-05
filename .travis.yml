@@ -3,8 +3,10 @@ python:
 - '2.7'
 sudo: false
 cache:
+  pip: true
   directories:
-  - "~/.platformio"
+  - "$HOME/.platformio"
+  - "$HOME/code/espurna/node_modules"
 install:
 - pip install -U platformio
 - cd code ; npm install --only=dev ; cd ..
