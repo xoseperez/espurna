@@ -474,8 +474,16 @@ void _lightProviderUpdate() {
 // -----------------------------------------------------------------------------
 
 void _lightColorSave() {
+
+    //TODO: Remove this once this code was in a stable release
+    // This force set ch3 to 0 which could be not zero when you update from a old version
+    if (_light_use_white) {
+      setSetting("ch", 3, 0);
+    }
+
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        setSetting("ch", i, _light_channel[i].value);
+        if (_light_use_white && (i == 3)) continue; //Don't save white channel.
+        setSetting("ch", i, _getChannel(i));
     }
     setSetting("brightness", _light_brightness);
     saveSettings();
@@ -485,6 +493,8 @@ void _lightColorRestore() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         _light_channel[i].value = getSetting("ch", i, i==0 ? 255 : 0).toInt();
     }
+    _setWhite();
+    
     _light_brightness = getSetting("brightness", LIGHT_MAX_BRIGHTNESS).toInt();
     lightUpdate(false, false);
 }
@@ -1079,8 +1089,8 @@ void lightSetup() {
     DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channel.size());
 
-    _lightColorRestore();
     _lightConfigure();
+    _lightColorRestore();
 
     #if WEB_SUPPORT
         _lightAPISetup();
