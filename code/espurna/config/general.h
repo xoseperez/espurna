@@ -75,33 +75,15 @@
 // To receive the message son the destination computer use nc:
 // nc -ul 8113
 
+#ifndef DEBUG_TELNET_SUPPORT
+#define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
+#endif
+
 #ifndef DEBUG_UDP_SUPPORT
 #define DEBUG_UDP_SUPPORT       0               // Enable UDP debug log
 #endif
 #define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
 #define DEBUG_UDP_PORT          8113
-
-//------------------------------------------------------------------------------
-
-#ifndef DEBUG_TELNET_SUPPORT
-#define DEBUG_TELNET_SUPPORT    TELNET_SUPPORT  // Enable telnet debug log if telnet is enabled too
-#endif
-
-#if DEBUG_TELNET_SUPPORT
-#undef TELNET_SUPPORT
-#define TELNET_SUPPORT          1
-#endif
-
-//------------------------------------------------------------------------------
-
-#ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT       WEB_SUPPORT  // Enable web debug log if web is enabled too
-#endif
-
-#if DEBUG_WEB_SUPPORT
-#undef WEB_SUPPORT
-#define WEB_SUPPORT             1           // Chicken and egg :)
-#endif
 
 #define DEBUG_WEB_ENABLED       1           // Enable debug output by default
 
@@ -446,10 +428,6 @@
 //#define SSDP_DEVICE_TYPE        "urn:schemas-upnp-org:device:BinaryLight:1"
 #endif
 
-#if WEB_SUPPORT == 0
-#undef SSDP_SUPPORT
-#define SSDP_SUPPORT            0           // SSDP support requires web support
-#endif
 
 // -----------------------------------------------------------------------------
 // SPIFFS
@@ -492,14 +470,6 @@
 #define UART_MQTT_TX_PIN        5           // TX PIN (if UART_MQTT_USE_SOFT == 1)
 #define UART_MQTT_BAUDRATE      115200      // Serial speed
 #define UART_MQTT_BUFFER_SIZE   100         // UART buffer size
-
-#if UART_MQTT_SUPPORT
-#define MQTT_SUPPORT            1
-#undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT        0
-#undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT    0
-#endif
 
 // -----------------------------------------------------------------------------
 // MQTT
@@ -719,11 +689,6 @@
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
-#if DOMOTICZ_SUPPORT
-#undef MQTT_SUPPORT
-#define MQTT_SUPPORT            1               // If Domoticz enabled enable MQTT
-#endif
-
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
@@ -734,11 +699,6 @@
 
 #ifndef HOMEASSISTANT_SUPPORT
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
-#endif
-
-#if HOMEASSISTANT_SUPPORT
-#undef MQTT_SUPPORT
-#define MQTT_SUPPORT            1               // If Home Assistant enabled enable MQTT
 #endif
 
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
@@ -788,12 +748,6 @@
 #define THINGSPEAK_URL          "/update"
 #define THINGSPEAK_MIN_INTERVAL 15000           // Minimum interval between POSTs (in millis)
 
-#ifndef ASYNC_TCP_SSL_ENABLED
-#if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
-#undef THINGSPEAK_SUPPORT                       // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
-#endif
-#endif
-
 // -----------------------------------------------------------------------------
 // SCHEDULER
 // -----------------------------------------------------------------------------
@@ -803,11 +757,6 @@
 
 #ifndef SCHEDULER_SUPPORT
 #define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
-#endif
-
-#if SCHEDULER_SUPPORT
-#undef NTP_SUPPORT
-#define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
 #define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
