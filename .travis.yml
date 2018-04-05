@@ -11,6 +11,7 @@ cache:
 install:
 - pip install -U platformio
 - cd code ; npm install --only=dev ; cd ..
+- cd code ; pio lib update ; cd ..
 script:
 - cd code && ./build.sh &&  cd ..
 before_deploy:
