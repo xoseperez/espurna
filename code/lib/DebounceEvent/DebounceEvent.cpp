@@ -39,6 +39,7 @@ void DebounceEvent::_init(uint8_t pin, uint8_t mode, unsigned long delay, unsign
     _status = _defaultStatus = (mode & BUTTON_DEFAULT_HIGH) > 0;
     _delay = delay;
     _repeat = repeat;
+    _event_start = 0;
 
     // set up button
     if (_pin == 16) {
@@ -83,7 +84,7 @@ unsigned char DebounceEvent::loop() {
             } else {
 
                 // released
-                if (_status == _defaultStatus) {
+                if (_status == (bool)_defaultStatus) {
 
                     _event_length = millis() - _event_start;
                     _ready = true;

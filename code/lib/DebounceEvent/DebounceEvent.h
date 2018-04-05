@@ -61,6 +61,7 @@ class DebounceEvent {
         uint8_t _defaultStatus;
         unsigned long _delay;
         unsigned long _repeat;
+        unsigned long _event_start;
         TDebounceEventCallback _callback = NULL;
 
         void _init(uint8_t pin, uint8_t mode, unsigned long delay, unsigned long repeat);
