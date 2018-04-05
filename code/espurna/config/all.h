@@ -30,6 +30,7 @@
 #include "general.h"
 #include "prototypes.h"
 #include "sensors.h"
+#include "progmem.h"
 
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"
