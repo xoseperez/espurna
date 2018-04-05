@@ -6,8 +6,8 @@ cache:
   pip: true
   directories:
   - "$HOME/.platformio"
-  - "$HOME/code/.piolibdeps"
-  - "$HOME/code/espurna/node_modules"
+  - "code/.piolibdeps"
+  - "code/espurna/node_modules"
 install:
 - pip install -U platformio
 - cd code ; npm install --only=dev ; cd ..
