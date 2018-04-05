@@ -24,6 +24,7 @@
 #endif
 
 #include "version.h"
+#include "types.h"
 #include "arduino.h"
 #include "hardware.h"
 #include "defaults.h"

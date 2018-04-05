@@ -12,9 +12,6 @@
 #define USE_PASSWORD            1           // Insecurity caution! Disabling this will disable password querying completely.
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
 
-#define ARRAYINIT(type, name, ...) \
-    type name[] = {__VA_ARGS__};
-
 //------------------------------------------------------------------------------
 // TELNET
 //------------------------------------------------------------------------------
@@ -92,16 +89,6 @@
 // General debug options and macros
 #define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT
 
-#if DEBUG_SUPPORT
-    #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
-    #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
-#endif
-
-#ifndef DEBUG_MSG
-    #define DEBUG_MSG(...)
-    #define DEBUG_MSG_P(...)
-#endif
-
 //------------------------------------------------------------------------------
 // TERMINAL
 //------------------------------------------------------------------------------
@@ -173,23 +160,6 @@
 #define LOADAVG_REPORT          1       // Should we report Load average over MQTT?
 
 //------------------------------------------------------------------------------
-// RESET
-//------------------------------------------------------------------------------
-
-#define CUSTOM_RESET_HARDWARE   1               // Reset from hardware button
-#define CUSTOM_RESET_WEB        2               // Reset from web interface
-#define CUSTOM_RESET_TERMINAL   3               // Reset from terminal
-#define CUSTOM_RESET_MQTT       4               // Reset via MQTT
-#define CUSTOM_RESET_RPC        5               // Reset via RPC (HTTP)
-#define CUSTOM_RESET_OTA        6               // Reset after successful OTA update
-#define CUSTOM_RESET_HTTP       7               // Reset via HTTP GET
-#define CUSTOM_RESET_NOFUSS     8               // Reset after successful NOFUSS update
-#define CUSTOM_RESET_UPGRADE    9               // Reset after update from web interface
-#define CUSTOM_RESET_FACTORY    10              // Factory reset from terminal
-
-#define CUSTOM_RESET_MAX        10
-
-//------------------------------------------------------------------------------
 // BUTTON
 //------------------------------------------------------------------------------
 
@@ -209,51 +179,9 @@
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
-#define BUTTON_EVENT_NONE           0
-#define BUTTON_EVENT_PRESSED        1
-#define BUTTON_EVENT_RELEASED       2
-#define BUTTON_EVENT_CLICK          2
-#define BUTTON_EVENT_DBLCLICK       3
-#define BUTTON_EVENT_LNGCLICK       4
-#define BUTTON_EVENT_LNGLNGCLICK    5
-
-#define BUTTON_MODE_NONE            0
-#define BUTTON_MODE_TOGGLE          1
-#define BUTTON_MODE_ON              2
-#define BUTTON_MODE_OFF             3
-#define BUTTON_MODE_AP              4
-#define BUTTON_MODE_RESET           5
-#define BUTTON_MODE_PULSE           6
-#define BUTTON_MODE_FACTORY         7
-
 //------------------------------------------------------------------------------
 // RELAY
 //------------------------------------------------------------------------------
-
-#define RELAY_BOOT_OFF              0
-#define RELAY_BOOT_ON               1
-#define RELAY_BOOT_SAME             2
-#define RELAY_BOOT_TOGGLE           3
-
-#define RELAY_TYPE_NORMAL           0
-#define RELAY_TYPE_INVERSE          1
-#define RELAY_TYPE_LATCHED          2
-#define RELAY_TYPE_LATCHED_INVERSE  3
-
-#define RELAY_SYNC_ANY              0
-#define RELAY_SYNC_NONE_OR_ONE      1
-#define RELAY_SYNC_ONE              2
-#define RELAY_SYNC_SAME             3
-
-#define RELAY_PULSE_NONE            0
-#define RELAY_PULSE_OFF             1
-#define RELAY_PULSE_ON              2
-
-#define RELAY_PROVIDER_RELAY        0
-#define RELAY_PROVIDER_DUAL         1
-#define RELAY_PROVIDER_LIGHT        2
-#define RELAY_PROVIDER_RFBRIDGE     3
-#define RELAY_PROVIDER_STM          4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF
@@ -279,20 +207,6 @@
 // Do not save relay state after these many milliseconds
 #define RELAY_SAVE_DELAY            1000
 
-//------------------------------------------------------------------------------
-// LED
-//------------------------------------------------------------------------------
-
-#define LED_MODE_MQTT               0       // LED will be managed from MQTT (OFF by default)
-#define LED_MODE_WIFI               1       // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW             2       // LED will follow state of linked relay (check RELAY#_LED)
-#define LED_MODE_FOLLOW_INVERSE     3       // LED will follow the opposite state of linked relay (check RELAY#_LED)
-#define LED_MODE_FINDME             4       // LED will be ON if all relays are OFF
-#define LED_MODE_FINDME_WIFI        5       // A mixture between WIFI and FINDME
-#define LED_MODE_ON                 6       // LED always ON
-#define LED_MODE_OFF                7       // LED always OFF
-#define LED_MODE_RELAY              8       // If any relay is ON, LED will be ON, otherwise OFF
-#define LED_MODE_RELAY_WIFI         9       // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -389,14 +303,6 @@
 #define API_ENABLED             0           // Do not enable API by default
 #define API_BUFFER_SIZE         15          // Size of the buffer for HTTP GET API responses
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
-
-// -----------------------------------------------------------------------------
-// UI
-// -----------------------------------------------------------------------------
-
-#define UI_TAG_INPUT            0
-#define UI_TAG_CHECKBOX         1
-#define UI_TAG_SELECT           2
 
 // -----------------------------------------------------------------------------
 // MDNS / LLMNR / NETBIOS / SSDP
@@ -628,11 +534,6 @@
 // LIGHT
 // -----------------------------------------------------------------------------
 
-// Available light providers (do not change)
-#define LIGHT_PROVIDER_NONE     0
-#define LIGHT_PROVIDER_MY92XX   1 // works with MY9291 and MY9231
-#define LIGHT_PROVIDER_DIMMER   2
-
 // LIGHT_PROVIDER_DIMMER can have from 1 to 5 different channels.
 // They have to be defined for each device in the hardware.h file.
 // If 3 or more channels first 3 will be considered RGB.
@@ -752,9 +653,6 @@
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
-#define SCHEDULER_TYPE_SWITCH       1
-#define SCHEDULER_TYPE_DIM          2
-
 #ifndef SCHEDULER_SUPPORT
 #define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
 #endif
@@ -820,20 +718,6 @@
 #ifndef IR_BUTTON_SET
 #define IR_BUTTON_SET           1               // IR button set to use (see below)
 #endif
-
-// IR Button modes
-#define IR_BUTTON_MODE_NONE         0
-#define IR_BUTTON_MODE_RGB          1
-#define IR_BUTTON_MODE_HSV          2
-#define IR_BUTTON_MODE_BRIGHTER     3
-#define IR_BUTTON_MODE_STATE        4
-#define IR_BUTTON_MODE_EFFECT       5
-
-#define LIGHT_EFFECT_SOLID          0
-#define LIGHT_EFFECT_FLASH          1
-#define LIGHT_EFFECT_STROBE         2
-#define LIGHT_EFFECT_FADE           3
-#define LIGHT_EFFECT_SMOOTH         4
 
 //Remote Buttons SET 1 (for the original Remote shipped with the controller)
 #if IR_SUPPORT
