@@ -55,6 +55,56 @@
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
+//------------------------------------------------------------------------------
+// Sensors
+//------------------------------------------------------------------------------
+
+
+#if ANALOG_SUPPORT
+#undef ADC_VCC_ENABLED
+#define ADC_VCC_ENABLED                 0
+#endif
+
+#if EMON_ANALOG_SUPPORT
+#undef ADC_VCC_ENABLED
+#define ADC_VCC_ENABLED                 0
+#endif
+
+
+#if BH1750_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+#if BMX280_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+#if EMON_ADC121_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+#if EMON_ADS1X15_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+#if SHT3X_I2C_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+#if SI7021_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
+
+#if AM2320_SUPPORT
+#undef I2C_SUPPORT
+#define I2C_SUPPORT                     1
+#endif
 
 
 //------------------------------------------------------------------------------

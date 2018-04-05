@@ -150,10 +150,6 @@
 #define ANALOG_SUPPORT                  0
 #endif
 
-#if ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
-#endif
 
 //------------------------------------------------------------------------------
 // BH1750
@@ -171,10 +167,6 @@
 
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
 
-#if BH1750_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
 
 //------------------------------------------------------------------------------
 // BME280/BMP280
@@ -197,11 +189,6 @@
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
-
-#if BMX280_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
 
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
@@ -303,11 +290,6 @@
 
 #define EMON_ADC121_I2C_ADDRESS         0x00    // 0x00 means auto
 
-#if EMON_ADC121_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
 // Enable support by passing EMON_ADS1X15_SUPPORT=1 build flag
@@ -322,11 +304,6 @@
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
 #define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
 
-#if EMON_ADS1X15_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
 // Enable support by passing EMON_ANALOG_SUPPORT=1 build flag
@@ -334,11 +311,6 @@
 
 #ifndef EMON_ANALOG_SUPPORT
 #define EMON_ANALOG_SUPPORT             0       // Do not build support by default
-#endif
-
-#if EMON_ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -466,11 +438,6 @@
 #define SHT3X_I2C_ADDRESS               0x00    // 0x00 means auto
 #endif
 
-#if SHT3X_I2C_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // SI7021 temperature & humidity sensor
 // Enable support by passing SI7021_SUPPORT=1 build flag
@@ -482,11 +449,6 @@
 
 #ifndef SI7021_ADDRESS
 #define SI7021_ADDRESS                  0x00    // 0x00 means auto
-#endif
-
-#if SI7021_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
 #endif
 
 //------------------------------------------------------------------------------
@@ -528,11 +490,6 @@
 #define AM2320_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
-#if AM2320_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // GUVAS12SD UV Sensor (analog)
 // Enable support by passing GUVAS12SD_SUPPORT=1 build flag
@@ -547,7 +504,7 @@
 #endif
 
 // =============================================================================
-// Sensor helpers configuration
+// Sensor helpers configuration - can't move to dependencies.h
 // =============================================================================
 
 #ifndef SENSOR_SUPPORT
