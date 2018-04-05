@@ -388,11 +388,11 @@
 #define API_ENABLED             0           // Do not enable API by default
 #endif
 
-#ifndef
+#ifndef API_BUFFER_SIZE
 #define API_BUFFER_SIZE         15          // Size of the buffer for HTTP GET API responses
 #endif
 
-#ifndef
+#ifndef API_REAL_TIME_VALUES
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
 #endif
 
