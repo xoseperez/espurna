@@ -126,17 +126,18 @@ function loadTimeZones() {
     ];
 
     for (var i in time_zones) {
-        var value = time_zones[i];
-        var offset = value >= 0 ? value : -value;
-        var text = "GMT" + (value >= 0 ? "+" : "-") +
-            zeroPad(parseInt(offset / 60, 10), 2) + ":" +
-            zeroPad(offset % 60, 2);
-        $("select[name='ntpOffset']").append(
-            $("<option></option>").
-                attr("value",value).
-                text(text));
+        if ({}.hasOwnProperty.call(time_zones, i)) {
+            var value = time_zones[i];
+            var offset = value >= 0 ? value : -value;
+            var text = "GMT" + (value >= 0 ? "+" : "-") +
+                zeroPad(parseInt(offset / 60, 10), 2) + ":" +
+                zeroPad(offset % 60, 2);
+            $("select[name='ntpOffset']").append(
+                $("<option></option>").
+                    attr("value",value).
+                    text(text));
+        }
     }
-
 }
 
 function validateForm(form) {
@@ -580,12 +581,13 @@ function createRelayList(data, container, template_name) {
 
     var template = $("#" + template_name + " .pure-g")[0];
     for (var i in data) {
-        var line = $(template).clone();
-        $("label", line).html("Switch #" + i);
-        $("input", line).attr("tabindex", 40 + i).val(data[i]);
-        line.appendTo("#" + container);
+        if ({}.hasOwnProperty.call(data, i)) {
+            var line = $(template).clone();
+            $("label", line).html("Switch #" + i);
+            $("input", line).attr("tabindex", 40 + i).val(data[i]);
+            line.appendTo("#" + container);
+        }
     }
-
 }
 
 function createMagnitudeList(data, container, template_name) {
@@ -595,14 +597,15 @@ function createMagnitudeList(data, container, template_name) {
 
     var template = $("#" + template_name + " .pure-g")[0];
     for (var i in data) {
-        var magnitude = data[i];
-        var line = $(template).clone();
-        $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
-        $("div.hint", line).html(magnitude.name);
-        $("input", line).attr("tabindex", 40 + i).val(magnitude.idx);
-        line.appendTo("#" + container);
+        if ({}.hasOwnProperty.call(data, i)) {
+            var magnitude = data[i];
+            var line = $(template).clone();
+            $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
+            $("div.hint", line).html(magnitude.name);
+            $("input", line).attr("tabindex", 40 + i).val(magnitude.idx);
+            line.appendTo("#" + container);
+        }
     }
-
 }
 
 // -----------------------------------------------------------------------------
@@ -728,17 +731,19 @@ function initRelayConfig(data) {
 
     var template = $("#relayConfigTemplate").children();
     for (var i in data) {
-        var relay = data[i];
-        var line = $(template).clone();
-        $("span.gpio", line).html(relay.gpio);
-        $("span.id", line).html(i);
-        $("select[name='relayBoot']", line).val(relay.boot);
-        $("select[name='relayPulse']", line).val(relay.pulse);
-        $("input[name='relayTime']", line).val(relay.pulse_ms);
-        $("input[name='mqttGroup']", line).val(relay.group);
-        $("select[name='mqttGroupInv']", line).val(relay.group_inv);
-        $("select[name='relayOnDisc']", line).val(relay.on_disc);
-        line.appendTo("#relayConfig");
+        if ({}.hasOwnProperty.call(data, i)) {
+            var relay = data[i];
+            var line = $(template).clone();
+            $("span.gpio", line).html(relay.gpio);
+            $("span.id", line).html(i);
+            $("select[name='relayBoot']", line).val(relay.boot);
+            $("select[name='relayPulse']", line).val(relay.pulse);
+            $("input[name='relayTime']", line).val(relay.pulse_ms);
+            $("input[name='mqttGroup']", line).val(relay.group);
+            $("select[name='mqttGroupInv']", line).val(relay.group_inv);
+            $("select[name='relayOnDisc']", line).val(relay.on_disc);
+            line.appendTo("#relayConfig");
+        }
     }
 
 }
@@ -756,14 +761,15 @@ function initMagnitudes(data) {
     // add templates
     var template = $("#magnitudeTemplate").children();
     for (var i in data) {
-        var magnitude = data[i];
-        var line = $(template).clone();
-        $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
-        $("div.hint", line).html(magnitude.description);
-        $("input", line).attr("data", i);
-        line.appendTo("#magnitudes");
+        if ({}.hasOwnProperty.call(data, i)) {
+            var magnitude = data[i];
+            var line = $(template).clone();
+            $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
+            $("div.hint", line).html(magnitude.description);
+            $("input", line).attr("data", i);
+            line.appendTo("#magnitudes");
+        }
     }
-
 }
 
 // -----------------------------------------------------------------------------
