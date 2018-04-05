@@ -376,6 +376,42 @@ function doUpdatePassword() {
     return false;
 }
 
+
+function doAction(question, action) {
+
+    checkChanges();
+
+    if (question) {
+        var response = window.confirm(question);
+        if (false === response) {
+            return false;
+        }
+    }
+
+    sendAction(action, {});
+    doReload(5000);
+    return false;
+
+}
+
+function doReboot(ask) {
+
+    var question = (typeof ask === "undefined" || false === ask) ?
+        null :
+        "Are you sure you want to reboot the device?";
+    return doAction(question, "reboot");
+
+}
+
+function doReconnect(ask) {
+
+    var question = (typeof ask === "undefined" || false === ask) ?
+        null :
+        "Are you sure you want to disconnect from the current WIFI network?";
+    return doAction(question, "reconnect");
+
+}
+
 function doUpdate() {
 
     var form = $("#formSave");
@@ -431,40 +467,6 @@ function checkChanges() {
 
 }
 
-function doAction(question, action) {
-
-    checkChanges();
-
-    if (question) {
-        var response = window.confirm(question);
-        if (false === response) {
-            return false;
-        }
-    }
-
-    sendAction(action, {});
-    doReload(5000);
-    return false;
-
-}
-
-function doReboot(ask) {
-
-    var question = (typeof ask === "undefined" || false === ask) ?
-        null :
-        "Are you sure you want to reboot the device?";
-    return doAction(question, "reboot");
-
-}
-
-function doReconnect(ask) {
-
-    var question = (typeof ask === "undefined" || false === ask) ?
-        null :
-        "Are you sure you want to disconnect from the current WIFI network?";
-    return doAction(question, "reconnect");
-
-}
 
 function doBackup() {
     document.getElementById("downloader").src = webhost + "config";
