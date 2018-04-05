@@ -376,6 +376,50 @@ function doUpdatePassword() {
     return false;
 }
 
+function doUpdate() {
+
+    var form = $("#formSave");
+    if (validateForm(form)) {
+
+        // Get data
+        sendConfig(getData(form));
+
+        // Empty special fields
+        $(".pwrExpected").val(0);
+        $("input[name='pwrResetCalibration']").
+            prop("checked", false).
+            iphoneStyle("refresh");
+        $("input[name='pwrResetE']").
+            prop("checked", false).
+            iphoneStyle("refresh");
+
+        // Change handling
+        numChanged = 0;
+        setTimeout(function() {
+
+            var response;
+
+            if (numReboot > 0) {
+                response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
+                if (response) { doReboot(false); }
+            } else if (numReconnect > 0) {
+                response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
+                if (response) { doReconnect(false); }
+            } else if (numReload > 0) {
+                response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
+                if (response) { doReload(0); }
+            }
+
+            resetOriginals();
+
+        }, 1000);
+
+    }
+
+    return false;
+
+}
+
 function checkChanges() {
 
     if (numChanged > 0) {
@@ -419,50 +463,6 @@ function doReconnect(ask) {
         null :
         "Are you sure you want to disconnect from the current WIFI network?";
     return doAction(question, "reconnect");
-
-}
-
-function doUpdate() {
-
-    var form = $("#formSave");
-    if (validateForm(form)) {
-
-        // Get data
-        sendConfig(getData(form));
-
-        // Empty special fields
-        $(".pwrExpected").val(0);
-        $("input[name='pwrResetCalibration']").
-            prop("checked", false).
-            iphoneStyle("refresh");
-        $("input[name='pwrResetE']").
-            prop("checked", false).
-            iphoneStyle("refresh");
-
-        // Change handling
-        numChanged = 0;
-        setTimeout(function() {
-
-            var response;
-
-            if (numReboot > 0) {
-                response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-                if (response) { doReboot(false); }
-            } else if (numReconnect > 0) {
-                response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-                if (response) { doReconnect(false); }
-            } else if (numReload > 0) {
-                response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response) { doReload(0); }
-            }
-
-            resetOriginals();
-
-        }, 1000);
-
-    }
-
-    return false;
 
 }
 
@@ -975,8 +975,10 @@ function processData(data) {
         if ("rfb" === key) {
             var nodes = data.rfb;
             for (i in nodes) {
-                var node = nodes[i];
-                $("input[name='rfbcode'][data-id='" + node.id + "'][data-status='" + node.status + "']").val(node.data);
+                if ({}.hasOwnProperty.call(nodes, i)) {
+                    var node = nodes[i];
+                    $("input[name='rfbcode'][data-id='" + node.id + "'][data-status='" + node.status + "']").val(node.data);
+                }
             }
             return;
         }
@@ -1013,9 +1015,11 @@ function processData(data) {
             var len = value.length;
             initChannels(len);
             for (i in value) {
-                var ch = value[i];
-                $("input.slider[data=" + i + "]").val(ch);
-                $("span.slider[data=" + i + "]").html(ch);
+                if ({}.hasOwnProperty.call(value, i)) {
+                    var ch = value[i];
+                    $("input.slider[data=" + i + "]").val(ch);
+                    $("span.slider[data=" + i + "]").html(ch);
+                }
             }
             return;
         }
@@ -1031,12 +1035,14 @@ function processData(data) {
         if ("magnitudes" === key) {
             initMagnitudes(value);
             for (i in value) {
-                var magnitude = value[i];
-                var error = magnitude.error || 0;
-                var text = (0 === error) ?
-                    magnitude.value + magnitude.units :
-                    magnitudeError(error);
-                $("input[name='magnitude'][data='" + i + "']").val(text);
+                if ({}.hasOwnProperty.call(value, i)) {
+                    var magnitude = value[i];
+                    var error = magnitude.error || 0;
+                    var text = (0 === error) ?
+                        magnitude.value + magnitude.units :
+                        magnitudeError(error);
+                    $("input[name='magnitude'][data='" + i + "']").val(text);
+                }
             }
             return;
         }
@@ -1052,11 +1058,13 @@ function processData(data) {
 
         if ("wifi" === key) {
             for (i in value) {
-                var wifi = value[i];
-                var nwk_line = addNetwork();
-                Object.keys(wifi).forEach(function(key) {
-                    $("input[name='" + key + "']", nwk_line).val(wifi[key]);
-                });
+                if ({}.hasOwnProperty.call(value, i)) {
+                    var wifi = value[i];
+                    var nwk_line = addNetwork();
+                    Object.keys(wifi).forEach(function(key) {
+                        $("input[name='" + key + "']", nwk_line).val(wifi[key]);
+                    });
+                }
             }
             return;
         }
@@ -1085,17 +1093,19 @@ function processData(data) {
 
         if ("schedule" === key) {
             for (i in value) {
-                var schedule = value[i];
-                var sch_line = addSchedule({ data: {schType: schedule["schType"] }});
+                if ({}.hasOwnProperty.call(value, i)) {
+                    var schedule = value[i];
+                    var sch_line = addSchedule({ data: {schType: schedule["schType"] }});
 
-                Object.keys(schedule).forEach(function(key) {
-                    var sch_value = schedule[key];
-                    $("input[name='" + key + "']", sch_line).val(sch_value);
-                    $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $("input[type='checkbox'][name='" + key + "']", sch_line).
-                        prop("checked", sch_value).
-                        iphoneStyle("refresh");
-                });
+                    Object.keys(schedule).forEach(function(key) {
+                        var sch_value = schedule[key];
+                        $("input[name='" + key + "']", sch_line).val(sch_value);
+                        $("select[name='" + key + "']", sch_line).prop("value", sch_value);
+                        $("input[type='checkbox'][name='" + key + "']", sch_line).
+                            prop("checked", sch_value).
+                            iphoneStyle("refresh");
+                    });
+                }
             }
             return;
         }
@@ -1107,12 +1117,12 @@ function processData(data) {
         if ("relayStatus" === key) {
             initRelays(value);
             for (i in value) {
-
-                // Set the status for each relay
-                $("input.relayStatus[data='" + i + "']").
-                    prop("checked", value[i]).
-                    iphoneStyle("refresh");
-
+                if ({}.hasOwnProperty.call(value, i)) {
+                    // Set the status for each relay
+                    $("input.relayStatus[data='" + i + "']").
+                        prop("checked", value[i]).
+                        iphoneStyle("refresh");
+                }
             }
             return;
         }
