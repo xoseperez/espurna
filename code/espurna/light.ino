@@ -119,6 +119,10 @@ void _setWhite() {
   }
 }
 
+//Return 4 (RGBW) or 3 (RGB)
+unsigned char _getRGBChannelWidth() {
+  return _light_use_white ? 4 : 3;
+}
 
 void _fromLong(unsigned long value, bool brightness) {
 
@@ -301,18 +305,12 @@ void _toHSV(char * hsv, size_t len) {
 
     v = 100.0 * max;
     if (v == 0) {
-
         h = s = 0;
-
     } else {
-
         s = 100.0 * (max - min) / max;
         if (s == 0) {
-
             h = 0;
-
         } else {
-
             if (max == r) {
                 if (g >= b) {
                     h = 0.0 + 60.0 * (g - b) / (max - min);
@@ -325,12 +323,10 @@ void _toHSV(char * hsv, size_t len) {
                 h = 240.0 + 60.0 * (r - g) / (max - min);
             }
         }
-
     }
 
     // String
     snprintf_P(hsv, len, PSTR("%d,%d,%d"), round(h), round(s), round(v));
-
 }
 
 void _toLong(char * color, size_t len, bool applyBrightness) {
@@ -410,7 +406,7 @@ unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
 
 // Returns a PWM value for the given channel ID
 unsigned int _toPWM(unsigned char id) {
-    bool useGamma = _light_use_gamma && _light_has_color && (id < 3);
+    bool useGamma = _light_use_gamma && _light_has_color && (id < _getRGBChannelWidth());
     return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse);
 }
 
@@ -421,7 +417,7 @@ void _shadow() {
     if (_light_steps_left == 0) _light_transition_ticker.detach();
 
     // Update 4 Channels if RGBW else 3
-    char channels = _light_use_white ? 4 : 3;
+    unsigned char channels = _getRGBChannelWidth();
 
     // Transitions
     unsigned char target;
@@ -475,7 +471,7 @@ void _lightProviderUpdate() {
 
 void _lightColorSave() {
 
-    //TODO: Remove this once this code was in a stable release
+    // TODO: Remove this once this code was in a stable release
     // This force set ch3 to 0 which could be not zero when you update from a old version
     if (_light_use_white) {
       setSetting("ch", 3, 0);
@@ -494,7 +490,7 @@ void _lightColorRestore() {
         _light_channel[i].value = getSetting("ch", i, i==0 ? 255 : 0).toInt();
     }
     _setWhite();
-    
+
     _light_brightness = getSetting("brightness", LIGHT_MAX_BRIGHTNESS).toInt();
     lightUpdate(false, false);
 }
