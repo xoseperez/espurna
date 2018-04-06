@@ -147,9 +147,10 @@ void _relayProcess(bool mode) {
     for (unsigned char id = 0; id < _relays.size(); id++) {
 
         bool target = _relays[id].target_status;
+        bool current = _relays[id].current_status;
 
         // Only process the relays we have to change
-        if (target == _relays[id].current_status) continue;
+        if (target == current) continue;
 
         // Only process the relays we have change to the requested mode
         if (target != mode) continue;
@@ -189,6 +190,7 @@ void _relayProcess(bool mode) {
         #endif
 
         #if THINGSPEAK_SUPPORT
+            tspkEnqueueRelay(id, current);
             tspkEnqueueRelay(id, target);
             tspkFlush();
         #endif
