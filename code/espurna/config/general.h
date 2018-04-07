@@ -597,7 +597,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
-#define MQTT_TOPIC_COLOR        "color"     // DEPRECATED, use RGB instead
 #define MQTT_TOPIC_COLOR_RGB    "rgb"
 #define MQTT_TOPIC_COLOR_HSV    "hsv"
 #define MQTT_TOPIC_ANIM_MODE    "anim_mode"
@@ -692,6 +691,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+//#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
+//#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
+#define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
 #define LIGHT_STEP              32          // Step size
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
