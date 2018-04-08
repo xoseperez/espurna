@@ -839,7 +839,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
 #define NTP_TIMEOUT             2000            // Set NTP request timeout to 2 seconds (issue #452)
-#define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
+#define NTP_TIME_OFFSET         60              // Default timezone offset (GMT+1)
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #define NTP_SYNC_INTERVAL       60              // NTP initial check every minute
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
