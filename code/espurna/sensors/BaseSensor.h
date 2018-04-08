@@ -18,6 +18,8 @@
 #define SENSOR_ERROR_CRC            5       // Sensor data corrupted
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
+#define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
+#define SENSOR_ERROR_OTHER          99      // Any other error
 
 typedef std::function<void(unsigned char, const char *)> TSensorCallback;
 
