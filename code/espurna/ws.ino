@@ -298,7 +298,9 @@ void _wsOnStart(JsonObject& root) {
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
         root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-        root["cmdVisible"] = TERMINAL_SUPPORT;
+        #if TERMINAL_SUPPORT
+            root["cmdVisible"] = 1;
+        #endif
 
     }
 
