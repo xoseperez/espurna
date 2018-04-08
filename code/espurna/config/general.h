@@ -622,7 +622,6 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
-#define MQTT_TOPIC_COLOR        "color"     // DEPRECATED, use RGB instead
 #define MQTT_TOPIC_COLOR_RGB    "rgb"
 #define MQTT_TOPIC_COLOR_HSV    "hsv"
 #define MQTT_TOPIC_ANIM_MODE    "anim_mode"
@@ -717,6 +716,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #endif
 
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+//#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
+//#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
+#define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
 #define LIGHT_STEP              32          // Step size
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
@@ -726,7 +728,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
 #define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
-#define LIGHT_TRANSITION_STEPS  50          // Number of steps to acomplish transition
+#define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
@@ -839,7 +841,7 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
 #define NTP_TIMEOUT             2000            // Set NTP request timeout to 2 seconds (issue #452)
-#define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
+#define NTP_TIME_OFFSET         60              // Default timezone offset (GMT+1)
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #define NTP_SYNC_INTERVAL       60              // NTP initial check every minute
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes

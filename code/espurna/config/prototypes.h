@@ -33,6 +33,9 @@ void wsOnActionRegister(ws_on_action_callback_f callback);
 typedef std::function<void(void)> ws_on_after_parse_callback_f;
 void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
 
+typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
+void wsOnReceiveRegister(ws_on_receive_callback_f callback);
+
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------

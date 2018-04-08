@@ -22,6 +22,11 @@ static std::queue<AlexaDevChange> _alexa_dev_changes;
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------
+
+bool _alexaWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "alexa", 5) == 0);
+}
+
 void _alexaWebSocketOnSend(JsonObject& root) {
     root["alexaVisible"] = 1;
     root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
@@ -46,6 +51,7 @@ void alexaSetup() {
         // Websockets
         wsOnSendRegister(_alexaWebSocketOnSend);
         wsOnAfterParseRegister(_alexaConfigure);
+        wsOnReceiveRegister(_alexaWebSocketOnReceive);
 
     #endif
 

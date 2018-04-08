@@ -32,6 +32,12 @@ unsigned long _tspk_last_flush = 0;
 
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _tspkWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "tspk", 4) == 0);
+}
+
 void _tspkWebSocketOnSend(JsonObject& root) {
 
     unsigned char visible = 0;
@@ -60,6 +66,8 @@ void _tspkWebSocketOnSend(JsonObject& root) {
     root["tspkVisible"] = visible;
 
 }
+
+#endif
 
 void _tspkConfigure() {
     _tspk_enabled = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
@@ -248,6 +256,7 @@ void tspkSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
         wsOnAfterParseRegister(_tspkConfigure);
+        wsOnReceiveRegister(_tspkWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),

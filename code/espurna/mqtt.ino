@@ -298,6 +298,10 @@ unsigned long _mqttNextMessageId() {
 
 #if WEB_SUPPORT
 
+bool _mqttWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "mqtt", 3) == 0);
+}
+
 void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttVisible"] = 1;
     root["mqttStatus"] = mqttConnected();
@@ -795,6 +799,7 @@ void mqttSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
         wsOnAfterParseRegister(_mqttConfigure);
+        wsOnReceiveRegister(_mqttWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT

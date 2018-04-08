@@ -76,6 +76,10 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
 #if WEB_SUPPORT
 
+bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "dcz", 3) == 0);
+}
+
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
     root["dczVisible"] = 1;
@@ -145,6 +149,7 @@ void domoticzSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
         wsOnAfterParseRegister(_domoticzConfigure);
+        wsOnReceiveRegister(_domoticzWebSocketOnReceive);
     #endif
     mqttRegister(_domoticzMqtt);
 }

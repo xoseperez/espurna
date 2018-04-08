@@ -20,10 +20,18 @@ bool _telnetFirst = true;
 // Private methods
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "telnet", 6) == 0);
+}
+
 void _telnetWebSocketOnSend(JsonObject& root) {
     root["telnetVisible"] = 1;
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
 }
+
+#endif
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
@@ -169,6 +177,7 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_telnetWebSocketOnSend);
+        wsOnReceiveRegister(_telnetWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);

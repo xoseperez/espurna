@@ -18,11 +18,19 @@ bool _nofussEnabled = false;
 // NOFUSS
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _nofussWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "nofuss", 6) == 0);
+}
+
 void _nofussWebSocketOnSend(JsonObject& root) {
     root["nofussVisible"] = 1;
     root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
     root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
+
+#endif
 
 void _nofussConfigure() {
 
@@ -147,6 +155,7 @@ void nofussSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_nofussWebSocketOnSend);
         wsOnAfterParseRegister(_nofussConfigure);
+        wsOnReceiveRegister(_nofussWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT

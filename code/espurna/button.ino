@@ -27,7 +27,15 @@ void buttonMQTT(unsigned char id, uint8_t event) {
     if (id >= _buttons.size()) return;
     char payload[2];
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain 
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
+}
+
+#endif
+
+#if WEB_SUPPORT
+
+bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "btn", 3) == 0);
 }
 
 #endif
@@ -181,6 +189,11 @@ void buttonSetup() {
     #endif
 
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
+
+    // Websocket Callbacks
+    #if WEB_SUPPORT
+        wsOnReceiveRegister(_buttonWebSocketOnReceive);
+    #endif
 
     // Register loop
     espurnaRegisterLoop(buttonLoop);

@@ -15,6 +15,10 @@ Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+bool _schWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "sch", 3) == 0);
+}
+
 void _schWebSocketOnSend(JsonObject &root){
 
     if (relayCount() > 0) {
@@ -201,6 +205,7 @@ void schSetup() {
     // Update websocket clients
     #if WEB_SUPPORT
         wsOnSendRegister(_schWebSocketOnSend);
+        wsOnReceiveRegister(_schWebSocketOnReceive);
         wsOnAfterParseRegister(_schConfigure);
     #endif
 

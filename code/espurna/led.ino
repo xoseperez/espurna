@@ -58,11 +58,17 @@ void _ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) 
 }
 
 #if WEB_SUPPORT
+
+bool _ledWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "led", 3) == 0);
+}
+
 void _ledWebSocketOnSend(JsonObject& root) {
     if (_ledCount() == 0) return;
     root["ledVisible"] = 1;
     root["ledMode0"] = _ledMode(0);
 }
+
 #endif
 
 #if MQTT_SUPPORT
@@ -163,6 +169,7 @@ void ledSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_ledWebSocketOnSend);
         wsOnAfterParseRegister(_ledConfigure);
+        wsOnReceiveRegister(_ledWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());

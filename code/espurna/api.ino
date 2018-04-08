@@ -22,6 +22,10 @@ std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
 
+bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "api", 3) == 0);
+}
+
 void _apiWebSocketOnSend(JsonObject& root) {
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
@@ -187,6 +191,7 @@ void apiSetup() {
     webServer()->on("/apis", HTTP_GET, _onAPIs);
     webServer()->on("/rpc", HTTP_GET, _onRPC);
     wsOnSendRegister(_apiWebSocketOnSend);
+    wsOnReceiveRegister(_apiWebSocketOnReceive);
 }
 
 #endif // WEB_SUPPORT

@@ -3,6 +3,60 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.5] 2018-04-08
+### Fixed
+- Fixed expected power calibration ([#676](https://github.com/xoseperez/espurna/issues/676))
+- Do not show empty time strings ([#691](https://github.com/xoseperez/espurna/issues/691), thanks to @PieBru)
+- Fix load average calculation when system check is disabled ([#707](https://github.com/xoseperez/espurna/issues/707))
+- Fixed unstability issues with NtpClientLib using temporary fork ([#743](https://github.com/xoseperez/espurna/issues/743))
+- Fixed typos in homeassistant module (thanks to @Cabalist)
+- Fixed default HLW8012 calibration for KMC devices (thanks to @gn0st1c)
+- Fix MQTT query request
+- Fix scheduler debug message
+- Fix NTP offset value
+
+### Added
+- Option to change NTP timeout via compile-time setting ([#452](https://github.com/xoseperez/espurna/issues/452))
+- Added humidity correction to web UI ([#626](https://github.com/xoseperez/espurna/issues/626), tahnks to @ManuelW77)
+- Added support for USA DST calculation ([#664](https://github.com/xoseperez/espurna/issues/664))
+- Option to reset energy count ([#671](https://github.com/xoseperez/espurna/issues/671))
+- Added Sonoff SV prebuild image ([#698](https://github.com/xoseperez/espurna/issues/698), thanks to @akasma74)
+- Check and remove unused config keys ([#730](https://github.com/xoseperez/espurna/issues/730))
+- Visual Studio metadata files added to .gitignore ([#731](https://github.com/xoseperez/espurna/issues/731), thanks to @gn0st1c)
+- Added default MQTT and SSL settings to web UI ([#732](https://github.com/xoseperez/espurna/issues/732), thanks to @mcspr)
+- Added option to the web UI to set the light transition length in milliseconds ([#739](https://github.com/xoseperez/espurna/issues/739))
+- Improved testing with Travis (thanks to @lobradov)
+- Change dimmers using schedule (thanks to @wysiwyng)
+- Debug console in web UI (thanks to @lobradov), including command execution
+- Option to reset relays in MQTT disconection (thanks to @a-tom-s)
+- Option to disable system check from custom header (thanks to @phuonglm)
+- Added "board" topic to the heartbeat messages (thanks to @mcspr)
+- Added methods to create hierarchical MQTT JSON responses
+- Added RESET.SAFE command to reboot into safe mode
+- Added SDK and Core versions to the web UI
+- Added revision to web UI (only when built from build.sh)
+- Support for OBI Powerplug Adapter ([#622](https://github.com/xoseperez/espurna/issues/622), thanks to @Geitde)
+- Support for Tunbox Powerstrip02 (thanks to @gn0st1c)
+- Support for Lingan SWA1 (thanks to @gn0st1c)
+- Support for Heygo HY02 (thanks to @gn0st1c)
+- Support for Maxcio WUS0025 (thanks to @gn0st1c)
+- Support for Yidian XSSSA05 SWA1 (thanks to @gn0st1c)
+- Support for ArnieX Swifitch (thanks to @LubergAlexander)
+- Support for IKE ESPIKE board
+- Support for AM2320 sensors via I2C (thanks to @gn0st1c)
+- Support for GUVAS12SD sensor (thanks to @gn0st1c)
+
+### Changed
+- Removed hostname size limit ([#576](https://github.com/xoseperez/espurna/issues/576), [#659](https://github.com/xoseperez/espurna/issues/659))
+- Reworked RGBW implementation (thanks to @Skaronator)
+- Several web UI layout changes (thanks to @lobradov & @mcspr)
+- Button MQTT messages will not have the retain flag (thanks to @lobradov)
+- Remove unnecessary code from boot log (thanks to @gn0st1c)
+- Updated logo and favicon, added gitter channel
+- Force reporting power values as 0 if relay is off
+- Using gulp-crass for CSS minification
+- Using WIFI_NONE_SLEEP by default
+
 ## [1.12.4] 2018-03-05
 ### Fixed
 - Adding a 1ms delay after UDP send to avoid loosing packets ([#438](https://github.com/xoseperez/espurna/issues/438))
@@ -12,7 +66,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix inline documentation for Sonoff 4CH Pro button modes ([#551](https://github.com/xoseperez/espurna/issues/551))
 - Prevent resending messages from rfin in RF Bridge ([#561](https://github.com/xoseperez/espurna/issues/561))
 - Fix AnalogSensor description ([#601](https://github.com/xoseperez/espurna/issues/601))
-- Fixed missing setting in HASS WS callback (thanks to Maxim Prokhorov)
+- Fixed missing setting in HASS WS callback (thanks to @mcspr)
 - ECH1560 call sync from tick method
 - Fixed several issues reported by codacy
 
@@ -93,7 +147,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed pulse and pulse_ms order in relay_t structure ([#424](https://github.com/xoseperez/espurna/issues/424))
 - Use same buffer size across all terminal-realted classes/methods. Set to 128 chars ([#477](https://github.com/xoseperez/espurna/issues/477), [#478](https://github.com/xoseperez/espurna/issues/478))
 - Fix WiFi scan status in web UI
-- Several code quality fixes (thanks to Lazar Obradovic)
+- Several code quality fixes (thanks to @lobradov)
 - Fixed error message on first command over telnet
 
 ### Changed
@@ -126,7 +180,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Scheduler (contributed by Stefano Cotterli, thank you!, [#131](https://github.com/xoseperez/espurna/issues/131))
 - Added "wifi.scan" command to terminal
 - Added ESPurna Switch board support
-- Added support for python3 in memanalyzer and ota scripts (thanks to Ryan Jarvis)
+- Added support for python3 in memanalyzer and ota scripts (thanks to @Cabalist)
 - Added BSSID, RSSI, channels and distance to web UI status tab
 - Added mDNS name resolving to MQTT, InfluxDB and NoFUSS modules ([#129](https://github.com/xoseperez/espurna/issues/129), disabled by default)
 
@@ -143,7 +197,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.11.4] 2018-01-09
 ### Fixed
 - Fix bug in RF Bridge when RF code contains the stop byte. Check overflow ([#357](https://github.com/xoseperez/espurna/issues/357))
-- Fixed typos in code and wiki (Thanks to Ryan Jarvis)
+- Fixed typos in code and wiki (Thanks to @Cabalist)
 - Fix bug in magnitude topic and units ([#355](https://github.com/xoseperez/espurna/issues/355))
 
 ### Added
