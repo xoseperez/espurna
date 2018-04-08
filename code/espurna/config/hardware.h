@@ -51,33 +51,6 @@
 // Development boards
 // -----------------------------------------------------------------------------
 
-#elif defined(SWIFITCH)
-  // https://github.com/ArnieX/swifitch
-
-  // Info
-  #define MANUFACTURER          "SWIFITCH"
-  #define DEVICE                "SWIFITCH"
-
-  // Buttons
-  #define BUTTON1_PIN         4 // D2
-  #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-  #define BUTTON1_RELAY       1
-
-  #define BUTTON1_PRESS           BUTTON_MODE_NONE
-  #define BUTTON1_CLICK           BUTTON_MODE_TOGGLE
-  #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-  #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-  #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
-
-
-  // Relays
-  #define RELAY1_PIN          5 // D1
-  #define RELAY1_TYPE         RELAY_TYPE_INVERSE
-
-  // LEDs
-  #define LED1_PIN            12 // D6
-  #define LED1_PIN_INVERSE    1
-
 #elif defined(NODEMCU_LOLIN)
 
     // Info
@@ -1793,6 +1766,36 @@
 
     #define LED1_PIN                2
     #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
+// SWIFITCH
+// https://github.com/ArnieX/swifitch
+// -----------------------------------------------------------------------------
+
+#elif defined(ARNIEX_SWIFITCH)
+
+    // Info
+    #define MANUFACTURER          "ARNIEX"
+    #define DEVICE                "SWIFITCH"
+
+    // Buttons
+    #define BUTTON1_PIN           4 // D2
+    #define BUTTON1_MODE          BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY         1
+
+    #define BUTTON1_PRESS         BUTTON_MODE_NONE
+    #define BUTTON1_CLICK         BUTTON_MODE_TOGGLE
+    #define BUTTON1_DBLCLICK      BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK      BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK   BUTTON_MODE_NONE
+
+    // Relays
+    #define RELAY1_PIN            5 // D1
+    #define RELAY1_TYPE           RELAY_TYPE_INVERSE
+
+    // LEDs
+    #define LED1_PIN              12 // D6
+    #define LED1_PIN_INVERSE      1
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

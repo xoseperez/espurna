@@ -70,6 +70,7 @@
 //#define TONBUX_XSSSA06
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
+//#define ARNIEX_SWIFITCH
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
