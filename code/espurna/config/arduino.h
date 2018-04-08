@@ -71,6 +71,9 @@
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
 //#define ARNIEX_SWIFITCH
+//#define GENERIC_ESP01SRELAY40
+//#define GENERIC_ESP01SRGBLED10
+//#define HELTEC_TOUCHRELAY
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

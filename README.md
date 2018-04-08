@@ -235,6 +235,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
+|![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
+|**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
 |||
 |**YJZK 2-gang switch**|**STM_RELAY**||
 
