@@ -1,16 +1,20 @@
 // -----------------------------------------------------------------------------
-// Analog Sensor (maps to an analogRead)
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// TMP3X Temperature Analog Sensor
+// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && TMP36_SUPPORT
+#if SENSOR_SUPPORT && TMP3X_SUPPORT
 
 #pragma once
 
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-class TMP36Sensor : public BaseSensor {
+#define TMP3X_TMP35                 35
+#define TMP3X_TMP36                 36
+#define TMP3X_TMP37                 37
+
+class TMP3XSensor : public BaseSensor {
 
     public:
 
@@ -18,9 +22,21 @@ class TMP36Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        TMP36Sensor(): BaseSensor() {
+        TMP3XSensor(): BaseSensor() {
             _count = 1;
-            _sensor_id = SENSOR_TMP36_ID;
+            _sensor_id = SENSOR_TMP3X_ID;
+        }
+
+        void setType(unsigned char type) {
+            if (type == _type) return;
+            if (35 <= type && type <= 37) {
+              _type = type;
+              _dirty = true;
+            }
+        }
+
+        unsigned char getType() {
+            return _type;
         }
 
         // ---------------------------------------------------------------------
@@ -35,7 +51,9 @@ class TMP36Sensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() {
-            return String("TMP36 @ TOUT");
+            char buffer[14];
+            snprintf(buffer, sizeof(buffer), "TMP%d @ TOUT", _type);
+            return String(buffer);
         }
 
         // Descriptive name of the slot # index
@@ -56,11 +74,19 @@ class TMP36Sensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return (double) analogRead(0) * 100 * (3.3 / 1024) - 50;
+            if (index == 0) {
+                double mV = 3300.0 * analogRead(0) / 1024.0;
+                if (_type == TMP3X_TMP35) return mV / 10.0;
+                if (_type == TMP3X_TMP36) return mV / 10.0 - 50.0;
+                if (_type == TMP3X_TMP37) return mV / 20.0;
+            }
             return 0;
         }
 
+    private:
+
+        unsigned char _type = TMP3X_TMP35;
 
 };
 
-#endif // SENSOR_SUPPORT && TMP36_SUPPORT
+#endif // SENSOR_SUPPORT && TMP3X_SUPPORT

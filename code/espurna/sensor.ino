@@ -484,9 +484,10 @@ void _sensorLoad() {
     }
     #endif
 
-    #if TMP36_SUPPORT
+    #if TMP3X_SUPPORT
     {
-        TMP36Sensor * sensor = new TMP36Sensor();
+        TMP3XSensor * sensor = new TMP3XSensor();
+        sensor->setType(TMP3X_TYPE);
         _sensors.push_back(sensor);
     }
     #endif
