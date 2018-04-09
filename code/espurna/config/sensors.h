@@ -521,7 +521,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef TMP3X_SUPPORT
-#define TMP3X_SUPPORT                   1
+#define TMP3X_SUPPORT                   0
 #endif
 
 #ifndef TMP3X_TYPE
