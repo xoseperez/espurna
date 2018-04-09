@@ -426,6 +426,15 @@ void _sensorLoad() {
     }
     #endif
 
+    #if HCSR04_SUPPORT
+    {
+        HCSR04Sensor * sensor = new HCSR04Sensor();
+        sensor->setTrigger(HCSR04_TRIGGER);
+        sensor->setEcho(HCSR04_ECHO);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if HLW8012_SUPPORT
     {
         HLW8012Sensor * sensor = new HLW8012Sensor();

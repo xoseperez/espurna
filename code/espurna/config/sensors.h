@@ -110,6 +110,7 @@
 #define SENSOR_GUVAS12SD_ID                 0x20
 #define SENSOR_CSE7766_ID                   0x21
 #define SENSOR_TMP3X_ID                     0x22
+#define SENSOR_HCSR04_ID                    0x23
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -136,8 +137,9 @@
 #define MAGNITUDE_CO2                       18
 #define MAGNITUDE_LUX                       19
 #define MAGNITUDE_UV                        20
+#define MAGNITUDE_DISTANCE                  21
 
-#define MAGNITUDE_MAX                       21
+#define MAGNITUDE_MAX                       22
 
 // =============================================================================
 // Specific data for each sensor
@@ -391,6 +393,23 @@
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
 
 //------------------------------------------------------------------------------
+// HC-SR04
+// Enable support by passing HCSR04_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef HCSR04_SUPPORT
+#define HCSR04_SUPPORT                  0
+#endif
+
+#ifndef HCSR04_TRIGGER
+#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
+#endif
+
+#ifndef HCSR04_ECHO
+#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
+#endif
+
+//------------------------------------------------------------------------------
 // HLW8012 Energy monitor IC
 // Enable support by passing HLW8012_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -601,7 +620,8 @@
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
     || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT \
-    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT || TMP3X_SUPPORT
+    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT || TMP3X_SUPPORT \
+    || HCSR04_SUPPORT
 #define SENSOR_SUPPORT                      1
 #else
 #define SENSOR_SUPPORT                      0
@@ -657,7 +677,8 @@ PROGMEM const unsigned char magnitude_decimals[] = {
     3, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0,
     0, 0, 0,
-    0, 0
+    0, 0,
+    2, 3
 };
 
 PROGMEM const char magnitude_unknown_topic[] = "unknown";
@@ -681,6 +702,7 @@ PROGMEM const char magnitude_pm10_topic[] = "pm10";
 PROGMEM const char magnitude_co2_topic[] = "co2";
 PROGMEM const char magnitude_lux_topic[] = "lux";
 PROGMEM const char magnitude_uv_topic[] = "uv";
+PROGMEM const char magnitude_distance_topic[] = "distance";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
@@ -689,7 +711,8 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
     magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
-    magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic
+    magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic,
+    magnitude_distance_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -707,6 +730,7 @@ PROGMEM const char magnitude_ugm3[] = "µg/m3";
 PROGMEM const char magnitude_ppm[] = "ppm";
 PROGMEM const char magnitude_lux[] = "lux";
 PROGMEM const char magnitude_uv[] = "uv";
+PROGMEM const char magnitude_distance[] = "m";
 
 PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_celsius, magnitude_percentage,
@@ -715,7 +739,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_percentage, magnitude_joules, magnitude_joules,
     magnitude_empty, magnitude_empty, magnitude_empty,
     magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
-    magnitude_ppm, magnitude_lux, magnitude_uv
+    magnitude_ppm, magnitude_lux, magnitude_uv,
+    magnitude_distance
 };
 
 #include "../sensors/BaseSensor.h"
@@ -776,6 +801,10 @@ PROGMEM const char* const magnitude_units[] = {
 
 #if GUVAS12SD_SUPPORT
     #include "../sensors/GUVAS12SDSensor.h"
+#endif
+
+#if HCSR04_SUPPORT
+    #include "../sensors/HCSR04Sensor.h"
 #endif
 
 #if HLW8012_SUPPORT

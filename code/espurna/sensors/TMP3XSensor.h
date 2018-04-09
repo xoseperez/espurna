@@ -28,10 +28,8 @@ class TMP3XSensor : public BaseSensor {
         }
 
         void setType(unsigned char type) {
-            if (type == _type) return;
             if (35 <= type && type <= 37) {
               _type = type;
-              _dirty = true;
             }
         }
 
