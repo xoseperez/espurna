@@ -62,7 +62,7 @@ function magnitudeType(type) {
 function magnitudeError(error) {
     var errors = [
         "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
-        "Data Error", "I2C Error", "GPIO Error"
+        "Data Error", "I2C Error", "GPIO Error", "Calibration error"
     ];
     if (0 <= error && error < errors.length) {
         return errors[error];

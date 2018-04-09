@@ -154,6 +154,13 @@ void _sensorWebSocketStart(JsonObject& root) {
             }
         #endif
 
+        #if CSE7766_SUPPORT
+            if (sensor->getID() == SENSOR_CSE7766_ID) {
+                root["cseVisible"] = 1;
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
         #if V9261F_SUPPORT
             if (sensor->getID() == SENSOR_V9261F_ID) {
                 root["pwrVisible"] = 1;
@@ -309,6 +316,14 @@ void _sensorLoad() {
     {
         BMX280Sensor * sensor = new BMX280Sensor();
         sensor->setAddress(BMX280_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if CSE7766_SUPPORT
+    {
+        CSE7766Sensor * sensor = new CSE7766Sensor();
+        sensor->setRX(CSE7766_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -586,6 +601,27 @@ void _sensorInit() {
 
         #endif // HLW8012_SUPPORT
 
+        #if CSE7766_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
+
+                CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
+
+                double value;
+
+                value = getSetting("pwrRatioC", 0).toFloat();
+                if (value > 0) sensor->setCurrentRatio(value);
+
+                value = getSetting("pwrRatioV", 0).toFloat();
+                if (value > 0) sensor->setVoltageRatio(value);
+
+                value = getSetting("pwrRatioP", 0).toFloat();
+                if (value > 0) sensor->setPowerRatio(value);
+
+            }
+
+        #endif // CSE7766_SUPPORT
+
     }
 
 }
@@ -687,6 +723,43 @@ void _sensorConfigure() {
             }
 
         #endif // HLW8012_SUPPORT
+
+        #if CSE7766_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
+
+                double value;
+                CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
+
+                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                    sensor->expectedCurrent(value);
+                    setSetting("pwrRatioC", sensor->getCurrentRatio());
+                }
+
+                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                    sensor->expectedVoltage(value);
+                    setSetting("pwrRatioV", sensor->getVoltageRatio());
+                }
+
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                    sensor->expectedPower(value);
+                    setSetting("pwrRatioP", sensor->getPowerRatio());
+                }
+
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    sensor->resetRatios();
+                    delSetting("pwrRatioC");
+                    delSetting("pwrRatioV");
+                    delSetting("pwrRatioP");
+                }
+
+            }
+
+        #endif // CSE7766_SUPPORT
 
     }
 
