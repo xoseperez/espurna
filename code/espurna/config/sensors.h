@@ -243,7 +243,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef CSE7766_SUPPORT
-#define CSE7766_SUPPORT                 1
+#define CSE7766_SUPPORT                 0
 #endif
 
 #ifndef CSE7766_PIN
