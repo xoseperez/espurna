@@ -484,6 +484,13 @@ void _sensorLoad() {
     }
     #endif
 
+    #if TMP36_SUPPORT
+    {
+        TMP36Sensor * sensor = new TMP36Sensor();
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if V9261F_SUPPORT
     {
         V9261FSensor * sensor = new V9261FSensor();

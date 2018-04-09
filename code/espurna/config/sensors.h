@@ -109,6 +109,7 @@
 #define SENSOR_AM2320_ID                    0x19
 #define SENSOR_GUVAS12SD_ID                 0x20
 #define SENSOR_CSE7766_ID                   0x21
+#define SENSOR_TMP36_ID                     0x22
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -515,6 +516,20 @@
 #endif
 
 //------------------------------------------------------------------------------
+// TMP36 analog temperature sensor
+// Enable support by passing TMP36_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef TMP36_SUPPORT
+#define TMP36_SUPPORT                   1
+#endif
+
+#if TMP36_SUPPORT
+#undef ADC_VCC_ENABLED
+#define ADC_VCC_ENABLED                 0
+#endif
+
+//------------------------------------------------------------------------------
 // V9261F based power sensor
 // Enable support by passing SI7021_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -582,7 +597,7 @@
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
     || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT \
-    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT
+    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT || TMP36_SUPPORT
 #define SENSOR_SUPPORT                      1
 #else
 #define SENSOR_SUPPORT                      0
@@ -701,6 +716,10 @@ PROGMEM const char* const magnitude_units[] = {
 
 #include "../sensors/BaseSensor.h"
 
+#if AM2320_SUPPORT
+    #include "../sensors/AM2320Sensor.h"
+#endif
+
 #if ANALOG_SUPPORT
     #include "../sensors/AnalogSensor.h"
 #endif
@@ -751,6 +770,10 @@ PROGMEM const char* const magnitude_units[] = {
     #include "../sensors/EventSensor.h"
 #endif
 
+#if GUVAS12SD_SUPPORT
+    #include "../sensors/GUVAS12SDSensor.h"
+#endif
+
 #if HLW8012_SUPPORT
     #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
@@ -780,17 +803,13 @@ PROGMEM const char* const magnitude_units[] = {
     #include "../sensors/SHT3XI2CSensor.h"
 #endif
 
+#if TMP36_SUPPORT
+    #include "../sensors/TMP36Sensor.h"
+#endif
+
 #if V9261F_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
-#endif
-
-#if AM2320_SUPPORT
-    #include "../sensors/AM2320Sensor.h"
-#endif
-
-#if GUVAS12SD_SUPPORT
-    #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT
