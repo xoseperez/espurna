@@ -10,6 +10,7 @@ firmware*
 credentials.h
 node_modules
 code/utils
+code/package-lock.json
 custom.h
 .python
 .env

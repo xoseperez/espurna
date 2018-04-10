@@ -6,7 +6,7 @@ echo "ESPURNA FIRMWARE BUILDER"
 
 # Available environments
 travis=$(grep env: platformio.ini | grep travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
-available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | grep -v travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
+available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | grep -v custom| grep -v travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
 
 # Parameters
 environments=$@
@@ -64,7 +64,7 @@ echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
 for environment in $environments; do
     echo "* espurna-$version-$environment.bin"
-    platformio run --silent --environment $environment || break
+    platformio run --silent --environment $environment || exit 1
     mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
 done
 echo "--------------------------------------------------------------"
