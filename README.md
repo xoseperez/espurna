@@ -239,6 +239,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**IKE ESPike**|**STM_RELAY**|**Arniex Swifitch**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
+|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
+|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
 
 **Other supported boards:**
 *TODO*
