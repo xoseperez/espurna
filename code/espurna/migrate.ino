@@ -843,11 +843,42 @@ void migrate() {
             setSetting("btnGPIO", 2, 13);
             setSetting("btnRelay", 2, 2);
             setSetting("relayGPIO", 0, 4);
-            setSetting("relayType", 0, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayGPIO", 1, 5);
-            setSetting("relayType", 1, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
             setSetting("relayGPIO", 2, 16);
-            setSetting("relayType", 2, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+
+        #elif defined(ARNIEX_SWIFITCH)
+
+            setSetting("board", 64);
+            setSetting("ledGPIO", 0, 12);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 4);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_INVERSE);
+
+        #elif defined(GENERIC_ESP01SRELAY40)
+
+            setSetting("board", 65);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 0);
+            setSetting("relayGPIO", 0, 0);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(GENERIC_ESP01SRGBLED10)
+
+            setSetting("board", 66);
+            setSetting("ledGPIO", 0, 2);
+
+        #elif defined(HELTEC_TOUCHRELAY)
+
+            setSetting("board", 67);
+            setSetting("btnGPIO", 0, 14);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
         #else
 
