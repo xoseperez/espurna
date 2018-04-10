@@ -225,5 +225,6 @@
 #define MAGNITUDE_CO2                       18
 #define MAGNITUDE_LUX                       19
 #define MAGNITUDE_UV                        20
+#define MAGNITUDE_DISTANCE                  21
 
-#define MAGNITUDE_MAX                       21
+#define MAGNITUDE_MAX                       22

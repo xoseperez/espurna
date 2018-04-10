@@ -905,7 +905,7 @@
 #endif
 
 #ifndef NTP_TIME_OFFSET
-#define NTP_TIME_OFFSET         1               // Default timezone offset (GMT+1)
+#define NTP_TIME_OFFSET         60               // Default timezone offset (GMT+1)
 #endif
 
 #ifndef NTP_DAY_LIGHT
