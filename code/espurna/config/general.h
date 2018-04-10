@@ -902,10 +902,16 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_MAX_VALUE         255         // Maximum light value
 #endif
 
+#ifndef LIGHT_MAX_BRIGHTNESS
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#endif
 //#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
 //#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
+#ifndef LIGHT_DEFAULT_MIREDS
 #define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
+#endif
+
+#ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
 #endif
 
