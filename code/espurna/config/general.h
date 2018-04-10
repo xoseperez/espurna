@@ -276,9 +276,6 @@
 // Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
 #define WEB_SSL_ENABLED         0           // Use HTTPS web interface
 
-#define WEB_MODE_NORMAL         0
-#define WEB_MODE_PASSWORD       1
-
 #define WEB_USERNAME            "admin"     // HTTP username
 #define WEB_FORCE_PASS_CHANGE   1           // Force the user to change the password if default one
 #define WEB_PORT                80          // HTTP port
