@@ -119,6 +119,7 @@
 #define WEB_SUPPORT             1           // Chicken and egg :)
 #endif
 
+#ifndef DEBUG_WEB_ENABLED
 #define DEBUG_WEB_ENABLED       1           // Enable debug output by default
 #endif
 
