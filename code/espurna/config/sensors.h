@@ -140,6 +140,30 @@
 #endif
 
 //------------------------------------------------------------------------------
+// CSE7766 based power sensor
+// Enable support by passing CSE7766_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef CSE7766_SUPPORT
+#define CSE7766_SUPPORT                 0
+#endif
+
+#ifndef CSE7766_PIN
+#define CSE7766_PIN                     1       // TX pin from the CSE7766
+#endif
+
+#ifndef CSE7766_PIN_INVERSE
+#define CSE7766_PIN_INVERSE             0       // Signal is inverted
+#endif
+
+#define CSE7766_SYNC_INTERVAL           300     // Safe time between transmissions (ms)
+#define CSE7766_BAUDRATE                4800    // UART baudrate
+
+#define CSE7766_V1R                     1.0     // 1mR current resistor
+#define CSE7766_V2R                     1.0     // 1M voltage resistor
+
+
+//------------------------------------------------------------------------------
 // Digital sensor
 // Enable support by passing DIGITAL_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -251,6 +275,23 @@
 #endif
 
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
+
+//------------------------------------------------------------------------------
+// HC-SR04
+// Enable support by passing HCSR04_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef HCSR04_SUPPORT
+#define HCSR04_SUPPORT                  0
+#endif
+
+#ifndef HCSR04_TRIGGER
+#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
+#endif
+
+#ifndef HCSR04_ECHO
+#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
+#endif
 
 //------------------------------------------------------------------------------
 // HLW8012 Energy monitor IC
@@ -368,6 +409,24 @@
 #endif
 
 //------------------------------------------------------------------------------
+// TMP3X analog temperature sensor
+// Enable support by passing TMP3X_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef TMP3X_SUPPORT
+#define TMP3X_SUPPORT                   0
+#endif
+
+#ifndef TMP3X_TYPE
+#define TMP3X_TYPE                      TMP3X_TMP35
+#endif
+
+#if TMP3X_SUPPORT
+#undef ADC_VCC_ENABLED
+#define ADC_VCC_ENABLED                 0
+#endif
+
+//------------------------------------------------------------------------------
 // V9261F based power sensor
 // Enable support by passing SI7021_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -429,7 +488,9 @@
     || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
     || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
     || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
-    || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT || GUVAS12SD_SUPPORT
+    || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT \
+    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT || TMP3X_SUPPORT \
+    || HCSR04_SUPPORT
 #define SENSOR_SUPPORT                      1
 #else
 #define SENSOR_SUPPORT                      0
@@ -481,6 +542,10 @@
 
 #include "../sensors/BaseSensor.h"
 
+#if AM2320_SUPPORT
+    #include "../sensors/AM2320Sensor.h"
+#endif
+
 #if ANALOG_SUPPORT
     #include "../sensors/AnalogSensor.h"
 #endif
@@ -491,6 +556,11 @@
 
 #if BMX280_SUPPORT
     #include "../sensors/BMX280Sensor.h"
+#endif
+
+#if CSE7766_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/CSE7766Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
@@ -526,6 +596,14 @@
     #include "../sensors/EventSensor.h"
 #endif
 
+#if GUVAS12SD_SUPPORT
+    #include "../sensors/GUVAS12SDSensor.h"
+#endif
+
+#if HCSR04_SUPPORT
+    #include "../sensors/HCSR04Sensor.h"
+#endif
+
 #if HLW8012_SUPPORT
     #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
@@ -555,17 +633,13 @@
     #include "../sensors/SHT3XI2CSensor.h"
 #endif
 
+#if TMP3X_SUPPORT
+    #include "../sensors/TMP3XSensor.h"
+#endif
+
 #if V9261F_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
-#endif
-
-#if AM2320_SUPPORT
-    #include "../sensors/AM2320Sensor.h"
-#endif
-
-#if GUVAS12SD_SUPPORT
-    #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT

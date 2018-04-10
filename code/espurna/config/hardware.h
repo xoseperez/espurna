@@ -768,6 +768,33 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(ITEAD_SONOFF_S31)
+
+    // Info
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_S31"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
+
+    // Disable UART noise
+    #define TERMINAL_SUPPORT        0
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // CSE7766
+    #define CSE7766_SUPPORT         1
+    #define CSE7766_PIN             1
+
 // -----------------------------------------------------------------------------
 // YJZK
 // -----------------------------------------------------------------------------
@@ -1766,6 +1793,98 @@
 
     #define LED1_PIN                2
     #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
+// SWIFITCH
+// https://github.com/ArnieX/swifitch
+// -----------------------------------------------------------------------------
+
+#elif defined(ARNIEX_SWIFITCH)
+
+    // Info
+    #define MANUFACTURER          "ARNIEX"
+    #define DEVICE                "SWIFITCH"
+
+    // Buttons
+    #define BUTTON1_PIN           4 // D2
+    #define BUTTON1_MODE          BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY         1
+
+    #define BUTTON1_PRESS         BUTTON_MODE_NONE
+    #define BUTTON1_CLICK         BUTTON_MODE_TOGGLE
+    #define BUTTON1_DBLCLICK      BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK      BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK   BUTTON_MODE_NONE
+
+    // Relays
+    #define RELAY1_PIN            5 // D1
+    #define RELAY1_TYPE           RELAY_TYPE_INVERSE
+
+    // LEDs
+    #define LED1_PIN              12 // D6
+    #define LED1_PIN_INVERSE      1
+
+// -----------------------------------------------------------------------------
+// ESP-01S RELAY v4.0
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404024035&SearchText=esp-01s+relay
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01SRELAY40)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_RELAY_40"
+
+    // Relays
+    #define RELAY1_PIN          0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// ESP-01S RGB LED v1.0 (some sold with ws2818)
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404023816&SearchText=esp-01s+led+controller
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01SRGBLED10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_RGBLED_10"
+
+    // This board is sold as RGB LED module BUT it has on board 3 pin ph2.0 connector (VCC, GPIO2, GND)
+    // so, if you wish, you may connect LED, BUTTON, RELAY, SENSOR etc.
+
+    // Buttons
+    //#define BUTTON1_PIN         2
+
+    // Relays
+    //#define RELAY1_PIN          2
+
+    // LEDs
+    #define LED1_PIN            2
+
+// -----------------------------------------------------------------------------
+// Heltec Touch Relay
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180408043114&SearchText=esp8266+touch+relay
+// -----------------------------------------------------------------------------
+
+#elif defined(HELTEC_TOUCHRELAY)
+
+    // Info
+    #define MANUFACTURER        "HELTEC"
+    #define DEVICE              "TOUCH_RELAY"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

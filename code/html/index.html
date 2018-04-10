@@ -287,7 +287,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -408,7 +408,7 @@
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Reload the page to update the web interface.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Enabling this will render useless the "Channel 4" slider in the status page.<br />Reload the page to update the web interface.</div>
                                 </div>
 
                                 <div class="pure-g">
@@ -992,7 +992,7 @@
 
                             <fieldset>
 
-                                <div class="pure-g module module-telnet">
+                                <div class="pure-g module module-cmd">
                                     <div class="pure-u-1 hint">
                                         Write a command and click send to execute it on the device. The output will be shown in the debug text area below.
                                     </div>
@@ -1061,7 +1061,7 @@
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
                                     <select name="energyUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="0">Joules (J)</option>
@@ -1097,7 +1097,7 @@
                                     </div>
                                 </div>
 
-                                <legend class="module module-hlw module-emon">Energy monitor</legend>
+                                <legend class="module module-hlw module-cse module-emon">Energy monitor</legend>
 
                                 <div class="pure-g module module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
@@ -1106,28 +1106,28 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Mains voltage in your system (in V).</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw">
+                                <div class="pure-g module module-hlw module-cse">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw">
+                                <div class="pure-g module module-hlw module-cse">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Voltage</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedV" type="text" tabindex="53" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Power</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" tabindex="54" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="55" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
@@ -1135,7 +1135,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset energy</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetE" tabindex="56" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>

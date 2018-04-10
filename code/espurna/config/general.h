@@ -660,7 +660,6 @@
 
 // Light module
 #define MQTT_TOPIC_CHANNEL      "channel"
-#define MQTT_TOPIC_COLOR        "color"     // DEPRECATED, use RGB instead
 #define MQTT_TOPIC_COLOR_RGB    "rgb"
 #define MQTT_TOPIC_COLOR_HSV    "hsv"
 #define MQTT_TOPIC_ANIM_MODE    "anim_mode"
@@ -754,8 +753,9 @@
 
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 
-
-#ifndef LIGHT_STEP
+//#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
+//#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
+#define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
 #define LIGHT_STEP              32          // Step size
 #endif
 
@@ -902,6 +902,7 @@
 
 #ifndef NTP_TIMEOUT
 #define NTP_TIMEOUT             2000            // Set NTP request timeout to 2 seconds (issue #452)
+
 #endif
 
 #ifndef NTP_TIME_OFFSET
@@ -909,6 +910,7 @@
 #endif
 
 #ifndef NTP_DAY_LIGHT
+
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #endif
 

@@ -32,6 +32,7 @@
 //#define ITEAD_SONOFF_T1_1CH
 //#define ITEAD_SONOFF_T1_2CH
 //#define ITEAD_SONOFF_T1_3CH
+//#define ITEAD_SONOFF_S31
 //#define YJZK_SWITCH_2CH
 //#define ELECTRODRAGON_WIFI_IOT
 //#define WORKCHOICE_ECOPLUG
@@ -70,6 +71,10 @@
 //#define TONBUX_XSSSA06
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
+//#define ARNIEX_SWIFITCH
+//#define GENERIC_ESP01SRELAY40
+//#define GENERIC_ESP01SRGBLED10
+//#define HELTEC_TOUCHRELAY
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
