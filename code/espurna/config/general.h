@@ -8,9 +8,19 @@
 //------------------------------------------------------------------------------
 
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
+
+#ifndef ADMIN_PASS
 #define ADMIN_PASS              "fibonacci" // Default password (WEB, OTA, WIFI)
+#endif
+
+#ifndef USE_PASSWORD
 #define USE_PASSWORD            1           // Insecurity caution! Disabling this will disable password querying completely.
+#endif
+
+#ifndef LOOP_DELAY_TIME
 #define LOOP_DELAY_TIME         10          // Delay for this millis in the main loop [0-250]
+#endif
+
 
 #define ARRAYINIT(type, name, ...) \
     type name[] = {__VA_ARGS__};
@@ -78,8 +88,14 @@
 #ifndef DEBUG_UDP_SUPPORT
 #define DEBUG_UDP_SUPPORT       0               // Enable UDP debug log
 #endif
+
+#ifndef DEBUG_UDP_IP
 #define DEBUG_UDP_IP            IPAddress(192, 168, 1, 100)
+#endif
+
+#ifndef DEBUG_UDP_PORT
 #define DEBUG_UDP_PORT          8113
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -103,7 +119,9 @@
 #define WEB_SUPPORT             1           // Chicken and egg :)
 #endif
 
+#ifndef DEBUG_WEB_ENABLED
 #define DEBUG_WEB_ENABLED       1           // Enable debug output by default
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -139,6 +157,7 @@
 #endif
 
 #define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
+
 #ifndef SYSTEM_CHECK_MAX
 #define SYSTEM_CHECK_MAX        5               // After this many crashes on boot
                                                 // the system is flagged as unstable
@@ -187,8 +206,13 @@
 //------------------------------------------------------------------------------
 // Load average
 //------------------------------------------------------------------------------
+#ifndef LOADAVG_INTERVAL
 #define LOADAVG_INTERVAL        30000   // Interval between calculating load average (in ms)
+#endif
+
+#ifndef LOADAVG_REPORT
 #define LOADAVG_REPORT          1       // Should we report Load average over MQTT?
+#endif
 
 //------------------------------------------------------------------------------
 // RESET
@@ -291,28 +315,44 @@ PROGMEM const char* const custom_reset_string[] = {
 #define RELAY_PROVIDER_STM          4
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
+#ifndef RELAY_BOOT_MODE
 #define RELAY_BOOT_MODE             RELAY_BOOT_OFF
+#endif
 
 // 0 means ANY, 1 zero or one and 2 one and only one
+#ifndef RELAY_SYNC
 #define RELAY_SYNC                  RELAY_SYNC_ANY
+#endif
 
 // Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
+#ifndef RELAY_PULSE_MODE
 #define RELAY_PULSE_MODE            RELAY_PULSE_NONE
+#endif
 
 // Default pulse time in seconds
+#ifndef RELAY_PULSE_TIME
 #define RELAY_PULSE_TIME            1.0
+#endif
 
 // Relay requests flood protection window - in seconds
+#ifndef RELAY_FLOOD_WINDOW
 #define RELAY_FLOOD_WINDOW          3
+#endif
 
 // Allowed actual relay changes inside requests flood protection window
+#ifndef RELAY_FLOOD_CHANGES
 #define RELAY_FLOOD_CHANGES         5
+#endif
 
 // Pulse with in milliseconds for a latched relay
+#ifndef RELAY_LATCHING_PULSE
 #define RELAY_LATCHING_PULSE        10
+#endif
 
 // Do not save relay state after these many milliseconds
+#ifndef RELAY_SAVE_DELAY
 #define RELAY_SAVE_DELAY            1000
+#endif
 
 //------------------------------------------------------------------------------
 // LED
@@ -333,53 +373,84 @@ PROGMEM const char* const custom_reset_string[] = {
 // WIFI
 // -----------------------------------------------------------------------------
 
+#ifndef WIFI_CONNECT_TIMEOUT
 #define WIFI_CONNECT_TIMEOUT    60000               // Connecting timeout for WIFI in ms
+#endif
+
+#ifndef WIFI_RECONNECT_INTERVAL
 #define WIFI_RECONNECT_INTERVAL 180000              // If could not connect to WIFI, retry after this time in ms
+#endif
+
 #define WIFI_MAX_NETWORKS       5                   // Max number of WIFI connection configurations
+
+#ifndef WIFI_AP_MODE
 #define WIFI_AP_MODE            AP_MODE_ALONE
+#endif
+
+#ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE         WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
+#endif
+
+#ifndef WIFI_SCAN_NETWORKS
 #define WIFI_SCAN_NETWORKS      1                   // Perform a network scan before connecting
+#endif
 
 // Optional hardcoded configuration (up to 2 networks)
 #ifndef WIFI1_SSID
 #define WIFI1_SSID              ""
 #endif
+
 #ifndef WIFI1_PASS
 #define WIFI1_PASS              ""
 #endif
+
 #ifndef WIFI1_IP
 #define WIFI1_IP                ""
 #endif
+
 #ifndef WIFI1_GW
 #define WIFI1_GW                ""
 #endif
+
 #ifndef WIFI1_MASK
 #define WIFI1_MASK              ""
 #endif
+
 #ifndef WIFI1_DNS
 #define WIFI1_DNS               ""
 #endif
+
 #ifndef WIFI2_SSID
 #define WIFI2_SSID              ""
 #endif
+
 #ifndef WIFI2_PASS
 #define WIFI2_PASS              ""
 #endif
+
 #ifndef WIFI2_IP
 #define WIFI2_IP                ""
 #endif
+
 #ifndef WIFI2_GW
 #define WIFI2_GW                ""
 #endif
+
 #ifndef WIFI2_MASK
 #define WIFI2_MASK              ""
 #endif
+
 #ifndef WIFI2_DNS
 #define WIFI2_DNS               ""
 #endif
 
+#ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
+#endif
+
+#ifndef WIFI_PROPAGATION_CONST
 #define WIFI_PROPAGATION_CONST  4           // This is typically something between 2.7 to 4.3 (free space is 2)
+#endif
 
 // -----------------------------------------------------------------------------
 // WEB
@@ -395,35 +466,60 @@ PROGMEM const char* const custom_reset_string[] = {
 
 // This is not working at the moment!!
 // Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
+#ifndef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED         0           // Use HTTPS web interface
+#endif
 
-#define WEB_MODE_NORMAL         0
-#define WEB_MODE_PASSWORD       1
-
+#ifndef WEB_USERNAME
 #define WEB_USERNAME            "admin"     // HTTP username
+#endif
+
+#ifndef WEB_FORCE_PASS_CHANGE
 #define WEB_FORCE_PASS_CHANGE   1           // Force the user to change the password if default one
+#endif
+
+#ifndef WEB_PORT
 #define WEB_PORT                80          // HTTP port
+#endif
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
 // -----------------------------------------------------------------------------
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
-
+#ifndef WS_AUTHENTICATION
 #define WS_AUTHENTICATION       1           // WS authentication ON by default (see #507)
+#endif
+
+#ifndef WS_BUFFER_SIZE
 #define WS_BUFFER_SIZE          5           // Max number of secured websocket connections
+#endif
+
+#ifndef WS_TIMEOUT
 #define WS_TIMEOUT              1800000     // Timeout for secured websocket
+#endif
+
+#ifndef WS_UPDATE_INTERVAL
 #define WS_UPDATE_INTERVAL      30000       // Update clients every 30 seconds
+#endif
 
 // -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
-
+#ifndef API_ENABLED
 #define API_ENABLED             0           // Do not enable API by default
+#endif
+
+#ifndef API_BUFFER_SIZE
 #define API_BUFFER_SIZE         15          // Size of the buffer for HTTP GET API responses
+#endif
+
+#ifndef API_REAL_TIME_VALUES
 #define API_REAL_TIME_VALUES    0           // Show filtered/median values by default (0 => median, 1 => real time)
+#endif
+
 
 // -----------------------------------------------------------------------------
 // UI
@@ -480,7 +576,10 @@ PROGMEM const char* const custom_reset_string[] = {
 // OTA
 // -----------------------------------------------------------------------------
 
+#ifndef OTA_PORT
 #define OTA_PORT                8266        // OTA port
+#endif
+
 #define OTA_GITHUB_FP           "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
 
 // -----------------------------------------------------------------------------
@@ -491,9 +590,17 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NOFUSS_SUPPORT          0          // Do not enable support for NoFuss by default (12.65Kb)
 #endif
 
+#ifndef NOFUSS_ENABLED
 #define NOFUSS_ENABLED          0           // Do not perform NoFUSS updates by default
+#endif
+
+#ifndef NOFUSS_SERVER
 #define NOFUSS_SERVER           ""          // Default NoFuss Server
+#endif
+
+#ifndef NOFUSS_INTERVAL
 #define NOFUSS_INTERVAL         3600000     // Check for updates every hour
+#endif
 
 // -----------------------------------------------------------------------------
 // UART <-> MQTT
@@ -503,11 +610,26 @@ PROGMEM const char* const custom_reset_string[] = {
 #define UART_MQTT_SUPPORT       0           // No support by default
 #endif
 
+#ifndef UART_MQTT_USE_SOFT
 #define UART_MQTT_USE_SOFT      0           // Use SoftwareSerial
+#endif
+
+#ifndef UART_MQTT_HW_PORT
 #define UART_MQTT_HW_PORT       Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
+#endif
+
+#ifndef UART_MQTT_RX_PIN
 #define UART_MQTT_RX_PIN        4           // RX PIN (if UART_MQTT_USE_SOFT == 1)
+#endif
+
+#ifndef UART_MQTT_TX_PIN
 #define UART_MQTT_TX_PIN        5           // TX PIN (if UART_MQTT_USE_SOFT == 1)
+#endif
+
+#ifndef UART_MQTT_BAUDRATE
 #define UART_MQTT_BAUDRATE      115200      // Serial speed
+#endif
+
 #define UART_MQTT_BUFFER_SIZE   100         // UART buffer size
 
 #if UART_MQTT_SUPPORT
@@ -548,31 +670,91 @@ PROGMEM const char* const custom_reset_string[] = {
 // $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
 // $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
 
+#ifndef MQTT_SSL_ENABLED
 #define MQTT_SSL_ENABLED            0               // By default MQTT over SSL will not be enabled
+#endif
+
+#ifndef MQTT_SSL_FINGERPRINT
 #define MQTT_SSL_FINGERPRINT        ""              // SSL fingerprint of the server
+#endif
 
+
+#ifndef MQTT_ENABLED
 #define MQTT_ENABLED                0               // Do not enable MQTT connection by default
+#endif
+
+#ifndef MQTT_AUTOCONNECT
 #define MQTT_AUTOCONNECT            1               // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
+#endif
+
                                                     // autoconnect to the first MQTT broker found if none defined
+#ifndef MQTT_SERVER
 #define MQTT_SERVER                 ""              // Default MQTT broker address
+#endif
+
+#ifndef MQTT_USER
 #define MQTT_USER                   ""              // Default MQTT broker usename
+#endif
+
+#ifndef MQTT_PASS
 #define MQTT_PASS                   ""              // Default MQTT broker password
+#endif
+
+#ifndef MQTT_PORT
 #define MQTT_PORT                   1883            // MQTT broker port
+#endif
+
+#ifndef MQTT_TOPIC
 #define MQTT_TOPIC                  "{hostname}"    // Default MQTT base topic
+#endif
+
+#ifndef MQTT_RETAIN
 #define MQTT_RETAIN                 true            // MQTT retain flag
+#endif
+
+#ifndef MQTT_QOS
 #define MQTT_QOS                    0               // MQTT QoS value for all messages
+#endif
+
+#ifndef MQTT_KEEPALIVE
 #define MQTT_KEEPALIVE              30              // MQTT keepalive value
+#endif
 
+
+#ifndef MQTT_RECONNECT_DELAY_MIN
 #define MQTT_RECONNECT_DELAY_MIN    5000            // Try to reconnect in 5 seconds upon disconnection
+#endif
+
+#ifndef MQTT_RECONNECT_DELAY_STEP
 #define MQTT_RECONNECT_DELAY_STEP   5000            // Increase the reconnect delay in 5 seconds after each failed attempt
+#endif
+
+#ifndef MQTT_RECONNECT_DELAY_MAX
 #define MQTT_RECONNECT_DELAY_MAX    120000          // Set reconnect time to 2 minutes at most
+#endif
 
+
+#ifndef MQTT_SKIP_RETAINED
 #define MQTT_SKIP_RETAINED          1               // Skip retained messages on connection
-#define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
+#endif
 
+#ifndef MQTT_SKIP_TIME
+#define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
+#endif
+
+
+#ifndef MQTT_USE_JSON
 #define MQTT_USE_JSON               0               // Group messages in a JSON body
+#endif
+
+#ifndef MQTT_USE_JSON_DELAY
 #define MQTT_USE_JSON_DELAY         100             // Wait this many ms before grouping messages
+#endif
+
+#ifndef MQTT_QUEUE_MAX_SIZE
 #define MQTT_QUEUE_MAX_SIZE         20              // Size of the MQTT queue when MQTT_USE_JSON is enabled
+#endif
+
 
 // These are the properties that will be sent when useJson is true
 #ifndef MQTT_ENQUEUE_IP
@@ -693,7 +875,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
 #endif
 
+#ifndef LIGHT_SAVE_DELAY
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
+#endif
+
 
 #ifndef LIGHT_MAX_PWM
 
@@ -715,24 +900,57 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_MAX_VALUE         255         // Maximum light value
 #endif
 
+#ifndef LIGHT_MAX_BRIGHTNESS
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#endif
 //#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
 //#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
+#ifndef LIGHT_DEFAULT_MIREDS
 #define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
+#endif
+
+#ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
+#endif
+
+#ifndef LIGHT_USE_COLOR
 #define LIGHT_USE_COLOR         1           // Use 3 first channels as RGB
+#endif
+
+#ifndef LIGHT_USE_WHITE
 #define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
+#endif
+
+#ifndef LIGHT_USE_GAMMA
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
+#endif
+
+#ifndef LIGHT_USE_CSS
 #define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
+#endif
+
+#ifndef LIGHT_USE_RGB
 #define LIGHT_USE_RGB           0           // Use RGB color selector (1=> RGB, 0=> HSV)
+#endif
+
 #ifndef LIGHT_WHITE_FACTOR
 #define LIGHT_WHITE_FACTOR      1           // When using LIGHT_USE_WHITE with uneven brightness LEDs,
                                             // this factor is used to scale the white channel to match brightness
 #endif
 
+
+#ifndef LIGHT_USE_TRANSITIONS
 #define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
+#endif
+
+#ifndef LIGHT_TRANSITION_STEP
 #define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
+#endif
+
+#ifndef LIGHT_TRANSITION_TIME
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
+#endif
+
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
@@ -775,12 +993,30 @@ PROGMEM const char* const custom_reset_string[] = {
 #define INFLUXDB_SUPPORT        0               // Disable InfluxDB support by default (4.38Kb)
 #endif
 
+#ifndef INFLUXDB_ENABLED
 #define INFLUXDB_ENABLED        0               // InfluxDB disabled by default
+#endif
+
+#ifndef INFLUXDB_HOST
 #define INFLUXDB_HOST           ""              // Default server
+#endif
+
+#ifndef INFLUXDB_PORT
 #define INFLUXDB_PORT           8086            // Default InfluxDB port
+#endif
+
+#ifndef INFLUXDB_DATABASE
 #define INFLUXDB_DATABASE       ""              // Default database
+#endif
+
+#ifndef INFLUXDB_USERNAME
 #define INFLUXDB_USERNAME       ""              // Default username
+#endif
+
+#ifndef INFLUXDB_PASSWORD
 #define INFLUXDB_PASSWORD       ""              // Default password
+#endif
+
 
 // -----------------------------------------------------------------------------
 // THINGSPEAK
@@ -843,14 +1079,38 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_SUPPORT             1               // Build with NTP support by default (6.78Kb)
 #endif
 
+#ifndef NTP_SERVER
 #define NTP_SERVER              "pool.ntp.org"  // Default NTP server
+#endif
+
+#ifndef NTP_TIMEOUT
 #define NTP_TIMEOUT             2000            // Set NTP request timeout to 2 seconds (issue #452)
+#endif
+
+#ifndef NTP_TIME_OFFSET
 #define NTP_TIME_OFFSET         60              // Default timezone offset (GMT+1)
+#endif
+
+#ifndef NTP_DAY_LIGHT
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
+#endif
+
+#ifndef NTP_SYNC_INTERVAL
 #define NTP_SYNC_INTERVAL       60              // NTP initial check every minute
+#endif
+
+#ifndef NTP_UPDATE_INTERVAL
 #define NTP_UPDATE_INTERVAL     1800            // NTP check every 30 minutes
+#endif
+
+#ifndef NTP_START_DELAY
 #define NTP_START_DELAY         1000            // Delay NTP start 1 second
+#endif
+
+#ifndef NTP_DST_REGION
 #define NTP_DST_REGION          0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
+#endif
+
 
 // -----------------------------------------------------------------------------
 // ALEXA
@@ -871,12 +1131,24 @@ PROGMEM const char* const custom_reset_string[] = {
 // This module is not compatible with RF_SUPPORT=1
 // -----------------------------------------------------------------------------
 
+#ifndef RF_SEND_TIMES
 #define RF_SEND_TIMES           4               // How many times to send the message
-#define RF_SEND_DELAY           500             // Interval between sendings in ms
-#define RF_RECEIVE_DELAY        500             // Interval between recieving in ms (avoid debouncing)
+#endif
 
+#ifndef RF_SEND_DELAY
+#define RF_SEND_DELAY           500             // Interval between sendings in ms
+#endif
+
+#ifndef RF_RECEIVE_DELAY
+#define RF_RECEIVE_DELAY        500             // Interval between recieving in ms (avoid debouncing)
+#endif
+
+
+#ifndef RF_RAW_SUPPORT
 #define RF_RAW_SUPPORT          0               // RF raw codes require a specific firmware for the EFM8BB1
                                                 // https://github.com/rhx/RF-Bridge-EFM8BB1
+#endif
+
 
 // -----------------------------------------------------------------------------
 // IR
