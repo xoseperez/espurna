@@ -77,6 +77,7 @@
 //#define GENERIC_ESP01S_DHT11_V10
 //#define GENERIC_ESP01S_DS18B20_V10
 //#define HELTEC_TOUCHRELAY
+//#define PILOTAK_ESP_DIN_V1
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
