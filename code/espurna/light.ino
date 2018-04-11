@@ -99,6 +99,7 @@ void _generateBrightness() {
             _light_channel[i].value = _light_channel[i].inputValue - white;
         }
         _light_channel[3].value = white;
+        _light_channel[3].inputValue = 0;
 
         max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
         if (max_out > 0) {
