@@ -1082,7 +1082,13 @@ PROGMEM const char* const custom_reset_string[] = {
 
 #ifndef NTP_TIMEOUT
 #define NTP_TIMEOUT             2000            // Set NTP request timeout to 2 seconds (issue #452)
+#endif
+
+#ifndef NTP_TIME_OFFSET
 #define NTP_TIME_OFFSET         60              // Default timezone offset (GMT+1)
+#endif
+
+#ifndef NTP_DAY_LIGHT
 #define NTP_DAY_LIGHT           true            // Enable daylight time saving by default
 #endif
 
