@@ -398,6 +398,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // Optional hardcoded configuration (up to 2 networks)
 #ifndef WIFI1_SSID
 #define WIFI1_SSID              ""
+#endif
 
 #ifndef WIFI1_PASS
 #define WIFI1_PASS              ""
@@ -419,10 +420,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WIFI1_DNS               ""
 #endif
 
-#endif // WIFI1
-
 #ifndef WIFI2_SSID
 #define WIFI2_SSID              ""
+#endif
 
 #ifndef WIFI2_PASS
 #define WIFI2_PASS              ""
@@ -443,8 +443,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #ifndef WIFI2_DNS
 #define WIFI2_DNS               ""
 #endif
-
-#endif // WIFI2
 
 #ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M            -30         // Calibrate it with your router reading the RSSI at 1m
