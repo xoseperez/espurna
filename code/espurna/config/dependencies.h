@@ -20,7 +20,7 @@
 #define WEB_SUPPORT             1           // Chicken and egg :)
 #endif
 
-#if WEB_SUPPORT == 0
+#if not WEB_SUPPORT
 #undef SSDP_SUPPORT
 #define SSDP_SUPPORT            0           // SSDP support requires web support
 #endif
