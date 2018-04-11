@@ -7,6 +7,11 @@
 
 #pragma once
 
+#if ADC_VCC_ENABLED
+    ADC_MODE(ADC_VCC);
+#endif
+
+
 #include "Arduino.h"
 #include "BaseSensor.h"
 

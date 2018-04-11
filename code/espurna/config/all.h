@@ -24,12 +24,15 @@
 #endif
 
 #include "version.h"
+#include "types.h"
 #include "arduino.h"
 #include "hardware.h"
 #include "defaults.h"
 #include "general.h"
 #include "prototypes.h"
 #include "sensors.h"
+#include "progmem.h"
+#include "dependencies.h"
 
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"
