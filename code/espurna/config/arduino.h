@@ -72,8 +72,10 @@
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
 //#define ARNIEX_SWIFITCH
-//#define GENERIC_ESP01SRELAY40
-//#define GENERIC_ESP01SRGBLED10
+//#define GENERIC_ESP01S_RELAY_V40
+//#define GENERIC_ESP01S_RGBLED_V10
+//#define GENERIC_ESP01S_DHT11_V10
+//#define GENERIC_ESP01S_DS18B20_V10
 //#define HELTEC_TOUCHRELAY
 
 //--------------------------------------------------------------------------------

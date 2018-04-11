@@ -215,8 +215,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**Tonbux PowerStrip02**
-|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![Swifitch](images/devices/swifitch.png)|
-|**Itead Sonoff Touch**|**Itead Sonoff T1**|Swifitch|
+|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK 2-gang switch](images/devices/yjzk-2gang-switch.jpg)|
+|**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 2-gang switch**|
 |![Itead Slampher](images/devices/itead-slampher.jpg)|||
 |**Itead Slampher**|||
 |![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|
@@ -235,10 +235,12 @@ Here is the list of supported hardware. For more information please refer to the
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
+|![IKE ESPike](images/devices/ike-espike.jpg)||![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
+|**IKE ESPike**|**STM_RELAY**|**Arniex Swifitch**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
-|||
-|**YJZK 2-gang switch**|**STM_RELAY**||
+|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
+|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
 
 **Other supported boards:**
 *TODO*
