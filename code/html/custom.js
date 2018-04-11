@@ -1303,6 +1303,7 @@ function initUrls(root) {
     });
 
     urls.ws.protocol = "ws";
+    
 }
 
 function connectToURL(url) {
@@ -1318,18 +1319,15 @@ function connectToURL(url) {
 }
 
 function connect(host) {
-
     if (!host.startsWith("http:") && !host.startsWith("https:")) {
         host = "http://" + host;
     }
-
     connectToURL(new URL(host));
 }
 
 function connectToCurrentURL() {
     connectToURL(new URL(window.location));
 }
-
 
 $(function() {
 
