@@ -129,15 +129,18 @@ bool ntpSynced() {
     return (year() > 2017);
 }
 
-String ntpDateTime() {
-    if (!ntpSynced()) return String();
+String ntpDateTime(time_t t) {
     char buffer[20];
-    time_t t = now();
     snprintf_P(buffer, sizeof(buffer),
         PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
         year(t), month(t), day(t), hour(t), minute(t), second(t)
     );
     return String(buffer);
+}
+
+String ntpDateTime() {
+    if (ntpSynced()) return ntpDateTime(now());
+    return String();
 }
 
 // -----------------------------------------------------------------------------

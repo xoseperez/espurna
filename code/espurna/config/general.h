@@ -1115,7 +1115,6 @@ PROGMEM const char* const custom_reset_string[] = {
 #define NTP_DST_REGION          0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
 #endif
 
-
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------
