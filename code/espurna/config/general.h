@@ -470,6 +470,9 @@ PROGMEM const char* const custom_reset_string[] = {
 #define WEB_SSL_ENABLED         0           // Use HTTPS web interface
 #endif
 
+#define WEB_MODE_NORMAL         0
+#define WEB_MODE_PASSWORD       1
+
 #ifndef WEB_USERNAME
 #define WEB_USERNAME            "admin"     // HTTP username
 #endif
@@ -903,6 +906,7 @@ PROGMEM const char* const custom_reset_string[] = {
 #ifndef LIGHT_MAX_BRIGHTNESS
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #endif
+
 //#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
 //#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
 #ifndef LIGHT_DEFAULT_MIREDS
