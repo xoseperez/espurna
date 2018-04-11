@@ -1,5 +1,4 @@
-#ifndef DEPENDENCIES_H
-#define DEPENDENCIES_H
+#pragma once
 
 //------------------------------------------------------------------------------
 // Do not change this file unless you know what you are doing
@@ -73,4 +72,3 @@
 // I2C dependencies moved to actual sensor files.
 
 //------------------------------------------------------------------------------
-#endif // DEPENDENCIES_H
