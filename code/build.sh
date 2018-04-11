@@ -64,7 +64,7 @@ echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
 for environment in $environments; do
     echo "* espurna-$version-$environment.bin"
-    platformio run --silent --environment $environment || break
+    platformio run --silent --environment $environment || exit 1
     mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
 done
 echo "--------------------------------------------------------------"

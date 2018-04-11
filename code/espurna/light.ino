@@ -89,30 +89,28 @@ void _generateBrightness() {
     // Convert RGB to RGBW
     if (_light_has_color && _light_use_white) {
 
-        unsigned char white, max_in, max_out;
-        double factor = 0;
-
-        white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
-        max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
-
+        // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50
+        unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
         for (unsigned int i=0; i < 3; i++) {
             _light_channel[i].value = _light_channel[i].inputValue - white;
         }
         _light_channel[3].value = white;
-
-        max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
-        if (max_out > 0) {
-            factor = (double) (max_in / max_out);
-        }
+        _light_channel[3].inputValue = 0;
 
         // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
+        unsigned char max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
+        unsigned char max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
+        double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
         for (unsigned int i=0; i < 4; i++) {
             _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
         }
 
-        // Don't apply brightness, it is already in the inputValue:
-        if (_light_channel.size() == 5) {
-            _light_channel[4].value = _light_channel[4].inputValue;
+        // Scale white channel to match brightness
+        _light_channel[3].value = constrain(_light_channel[3].value * LIGHT_WHITE_FACTOR, 0, 255);
+
+        // For the rest of channels, don't apply brightness, it is already in the inputValue:
+        for (unsigned char i=4; i < _light_channel.size(); i++) {
+            _light_channel[i].value = _light_channel[i].inputValue;
         }
 
     } else {

@@ -933,6 +933,11 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_RGB           0           // Use RGB color selector (1=> RGB, 0=> HSV)
 #endif
 
+#ifndef LIGHT_WHITE_FACTOR
+#define LIGHT_WHITE_FACTOR      1           // When using LIGHT_USE_WHITE with uneven brightness LEDs,
+                                            // this factor is used to scale the white channel to match brightness
+#endif
+
 
 #ifndef LIGHT_USE_TRANSITIONS
 #define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
