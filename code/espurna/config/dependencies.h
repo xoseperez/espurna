@@ -2,45 +2,40 @@
 
 //------------------------------------------------------------------------------
 // Do not change this file unless you know what you are doing
-// Configuration settings are in the settings.h file
+// Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
-
 
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
-#define TELNET_SUPPORT          1
+#define TELNET_SUPPORT              1
 #endif
 
-#ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT       WEB_SUPPORT  // Enable web debug log if web is enabled too
-#endif
-
-#if DEBUG_WEB_SUPPORT
-#undef WEB_SUPPORT
-#define WEB_SUPPORT             1           // Chicken and egg :)
+#if not WEB_SUPPORT
+#undef DEBUG_WEB_SUPPORT
+#define DEBUG_WEB_SUPPORT           0
 #endif
 
 #if not WEB_SUPPORT
 #undef SSDP_SUPPORT
-#define SSDP_SUPPORT            0           // SSDP support requires web support
+#define SSDP_SUPPORT                0           // SSDP support requires web support
 #endif
 
 #if UART_MQTT_SUPPORT
-#define MQTT_SUPPORT            1
+#define MQTT_SUPPORT                1
 #undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT        0
+#define TERMINAL_SUPPORT            0
 #undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT    0
+#define DEBUG_SERIAL_SUPPORT        0
 #endif
 
 #if DOMOTICZ_SUPPORT
 #undef MQTT_SUPPORT
-#define MQTT_SUPPORT            1               // If Domoticz enabled enable MQTT
+#define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
 #endif
 
 #if HOMEASSISTANT_SUPPORT
 #undef MQTT_SUPPORT
-#define MQTT_SUPPORT            1               // If Home Assistant enabled enable MQTT
+#define MQTT_SUPPORT                1               // If Home Assistant enabled enable MQTT
 #endif
 
 #ifndef ASYNC_TCP_SSL_ENABLED
@@ -54,21 +49,18 @@
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
-//------------------------------------------------------------------------------
-// Sensors
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Debug
+// -----------------------------------------------------------------------------
 
+#define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT || DEBUG_WEB_SUPPORT
 
-#if ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
+#if DEBUG_SUPPORT
+    #define DEBUG_MSG(...) debugSend(__VA_ARGS__)
+    #define DEBUG_MSG_P(...) debugSend_P(__VA_ARGS__)
 #endif
 
-#if EMON_ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
+#ifndef DEBUG_MSG
+    #define DEBUG_MSG(...)
+    #define DEBUG_MSG_P(...)
 #endif
-
-// I2C dependencies moved to actual sensor files.
-
-//------------------------------------------------------------------------------

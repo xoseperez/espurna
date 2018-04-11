@@ -1,7 +1,10 @@
 //--------------------------------------------------------------------------------
-// General PROGMEM definitions
+// PROGMEM definitions
 //--------------------------------------------------------------------------------
 
+//--------------------------------------------------------------------------------
+// Reset reasons
+//--------------------------------------------------------------------------------
 
 PROGMEM const char custom_reset_hardware[] = "Hardware button";
 PROGMEM const char custom_reset_web[] = "Reboot from web interface";
@@ -20,6 +23,10 @@ PROGMEM const char* const custom_reset_string[] = {
     custom_reset_factory
 };
 
+//--------------------------------------------------------------------------------
+// Sensors
+//--------------------------------------------------------------------------------
+
 #if SENSOR_SUPPORT
 
 PROGMEM const unsigned char magnitude_decimals[] = {
@@ -28,7 +35,7 @@ PROGMEM const unsigned char magnitude_decimals[] = {
     3, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0,
     0, 0, 0,
-    0, 0
+    0, 0, 3, 3
 };
 
 PROGMEM const char magnitude_unknown_topic[] = "unknown";

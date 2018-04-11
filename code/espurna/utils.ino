@@ -123,7 +123,7 @@ void heartbeat() {
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
-        #if ADC_VCC_ENABLED
+        #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
         #if NTP_SUPPORT
@@ -177,7 +177,7 @@ void heartbeat() {
                 lightMQTT();
             #endif
             #if (HEARTBEAT_REPORT_VCC)
-            #if ADC_VCC_ENABLED
+            #if ADC_MODE_VALUE == ADC_VCC
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
             #endif
             #endif
@@ -422,7 +422,7 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
-    #if ADC_VCC_ENABLED
+    #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
     #endif
 
@@ -524,4 +524,9 @@ double roundTo(double num, unsigned char positions) {
 void nice_delay(unsigned long ms) {
     unsigned long start = millis();
     while (millis() - start < ms) delay(1);
+}
+
+// This method is called by the SDK to know where to connect the ADC
+int __get_adc_mode() {
+    return (int) (ADC_MODE_VALUE);
 }

@@ -66,7 +66,6 @@
 #define ANALOG_SUPPORT                  0
 #endif
 
-
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag
@@ -82,7 +81,6 @@
 #endif
 
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
-
 
 //------------------------------------------------------------------------------
 // BME280/BMP280
@@ -381,7 +379,6 @@
 #define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
-
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
 // Enable support by passing SHT3X_SUPPORT=1 build flag
@@ -419,11 +416,6 @@
 
 #ifndef TMP3X_TYPE
 #define TMP3X_TYPE                      TMP3X_TMP35
-#endif
-
-#if TMP3X_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -498,6 +490,15 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// ADC
+// -----------------------------------------------------------------------------
+
+// Default ADC mode is to monitor internal power supply
+#ifndef ADC_MODE_VALUE
+#define ADC_MODE_VALUE                  ADC_VCC
+#endif
+
+// -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
 
@@ -519,16 +520,6 @@
 #define I2C_SCL_FREQUENCY               1000    // BRZO SCL frequency
 #define I2C_CLEAR_BUS                   0       // Clear I2C bus on boot
 #define I2C_PERFORM_SCAN                1       // Perform a bus scan on boot
-
-//--------------------------------------------------------------------------------
-// Internal power monitor
-// Enable support by passing ADC_VCC_ENABLED=1 build flag
-// Do not enable this if using the analog GPIO for any other thing
-//--------------------------------------------------------------------------------
-
-#ifndef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 1
-#endif
 
 //--------------------------------------------------------------------------------
 // Class loading
