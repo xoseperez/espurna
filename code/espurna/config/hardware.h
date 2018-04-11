@@ -636,6 +636,7 @@
     #define MY92XX_DCKI_PIN     14
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     #define MY92XX_MAPPING      4, 3, 5, 0, 1
+    #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
 #elif defined(ITEAD_SONOFF_LED)
 

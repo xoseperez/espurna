@@ -725,6 +725,10 @@ PROGMEM const char* const custom_reset_string[] = {
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
 #define LIGHT_USE_CSS           1           // Use CSS style to report colors (1=> "#FF0000", 0=> "255,0,0")
 #define LIGHT_USE_RGB           0           // Use RGB color selector (1=> RGB, 0=> HSV)
+#ifndef LIGHT_WHITE_FACTOR
+#define LIGHT_WHITE_FACTOR      1           // When using LIGHT_USE_WHITE with uneven brightness LEDs,
+                                            // this factor is used to scale the white channel to match brightness
+#endif
 
 #define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
 #define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
