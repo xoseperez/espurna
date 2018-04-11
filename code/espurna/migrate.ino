@@ -859,7 +859,7 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_INVERSE);
 
-        #elif defined(GENERIC_ESP01SRELAY40)
+        #elif defined(GENERIC_ESP01S_RELAY_V40)
 
             setSetting("board", 65);
             setSetting("ledGPIO", 0, 2);
@@ -867,7 +867,7 @@ void migrate() {
             setSetting("relayGPIO", 0, 0);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
-        #elif defined(GENERIC_ESP01SRGBLED10)
+        #elif defined(GENERIC_ESP01S_RGBLED_V10)
 
             setSetting("board", 66);
             setSetting("ledGPIO", 0, 2);
@@ -879,6 +879,14 @@ void migrate() {
             setSetting("btnRelay", 0, 1);
             setSetting("relayGPIO", 0, 12);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(GENERIC_ESP01S_DHT11_V10)
+
+            setSetting("board", 68);
+
+        #elif defined(GENERIC_ESP01S_DS18B20_V10)
+
+            setSetting("board", 69);
 
         #else
 

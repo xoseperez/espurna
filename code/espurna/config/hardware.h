@@ -1224,7 +1224,7 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
-    // DB18B20
+    // DS18B20
     #ifndef DALLAS_SUPPORT
     #define DALLAS_SUPPORT             	1
     #endif
@@ -1830,7 +1830,7 @@
 // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404024035&SearchText=esp-01s+relay
 // -----------------------------------------------------------------------------
 
-#elif defined(GENERIC_ESP01SRELAY40)
+#elif defined(GENERIC_ESP01S_RELAY_V40)
 
     // Info
     #define MANUFACTURER        "GENERIC"
@@ -1849,7 +1849,7 @@
 // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404023816&SearchText=esp-01s+led+controller
 // -----------------------------------------------------------------------------
 
-#elif defined(GENERIC_ESP01SRGBLED10)
+#elif defined(GENERIC_ESP01S_RGBLED_V10)
 
     // Info
     #define MANUFACTURER        "GENERIC"
@@ -1866,6 +1866,41 @@
 
     // LEDs
     #define LED1_PIN            2
+
+
+// -----------------------------------------------------------------------------
+// ESP-01S DHT11 v1.0
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105907&SearchText=esp-01s+dht11
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01S_DHT11_V10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_DHT11_10"
+
+    // DHT11
+    #ifndef DHT_SUPPORT
+    #define DHT_SUPPORT         1
+    #endif
+    #define DHT_PIN             2
+
+// -----------------------------------------------------------------------------
+// ESP-01S DS18B20 v1.0
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105933&SearchText=esp-01s+ds18b20
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01S_DS18B20_V10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_DS18B20_10"
+
+    // DB18B20
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          2
 
 // -----------------------------------------------------------------------------
 // Heltec Touch Relay
