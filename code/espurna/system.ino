@@ -152,10 +152,10 @@ void systemSetup() {
         systemCheck(false);
     #endif
 
-    #if defined(ESPLIVE)
+    #if defined(MANCAVEMADE_ESPLIVE)
         //The ESPLive has an ADC MUX which needs to be configured.
         pinMode(16, OUTPUT);
-        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
+        digitalWrite(16, ESPLIVE_ADC); //Defualt CT input high (pin B, solder jumper B)
     #endif
 
     // Cache loop delay value to speed things (recommended max 250ms)
