@@ -35,6 +35,7 @@ void _schWebSocketOnSend(JsonObject &root){
             scheduler["schType"] = getSetting("schType", i, 0).toInt();
             scheduler["schHour"] = getSetting("schHour", i, 0).toInt();
             scheduler["schMinute"] = getSetting("schMinute", i, 0).toInt();
+            scheduler["schUTC"] = getSetting("schUTC", i, 0).toInt() == 1;
             scheduler["schWDs"] = getSetting("schWDs", i, "");
         }
 
@@ -64,22 +65,25 @@ void _schConfigure() {
             delSetting("schMinute", i);
             delSetting("schWDs", i);
             delSetting("schType", i);
+            delSetting("schUTC", i);
 
         } else {
 
             #if DEBUG_SUPPORT
 
-                int sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
+                bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
                 int sch_action = getSetting("schAction", i, 0).toInt();
                 int sch_hour = getSetting("schHour", i, 0).toInt();
                 int sch_minute = getSetting("schMinute", i, 0).toInt();
+                bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
                 String sch_weekdays = getSetting("schWDs", i, "");
                 unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
 
                 DEBUG_MSG_P(
-                    PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d on %s%s\n"),
+                    PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
                     i, SCHEDULER_TYPE_SWITCH == sch_type ? "switch" : "channel", sch_switch,
-                    sch_action, sch_hour, sch_minute, (char *) sch_weekdays.c_str(),
+                    sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
+                    (char *) sch_weekdays.c_str(),
                     sch_enabled ? "" : " (disabled)"
                 );
 
@@ -91,11 +95,11 @@ void _schConfigure() {
 
 }
 
-bool _schIsThisWeekday(String weekdays){
+bool _schIsThisWeekday(time_t t, String weekdays){
 
     // Convert from Sunday to Monday as day 1
-    int w = weekday(now()) - 1;
-    if (w == 0) w = 7;
+    int w = weekday(t) - 1;
+    if (0 == w) w = 7;
 
     char pch;
     char * p = (char *) weekdays.c_str();
@@ -107,14 +111,16 @@ bool _schIsThisWeekday(String weekdays){
 
 }
 
-int _schMinutesLeft(unsigned char schedule_hour, unsigned char schedule_minute){
-    time_t t = now();
+int _schMinutesLeft(time_t t, unsigned char schedule_hour, unsigned char schedule_minute){
     unsigned char now_hour = hour(t);
     unsigned char now_minute = minute(t);
     return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
 }
 
 void _schCheck() {
+
+    time_t local_time = now();
+    time_t utc_time = ntpLocal2UTC(local_time);
 
     // Check schedules
     for (unsigned char i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
@@ -125,12 +131,16 @@ void _schCheck() {
         // Skip disabled schedules
         if (getSetting("schEnabled", i, 1).toInt() == 0) continue;
 
+        // Get the datetime used for the calculation
+        bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
+        time_t t = sch_utc ? utc_time : local_time;
+
         String sch_weekdays = getSetting("schWDs", i, "");
-        if (_schIsThisWeekday(sch_weekdays)) {
+        if (_schIsThisWeekday(t, sch_weekdays)) {
 
             int sch_hour = getSetting("schHour", i, 0).toInt();
             int sch_minute = getSetting("schMinute", i, 0).toInt();
-            int minutes_to_trigger = _schMinutesLeft(sch_hour, sch_minute);
+            int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
 
             if (minutes_to_trigger == 0) {
 
