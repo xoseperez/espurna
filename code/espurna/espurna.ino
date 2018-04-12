@@ -24,6 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 std::vector<void (*)()> _loop_callbacks;
 
+#if USE_EXTRA
+std::vector<void (*)()> _hooks_callbacks;
+std::vector<std::string> _hooks_names;
+#endif
 // -----------------------------------------------------------------------------
 // REGISTER
 // -----------------------------------------------------------------------------
@@ -32,6 +36,18 @@ void espurnaRegisterLoop(void (*callback)()) {
     _loop_callbacks.push_back(callback);
 }
 
+#if USE_EXTRA
+void espurnaRegisterHook(void (*callback)(), std::string _hookName) {
+    _hooks_callbacks.push_back(callback);
+    _hooks_names.push_back(_hookName);
+}
+void espurnaDoHook(std::string _hookName) {
+  // Call registered hook callbacks
+  for (unsigned char i = 0; i < _hooks_names.size(); i++) {
+      if (_hooks_names[i] == _hookName) (_hooks_callbacks[i])();
+  }
+}
+#endif
 // -----------------------------------------------------------------------------
 // BOOTING
 // -----------------------------------------------------------------------------
