@@ -1032,7 +1032,9 @@ function processData(data) {
                 var text = (0 === error) ?
                     magnitude.value + magnitude.units :
                     magnitudeError(error);
-                $("input[name='magnitude'][data='" + i + "']").val(text);
+                var element = $("input[name='magnitude'][data='" + i + "']");
+                element.val(text);
+                $("div.hint", element.parent().parent()).html(magnitude.description);
             }
             return;
         }
