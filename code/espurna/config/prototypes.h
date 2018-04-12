@@ -116,3 +116,6 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
 // -----------------------------------------------------------------------------
 char * ltrim(char * s);
 void nice_delay(unsigned long ms);
+
+#define ARRAYINIT(type, name, ...) \
+    type name[] = {__VA_ARGS__};
