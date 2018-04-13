@@ -40,7 +40,7 @@ bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 bool _light_has_color = false;
 bool _light_use_white = false;
-bool _light_use_cold_white = false;
+bool _light_use_cct = false;
 bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
@@ -114,15 +114,18 @@ void _generateBrightness() {
         }
 
         // Split the White Value across 2 White LED Strips.
-        if (_light_use_cold_white) {
+        if (_light_use_cct) {
 
           // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-          double miredFactor = ((double) _light_mireds - (double) LIGHT_MIRED_W2)/((double) LIGHT_MIRED_W1 - (double) LIGHT_MIRED_W2);
+          double miredFactor = ((double) _light_mireds - (double) LIGHT_MIRED_W1)/((double) LIGHT_MIRED_W2 - (double) LIGHT_MIRED_W1);
 
+          // set warm white
           _light_channel[3].inputValue = 0;
-          _light_channel[3].value = round(miredFactor * white);
+          _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
+
+          // set cold white
           _light_channel[4].inputValue = 0;
-          _light_channel[4].value = round(((double) 1.0 - (double) miredFactor) * white);
+          _light_channel[4].value = round(miredFactor * white);
         } else {
           _light_channel[3].inputValue = 0;
           _light_channel[3].value = white;
@@ -130,8 +133,8 @@ void _generateBrightness() {
 
         // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
         unsigned char max_in = getMax(_light_channel[0].inputValue, _light_channel[1].inputValue, _light_channel[2].inputValue);
-        unsigned char max_out = getMax(_light_channel[0].value, _light_channel[1].value, _light_channel[2].value, _light_channel[3].value, (_light_use_cold_white ? _light_channel[4].value : 0));
-        unsigned char channelSize = _light_use_cold_white ? 5 : 4;
+        unsigned char max_out = getMax(_light_channel[0].value, _light_channel[1].value, _light_channel[2].value, _light_channel[3].value, (_light_use_cct ? _light_channel[4].value : 0));
+        unsigned char channelSize = _light_use_cct ? 5 : 4;
 
         double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
         for (unsigned char i=0; i < channelSize; i++) {
@@ -191,16 +194,10 @@ void _fromRGB(const char * rgb) {
         }
         break;
       case 'M': // Mired Value
-        if (_light_has_color) {
-            unsigned long mireds = atol(p + 1);
-            _fromMireds(mireds);
-        }
+          _fromMireds(atol(p + 1));
         break;
       case 'K': // Kelvin Value
-        if (_light_has_color) {
-            unsigned long kelvin = atol(p + 1);
-            _fromKelvin(kelvin);
-        }
+          _fromKelvin(atol(p + 1));
         break;
       default: // assume decimal values separated by commas
         char * tok;
@@ -293,15 +290,14 @@ void _fromHSV(const char * hsv) {
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin, bool setMireds) {
 
-    // Check we have RGB channels
     if (!_light_has_color) return;
 
     if (setMireds) {
       _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
     }
 
-    if (_light_has_color && _light_use_cold_white) {
-      // _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
+    if (_light_use_cct) {
+      _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
       return;
     }
 
@@ -328,10 +324,12 @@ void _fromKelvin(unsigned long kelvin) {
 
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
 void _fromMireds(unsigned long mireds) {
+    if (!_light_has_color) return;
+
     _light_mireds = mireds = constrain(mireds, LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
 
-    if (_light_has_color && _light_use_cold_white) {
-      // _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
+    if (_light_use_cct) {
+      _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
       return;
     }
 
@@ -789,7 +787,7 @@ void _lightWebSocketOnSend(JsonObject& root) {
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
-    root["useColdWhite"] = _light_use_cold_white;
+    root["useCCT"] = _light_use_cct;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
     root["lightTime"] = _light_transition_time;
@@ -1007,10 +1005,10 @@ void _lightConfigure() {
         setSetting("useWhite", _light_use_white);
     }
 
-    _light_use_cold_white = getSetting("useColdWhite", LIGHT_USE_COLD_WHITE).toInt() == 1;
-    if (_light_use_cold_white && ((_light_channel.size() < 5) || !_light_use_white)) {
-        _light_use_cold_white = false;
-        setSetting("useColdWhite", _light_use_cold_white);
+    _light_use_cct = getSetting("useCCT", LIGHT_USE_COLD_WHITE).toInt() == 1;
+    if (_light_use_cct && ((_light_channel.size() < 5) || !_light_use_white)) {
+        _light_use_cct = false;
+        setSetting("useCCT", _light_use_cct);
     }
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;

@@ -13,7 +13,7 @@ var numReconnect = 0;
 var numReload = 0;
 
 var useWhite = false;
-var useColdWhite = false;
+var useCCT = false;
 
 var now = 0;
 var ago = 0;
@@ -839,7 +839,7 @@ function initChannels(num) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
-            if (useColdWhite) {
+            if (useCCT) {
               max--;
             }
         }
@@ -1024,8 +1024,8 @@ function processData(data) {
             useWhite = value;
         }
 
-        if ("useColdWhite" === key) {
-            useColdWhite = value;
+        if ("useCCT" === key) {
+            useCCT = value;
         }
 
         // ---------------------------------------------------------------------
