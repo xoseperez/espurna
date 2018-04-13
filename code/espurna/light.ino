@@ -44,7 +44,7 @@ bool _light_use_cct = false;
 bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
-unsigned int _light_mireds = (LIGHT_MIRED_W1+LIGHT_MIRED_W2)/2;
+unsigned int _light_mireds = round((LIGHT_MIRED_W1+LIGHT_MIRED_W2)/2);
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
@@ -92,7 +92,6 @@ unsigned char getMax(unsigned char a, unsigned char b, unsigned char c, unsigned
 unsigned char getMin(unsigned char a, unsigned char b, unsigned char c) {
   return std::min(a, std::min(b, c));
 }
-
 
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
     _light_channel[0].inputValue = constrain(red, 0, LIGHT_MAX_VALUE);
@@ -354,15 +353,15 @@ void _toRGB(char * rgb, size_t len) {
 }
 
 void _toHSV(char * hsv, size_t len) {
-    double min, max, h, s, v;
+    double h, s, v;
     double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
 
     double r = (double) (_light_channel[0].inputValue * brightness) / 255.0;
     double g = (double) (_light_channel[1].inputValue * brightness) / 255.0;
     double b = (double) (_light_channel[2].inputValue * brightness) / 255.0;
 
-    min = getMin(r, g, b);
-    max = getMax(r, g, b);
+    double min = std::min(r, std::min(g, b));
+    double max = std::max(r, std::max(g, b));
 
     v = 100.0 * max;
     if (v == 0) {
@@ -787,7 +786,6 @@ void _lightWebSocketOnSend(JsonObject& root) {
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
-    root["useCCT"] = _light_use_cct;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
     root["lightTime"] = _light_transition_time;
@@ -795,6 +793,10 @@ void _lightWebSocketOnSend(JsonObject& root) {
     bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
     root["useRGB"] = useRGB;
     if (_light_has_color) {
+        if (_light_use_cct) {
+            root["useCCT"] = _light_use_cct;
+            root["mireds"] = _light_mireds;
+        }
         if (useRGB) {
             root["rgb"] = lightColor(true);
             root["brightness"] = lightBrightness();
@@ -823,6 +825,12 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
                 lightBrightness(data["brightness"]);
                 lightUpdate(true, true);
             }
+        }
+        if (_light_use_cct) {
+          if (strcmp(action, "mireds") == 0) {
+              _fromMireds(data["mireds"]);
+              lightUpdate(true, true);
+          }
         }
     }
 
