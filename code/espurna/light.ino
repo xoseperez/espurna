@@ -44,7 +44,7 @@ bool _light_use_cct = false;
 bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
-unsigned int _light_mireds = round((LIGHT_MIRED_W1+LIGHT_MIRED_W2)/2);
+unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
@@ -116,13 +116,13 @@ void _generateBrightness() {
         if (_light_use_cct) {
 
           // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-          double miredFactor = ((double) _light_mireds - (double) LIGHT_MIRED_W1)/((double) LIGHT_MIRED_W2 - (double) LIGHT_MIRED_W1);
+          double miredFactor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
 
-          // set warm white
+          // set cold white
           _light_channel[3].inputValue = 0;
           _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
 
-          // set cold white
+          // set warm white
           _light_channel[4].inputValue = 0;
           _light_channel[4].value = round(miredFactor * white);
         } else {
@@ -1013,7 +1013,7 @@ void _lightConfigure() {
         setSetting("useWhite", _light_use_white);
     }
 
-    _light_use_cct = getSetting("useCCT", LIGHT_USE_COLD_WHITE).toInt() == 1;
+    _light_use_cct = getSetting("useCCT", LIGHT_USE_CCT).toInt() == 1;
     if (_light_use_cct && ((_light_channel.size() < 5) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);

@@ -776,14 +776,14 @@
 #define LIGHT_USE_WHITE         0           // Use the 4th channel as (Warm-)White LEDs
 #endif
 
-#ifndef LIGHT_USE_COLD_WHITE
-#define LIGHT_USE_COLD_WHITE    0           // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
+#ifndef LIGHT_USE_CCT
+#define LIGHT_USE_CCT           0           // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
 #endif
 
-// Used when LIGHT_USE_WHITE AND LIGHT_USE_COLD_WHITE is 1 - (1000000/Kelvin = MiReds)
+// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
 // Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
-#define LIGHT_MIRED_W1          153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
-#define LIGHT_MIRED_W2          500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
+#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
+#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
