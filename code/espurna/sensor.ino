@@ -40,6 +40,8 @@ unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
 
+String _sensor_energy_reset_ts = String();
+
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
@@ -120,8 +122,14 @@ void _sensorWebSocketSendData(JsonObject& root) {
         element["type"] = int(magnitude.type);
         element["value"] = String(buffer);
         element["units"] = magnitudeUnits(magnitude.type);
-        element["description"] = magnitude.sensor->slot(magnitude.local);
         element["error"] = magnitude.sensor->error();
+
+        if (magnitude.type == MAGNITUDE_ENERGY) {
+            if (_sensor_energy_reset_ts.length() == 0) _sensorReset();
+            element["description"] = magnitude.sensor->slot(magnitude.local) + _sensor_energy_reset_ts;
+        } else {
+            element["description"] = magnitude.sensor->slot(magnitude.local);
+        }
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
         if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
@@ -274,6 +282,12 @@ void _sensorPre() {
 void _sensorPost() {
     for (unsigned char i=0; i<_sensors.size(); i++) {
         _sensors[i]->post();
+    }
+}
+
+void _sensorReset() {
+    if (ntpSynced()) {
+        _sensor_energy_reset_ts = String(" (since ") + ntpDateTime() + String(")");
     }
 }
 
@@ -677,6 +691,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
+                    _sensorReset();
                 }
 
                 sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
@@ -690,6 +705,7 @@ void _sensorConfigure() {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
+                    _sensorReset();
                 }
             }
         #endif
@@ -699,6 +715,7 @@ void _sensorConfigure() {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
+                    _sensorReset();
                 }
             }
         #endif
@@ -728,6 +745,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
+                    _sensorReset();
                 }
 
                 if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
@@ -765,6 +783,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
+                    _sensorReset();
                 }
 
                 if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
