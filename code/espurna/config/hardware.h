@@ -1211,8 +1211,8 @@
     #define BUTTON1_PIN         4
     #define BUTTON2_PIN         5
 
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -1224,13 +1224,19 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
+    //ADC Mode
+    #define ESPLIVE_ADC         HIGH //CT Input
+    #define EMON_ANALOG_SUPPORT 1
+    //#define ESPLIVE_ADC         LOW //Raw ADC Input
+
     // DS18B20
     #ifndef DALLAS_SUPPORT
     #define DALLAS_SUPPORT             	1
     #endif
     #define DALLAS_PIN                 	2
     #define DALLAS_UPDATE_INTERVAL     	5000
-    #define TEMPERATURE_MIN_CHANGE      1.0
+    #define TEMPERATURE_MIN_CHANGE      0.0
+
 
 // -----------------------------------------------------------------------------
 // QuinLED
