@@ -19,6 +19,9 @@ extern "C" {
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
+#if DEBUG_UDP_PORT == 514
+char _udp_header[40] = {0};
+#endif
 #endif
 
 void _debugSend(char * message) {
@@ -42,8 +45,8 @@ void _debugSend(char * message) {
         if (systemCheck()) {
         #endif
             _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            #if DEBUG_ADD_TIMESTAMP
-                _udp_debug.write(timestamp);
+            #if DEBUG_UDP_PORT == 514
+                _udp_debug.write(_udp_header);
             #endif
             _udp_debug.write(message);
             _udp_debug.endPacket();
@@ -131,6 +134,13 @@ void debugSetup() {
             settingsInject((void*) buffer, strlen(buffer));
         }
     });
+
+    #if DEBUG_UDP_SUPPORT
+    #if DEBUG_UDP_PORT == 514
+        snprintf_P(_udp_header, sizeof(_udp_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
+    #endif
+    #endif
+
 
 }
 
