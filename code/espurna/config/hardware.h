@@ -1271,15 +1271,13 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Light
-    #define LIGHT_CHANNELS      4
+    #define LIGHT_CHANNELS      3
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH4_PIN       14      // WHITE1
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
 
 #elif defined(ARILUX_AL_LC02)
 
