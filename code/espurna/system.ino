@@ -130,6 +130,22 @@ void systemLoop() {
 
 }
 
+void _systemSetupSpecificHardware() {
+
+    //The ESPLive has an ADC MUX which needs to be configured.
+    #if defined(MANCAVEMADE_ESPLIVE)
+        pinMode(16, OUTPUT);
+        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
+    #endif
+
+    // These devices use the hardware UART
+    // to communicate to secondary microcontrollers
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(STM_RELAY)
+        Serial.begin(SERIAL_BAUDRATE);
+    #endif
+
+}
+
 void systemSetup() {
 
     EEPROM.begin(EEPROM_SIZE);
@@ -139,8 +155,6 @@ void systemSetup() {
         #if DEBUG_ESP_WIFI
             DEBUG_PORT.setDebugOutput(true);
         #endif
-    #elif defined(SERIAL_BAUDRATE)
-        Serial.begin(SERIAL_BAUDRATE);
     #endif
 
     #if SPIFFS_SUPPORT
@@ -152,11 +166,8 @@ void systemSetup() {
         systemCheck(false);
     #endif
 
-    #if defined(ESPLIVE)
-        //The ESPLive has an ADC MUX which needs to be configured.
-        pinMode(16, OUTPUT);
-        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
-    #endif
+    // Init device-specific hardware
+    _systemSetupSpecificHardware();
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());

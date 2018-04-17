@@ -1220,9 +1220,6 @@ function processData(data) {
         }
 
         // Pre-process
-        if ("network" === key) {
-            value = value.toUpperCase();
-        }
         if ("mqttStatus" === key) {
             value = value ? "CONNECTED" : "NOT CONNECTED";
         }

@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+// // //------------------------------------------------------------------------------
 // Do not change this file unless you know what you are doing
 // Configuration settings are in the settings.h file
 //------------------------------------------------------------------------------
@@ -75,8 +75,13 @@
 #endif
 
 #ifndef DEBUG_UDP_PORT
-#define DEBUG_UDP_PORT          8113
+#define DEBUG_UDP_PORT          514
 #endif
+
+// If DEBUG_UDP_PORT is set to 514 syslog format is assumed 
+// (https://tools.ietf.org/html/rfc3164)
+// DEBUG_UDP_FAC_PRI is the facility+priority
+#define DEBUG_UDP_FAC_PRI       (SYSLOG_LOCAL0 | SYSLOG_DEBUG)
 
 //------------------------------------------------------------------------------
 
