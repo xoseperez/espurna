@@ -278,6 +278,9 @@ void info() {
     #if DEBUG_UDP_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
     #endif
+    #if DEBUG_WEB_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_WEB"));
+    #endif
     #if DOMOTICZ_SUPPORT
         DEBUG_MSG_P(PSTR(" DOMOTICZ"));
     #endif
