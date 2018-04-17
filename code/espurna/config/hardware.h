@@ -1554,7 +1554,8 @@
     // Remove UART noise on serial line
     #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
-
+    #define SERIAL_BAUDRATE         115200
+    
 // -----------------------------------------------------------------------------
 // Tonbux Powerstrip02
 // -----------------------------------------------------------------------------

@@ -522,7 +522,7 @@ void rfbSetup() {
         wsOnActionRegister(_rfbWebSocketOnAction);
     #endif
 
-    // Register oop
+    // Register loop
     espurnaRegisterLoop(rfbLoop);
 
 }
