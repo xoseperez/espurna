@@ -388,7 +388,6 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
-    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -608,7 +607,6 @@
     #endif
 
     // Remove UART noise on serial line
-    #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
 
     // Buttons
@@ -789,7 +787,6 @@
     #define LED1_PIN_INVERSE        1
 
     // Disable UART noise
-    #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
 
     // CSE7766
@@ -1552,10 +1549,8 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_STM
 
     // Remove UART noise on serial line
-    #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
-    #define SERIAL_BAUDRATE         115200
-    
+
 // -----------------------------------------------------------------------------
 // Tonbux Powerstrip02
 // -----------------------------------------------------------------------------
