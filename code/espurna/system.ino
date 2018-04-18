@@ -150,13 +150,6 @@ void systemSetup() {
 
     EEPROM.begin(EEPROM_SIZE);
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.begin(SERIAL_BAUDRATE);
-        #if DEBUG_ESP_WIFI
-            DEBUG_PORT.setDebugOutput(true);
-        #endif
-    #endif
-
     #if SPIFFS_SUPPORT
         SPIFFS.begin();
     #endif
