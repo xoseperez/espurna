@@ -1995,11 +1995,11 @@
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 02"
 
-    // A bit of DHT - pin 1
-    #ifndef DHT_SUPPORT
-    #define DHT_SUPPORT         1
+    // A bit of CSE7766 - pin 1
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
     #endif
-    #define DHT_PIN             1
+    #define CSE7766_PIN         1
 
     // Relay type dual  - pins 2,3
     #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
@@ -2012,6 +2012,12 @@
     #define IR_SUPPORT          1
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
+
+    // A bit of DHT - pin 5
+    #ifndef DHT_SUPPORT
+    #define DHT_SUPPORT         1
+    #endif
+    #define DHT_PIN             5
 
 #elif defined(TRAVIS03)
 
