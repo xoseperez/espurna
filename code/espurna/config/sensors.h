@@ -339,8 +339,13 @@
 #define MHZ19_SUPPORT                   0
 #endif
 
+#ifndef MHZ19_RX_PIN
 #define MHZ19_RX_PIN                    13
+#endif
+
+#ifndef MHZ19_TX_PIN
 #define MHZ19_TX_PIN                    15
+#endif
 
 //------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMSX003
@@ -351,8 +356,13 @@
 #define PMSX003_SUPPORT                 0
 #endif
 
+#ifndef PMS_RX_PIN
 #define PMS_RX_PIN                      13
+#endif
+
+#ifndef PMS_TX_PIN
 #define PMS_TX_PIN                      15
+#endif
 
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
@@ -475,18 +485,31 @@
 // =============================================================================
 
 #ifndef SENSOR_SUPPORT
-#if ANALOG_SUPPORT || BH1750_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
-    || DHT_SUPPORT || DIGITAL_SUPPORT || ECH1560_SUPPORT \
-    || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
-    || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
-    || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
-    || SI7021_SUPPORT || V9261F_SUPPORT || AM2320_SUPPORT \
-    || GUVAS12SD_SUPPORT || CSE7766_SUPPORT || TMP3X_SUPPORT \
-    || HCSR04_SUPPORT
-#define SENSOR_SUPPORT                      1
-#else
-#define SENSOR_SUPPORT                      0
-#endif
+#define SENSOR_SUPPORT ( \
+    AM2320_SUPPORT || \
+    ANALOG_SUPPORT || \
+    BH1750_SUPPORT || \
+    BMX280_SUPPORT || \
+    CSE7766_SUPPORT || \
+    DALLAS_SUPPORT || \
+    DHT_SUPPORT || \
+    DIGITAL_SUPPORT || \
+    ECH1560_SUPPORT || \
+    EMON_ADC121_SUPPORT || \
+    EMON_ADS1X15_SUPPORT || \
+    EMON_ANALOG_SUPPORT || \
+    EVENTS_SUPPORT || \
+    GUVAS12SD_SUPPORT || \
+    HCSR04_SUPPORT || \
+    HLW8012_SUPPORT || \
+    MHZ19_SUPPORT || \
+    PMSX003_SUPPORT || \
+    PZEM004T_SUPPORT || \
+    SHT3X_I2C_SUPPORT || \
+    SI7021_SUPPORT || \
+    TMP3X_SUPPORT || \
+    V9261F_SUPPORT \
+)
 #endif
 
 // -----------------------------------------------------------------------------

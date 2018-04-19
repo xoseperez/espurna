@@ -310,6 +310,14 @@ void _sensorLoad() {
 
      */
 
+     #if AM2320_SUPPORT
+     {
+         AM2320Sensor * sensor = new AM2320Sensor();
+         sensor->setAddress(AM2320_ADDRESS);
+         _sensors.push_back(sensor);
+     }
+     #endif
+
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
@@ -440,6 +448,14 @@ void _sensorLoad() {
     }
     #endif
 
+    #if GUVAS12SD_SUPPORT
+    {
+        GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
+        sensor->setGPIO(GUVAS12SD_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if HCSR04_SUPPORT
     {
         HCSR04Sensor * sensor = new HCSR04Sensor();
@@ -520,22 +536,6 @@ void _sensorLoad() {
         V9261FSensor * sensor = new V9261FSensor();
         sensor->setRX(V9261F_PIN);
         sensor->setInverted(V9261F_PIN_INVERSE);
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if AM2320_SUPPORT
-    {
-        AM2320Sensor * sensor = new AM2320Sensor();
-        sensor->setAddress(AM2320_ADDRESS);
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if GUVAS12SD_SUPPORT
-    {
-        GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
-        sensor->setGPIO(GUVAS12SD_PIN);
         _sensors.push_back(sensor);
     }
     #endif
