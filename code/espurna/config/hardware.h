@@ -622,10 +622,12 @@
     #define LED1_PIN_INVERSE    1
 
     // RFB-Direct
-    #define RFB_DIRECT
+    #ifdef RFB_DIRECT
+    #undef DEVICE
+    #define DEVICE              "SONOFF_RFBRIDGE_DIRECT"
     #define RFB_RX_PIN 4
     #define RFB_TX_PIN 5
-
+    #endif
 
 #elif defined(ITEAD_SONOFF_B1)
 

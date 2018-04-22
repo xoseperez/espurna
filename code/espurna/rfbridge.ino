@@ -127,6 +127,7 @@ void _rfbAck() {
 
 void _rfbLearn() {
     #ifdef RFB_DIRECT
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Entering LEARN mode\n"));
         _learning = true;
     #else
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending LEARN\n"));
@@ -344,15 +345,6 @@ void _rfbReceive() {
                 _rfbDecode();
                 _learning = false;
             }
-        }
-
-        String dump = getSetting("rfb-dump");
-        if (dump.length()) {
-            setSetting("rfb-dump", "");
-            DEBUG_MSG_P(PSTR("[RFBRIDGE] dump rfb:"));
-            for(int j = 0; j < RCSWITCH_MAX_CHANGES; ++j)
-                DEBUG_MSG_P(PSTR(" %d"), RCSwitch::timings[j]);
-            DEBUG_MSG_P(PSTR("\n"));
         }
 
         if (_rfModem->available()) {
