@@ -41,7 +41,10 @@ version = "[![version](https://img.shields.io/badge/version-{VERSION}-brightgree
     VERSION = VERSION
 )
 
-branch = "![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)\n".format(
+branch = "[![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)] "
+    "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n".format(
+    USER = USER,
+    REPO = REPO,
     BRANCH = BRANCH
 )
 
