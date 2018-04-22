@@ -13,7 +13,6 @@ Travis badge with the current branch. Based on [4].
 Copy this file to .git/hooks/
 
 """
-from __future__ import print_function
 
 import os
 import sys
@@ -119,6 +118,6 @@ if __name__ == "__main__":
 
     with FileInput(path, inplace=True) as readme:
         for line in readme:
-            print(fmt_line(line), end='')
+            sys.stdout.write(fmt_line(line))
 
     sys.exit(call(["git", "add", README]))
