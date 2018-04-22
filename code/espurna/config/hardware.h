@@ -1798,6 +1798,37 @@
     #define LED1_PIN_INVERSE      1
 
 // -----------------------------------------------------------------------------
+// Zhilde ZLD-EU44-W
+// http://www.zhilde.com/product/60705150109-805652505/EU_WiFi_Surge_Protector_Extension_Socket_4_Outlets_works_with_Amazon_Echo_Smart_Power_Strip.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ZHILDE_EU44_W)
+
+    // Info
+    #define MANUFACTURER        "ZHILDE"
+    #define DEVICE              "ZLD_EU44_W"
+
+    // Buttons
+    #define BUTTON1_PIN         3
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY2_PIN          4
+    #define RELAY3_PIN          12
+    #define RELAY4_PIN          13
+    #define RELAY5_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY5_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            1
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
