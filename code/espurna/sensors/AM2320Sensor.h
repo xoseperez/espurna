@@ -101,7 +101,7 @@ class AM2320Sensor : public I2CSensor {
         // Get device model, version, device_id
 
         void _init() {
-            i2c_wakeup();
+            i2c_wakeup(address);
             delayMicroseconds(800);
 
             unsigned char _buffer[11];
@@ -121,7 +121,7 @@ class AM2320Sensor : public I2CSensor {
 
         void _read() {
 
-            i2c_wakeup();
+            i2c_wakeup(address);
 
             // waiting time of at least 800 μs, the maximum 3000 μs
             delayMicroseconds(800); // just to be on safe side
