@@ -78,7 +78,7 @@
 #define DEBUG_UDP_PORT          514
 #endif
 
-// If DEBUG_UDP_PORT is set to 514 syslog format is assumed 
+// If DEBUG_UDP_PORT is set to 514 syslog format is assumed
 // (https://tools.ietf.org/html/rfc3164)
 // DEBUG_UDP_FAC_PRI is the facility+priority
 #define DEBUG_UDP_FAC_PRI       (SYSLOG_LOCAL0 | SYSLOG_DEBUG)
@@ -268,7 +268,13 @@
 #define WIFI_RECONNECT_INTERVAL     180000              // If could not connect to WIFI, retry after this time in ms
 #endif
 
+#ifndef WIFI_MAX_NETWORKS
 #define WIFI_MAX_NETWORKS           5                   // Max number of WIFI connection configurations
+#endif
+
+#ifndef WIFI_AP_CAPTIVE
+#define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
+#endif
 
 #ifndef WIFI_AP_MODE
 #define WIFI_AP_MODE                AP_MODE_ALONE
