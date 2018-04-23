@@ -77,6 +77,7 @@ bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
 unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
 
+void i2c_wakeup(uint8_t address);
 uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len);
 uint8_t i2c_write_uint8(uint8_t address, uint8_t value);
 uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value);
