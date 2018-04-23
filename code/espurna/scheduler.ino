@@ -104,7 +104,7 @@ bool _schIsThisWeekday(time_t t, String weekdays){
     char pch;
     char * p = (char *) weekdays.c_str();
     unsigned char position = 0;
-    while (pch = p[position++]) {
+    while ((pch = p[position++])) {
         if ((pch - '0') == w) return true;
     }
     return false;

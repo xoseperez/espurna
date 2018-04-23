@@ -63,7 +63,7 @@ template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
-bool settingsGetJson(JsonObject& data);
+void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
 void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
 void settingsInject(void *data, size_t len);

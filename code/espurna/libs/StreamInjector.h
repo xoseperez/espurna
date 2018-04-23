@@ -46,7 +46,7 @@ class StreamInjector : public Stream {
         }
 
         virtual uint8_t inject(char *data, size_t len) {
-            for (int i=0; i<len; i++) {
+            for (uint8_t i=0; i<len; i++) {
                 inject(data[i]);
             }
             return len;
@@ -60,6 +60,7 @@ class StreamInjector : public Stream {
 
         virtual size_t write(uint8_t ch) {
             if (_callback) _callback(ch);
+            return 1;
         }
 
         virtual int read() {
