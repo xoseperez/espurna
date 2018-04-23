@@ -608,7 +608,9 @@
     #endif
 
     // Remove UART noise on serial line
+    #ifndef RFB_DIRECT
     #define TERMINAL_SUPPORT        0
+    #endif
     #define DEBUG_SERIAL_SUPPORT    0
 
     // Buttons
@@ -618,6 +620,14 @@
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
+
+    // RFB-Direct
+    #ifdef RFB_DIRECT
+    #undef DEVICE
+    #define DEVICE              "SONOFF_RFBRIDGE_DIRECT"
+    #define RFB_RX_PIN 4
+    #define RFB_TX_PIN 5
+    #endif
 
 #elif defined(ITEAD_SONOFF_B1)
 
