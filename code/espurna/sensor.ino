@@ -286,9 +286,11 @@ void _sensorPost() {
 }
 
 void _sensorReset() {
-    if (ntpSynced()) {
-        _sensor_energy_reset_ts = String(" (since ") + ntpDateTime() + String(")");
-    }
+    #if NTP_SUPPORT
+        if (ntpSynced()) {
+            _sensor_energy_reset_ts = String(" (since ") + ntpDateTime() + String(")");
+        }
+    #endif
 }
 
 // -----------------------------------------------------------------------------
