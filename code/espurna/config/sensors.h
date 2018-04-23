@@ -58,6 +58,19 @@
 // =============================================================================
 
 //------------------------------------------------------------------------------
+// AM2320 Humidity & Temperature sensor over I2C
+// Enable support by passing AM2320_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef AM2320_SUPPORT
+#define AM2320_SUPPORT                  0
+#endif
+
+#ifndef AM2320_ADDRESS
+#define AM2320_ADDRESS                  0x00    // 0x00 means auto
+#endif
+
+//------------------------------------------------------------------------------
 // Analog sensor
 // Enable support by passing ANALOG_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -275,6 +288,19 @@
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
 
 //------------------------------------------------------------------------------
+// GUVAS12SD UV Sensor (analog)
+// Enable support by passing GUVAS12SD_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef GUVAS12SD_SUPPORT
+#define GUVAS12SD_SUPPORT               0
+#endif
+
+#ifndef GUVAS12SD_PIN
+#define GUVAS12SD_PIN                   14
+#endif
+
+//------------------------------------------------------------------------------
 // HC-SR04
 // Enable support by passing HCSR04_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -453,32 +479,6 @@
 #define V9261F_VOLTAGE_FACTOR           4160651.0
 #define V9261F_POWER_FACTOR             153699.0
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
-
-//------------------------------------------------------------------------------
-// AM2320 Humidity & Temperature sensor over I2C
-// Enable support by passing AM2320_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef AM2320_SUPPORT
-#define AM2320_SUPPORT                  0
-#endif
-
-#ifndef AM2320_ADDRESS
-#define AM2320_ADDRESS                  0x00    // 0x00 means auto
-#endif
-
-//------------------------------------------------------------------------------
-// GUVAS12SD UV Sensor (analog)
-// Enable support by passing GUVAS12SD_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef GUVAS12SD_SUPPORT
-#define GUVAS12SD_SUPPORT               0
-#endif
-
-#ifndef GUVAS12SD_PIN
-#define GUVAS12SD_PIN                   14
-#endif
 
 // =============================================================================
 // Sensor helpers configuration - can't move to dependencies.h
