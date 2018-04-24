@@ -382,7 +382,7 @@ bool settingsRestoreJson(JsonObject& data) {
 
 }
 
-bool settingsGetJson(JsonObject& root) {
+void settingsGetJson(JsonObject& root) {
 
     // Get sorted list of keys
     std::vector<String> keys = _settingsKeys();
