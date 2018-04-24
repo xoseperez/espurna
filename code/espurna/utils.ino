@@ -386,6 +386,9 @@ void info() {
         #if GUVAS12SD_SUPPORT
             DEBUG_MSG_P(PSTR(" GUVAS12SD"));
         #endif
+        #if HCSR04_SUPPORT
+            DEBUG_MSG_P(PSTR(" HCSR04"));
+        #endif
         #if HLW8012_SUPPORT
             DEBUG_MSG_P(PSTR(" HLW8012"));
         #endif
@@ -403,6 +406,9 @@ void info() {
         #endif
         #if SI7021_SUPPORT
             DEBUG_MSG_P(PSTR(" SI7021"));
+        #endif
+        #if TMP3X_SUPPORT
+            DEBUG_MSG_P(PSTR(" TMP3X"));
         #endif
         #if V9261F_SUPPORT
             DEBUG_MSG_P(PSTR(" V9261F"));

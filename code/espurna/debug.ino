@@ -119,7 +119,7 @@ void debugSend_P(PGM_P format_P, ...) {
 
 #if DEBUG_WEB_SUPPORT
 
-void debugSetup() {
+void debugWebSetup() {
 
     wsOnSendRegister([](JsonObject& root) {
         root["dbgVisible"] = 1;
@@ -144,6 +144,17 @@ void debugSetup() {
 }
 
 #endif // DEBUG_WEB_SUPPORT
+
+void debugSetup() {
+
+    #if DEBUG_SERIAL_SUPPORT
+        DEBUG_PORT.begin(SERIAL_BAUDRATE);
+        #if DEBUG_ESP_WIFI
+            DEBUG_PORT.setDebugOutput(true);
+        #endif
+    #endif
+
+}
 
 // -----------------------------------------------------------------------------
 // Save crash info
@@ -274,4 +285,5 @@ void debugDumpCrashInfo() {
     DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 
 }
+
 #endif // DEBUG_SUPPORT

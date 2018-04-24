@@ -122,6 +122,7 @@ class GUVAS12SDSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         void _read() {
+
                 int _average = 0;
 
             #if UV_SAMPLE_RATE == 1
@@ -161,7 +162,6 @@ class GUVAS12SDSensor : public BaseSensor {
                     _uvindex = 10;
                 }
 
-                return _uvindex;
             }
 
         unsigned char _gpio = GPIO_NONE;

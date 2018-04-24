@@ -878,13 +878,15 @@ function initChannels(num) {
         var line = $(template).clone();
         $("span.slider", line).attr("data", channel_id);
         $("input.slider", line).attr("data", channel_id).on("change", onChannelSliderChange);
-        $("label", line).html("Channel " + (channel_id + 1));
+        $("label", line).html("Channel #" + channel_id);
 
         line.appendTo("#channels");
 
+    }
+
+    for (var i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
-
     }
 
 }

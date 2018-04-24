@@ -888,6 +888,23 @@ void migrate() {
 
             setSetting("board", 69);
 
+        #elif defined(ZHILDE_EU44_W)
+
+            setSetting("board", 70);
+            setSetting("btnGPIO", 0, 3);
+            setSetting("ledGPIO", 0, 1);
+            setSetting("ledLogic", 0, 1);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayGPIO", 1, 4);
+            setSetting("relayGPIO", 2, 12);
+            setSetting("relayGPIO", 3, 13);
+            setSetting("relayGPIO", 4, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

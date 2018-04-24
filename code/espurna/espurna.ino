@@ -42,6 +42,11 @@ void setup() {
     // Basic modules, will always run
     // -------------------------------------------------------------------------
 
+    // Serial debug
+    #if DEBUG_SUPPORT
+        debugSetup();
+    #endif
+
     // Init EEPROM, Serial, SPIFFS and system check
     systemSetup();
 
@@ -81,7 +86,7 @@ void setup() {
         wsSetup();
         apiSetup();
         #if DEBUG_WEB_SUPPORT
-            debugSetup();
+            debugWebSetup();
         #endif
     #endif
 

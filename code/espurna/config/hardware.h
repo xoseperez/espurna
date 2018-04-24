@@ -388,7 +388,6 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
-    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -608,7 +607,6 @@
     #endif
 
     // Remove UART noise on serial line
-    #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
 
     // Buttons
@@ -789,7 +787,6 @@
     #define LED1_PIN_INVERSE        1
 
     // Disable UART noise
-    #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
 
     // CSE7766
@@ -1552,10 +1549,8 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_STM
 
     // Remove UART noise on serial line
-    #define TERMINAL_SUPPORT        0
     #define DEBUG_SERIAL_SUPPORT    0
-    #define SERIAL_BAUDRATE         115200
-    
+
 // -----------------------------------------------------------------------------
 // Tonbux Powerstrip02
 // -----------------------------------------------------------------------------
@@ -1921,6 +1916,42 @@
     #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+
+// -----------------------------------------------------------------------------
+// Zhilde ZLD-EU44-W
+// http://www.zhilde.com/product/60705150109-805652505/EU_WiFi_Surge_Protector_Extension_Socket_4_Outlets_works_with_Amazon_Echo_Smart_Power_Strip.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ZHILDE_EU44_W)
+
+    // Info
+    #define MANUFACTURER            "ZHILDE"
+    #define DEVICE                  "EU44_W"
+
+    // Based on the reporter, this product uses GPIO1 and 3 for the button
+    // and onboard LED, so hardware serial should be disabled...
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN             3
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN              5
+    #define RELAY2_PIN              4
+    #define RELAY3_PIN              12
+    #define RELAY4_PIN              13
+    #define RELAY5_PIN              14
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY5_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                1
+    #define LED1_PIN_INVERSE        1
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
@@ -1955,6 +1986,7 @@
     // We got silk sensor, velvet sensor, naugahyde sensor. We even got horse sensor, dog sensor, chicken sensor.
     // C'mon, you want sensor, come on in sensor lovers!
     // If we don’t got it, you don't want it!
+    #define AM2320_SUPPORT        1
     #define BH1750_SUPPORT        1
     #define BMX280_SUPPORT        1
     #define SHT3X_I2C_SUPPORT     1
@@ -2000,11 +2032,11 @@
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 02"
 
-    // A bit of DHT - pin 1
-    #ifndef DHT_SUPPORT
-    #define DHT_SUPPORT         1
+    // A bit of CSE7766 - pin 1
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
     #endif
-    #define DHT_PIN             1
+    #define CSE7766_PIN         1
 
     // Relay type dual  - pins 2,3
     #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
@@ -2017,6 +2049,42 @@
     #define IR_SUPPORT          1
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
+
+    // A bit of DHT - pin 5
+    #ifndef DHT_SUPPORT
+    #define DHT_SUPPORT         1
+    #endif
+    #define DHT_PIN             5
+
+    // A bit of TMP3X (analog)
+    #define TMP3X_SUPPORT       1
+
+    // A bit of EVENTS - pin 10
+    #define EVENTS_SUPPORT      1
+    #define EVENTS_PIN          6
+
+    // HC-RS04
+    #define HCSR04_SUPPORT      1
+    #define HCSR04_TRIGGER      7
+    #define HCSR04_ECHO         8
+
+    // MHZ19
+    #define MHZ19_SUPPORT       1
+    #define MHZ19_RX_PIN        9
+    #define MHZ19_TX_PIN        10
+
+    // PZEM004T
+    #define PZEM004T_SUPPORT    0   // not working?
+    #define PZEM004T_RX_PIN     11
+    #define PZEM004T_TX_PIN     12
+
+    // V9261F
+    #define V9261F_SUPPORT      1
+    #define V9261F_PIN          13
+
+    // GUVAS12SD
+    #define GUVAS12SD_SUPPORT   1
+    #define GUVAS12SD_PIN       14
 
 #elif defined(TRAVIS03)
 
@@ -2035,6 +2103,11 @@
     #define MY92XX_DCKI_PIN     2
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     #define MY92XX_MAPPING      4, 3, 5, 0, 1
+
+    // A bit of Analog EMON (analog)
+    #ifndef EMON_ANALOG_SUPPORT
+    #define EMON_ANALOG_SUPPORT 1
+    #endif
 
 #endif
 
