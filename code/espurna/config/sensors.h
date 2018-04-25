@@ -374,6 +374,23 @@
 #endif
 
 //------------------------------------------------------------------------------
+// SenseAir CO2 sensor
+// Enable support by passing SENSEAIR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SENSEAIR_SUPPORT
+#define SENSEAIR_SUPPORT                0
+#endif
+
+#ifndef SENSEAIR_RX_PIN
+#define SENSEAIR_RX_PIN                 0
+#endif
+
+#ifndef SENSEAIR_TX_PIN
+#define SENSEAIR_TX_PIN                 2
+#endif
+
+//------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMSX003
 // Enable support by passing PMSX003_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -503,6 +520,7 @@
     HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
+	SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
@@ -622,6 +640,11 @@
 #if MHZ19_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
+#endif
+
+#if SENSEAIR_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/SenseAirSensor.h"
 #endif
 
 #if PMSX003_SUPPORT

@@ -249,6 +249,7 @@
 #define SENSOR_CSE7766_ID           0x21
 #define SENSOR_TMP3X_ID             0x22
 #define SENSOR_HCSR04_ID            0x23
+#define SENSOR_SENSEAIR_ID          0x24
 
 //--------------------------------------------------------------------------------
 // Magnitudes
