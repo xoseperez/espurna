@@ -617,6 +617,14 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+    // RFB-Direct
+    #ifdef RFB_DIRECT
+        #undef DEVICE
+        #define DEVICE          "SONOFF_RFBRIDGE_DIRECT"
+        #define RFB_RX_PIN      4
+        #define RFB_TX_PIN      5
+    #endif
+
 #elif defined(ITEAD_SONOFF_B1)
 
     // Info
@@ -1641,7 +1649,7 @@
     #define MANUFACTURER		"MAXCIO"
     #define DEVICE				"WUS002S"
 
-	// Buttons
+    // Buttons
     #define BUTTON1_PIN			2
     #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
