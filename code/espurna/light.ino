@@ -77,22 +77,6 @@ const unsigned char _light_gamma_table[] = {
 // UTILS
 // -----------------------------------------------------------------------------
 
-unsigned char getMax(unsigned char a, unsigned char b, unsigned char c) {
-  return std::max(a, std::max(b, c));
-}
-
-unsigned char getMax(unsigned char a, unsigned char b, unsigned char c, unsigned char d) {
-  return std::max(std::max(a, b), std::max(c, d));
-}
-
-unsigned char getMax(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char e) {
-  return std::max(std::max(a, b), std::max(c, std::max(d, e)));
-}
-
-unsigned char getMin(unsigned char a, unsigned char b, unsigned char c) {
-  return std::min(a, std::min(b, c));
-}
-
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
     _light_channel[0].inputValue = constrain(red, 0, LIGHT_MAX_VALUE);
     _light_channel[1].inputValue = constrain(green, 0, LIGHT_MAX_VALUE);;
@@ -107,7 +91,7 @@ void _generateBrightness() {
     if (_light_has_color && _light_use_white) {
 
         // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
-        unsigned char white = getMin(_light_channel[0].inputValue, _light_channel[1].inputValue, _light_channel[2].inputValue);
+        unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
         for (unsigned int i=0; i < 3; i++) {
             _light_channel[i].value = _light_channel[i].inputValue - white;
         }
@@ -131,9 +115,13 @@ void _generateBrightness() {
         }
 
         // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
-        unsigned char max_in = getMax(_light_channel[0].inputValue, _light_channel[1].inputValue, _light_channel[2].inputValue);
-        unsigned char max_out = getMax(_light_channel[0].value, _light_channel[1].value, _light_channel[2].value, _light_channel[3].value, (_light_use_cct ? _light_channel[4].value : 0));
+        unsigned char max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
+        unsigned char max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
         unsigned char channelSize = _light_use_cct ? 5 : 4;
+
+        if (_light_use_cct) {
+          max_out = std::max(max_out, _light_channel[4].value);
+        }
 
         double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
         for (unsigned char i=0; i < channelSize; i++) {
