@@ -218,7 +218,6 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
             _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
             _serial->enableIntTx(false);
             _serial->begin(9600);
-            //_serial->enableRx(true);  // TODO: Test
             passiveMode();
 
             _startTime = millis();
