@@ -2,6 +2,7 @@
 // PMSX003 Dust Sensor
 // Uses SoftwareSerial library
 // Contribution by Òscar Rovira López
+// Refine to support PMS5003T/PMS5003ST by Yonsm Guo
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && PMSX003_SUPPORT
