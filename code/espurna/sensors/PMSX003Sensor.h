@@ -20,38 +20,24 @@
 #define PMS_TYPE_5003T      2
 #define PMS_TYPE_5003ST     3
 
-// These should not be static, instead a setType method should be used to
-// dinamically choose the type of sensor...
+// Sensor type specified data
+#define PMS_SLOT_MAX        4
+#define PMS_DATA_MAX        17
+const static struct {
+    const char *name;
+    unsigned char data_count;
+    unsigned char slot_count;
+    unsigned char slot_types[PMS_SLOT_MAX];
+} pms_specs[] = {
+    {"PMSX003", 13, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
+    {"PMSX003_9", 9, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
+    {"PMS5003T", 13, 3, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY}},
+    {"PMS5003ST", 17, 4, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}}
+};
 
 // [MAGIC][LEN][DATA9|13|17][SUM]
-#if PMS_TYPE == PMS_TYPE_5003ST
-#define PMS_TYPE_NAME "PMS5003ST"
-#define PMS_DATA_COUNT 17
-#define PMS_SLOT_COUNT 4
-#define PMS_SLOT_NAMES {"PM2.5", "TEMP", "HUMI", "HCHO"}
-#define PMS_SLOT_TYPES {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}
-#elif PMS_TYPE == PMS_TYPE_5003T
-#define PMS_TYPE_NAME "PMS5003T"
-#define PMS_DATA_COUNT 13
-#define PMS_SLOT_COUNT 3
-#define PMS_SLOT_NAMES {"PM2.5", "TEMP", "HUMI"}
-#define PMS_SLOT_TYPES {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY}
-#elif PMS_TYPE == PMS_TYPE_X003_9
-#define PMS_TYPE_NAME "PMSX003_9"
-#define PMS_DATA_COUNT 9
-#define PMS_SLOT_COUNT 3
-#define PMS_SLOT_NAMES {"PM1.0", "PM2.5", "PM10"}
-#define PMS_SLOT_TYPES {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}
-#else
-#define PMS_TYPE_NAME "PMSX003"
-#define PMS_DATA_COUNT 13
-#define PMS_SLOT_COUNT 3
-#define PMS_SLOT_NAMES {"PM1.0", "PM2.5", "PM10"}
-#define PMS_SLOT_TYPES {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}
-#endif
-
-#define PMS_PACKET_SIZE ((PMS_DATA_COUNT + 3) * 2)
-#define PMS_PAYLOAD_SIZE (PMS_DATA_COUNT * 2 + 2)
+#define PMS_PACKET_SIZE(data_count) ((data_count + 3) * 2)
+#define PMS_PAYLOAD_SIZE(data_count) ((data_count + 1) * 2)
 
 
 // PMS sensor utils
@@ -95,7 +81,7 @@ class PMSX003 {
         }
 
         // Read sensor's data
-        bool readData(uint16_t data[PMS_DATA_COUNT]) {
+        bool readData(uint16_t data[], unsigned char data_count) {
 
             do {
 
@@ -103,7 +89,7 @@ class PMSX003 {
                 #if SENSOR_DEBUG
                     //debugSend("[SENSOR] %s: Packet available = %d\n", PMS_TYPE_NAME, avail);
                 #endif
-                if (avail < PMS_PACKET_SIZE) {
+                if (avail < PMS_PACKET_SIZE(data_count)) {
                     break;
                 }
 
@@ -114,14 +100,14 @@ class PMSX003 {
                     #if SENSOR_DEBUG
                         debugSend("[SENSOR] %s: Payload size = %d\n", PMS_TYPE_NAME, size);
                     #endif
-                    if (size != PMS_PAYLOAD_SIZE) {
+                    if (size != PMS_PAYLOAD_SIZE(data_count)) {
                         #if SENSOR_DEBUG
                             debugSend(("[SENSOR] %s: Payload size != %d \n"), PMS_TYPE_NAME, PMS_PAYLOAD_SIZE);
                         #endif
                         break;
                     }
 
-                    for (int i = 0; i < PMS_DATA_COUNT; i++) {
+                    for (int i = 0; i < data_count; i++) {
                         data[i] = read16(sum);
                         #if SENSOR_DEBUG
                             //debugSend(("[SENSOR] %s:   data[%d] = %d\n"), PMS_TYPE_NAME, i, data[i]);
@@ -171,7 +157,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         // ---------------------------------------------------------------------
 
         PMSX003Sensor(): BaseSensor() {
-            _count = PMS_SLOT_COUNT;
+            _count = pms_specs[_type].slot_count;
             _sensor_id = SENSOR_PMSX003_ID;
         }
 
@@ -191,6 +177,12 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
             _dirty = true;
         }
 
+        // Should call setType after constrcutor immediately to enable corresponding slot count
+        void setType(unsigned char type) {
+            _type = type;
+            _count = pms_specs[_type].slot_count;
+        }
+
         // ---------------------------------------------------------------------
 
         unsigned char getRX() {
@@ -199,6 +191,10 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
         unsigned char getTX() {
             return _pin_tx;
+        }
+
+        unsigned char getType() {
+            return _type;
         }
 
         // ---------------------------------------------------------------------
@@ -226,15 +222,14 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "%s @ SwSerial(%u,%u)", PMS_TYPE_NAME, _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "%s @ SwSerial(%u,%u)", pms_specs[_type].name, _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             char buffer[36] = {0};
-            const static char *_slot_names[] = PMS_SLOT_NAMES;
-            snprintf(buffer, sizeof(buffer), "%s @ %s @ SwSerial(%u,%u)", _slot_names[index], PMS_TYPE_NAME, _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "%d @ %s @ SwSerial(%u,%u)", int(index + 1), pms_specs[_type].name, _pin_rx, _pin_tx);
             return String(buffer);
         }
 
@@ -247,8 +242,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            const static unsigned char _slot_types[] = PMS_SLOT_TYPES;
-            return _slot_types[index];
+            return pms_specs[_type].slot_types[index];
         }
 
         void pre() {
@@ -280,22 +274,22 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                 }
             #endif
 
-            uint16_t data[PMS_DATA_COUNT];
-            if (readData(data)) {
-                #if PMS_TYPE == PMS_TYPE_5003ST
+            uint16_t data[PMS_DATA_MAX];
+            if (readData(data, pms_specs[_type].data_count)) {
+                if (_type == PMS_TYPE_5003ST) {
                     _slot_values[0] = data[4];
                     _slot_values[1] = (double)data[13] / 10;
                     _slot_values[2] = (double)data[14] / 10;
                     _slot_values[3] = (double)data[12] / 1000;
-                #elif PMS_TYPE == PMS_TYPE_5003T
+                } else if (_type == PMS_TYPE_5003T) {
                     _slot_values[0] = data[4];
                     _slot_values[1] = (double)data[10] / 10;
                     _slot_values[2] = (double)data[11] / 10;
-                #else
+                } else {
                     _slot_values[0] = data[3];
                     _slot_values[1] = data[4];
                     _slot_values[2] = data[5];
-                #endif
+                }
             }
 
             #if PMS_SMART_SLEEP
@@ -321,7 +315,8 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         unsigned int _pin_rx;
         unsigned int _pin_tx;
         unsigned long _startTime;
-        double _slot_values[PMS_SLOT_COUNT] = {0};
+        unsigned char _type = PMS_TYPE_X003;
+        double _slot_values[PMS_SLOT_MAX] = {0};
 
         #if PMS_SMART_SLEEP
             unsigned int _readCount = 0;
