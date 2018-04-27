@@ -159,6 +159,7 @@
 #define IR_BUTTON_MODE_BRIGHTER     3
 #define IR_BUTTON_MODE_STATE        4
 #define IR_BUTTON_MODE_EFFECT       5
+#define IR_BUTTON_MODE_TOGGLE       6
 
 #define LIGHT_EFFECT_SOLID          0
 #define LIGHT_EFFECT_FLASH          1
@@ -249,6 +250,7 @@
 #define SENSOR_CSE7766_ID           0x21
 #define SENSOR_TMP3X_ID             0x22
 #define SENSOR_HCSR04_ID            0x23
+#define SENSOR_SENSEAIR_ID          0x24
 
 //--------------------------------------------------------------------------------
 // Magnitudes
