@@ -128,7 +128,7 @@
 #define SYSTEM_CHECK_ENABLED    1               // Enable crash check by default
 #endif
 
-#ifndef SYSTEM_CHECK_MAX
+#ifndef SYSTEM_CHECK_TIME
 #define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
 #endif
 
@@ -1144,6 +1144,38 @@
 
 #endif
 
+//Remote Buttons SET 3 (samsung AA59-00608A 8 Toggle Buttons for generic 8CH module)
+#if IR_BUTTON_SET == 3
+/*
+   +------+------+------+
+   |  1   |  2   |  3   |      
+   +------+------+------+
+   |  4   |  5   |  6   |      
+   +------+------+------+
+   |  7   |  8   |  9   |      
+   +------+------+------+
+   |      |  0   |      |      
+   +------+------+------+
+*/
+#define IR_BUTTON_COUNT 10
+
+ const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xE0E020DF, IR_BUTTON_MODE_TOGGLE, 0 }, // Toggle Relay #0
+        { 0xE0E0A05F, IR_BUTTON_MODE_TOGGLE, 1 }, // Toggle Relay #1
+        { 0xE0E0609F, IR_BUTTON_MODE_TOGGLE, 2 }, // Toggle Relay #2
+        
+        { 0xE0E010EF, IR_BUTTON_MODE_TOGGLE, 3 }, // Toggle Relay #3
+        { 0xE0E0906F, IR_BUTTON_MODE_TOGGLE, 4 }, // Toggle Relay #4
+        { 0xE0E050AF, IR_BUTTON_MODE_TOGGLE, 5 }, // Toggle Relay #5
+
+        { 0xE0E030CF, IR_BUTTON_MODE_TOGGLE, 6 }, // Toggle Relay #6
+        { 0xE0E0B04F, IR_BUTTON_MODE_TOGGLE, 7 } // Toggle Relay #7
+      //{ 0xE0E0708F, IR_BUTTON_MODE_TOGGLE, 8 } //Extra Button
+
+      //{ 0xE0E08877, IR_BUTTON_MODE_TOGGLE, 9 } //Extra Button
+ };
+#endif
 #endif // IR_SUPPORT
 
 //--------------------------------------------------------------------------------

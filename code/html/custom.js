@@ -40,7 +40,7 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "HC-SR04"
+        "TMP3X", "HC-SR04", "SenseAir"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -54,7 +54,7 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Events",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance"
+        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -89,14 +89,17 @@ $.fn.enterKey = function (fnc) {
 };
 
 function keepTime() {
+
+    $("span[name='ago']").html(ago);
+    ago++;
+
     if (0 === now) { return; }
     var date = new Date(now * 1000);
     var text = date.toISOString().substring(0, 19).replace("T", " ");
     $("input[name='now']").val(text);
     $("span[name='now']").html(text);
-    $("span[name='ago']").html(ago);
     now++;
-    ago++;
+
 }
 
 // http://www.the-art-of-web.com/javascript/validate-password/
@@ -1207,13 +1210,12 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
-            $(".module-" + module).show();
+            $(".module-" + module).css("display", "inherit");
             return;
         }
 
         if ("now" === key) {
             now = value;
-            ago = 0;
             return;
         }
 
@@ -1229,6 +1231,7 @@ function processData(data) {
             value = value ? "SYNC'D" : "NOT SYNC'D";
         }
         if ("uptime" === key) {
+            ago = 0;
             var uptime  = parseInt(value, 10);
             var seconds = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var minutes = uptime % 60; uptime = parseInt(uptime / 60, 10);

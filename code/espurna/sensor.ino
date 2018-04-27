@@ -487,11 +487,21 @@ void _sensorLoad() {
     }
     #endif
 
+    #if SENSEAIR_SUPPORT
+    {
+        SenseAirSensor * sensor = new SenseAirSensor();
+        sensor->setRX(SENSEAIR_RX_PIN);
+        sensor->setTX(SENSEAIR_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
         sensor->setRX(PMS_RX_PIN);
         sensor->setTX(PMS_TX_PIN);
+        sensor->setType(PMS_TYPE);
         _sensors.push_back(sensor);
     }
     #endif

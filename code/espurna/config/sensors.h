@@ -374,12 +374,40 @@
 #endif
 
 //------------------------------------------------------------------------------
-// Particle Monitor based on Plantower PMSX003
+// SenseAir CO2 sensor
+// Enable support by passing SENSEAIR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SENSEAIR_SUPPORT
+#define SENSEAIR_SUPPORT                0
+#endif
+
+#ifndef SENSEAIR_RX_PIN
+#define SENSEAIR_RX_PIN                 0
+#endif
+
+#ifndef SENSEAIR_TX_PIN
+#define SENSEAIR_TX_PIN                 2
+#endif
+
+//------------------------------------------------------------------------------
+// Particle Monitor based on Plantower PMS
 // Enable support by passing PMSX003_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef PMSX003_SUPPORT
 #define PMSX003_SUPPORT                 0
+#endif
+
+#ifndef PMS_TYPE
+#define PMS_TYPE                        PMS_TYPE_X003
+#endif
+
+// You can enable smart sleep (read 6-times then sleep on 24-reading-cycles) to extend PMS sensor's life.
+// Otherwise the default lifetime of PMS sensor is about 8000-hours/1-years.
+// The PMS's fan will stop working on sleeping cycle, and will wake up on reading cycle.
+#ifndef PMS_SMART_SLEEP
+#define PMS_SMART_SLEEP                 0
 #endif
 
 #ifndef PMS_RX_PIN
@@ -503,6 +531,7 @@
     HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
+    SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
@@ -624,9 +653,13 @@
     #include "../sensors/MHZ19Sensor.h"
 #endif
 
+#if SENSEAIR_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/SenseAirSensor.h"
+#endif
+
 #if PMSX003_SUPPORT
     #include <SoftwareSerial.h>
-    #include <PMS.h>
     #include "../sensors/PMSX003Sensor.h"
 #endif
 

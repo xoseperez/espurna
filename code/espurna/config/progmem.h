@@ -60,6 +60,7 @@ PROGMEM const char magnitude_co2_topic[] = "co2";
 PROGMEM const char magnitude_lux_topic[] = "lux";
 PROGMEM const char magnitude_uv_topic[] = "uv";
 PROGMEM const char magnitude_distance_topic[] = "distance";
+PROGMEM const char magnitude_hcho_topic[] = "hcho";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
@@ -69,12 +70,12 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
     magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic,
-    magnitude_distance_topic
+    magnitude_distance_topic, magnitude_hcho_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
-PROGMEM const char magnitude_celsius[] =  "C";
-PROGMEM const char magnitude_fahrenheit[] =  "F";
+PROGMEM const char magnitude_celsius[] =  "°C";
+PROGMEM const char magnitude_fahrenheit[] =  "°F";
 PROGMEM const char magnitude_percentage[] = "%";
 PROGMEM const char magnitude_hectopascals[] = "hPa";
 PROGMEM const char magnitude_amperes[] = "A";
@@ -83,11 +84,12 @@ PROGMEM const char magnitude_watts[] = "W";
 PROGMEM const char magnitude_kw[] = "kW";
 PROGMEM const char magnitude_joules[] = "J";
 PROGMEM const char magnitude_kwh[] = "kWh";
-PROGMEM const char magnitude_ugm3[] = "µg/m3";
+PROGMEM const char magnitude_ugm3[] = "µg/m³";
 PROGMEM const char magnitude_ppm[] = "ppm";
 PROGMEM const char magnitude_lux[] = "lux";
 PROGMEM const char magnitude_uv[] = "uv";
 PROGMEM const char magnitude_distance[] = "m";
+PROGMEM const char magnitude_mgm3[] = "mg/m³";
 
 PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_celsius, magnitude_percentage,
@@ -97,7 +99,7 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_empty, magnitude_empty,
     magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_ppm, magnitude_lux, magnitude_uv,
-    magnitude_distance
+    magnitude_distance, magnitude_mgm3
 
 };
 

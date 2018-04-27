@@ -599,15 +599,12 @@
     // Info
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_RFBRIDGE"
-    #define SERIAL_BAUDRATE     19200
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
 
+    // Number of virtual switches
     #ifndef DUMMY_RELAY_COUNT
     #define DUMMY_RELAY_COUNT   8
     #endif
-
-    // Remove UART noise on serial line
-    #define DEBUG_SERIAL_SUPPORT    0
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -616,6 +613,28 @@
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
+
+    // RFB Direct hack thanks to @wildwiz
+    // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+    #ifndef RFB_DIRECT
+    #define RFB_DIRECT          0
+    #endif
+
+    #ifndef RFB_RX_PIN
+    #define RFB_RX_PIN          4   // GPIO for RX when RFB_DIRECT
+    #endif
+
+    #ifndef RFB_TX_PIN
+    #define RFB_TX_PIN          5   // GPIO for TX when RFB_DIRECT
+    #endif
+
+    // When using un-modified harware, ESPurna communicates with the secondary
+    // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
+    // the port and remove UART noise on serial line
+    #if not RFB_DIRECT
+    #define SERIAL_BAUDRATE         19200
+    #define DEBUG_SERIAL_SUPPORT    0
+    #endif
 
 #elif defined(ITEAD_SONOFF_B1)
 
@@ -1641,7 +1660,7 @@
     #define MANUFACTURER		"MAXCIO"
     #define DEVICE				"WUS002S"
 
-	// Buttons
+    // Buttons
     #define BUTTON1_PIN			2
     #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
