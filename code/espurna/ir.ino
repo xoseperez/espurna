@@ -42,7 +42,9 @@ void _irProcessCode(unsigned long code) {
             if (button_mode == IR_BUTTON_MODE_STATE) {
                 relayStatus(0, button_value);
             }
-
+            if (button_mode == IR_BUTTON_MODE_TOGGLE) {
+                relayToggle(button_value);
+            }
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
                 if (button_mode == IR_BUTTON_MODE_BRIGHTER) {

@@ -159,6 +159,7 @@
 #define IR_BUTTON_MODE_BRIGHTER     3
 #define IR_BUTTON_MODE_STATE        4
 #define IR_BUTTON_MODE_EFFECT       5
+#define IR_BUTTON_MODE_TOGGLE       6
 
 #define LIGHT_EFFECT_SOLID          0
 #define LIGHT_EFFECT_FLASH          1
