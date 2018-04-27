@@ -501,6 +501,7 @@ void _sensorLoad() {
         PMSX003Sensor * sensor = new PMSX003Sensor();
         sensor->setRX(PMS_RX_PIN);
         sensor->setTX(PMS_TX_PIN);
+        sensor->setType(PMS_TYPE);
         _sensors.push_back(sensor);
     }
     #endif
