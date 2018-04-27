@@ -128,7 +128,7 @@
 #define SYSTEM_CHECK_ENABLED    1               // Enable crash check by default
 #endif
 
-#ifndef SYSTEM_CHECK_MAX
+#ifndef SYSTEM_CHECK_TIME
 #define SYSTEM_CHECK_TIME       60000           // The system is considered stable after these many millis
 #endif
 
