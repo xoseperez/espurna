@@ -392,7 +392,7 @@
 
 //------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMS
-// Enable support by passing PMS_SUPPORT=1 build flag
+// Enable support by passing PMSX003_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef PMSX003_SUPPORT
