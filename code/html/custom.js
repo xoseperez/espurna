@@ -88,14 +88,17 @@ $.fn.enterKey = function (fnc) {
 };
 
 function keepTime() {
+
+    $("span[name='ago']").html(ago);
+    ago++;
+
     if (0 === now) { return; }
     var date = new Date(now * 1000);
     var text = date.toISOString().substring(0, 19).replace("T", " ");
     $("input[name='now']").val(text);
     $("span[name='now']").html(text);
-    $("span[name='ago']").html(ago);
     now++;
-    ago++;
+
 }
 
 // http://www.the-art-of-web.com/javascript/validate-password/
@@ -1176,13 +1179,12 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
-            $(".module-" + module).show();
+            $(".module-" + module).css("display", "inherit");
             return;
         }
 
         if ("now" === key) {
             now = value;
-            ago = 0;
             return;
         }
 
@@ -1198,6 +1200,7 @@ function processData(data) {
             value = value ? "SYNC'D" : "NOT SYNC'D";
         }
         if ("uptime" === key) {
+            ago = 0;
             var uptime  = parseInt(value, 10);
             var seconds = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var minutes = uptime % 60; uptime = parseInt(uptime / 60, 10);
