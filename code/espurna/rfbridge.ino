@@ -11,7 +11,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <queue>
 #include <Ticker.h>
 
-#ifdef RFB_DIRECT
+#if RFB_DIRECT
 #include <RCSwitch.h>
 #endif
 
@@ -55,9 +55,9 @@ static std::queue<rfb_message_t> _rfb_message_queue;
 Ticker _rfb_ticker;
 bool _rfb_ticker_active = false;
 
-#ifdef RFB_DIRECT
-RCSwitch * _rfModem;
-bool _learning = false;
+#if RFB_DIRECT
+    RCSwitch * _rfModem;
+    bool _learning = false;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -114,19 +114,19 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& 
 }
 
 void _rfbAck() {
-    #ifndef RFB_DIRECT
-    DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending ACK\n"));
-    Serial.println();
-    Serial.write(RF_CODE_START);
-    Serial.write(RF_CODE_ACK);
-    Serial.write(RF_CODE_STOP);
-    Serial.flush();
-    Serial.println();
+    #if not RFB_DIRECT
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending ACK\n"));
+        Serial.println();
+        Serial.write(RF_CODE_START);
+        Serial.write(RF_CODE_ACK);
+        Serial.write(RF_CODE_STOP);
+        Serial.flush();
+        Serial.println();
     #endif
 }
 
 void _rfbLearn() {
-    #ifdef RFB_DIRECT
+    #if RFB_DIRECT
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Entering LEARN mode\n"));
         _learning = true;
     #else
@@ -154,7 +154,7 @@ void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
 }
 
 void _rfbSend(byte * message) {
-    #ifdef RFB_DIRECT
+    #if RFB_DIRECT
         unsigned int protocol = message[1];
         unsigned int bitlength = message[4];
         unsigned long rf_code =
@@ -328,7 +328,7 @@ void _rfbDecode() {
 }
 
 void _rfbReceive() {
-    #ifdef RFB_DIRECT
+    #if RFB_DIRECT
         static long learn_start = 0;
         if (!_learning && learn_start) {
             learn_start = 0;
@@ -357,7 +357,7 @@ void _rfbReceive() {
                     memset(_uartbuf, 0, sizeof(_uartbuf));
                     unsigned char *msgbuf = _uartbuf + 1;
                     _uartbuf[0] = _learning ? RF_CODE_LEARN_OK: RF_CODE_RFIN;
-                    msgbuf[0] = 0xC0;                   
+                    msgbuf[0] = 0xC0;
                     msgbuf[1] = _rfModem->getReceivedProtocol();
                     msgbuf[4] = _rfModem->getReceivedBitlength();
                     msgbuf[5] = rf_code >> 24;
@@ -590,7 +590,7 @@ void rfbSetup() {
         wsOnActionRegister(_rfbWebSocketOnAction);
     #endif
 
-    #ifdef RFB_DIRECT
+    #if RFB_DIRECT
         _rfModem = new RCSwitch();
         _rfModem->enableReceive(RFB_RX_PIN);
         _rfModem->enableTransmit(RFB_TX_PIN);
