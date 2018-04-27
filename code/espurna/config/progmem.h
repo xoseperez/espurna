@@ -60,6 +60,7 @@ PROGMEM const char magnitude_co2_topic[] = "co2";
 PROGMEM const char magnitude_lux_topic[] = "lux";
 PROGMEM const char magnitude_uv_topic[] = "uv";
 PROGMEM const char magnitude_distance_topic[] = "distance";
+PROGMEM const char magnitude_hcho_topic[] = "hcho";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
@@ -69,7 +70,7 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
     magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic,
-    magnitude_distance_topic
+    magnitude_distance_topic, magnitude_hcho_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -97,7 +98,7 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_empty, magnitude_empty,
     magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_ppm, magnitude_lux, magnitude_uv,
-    magnitude_distance
+    magnitude_distance, magnitude_empty
 
 };
 

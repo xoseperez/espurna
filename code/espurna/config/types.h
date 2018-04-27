@@ -278,5 +278,6 @@
 #define MAGNITUDE_LUX               19
 #define MAGNITUDE_UV                20
 #define MAGNITUDE_DISTANCE          21
+#define MAGNITUDE_HCHO              22
 
-#define MAGNITUDE_MAX               22
+#define MAGNITUDE_MAX               23

@@ -39,7 +39,7 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "HC-SR04"
+        "TMP3X", "HC-SR04", "SenseAir"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -53,7 +53,7 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Events",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance"
+        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];

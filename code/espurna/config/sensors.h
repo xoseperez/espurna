@@ -391,12 +391,23 @@
 #endif
 
 //------------------------------------------------------------------------------
-// Particle Monitor based on Plantower PMSX003
-// Enable support by passing PMSX003_SUPPORT=1 build flag
+// Particle Monitor based on Plantower PMS
+// Enable support by passing PMS_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef PMSX003_SUPPORT
 #define PMSX003_SUPPORT                 0
+#endif
+
+#ifndef PMS_TYPE
+#define PMS_TYPE                        PMS_TYPE_X003
+#endif
+
+// You can enable smart sleep (read 6-times then sleep on 24-reading-cycles) to extend PMS sensor's life.
+// Otherwise the default lifetime of PMS sensor is about 8000-hours/1-years.
+// The PMS's fan will stop working on sleeping cycle, and will wake up on reading cycle.
+#ifndef PMS_SMART_SLEEP
+#define PMS_SMART_SLEEP                 0
 #endif
 
 #ifndef PMS_RX_PIN
@@ -649,7 +660,6 @@
 
 #if PMSX003_SUPPORT
     #include <SoftwareSerial.h>
-    #include <PMS.h>
     #include "../sensors/PMSX003Sensor.h"
 #endif
 
