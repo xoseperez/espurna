@@ -379,6 +379,31 @@
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
+#elif defined(ITEAD_SONOFF_POW_R2)
+
+    // Info
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_POW_R2"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    // CSE7766
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT         1
+    #endif
+    #define CSE7766_PIN             1
+
 #elif defined(ITEAD_SONOFF_DUAL)
 
     // Info
