@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.12.6a-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.12.6-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.org/xoseperez/espurna/tree/dev/)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
@@ -63,6 +63,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)
     * Support for [https://github.com/Portisch/RF-Bridge-EFM8BB1](https://github.com/Portisch/RF-Bridge-EFM8BB1) custom firmware
+    * Support for [direct control of the encoder/decoder bypassing the EFM8BB1](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack)
 * Support for [different **sensors**](Sensors)
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
@@ -72,7 +73,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
-        * **PMSX003** dust sensor
+        * **SenseAir S8** CO2 sensor
+        * **PMSX003/PMS5003T/ST** dust sensors
         * **BH1750** luminosity sensor
         * **GUVAS12SD** UV sensor
     * Power monitoring
@@ -243,7 +245,7 @@ Here is the list of supported hardware. For more information please refer to the
 |**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
 
 **Other supported boards:**
-*TODO*
+IteadStudio Sonoff S31, IteadStudio Sonoff POW R2, Zhilde ZLD-EU55-W, Luani HVIO
 
 ## License
 
