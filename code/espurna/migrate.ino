@@ -905,6 +905,19 @@ void migrate() {
             setSetting("relayType", 3, RELAY_TYPE_NORMAL);
             setSetting("relayType", 4, RELAY_TYPE_NORMAL);
 
+        #elif defined(ITEAD_SONOFF_POW_R2)
+
+            setSetting("board", 71);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 5);
+            setSetting("cf1GPIO", 13);
+            setSetting("cfGPIO", 14);
+
         #else
 
             // Allow users to define new settings without migration config
