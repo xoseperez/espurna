@@ -905,6 +905,13 @@ void migrate() {
             setSetting("relayType", 3, RELAY_TYPE_NORMAL);
             setSetting("relayType", 4, RELAY_TYPE_NORMAL);
 
+        #elif defined(ALLNET_ESP8266_UP)
+
+            setSetting("board", 71);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayResetGPIO", 1, 12);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+
         #else
 
             // Allow users to define new settings without migration config

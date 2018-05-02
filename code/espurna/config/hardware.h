@@ -1971,6 +1971,39 @@
     #define LED1_PIN                1
     #define LED1_PIN_INVERSE        1
 
+    // -----------------------------------------------------------------------------
+    // Allnet 4duino ESP8266-UP-Relais
+    // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+    // -----------------------------------------------------------------------------
+
+#elif defined(ALLNET_ESP8266_UP)
+
+    // Info
+    #define MANUFACTURER            "ALLNET"
+    #define DEVICE                  "ESP8266_UP_Relais"
+
+    // Relays
+    #define RELAY1_PIN              14
+    #define RELAY1_RESET_PIN        12
+    #define RELAY1_TYPE             RELAY_TYPE_LATCHED
+
+    // LEDs
+    #define LED1_PIN                0
+    #define LED1_PIN_INVERSE        1
+
+    // Buttons
+    #define BUTTON1_PIN             4
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK           BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #define BUTTON2_PIN             5
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON
+
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
