@@ -400,9 +400,9 @@
 
     // CSE7766
     #ifndef CSE7766_SUPPORT
-    #define CSE7766_SUPPORT         1
+    #define CSE7766_SUPPORT     1
     #endif
-    #define CSE7766_PIN             1
+    #define CSE7766_PIN         1
 
 #elif defined(ITEAD_SONOFF_DUAL)
 

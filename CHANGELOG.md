@@ -3,6 +3,35 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.12.6] 2018-05-02
+### Fixed
+- Check NTP_SUPPORT for sensors (thanks to @mcspr)
+- Fix AM2302 sensor
+- Fix hostname truncated to 20 chars when advertised to DHCP ([#774](https://github.com/xoseperez/espurna/issues/774))
+- Decouple Serial object from Terminal, Debug modules ([#787](https://github.com/xoseperez/espurna/issues/787))
+- Fix Arilux LC-01 definitions ([#797](https://github.com/xoseperez/espurna/issues/797))
+- Do not uppercase hostname in web interface ([#799](https://github.com/xoseperez/espurna/issues/799))
+- Ensure scheduler has access to all channels independently of the color mode ([#807](https://github.com/xoseperez/espurna/issues/807))
+
+### Added
+- Support for IteadStudio Sonoff S31 ([#497](https://github.com/xoseperez/espurna/issues/497))
+- Option to ignore daylight saving in scheduler ([#783](https://github.com/xoseperez/espurna/issues/783))
+- Report last energy reset datetime in web interface ([#784](https://github.com/xoseperez/espurna/issues/784))
+- Added captive portal in AP mode
+- Support for IR toggle mode (thanks to @darshkpatel)
+- Support for IteadStudio Sonoff POW R2 (thanks to @ColinShorts)
+- Support for Luani HVIO (thanks to @wildwiz)
+- Support for Zhilde ZLD-EU55-W power strip (thanks to @wildwiz)
+- Support for RFB_DIRECT Sonoff Bridge EFM8BB1 bypass hack (thanks to @wildwiz)
+- Support for SenseAir S8 CO2 sensor (thanks to @Yonsm)
+- Support for PMS5003T/ST sensors (thanks to @Yonsm)
+
+### Changed
+- Updated JustWifi Library
+- Some cleanup in the web interface
+- Refactored configuration files (thanks to @lobradov, @mcspr)
+- Changes pre-commit hook (thanks to @mcspr)
+
 ## [1.12.5] 2018-04-08
 ### Fixed
 - Fixed expected power calibration ([#676](https://github.com/xoseperez/espurna/issues/676))

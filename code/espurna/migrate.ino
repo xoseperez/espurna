@@ -918,6 +918,18 @@ void migrate() {
             setSetting("cf1GPIO", 13);
             setSetting("cfGPIO", 14);
 
+        #elif defined(LUANI_HVIO)
+
+            setSetting("board", 72);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
