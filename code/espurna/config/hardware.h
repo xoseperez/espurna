@@ -379,6 +379,31 @@
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
+#elif defined(ITEAD_SONOFF_POW_R2)
+
+    // Info
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_POW_R2"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    // CSE7766
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
+    #endif
+    #define CSE7766_PIN         1
+
 #elif defined(ITEAD_SONOFF_DUAL)
 
     // Info
@@ -2003,6 +2028,39 @@
     #define BUTTON2_PIN             5
     #define BUTTON2_MODE            BUTTON_PUSHBUTTON
 
+
+// -----------------------------------------------------------------------------
+// Luani HVIO
+// https://luani.de/projekte/esp8266-hvio/
+// https://luani.de/blog/esp8266-230v-io-modul/
+// -----------------------------------------------------------------------------
+
+#elif defined(LUANI_HVIO)
+
+    // Info
+    #define MANUFACTURER            "LUANI"
+    #define DEVICE                  "HVIO"
+
+    // Buttons
+    #define BUTTON1_PIN             12
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+
+    #define BUTTON2_PIN             13
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              5
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                15
+    #define LED1_PIN_INVERSE        0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

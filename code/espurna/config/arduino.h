@@ -19,6 +19,7 @@
 //#define ITEAD_S20
 //#define ITEAD_SONOFF_TOUCH
 //#define ITEAD_SONOFF_POW
+//#define ITEAD_SONOFF_POW_R2
 //#define ITEAD_SONOFF_DUAL
 //#define ITEAD_SONOFF_DUAL_R2
 //#define ITEAD_SONOFF_4CH
@@ -78,6 +79,7 @@
 //#define GENERIC_ESP01S_DS18B20_V10
 //#define HELTEC_TOUCHRELAY
 //#define ZHILDE_EU44_W
+//#define LUANI_HVIO
 //#define ALLNET_ESP8266_UP
 
 //--------------------------------------------------------------------------------
