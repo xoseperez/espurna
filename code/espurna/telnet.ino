@@ -70,7 +70,7 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     // C-d is sent as two bytes (sometimes repeating)
     if (len >= 2) {
         if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
-            _telnetClients[clientId]->close();
+            _telnetClients[clientId]->close(true);
             return;
         }
     }
