@@ -447,30 +447,25 @@ void settingsLoop() {
         _settings_save = false;
     }
 
+    #if TERMINAL_SUPPORT && DEBUG_SERIAL_SUPPORT
+        while (DEBUG_PORT.available()) {
+            _serial.inject(DEBUG_PORT.read());
+        }
+    #endif
 
-    #if TERMINAL_SUPPORT
-
-        #if DEBUG_SERIAL_SUPPORT
-            while (DEBUG_PORT.available()) {
-                _serial.inject(DEBUG_PORT.read());
-            }
-        #endif
-
+    #if TERMINAL_SUPPORT || DEBUG_WEB_SUPPORT || TELNET_SUPPORT
         embedis.process();
+    #endif
 
-        #if SERIAL_RX_ENABLED
-
-            while (SERIAL_RX_PORT.available() > 0) {
-                char rc = Serial.read();
-                _serial_rx_buffer[_serial_rx_pointer++] = rc;
-                if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
-                    settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
-                    _serial_rx_pointer = 0;
-                }
+    #if TERMINAL_SUPPORT && SERIAL_RX_ENABLED
+        while (SERIAL_RX_PORT.available() > 0) {
+            char rc = Serial.read();
+            _serial_rx_buffer[_serial_rx_pointer++] = rc;
+            if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
+                settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
+                _serial_rx_pointer = 0;
             }
-
-        #endif // SERIAL_RX_ENABLED
-
-    #endif // TERMINAL_SUPPORT
+        }
+    #endif
 
 }
