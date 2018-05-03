@@ -80,6 +80,7 @@
 //#define HELTEC_TOUCHRELAY
 //#define ZHILDE_EU44_W
 //#define LUANI_HVIO
+//#define ALLNET_ESP8266_UP
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
