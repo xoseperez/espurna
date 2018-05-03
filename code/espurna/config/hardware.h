@@ -2000,13 +2000,14 @@
     // -----------------------------------------------------------------------------
     // Allnet 4duino ESP8266-UP-Relais
     // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+    // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
     // -----------------------------------------------------------------------------
 
-#elif defined(ALLNET_ESP8266_UP)
+#elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
 
     // Info
     #define MANUFACTURER            "ALLNET"
-    #define DEVICE                  "ESP8266_UP_Relais"
+    #define DEVICE                  "4DUINO_IOT_WLAN_RELAIS"
 
     // Relays
     #define RELAY1_PIN              14
@@ -2018,16 +2019,24 @@
     #define LED1_PIN_INVERSE        1
 
     // Buttons
-    #define BUTTON1_PIN             4
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON
-    #define BUTTON1_PRESS           BUTTON_MODE_TOGGLE
-    #define BUTTON1_CLICK           BUTTON_MODE_NONE
-    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
-    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+    //#define BUTTON1_PIN             0
+    //#define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
-    #define BUTTON2_PIN             5
+    // Using pins labelled as SDA & SCL as buttons
+    #define BUTTON2_PIN             4
     #define BUTTON2_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON2_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK           BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #define BUTTON3_PIN             5
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON
+
+    // Using pins labelled as SDA & SCL for I2C
+    //#define I2C_SDA_PIN             4
+    //#define I2C_SCL_PIN             5
 
 
 // -----------------------------------------------------------------------------

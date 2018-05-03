@@ -930,11 +930,11 @@ void migrate() {
             setSetting("relayGPIO", 1, 5);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(ALLNET_ESP8266_UP)
+        #elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
 
             setSetting("board", 73);
             setSetting("relayGPIO", 0, 14);
-            setSetting("relayResetGPIO", 1, 12);
+            setSetting("relayResetGPIO", 0, 12);
             setSetting("relayType", 0, RELAY_TYPE_LATCHED);
 
         #else
