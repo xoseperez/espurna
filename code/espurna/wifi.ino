@@ -196,6 +196,27 @@ void _wifiInject() {
     }
 }
 
+#if WIFI_AP_CAPTIVE
+
+DNSServer _wifi_dnsServer;
+
+void _wifiCaptivePortal(justwifi_messages_t code, char * parameter) {
+
+    if (MESSAGE_ACCESSPOINT_CREATED == code) {
+        _wifi_dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+        _wifi_dnsServer.start(53, "*", WiFi.softAPIP());
+        DEBUG_MSG_P(PSTR("[WIFI] Captive portal enabled\n"));
+    }
+
+    if (MESSAGE_CONNECTED == code) {
+        _wifi_dnsServer.stop();
+        DEBUG_MSG_P(PSTR("[WIFI] Captive portal disabled\n"));
+    }
+
+}
+
+#endif // WIFI_AP_CAPTIVE
+
 #if DEBUG_SUPPORT
 
 void _wifiDebug(justwifi_messages_t code, char * parameter) {
@@ -422,6 +443,9 @@ void wifiSetup() {
     _wifiConfigure();
 
     // Message callbacks
+    #if WIFI_AP_CAPTIVE
+        wifiRegister(_wifiCaptivePortal);
+    #endif
     #if DEBUG_SUPPORT
         wifiRegister(_wifiDebug);
     #endif
@@ -445,6 +469,12 @@ void wifiSetup() {
 void wifiLoop() {
 
     jw.loop();
+
+    #if WIFI_AP_CAPTIVE
+        if ((WiFi.getMode() & WIFI_AP) == WIFI_AP) {
+            _wifi_dnsServer.processNextRequest();
+        }
+    #endif
 
     if (_wifi_scan_client_id > 0) {
         _wifiScan(_wifi_scan_client_id);

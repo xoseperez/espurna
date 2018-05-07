@@ -26,7 +26,8 @@ if [ $# -eq 0 ]; then
 
     # Hook to build travis test envs
     if [[ "${TRAVIS_BRANCH}" != "" ]]; then
-        if [[ ${TRAVIS_BRANCH} != "master" ]]; then
+        re='^[0-9]+\.[0-9]+\.[0-9]+$'
+        if ! [[ ${TRAVIS_BRANCH} =~ $re ]]; then
             environments=$travis
         fi
     fi

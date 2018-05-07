@@ -209,8 +209,10 @@
                                     <div class="pure-u-1-2">Firmware version</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_version"></span></div>
 
+                                    <!--
                                     <div class="pure-u-1-2">Firmware revision</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_revision"></span></div>
+                                    -->
 
                                     <div class="pure-u-1-2">Firmware build date</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_build"></span></div>
@@ -247,16 +249,16 @@
                                     <div class="pure-u-11-24"><span class="right" name="loadaverage"></span><span>%</span></div>
 
                                     <div class="pure-u-1-2">VCC</div>
-                                    <div class="pure-u-11-24"><span class="right" name="vcc"></span><span>mV</span></div>
+                                    <div class="pure-u-11-24"><span class="right" name="vcc">? </span><span>mV</span></div>
 
-                                    <div class="pure-u-1-2">MQTT Status</div>
-                                    <div class="pure-u-11-24"><span class="right" name="mqttStatus">NOT AVAILABLE</span></div>
+                                    <div class="pure-u-1-2 module module-mqtt">MQTT Status</div>
+                                    <div class="pure-u-11-24 module module-mqtt"><span class="right" name="mqttStatus"></span></div>
 
-                                    <div class="pure-u-1-2">NTP Status</div>
-                                    <div class="pure-u-11-24"><span class="right" name="ntpStatus">NOT AVAILABLE</span></div>
+                                    <div class="pure-u-1-2 module module-ntp">NTP Status</div>
+                                    <div class="pure-u-11-24 module module-ntp"><span class="right" name="ntpStatus"></span></div>
 
-                                    <div class="pure-u-1-2">Current time</div>
-                                    <div class="pure-u-11-24"><span class="right" name="now"></span></div>
+                                    <div class="pure-u-1-2 module module-ntp">Current time</div>
+                                    <div class="pure-u-11-24 module module-ntp"><span class="right" name="now"></span></div>
 
                                     <div class="pure-u-1-2">Uptime</div>
                                     <div class="pure-u-11-24"><span class="right" name="uptime"></span></div>
@@ -1251,6 +1253,9 @@
                     <div class="pure-u-1-4 hint center">&nbsp;m</div>
                 </div>
                 <div class="pure-u-0 pure-u-lg-1-3"></div>
+
+                <label class="pure-u-1 pure-u-lg-1-4">Use UTC time</label>
+                <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schUTC" /></div>
 
                 <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
                 <div class="pure-u-2-5 pure-u-lg-1-5">

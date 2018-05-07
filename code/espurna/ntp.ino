@@ -88,8 +88,10 @@ void _ntpUpdate() {
         wsSend(_ntpWebSocketOnSend);
     #endif
 
-    if (strlen(ntpDateTime().c_str())) {
-        DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+    if (ntpSynced()) {
+        time_t t = now();
+        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), (char *) ntpDateTime(ntpLocal2UTC(t)).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) ntpDateTime(t).c_str());
     }
 
 }
@@ -141,6 +143,12 @@ String ntpDateTime(time_t t) {
 String ntpDateTime() {
     if (ntpSynced()) return ntpDateTime(now());
     return String();
+}
+
+time_t ntpLocal2UTC(time_t local) {
+    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    if (NTP.isSummerTime()) offset += 60;
+    return local - offset * 60;
 }
 
 // -----------------------------------------------------------------------------

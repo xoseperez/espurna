@@ -10,21 +10,10 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include "libs/EmbedisWrap.h"
 #include <Stream.h>
+#include "libs/StreamInjector.h"
 
-#ifdef DEBUG_PORT
-    #define EMBEDIS_PORT    DEBUG_PORT
-#else
-    #define EMBEDIS_PORT    Serial
-#endif
-
-#if TELNET_SUPPORT
-    #include "libs/StreamInjector.h"
-    StreamInjector _serial = StreamInjector(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
-    #undef EMBEDIS_PORT
-    #define EMBEDIS_PORT    _serial
-#endif
-
-EmbedisWrap embedis(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
+StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
+EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 
 #if TERMINAL_SUPPORT
 #if SERIAL_RX_ENABLED
@@ -360,11 +349,9 @@ void resetSettings() {
 // Settings
 // -----------------------------------------------------------------------------
 
-#if TELNET_SUPPORT
-    void settingsInject(void *data, size_t len) {
-        _serial.inject((char *) data, len);
-    }
-#endif
+void settingsInject(void *data, size_t len) {
+    _serial.inject((char *) data, len);
+}
 
 size_t settingsMaxSize() {
     size_t size = EEPROM_SIZE;
@@ -395,7 +382,7 @@ bool settingsRestoreJson(JsonObject& data) {
 
 }
 
-bool settingsGetJson(JsonObject& root) {
+void settingsGetJson(JsonObject& root) {
 
     // Get sorted list of keys
     std::vector<String> keys = _settingsKeys();
@@ -420,11 +407,14 @@ void settingsSetup() {
 
     EEPROM.begin(SPI_FLASH_SEC_SIZE);
 
-    #if TELNET_SUPPORT
-        _serial.callback([](uint8_t ch) {
+    _serial.callback([](uint8_t ch) {
+        #if TELNET_SUPPORT
             telnetWrite(ch);
-        });
-    #endif
+        #endif
+        #if DEBUG_SERIAL_SUPPORT
+            DEBUG_PORT.write(ch);
+        #endif
+    });
 
     Embedis::dictionary( F("EEPROM"),
         SPI_FLASH_SEC_SIZE,
@@ -457,7 +447,14 @@ void settingsLoop() {
         _settings_save = false;
     }
 
+
     #if TERMINAL_SUPPORT
+
+        #if DEBUG_SERIAL_SUPPORT
+            while (DEBUG_PORT.available()) {
+                _serial.inject(DEBUG_PORT.read());
+            }
+        #endif
 
         embedis.process();
 

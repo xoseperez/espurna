@@ -123,7 +123,7 @@ void heartbeat() {
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
-        #if ADC_VCC_ENABLED
+        #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
         #if NTP_SUPPORT
@@ -177,7 +177,7 @@ void heartbeat() {
                 lightMQTT();
             #endif
             #if (HEARTBEAT_REPORT_VCC)
-            #if ADC_VCC_ENABLED
+            #if ADC_MODE_VALUE == ADC_VCC
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
             #endif
             #endif
@@ -278,6 +278,9 @@ void info() {
     #if DEBUG_UDP_SUPPORT
         DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
     #endif
+    #if DEBUG_WEB_SUPPORT
+        DEBUG_MSG_P(PSTR(" DEBUG_WEB"));
+    #endif
     #if DOMOTICZ_SUPPORT
         DEBUG_MSG_P(PSTR(" DOMOTICZ"));
     #endif
@@ -353,8 +356,14 @@ void info() {
         #if ANALOG_SUPPORT
             DEBUG_MSG_P(PSTR(" ANALOG"));
         #endif
+        #if BH1750_SUPPORT
+            DEBUG_MSG_P(PSTR(" BH1750"));
+        #endif
         #if BMX280_SUPPORT
             DEBUG_MSG_P(PSTR(" BMX280"));
+        #endif
+        #if CSE7766_SUPPORT
+            DEBUG_MSG_P(PSTR(" CSE7766"));
         #endif
         #if DALLAS_SUPPORT
             DEBUG_MSG_P(PSTR(" DALLAS"));
@@ -383,6 +392,9 @@ void info() {
         #if GUVAS12SD_SUPPORT
             DEBUG_MSG_P(PSTR(" GUVAS12SD"));
         #endif
+        #if HCSR04_SUPPORT
+            DEBUG_MSG_P(PSTR(" HCSR04"));
+        #endif
         #if HLW8012_SUPPORT
             DEBUG_MSG_P(PSTR(" HLW8012"));
         #endif
@@ -395,11 +407,17 @@ void info() {
         #if PZEM004T_SUPPORT
             DEBUG_MSG_P(PSTR(" PZEM004T"));
         #endif
+        #if SENSEAIR_SUPPORT
+            DEBUG_MSG_P(PSTR(" SENSEAIR"));
+        #endif
         #if SHT3X_I2C_SUPPORT
             DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
         #endif
         #if SI7021_SUPPORT
             DEBUG_MSG_P(PSTR(" SI7021"));
+        #endif
+        #if TMP3X_SUPPORT
+            DEBUG_MSG_P(PSTR(" TMP3X"));
         #endif
         #if V9261F_SUPPORT
             DEBUG_MSG_P(PSTR(" V9261F"));
@@ -422,7 +440,7 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
-    #if ADC_VCC_ENABLED
+    #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
     #endif
 
@@ -524,4 +542,9 @@ double roundTo(double num, unsigned char positions) {
 void nice_delay(unsigned long ms) {
     unsigned long start = millis();
     while (millis() - start < ms) delay(1);
+}
+
+// This method is called by the SDK to know where to connect the ADC
+int __get_adc_mode() {
+    return (int) (ADC_MODE_VALUE);
 }

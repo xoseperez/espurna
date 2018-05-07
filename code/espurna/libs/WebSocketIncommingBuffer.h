@@ -80,8 +80,8 @@ class WebSocketIncommingBuffer {
     private:
 
         AwsMessageHandler _cb;
-        bool _cb_on_fragments;
         bool _terminate_string;
+        bool _cb_on_fragments;
         std::vector<uint8_t> *_buffer;
 
 };

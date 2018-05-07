@@ -66,6 +66,15 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 
     // Capture close connection
     char * p = (char *) data;
+
+    // C-d is sent as two bytes (sometimes repeating)
+    if (len >= 2) {
+        if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
+            _telnetClients[clientId]->close(true);
+            return;
+        }
+    }
+
     if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {
         _telnetClients[clientId]->close();
         return;

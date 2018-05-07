@@ -888,6 +888,55 @@ void migrate() {
 
             setSetting("board", 69);
 
+        #elif defined(ZHILDE_EU44_W)
+
+            setSetting("board", 70);
+            setSetting("btnGPIO", 0, 3);
+            setSetting("ledGPIO", 0, 1);
+            setSetting("ledLogic", 0, 1);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayGPIO", 1, 4);
+            setSetting("relayGPIO", 2, 12);
+            setSetting("relayGPIO", 3, 13);
+            setSetting("relayGPIO", 4, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);
+
+        #elif defined(ITEAD_SONOFF_POW_R2)
+
+            setSetting("board", 71);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 5);
+            setSetting("cf1GPIO", 13);
+            setSetting("cfGPIO", 14);
+
+        #elif defined(LUANI_HVIO)
+
+            setSetting("board", 72);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
+
+            setSetting("board", 73);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayResetGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+
         #elif defined(PILOTAK_ESP_DIN_V1)
 
             setSetting("board", 70);
@@ -899,7 +948,6 @@ void migrate() {
             setSetting("relayGPIO", 1, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
-
         #else
 
             // Allow users to define new settings without migration config

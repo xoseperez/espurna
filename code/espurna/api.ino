@@ -88,11 +88,11 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         }
 
         // Get response from callback
-        char value[API_BUFFER_SIZE];
+        char value[API_BUFFER_SIZE] = {0};
         (api.getFn)(value, API_BUFFER_SIZE);
 
         // The response will be a 404 NOT FOUND if the resource is not available
-        if (!value) {
+        if (0 == value[0]) {
             DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
             request->send(404);
             return;
