@@ -2073,6 +2073,41 @@
     #define LED1_PIN_INVERSE        0
 
 // -----------------------------------------------------------------------------
+// Tonbux 50-100M Smart Mosquito Killer USB
+// https://www.aliexpress.com/item/Original-Tonbux-50-100M-Smart-Mosquito-Killer-USB-Plug-No-Noise-Repellent-App-Smart-Module/32859330820.html
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_MOSQUITO_KILLER)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "MOSQUITO_KILLER"
+
+    // Buttons
+    #define BUTTON1_PIN         2
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5   // not a relay, fan
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15  // blue led
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_WIFI
+    #define LED2_PIN            14  // red led
+    #define LED2_PIN_INVERSE    1
+    #define LED2_MODE           LED_MODE_RELAY
+
+    #define LED3_PIN            12  // UV leds (1-2-3-4-5-6-7-8)
+    #define LED3_PIN_INVERSE    0
+    #define LED3_RELAY          1
+    #define LED4_PIN            16  // UV leds (9-10-11)
+    #define LED4_PIN_INVERSE    0
+    #define LED4_RELAY          1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
