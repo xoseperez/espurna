@@ -379,6 +379,31 @@
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
+#elif defined(ITEAD_SONOFF_POW_R2)
+
+    // Info
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_POW_R2"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    // CSE7766
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
+    #endif
+    #define CSE7766_PIN         1
+
 #elif defined(ITEAD_SONOFF_DUAL)
 
     // Info
@@ -1879,6 +1904,7 @@
 
     // LEDs
     #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
 
 
 // -----------------------------------------------------------------------------
@@ -1970,6 +1996,81 @@
     // LEDs
     #define LED1_PIN                1
     #define LED1_PIN_INVERSE        1
+
+    // -----------------------------------------------------------------------------
+    // Allnet 4duino ESP8266-UP-Relais
+    // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+    // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
+    // -----------------------------------------------------------------------------
+
+#elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
+
+    // Info
+    #define MANUFACTURER            "ALLNET"
+    #define DEVICE                  "4DUINO_IOT_WLAN_RELAIS"
+
+    // Relays
+    #define RELAY1_PIN              14
+    #define RELAY1_RESET_PIN        12
+    #define RELAY1_TYPE             RELAY_TYPE_LATCHED
+
+    // LEDs
+    #define LED1_PIN                0
+    #define LED1_PIN_INVERSE        1
+
+    // Buttons
+    //#define BUTTON1_PIN             0
+    //#define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Using pins labelled as SDA & SCL as buttons
+    #define BUTTON2_PIN             4
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON2_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK           BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #define BUTTON3_PIN             5
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON
+
+    // Using pins labelled as SDA & SCL for I2C
+    //#define I2C_SDA_PIN             4
+    //#define I2C_SCL_PIN             5
+
+
+// -----------------------------------------------------------------------------
+// Luani HVIO
+// https://luani.de/projekte/esp8266-hvio/
+// https://luani.de/blog/esp8266-230v-io-modul/
+// -----------------------------------------------------------------------------
+
+#elif defined(LUANI_HVIO)
+
+    // Info
+    #define MANUFACTURER            "LUANI"
+    #define DEVICE                  "HVIO"
+
+    // Buttons
+    #define BUTTON1_PIN             12
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+
+    #define BUTTON2_PIN             13
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              5
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                15
+    #define LED1_PIN_INVERSE        0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
