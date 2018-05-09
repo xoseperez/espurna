@@ -937,6 +937,22 @@ void migrate() {
             setSetting("relayResetGPIO", 0, 12);
             setSetting("relayType", 0, RELAY_TYPE_LATCHED);
 
+        #elif defined(TONBUX_MOSQUITO_KILLER)
+
+            setSetting("board", 74);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 14);
+            setSetting("ledLogic", 1, 1);
+            setSetting("ledGPIO", 2, 12);
+            setSetting("ledLogic", 2, 0);
+            setSetting("ledGPIO", 3, 16);
+            setSetting("ledLogic", 3, 0);
+            setSetting("btnGPIO", 0, 2);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

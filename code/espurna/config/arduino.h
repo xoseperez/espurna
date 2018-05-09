@@ -81,6 +81,7 @@
 //#define ZHILDE_EU44_W
 //#define LUANI_HVIO
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
+//#define TONBUX_MOSQUITO_KILLER
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
