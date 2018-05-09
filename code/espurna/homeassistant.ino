@@ -26,7 +26,7 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config.set("platform", "mqtt");
     config.set("device_class", "sensor");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = String("\"") + magnitudeUnits(type) + String("\"");
+    config["unit_of_measurement"] = magnitudeUnits(type);
 
 }
 
