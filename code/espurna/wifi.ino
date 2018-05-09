@@ -198,6 +198,8 @@ void _wifiInject() {
 
 #if WIFI_AP_CAPTIVE
 
+#include "DNSServer.h"
+
 DNSServer _wifi_dnsServer;
 
 void _wifiCaptivePortal(justwifi_messages_t code, char * parameter) {
