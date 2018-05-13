@@ -772,11 +772,8 @@
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #endif
 
-//#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
-//#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
-#ifndef LIGHT_DEFAULT_MIREDS
-#define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
-#endif
+#define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
+#define LIGHT_MAX_MIREDS        500      // https://developers.meethue.com/documentation/core-concepts
 
 #ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
@@ -787,8 +784,17 @@
 #endif
 
 #ifndef LIGHT_USE_WHITE
-#define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
+#define LIGHT_USE_WHITE         0           // Use the 4th channel as (Warm-)White LEDs
 #endif
+
+#ifndef LIGHT_USE_CCT
+#define LIGHT_USE_CCT           0           // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
+#endif
+
+// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
+// Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
+#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
+#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
