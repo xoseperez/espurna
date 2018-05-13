@@ -1923,6 +1923,7 @@
     #define DHT_SUPPORT         1
     #endif
     #define DHT_PIN             2
+    #define DHT_TYPE            DHT_CHIP_DHT11
 
 // -----------------------------------------------------------------------------
 // ESP-01S DS18B20 v1.0
