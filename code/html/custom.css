@@ -256,20 +256,20 @@ span.slider {
     RF Bridge panel
    -------------------------------------------------------------------------- */
 
-#panel-rfb fieldset {
+#panel-rfbridge fieldset {
     margin: 10px 2px;
     padding: 20px;
 }
 
-#panel-rfb input {
+#panel-rfbridge input {
     margin-right: 5px;
 }
 
-#panel-rfb label {
+#panel-rfbridge label {
     padding-top: 5px;
 }
 
-#panel-rfb input {
+#panel-rfbridge input {
     text-align: center;
 }
 
