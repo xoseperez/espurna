@@ -1,5 +1,4 @@
 var websock;
-var password = false;
 var maxNetworks;
 var maxSchedules;
 var messages = [];
@@ -16,6 +15,8 @@ var useWhite = false;
 
 var now = 0;
 var ago = 0;
+
+const WEB_MODE_PASSWORD = 1;
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -565,13 +566,22 @@ function toggleMenu() {
     $("#menuLink").toggleClass("active");
 }
 
-function showPanel() {
+function showPanel(target) {
     $(".panel").hide();
     if ($("#layout").hasClass("active")) { toggleMenu(); }
-    $("#" + $(this).attr("data")).show().
+
+    $(target).show().
         find("input[type='checkbox']").
         iphoneStyle("calculateDimensions").
         iphoneStyle("refresh");
+}
+
+function showPanelCurrentHash() {
+    if (!location.hash.startsWith("#/")) {
+        return;
+    }
+
+    showPanel(location.hash.replace("#/", "#panel-"));
 }
 
 // -----------------------------------------------------------------------------
@@ -946,9 +956,21 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("webMode" === key) {
-            password = (1 === value);
-            $("#layout").toggle(!password);
-            $("#password").toggle(password);
+            if (WEB_MODE_PASSWORD === value) {
+                $("#password").show();
+                $("#layout").hide();
+                return;
+            }
+
+            $("#password").hide();
+            $("#layout").show();
+
+            $(window).on("hashchange", showPanelCurrentHash);
+            if (location.hash.length > 2) {
+                showPanelCurrentHash();
+            } else {
+                location.hash = "#/status";
+            }
         }
 
         // ---------------------------------------------------------------------
@@ -1340,7 +1362,6 @@ $(function() {
     setInterval(function() { keepTime(); }, 1000);
 
     $("#menuLink").on("click", toggleMenu);
-    $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
     $(".button-update").on("click", doUpdate);
