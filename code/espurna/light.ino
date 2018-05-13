@@ -141,7 +141,7 @@ void _generateBrightness() {
 
     } else {
 
-        // Don't apply brightness, it is already in the inputValue:
+        // Don't apply brightness, it is already in the target:
         for (unsigned char i=0; i < _light_channel.size(); i++) {
             if (_light_has_color & (i<3)) {
                 _light_channel[i].value = _light_channel[i].inputValue * brightness;
@@ -417,6 +417,7 @@ unsigned int _toPWM(unsigned char id) {
 }
 
 void _shadow() {
+
     // Update transition ticker
     _light_steps_left--;
     if (_light_steps_left == 0) _light_transition_ticker.detach();
@@ -424,15 +425,20 @@ void _shadow() {
     // Transitions
     unsigned char target;
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        target = _light_state ? _light_channel[i].value : 0;
+
+        target = _light_state && _light_channel[i].state ? _light_channel[i].value : 0;
+
         if (_light_steps_left == 0) {
             _light_channel[i].current = target;
         } else {
             double difference = (double) (target - _light_channel[i].current) / (_light_steps_left + 1);
             _light_channel[i].current = _light_channel[i].current + difference;
         }
+
         _light_channel[i].shadow = _light_channel[i].current;
+
     }
+
 }
 
 void _lightProviderUpdate() {

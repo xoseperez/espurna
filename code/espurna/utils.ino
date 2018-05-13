@@ -356,8 +356,14 @@ void info() {
         #if ANALOG_SUPPORT
             DEBUG_MSG_P(PSTR(" ANALOG"));
         #endif
+        #if BH1750_SUPPORT
+            DEBUG_MSG_P(PSTR(" BH1750"));
+        #endif
         #if BMX280_SUPPORT
             DEBUG_MSG_P(PSTR(" BMX280"));
+        #endif
+        #if CSE7766_SUPPORT
+            DEBUG_MSG_P(PSTR(" CSE7766"));
         #endif
         #if DALLAS_SUPPORT
             DEBUG_MSG_P(PSTR(" DALLAS"));
@@ -400,6 +406,9 @@ void info() {
         #endif
         #if PZEM004T_SUPPORT
             DEBUG_MSG_P(PSTR(" PZEM004T"));
+        #endif
+        #if SENSEAIR_SUPPORT
+            DEBUG_MSG_P(PSTR(" SENSEAIR"));
         #endif
         #if SHT3X_I2C_SUPPORT
             DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
