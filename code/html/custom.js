@@ -574,6 +574,8 @@ function showPanel(target) {
         find("input[type='checkbox']").
         iphoneStyle("calculateDimensions").
         iphoneStyle("refresh");
+
+    window.scrollTo(0,0);
 }
 
 function showPanelCurrentHash() {
