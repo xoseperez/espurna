@@ -973,6 +973,8 @@ function processData(data) {
             } else {
                 location.hash = "#/status";
             }
+
+            return;
         }
 
         // ---------------------------------------------------------------------
