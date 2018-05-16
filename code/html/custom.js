@@ -13,6 +13,7 @@ var numReconnect = 0;
 var numReload = 0;
 
 var useWhite = false;
+var useCCT = false;
 
 var now = 0;
 var ago = 0;
@@ -804,6 +805,22 @@ function initColorRGB() {
 
 }
 
+function initCCT() {
+
+  // check if already initialized
+  var done = $("#cct > div").length;
+  if (done > 0) { return; }
+
+  $("#miredsTemplate").children().clone().appendTo("#cct");
+
+  $("#mireds").on("change", function() {
+    var value = $(this).val();
+    var parent = $(this).parents(".pure-g");
+    $("span", parent).html(value);
+    sendAction("mireds", {mireds: value});
+  });
+}
+
 function initColorHSV() {
 
     // check if already initialized
@@ -841,6 +858,9 @@ function initChannels(num) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
+            if (useCCT) {
+              max--;
+            }
         }
     }
     var start = num - max;
@@ -1021,8 +1041,19 @@ function processData(data) {
             return;
         }
 
+        if ("mireds" === key) {
+            $("#mireds").val(value);
+            $("span.mireds").html(value);
+            return;
+        }
+
         if ("useWhite" === key) {
             useWhite = value;
+        }
+
+        if ("useCCT" === key) {
+            initCCT();
+            useCCT = value;
         }
 
         // ---------------------------------------------------------------------

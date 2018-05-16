@@ -243,9 +243,14 @@ Here is the list of supported hardware. For more information please refer to the
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
 |![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
 |**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
+|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|||
+|**Tonbux Mosquito Killer**|||
 
 **Other supported boards:**
 IteadStudio Sonoff S31, IteadStudio Sonoff POW R2, Zhilde ZLD-EU55-W, Luani HVIO
+
+**Other supported boards (beta):**
+KMC 4 Outlet, Gosund WS1, Smart Dual Plug, MakerFocus Intelligent Module LM33 for Lamps
 
 ## License
 
