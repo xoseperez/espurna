@@ -1965,7 +1965,7 @@
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN            16
+    #define LED1_PIN            15
     #define LED1_PIN_INVERSE    0
 
     #define I2C_SDA_PIN         12
@@ -1980,6 +1980,12 @@
     #define RF_SUPPORT          1
     #endif
     #define RF_PIN              14
+
+    #ifndef DIGITAL_SUPPORT
+    #define DIGITAL_SUPPORT      1
+    #endif
+    #define DIGITAL_PIN          16
+    #define DIGITAL_PIN_MODE     INPUT
 
 // -----------------------------------------------------------------------------
 // Heltec Touch Relay
