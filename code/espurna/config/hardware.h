@@ -2109,6 +2109,30 @@
     #define LED4_RELAY          1
 
 // -----------------------------------------------------------------------------
+// NEO Coolcam Power Plug
+// https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
+// -----------------------------------------------------------------------------
+
+#elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+
+    // Info
+    #define MANUFACTURER        "NEO_COOLCAM"
+    #define DEVICE              "POWER_PLUG_WIFI"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
