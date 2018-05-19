@@ -953,9 +953,19 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
-          #elif defined(PILOTAK_ESP_DIN_V1)
+        #elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
 
             setSetting("board", 75);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+  
+          #elif defined(PILOTAK_ESP_DIN_V1)
+
+            setSetting("board", 76);
             setSetting("ledGPIO", 0, 16);
             setSetting("ledLogic", 0, 0);
             setSetting("btnGPIO", 0, 0);
@@ -964,6 +974,7 @@ void migrate() {
             setSetting("relayGPIO", 1, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

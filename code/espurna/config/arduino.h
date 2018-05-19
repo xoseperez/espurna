@@ -82,6 +82,7 @@
 //#define LUANI_HVIO
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
 //#define TONBUX_MOSQUITO_KILLER
+//#define NEO_COOLCAM_POWER_PLUG_WIFI
 //#define PILOTAK_ESP_DIN_V1
 
 //--------------------------------------------------------------------------------
