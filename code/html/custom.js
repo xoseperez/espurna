@@ -142,7 +142,7 @@ function validateForm(form) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
     // at least five characters (letters, numbers or special characters)
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+    var re_password = new RegExp('^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$');
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
@@ -157,14 +157,20 @@ function validateForm(form) {
         return false;
     }
 
-    // The Internet standards (Requests for Comments) for protocols mandate that
-    // component hostname labels may contain only the ASCII letters 'a' through 'z'
-    // (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-').
-    var re_hostname = /^[A-Za-z\d-]{1,32}$/;
+    // RFCs mandate that a hostname's labels may contain only
+    // the ASCII letters 'a' through 'z' (case-insensitive),
+    // the digits '0' through '9', and the hyphen.
+    // Hostname labels cannot begin or end with a hyphen.
+    // No other symbols, punctuation characters, or blank spaces are permitted.
+
+    // Negative lookbehind does not work in Javascript
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form).val();
     if (!re_hostname.test(hostname)) {
-        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')!");
+        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
         return false;
     }
 
@@ -882,8 +888,9 @@ function initChannels(num) {
     };
 
     // add templates
+    var i = 0;
     var template = $("#channelTemplate").children();
-    for (var i=0; i<max; i++) {
+    for (i=0; i<max; i++) {
 
         var channel_id = start + i;
         var line = $(template).clone();
@@ -895,7 +902,7 @@ function initChannels(num) {
 
     }
 
-    for (var i=0; i<num; i++) {
+    for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
     }
