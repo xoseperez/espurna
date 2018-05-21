@@ -102,14 +102,6 @@ function keepTime() {
 
 }
 
-// http://www.the-art-of-web.com/javascript/validate-password/
-function checkPassword(str) {
-    // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
-    return re.test(str);
-}
-
 function zeroPad(number, positions) {
     var zeros = "";
     for (var i = 0; i < positions; i++) {
@@ -147,9 +139,14 @@ function loadTimeZones() {
 
 function validateForm(form) {
 
+    // http://www.the-art-of-web.com/javascript/validate-password/
+    // at least one lowercase and one uppercase letter or number
+    // at least five characters (letters, numbers or special characters)
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
+    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
         alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
         return false;
     }
@@ -157,6 +154,17 @@ function validateForm(form) {
     var adminPass2 = $("input[name='adminPass']", form).last().val();
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
+        return false;
+    }
+
+    // The Internet standards (Requests for Comments) for protocols mandate that
+    // component hostname labels may contain only the ASCII letters 'a' through 'z'
+    // (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-').
+    var re_hostname = /^[A-Za-z\d-]{1,32}$/;
+
+    var hostname = $("input[name='hostname']", form).val();
+    if (!re_hostname.test(hostname)) {
+        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')!");
         return false;
     }
 
