@@ -2135,6 +2135,59 @@
     #define LED1_PIN            4
     #define LED1_PIN_INVERSE    1
 
+
+// ------------------------------------------------------------------------------
+// Estink Wifi Power Strip
+// https://www.amazon.de/Steckdosenleiste-Ladeger%C3%A4t-Sprachsteuerung-SmartphonesTablets-Android/dp/B0796W5FZY
+// Fornorm Wi-Fi USB Extension Socket (ZLD-34EU)
+// https://www.aliexpress.com/item/Fornorm-WiFi-Extension-Socket-with-Surge-Protector-Smart-Power-Strip-3-Outlets-and-4-USB-Charging/32849743948.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ESTINK_WIFI_POWER_STRIP)
+
+    // Info
+    #define MANUFACTURER        "ESTINK"
+    #define DEVICE              "WIFI_POWER_STRIP"
+
+    // Disable UART noise since this board uses GPIO3
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN         16
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       4
+
+    // Relays
+    #define RELAY1_PIN          14  // USB power
+    #define RELAY2_PIN          13  // power plug 1
+    #define RELAY3_PIN          4   // power plug 2
+    #define RELAY4_PIN          15  // power plug 3
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // power led
+    #define LED2_PIN            12  // power plug 1
+    #define LED3_PIN            3   // power plug 2
+    #define LED4_PIN            5   // power plug 3
+
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN_INVERSE    1
+    #define LED3_PIN_INVERSE    1
+    #define LED4_PIN_INVERSE    1
+
+    #define LED1_MODE           LED_MODE_FINDME
+    #define LED2_MODE           LED_MODE_FOLLOW
+    #define LED3_MODE           LED_MODE_FOLLOW
+    #define LED4_MODE           LED_MODE_FOLLOW
+
+    #define LED2_RELAY          2
+    #define LED3_RELAY          3
+    #define LED4_RELAY          4
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
