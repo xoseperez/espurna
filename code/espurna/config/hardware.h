@@ -395,8 +395,11 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN            15
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
 
     // CSE7766
     #ifndef CSE7766_SUPPORT
