@@ -276,9 +276,6 @@
 #define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
 #endif
 
-#ifndef WIFI_AP_MODE
-#define WIFI_AP_MODE                AP_MODE_ALONE
-#endif
 
 #ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
@@ -1148,13 +1145,13 @@
 #if IR_BUTTON_SET == 3
 /*
    +------+------+------+
-   |  1   |  2   |  3   |      
+   |  1   |  2   |  3   |
    +------+------+------+
-   |  4   |  5   |  6   |      
+   |  4   |  5   |  6   |
    +------+------+------+
-   |  7   |  8   |  9   |      
+   |  7   |  8   |  9   |
    +------+------+------+
-   |      |  0   |      |      
+   |      |  0   |      |
    +------+------+------+
 */
 #define IR_BUTTON_COUNT 10
@@ -1164,7 +1161,7 @@
         { 0xE0E020DF, IR_BUTTON_MODE_TOGGLE, 0 }, // Toggle Relay #0
         { 0xE0E0A05F, IR_BUTTON_MODE_TOGGLE, 1 }, // Toggle Relay #1
         { 0xE0E0609F, IR_BUTTON_MODE_TOGGLE, 2 }, // Toggle Relay #2
-        
+
         { 0xE0E010EF, IR_BUTTON_MODE_TOGGLE, 3 }, // Toggle Relay #3
         { 0xE0E0906F, IR_BUTTON_MODE_TOGGLE, 4 }, // Toggle Relay #4
         { 0xE0E050AF, IR_BUTTON_MODE_TOGGLE, 5 }, // Toggle Relay #5

@@ -25,7 +25,7 @@ void _wifiConfigure() {
     #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
-    jw.setAPMode(WIFI_AP_MODE);
+    jw.enableAPFailsafe(true);
     jw.cleanNetworks();
 
     // If system is flagged unstable we do not init wifi networks
@@ -196,6 +196,31 @@ void _wifiInject() {
     }
 }
 
+void _wifiWPS(justwifi_messages_t code, char * parameter) {
+
+    if (MESSAGE_WPS_SUCCESS == code) {
+
+        String ssid = WiFi.SSID();
+        String pass = WiFi.psk();
+
+        // Look for the same SSID
+        uint8_t count = 0;
+        while (count < WIFI_MAX_NETWORKS) {
+            if (!hasSetting("ssid", count)) break;
+            if (getSetting("ssid", count).equals(ssid)) break;
+            count++;
+        }
+
+        // If we have reached the max we overwrite the first one
+        if (WIFI_MAX_NETWORKS == count) count = 0;
+
+        setSetting("ssid", count, ssid);
+        setSetting("pass", count, pass);
+
+    }
+
+}
+
 #if WIFI_AP_CAPTIVE
 
 #include "DNSServer.h"
@@ -223,6 +248,8 @@ void _wifiCaptivePortal(justwifi_messages_t code, char * parameter) {
 
 void _wifiDebug(justwifi_messages_t code, char * parameter) {
 
+    // -------------------------------------------------------------------------
+
     if (code == MESSAGE_SCANNING) {
         DEBUG_MSG_P(PSTR("[WIFI] Scanning\n"));
     }
@@ -243,6 +270,8 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
         DEBUG_MSG_P(PSTR("[WIFI] %s\n"), parameter);
     }
 
+    // -------------------------------------------------------------------------
+
     if (code == MESSAGE_CONNECTING) {
         DEBUG_MSG_P(PSTR("[WIFI] Connecting to %s\n"), parameter);
     }
@@ -259,20 +288,36 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
         wifiStatus();
     }
 
-    if (code == MESSAGE_ACCESSPOINT_CREATED) {
-        wifiStatus();
-    }
-
     if (code == MESSAGE_DISCONNECTED) {
         DEBUG_MSG_P(PSTR("[WIFI] Disconnected\n"));
     }
+
+    // -------------------------------------------------------------------------
 
     if (code == MESSAGE_ACCESSPOINT_CREATING) {
         DEBUG_MSG_P(PSTR("[WIFI] Creating access point\n"));
     }
 
+    if (code == MESSAGE_ACCESSPOINT_CREATED) {
+        wifiStatus();
+    }
+
     if (code == MESSAGE_ACCESSPOINT_FAILED) {
         DEBUG_MSG_P(PSTR("[WIFI] Could not create access point\n"));
+    }
+
+    // -------------------------------------------------------------------------
+
+    if (code == MESSAGE_WPS_START) {
+        DEBUG_MSG_P(PSTR("[WIFI] WPS started\n"));
+    }
+
+    if (code == MESSAGE_WPS_SUCCESS) {
+        DEBUG_MSG_P(PSTR("[WIFI] WPS succeded!\n"));
+    }
+
+    if (code == MESSAGE_WPS_ERROR) {
+        DEBUG_MSG_P(PSTR("[WIFI] WPS failed\n"));
     }
 
 }
@@ -295,6 +340,11 @@ void _wifiInitCommands() {
 
     settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
         createAP();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+        jw.startWPS();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -445,6 +495,7 @@ void wifiSetup() {
     _wifiConfigure();
 
     // Message callbacks
+    wifiRegister(_wifiWPS);
     #if WIFI_AP_CAPTIVE
         wifiRegister(_wifiCaptivePortal);
     #endif
