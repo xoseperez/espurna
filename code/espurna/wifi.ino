@@ -10,6 +10,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 
 uint32_t _wifi_scan_client_id = 0;
+bool _wifi_wps_running = false;
 
 // -----------------------------------------------------------------------------
 // PRIVATE
@@ -198,6 +199,14 @@ void _wifiInject() {
 
 void _wifiWPS(justwifi_messages_t code, char * parameter) {
 
+    if (MESSAGE_WPS_START == code) {
+        _wifi_wps_running = true;
+    }
+
+    if (MESSAGE_WPS_ERROR == code) {
+        _wifi_wps_running = false;
+    }
+
     if (MESSAGE_WPS_SUCCESS == code) {
 
         String ssid = WiFi.SSID();
@@ -207,7 +216,7 @@ void _wifiWPS(justwifi_messages_t code, char * parameter) {
         uint8_t count = 0;
         while (count < WIFI_MAX_NETWORKS) {
             if (!hasSetting("ssid", count)) break;
-            if (getSetting("ssid", count).equals(ssid)) break;
+            if (ssid.equals(getSetting("ssid", count, ""))) break;
             count++;
         }
 
@@ -216,6 +225,8 @@ void _wifiWPS(justwifi_messages_t code, char * parameter) {
 
         setSetting("ssid", count, ssid);
         setSetting("pass", count, pass);
+
+        _wifi_wps_running = false;
 
     }
 
@@ -285,7 +296,7 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_CONNECTED) {
-        wifiStatus();
+        wifiDebug();
     }
 
     if (code == MESSAGE_DISCONNECTED) {
@@ -299,7 +310,7 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_ACCESSPOINT_CREATED) {
-        wifiStatus();
+        wifiDebug();
     }
 
     if (code == MESSAGE_ACCESSPOINT_FAILED) {
@@ -339,12 +350,12 @@ void _wifiInitCommands() {
     });
 
     settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
-        createAP();
+        wifiStartAP();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
-        jw.startWPS();
+        wifiStartWPS();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -422,10 +433,14 @@ void wifiDisconnect() {
     jw.disconnect();
 }
 
-bool createAP() {
+bool wifiStartAP() {
     jw.disconnect();
     jw.resetReconnectTimeout();
     return jw.createAP();
+}
+
+void wifiStartWPS() {
+    jw.startWPS();
 }
 
 void wifiReconnectCheck() {
@@ -439,7 +454,15 @@ void wifiReconnectCheck() {
     jw.setReconnectTimeout(connected ? 0 : WIFI_RECONNECT_INTERVAL);
 }
 
-void wifiStatus() {
+uint8_t wifiState() {
+    uint8_t state = 0;
+    if (jw.connected()) state += WIFI_STATE_STA;
+    if (jw.connectable()) state += WIFI_STATE_AP;
+    if (_wifi_wps_running) state += WIFI_STATE_WPS;
+    return state;
+}
+
+void wifiDebug() {
 
     if (WiFi.getMode() == WIFI_AP_STA) {
         DEBUG_MSG_P(PSTR("[WIFI] MODE AP + STA --------------------------------\n"));

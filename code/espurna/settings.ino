@@ -257,7 +257,7 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("INFO"), [](Embedis* e) {
         info();
-        wifiStatus();
+        wifiDebug();
         //StreamString s;
         //WiFi.printDiag(s);
         //DEBUG_MSG(s.c_str());
