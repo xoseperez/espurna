@@ -510,7 +510,7 @@ function onFileUpload(event) {
         if (data) {
             sendAction("restore", data);
         } else {
-            alert(messages[4]);
+            window.alert(messages[4]);
         }
     };
     reader.readAsText(inputFile);
@@ -1227,6 +1227,11 @@ function processData(data) {
             var module = key.slice(0,-7);
             $(".module-" + module).css("display", "inherit");
             return;
+        }
+
+        if ("deviceip" === key) {
+            var a_href = $("span[name='" + key + "']").parent();
+            a_href.attr("href", "http://" + value);
         }
 
         if ("now" === key) {
