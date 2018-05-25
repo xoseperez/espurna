@@ -511,6 +511,10 @@
 #define UART_MQTT_BAUDRATE          115200      // Serial speed
 #endif
 
+#ifndef UART_MQTT_TERMINATION
+#define UART_MQTT_TERMINATION      '\n'         // Termination character
+#endif
+
 #define UART_MQTT_BUFFER_SIZE       100         // UART buffer size
 
 // -----------------------------------------------------------------------------
