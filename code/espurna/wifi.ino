@@ -19,16 +19,12 @@ uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 
 void _wifiCheckAP() {
 
-    static unsigned long last = 0;
-    if (millis() - last < 60000) return;
-    last = millis();
-
     if ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
-        jw.connected() &&
-        jw.connectable() &&
+        (jw.connected()) &&
+        ((WiFi.getMode() & WIFI_AP) > 0) &&
         (WiFi.softAPgetStationNum() == 0)
     ) {
-        jw.destroyAP();
+        jw.enableAP(false);
     }
 
 }
@@ -276,7 +272,7 @@ void _wifiCaptivePortal(justwifi_messages_t code, char * parameter) {
 
 #if DEBUG_SUPPORT
 
-void _wifiDebug(justwifi_messages_t code, char * parameter) {
+void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
     // -------------------------------------------------------------------------
 
@@ -315,12 +311,11 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_CONNECTED) {
-        wifiDebug();
+        wifiDebug(WIFI_STA);
     }
 
     if (code == MESSAGE_DISCONNECTED) {
         DEBUG_MSG_P(PSTR("[WIFI] Disconnected\n"));
-        wifiDebug();
     }
 
     // -------------------------------------------------------------------------
@@ -330,7 +325,7 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_ACCESSPOINT_CREATED) {
-        wifiDebug();
+        wifiDebug(WIFI_AP);
     }
 
     if (code == MESSAGE_ACCESSPOINT_FAILED) {
@@ -339,7 +334,6 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
 
     if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
         DEBUG_MSG_P(PSTR("[WIFI] Access point destroyed\n"));
-        wifiDebug();
     }
 
     // -------------------------------------------------------------------------
@@ -458,10 +452,17 @@ void wifiDisconnect() {
     jw.disconnect();
 }
 
-bool wifiStartAP() {
-    jw.disconnect();
-    jw.resetReconnectTimeout();
-    return jw.createAP();
+void wifiStartAP(bool only) {
+    if (only) {
+        jw.enableSTA(false);
+        jw.disconnect();
+        jw.resetReconnectTimeout();
+    }
+    jw.enableAP(true);
+}
+
+void wifiStartAP() {
+    wifiStartAP(true);
 }
 
 void wifiStartWPS() {
@@ -487,9 +488,11 @@ uint8_t wifiState() {
     return state;
 }
 
-void wifiDebug() {
+void wifiDebug(WiFiMode_t modes) {
 
-    if (WiFi.getMode() & WIFI_STA) {
+    bool footer = false;
+
+    if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
 
         uint8_t * bssid = WiFi.BSSID();
         DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE STA\n"));
@@ -505,24 +508,33 @@ void wifiDebug() {
         );
         DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
         DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
+        footer = true;
 
     }
 
-    if (WiFi.getMode() & WIFI_AP) {
+    if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
         DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), jw.getAPSSID().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
+        footer = true;
     }
 
     if (WiFi.getMode() == 0) {
         DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE OFF\n"));
         DEBUG_MSG_P(PSTR("[WIFI] No connection\n"));
+        footer = true;
     }
 
-    DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
+    if (footer) {
+        DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
+    }
 
+}
+
+void wifiDebug() {
+    wifiDebug(WIFI_AP_STA);
 }
 
 void wifiRegister(wifi_callback_f callback) {
@@ -546,7 +558,7 @@ void wifiSetup() {
         wifiRegister(_wifiCaptivePortal);
     #endif
     #if DEBUG_SUPPORT
-        wifiRegister(_wifiDebug);
+        wifiRegister(_wifiDebugCallback);
     #endif
 
     #if WEB_SUPPORT
@@ -584,6 +596,10 @@ void wifiLoop() {
     }
 
     // Check if we should disable AP
-    _wifiCheckAP();
+    static unsigned long last = 0;
+    if (millis() - last > 60000) {
+        last = millis();
+        _wifiCheckAP();
+    }
 
 }
