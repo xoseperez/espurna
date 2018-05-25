@@ -1229,6 +1229,12 @@ function processData(data) {
             return;
         }
 
+        if ("deviceip" === key) {
+            var a_href = $("span[name='" + key + "']").parent();
+            a_href.attr("href", "http://" + value);
+            a_href.next().attr("href", "telnet://" + value);
+        }
+
         if ("now" === key) {
             now = value;
             return;
