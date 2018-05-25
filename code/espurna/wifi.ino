@@ -373,10 +373,12 @@ void _wifiInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
-        wifiStartWPS();
-        DEBUG_MSG_P(PSTR("+OK\n"));
-    });
+    #if !defined(JUSTWIFI_DISABLE_WPS)
+        settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+            wifiStartWPS();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif
 
     settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
@@ -427,6 +429,59 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 #endif
 
 // -----------------------------------------------------------------------------
+// INFO
+// -----------------------------------------------------------------------------
+
+void wifiDebug(WiFiMode_t modes) {
+
+    bool footer = false;
+
+    if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
+
+        uint8_t * bssid = WiFi.BSSID();
+        DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE STA\n"));
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.macAddress().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] HOST  http://%s.local\n"), WiFi.hostname().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
+            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
+        );
+        DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
+        DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
+        footer = true;
+
+    }
+
+    if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
+        DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
+        footer = true;
+    }
+
+    if (WiFi.getMode() == 0) {
+        DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE OFF\n"));
+        DEBUG_MSG_P(PSTR("[WIFI] No connection\n"));
+        footer = true;
+    }
+
+    if (footer) {
+        DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
+    }
+
+}
+
+void wifiDebug() {
+    wifiDebug(WIFI_AP_STA);
+}
+
+// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 
@@ -465,9 +520,11 @@ void wifiStartAP() {
     wifiStartAP(true);
 }
 
+#if !defined(JUSTWIFI_DISABLE_WPS)
 void wifiStartWPS() {
     jw.startWPS();
 }
+#endif
 
 void wifiReconnectCheck() {
     bool connected = false;
@@ -486,55 +543,6 @@ uint8_t wifiState() {
     if (jw.connectable()) state += WIFI_STATE_AP;
     if (_wifi_wps_running) state += WIFI_STATE_WPS;
     return state;
-}
-
-void wifiDebug(WiFiMode_t modes) {
-
-    bool footer = false;
-
-    if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
-
-        uint8_t * bssid = WiFi.BSSID();
-        DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE STA\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.macAddress().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] HOST  http://%s.local\n"), WiFi.hostname().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
-            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
-        );
-        DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
-        DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
-        footer = true;
-
-    }
-
-    if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
-        DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), jw.getAPSSID().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
-        footer = true;
-    }
-
-    if (WiFi.getMode() == 0) {
-        DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE OFF\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] No connection\n"));
-        footer = true;
-    }
-
-    if (footer) {
-        DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
-    }
-
-}
-
-void wifiDebug() {
-    wifiDebug(WIFI_AP_STA);
 }
 
 void wifiRegister(wifi_callback_f callback) {

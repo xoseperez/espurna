@@ -117,7 +117,9 @@ void buttonEvent(unsigned int id, unsigned char event) {
         }
     }
     if (action == BUTTON_MODE_AP) wifiStartAP();
+    #if !defined(JUSTWIFI_DISABLE_WPS)
     if (action == BUTTON_MODE_WPS) wifiStartWPS();
+    #endif
     if (action == BUTTON_MODE_RESET) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
