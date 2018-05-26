@@ -508,7 +508,7 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 unsigned char resetReason() {
     static unsigned char status = 255;
     if (status == 255) {
-        status = EEPROM.read(EEPROM_CUSTOM_RESET);
+        status = EEPROMr.read(EEPROM_CUSTOM_RESET);
         if (status > 0) resetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
@@ -516,8 +516,8 @@ unsigned char resetReason() {
 }
 
 void resetReason(unsigned char reason) {
-    EEPROM.write(EEPROM_CUSTOM_RESET, reason);
-    EEPROM.commit();
+    EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
+    EEPROMr.commit();
 }
 
 void reset(unsigned char reason) {

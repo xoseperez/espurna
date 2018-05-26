@@ -6,7 +6,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 
 // -----------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ unsigned short int _load_average = 100;
 bool _systemStable = true;
 
 void systemCheck(bool stable) {
-    unsigned char value = EEPROM.read(EEPROM_CRASH_COUNTER);
+    unsigned char value = EEPROMr.read(EEPROM_CRASH_COUNTER);
     if (stable) {
         value = 0;
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
@@ -41,8 +41,8 @@ void systemCheck(bool stable) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         }
     }
-    EEPROM.write(EEPROM_CRASH_COUNTER, value);
-    EEPROM.commit();
+    EEPROMr.write(EEPROM_CRASH_COUNTER, value);
+    EEPROMr.commit();
 }
 
 bool systemCheck() {
@@ -148,7 +148,17 @@ void _systemSetupSpecificHardware() {
 
 void systemSetup() {
 
-    EEPROM.begin(EEPROM_SIZE);
+    uint8_t sectors = 0;
+    if (EEPROMr.last() > 1000) { // 4Mb boards
+        sectors = 4;
+    } else if (EEPROMr.last() > 250) { // 1Mb boards
+        sectors = 2;
+    } else {
+        sectors = 1;
+    }
+    EEPROMr.offset(EEPROM_ROTATE_DATA);
+    EEPROMr.rotate(sectors);
+    EEPROMr.begin(EEPROM_SIZE);
 
     #if SPIFFS_SUPPORT
         SPIFFS.begin();

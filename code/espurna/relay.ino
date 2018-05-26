@@ -6,7 +6,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 #include <Ticker.h>
 #include <ArduinoJson.h>
 #include <vector>
@@ -357,9 +357,9 @@ void relaySave() {
         if (relayStatus(i)) mask += bit;
         bit += bit;
     }
-    EEPROM.write(EEPROM_RELAY_STATUS, mask);
+    EEPROMr.write(EEPROM_RELAY_STATUS, mask);
     DEBUG_MSG_P(PSTR("[RELAY] Saving mask: %d\n"), mask);
-    EEPROM.commit();
+    EEPROMr.commit();
 }
 
 void relayToggle(unsigned char id, bool report, bool group_report) {
@@ -437,7 +437,7 @@ void _relayBoot() {
     bool trigger_save = false;
 
     // Get last statuses from EEPROM
-    unsigned char mask = EEPROM.read(EEPROM_RELAY_STATUS);
+    unsigned char mask = EEPROMr.read(EEPROM_RELAY_STATUS);
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
 
     // Walk the relays
@@ -474,8 +474,8 @@ void _relayBoot() {
 
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
-        EEPROM.write(EEPROM_RELAY_STATUS, mask);
-        EEPROM.commit();
+        EEPROMr.write(EEPROM_RELAY_STATUS, mask);
+        EEPROMr.commit();
     }
 
     _relayRecursive = false;
