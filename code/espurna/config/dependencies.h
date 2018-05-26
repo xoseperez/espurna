@@ -22,10 +22,10 @@
 
 #if UART_MQTT_SUPPORT
 #define MQTT_SUPPORT                1
-#undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT            0
+#if not UART_MQTT_USE_SOFT
 #undef DEBUG_SERIAL_SUPPORT
 #define DEBUG_SERIAL_SUPPORT        0
+#endif
 #endif
 
 #if DOMOTICZ_SUPPORT
