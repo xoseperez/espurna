@@ -6,6 +6,7 @@ var messages = [];
 var free_size = 0;
 
 var urls = {};
+var inputs = [];
 
 var numChanged = 0;
 var numReboot = 0;
@@ -17,6 +18,8 @@ var useCCT = false;
 
 var now = 0;
 var ago = 0;
+
+const COLOR_ERR = "#e53935";
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -137,44 +140,27 @@ function loadTimeZones() {
 
 }
 
-function validateForm(form) {
+// Colorize hint after the input
+// Colorize panel where the error originates
+function reportInputValidity(elem) {
 
-    // http://www.the-art-of-web.com/javascript/validate-password/
-    // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re_password = new RegExp('^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$');
+    var hint = $(elem).nextUntil(".hint").next().last(),
+        panel_id = hint.parents(".panel").prop("id"),
+        menu_label = $("a[data='" + panel_id + "']");
 
-    // password
-    var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
-        return false;
+    if (!elem.validity.valid) {
+        elem.reportValidity();
     }
 
-    var adminPass2 = $("input[name='adminPass']", form).last().val();
-    if (adminPass1 !== adminPass2) {
-        alert("Passwords are different!");
-        return false;
+    if (hint.length) {
+        if (elem.validity.valid) {
+            hint.css("color", "");
+            menu_label.css("color", "");
+        } else {
+            hint.css("color", COLOR_ERR);
+            menu_label.css("color", COLOR_ERR);
+        }
     }
-
-    // RFCs mandate that a hostname's labels may contain only
-    // the ASCII letters 'a' through 'z' (case-insensitive),
-    // the digits '0' through '9', and the hyphen.
-    // Hostname labels cannot begin or end with a hyphen.
-    // No other symbols, punctuation characters, or blank spaces are permitted.
-
-    // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
-
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
-
-    var hostname = $("input[name='hostname']", form).val();
-    if (!re_hostname.test(hostname)) {
-        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
-        return false;
-    }
-
-    return true;
 
 }
 
@@ -387,11 +373,65 @@ function doUpgrade() {
 
 }
 
+// http://www.the-art-of-web.com/javascript/validate-password/
+// at least one lowercase and one uppercase letter or number
+// at least five characters (letters, numbers or special characters)
+function initPasswordValidator(form) {
+    var passInputs = $("input[name='adminPass']", form);
+
+    var initialPass = passInputs.first(),
+        repeatPass = passInputs.last();
+
+    inputs.push(initialPass[0]);
+    inputs.push(repeatPass[0]);
+
+    initialPass.on("input", function(event) {
+        reportInputValidity(event.target);
+    });
+    repeatPass.on("input", function(event) {
+        if (initialPass.val() === repeatPass.val()) {
+            event.target.setCustomValidity("");
+        } else {
+            event.target.setCustomValidity(messages[7]);
+            event.target.reportValidity();
+        }
+    });
+}
+
+// RFCs mandate that a hostname's labels may contain only
+// the ASCII letters 'a' through 'z' (case-insensitive),
+// the digits '0' through '9', and the hyphen.
+// Hostname labels cannot begin or end with a hyphen.
+// No other symbols, punctuation characters, or blank spaces are permitted.
+function initHostnameValidator(form) {
+    var hostnameInput = $("input[name='hostname']", form);
+    inputs.push(hostnameInput[0]);
+    reportInputValidity(hostnameInput[0]);
+    hostnameInput.on("input", function(event) {
+        reportInputValidity(event.target);
+    });
+}
+
+
+function checkValidInputs() {
+    return inputs.every(function(input) {
+        if (!input.required && (input.value.length === 0)) {
+            return true;
+        }
+
+        return input.validity.valid;
+    });
+}
+
 function doUpdatePassword() {
     var form = $("#formPassword");
-    if (validateForm(form)) {
+
+    if (checkValidInputs()) {
         sendConfig(getData(form));
+    } else {
+        alert("Cannot save the password. Check for errors!");
     }
+
     return false;
 }
 
@@ -442,9 +482,10 @@ function doReconnect(ask) {
 }
 
 function doUpdate() {
+    toggleMenu();
 
     var form = $("#formSave");
-    if (validateForm(form)) {
+    if (checkValidInputs()) {
 
         // Get data
         sendConfig(getData(form));
@@ -479,6 +520,8 @@ function doUpdate() {
 
         }, 1000);
 
+    } else {
+        alert("Cannot save settings. Check for errors!");
     }
 
     return false;
@@ -984,6 +1027,14 @@ function processData(data) {
             password = (1 === value);
             $("#layout").toggle(!password);
             $("#password").toggle(password);
+
+            if (password) {
+                initPasswordValidator($("#formPassword"));
+                return;
+            }
+
+            initPasswordValidator($("#formSave"));
+            initHostnameValidator($("#formSave"));
         }
 
         // ---------------------------------------------------------------------

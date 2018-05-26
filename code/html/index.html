@@ -39,7 +39,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="1" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="1" autocomplete="false" pattern="^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$" minlength="5" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -48,7 +48,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Repeat password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="2" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="2" autocomplete="false" pattern="^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$" minlength="5" />
                                 </div>
 
                                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
@@ -291,7 +291,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" required pattern="^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -488,7 +488,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" action="reboot" tabindex="11" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" action="reboot" tabindex="11" autocomplete="false" pattern="^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$" minlength="5" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
@@ -497,7 +497,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Repeat password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" action="reboot" tabindex="12" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" action="reboot" tabindex="12" autocomplete="false" pattern="^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$" minlength="5" />
                                 </div>
 
                                 <div class="pure-g">
