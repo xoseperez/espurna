@@ -1001,6 +1001,15 @@ void migrate() {
 
     }
 
+    #if MQTT_SUPPORT
+        // Deprecated MQTT substitution
+        String mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
+        if (mqttTopic.indexOf("{identifier}") > 0) {
+            mqttTopic.replace("{identifier}", "{hostname}");
+            setSetting("mqttTopic", mqttTopic);
+        }
+    #endif
+
     saveSettings();
 
 }
