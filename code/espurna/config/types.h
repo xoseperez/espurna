@@ -7,13 +7,14 @@
 // WIFI
 // -----------------------------------------------------------------------------
 
-#define WIFI_STATE_AP       1
-#define WIFI_STATE_STA      2
-#define WIFI_STATE_AP_STA   3
-#define WIFI_STATE_WPS      4
+#define WIFI_STATE_AP               1
+#define WIFI_STATE_STA              2
+#define WIFI_STATE_AP_STA           3
+#define WIFI_STATE_WPS              4
+#define WIFI_STATE_SMARTCONFIG      8
 
-#define WIFI_AP_ALLWAYS     1
-#define WIFI_AP_FALLBACK    2
+#define WIFI_AP_ALLWAYS             1
+#define WIFI_AP_FALLBACK            2
 
 //------------------------------------------------------------------------------
 // BUTTONS
@@ -37,6 +38,7 @@
 #define BUTTON_MODE_PULSE           6
 #define BUTTON_MODE_FACTORY         7
 #define BUTTON_MODE_WPS             8
+#define BUTTON_MODE_SMART_CONFIG    9
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON

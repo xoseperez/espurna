@@ -188,7 +188,7 @@ void ledLoop() {
 
         if (_ledMode(i) == LED_MODE_WIFI) {
 
-            if (wifi_state & WIFI_STATE_WPS) {
+            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
                 _ledBlink(i, 100, 100);
             } else if (wifi_state & WIFI_STATE_STA) {
                 _ledBlink(i, 4900, 100);
@@ -202,7 +202,7 @@ void ledLoop() {
 
         if (_ledMode(i) == LED_MODE_FINDME_WIFI) {
 
-            if (wifi_state & WIFI_STATE_WPS) {
+            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
                 _ledBlink(i, 100, 100);
             } else if (wifi_state & WIFI_STATE_STA) {
                 if (relayStatus(_leds[i].relay-1)) {
@@ -224,7 +224,7 @@ void ledLoop() {
 
         if (_ledMode(i) == LED_MODE_RELAY_WIFI) {
 
-            if (wifi_state & WIFI_STATE_WPS) {
+            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
                 _ledBlink(i, 100, 100);
             } else if (wifi_state & WIFI_STATE_STA) {
                 if (relayStatus(_leds[i].relay-1)) {

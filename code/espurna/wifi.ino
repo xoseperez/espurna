@@ -11,6 +11,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 uint32_t _wifi_scan_client_id = 0;
 bool _wifi_wps_running = false;
+bool _wifi_smartconfig_running = false;
 uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 
 // -----------------------------------------------------------------------------
@@ -218,11 +219,16 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
         _wifi_wps_running = true;
     }
 
-    if (MESSAGE_WPS_ERROR == code) {
-        _wifi_wps_running = false;
+    if (MESSAGE_SMARTCONFIG_START == code) {
+        _wifi_smartconfig_running = true;
     }
 
-    if (MESSAGE_WPS_SUCCESS == code) {
+    if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
+        _wifi_wps_running = false;
+        _wifi_smartconfig_running = false;
+    }
+
+    if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
 
         String ssid = WiFi.SSID();
         String pass = WiFi.psk();
@@ -242,6 +248,7 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
         setSetting("pass", count, pass);
 
         _wifi_wps_running = false;
+        _wifi_smartconfig_running = false;
 
     }
 
@@ -350,6 +357,20 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
         DEBUG_MSG_P(PSTR("[WIFI] WPS failed\n"));
     }
 
+    // ------------------------------------------------------------------------
+
+    if (code == MESSAGE_SMARTCONFIG_START) {
+        DEBUG_MSG_P(PSTR("[WIFI] Smart Config started\n"));
+    }
+
+    if (code == MESSAGE_SMARTCONFIG_SUCCESS) {
+        DEBUG_MSG_P(PSTR("[WIFI] Smart Config succeded!\n"));
+    }
+
+    if (code == MESSAGE_SMARTCONFIG_ERROR) {
+        DEBUG_MSG_P(PSTR("[WIFI] Smart Config failed\n"));
+    }
+
 }
 
 #endif // DEBUG_SUPPORT
@@ -373,12 +394,19 @@ void _wifiInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    #if !defined(JUSTWIFI_DISABLE_WPS)
+    #if defined(JUSTWIFI_ENABLE_WPS)
         settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
             wifiStartWPS();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
-    #endif
+    #endif // defined(JUSTWIFI_ENABLE_WPS)
+
+    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+        settingsRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
+            wifiStartSmartConfig();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
     settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
@@ -520,11 +548,17 @@ void wifiStartAP() {
     wifiStartAP(true);
 }
 
-#if !defined(JUSTWIFI_DISABLE_WPS)
+#if defined(JUSTWIFI_ENABLE_WPS)
 void wifiStartWPS() {
     jw.startWPS();
 }
-#endif
+#endif // defined(JUSTWIFI_ENABLE_WPS)
+
+#if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+void wifiStartSmartConfig() {
+    jw.startSmartConfig();
+}
+#endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
 void wifiReconnectCheck() {
     bool connected = false;
@@ -542,6 +576,7 @@ uint8_t wifiState() {
     if (jw.connected()) state += WIFI_STATE_STA;
     if (jw.connectable()) state += WIFI_STATE_AP;
     if (_wifi_wps_running) state += WIFI_STATE_WPS;
+    if (_wifi_smartconfig_running) state += WIFI_STATE_SMARTCONFIG;
     return state;
 }
 
