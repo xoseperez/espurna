@@ -2322,6 +2322,13 @@
     #define GUVAS12SD_SUPPORT   1
     #define GUVAS12SD_PIN       14
 
+    // Test non-default modules
+    #define MDNS_CLIENT_SUPPORT 1
+    #define NOFUSS_SUPPORT      1
+    #define UART_MQTT_SUPPORT   1
+    #define INFLUXDB_SUPPORT    1
+    #define IR_SUPPORT          1
+
 #elif defined(TRAVIS03)
 
     // Relay provider light/my92XX
@@ -2344,6 +2351,11 @@
     #ifndef EMON_ANALOG_SUPPORT
     #define EMON_ANALOG_SUPPORT 1
     #endif
+
+    // Test non-default modules
+    #define LLMNR_SUPPORT       1
+    #define NETBIOS_SUPPORT     1
+    #define SSDP_SUPPORT        1
 
 #endif
 
