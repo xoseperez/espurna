@@ -192,7 +192,7 @@ void _tspkPost(String data) {
 
 #endif // THINGSPEAK_USE_ASYNC
 
-bool _tspkEnqueue(unsigned char index, char * payload) {
+void _tspkEnqueue(unsigned char index, char * payload) {
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%d with value %s\n"), index, payload);
     --index;
     if (_tspk_queue[index] != NULL) free(_tspk_queue[index]);
@@ -230,7 +230,9 @@ bool tspkEnqueueRelay(unsigned char index, unsigned char status) {
         char payload[3] = {0};
         itoa(status ? 1 : 0, payload, 10);
         _tspkEnqueue(id, payload);
+        return true;
     }
+    return false;
 }
 
 bool tspkEnqueueMeasurement(unsigned char index, char * payload) {
@@ -238,7 +240,9 @@ bool tspkEnqueueMeasurement(unsigned char index, char * payload) {
     unsigned char id = getSetting("tspkMagnitude", index, 0).toInt();
     if (id > 0) {
         _tspkEnqueue(id, payload);
+        return true;
     }
+    return false;
 }
 
 void tspkFlush() {

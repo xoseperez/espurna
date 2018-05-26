@@ -14,6 +14,7 @@ Copyright (C) 2017-2018 by François Déchery
 
 IRrecv * _ir_recv;
 decode_results _ir_results;
+unsigned long _ir_last_toggle = 0;
 
 // -----------------------------------------------------------------------------
 // PRIVATE
@@ -41,6 +42,16 @@ void _irProcessCode(unsigned long code) {
 
             if (button_mode == IR_BUTTON_MODE_STATE) {
                 relayStatus(0, button_value);
+            }
+
+            if (button_mode == IR_BUTTON_MODE_TOGGLE) {
+
+                if (millis() - _ir_last_toggle > 250){
+                    relayToggle(button_value);
+                    _ir_last_toggle = millis();
+                } else {
+                    DEBUG_MSG_P(PSTR("[IR] Ignoring repeated code\n"));
+                }
             }
 
             #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

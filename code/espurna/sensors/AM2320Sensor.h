@@ -7,6 +7,9 @@
 
 #pragma once
 
+#undef I2C_SUPPORT
+#define I2C_SUPPORT 1 // Explicitly request I2C support.
+
 #include "Arduino.h"
 #include "I2CSensor.h"
 
@@ -98,7 +101,7 @@ class AM2320Sensor : public I2CSensor {
         // Get device model, version, device_id
 
         void _init() {
-            i2c_wakeup();
+            i2c_wakeup(_address);
             delayMicroseconds(800);
 
             unsigned char _buffer[11];
@@ -117,7 +120,9 @@ class AM2320Sensor : public I2CSensor {
 */
 
         void _read() {
-            i2c_wakeup();
+
+            i2c_wakeup(_address);
+
             // waiting time of at least 800 μs, the maximum 3000 μs
             delayMicroseconds(800); // just to be on safe side
 
@@ -125,7 +130,7 @@ class AM2320Sensor : public I2CSensor {
             //    4 = number of bytes to read
             if (i2c_write_uint8(_address, AM2320_I2C_READ_REGISTER_DATA, 0x00, 4) != I2C_TRANS_SUCCESS) {
                 _error = SENSOR_ERROR_TIMEOUT;
-                return false;
+                return;
             }
 
             unsigned char _buffer[8];

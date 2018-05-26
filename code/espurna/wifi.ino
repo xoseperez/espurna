@@ -196,6 +196,29 @@ void _wifiInject() {
     }
 }
 
+#if WIFI_AP_CAPTIVE
+
+#include "DNSServer.h"
+
+DNSServer _wifi_dnsServer;
+
+void _wifiCaptivePortal(justwifi_messages_t code, char * parameter) {
+
+    if (MESSAGE_ACCESSPOINT_CREATED == code) {
+        _wifi_dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+        _wifi_dnsServer.start(53, "*", WiFi.softAPIP());
+        DEBUG_MSG_P(PSTR("[WIFI] Captive portal enabled\n"));
+    }
+
+    if (MESSAGE_CONNECTED == code) {
+        _wifi_dnsServer.stop();
+        DEBUG_MSG_P(PSTR("[WIFI] Captive portal disabled\n"));
+    }
+
+}
+
+#endif // WIFI_AP_CAPTIVE
+
 #if DEBUG_SUPPORT
 
 void _wifiDebug(justwifi_messages_t code, char * parameter) {
@@ -394,7 +417,7 @@ void wifiStatus() {
         DEBUG_MSG_P(PSTR("[WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] HOST  %s\n"), WiFi.hostname().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] HOST  http://%s.local\n"), WiFi.hostname().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
             bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
         );
@@ -422,6 +445,9 @@ void wifiSetup() {
     _wifiConfigure();
 
     // Message callbacks
+    #if WIFI_AP_CAPTIVE
+        wifiRegister(_wifiCaptivePortal);
+    #endif
     #if DEBUG_SUPPORT
         wifiRegister(_wifiDebug);
     #endif
@@ -445,6 +471,12 @@ void wifiSetup() {
 void wifiLoop() {
 
     jw.loop();
+
+    #if WIFI_AP_CAPTIVE
+        if ((WiFi.getMode() & WIFI_AP) == WIFI_AP) {
+            _wifi_dnsServer.processNextRequest();
+        }
+    #endif
 
     if (_wifi_scan_client_id > 0) {
         _wifiScan(_wifi_scan_client_id);

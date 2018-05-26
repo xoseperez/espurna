@@ -3,10 +3,10 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.12.6a-brightgreen.svg)](CHANGELOG.md)
-![branch](https://img.shields.io/badge/branch-sensors-orange.svg)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=sensors)](https://travis-ci.org/xoseperez/espurna)
-[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/sensors.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+[![version](https://img.shields.io/badge/version-1.12.7a-brightgreen.svg)](CHANGELOG.md)
+[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.org/xoseperez/espurna/tree/dev/)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
@@ -63,6 +63,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)
     * Support for [https://github.com/Portisch/RF-Bridge-EFM8BB1](https://github.com/Portisch/RF-Bridge-EFM8BB1) custom firmware
+    * Support for [direct control of the encoder/decoder bypassing the EFM8BB1](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack)
 * Support for [different **sensors**](Sensors)
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
@@ -72,7 +73,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
-        * **PMSX003** dust sensor
+        * **SenseAir S8** CO2 sensor
+        * **PMSX003/PMS5003T/ST** dust sensors
         * **BH1750** luminosity sensor
         * **GUVAS12SD** UV sensor
     * Power monitoring
@@ -215,8 +217,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**Tonbux PowerStrip02**
-|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![Swifitch](images/devices/swifitch.png)|
-|**Itead Sonoff Touch**|**Itead Sonoff T1**|Swifitch|
+|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK 2-gang switch](images/devices/yjzk-2gang-switch.jpg)|
+|**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 2-gang switch**|
 |![Itead Slampher](images/devices/itead-slampher.jpg)|||
 |**Itead Slampher**|||
 |![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|
@@ -235,13 +237,20 @@ Here is the list of supported hardware. For more information please refer to the
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
+|![IKE ESPike](images/devices/ike-espike.jpg)||![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
+|**IKE ESPike**|**STM_RELAY**|**Arniex Swifitch**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
-|||
-|**YJZK 2-gang switch**|**STM_RELAY**||
+|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
+|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
+|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|||
+|**Tonbux Mosquito Killer**|||
 
 **Other supported boards:**
-*TODO*
+IteadStudio Sonoff S31, IteadStudio Sonoff POW R2, Zhilde ZLD-EU55-W, Luani HVIO
+
+**Other supported boards (beta):**
+KMC 4 Outlet, Gosund WS1, Smart Dual Plug, MakerFocus Intelligent Module LM33 for Lamps
 
 ## License
 

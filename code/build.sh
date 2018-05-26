@@ -26,7 +26,8 @@ if [ $# -eq 0 ]; then
 
     # Hook to build travis test envs
     if [[ "${TRAVIS_BRANCH}" != "" ]]; then
-        if [[ ${TRAVIS_BRANCH} != "master" ]]; then
+        re='^[0-9]+\.[0-9]+\.[0-9]+$'
+        if ! [[ ${TRAVIS_BRANCH} =~ $re ]]; then
             environments=$travis
         fi
     fi
@@ -64,7 +65,7 @@ echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
 for environment in $environments; do
     echo "* espurna-$version-$environment.bin"
-    platformio run --silent --environment $environment || break
+    platformio run --silent --environment $environment || exit 1
     mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
 done
 echo "--------------------------------------------------------------"

@@ -19,6 +19,7 @@
 //#define ITEAD_S20
 //#define ITEAD_SONOFF_TOUCH
 //#define ITEAD_SONOFF_POW
+//#define ITEAD_SONOFF_POW_R2
 //#define ITEAD_SONOFF_DUAL
 //#define ITEAD_SONOFF_DUAL_R2
 //#define ITEAD_SONOFF_4CH
@@ -72,9 +73,17 @@
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
 //#define ARNIEX_SWIFITCH
-//#define GENERIC_ESP01SRELAY40
-//#define GENERIC_ESP01SRGBLED10
+//#define GENERIC_ESP01S_RELAY_V40
+//#define GENERIC_ESP01S_RGBLED_V10
+//#define GENERIC_ESP01S_DHT11_V10
+//#define GENERIC_ESP01S_DS18B20_V10
 //#define HELTEC_TOUCHRELAY
+//#define ZHILDE_EU44_W
+//#define LUANI_HVIO
+//#define ALLNET_4DUINO_IOT_WLAN_RELAIS
+//#define TONBUX_MOSQUITO_KILLER
+//#define NEO_COOLCAM_POWER_PLUG_WIFI
+//#define ESTINK_WIFI_POWER_STRIP
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -85,6 +94,7 @@
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
+//#define DEBUG_WEB_SUPPORT      0
 //#define DOMOTICZ_SUPPORT       0
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
@@ -115,6 +125,7 @@
 //#define ANALOG_SUPPORT         1
 //#define BH1750_SUPPORT         1
 //#define BMX280_SUPPORT         1
+//#define CSE7766_SUPPORT        1
 //#define DALLAS_SUPPORT         1
 //#define DHT_SUPPORT            1
 //#define DIGITAL_SUPPORT        1
@@ -124,10 +135,12 @@
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
+//#define HCSR04_SUPPORT         1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
+//#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1

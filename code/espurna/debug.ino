@@ -19,6 +19,9 @@ extern "C" {
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
+#if DEBUG_UDP_PORT == 514
+char _udp_syslog_header[40] = {0};
+#endif
 #endif
 
 void _debugSend(char * message) {
@@ -42,12 +45,11 @@ void _debugSend(char * message) {
         if (systemCheck()) {
         #endif
             _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            #if DEBUG_ADD_TIMESTAMP
-                _udp_debug.write(timestamp);
+            #if DEBUG_UDP_PORT == 514
+                _udp_debug.write(_udp_syslog_header);
             #endif
             _udp_debug.write(message);
             _udp_debug.endPacket();
-            delay(1); // https://github.com/xoseperez/espurna/issues/438
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
@@ -117,7 +119,7 @@ void debugSend_P(PGM_P format_P, ...) {
 
 #if DEBUG_WEB_SUPPORT
 
-void debugSetup() {
+void debugWebSetup() {
 
     wsOnSendRegister([](JsonObject& root) {
         root["dbgVisible"] = 1;
@@ -132,9 +134,27 @@ void debugSetup() {
         }
     });
 
+    #if DEBUG_UDP_SUPPORT
+    #if DEBUG_UDP_PORT == 514
+        snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
+    #endif
+    #endif
+
+
 }
 
 #endif // DEBUG_WEB_SUPPORT
+
+void debugSetup() {
+
+    #if DEBUG_SERIAL_SUPPORT
+        DEBUG_PORT.begin(SERIAL_BAUDRATE);
+        #if DEBUG_ESP_WIFI
+            DEBUG_PORT.setDebugOutput(true);
+        #endif
+    #endif
+
+}
 
 // -----------------------------------------------------------------------------
 // Save crash info
@@ -265,4 +285,5 @@ void debugDumpCrashInfo() {
     DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 
 }
+
 #endif // DEBUG_SUPPORT

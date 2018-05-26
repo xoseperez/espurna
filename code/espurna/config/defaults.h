@@ -399,17 +399,9 @@
 // General
 // -----------------------------------------------------------------------------
 
-// Default hostname will be ESPURNA_XXXXXX, where XXXXXX is last 3 octets of chipID
+// Default hostname will be ESPURNA-XXXXXX, where XXXXXX is last 3 octets of chipID
 #ifndef HOSTNAME
 #define HOSTNAME ""
-#endif
-
-// Needed for ESP8285 boards under Windows using PlatformIO (?)
-#ifndef BUTTON_PUSHBUTTON
-#define BUTTON_PUSHBUTTON   0
-#define BUTTON_SWITCH       1
-#define BUTTON_DEFAULT_HIGH 2
-#define BUTTON_SET_PULLUP   4
 #endif
 
 // Relay providers
