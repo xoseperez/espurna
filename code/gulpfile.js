@@ -38,6 +38,7 @@ const htmllint = require('gulp-htmllint');
 const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 const crass = require('gulp-crass');
+const replace = require('gulp-replace');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
@@ -126,6 +127,7 @@ gulp.task('buildfs_inline', function() {
             minifyCSS: true,
             minifyJS: true
         })).
+        pipe(replace('pure-', 'p-')).
         pipe(gzip()).
         pipe(gulp.dest(dataFolder));
 });

@@ -395,8 +395,11 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN            15
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
 
     // CSE7766
     #ifndef CSE7766_SUPPORT
@@ -1923,6 +1926,7 @@
     #define DHT_SUPPORT         1
     #endif
     #define DHT_PIN             2
+    #define DHT_TYPE            DHT_CHIP_DHT11
 
 // -----------------------------------------------------------------------------
 // ESP-01S DS18B20 v1.0
@@ -1997,6 +2001,48 @@
     #define LED1_PIN                1
     #define LED1_PIN_INVERSE        1
 
+    // -----------------------------------------------------------------------------
+    // Allnet 4duino ESP8266-UP-Relais
+    // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+    // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
+    // -----------------------------------------------------------------------------
+
+#elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
+
+    // Info
+    #define MANUFACTURER            "ALLNET"
+    #define DEVICE                  "4DUINO_IOT_WLAN_RELAIS"
+
+    // Relays
+    #define RELAY1_PIN              14
+    #define RELAY1_RESET_PIN        12
+    #define RELAY1_TYPE             RELAY_TYPE_LATCHED
+
+    // LEDs
+    #define LED1_PIN                0
+    #define LED1_PIN_INVERSE        1
+
+    // Buttons
+    //#define BUTTON1_PIN             0
+    //#define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Using pins labelled as SDA & SCL as buttons
+    #define BUTTON2_PIN             4
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON2_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK           BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #define BUTTON3_PIN             5
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON
+
+    // Using pins labelled as SDA & SCL for I2C
+    //#define I2C_SDA_PIN             4
+    //#define I2C_SCL_PIN             5
+
+
 // -----------------------------------------------------------------------------
 // Luani HVIO
 // https://luani.de/projekte/esp8266-hvio/
@@ -2029,6 +2075,118 @@
     // LEDs
     #define LED1_PIN                15
     #define LED1_PIN_INVERSE        0
+
+// -----------------------------------------------------------------------------
+// Tonbux 50-100M Smart Mosquito Killer USB
+// https://www.aliexpress.com/item/Original-Tonbux-50-100M-Smart-Mosquito-Killer-USB-Plug-No-Noise-Repellent-App-Smart-Module/32859330820.html
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_MOSQUITO_KILLER)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "MOSQUITO_KILLER"
+
+    // Buttons
+    #define BUTTON1_PIN         2
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5   // not a relay, fan
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15  // blue led
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_WIFI
+    #define LED2_PIN            14  // red led
+    #define LED2_PIN_INVERSE    1
+    #define LED2_MODE           LED_MODE_RELAY
+
+    #define LED3_PIN            12  // UV leds (1-2-3-4-5-6-7-8)
+    #define LED3_PIN_INVERSE    0
+    #define LED3_RELAY          1
+    #define LED4_PIN            16  // UV leds (9-10-11)
+    #define LED4_PIN_INVERSE    0
+    #define LED4_RELAY          1
+
+// -----------------------------------------------------------------------------
+// NEO Coolcam Power Plug
+// https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
+// -----------------------------------------------------------------------------
+
+#elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+
+    // Info
+    #define MANUFACTURER        "NEO_COOLCAM"
+    #define DEVICE              "POWER_PLUG_WIFI"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+
+// ------------------------------------------------------------------------------
+// Estink Wifi Power Strip
+// https://www.amazon.de/Steckdosenleiste-Ladeger%C3%A4t-Sprachsteuerung-SmartphonesTablets-Android/dp/B0796W5FZY
+// Fornorm Wi-Fi USB Extension Socket (ZLD-34EU)
+// https://www.aliexpress.com/item/Fornorm-WiFi-Extension-Socket-with-Surge-Protector-Smart-Power-Strip-3-Outlets-and-4-USB-Charging/32849743948.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ESTINK_WIFI_POWER_STRIP)
+
+    // Info
+    #define MANUFACTURER        "ESTINK"
+    #define DEVICE              "WIFI_POWER_STRIP"
+
+    // Disable UART noise since this board uses GPIO3
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN         16
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       4
+
+    // Relays
+    #define RELAY1_PIN          14  // USB power
+    #define RELAY2_PIN          13  // power plug 1
+    #define RELAY3_PIN          4   // power plug 2
+    #define RELAY4_PIN          15  // power plug 3
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // power led
+    #define LED2_PIN            12  // power plug 1
+    #define LED3_PIN            3   // power plug 2
+    #define LED4_PIN            5   // power plug 3
+
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN_INVERSE    1
+    #define LED3_PIN_INVERSE    1
+    #define LED4_PIN_INVERSE    1
+
+    #define LED1_MODE           LED_MODE_FINDME
+    #define LED2_MODE           LED_MODE_FOLLOW
+    #define LED3_MODE           LED_MODE_FOLLOW
+    #define LED4_MODE           LED_MODE_FOLLOW
+
+    #define LED2_RELAY          2
+    #define LED3_RELAY          3
+    #define LED4_RELAY          4
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

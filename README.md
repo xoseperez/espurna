@@ -3,10 +3,10 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.12.6-brightgreen.svg)](CHANGELOG.md)
-[![branch](https://img.shields.io/badge/branch-master-orange.svg)](https://github.org/xoseperez/espurna/tree/master/)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=master)](https://travis-ci.org/xoseperez/espurna)
-[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/master.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+[![version](https://img.shields.io/badge/version-1.12.7a-brightgreen.svg)](CHANGELOG.md)
+[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.org/xoseperez/espurna/tree/dev/)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
@@ -243,9 +243,14 @@ Here is the list of supported hardware. For more information please refer to the
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
 |![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
 |**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
+|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|||
+|**Tonbux Mosquito Killer**|||
 
 **Other supported boards:**
 IteadStudio Sonoff S31, IteadStudio Sonoff POW R2, Zhilde ZLD-EU55-W, Luani HVIO
+
+**Other supported boards (beta):**
+KMC 4 Outlet, Gosund WS1, Smart Dual Plug, MakerFocus Intelligent Module LM33 for Lamps
 
 ## License
 
