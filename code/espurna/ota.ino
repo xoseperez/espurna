@@ -133,13 +133,15 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
             }
         #endif
 
+        // Backup EEPROM data to last sector
+        eepromBackup();
+
         DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_url);
         char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(_ota_url) + strlen(_ota_host)];
         snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_url, _ota_host);
         client->write(buffer);
 
     }, NULL);
-
 
     #if ASYNC_TCP_SSL_ENABLED
         bool connected = _ota_client->connect(host, port, 443 == port);
@@ -214,10 +216,16 @@ void otaSetup() {
     // -------------------------------------------------------------------------
 
     ArduinoOTA.onStart([]() {
+
+        // Backup EEPROM data to last sector
+        eepromBackup();
+
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
+
         #if WEB_SUPPORT
             wsSend_P(PSTR("{\"message\": 2}"));
         #endif
+
     });
 
     ArduinoOTA.onEnd([]() {

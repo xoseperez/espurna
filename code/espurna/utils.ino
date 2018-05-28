@@ -240,7 +240,7 @@ void info() {
     DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
     DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
     DEBUG_MSG_P(PSTR("[INIT] Max OTA size:      %8u bytes / %4d sectors\n"), maxSketchSpace(), sectors(maxSketchSpace()));
-    DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), EEPROMr.sectors() * SPI_FLASH_SEC_SIZE, EEPROMr.sectors());
+    DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors*\n"), EEPROMr.pool() * SPI_FLASH_SEC_SIZE, EEPROMr.pool());
     DEBUG_MSG_P(PSTR("[INIT] Reserved space:    %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("\n"));
 

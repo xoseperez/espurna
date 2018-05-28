@@ -8,9 +8,14 @@ EEPROM MODULE
 
 // -----------------------------------------------------------------------------
 
+bool eepromBackup() {
+    DEBUG_MSG_P(PSTR("[EEPROM] Backing up data to last sector\n"));
+    return EEPROMr.backup();
+}
+
 String eepromSectors() {
     String response;
-    for (uint32_t i = 0; i < EEPROMr.sectors(); i++) {
+    for (uint32_t i = 0; i < EEPROMr.pool(); i++) {
         if (i > 0) response = response + String(", ");
         response = response + String(EEPROMr.base() - i);
     }
@@ -35,7 +40,7 @@ void _eepromInitCommands() {
 void eepromSetup() {
 
     #ifdef EEPROM_ROTATE_SECTORS
-        EEPROMr.sectors(EEPROM_ROTATE_SECTORS);
+        EEPROMr.pool(EEPROM_ROTATE_SECTORS);
     #else
         uint8_t sectors = 0;
         if (EEPROMr.last() > 1000) { // 4Mb boards
@@ -45,7 +50,7 @@ void eepromSetup() {
         } else {
             sectors = 1;
         }
-        EEPROMr.sectors(sectors);
+        EEPROMr.pool(sectors);
     #endif
 
     EEPROMr.offset(EEPROM_ROTATE_DATA);

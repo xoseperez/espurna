@@ -156,6 +156,7 @@ void _settingsKeysCommand() {
 
     unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
     DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
+    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
     DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
 }
