@@ -148,18 +148,6 @@ void _systemSetupSpecificHardware() {
 
 void systemSetup() {
 
-    uint8_t sectors = 0;
-    if (EEPROMr.last() > 1000) { // 4Mb boards
-        sectors = 4;
-    } else if (EEPROMr.last() > 250) { // 1Mb boards
-        sectors = 2;
-    } else {
-        sectors = 1;
-    }
-    EEPROMr.offset(EEPROM_ROTATE_DATA);
-    EEPROMr.rotate(sectors);
-    EEPROMr.begin(EEPROM_SIZE);
-
     #if SPIFFS_SUPPORT
         SPIFFS.begin();
     #endif

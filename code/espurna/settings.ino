@@ -167,10 +167,6 @@ void _settingsFactoryResetCommand() {
     EEPROMr.commit();
 }
 
-void _settingsDumpCommand() {
-    EEPROMr.dump(_serial);
-}
-
 void _settingsInitCommands() {
 
     #if DEBUG_SUPPORT
@@ -184,11 +180,6 @@ void _settingsInitCommands() {
     settingsRegisterCommand(F("COMMANDS"), [](Embedis* e) {
         _settingsHelpCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
-        _settingsDumpCommand();
-        DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
     settingsRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
@@ -341,6 +332,10 @@ void resetSettings() {
 
 void settingsInject(void *data, size_t len) {
     _serial.inject((char *) data, len);
+}
+
+Stream & settingsSerial() {
+    return (Stream &) _serial;
 }
 
 size_t settingsMaxSize() {
