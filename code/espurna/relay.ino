@@ -220,6 +220,7 @@ void relayPulse(unsigned char id) {
     if (pulseStatus == status) {
         _relays[id].pulseTicker.detach();
     } else {
+        DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
     }
 

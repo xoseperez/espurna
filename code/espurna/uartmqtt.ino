@@ -32,15 +32,17 @@ void _uartmqttReceiveUART() {
 
         char rc = UART_MQTT_PORT.read();
 
-        if (rc != '\n') {
+        if (rc != UART_MQTT_TERMINATION) {
 
             _uartmqttBuffer[ndx] = rc;
             if (ndx < UART_MQTT_BUFFER_SIZE - 1) ndx++;
 
         } else {
+
             _uartmqttBuffer[ndx] = '\0';
             _uartmqttNewData = true;
             ndx = 0;
+
         }
 
     }

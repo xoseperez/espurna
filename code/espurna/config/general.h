@@ -511,6 +511,10 @@
 #define UART_MQTT_BAUDRATE          115200      // Serial speed
 #endif
 
+#ifndef UART_MQTT_TERMINATION
+#define UART_MQTT_TERMINATION      '\n'         // Termination character
+#endif
+
 #define UART_MQTT_BUFFER_SIZE       100         // UART buffer size
 
 // -----------------------------------------------------------------------------
@@ -558,9 +562,9 @@
 
 #ifndef MQTT_AUTOCONNECT
 #define MQTT_AUTOCONNECT            1               // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
+                                                    // autoconnect to the first MQTT broker found if none defined
 #endif
 
-                                                    // autoconnect to the first MQTT broker found if none defined
 #ifndef MQTT_SERVER
 #define MQTT_SERVER                 ""              // Default MQTT broker address
 #endif

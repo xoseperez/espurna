@@ -579,6 +579,10 @@
 
 #if SENSOR_SUPPORT
 
+#if SENSOR_DEBUG
+    #include "../config/debug.h"
+#endif
+
 #include "../sensors/BaseSensor.h"
 
 #if AM2320_SUPPORT
