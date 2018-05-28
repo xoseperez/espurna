@@ -562,9 +562,9 @@
 
 #ifndef MQTT_AUTOCONNECT
 #define MQTT_AUTOCONNECT            1               // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
+                                                    // autoconnect to the first MQTT broker found if none defined
 #endif
 
-                                                    // autoconnect to the first MQTT broker found if none defined
 #ifndef MQTT_SERVER
 #define MQTT_SERVER                 ""              // Default MQTT broker address
 #endif

@@ -142,7 +142,7 @@ function validateForm(form) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
     // at least five characters (letters, numbers or special characters)
-    var re_password = new RegExp('^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$');
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
