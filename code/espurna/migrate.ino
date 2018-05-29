@@ -962,6 +962,18 @@ void migrate() {
             setSetting("btnRelay", 0, 0);
             setSetting("relayGPIO", 0, 12);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+  
+          #elif defined(PILOTAK_ESP_DIN_V1)
+
+            setSetting("board", 76);
+            setSetting("ledGPIO", 0, 16);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
         #elif defined(ESTINK_WIFI_POWER_STRIP)
 

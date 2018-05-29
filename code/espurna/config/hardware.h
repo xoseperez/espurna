@@ -1946,6 +1946,52 @@
     #define DALLAS_PIN          2
 
 // -----------------------------------------------------------------------------
+// ESP-DIN relay board V1
+// https://github.com/pilotak/esp_din
+// -----------------------------------------------------------------------------
+
+#elif defined(PILOTAK_ESP_DIN_V1)
+
+    // Info
+    #define MANUFACTURER        "PILOTAK"
+    #define DEVICE              "ESP_DIN_V1"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    #define I2C_SDA_PIN         12
+    #define I2C_SCL_PIN         13
+
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          2
+
+    #ifndef RF_SUPPORT
+    #define RF_SUPPORT          1
+    #endif
+    #define RF_PIN              14
+
+    #ifndef DIGITAL_SUPPORT
+    #define DIGITAL_SUPPORT      1
+    #endif
+    #define DIGITAL_PIN          16
+    #define DIGITAL_PIN_MODE     INPUT
+
+// -----------------------------------------------------------------------------
 // Heltec Touch Relay
 // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180408043114&SearchText=esp8266+touch+relay
 // -----------------------------------------------------------------------------
