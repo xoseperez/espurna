@@ -218,7 +218,6 @@ void _mqttConfigure() {
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
 
     // Placeholders
-    _mqtt_topic.replace("{identifier}", getSetting("hostname"));
     _mqtt_topic.replace("{hostname}", getSetting("hostname"));
     _mqtt_topic.replace("{magnitude}", "#");
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
