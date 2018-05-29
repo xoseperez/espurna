@@ -205,9 +205,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (save) {
 
             // Callbacks
-            for (unsigned char i = 0; i < _ws_on_after_parse_callbacks.size(); i++) {
-                (_ws_on_after_parse_callbacks[i])();
-            }
+            wsReload();
 
             // This should got to callback as well
             // but first change management has to be in place
@@ -432,6 +430,15 @@ void wsConfigure() {
             _ws.setAuthentication("", "");
         }
     #endif
+}
+
+// This method being public makes
+// _ws_on_after_parse_callbacks strange here,
+// it should belong somewhere else.
+void wsReload() {
+    for (unsigned char i = 0; i < _ws_on_after_parse_callbacks.size(); i++) {
+        (_ws_on_after_parse_callbacks[i])();
+    }
 }
 
 void wsSetup() {

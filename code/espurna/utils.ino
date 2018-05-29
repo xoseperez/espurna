@@ -11,7 +11,7 @@ Ticker _defer_reset;
 
 String getIdentifier() {
     char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), APP_NAME, ESP.getChipId());
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
     return String(buffer);
 }
 
@@ -50,6 +50,10 @@ String getCoreRevision() {
     #else
         return String("");
     #endif
+}
+
+unsigned long maxSketchSpace() {
+    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 }
 
 // WTF
@@ -235,9 +239,9 @@ void info() {
     DEBUG_MSG_P(PSTR("[INIT] Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
     DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
     DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
-    DEBUG_MSG_P(PSTR("[INIT] OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
+    DEBUG_MSG_P(PSTR("[INIT] Max OTA size:      %8u bytes / %4d sectors\n"), maxSketchSpace(), sectors(maxSketchSpace()));
     DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /   4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------

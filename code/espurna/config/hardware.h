@@ -395,8 +395,11 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN            15
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
 
     // CSE7766
     #ifndef CSE7766_SUPPORT
@@ -1943,6 +1946,52 @@
     #define DALLAS_PIN          2
 
 // -----------------------------------------------------------------------------
+// ESP-DIN relay board V1
+// https://github.com/pilotak/esp_din
+// -----------------------------------------------------------------------------
+
+#elif defined(PILOTAK_ESP_DIN_V1)
+
+    // Info
+    #define MANUFACTURER        "PILOTAK"
+    #define DEVICE              "ESP_DIN_V1"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    #define I2C_SDA_PIN         12
+    #define I2C_SCL_PIN         13
+
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          2
+
+    #ifndef RF_SUPPORT
+    #define RF_SUPPORT          1
+    #endif
+    #define RF_PIN              14
+
+    #ifndef DIGITAL_SUPPORT
+    #define DIGITAL_SUPPORT      1
+    #endif
+    #define DIGITAL_PIN          16
+    #define DIGITAL_PIN_MODE     INPUT
+
+// -----------------------------------------------------------------------------
 // Heltec Touch Relay
 // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180408043114&SearchText=esp8266+touch+relay
 // -----------------------------------------------------------------------------
@@ -2107,6 +2156,83 @@
     #define LED4_PIN            16  // UV leds (9-10-11)
     #define LED4_PIN_INVERSE    0
     #define LED4_RELAY          1
+
+// -----------------------------------------------------------------------------
+// NEO Coolcam Power Plug
+// https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
+// -----------------------------------------------------------------------------
+
+#elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+
+    // Info
+    #define MANUFACTURER        "NEO_COOLCAM"
+    #define DEVICE              "POWER_PLUG_WIFI"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+
+// ------------------------------------------------------------------------------
+// Estink Wifi Power Strip
+// https://www.amazon.de/Steckdosenleiste-Ladeger%C3%A4t-Sprachsteuerung-SmartphonesTablets-Android/dp/B0796W5FZY
+// Fornorm Wi-Fi USB Extension Socket (ZLD-34EU)
+// https://www.aliexpress.com/item/Fornorm-WiFi-Extension-Socket-with-Surge-Protector-Smart-Power-Strip-3-Outlets-and-4-USB-Charging/32849743948.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ESTINK_WIFI_POWER_STRIP)
+
+    // Info
+    #define MANUFACTURER        "ESTINK"
+    #define DEVICE              "WIFI_POWER_STRIP"
+
+    // Disable UART noise since this board uses GPIO3
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN         16
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       4
+
+    // Relays
+    #define RELAY1_PIN          14  // USB power
+    #define RELAY2_PIN          13  // power plug 1
+    #define RELAY3_PIN          4   // power plug 2
+    #define RELAY4_PIN          15  // power plug 3
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // power led
+    #define LED2_PIN            12  // power plug 1
+    #define LED3_PIN            3   // power plug 2
+    #define LED4_PIN            5   // power plug 3
+
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN_INVERSE    1
+    #define LED3_PIN_INVERSE    1
+    #define LED4_PIN_INVERSE    1
+
+    #define LED1_MODE           LED_MODE_FINDME
+    #define LED2_MODE           LED_MODE_FOLLOW
+    #define LED3_MODE           LED_MODE_FOLLOW
+    #define LED4_MODE           LED_MODE_FOLLOW
+
+    #define LED2_RELAY          2
+    #define LED3_RELAY          3
+    #define LED4_RELAY          4
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

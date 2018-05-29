@@ -953,6 +953,57 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+
+            setSetting("board", 75);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+  
+          #elif defined(PILOTAK_ESP_DIN_V1)
+
+            setSetting("board", 76);
+            setSetting("ledGPIO", 0, 16);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(ESTINK_WIFI_POWER_STRIP)
+
+            setSetting("board", 76);
+            setSetting("btnGPIO", 0, 16);
+            setSetting("btnRelay", 0, 3);
+            setSetting("ledGPIO", 0, 0);
+            setSetting("ledGPIO", 1, 12);
+            setSetting("ledGPIO", 2, 3);
+            setSetting("ledGPIO", 3, 5);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledLogic", 1, 1);
+            setSetting("ledLogic", 2, 1);
+            setSetting("ledLogic", 3, 1);
+            setSetting("ledMode", 0, LED_MODE_FINDME);
+            setSetting("ledMode", 1, LED_MODE_FOLLOW);
+            setSetting("ledMode", 2, LED_MODE_FOLLOW);
+            setSetting("ledMode", 3, LED_MODE_FOLLOW);
+            setSetting("ledRelay", 1, 1);
+            setSetting("ledRelay", 2, 2);
+            setSetting("ledRelay", 3, 3);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayGPIO", 1, 13);
+            setSetting("relayGPIO", 2, 4);
+            setSetting("relayGPIO", 3, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

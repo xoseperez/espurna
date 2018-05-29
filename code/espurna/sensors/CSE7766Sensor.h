@@ -270,10 +270,16 @@ class CSE7766Sensor : public BaseSensor {
             }
 
             // Calculate energy
-            static unsigned long cf_pulses_last = 0;
-            unsigned long cf_pulses = _data[21] << 8 | _data[22];
+            unsigned int difference;
+            static unsigned int cf_pulses_last = 0;
+            unsigned int cf_pulses = _data[21] << 8 | _data[22];
             if (0 == cf_pulses_last) cf_pulses_last = cf_pulses;
-            _energy += (cf_pulses - cf_pulses_last) * (float) _coefP / 1000000.0;
+            if (cf_pulses < cf_pulses_last) {
+                difference = cf_pulses + (0xFFFF - cf_pulses_last) + 1;
+            } else {
+                difference = cf_pulses - cf_pulses_last;
+            }
+            _energy += difference * (float) _coefP / 1000000.0;
             cf_pulses_last = cf_pulses;
 
         }
