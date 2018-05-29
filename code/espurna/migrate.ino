@@ -962,7 +962,7 @@ void migrate() {
             setSetting("btnRelay", 0, 0);
             setSetting("relayGPIO", 0, 12);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
-  
+
           #elif defined(PILOTAK_ESP_DIN_V1)
 
             setSetting("board", 76);
@@ -1012,15 +1012,6 @@ void migrate() {
         #endif
 
     }
-
-    #if MQTT_SUPPORT
-        // Deprecated MQTT substitution
-        String mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
-        if (mqttTopic.indexOf("{identifier}") > 0) {
-            mqttTopic.replace("{identifier}", "{hostname}");
-            setSetting("mqttTopic", mqttTopic);
-        }
-    #endif
 
     saveSettings();
 

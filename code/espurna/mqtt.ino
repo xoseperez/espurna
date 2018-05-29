@@ -249,6 +249,14 @@ void _mqttConfigure() {
 
 }
 
+void _mqttBackwards() {
+    String mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
+    if (mqttTopic.indexOf("{identifier}") > 0) {
+        mqttTopic.replace("{identifier}", "{hostname}");
+        setSetting("mqttTopic", mqttTopic);
+    }
+}
+
 unsigned long _mqttNextMessageId() {
 
     static unsigned long id = 0;
@@ -740,6 +748,8 @@ void mqttReset() {
 
 void mqttSetup() {
 
+    _mqttBackwards();
+    
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
