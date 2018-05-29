@@ -269,6 +269,11 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
+        wsReload();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
         deferredReset(100, CUSTOM_RESET_TERMINAL);
