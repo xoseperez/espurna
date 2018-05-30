@@ -682,6 +682,7 @@
 #define MQTT_TOPIC_UARTOUT          "uartout"
 #define MQTT_TOPIC_LOADAVG          "loadavg"
 #define MQTT_TOPIC_BOARD            "board"
+#define MQTT_TOPIC_PULSE            "pulse"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
