@@ -269,6 +269,25 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    settingsRegisterCommand(F("GET"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+
+        for (unsigned char i = 1; i < e->argc; i++) {
+            String key = String(e->argv[i]);
+            String value;
+            if (!Embedis::get(key, value)) {
+                DEBUG_MSG_P(PSTR("-ERROR: Unknown key: %s\n"), key.c_str());
+            }
+
+            DEBUG_MSG_P(PSTR("> %s => %s\n"), key.c_str(), value.c_str());
+        }
+
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
         wsReload();
         DEBUG_MSG_P(PSTR("+OK\n"));
