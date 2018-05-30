@@ -23,7 +23,6 @@ typedef struct {
     unsigned long delay_off;    // Delay to turn relay OFF
     unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
     unsigned long pulse_ms;     // Pulse length in millis
-    unsigned long pulse_start;  // Current pulse start (millis), 0 means no pulse
 
     // Status variables
 
@@ -34,6 +33,10 @@ typedef struct {
     unsigned long change_time;  // Scheduled time to change
     bool report;                // Whether to report to own topic
     bool group_report;          // Whether to report to group topic
+
+    // Helping objects
+
+    Ticker pulseTicker;         // Holds the pulse back timer
 
 } relay_t;
 std::vector<relay_t> _relays;
@@ -200,21 +203,6 @@ void _relayProcess(bool mode) {
 
 }
 
-/**
- * Walks the relay vector check if any relay has to pulse back
- */
-void _relayPulseCheck() {
-    unsigned long current_time = millis();
-    for (unsigned char id = 0; id < _relays.size(); id++) {
-        if (_relays[id].pulse_start > 0) {
-            if (current_time - _relays[id].pulse_start > _relays[id].pulse_ms) {
-                _relays[id].pulse_start = 0;
-                relayToggle(id);
-            }
-        }
-    }
-}
-
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
@@ -230,10 +218,10 @@ void relayPulse(unsigned char id) {
     bool pulseStatus = (mode == RELAY_PULSE_ON);
 
     if (pulseStatus == status) {
-        _relays[id].pulse_start = 0;
+        _relays[id].pulseTicker.detach();
     } else {
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
-        _relays[id].pulse_start = millis();
+        _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
     }
 
 }
@@ -476,7 +464,6 @@ void _relayBoot() {
         }
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
-        _relays[i].pulse_start = 0;
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
             _relays[i].change_time = millis() + 3000 + 1000 * i;
         #else
@@ -834,7 +821,6 @@ void _relayInitCommands() {
 //------------------------------------------------------------------------------
 
 void _relayLoop() {
-    _relayPulseCheck();
     _relayProcess(false);
     _relayProcess(true);
 }
