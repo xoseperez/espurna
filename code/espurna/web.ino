@@ -40,6 +40,24 @@ void _onReset(AsyncWebServerRequest *request) {
     request->send(200);
 }
 
+void _onDiscover(AsyncWebServerRequest *request) {
+
+    webLog(request);
+
+    AsyncResponseStream *response = request->beginResponseStream("text/json");
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &root = jsonBuffer.createObject();
+    root["app"] = APP_NAME;
+    root["version"] = APP_VERSION;
+    root["hostname"] = getSetting("hostname");
+    root["device"] = getBoardName();
+    root.printTo(*response);
+
+    request->send(response);
+
+}
+
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
@@ -311,6 +329,7 @@ void webSetup() {
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files
     #if SPIFFS_SUPPORT
