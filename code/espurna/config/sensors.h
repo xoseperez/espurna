@@ -428,7 +428,7 @@
 #endif
 
 #ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               1       // Use software serial
+#define PZEM004T_USE_SOFT               0       // Use software serial
 #endif
 
 #ifndef PZEM004T_RX_PIN
@@ -440,7 +440,7 @@
 #endif
 
 #ifndef PZEM004T_HW_PORT
-#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
 //------------------------------------------------------------------------------

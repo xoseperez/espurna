@@ -183,6 +183,7 @@ void _sensorWebSocketStart(JsonObject& root) {
 
         #if PZEM004T_SUPPORT
             if (sensor->getID() == SENSOR_PZEM004T_ID) {
+                root["pzemVisible"] = 1;
                 root["pwrVisible"] = 1;
             }
         #endif
