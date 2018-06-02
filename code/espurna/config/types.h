@@ -251,6 +251,7 @@
 #define SENSOR_TMP3X_ID             0x22
 #define SENSOR_HCSR04_ID            0x23
 #define SENSOR_SENSEAIR_ID          0x24
+#define SENSOR_GEIGER_ID            0x25
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -279,5 +280,7 @@
 #define MAGNITUDE_UV                20
 #define MAGNITUDE_DISTANCE          21
 #define MAGNITUDE_HCHO              22
+#define MAGNITUDE_GEIGER_CPM        23
+#define MAGNITUDE_GEIGER_SIEVERT    24
 
-#define MAGNITUDE_MAX               23
+#define MAGNITUDE_MAX               25

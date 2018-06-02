@@ -117,7 +117,6 @@
 //#define THINGSPEAK_SUPPORT     0
 //#define UART_MQTT_SUPPORT      1
 //#define WEB_SUPPORT            0
-//#define GEIGER_SUPPORT         1
 
 //--------------------------------------------------------------------------------
 // Sensors (values below are non-default values)
@@ -146,3 +145,4 @@
 //#define SI7021_SUPPORT         1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
+//#define GEIGER_SUPPORT         1
