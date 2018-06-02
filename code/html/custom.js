@@ -563,6 +563,13 @@ function doDebugCommand() {
     return false;
 }
 
+function doDebugCommandLiteral(command) {
+    return function () {
+        sendAction("dbgcmd", {command: command});
+        return false;
+    };
+}
+
 function doDebugClear() {
     $("#weblog").text("");
     return false;
@@ -1485,6 +1492,8 @@ $(function() {
     $(".button-ha-config").on("click", doHAConfig);
     $(".button-dbgcmd").on("click", doDebugCommand);
     $("input[name='dbgcmd']").enterKey(doDebugCommand);
+    $(".button-dbgrfdump1").on("click", doDebugCommandLiteral("set rfb-dump 1"));
+    $(".button-dbgrfdump0").on("click", doDebugCommandLiteral("set rfb-dump 0"));
     $(".button-dbg-clear").on("click", doDebugClear);
     $(".button-settings-backup").on("click", doBackup);
     $(".button-settings-restore").on("click", doRestore);

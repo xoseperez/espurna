@@ -96,6 +96,11 @@ void _rfbWebSocketOnSend(JsonObject& root) {
     #if RF_RAW_SUPPORT
         root["rfbrawVisible"] = 1;
     #endif
+    #if RFB_DIRECT
+    #ifdef HAS_RC_ONRXBUFFER
+        root["rfbdumpVisible"] = 1;
+    #endif
+    #endif
     JsonArray& rfb = root.createNestedArray("rfb");
     for (byte id=0; id<relayCount(); id++) {
         for (byte status=0; status<2; status++) {
@@ -598,6 +603,35 @@ void rfbForget(unsigned char id, bool status) {
 
 }
 
+#if RFB_DIRECT
+#ifdef HAS_RC_ONRXBUFFER
+#define RFB_DUMP_SETTING "rfb-dump"
+void rfbDebug(int changeCount, unsigned int *timings) {
+    static boolean quenching = true;
+    static unsigned long enabled = 0;
+    static unsigned long last = 0;
+    unsigned long now = millis();
+
+    if (hasSetting(RFB_DUMP_SETTING) || (enabled && now - enabled > 900000/*15 mins*/)) {
+        int setting = getSetting(RFB_DUMP_SETTING).toInt();
+        enabled = setting ? now : 0;
+        quenching = setting < 2;
+        delSetting(RFB_DUMP_SETTING);
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] RF buffer dump is %s, quenching is %s\n"), 
+            enabled ? "enabled" : "disabled", quenching ? "on": "off");
+    }
+
+    if (enabled && (!quenching || now - last > 1000/*1 second*/)) {
+        last = now;
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] RF buffer count: %d, data: "), changeCount);
+        for(int index = 0; index < changeCount; ++index)
+            DEBUG_MSG_P(PSTR(" %d"), timings[index]);
+        DEBUG_MSG_P(PSTR("\n"));
+    }
+}
+#endif
+#endif
+
 // -----------------------------------------------------------------------------
 // SETUP & LOOP
 // -----------------------------------------------------------------------------
@@ -614,6 +648,11 @@ void rfbSetup() {
     #endif
 
     #if RFB_DIRECT
+        #ifdef HAS_RC_ONRXBUFFER
+        RCSwitch::onRxBufferDebug = rfbDebug;
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] RF buffer hook installed\n"));
+        #endif
+
         _rfModem = new RCSwitch();
         _rfModem->enableReceive(RFB_RX_PIN);
         _rfModem->enableTransmit(RFB_TX_PIN);
