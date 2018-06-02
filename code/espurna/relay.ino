@@ -798,6 +798,7 @@ void _relayInitCommands() {
     settingsRegisterCommand(F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
         }
         int id = String(e->argv[1]).toInt();
         if (e->argc > 2) {

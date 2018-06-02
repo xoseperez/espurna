@@ -211,8 +211,40 @@ void heartbeat() {
 
 #endif /// HEARTBEAT_ENABLED
 
-unsigned int sectors(size_t size) {
+// -----------------------------------------------------------------------------
+// INFO
+// -----------------------------------------------------------------------------
+
+extern "C" uint32_t _SPIFFS_start;
+extern "C" uint32_t _SPIFFS_end;
+
+unsigned int info_bytes2sectors(size_t size) {
     return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+}
+
+unsigned long info_ota_space() {
+    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+}
+
+unsigned long info_filesystem_space() {
+    return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
+}
+
+unsigned long info_eeprom_space() {
+    return EEPROMr.reserved() * SPI_FLASH_SEC_SIZE;
+}
+
+void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool reset) {
+    static unsigned long index = 0;
+    if (reset) index = 0;
+    if (0 == bytes) return;
+    unsigned int _sectors = info_bytes2sectors(bytes);
+    DEBUG_MSG_P(PSTR("[INIT] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
+    index += _sectors;
+}
+
+void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
+    _info_print_memory_layout_line(name, bytes, false);
 }
 
 void info() {
@@ -235,13 +267,15 @@ void info() {
     DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[INIT] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
-    DEBUG_MSG_P(PSTR("[INIT] Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("[INIT] Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
-    DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Max OTA size:      %8u bytes / %4d sectors\n"), maxSketchSpace(), sectors(maxSketchSpace()));
-    DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors*\n"), EEPROMr.pool() * SPI_FLASH_SEC_SIZE, EEPROMr.pool());
-    DEBUG_MSG_P(PSTR("[INIT] Reserved space:    %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+
+    _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
+    _info_print_memory_layout_line("Flash size (SDK)", ESP.getFlashChipSize(), true);
+    _info_print_memory_layout_line("Reserved", 1 * SPI_FLASH_SEC_SIZE, true);
+    _info_print_memory_layout_line("Firmware size", ESP.getSketchSize());
+    _info_print_memory_layout_line("Max OTA size", info_ota_space());
+    _info_print_memory_layout_line("SPIFFS size", info_filesystem_space());
+    _info_print_memory_layout_line("EEPROM size", info_eeprom_space());
+    _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("\n"));
 
     DEBUG_MSG_P(PSTR("[INIT] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
