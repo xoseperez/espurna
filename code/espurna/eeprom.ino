@@ -11,7 +11,7 @@ EEPROM MODULE
 bool eepromBackup() {
     // Backup data to last sector if we are using more sectors than the
     // reserved by the memory layout
-    if (EEPROMr.pool() > EEPROMr.reserved()) {
+    if (EEPROMr.size() > EEPROMr.reserved()) {
         DEBUG_MSG_P(PSTR("[EEPROM] Backing up data to last sector\n"));
         return EEPROMr.backup();
     }
@@ -19,7 +19,7 @@ bool eepromBackup() {
 
 String eepromSectors() {
     String response;
-    for (uint32_t i = 0; i < EEPROMr.pool(); i++) {
+    for (uint32_t i = 0; i < EEPROMr.size(); i++) {
         if (i > 0) response = response + String(", ");
         response = response + String(EEPROMr.base() - i);
     }
@@ -59,15 +59,15 @@ void _eepromInitCommands() {
 void eepromSetup() {
 
     #ifdef EEPROM_ROTATE_SECTORS
-        EEPROMr.pool(EEPROM_ROTATE_SECTORS);
+        EEPROMr.size(EEPROM_ROTATE_SECTORS);
     #else
         // If the memory layout has more than one sector reserved use those,
         // otherwise calculate pool size based on memory size.
-        if (EEPROMr.pool() == 1) {
+        if (EEPROMr.size() == 1) {
             if (EEPROMr.last() > 1000) { // 4Mb boards
-                EEPROMr.pool(4);
+                EEPROMr.size(4);
             } else if (EEPROMr.last() > 250) { // 1Mb boards
-                EEPROMr.pool(2);
+                EEPROMr.size(2);
             }
         }
     #endif
