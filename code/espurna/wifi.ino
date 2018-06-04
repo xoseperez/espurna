@@ -73,7 +73,7 @@ void _wifiConfigure() {
         }
     }
 
-    jw.scanNetworks(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
+    jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
 
 }
 
