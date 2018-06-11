@@ -142,7 +142,7 @@ function validateForm(form) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
     // at least five characters (letters, numbers or special characters)
-    var re_password = new RegExp('^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$');
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
@@ -1351,7 +1351,7 @@ function hasChanged() {
 
 function initUrls(root) {
 
-    var paths = ["ws", "upgrade", "config"];
+    var paths = ["ws", "upgrade", "config", "auth"];
 
     urls["root"] = root;
     paths.forEach(function(path) {
@@ -1363,15 +1363,26 @@ function initUrls(root) {
 }
 
 function connectToURL(url) {
+
     initUrls(url);
-    if (websock) { websock.close(); }
-    websock = new WebSocket(urls.ws.href);
-    websock.onmessage = function(evt) {
-        var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-        if (data) {
-            processData(data);
-        }
-    };
+
+    $.ajax({
+        'method': 'GET',
+        'url': urls.auth.href,
+        'xhrFields': { 'withCredentials': true }
+    }).done(function(data) {
+        if (websock) { websock.close(); }
+        websock = new WebSocket(urls.ws.href);
+        websock.onmessage = function(evt) {
+            var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+            if (data) {
+                processData(data);
+            }
+        };
+    }).fail(function() {
+        // Nothing to do, reload page and retry
+    });
+
 }
 
 function connect(host) {

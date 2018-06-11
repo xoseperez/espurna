@@ -84,6 +84,7 @@
 //#define TONBUX_MOSQUITO_KILLER
 //#define NEO_COOLCAM_POWER_PLUG_WIFI
 //#define ESTINK_WIFI_POWER_STRIP
+//#define PILOTAK_ESP_DIN_V1
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
