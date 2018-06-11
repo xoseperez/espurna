@@ -231,7 +231,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
     if (!index) {
+
+        // Backup EEPROM data to last sector
+        eepromBackup();
+
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
@@ -239,7 +244,9 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
                 Update.printError(DEBUG_PORT);
             #endif
         }
+
     }
+
     if (!Update.hasError()) {
         if (Update.write(data, len) != len) {
             #ifdef DEBUG_PORT
@@ -247,6 +254,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     }
+
     if (final) {
         if (Update.end(true)){
             DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
