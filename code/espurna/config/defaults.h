@@ -424,7 +424,7 @@
 // General
 // -----------------------------------------------------------------------------
 
-// Default hostname will be ESPURNA_XXXXXX, where XXXXXX is last 3 octets of chipID
+// Default hostname will be ESPURNA-XXXXXX, where XXXXXX is last 3 octets of chipID
 #ifndef HOSTNAME
 #define HOSTNAME ""
 #endif

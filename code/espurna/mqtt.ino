@@ -218,7 +218,6 @@ void _mqttConfigure() {
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
 
     // Placeholders
-    _mqtt_topic.replace("{identifier}", getSetting("hostname"));
     _mqtt_topic.replace("{hostname}", getSetting("hostname"));
     _mqtt_topic.replace("{magnitude}", "#");
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
@@ -248,6 +247,14 @@ void _mqttConfigure() {
 
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
+}
+
+void _mqttBackwards() {
+    String mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
+    if (mqttTopic.indexOf("{identifier}") > 0) {
+        mqttTopic.replace("{identifier}", "{hostname}");
+        setSetting("mqttTopic", mqttTopic);
+    }
 }
 
 unsigned long _mqttNextMessageId() {
@@ -741,6 +748,8 @@ void mqttReset() {
 
 void mqttSetup() {
 
+    _mqttBackwards();
+    
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
