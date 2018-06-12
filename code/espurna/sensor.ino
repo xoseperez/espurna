@@ -59,7 +59,6 @@ unsigned char _magnitudeDecimals(unsigned char type) {
         type == MAGNITUDE_POWER_REACTIVE) {
         if (_sensor_power_units == POWER_KILOWATTS) return 3;
     }
-    if (type == MAGNITUDE_GEIGER_SIEVERT) return 4;        // TODO: Is this required? "magnitude_decimals" are defined in progmem.h
     if (type < MAGNITUDE_MAX) return pgm_read_byte(magnitude_decimals + type);
     return 0;
 
