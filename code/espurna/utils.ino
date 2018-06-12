@@ -589,3 +589,19 @@ void nice_delay(unsigned long ms) {
 int __get_adc_mode() {
     return (int) (ADC_MODE_VALUE);
 }
+
+bool isNumber(const char * s) {
+    unsigned char len = strlen(s);
+    bool decimal = false;
+    for (unsigned char i=0; i<len; i++) {
+        if (s[i] == '-') {
+            if (i>0) return false;
+        } else if (s[i] == '.') {
+            if (decimal) return false;
+            decimal = true;
+        } else if (!isdigit(s[i])) {
+            return false;
+        }
+    }
+    return true;
+}

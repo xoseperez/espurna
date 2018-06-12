@@ -102,7 +102,11 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         // Format response according to the Accept header
         if (_asJson(request)) {
             char buffer[64];
-            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+            if (isNumber(value)) {
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+            } else {
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key, value);
+            }
             request->send(200, "application/json", buffer);
         } else {
             request->send(200, "text/plain", value);
