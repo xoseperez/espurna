@@ -255,13 +255,17 @@ void _haInitCommands() {
     settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
     settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 }
