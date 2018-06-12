@@ -23,7 +23,6 @@ typedef struct {
     unsigned long delay_off;    // Delay to turn relay OFF
     unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
     unsigned long pulse_ms;     // Pulse length in millis
-    unsigned long pulse_start;  // Current pulse start (millis), 0 means no pulse
 
     // Status variables
 
@@ -34,6 +33,10 @@ typedef struct {
     unsigned long change_time;  // Scheduled time to change
     bool report;                // Whether to report to own topic
     bool group_report;          // Whether to report to group topic
+
+    // Helping objects
+
+    Ticker pulseTicker;         // Holds the pulse back timer
 
 } relay_t;
 std::vector<relay_t> _relays;
@@ -200,26 +203,13 @@ void _relayProcess(bool mode) {
 
 }
 
-/**
- * Walks the relay vector check if any relay has to pulse back
- */
-void _relayPulseCheck() {
-    unsigned long current_time = millis();
-    for (unsigned char id = 0; id < _relays.size(); id++) {
-        if (_relays[id].pulse_start > 0) {
-            if (current_time - _relays[id].pulse_start > _relays[id].pulse_ms) {
-                _relays[id].pulse_start = 0;
-                relayToggle(id);
-            }
-        }
-    }
-}
-
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
 
 void relayPulse(unsigned char id) {
+
+    _relays[id].pulseTicker.detach();
 
     byte mode = _relays[id].pulse;
     if (mode == RELAY_PULSE_NONE) return;
@@ -229,11 +219,12 @@ void relayPulse(unsigned char id) {
     bool status = relayStatus(id);
     bool pulseStatus = (mode == RELAY_PULSE_ON);
 
-    if (pulseStatus == status) {
-        _relays[id].pulse_start = 0;
-    } else {
+    if (pulseStatus != status) {
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
-        _relays[id].pulse_start = millis();
+        _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
+        // Reconfigure after dynamic pulse
+        _relays[id].pulse = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
+        _relays[id].pulse_ms = 1000 * getSetting("relayTime", id, RELAY_PULSE_MODE).toFloat();
     }
 
 }
@@ -476,7 +467,6 @@ void _relayBoot() {
         }
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
-        _relays[i].pulse_start = 0;
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
             _relays[i].change_time = millis() + 3000 + 1000 * i;
         #else
@@ -706,9 +696,14 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         #endif
 
         // Subscribe to own /set topic
-        char buffer[strlen(MQTT_TOPIC_RELAY) + 3];
-        snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_RELAY);
-        mqttSubscribe(buffer);
+        char relay_topic[strlen(MQTT_TOPIC_RELAY) + 3];
+        snprintf_P(relay_topic, sizeof(relay_topic), PSTR("%s/+"), MQTT_TOPIC_RELAY);
+        mqttSubscribe(relay_topic);
+
+        // Subscribe to pulse topic
+        char pulse_topic[strlen(MQTT_TOPIC_RELAY) + strlen(MQTT_TOPIC_PULSE) + 4];
+        snprintf_P(pulse_topic, sizeof(pulse_topic), PSTR("%s/+/%s"), MQTT_TOPIC_RELAY, MQTT_TOPIC_PULSE);
+        mqttSubscribe(pulse_topic);
 
         // Subscribe to group topics
         for (unsigned int i=0; i < _relays.size(); i++) {
@@ -720,25 +715,49 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     if (type == MQTT_MESSAGE_EVENT) {
 
-        // Check relay topic
         String t = mqttMagnitude((char *) topic);
-        if (t.startsWith(MQTT_TOPIC_RELAY)) {
 
-            // Get value
-            unsigned char value = relayParsePayload(payload);
-            if (value == 0xFF) return;
+        // magnitude is relay/#/pulse
+        if (t.startsWith(MQTT_TOPIC_RELAY) && t.endsWith(MQTT_TOPIC_PULSE)) {
+            unsigned int id = t.substring(t.indexOf("/"), t.lastIndexOf("/")).toInt();
+            if (id >= relayCount()) {
+                DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), id);
+                return;
+            }
+
+            unsigned long pulse = 1000 * String(payload).toFloat();
+            if (pulse == 0) return;
+
+            if (_relays[id].pulse != RELAY_PULSE_NONE) {
+                DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), id);
+            }
+
+            _relays[id].pulse_ms = pulse;
+            _relays[id].pulse = relayStatus(id) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
+            relayToggle(id, true, false);
+
+            return;
+        }
+
+        // magnitude is relay/#
+        if (t.startsWith(MQTT_TOPIC_RELAY)) {
 
             // Get relay ID
             unsigned int id = t.substring(strlen(MQTT_TOPIC_RELAY)+1).toInt();
             if (id >= relayCount()) {
                 DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), id);
-            } else {
-                relayStatusWrap(id, value, false);
+                return;
             }
 
-            return;
+            // Get value
+            unsigned char value = relayParsePayload(payload);
+            if (value == 0xFF) return;
 
+            relayStatusWrap(id, value, false);
+
+            return;
         }
+
 
         // Check group topics
         for (unsigned int i=0; i < _relays.size(); i++) {
@@ -814,6 +833,11 @@ void _relayInitCommands() {
             return;
         }
         int id = String(e->argv[1]).toInt();
+        if (id >= relayCount()) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            return;
+        }
+
         if (e->argc > 2) {
             int value = String(e->argv[2]).toInt();
             if (value == 2) {
@@ -823,6 +847,11 @@ void _relayInitCommands() {
             }
         }
         DEBUG_MSG_P(PSTR("Status: %s\n"), _relays[id].target_status ? "true" : "false");
+        if (_relays[id].pulse != RELAY_PULSE_NONE) {
+            DEBUG_MSG_P(PSTR("Pulse: %s\n"), (_relays[id].pulse == RELAY_PULSE_ON) ? "ON" : "OFF");
+            DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
+
+        }
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -835,7 +864,6 @@ void _relayInitCommands() {
 //------------------------------------------------------------------------------
 
 void _relayLoop() {
-    _relayPulseCheck();
     _relayProcess(false);
     _relayProcess(true);
 }
