@@ -26,6 +26,8 @@ char _udp_syslog_header[40] = {0};
 
 void _debugSend(char * message) {
 
+    bool pause = false;
+
     #if DEBUG_ADD_TIMESTAMP
         static bool add_timestamp = true;
         char timestamp[10] = {0};
@@ -50,6 +52,7 @@ void _debugSend(char * message) {
             #endif
             _udp_debug.write(message);
             _udp_debug.endPacket();
+            pause = true;
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
@@ -60,6 +63,7 @@ void _debugSend(char * message) {
             _telnetWrite(timestamp, strlen(timestamp));
         #endif
         _telnetWrite(message, strlen(message));
+        pause = true;
     #endif
 
     #if DEBUG_WEB_SUPPORT
@@ -75,8 +79,11 @@ void _debugSend(char * message) {
                 snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), m.c_str());
             #endif
             wsSend(buffer);
+            pause = true;
         }
     #endif
+
+    if (pause) optimistic_yield(100);
 
 }
 

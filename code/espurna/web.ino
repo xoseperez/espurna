@@ -43,7 +43,9 @@ void _onReset(AsyncWebServerRequest *request) {
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
@@ -64,7 +66,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfig(AsyncWebServerRequest *request) {
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
@@ -112,7 +116,9 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
 void _onHome(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
 
@@ -212,7 +218,9 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     char buffer[10];
     if (!Update.hasError()) {
