@@ -601,9 +601,9 @@ void relaySetupAPI() {
     // API entry points (protected with apikey)
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
 
-        char key[15];
-        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
+        char key[20];
 
+        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
         apiRegister(key,
             [relayID](char * buffer, size_t len) {
 				snprintf_P(buffer, len, PSTR("%d"), _relays[relayID].target_status ? 1 : 0);
@@ -624,6 +624,30 @@ void relaySetupAPI() {
                 } else if (value == 2) {
                     relayToggle(relayID);
                 }
+
+            }
+        );
+
+        snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_PULSE, relayID);
+        apiRegister(key,
+            [relayID](char * buffer, size_t len) {
+				snprintf_P(buffer, len, PSTR("%lu"), _relays[relayID].pulse_ms);
+            },
+            [relayID](const char * payload) {
+
+                unsigned long pulse = String(payload).toInt();
+                if (0 == pulse) return;
+
+                if (RELAY_PULSE_NONE != _relays[relayID].pulse) {
+                    DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), relayID);
+                }
+
+                _relays[relayID].pulse_ms = pulse;
+                _relays[relayID].pulse = relayStatus(relayID) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
+                relayToggle(relayID, true, false);
+
+                return;
+
 
             }
         );
@@ -701,8 +725,8 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         mqttSubscribe(relay_topic);
 
         // Subscribe to pulse topic
-        char pulse_topic[strlen(MQTT_TOPIC_RELAY) + strlen(MQTT_TOPIC_PULSE) + 4];
-        snprintf_P(pulse_topic, sizeof(pulse_topic), PSTR("%s/+/%s"), MQTT_TOPIC_RELAY, MQTT_TOPIC_PULSE);
+        char pulse_topic[strlen(MQTT_TOPIC_PULSE) + 3];
+        snprintf_P(pulse_topic, sizeof(pulse_topic), PSTR("%s/+"), MQTT_TOPIC_PULSE);
         mqttSubscribe(pulse_topic);
 
         // Subscribe to group topics
@@ -718,17 +742,19 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         String t = mqttMagnitude((char *) topic);
 
         // magnitude is relay/#/pulse
-        if (t.startsWith(MQTT_TOPIC_RELAY) && t.endsWith(MQTT_TOPIC_PULSE)) {
-            unsigned int id = t.substring(t.indexOf("/"), t.lastIndexOf("/")).toInt();
+        if (t.startsWith(MQTT_TOPIC_PULSE)) {
+
+            unsigned int id = t.substring(strlen(MQTT_TOPIC_PULSE)+1).toInt();
+
             if (id >= relayCount()) {
                 DEBUG_MSG_P(PSTR("[RELAY] Wrong relayID (%d)\n"), id);
                 return;
             }
 
-            unsigned long pulse = 1000 * String(payload).toFloat();
-            if (pulse == 0) return;
+            unsigned long pulse = String(payload).toInt();
+            if (0 == pulse) return;
 
-            if (_relays[id].pulse != RELAY_PULSE_NONE) {
+            if (RELAY_PULSE_NONE != _relays[id].pulse) {
                 DEBUG_MSG_P(PSTR("[RELAY] Overriding relay #%d pulse settings\n"), id);
             }
 
@@ -737,6 +763,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
             relayToggle(id, true, false);
 
             return;
+
         }
 
         // magnitude is relay/#
