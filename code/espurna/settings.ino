@@ -151,7 +151,7 @@ void _settingsKeysCommand() {
     DEBUG_MSG_P(PSTR("Current settings:\n"));
     for (unsigned int i=0; i<keys.size(); i++) {
         String value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("> %s => %s\n"), (keys[i]).c_str(), value.c_str());
+        DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
     }
 
     unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
@@ -248,6 +248,26 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("KEYS"), [](Embedis* e) {
         _settingsKeysCommand();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("GET"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+
+        for (unsigned char i = 1; i < e->argc; i++) {
+            String key = String(e->argv[i]);
+            String value;
+            if (!Embedis::get(key, value)) {
+                DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
+                continue;
+            }
+
+            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
+        }
+
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
