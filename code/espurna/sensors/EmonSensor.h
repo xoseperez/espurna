@@ -43,6 +43,7 @@ class EmonSensor : public I2CSensor {
             if (actual == 0) return;
             if (expected == actual) return;
             _current_ratio[channel] = _current_ratio[channel] * ((double) expected / (double) actual);
+            calculateFactors(channel);
             _dirty = true;
         }
 
@@ -70,6 +71,7 @@ class EmonSensor : public I2CSensor {
             if (channel >= _channels) return;
             if (_current_ratio[channel] == current_ratio) return;
             _current_ratio[channel] = current_ratio;
+            calculateFactors(channel);
             _dirty = true;
         }
 
@@ -105,8 +107,7 @@ class EmonSensor : public I2CSensor {
             for (unsigned char i=0; i<_channels; i++) {
                 _energy[i] = _current[i] = 0;
                 _pivot[i] = _adc_counts >> 1;
-                _current_factor[i] = _current_ratio[i] * _reference / _adc_counts;
-                _multiplier[i] = calculateMultiplier(_current_factor[i]);
+                calculateFactors(i);
             }
 
             #if SENSOR_DEBUG
@@ -145,18 +146,22 @@ class EmonSensor : public I2CSensor {
 
         virtual unsigned int readADC(unsigned char channel) {}
 
-        unsigned int calculateMultiplier(double current_factor) {
+        void calculateFactors(unsigned char channel) {
+
+            _current_factor[channel] = _current_ratio[channel] * _reference / _adc_counts;
+
             unsigned int s = 1;
             unsigned int i = 1;
             unsigned int m = s * i;
             unsigned int multiplier;
-            while (m * current_factor < 1) {
+            while (m * _current_factor[channel] < 1) {
                 multiplier = m;
                 i = (i == 1) ? 2 : (i == 2) ? 5 : 1;
                 if (i == 1) s *= 10;
                 m = s * i;
             }
-            return multiplier;
+            _multiplier[channel] = multiplier;
+
         }
 
         double read(unsigned char channel) {
@@ -206,7 +211,7 @@ class EmonSensor : public I2CSensor {
                 DEBUG_MSG("[EMON] Min value: %d\n", min);
                 DEBUG_MSG("[EMON] Midpoint value: %d\n", int(_pivot[channel]));
                 DEBUG_MSG("[EMON] RMS value: %d\n", int(rms));
-                DEBUG_MSG("[EMON] Current (mA): %d\n", int(current));
+                DEBUG_MSG("[EMON] Current (mA): %d\n", int(1000 * current));
             #endif
 
             // Check timing
