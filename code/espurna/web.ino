@@ -223,9 +223,10 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
-    if (!Update.hasError()) {
-        nice_delay(100);
-        ESP.restart();
+    if (Update.hasError()) {
+        eepromRotate(true);
+    } else {
+        deferredReset(100, CUSTOM_RESET_UPGRADE);
     }
     request->send(response);
 
@@ -235,15 +236,8 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 
     if (!index) {
 
-        // Cache current reset reason
-        resetReason();
-
-        // Set reset reason beforehand,
-        // to prevent writing to EEPROM after the upgrade
-        resetReason(CUSTOM_RESET_UPGRADE);
-
-        // Backup EEPROM data to last sector
-        eepromBackup();
+        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+        eepromRotate(false);
 
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);

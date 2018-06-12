@@ -8,12 +8,16 @@ EEPROM MODULE
 
 // -----------------------------------------------------------------------------
 
-bool eepromBackup() {
-    // Backup data to last sector if we are using more sectors than the
+bool eepromRotate(bool value) {
+    // Enable/disable EEPROM rotation only if we are using more sectors than the
     // reserved by the memory layout
     if (EEPROMr.size() > EEPROMr.reserved()) {
-        DEBUG_MSG_P(PSTR("[EEPROM] Backing up data to last sector\n"));
-        return EEPROMr.backup();
+        if (value) {
+            DEBUG_MSG_P(PSTR("[EEPROM] Reenabling EEPROM rotation\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("[EEPROM] Disabling EEPROM rotation\n"));
+        }
+        EEPROMr.rotate(value);
     }
 }
 
