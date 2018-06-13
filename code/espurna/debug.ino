@@ -68,17 +68,20 @@ void _debugSend(char * message) {
 
     #if DEBUG_WEB_SUPPORT
         if (wsConnected() && (getFreeHeap() > 10000)) {
-            String m = String(message);
-            m.replace("\"", "&quot;");
-            m.replace("{", "&#123");
-            m.replace("}", "&#125");
-            char buffer[m.length() + 24];
+            DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(1) + strlen(message) + 17);
+            JsonObject &root = jsonBuffer.createObject();
             #if DEBUG_ADD_TIMESTAMP
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s%s\"}"), timestamp, m.c_str());
+                char buffer[strlen(timestamp) + strlen(message) + 1];
+                snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
+                root.set("weblog", buffer);
             #else
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), m.c_str());
+                root.set("weblog", message);
             #endif
-            wsSend(buffer);
+            String out;
+            root.printTo(out);
+            jsonBuffer.clear();
+
+            wsSend(out.c_str());
             pause = true;
         }
     #endif
