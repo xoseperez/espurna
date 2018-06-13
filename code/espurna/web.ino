@@ -55,6 +55,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     root["version"] = APP_VERSION;
     settingsGetJson(root);
     root.prettyPrintTo(*response);
+    jsonBuffer.clear();
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
