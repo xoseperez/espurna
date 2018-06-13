@@ -73,9 +73,9 @@ void _debugSend(char * message) {
             #if DEBUG_ADD_TIMESTAMP
                 char buffer[strlen(timestamp) + strlen(message) + 1];
                 snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
-                root["weblog"] = buffer;
+                root.set("weblog", buffer);
             #else
-                root["weblog"] = message;
+                root.set("weblog", message);
             #endif
             String out;
             root.printTo(out);
