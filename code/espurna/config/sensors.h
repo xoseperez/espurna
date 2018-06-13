@@ -457,7 +457,7 @@
 #endif
 
 #ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               1       // Use software serial
+#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
 #endif
 
 #ifndef PZEM004T_RX_PIN
