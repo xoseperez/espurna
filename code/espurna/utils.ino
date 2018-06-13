@@ -64,6 +64,16 @@ unsigned int getFreeHeap() {
     return ESP.getFreeHeap();
 }
 
+String getEspurnaModules() {
+    return FPSTR(espurna_modules);
+}
+
+#if SENSOR_SUPPORT
+String getEspurnaSensors() {
+    return FPSTR(espurna_sensors);
+}
+#endif
+
 String buildTime() {
 
     const char time_now[] = __TIME__;   // hh:mm:ss
@@ -302,171 +312,11 @@ void info() {
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
-
-    #if ALEXA_SUPPORT
-        DEBUG_MSG_P(PSTR(" ALEXA"));
-    #endif
-    #if BROKER_SUPPORT
-        DEBUG_MSG_P(PSTR(" BROKER"));
-    #endif
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
-    #endif
-    #if DEBUG_TELNET_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_TELNET"));
-    #endif
-    #if DEBUG_UDP_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
-    #endif
-    #if DEBUG_WEB_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_WEB"));
-    #endif
-    #if DOMOTICZ_SUPPORT
-        DEBUG_MSG_P(PSTR(" DOMOTICZ"));
-    #endif
-    #if HOMEASSISTANT_SUPPORT
-        DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
-    #endif
-    #if I2C_SUPPORT
-        DEBUG_MSG_P(PSTR(" I2C"));
-    #endif
-    #if INFLUXDB_SUPPORT
-        DEBUG_MSG_P(PSTR(" INFLUXDB"));
-    #endif
-    #if LLMNR_SUPPORT
-        DEBUG_MSG_P(PSTR(" LLMNR"));
-    #endif
-    #if MDNS_SERVER_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS_SERVER"));
-    #endif
-    #if MDNS_CLIENT_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
-    #endif
-    #if MQTT_SUPPORT
-        DEBUG_MSG_P(PSTR(" MQTT"));
-    #endif
-    #if NETBIOS_SUPPORT
-        DEBUG_MSG_P(PSTR(" NETBIOS"));
-    #endif
-    #if NOFUSS_SUPPORT
-        DEBUG_MSG_P(PSTR(" NOFUSS"));
-    #endif
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(PSTR(" NTP"));
-    #endif
-    #if RF_SUPPORT
-        DEBUG_MSG_P(PSTR(" RF"));
-    #endif
-    #if SCHEDULER_SUPPORT
-        DEBUG_MSG_P(PSTR(" SCHEDULER"));
-    #endif
+    DEBUG_MSG_P(PSTR("[INIT] SUPPORT: %s\n"), getEspurnaModules().c_str());
     #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR(" SENSOR"));
-    #endif
-    #if SPIFFS_SUPPORT
-        DEBUG_MSG_P(PSTR(" SPIFFS"));
-    #endif
-    #if SSDP_SUPPORT
-        DEBUG_MSG_P(PSTR(" SSDP"));
-    #endif
-    #if TELNET_SUPPORT
-        DEBUG_MSG_P(PSTR(" TELNET"));
-    #endif
-    #if TERMINAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" TERMINAL"));
-    #endif
-    #if THINGSPEAK_SUPPORT
-        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
-    #endif
-    #if UART_MQTT_SUPPORT
-        DEBUG_MSG_P(PSTR(" UART_MQTT"));
-    #endif
-    #if WEB_SUPPORT
-        DEBUG_MSG_P(PSTR(" WEB"));
-    #endif
-
-    #if SENSOR_SUPPORT
-
-        DEBUG_MSG_P(PSTR("\n"));
-        DEBUG_MSG_P(PSTR("[INIT] SENSORS:"));
-
-        #if AM2320_SUPPORT
-            DEBUG_MSG_P(PSTR(" AM2320_I2C"));
-        #endif
-        #if ANALOG_SUPPORT
-            DEBUG_MSG_P(PSTR(" ANALOG"));
-        #endif
-        #if BH1750_SUPPORT
-            DEBUG_MSG_P(PSTR(" BH1750"));
-        #endif
-        #if BMX280_SUPPORT
-            DEBUG_MSG_P(PSTR(" BMX280"));
-        #endif
-        #if CSE7766_SUPPORT
-            DEBUG_MSG_P(PSTR(" CSE7766"));
-        #endif
-        #if DALLAS_SUPPORT
-            DEBUG_MSG_P(PSTR(" DALLAS"));
-        #endif
-        #if DHT_SUPPORT
-            DEBUG_MSG_P(PSTR(" DHTXX"));
-        #endif
-        #if DIGITAL_SUPPORT
-            DEBUG_MSG_P(PSTR(" DIGITAL"));
-        #endif
-        #if ECH1560_SUPPORT
-            DEBUG_MSG_P(PSTR(" ECH1560"));
-        #endif
-        #if EMON_ADC121_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ADC121"));
-        #endif
-        #if EMON_ADS1X15_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
-        #endif
-        #if EMON_ANALOG_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
-        #endif
-        #if EVENTS_SUPPORT
-            DEBUG_MSG_P(PSTR(" EVENTS"));
-        #endif
-        #if GUVAS12SD_SUPPORT
-            DEBUG_MSG_P(PSTR(" GUVAS12SD"));
-        #endif
-        #if HCSR04_SUPPORT
-            DEBUG_MSG_P(PSTR(" HCSR04"));
-        #endif
-        #if HLW8012_SUPPORT
-            DEBUG_MSG_P(PSTR(" HLW8012"));
-        #endif
-        #if MHZ19_SUPPORT
-            DEBUG_MSG_P(PSTR(" MHZ19"));
-        #endif
-        #if PMSX003_SUPPORT
-            DEBUG_MSG_P(PSTR(" PMSX003"));
-        #endif
-        #if PZEM004T_SUPPORT
-            DEBUG_MSG_P(PSTR(" PZEM004T"));
-        #endif
-        #if SENSEAIR_SUPPORT
-            DEBUG_MSG_P(PSTR(" SENSEAIR"));
-        #endif
-        #if SHT3X_I2C_SUPPORT
-            DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
-        #endif
-        #if SI7021_SUPPORT
-            DEBUG_MSG_P(PSTR(" SI7021"));
-        #endif
-        #if TMP3X_SUPPORT
-            DEBUG_MSG_P(PSTR(" TMP3X"));
-        #endif
-        #if V9261F_SUPPORT
-            DEBUG_MSG_P(PSTR(" V9261F"));
-        #endif
-
+        DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-
-    DEBUG_MSG_P(PSTR("\n\n"));
+    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 

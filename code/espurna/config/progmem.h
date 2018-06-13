@@ -24,10 +24,177 @@ PROGMEM const char* const custom_reset_string[] = {
 };
 
 //--------------------------------------------------------------------------------
+// Capabilities
+//--------------------------------------------------------------------------------
+
+PROGMEM const char espurna_modules[] =
+    #if ALEXA_SUPPORT
+        "ALEXA "
+    #endif
+    #if BROKER_SUPPORT
+        "BROKER "
+    #endif
+    #if DEBUG_SERIAL_SUPPORT
+        "DEBUG_SERIAL "
+    #endif
+    #if DEBUG_TELNET_SUPPORT
+        "DEBUG_TELNET "
+    #endif
+    #if DEBUG_UDP_SUPPORT
+        "DEBUG_UDP "
+    #endif
+    #if DEBUG_WEB_SUPPORT
+        "DEBUG_WEB "
+    #endif
+    #if DOMOTICZ_SUPPORT
+        "DOMOTICZ "
+    #endif
+    #if HOMEASSISTANT_SUPPORT
+        "HOMEASSISTANT "
+    #endif
+    #if I2C_SUPPORT
+        "I2C "
+    #endif
+    #if INFLUXDB_SUPPORT
+        "INFLUXDB "
+    #endif
+    #if LLMNR_SUPPORT
+        "LLMNR "
+    #endif
+    #if MDNS_SERVER_SUPPORT
+        "MDNS_SERVER "
+    #endif
+    #if MDNS_CLIENT_SUPPORT
+        "MDNS_CLIENT "
+    #endif
+    #if MQTT_SUPPORT
+        "MQTT "
+    #endif
+    #if NETBIOS_SUPPORT
+        "NETBIOS "
+    #endif
+    #if NOFUSS_SUPPORT
+        "NOFUSS "
+    #endif
+    #if NTP_SUPPORT
+        "NTP "
+    #endif
+    #if RF_SUPPORT
+        "RF "
+    #endif
+    #if SCHEDULER_SUPPORT
+        "SCHEDULER "
+    #endif
+    #if SENSOR_SUPPORT
+        "SENSOR "
+    #endif
+    #if SPIFFS_SUPPORT
+        "SPIFFS "
+    #endif
+    #if SSDP_SUPPORT
+        "SSDP "
+    #endif
+    #if TELNET_SUPPORT
+        "TELNET "
+    #endif
+    #if TERMINAL_SUPPORT
+        "TERMINAL "
+    #endif
+    #if THINGSPEAK_SUPPORT
+        "THINGSPEAK "
+    #endif
+    #if UART_MQTT_SUPPORT
+        "UART_MQTT "
+    #endif
+    #if WEB_SUPPORT
+        "WEB "
+    #endif
+    "";
+
+//--------------------------------------------------------------------------------
 // Sensors
 //--------------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT
+
+PROGMEM const char espurna_sensors[] =
+    #if AM2320_SUPPORT
+        "AM2320_I2C "
+    #endif
+    #if ANALOG_SUPPORT
+        "ANALOG "
+    #endif
+    #if BH1750_SUPPORT
+        "BH1750 "
+    #endif
+    #if BMX280_SUPPORT
+        "BMX280 "
+    #endif
+    #if CSE7766_SUPPORT
+        "CSE7766 "
+    #endif
+    #if DALLAS_SUPPORT
+        "DALLAS "
+    #endif
+    #if DHT_SUPPORT
+        "DHTXX "
+    #endif
+    #if DIGITAL_SUPPORT
+        "DIGITAL "
+    #endif
+    #if ECH1560_SUPPORT
+        "ECH1560 "
+    #endif
+    #if EMON_ADC121_SUPPORT
+        "EMON_ADC121 "
+    #endif
+    #if EMON_ADS1X15_SUPPORT
+        "EMON_ADX1X15 "
+    #endif
+    #if EMON_ANALOG_SUPPORT
+        "EMON_ANALOG "
+    #endif
+    #if EVENTS_SUPPORT
+        "EVENTS "
+    #endif
+    #if GEIGER_SUPPORT
+        "GEIGER "
+    #endif
+    #if GUVAS12SD_SUPPORT
+        "GUVAS12SD "
+    #endif
+    #if HCSR04_SUPPORT
+        "HCSR04 "
+    #endif
+    #if HLW8012_SUPPORT
+        "HLW8012 "
+    #endif
+    #if MHZ19_SUPPORT
+        "MHZ19 "
+    #endif
+    #if PMSX003_SUPPORT
+        "PMSX003 "
+    #endif
+    #if PZEM004T_SUPPORT
+        "PZEM004T "
+    #endif
+    #if SENSEAIR_SUPPORT
+        "SENSEAIR "
+    #endif
+    #if SHT3X_I2C_SUPPORT
+        "SHT3X_I2C "
+    #endif
+    #if SI7021_SUPPORT
+        "SI7021 "
+    #endif
+    #if TMP3X_SUPPORT
+        "TMP3X "
+    #endif
+    #if V9261F_SUPPORT
+        "V9261F "
+    #endif
+    "";
+
 
 PROGMEM const unsigned char magnitude_decimals[] = {
     0,
