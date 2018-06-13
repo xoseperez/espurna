@@ -613,6 +613,8 @@ void mqttFlush() {
     // Send
     String output;
     root.printTo(output);
+    jsonBuffer.clear();
+
     mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
 
     // Clear queue

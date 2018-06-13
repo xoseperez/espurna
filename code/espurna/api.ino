@@ -134,6 +134,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
             root[_apis[i].key] = String(buffer);
         }
         root.printTo(output);
+        jsonBuffer.clear();
         request->send(200, "application/json", output);
 
     } else {
