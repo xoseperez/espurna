@@ -279,20 +279,19 @@ void _fromHSV(const char * hsv) {
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
-void _fromKelvin(unsigned long kelvin, bool setMireds) {
+void _fromKelvin(unsigned long kelvin) {
 
     if (!_light_has_color) return;
-
-    if (setMireds) {
-      _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
-    }
 
     if (_light_use_cct) {
       _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
       return;
     }
 
+    _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
+
     // Calculate colors
+    kelvin /= 100;
     unsigned int red = (kelvin <= 66)
         ? LIGHT_MAX_VALUE
         : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592);
@@ -306,25 +305,13 @@ void _fromKelvin(unsigned long kelvin, bool setMireds) {
             : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307);
 
     _setRGBInputValue(red, green, blue);
-}
 
-void _fromKelvin(unsigned long kelvin) {
-  _fromKelvin(kelvin, true);
 }
 
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
 void _fromMireds(unsigned long mireds) {
-    if (!_light_has_color) return;
-
-    _light_mireds = mireds = constrain(mireds, LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
-
-    if (_light_use_cct) {
-      _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
-      return;
-    }
-
-    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
-    _fromKelvin(kelvin, false);
+    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000);
+    _fromKelvin(kelvin);
 }
 
 // -----------------------------------------------------------------------------
