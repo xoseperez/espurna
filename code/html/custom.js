@@ -1357,9 +1357,14 @@ function initUrls(root) {
     urls["root"] = root;
     paths.forEach(function(path) {
         urls[path] = new URL(path, root);
+        urls[path].protocol = root.protocol;
     });
 
-    urls.ws.protocol = "ws";
+    if (root.protocol == "https:") {
+        urls.ws.protocol = "wss:";
+    } else {
+        urls.ws.protocol = "ws:";
+    }
 
 }
 
