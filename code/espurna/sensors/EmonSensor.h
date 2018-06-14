@@ -10,9 +10,11 @@
 #undef I2C_SUPPORT
 #define I2C_SUPPORT 1 // Explicitly request I2C support.
 
-
 #include "Arduino.h"
 #include "I2CSensor.h"
+extern "C" {
+    #include "libs/fs_math.h"
+}
 
 class EmonSensor : public I2CSensor {
 
@@ -197,7 +199,7 @@ class EmonSensor : public I2CSensor {
             }
 
             // Calculate current
-            double rms = _samples > 0 ? sqrt(sum / _samples) : 0;
+            double rms = _samples > 0 ? fs_sqrt(sum / _samples) : 0;
             double current = _current_factor[channel] * rms;
             current = (double) (int(current * _multiplier[channel]) - 1) / _multiplier[channel];
             if (current < 0) current = 0;

@@ -12,6 +12,10 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
+extern "C" {
+    #include "libs/fs_math.h"
+}
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
 extern "C" {
@@ -288,19 +292,18 @@ void _fromKelvin(unsigned long kelvin, bool setMireds) {
       return;
     }
 
-
     // Calculate colors
     unsigned int red = (kelvin <= 66)
         ? LIGHT_MAX_VALUE
-        : 329.698727446 * pow((kelvin - 60), -0.1332047592);
+        : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592);
     unsigned int green = (kelvin <= 66)
-        ? 99.4708025861 * log(kelvin) - 161.1195681661
-        : 288.1221695283 * pow(kelvin, -0.0755148492);
+        ? 99.4708025861 * fs_log(kelvin) - 161.1195681661
+        : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492);
     unsigned int blue = (kelvin >= 66)
         ? LIGHT_MAX_VALUE
         : ((kelvin <= 19)
             ? 0
-            : 138.5177312231 * log(kelvin - 10) - 305.0447927307);
+            : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307);
 
     _setRGBInputValue(red, green, blue);
 }
