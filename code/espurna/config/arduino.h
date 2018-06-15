@@ -80,6 +80,11 @@
 //#define HELTEC_TOUCHRELAY
 //#define ZHILDE_EU44_W
 //#define LUANI_HVIO
+//#define ALLNET_4DUINO_IOT_WLAN_RELAIS
+//#define TONBUX_MOSQUITO_KILLER
+//#define NEO_COOLCAM_POWER_PLUG_WIFI
+//#define ESTINK_WIFI_POWER_STRIP
+//#define PILOTAK_ESP_DIN_V1
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -140,3 +145,4 @@
 //#define SI7021_SUPPORT         1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
+//#define GEIGER_SUPPORT         1

@@ -43,7 +43,13 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
     String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
     if (type == MQTT_CONNECT_EVENT) {
+
+        // Subscribe to domoticz action topics
         mqttSubscribeRaw(dczTopicOut.c_str());
+
+        // Send relays state on connection
+        domoticzSendRelays();
+
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -136,6 +142,12 @@ void domoticzSendRelay(unsigned char relayID) {
     char buffer[15];
     snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
+}
+
+void domoticzSendRelays() {
+    for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
+        domoticzSendRelay(relayID);
+    }
 }
 
 unsigned int domoticzIdx(unsigned char relayID) {

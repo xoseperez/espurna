@@ -142,12 +142,17 @@
 //------------------------------------------------------------------------------
 
 #define EEPROM_SIZE             4096            // EEPROM size in bytes
+//#define EEPROM_RORATE_SECTORS   2             // Number of sectors to use for EEPROM rotation
+                                                // If not defined the firmware will use a number based
+                                                // on the number of available sectors
+
 #define EEPROM_RELAY_STATUS     0               // Address for the relay status (1 byte)
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
 #define EEPROM_CRASH_COUNTER    6               // Address for the crash counter (1 byte)
 #define EEPROM_MESSAGE_ID       7               // Address for the MQTT message id (4 bytes)
-#define EEPROM_DATA_END         11              // End of custom EEPROM data block
+#define EEPROM_ROTATE_DATA      11              // Reserved for the EEPROM_ROTATE library (3 bytes)
+#define EEPROM_DATA_END         14              // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
 // HEARTBEAT
@@ -276,9 +281,6 @@
 #define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
 #endif
 
-#ifndef WIFI_AP_MODE
-#define WIFI_AP_MODE                AP_MODE_ALONE
-#endif
 
 #ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
@@ -511,6 +513,10 @@
 #define UART_MQTT_BAUDRATE          115200      // Serial speed
 #endif
 
+#ifndef UART_MQTT_TERMINATION
+#define UART_MQTT_TERMINATION      '\n'         // Termination character
+#endif
+
 #define UART_MQTT_BUFFER_SIZE       100         // UART buffer size
 
 // -----------------------------------------------------------------------------
@@ -558,9 +564,9 @@
 
 #ifndef MQTT_AUTOCONNECT
 #define MQTT_AUTOCONNECT            1               // If enabled and MDNS_SERVER_SUPPORT=1 will perform an autodiscover and
+                                                    // autoconnect to the first MQTT broker found if none defined
 #endif
 
-                                                    // autoconnect to the first MQTT broker found if none defined
 #ifndef MQTT_SERVER
 #define MQTT_SERVER                 ""              // Default MQTT broker address
 #endif
@@ -590,7 +596,7 @@
 #endif
 
 #ifndef MQTT_KEEPALIVE
-#define MQTT_KEEPALIVE              30              // MQTT keepalive value
+#define MQTT_KEEPALIVE              300             // MQTT keepalive value
 #endif
 
 
@@ -678,6 +684,7 @@
 #define MQTT_TOPIC_UARTOUT          "uartout"
 #define MQTT_TOPIC_LOADAVG          "loadavg"
 #define MQTT_TOPIC_BOARD            "board"
+#define MQTT_TOPIC_PULSE            "pulse"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -772,11 +779,8 @@
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #endif
 
-//#define LIGHT_MIN_MIREDS        153       // NOT USED (yet)! // Default to the Philips Hue value that HA has always assumed
-//#define LIGHT_MAX_MIREDS        500       // NOT USED (yet)! // https://developers.meethue.com/documentation/core-concepts
-#ifndef LIGHT_DEFAULT_MIREDS
-#define LIGHT_DEFAULT_MIREDS    153         // Default value used by MQTT. This value is __NEVRER__ applied!
-#endif
+#define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
+#define LIGHT_MAX_MIREDS        500      // https://developers.meethue.com/documentation/core-concepts
 
 #ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
@@ -787,8 +791,17 @@
 #endif
 
 #ifndef LIGHT_USE_WHITE
-#define LIGHT_USE_WHITE         0           // Use white channel whenever RGB have the same value
+#define LIGHT_USE_WHITE         0           // Use the 4th channel as (Warm-)White LEDs
 #endif
+
+#ifndef LIGHT_USE_CCT
+#define LIGHT_USE_CCT           0           // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
+#endif
+
+// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
+// Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
+#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
+#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
@@ -1142,13 +1155,13 @@
 #if IR_BUTTON_SET == 3
 /*
    +------+------+------+
-   |  1   |  2   |  3   |      
+   |  1   |  2   |  3   |
    +------+------+------+
-   |  4   |  5   |  6   |      
+   |  4   |  5   |  6   |
    +------+------+------+
-   |  7   |  8   |  9   |      
+   |  7   |  8   |  9   |
    +------+------+------+
-   |      |  0   |      |      
+   |      |  0   |      |
    +------+------+------+
 */
 #define IR_BUTTON_COUNT 10
@@ -1158,7 +1171,7 @@
         { 0xE0E020DF, IR_BUTTON_MODE_TOGGLE, 0 }, // Toggle Relay #0
         { 0xE0E0A05F, IR_BUTTON_MODE_TOGGLE, 1 }, // Toggle Relay #1
         { 0xE0E0609F, IR_BUTTON_MODE_TOGGLE, 2 }, // Toggle Relay #2
-        
+
         { 0xE0E010EF, IR_BUTTON_MODE_TOGGLE, 3 }, // Toggle Relay #3
         { 0xE0E0906F, IR_BUTTON_MODE_TOGGLE, 4 }, // Toggle Relay #4
         { 0xE0E050AF, IR_BUTTON_MODE_TOGGLE, 5 }, // Toggle Relay #5
