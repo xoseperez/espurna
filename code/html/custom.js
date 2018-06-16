@@ -34,6 +34,7 @@ function initMessages() {
     messages[10] = "Session expired, please reload page...";
 }
 
+<!-- removeIf(!sensor)-->
 function sensorName(id) {
     var names = [
         "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
@@ -73,6 +74,7 @@ function magnitudeError(error) {
     }
     return "Error " + error;
 }
+<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -609,6 +611,7 @@ function createRelayList(data, container, template_name) {
 
 }
 
+<!-- removeIf(!sensor)-->
 function createMagnitudeList(data, container, template_name) {
 
     var current = $("#" + container + " > div").length;
@@ -625,6 +628,7 @@ function createMagnitudeList(data, container, template_name) {
     }
 
 }
+<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Wifi
@@ -666,6 +670,7 @@ function addNetwork() {
 // -----------------------------------------------------------------------------
 // Relays scheduler
 // -----------------------------------------------------------------------------
+
 function delSchedule() {
     var parent = $(this).parents(".pure-g");
     $(parent).remove();
@@ -739,7 +744,6 @@ function initRelays(data) {
 
     }
 
-
 }
 
 function initRelayConfig(data) {
@@ -768,6 +772,7 @@ function initRelayConfig(data) {
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
 
+<!-- removeIf(!sensor)-->
 function initMagnitudes(data) {
 
     // check if already initialized
@@ -786,10 +791,13 @@ function initMagnitudes(data) {
     }
 
 }
+<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Lights
 // -----------------------------------------------------------------------------
+
+<!-- removeIf(!light)-->
 
 function initColorRGB() {
 
@@ -909,10 +917,13 @@ function initChannels(num) {
     }
 
 }
+<!-- endRemoveIf(!light)-->
 
 // -----------------------------------------------------------------------------
 // RFBridge
 // -----------------------------------------------------------------------------
+
+<!-- removeIf(!rfbridge)-->
 
 function rfbLearn() {
     var parent = $(this).parents(".pure-g");
@@ -952,6 +963,7 @@ function addRfbNode() {
 
     return line;
 }
+<!-- endRemoveIf(!rfbridge)-->
 
 // -----------------------------------------------------------------------------
 // Processing
@@ -1000,6 +1012,8 @@ function processData(data) {
         // RFBridge
         // ---------------------------------------------------------------------
 
+        <!-- removeIf(!rfbridge)-->
+
         if ("rfbCount" === key) {
             for (i=0; i<data.rfbCount; i++) { addRfbNode(); }
             return;
@@ -1017,10 +1031,13 @@ function processData(data) {
             }
             return;
         }
+        <!-- endRemoveIf(!rfbridge)-->
 
         // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
+
+        <!-- removeIf(!light)-->
 
         if ("rgb" === key) {
             initColorRGB();
@@ -1072,9 +1089,13 @@ function processData(data) {
             useCCT = value;
         }
 
+        <!-- endRemoveIf(!light)-->
+
         // ---------------------------------------------------------------------
         // Sensors & Magnitudes
         // ---------------------------------------------------------------------
+
+        <!-- removeIf(!sensor)-->
 
         if ("magnitudes" === key) {
             initMagnitudes(value);
@@ -1090,6 +1111,8 @@ function processData(data) {
             }
             return;
         }
+
+        <!-- endRemoveIf(!sensor)-->
 
         // ---------------------------------------------------------------------
         // WiFi
@@ -1184,10 +1207,12 @@ function processData(data) {
         }
 
         // Domoticz - Magnitudes
+        <!-- removeIf(!sensor)-->
         if ("dczMagnitudes" === key) {
             createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
             return;
         }
+        <!-- endRemoveIf(!sensor)-->
 
         // ---------------------------------------------------------------------
         // Thingspeak
@@ -1200,10 +1225,12 @@ function processData(data) {
         }
 
         // Thingspeak - Magnitudes
+        <!-- removeIf(!sensor)-->
         if ("tspkMagnitudes" === key) {
             createMagnitudeList(value, "tspkMagnitudes", "tspkMagnitudeTemplate");
             return;
         }
+        <!-- endRemoveIf(!sensor)-->
 
         // ---------------------------------------------------------------------
         // General
@@ -1440,7 +1467,9 @@ $(function() {
         $(".more", addNetwork()).toggle();
     });
     $(".button-add-switch-schedule").on("click", { schType: 1 }, addSchedule);
+    <!-- removeIf(!light)-->
     $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
+    <!-- endRemoveIf(!light)-->
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

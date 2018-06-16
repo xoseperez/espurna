@@ -39,6 +39,7 @@ const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 const crass = require('gulp-crass');
 const replace = require('gulp-replace');
+const remover = require('gulp-remove-code');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
@@ -106,6 +107,13 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 });
 
 gulp.task('buildfs_inline', function() {
+
+    var remover_config = {
+        sensor: false,
+        light: false,
+        rfbridge: false
+    };
+
     return gulp.src('html/*.html').
         pipe(htmllint({
             'failOnError': true,
@@ -117,10 +125,11 @@ gulp.task('buildfs_inline', function() {
         pipe(favicon()).
         pipe(inline({
             base: 'html/',
-            js: [uglify],
+            js: [],
             css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
         })).
+        pipe(remover(remover_config)).
         pipe(htmlmin({
             collapseWhitespace: true,
             removeComments: true,
@@ -130,6 +139,17 @@ gulp.task('buildfs_inline', function() {
         pipe(replace('pure-', 'p-')).
         pipe(gzip()).
         pipe(gulp.dest(dataFolder));
+});
+
+
+gulp.task('test', function() {
+    return gulp.src('html/custom.js').
+        pipe(remover({
+            sensor: false,
+            light: false,
+            rfbridge: false
+        })).
+        pipe(gulp.dest('/home/xose/tmp/'));
 });
 
 
