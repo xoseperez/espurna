@@ -57,7 +57,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
-
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
     request->send(response);
 
 }
@@ -151,6 +153,9 @@ void _onHome(AsyncWebServerRequest *request) {
 
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Last-Modified", _last_modified);
+	response->addHeader("X-XSS-Protection", "1; mode=block");
+	response->addHeader("X-Content-Type-Options", "nosniff");
+	response->addHeader("X-Frame-Options", "deny");
         request->send(response);
 
     }
@@ -223,6 +228,10 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+
     if (!Update.hasError()) {
         deferredReset(100, CUSTOM_RESET_UPGRADE);
     }
