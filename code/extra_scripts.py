@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from subprocess import call
+from platformio import util
 import os
 import time
 
@@ -58,6 +59,14 @@ def check_size(source, target, env):
     #    print clr(Color.LIGHT_RED, "File too large for OTA!")
     #    Exit(1)
 
+def build_webui(source, target, env):
+    config = util.load_project_config()
+    try:
+        os.environ['MODULES'] = config.get("env:" + env.get('PIOENV'), "modules")
+    except:
+        None
+    call(["gulp"])
+
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
@@ -65,4 +74,5 @@ def check_size(source, target, env):
 remove_float_support()
 
 #env.AddPreAction("buildprog", cpp_check)
+env.AddPreAction("$BUILD_DIR/src/espurna.ino.cpp.o", build_webui)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
