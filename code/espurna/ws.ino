@@ -440,6 +440,7 @@ void wsSend(ws_on_send_callback_f callback) {
         callback(root);
         String output;
         root.printTo(output);
+        jsonBuffer.clear();
         _ws.textAll((char *) output.c_str());
     }
 }
@@ -464,6 +465,7 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     callback(root);
     String output;
     root.printTo(output);
+    jsonBuffer.clear();
     _ws.text(client_id, (char *) output.c_str());
 }
 

@@ -61,7 +61,9 @@ void _onDiscover(AsyncWebServerRequest *request) {
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
@@ -71,6 +73,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     root["version"] = APP_VERSION;
     settingsGetJson(root);
     root.prettyPrintTo(*response);
+    jsonBuffer.clear();
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
@@ -82,7 +85,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfig(AsyncWebServerRequest *request) {
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
@@ -130,7 +135,9 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
 void _onHome(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
 
@@ -230,7 +237,9 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!webAuthenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     char buffer[10];
     if (!Update.hasError()) {
@@ -241,7 +250,9 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
-    if (!Update.hasError()) {
+    if (Update.hasError()) {
+        eepromRotate(true);
+    } else {
         deferredReset(100, CUSTOM_RESET_UPGRADE);
     }
     request->send(response);
@@ -249,7 +260,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
     if (!index) {
+
+        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+        eepromRotate(false);
+
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
@@ -257,7 +273,9 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
                 Update.printError(DEBUG_PORT);
             #endif
         }
+
     }
+
     if (!Update.hasError()) {
         if (Update.write(data, len) != len) {
             #ifdef DEBUG_PORT
@@ -265,6 +283,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     }
+
     if (final) {
         if (Update.end(true)){
             DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
