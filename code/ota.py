@@ -13,7 +13,7 @@ import re
 import socket
 import subprocess
 import sys
-from time import sleep
+import time
 
 from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 
@@ -25,9 +25,11 @@ except NameError:
 
 # -------------------------------------------------------------------------------
 
-devices = []
-description = "ESPurna OTA Manager v0.1"
+DISCOVER_TIMEOUT = 2
 
+description = "ESPurna OTA Manager v0.2"
+devices = []
+discover_last = 0
 
 # -------------------------------------------------------------------------------
 
@@ -37,23 +39,26 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
     """
 
     if state_change is ServiceStateChange.Added:
+        discover_last = time.time()
         info = zeroconf.get_service_info(service_type, name)
         if info:
+
             hostname = info.server.split(".")[0]
             device = {
                 'hostname': hostname.upper(),
-                'ip': socket.inet_ntoa(info.address)
+                'ip': socket.inet_ntoa(info.address),
+                'mac': '',
+                'app_name': '',
+                'app_version': '',
+                'target_board': '',
+                'mem_size': '',
+                'sdk_size': '',
+                'free_space': '',
             }
-            device['mac'] = info.properties.get('mac', '')
-            device['app'] = info.properties.get('app_name', '')
-            device['version'] = info.properties.get('app_version', '')
-            device['device'] = info.properties.get('target_board', '')
-            if 'mem_size' in info.properties:
-                device['mem_size'] = info.properties.get('mem_size')
-            if 'sdk_size' in info.properties:
-                device['sdk_size'] = info.properties.get('sdk_size')
-            if 'free_space' in info.properties:
-                device['free_space'] = info.properties.get('free_space')
+
+            for key, item in info.properties.items():
+                device[key.decode('UTF-8')] = item.decode('UTF-8');
+
             devices.append(device)
 
 
@@ -84,9 +89,9 @@ def list_devices():
             device.get('hostname', ''),
             device.get('ip', ''),
             device.get('mac', ''),
-            device.get('app', ''),
-            device.get('version', ''),
-            device.get('device', ''),
+            device.get('app_name', ''),
+            device.get('app_version', ''),
+            device.get('target_board', ''),
             device.get('mem_size', ''),
             device.get('sdk_size', ''),
             device.get('free_space', ''),
@@ -121,7 +126,7 @@ def get_board_by_index(index):
     if 1 <= index and index <= len(devices):
         device = devices[index - 1]
         board['hostname'] = device.get('hostname')
-        board['board'] = device.get('device', '')
+        board['board'] = device.get('target_board', '')
         board['ip'] = device.get('ip', '')
         board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
     return board
@@ -135,7 +140,7 @@ def get_board_by_hostname(hostname):
         if device.get('hostname', '').lower() == hostname:
             board = {}
             board['hostname'] = device.get('hostname')
-            board['board'] = device.get('device')
+            board['board'] = device.get('target_board')
             if not board['board']:
                 return None
             board['ip'] = device.get('ip')
@@ -226,8 +231,10 @@ if __name__ == '__main__':
     # Look for sevices
     zeroconf = Zeroconf()
     browser = ServiceBrowser(zeroconf, "_arduino._tcp.local.", handlers=[on_service_state_change])
-    sleep(5)
-    zeroconf.close()
+    discover_last = time.time()
+    while time.time() < discover_last + DISCOVER_TIMEOUT:
+        None
+    #zeroconf.close()
 
     if len(devices) == 0:
         print("Nothing found!\n")

@@ -28,7 +28,7 @@ void _mdnsFindMQTT() {
 #endif
 
 void _mdnsServerStart() {
-    if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
+    if (MDNS.begin((char *) getSetting("hostname").c_str())) {
         DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     } else {
         DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));

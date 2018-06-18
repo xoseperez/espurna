@@ -13,6 +13,7 @@ var numReconnect = 0;
 var numReload = 0;
 
 var useWhite = false;
+var useCCT = false;
 
 var now = 0;
 var ago = 0;
@@ -39,7 +40,7 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "HC-SR04", "SenseAir"
+        "TMP3X", "HC-SR04", "SenseAir", "GeigerTicks", "GeigerCPM"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -53,7 +54,8 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Events",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO"
+        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
+        "Local Dose Rate", "Local Dose Rate"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -101,14 +103,6 @@ function keepTime() {
 
 }
 
-// http://www.the-art-of-web.com/javascript/validate-password/
-function checkPassword(str) {
-    // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
-    return re.test(str);
-}
-
 function zeroPad(number, positions) {
     var zeros = "";
     for (var i = 0; i < positions; i++) {
@@ -146,9 +140,14 @@ function loadTimeZones() {
 
 function validateForm(form) {
 
+    // http://www.the-art-of-web.com/javascript/validate-password/
+    // at least one lowercase and one uppercase letter or number
+    // at least five characters (letters, numbers or special characters)
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
+    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
         alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
         return false;
     }
@@ -156,6 +155,23 @@ function validateForm(form) {
     var adminPass2 = $("input[name='adminPass']", form).last().val();
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
+        return false;
+    }
+
+    // RFCs mandate that a hostname's labels may contain only
+    // the ASCII letters 'a' through 'z' (case-insensitive),
+    // the digits '0' through '9', and the hyphen.
+    // Hostname labels cannot begin or end with a hyphen.
+    // No other symbols, punctuation characters, or blank spaces are permitted.
+
+    // Negative lookbehind does not work in Javascript
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+
+    var hostname = $("input[name='hostname']", form).val();
+    if (!re_hostname.test(hostname)) {
+        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
         return false;
     }
 
@@ -495,7 +511,7 @@ function onFileUpload(event) {
         if (data) {
             sendAction("restore", data);
         } else {
-            alert(messages[4]);
+            window.alert(messages[4]);
         }
     };
     reader.readAsText(inputFile);
@@ -804,6 +820,22 @@ function initColorRGB() {
 
 }
 
+function initCCT() {
+
+  // check if already initialized
+  var done = $("#cct > div").length;
+  if (done > 0) { return; }
+
+  $("#miredsTemplate").children().clone().appendTo("#cct");
+
+  $("#mireds").on("change", function() {
+    var value = $(this).val();
+    var parent = $(this).parents(".pure-g");
+    $("span", parent).html(value);
+    sendAction("mireds", {mireds: value});
+  });
+}
+
 function initColorHSV() {
 
     // check if already initialized
@@ -841,6 +873,9 @@ function initChannels(num) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
+            if (useCCT) {
+              max--;
+            }
         }
     }
     var start = num - max;
@@ -854,8 +889,9 @@ function initChannels(num) {
     };
 
     // add templates
+    var i = 0;
     var template = $("#channelTemplate").children();
-    for (var i=0; i<max; i++) {
+    for (i=0; i<max; i++) {
 
         var channel_id = start + i;
         var line = $(template).clone();
@@ -867,7 +903,7 @@ function initChannels(num) {
 
     }
 
-    for (var i=0; i<num; i++) {
+    for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
     }
@@ -1021,8 +1057,19 @@ function processData(data) {
             return;
         }
 
+        if ("mireds" === key) {
+            $("#mireds").val(value);
+            $("span.mireds").html(value);
+            return;
+        }
+
         if ("useWhite" === key) {
             useWhite = value;
+        }
+
+        if ("useCCT" === key) {
+            initCCT();
+            useCCT = value;
         }
 
         // ---------------------------------------------------------------------
@@ -1170,7 +1217,7 @@ function processData(data) {
 
         // Web log
         if ("weblog" === key) {
-            $("#weblog").append(value);
+            $("#weblog").append(new Text(value));
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
         }
@@ -1181,6 +1228,12 @@ function processData(data) {
             var module = key.slice(0,-7);
             $(".module-" + module).css("display", "inherit");
             return;
+        }
+
+        if ("deviceip" === key) {
+            var a_href = $("span[name='" + key + "']").parent();
+            a_href.attr("href", "http://" + value);
+            a_href.next().attr("href", "telnet://" + value);
         }
 
         if ("now" === key) {
@@ -1299,27 +1352,43 @@ function hasChanged() {
 
 function initUrls(root) {
 
-    var paths = ["ws", "upgrade", "config"];
+    var paths = ["ws", "upgrade", "config", "auth"];
 
     urls["root"] = root;
     paths.forEach(function(path) {
         urls[path] = new URL(path, root);
+        urls[path].protocol = root.protocol;
     });
 
-    urls.ws.protocol = "ws";
+    if (root.protocol == "https:") {
+        urls.ws.protocol = "wss:";
+    } else {
+        urls.ws.protocol = "ws:";
+    }
 
 }
 
 function connectToURL(url) {
+
     initUrls(url);
-    if (websock) { websock.close(); }
-    websock = new WebSocket(urls.ws.href);
-    websock.onmessage = function(evt) {
-        var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-        if (data) {
-            processData(data);
-        }
-    };
+
+    $.ajax({
+        'method': 'GET',
+        'url': urls.auth.href,
+        'xhrFields': { 'withCredentials': true }
+    }).done(function(data) {
+        if (websock) { websock.close(); }
+        websock = new WebSocket(urls.ws.href);
+        websock.onmessage = function(evt) {
+            var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+            if (data) {
+                processData(data);
+            }
+        };
+    }).fail(function() {
+        // Nothing to do, reload page and retry
+    });
+
 }
 
 function connect(host) {

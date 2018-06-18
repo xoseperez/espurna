@@ -10,7 +10,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -25,6 +25,8 @@ char _udp_syslog_header[40] = {0};
 #endif
 
 void _debugSend(char * message) {
+
+    bool pause = false;
 
     #if DEBUG_ADD_TIMESTAMP
         static bool add_timestamp = true;
@@ -50,6 +52,7 @@ void _debugSend(char * message) {
             #endif
             _udp_debug.write(message);
             _udp_debug.endPacket();
+            pause = true;
         #if SYSTEM_CHECK_ENABLED
         }
         #endif
@@ -60,23 +63,30 @@ void _debugSend(char * message) {
             _telnetWrite(timestamp, strlen(timestamp));
         #endif
         _telnetWrite(message, strlen(message));
+        pause = true;
     #endif
 
     #if DEBUG_WEB_SUPPORT
         if (wsConnected() && (getFreeHeap() > 10000)) {
-            String m = String(message);
-            m.replace("\"", "&quot;");
-            m.replace("{", "&#123");
-            m.replace("}", "&#125");
-            char buffer[m.length() + 24];
+            DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(1) + strlen(message) + 17);
+            JsonObject &root = jsonBuffer.createObject();
             #if DEBUG_ADD_TIMESTAMP
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s%s\"}"), timestamp, m.c_str());
+                char buffer[strlen(timestamp) + strlen(message) + 1];
+                snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
+                root.set("weblog", buffer);
             #else
-                snprintf_P(buffer, sizeof(buffer), PSTR("{\"weblog\": \"%s\"}"), m.c_str());
+                root.set("weblog", message);
             #endif
-            wsSend(buffer);
+            String out;
+            root.printTo(out);
+            jsonBuffer.clear();
+
+            wsSend(out.c_str());
+            pause = true;
         }
     #endif
+
+    if (pause) optimistic_yield(100);
 
 }
 
@@ -204,31 +214,31 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     // write crash time to EEPROM
     uint32_t crash_time = millis();
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
 
     // write reset info to EEPROM
-    EEPROM.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rst_info->reason);
-    EEPROM.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rst_info->exccause);
+    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rst_info->reason);
+    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rst_info->exccause);
 
     // write epc1, epc2, epc3, excvaddr and depc to EEPROM
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rst_info->epc1);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rst_info->epc2);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rst_info->epc3);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rst_info->depc);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rst_info->epc1);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rst_info->epc2);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rst_info->epc3);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rst_info->depc);
 
     // write stack start and end address to EEPROM
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
 
     // write stack trace to EEPROM
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     for (uint32_t i = stack_start; i < stack_end; i++) {
         byte* byteValue = (byte*) i;
-        EEPROM.write(current_address++, *byteValue);
+        EEPROMr.write(current_address++, *byteValue);
     }
 
-    EEPROM.commit();
+    EEPROMr.commit();
 
 }
 
@@ -237,8 +247,8 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
  */
 void debugClearCrashInfo() {
     uint32_t crash_time = 0xFFFFFFFF;
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    EEPROM.commit();
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+    EEPROMr.commit();
 }
 
 /**
@@ -247,28 +257,28 @@ void debugClearCrashInfo() {
 void debugDumpCrashInfo() {
 
     uint32_t crash_time;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
     if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
         DEBUG_MSG_P(PSTR("[DEBUG] No crash info\n"));
         return;
     }
 
     DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
-    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
+    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
+    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 
     uint32_t epc1, epc2, epc3, excvaddr, depc;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
     DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
     DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
 
     uint32_t stack_start, stack_end;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
     DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     int16_t stack_len = stack_end - stack_start;
@@ -276,7 +286,7 @@ void debugDumpCrashInfo() {
     for (int16_t i = 0; i < stack_len; i += 0x10) {
         DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
         for (byte j = 0; j < 4; j++) {
-            EEPROM.get(current_address, stack_trace);
+            EEPROMr.get(current_address, stack_trace);
             DEBUG_MSG_P(PSTR("%08x "), stack_trace);
             current_address += 4;
         }
