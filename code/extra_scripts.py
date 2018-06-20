@@ -46,12 +46,20 @@ def remove_float_support():
         LINKFLAGS = newflags
     )
 
+def cpp_check(source, target, env):
+    print("Started cppcheck...\n")
+    call(["cppcheck", os.getcwd()+"/espurna", "--force", "--enable=all"])
+    print("Finished cppcheck...\n")
+
 def check_size(source, target, env):
     time.sleep(2)
     size = target[0].get_size()
     print clr(Color.LIGHT_BLUE, "Binary size: %s bytes" % size)
+    #if size > 512000:
+    #    print clr(Color.LIGHT_RED, "File too large for OTA!")
+    #    Exit(1)
 
-def build_webui():
+def build_webui(env):
     config = util.load_project_config()
     kv = dict(config.items("env:" + env.get('PIOENV')))
     if 'modules' in kv:
@@ -63,6 +71,6 @@ def build_webui():
 # ------------------------------------------------------------------------------
 
 remove_float_support()
-build_webui()
+build_webui(env)
 
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
