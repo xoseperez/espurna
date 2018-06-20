@@ -8,6 +8,7 @@
 # -------------------------------------------------------------------------------
 from __future__ import print_function
 
+import shutil
 import argparse
 import re
 import socket
@@ -27,7 +28,7 @@ except NameError:
 
 DISCOVER_TIMEOUT = 2
 
-description = "ESPurna OTA Manager v0.2"
+description = "ESPurna OTA Manager v0.3"
 devices = []
 discover_last = 0
 
@@ -111,11 +112,16 @@ def get_boards():
             boards.append(m.group(1))
     return sorted(boards)
 
+def get_device_size(device):
+    if device.get('mem_size', 0) == device.get('sdk_size', 0):
+        return int(device.get('mem_size', 0)) / 1024
+    return 0
+
 def get_empty_board():
     """
     Returns the empty structure of a board to flash
     """
-    board = {'board': '', 'ip': '', 'size': 0, 'auth': '', 'flags': ''}
+    board = {'board': '', 'ip': '', 'size': 0, 'auth': '', 'flags': '', 'modules': ''}
     return board
 
 def get_board_by_index(index):
@@ -128,8 +134,25 @@ def get_board_by_index(index):
         board['hostname'] = device.get('hostname')
         board['board'] = device.get('target_board', '')
         board['ip'] = device.get('ip', '')
-        board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
+        board['size'] = get_device_size(device)
     return board
+
+def get_board_by_mac(mac):
+    """
+    Returns the required data to flash a given board
+    """
+    hostname = hostname.lower()
+    for device in devices:
+        if device.get('mac', '').lower() == mac:
+            board = {}
+            board['hostname'] = device.get('hostname')
+            board['board'] = device.get('device')
+            board['ip'] = device.get('ip')
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
+                return None
+            return board
+    return None
 
 def get_board_by_hostname(hostname):
     """
@@ -141,13 +164,9 @@ def get_board_by_hostname(hostname):
             board = {}
             board['hostname'] = device.get('hostname')
             board['board'] = device.get('target_board')
-            if not board['board']:
-                return None
             board['ip'] = device.get('ip')
-            if not board['ip']:
-                return None
-            board['size'] = int(device.get('sdk_size', 0)) / 1024
-            if board['size'] == 0:
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
                 return None
             return board
     return None
@@ -201,13 +220,20 @@ def input_board():
 
     return board
 
+def boardname(board):
+    return board.get('hostname', board['ip'])
+
+def store(device, env):
+    source = ".pioenvs/%s/firmware.elf" % env
+    destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+    shutil.move(source, destination)
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "export ESPURNA_IP=\"%s\"; export ESPURNA_BOARD=\"%s\"; export ESPURNA_AUTH=\"%s\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s -t upload"
-    command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
+    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" WEBUI_MODULES=\"%s\" platformio run --silent --environment %s -t upload"
+    command = command % (device['ip'], device['board'], device['auth'], device['flags'], device['modules'], env)
     subprocess.check_call(command, shell=True)
-
+    store(device, env)
 
 # -------------------------------------------------------------------------------
 
@@ -219,6 +245,7 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--flash", help="flash device", default=0, action='count')
     parser.add_argument("-o", "--flags", help="extra flags", default='')
     parser.add_argument("-p", "--password", help="auth password", default='')
+    parser.add_argument("-m", "--modules", help="webui modules", default='')
     parser.add_argument("-s", "--sort", help="sort devices list by field", default='hostname')
     parser.add_argument("-y", "--yes", help="do not ask for confirmation", default=0, action='count')
     parser.add_argument("hostnames", nargs='*', help="Hostnames to update")
@@ -262,6 +289,7 @@ if __name__ == '__main__':
             if board:
                 board['auth'] = args.password
                 board['flags'] = args.flags
+                board['modules'] = args.modules
                 queue.append(board)
 
         # If no boards ask the user
@@ -270,6 +298,7 @@ if __name__ == '__main__':
             if board:
                 board['auth'] = args.password or input("Authorization key of the device to flash: ")
                 board['flags'] = args.flags or input("Extra flags for the build: ")
+                board['modules'] = args.modules or input("WebUI modules to build: ")
                 queue.append(board)
 
         # If still no boards quit
@@ -287,12 +316,13 @@ if __name__ == '__main__':
 
             # Summary
             print()
-            print("HOST  = %s" % board.get('hostname', board['ip']))
-            print("IP    = %s" % board['ip'])
-            print("BOARD = %s" % board['board'])
-            print("AUTH  = %s" % board['auth'])
-            print("FLAGS = %s" % board['flags'])
-            print("ENV   = %s" % env)
+            print("HOST    = %s" % boardname(board))
+            print("IP      = %s" % board['ip'])
+            print("BOARD   = %s" % board['board'])
+            print("AUTH    = %s" % board['auth'])
+            print("FLAGS   = %s" % board['flags'])
+            print("MODULES = %s" % board['modules'])
+            print("ENV     = %s" % env)
 
             response = True
             if args.yes == 0:

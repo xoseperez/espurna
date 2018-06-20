@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from subprocess import call
+from platformio import util
 import os
 import time
 
@@ -58,11 +59,17 @@ def check_size(source, target, env):
     #    print clr(Color.LIGHT_RED, "File too large for OTA!")
     #    Exit(1)
 
+def build_webui(env):
+    config = util.load_project_config()
+    kv = dict(config.items("env:" + env.get('PIOENV')))
+    modules = kv["modules"] if "modules" in kv else "all"
+    env.Execute("WEBUI_MODULES=\"%s\" node node_modules/gulp/bin/gulp.js" % modules)
+
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
 
 remove_float_support()
+build_webui(env)
 
-#env.AddPreAction("buildprog", cpp_check)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
