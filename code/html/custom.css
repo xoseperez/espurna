@@ -6,6 +6,7 @@
     font-size: 100%;
     padding: .5em .5em;
     white-space: normal;
+    text-transform: initial;
 }
 
 .pure-g {

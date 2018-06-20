@@ -3,8 +3,8 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.12.5a-brightgreen.svg)](CHANGELOG.md)
-![branch](https://img.shields.io/badge/branch-ota-orange.svg)
+[![version](https://img.shields.io/badge/version-1.13.0c-brightgreen.svg)](CHANGELOG.md)
+[![branch](https://img.shields.io/badge/branch-ota-orange.svg)](https://github.org/xoseperez/espurna/tree/ota/)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=ota)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/ota.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
@@ -14,6 +14,10 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
+
+## Notice
+
+> Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
 ## Features
 
@@ -44,7 +48,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Change LED notification mode
     * Remote reset the board
     * Fully configurable in webUI (broker, user, password, QoS, keep alive time, retain flag, client ID)
-* **Scheduler** to automatically turn on, off or toggle any relay at a given time and day
+* **Scheduler** to automatically turn on, off or toggle any relay at a given time and day, also change light intensity for dimmers
 * **Alexa** integration using the [FauxmoESP Library](https://bitbucket.org/xoseperez/fauxmoesp)
 * [**Google Assistant**](http://tinkerman.cat/using-google-assistant-control-your-esp8266-devices/) integration using IFTTT and Webhooks (Google Home, Allo)
 * [**Domoticz**](https://domoticz.com/) integration via MQTT
@@ -59,21 +63,26 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)
     * Support for [https://github.com/Portisch/RF-Bridge-EFM8BB1](https://github.com/Portisch/RF-Bridge-EFM8BB1) custom firmware
+    * Support for [direct control of the encoder/decoder bypassing the EFM8BB1](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack)
 * Support for [different **sensors**](Sensors)
     * Environment
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
         * **SI7021** temperature and humidity sensor
         * **SHT3X** temperature and humidity sensor over I2C (Wemos shield)
+        * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
-        * **PMSX003** dust sensor
+        * **SenseAir S8** CO2 sensor
+        * **PMSX003/PMS5003T/ST** dust sensors
         * **BH1750** luminosity sensor
+        * **GUVAS12SD** UV sensor
     * Power monitoring
         * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
         * Non-invasive **current sensor** using **internal ADC** or **ADC121** or **ADS1115**
         * **ECH1560** power monitor chip
         * **V9261F** power monitor chip
+        * **PZEM0004T**  power monitor board
     * Raw analog and digital sensors
     * Simple pulse counter
     * Support for different units (Fahrenheit or Celsius, Watts or Kilowatts, Joules or kWh)
@@ -117,7 +126,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Shows debug info and allows to run terminal commands
 * **NTP** for time synchronization
     * Supports worldwide time zones
-    * Compatible with DST
+    * Compatible with DST (EU and USA)
 * **Unstable system check**
     * Detects unstable system (crashes on boot continuously) and defaults to a stable system
     * Only WiFi AP, OTA and Telnet available if system is flagged as unstable
@@ -130,6 +139,10 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Specific definitions for touch button devices (ESPurna Switch, Sonoff Touch & T1)
 
 ## Notices
+
+---
+> **2018-04-08**<br />
+> Please use [gitter](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers by me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
 ---
 > **2018-03-09**<br />
@@ -204,8 +217,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**Tonbux PowerStrip02**
-|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)||
-|**Itead Sonoff Touch**|**Itead Sonoff T1**||
+|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK 2-gang switch](images/devices/yjzk-2gang-switch.jpg)|
+|**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 2-gang switch**|
 |![Itead Slampher](images/devices/itead-slampher.jpg)|||
 |**Itead Slampher**|||
 |![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|
@@ -224,11 +237,20 @@ Here is the list of supported hardware. For more information please refer to the
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
-|||
-|**YJZK 2-gang switch**|**STM_RELAY**||
+|![IKE ESPike](images/devices/ike-espike.jpg)||![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
+|**IKE ESPike**|**STM_RELAY**|**Arniex Swifitch**|
+|![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
+|**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
+|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
+|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
+|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|||
+|**Tonbux Mosquito Killer**|||
 
 **Other supported boards:**
-*TODO*
+IteadStudio Sonoff S31, IteadStudio Sonoff POW R2, Zhilde ZLD-EU55-W, Luani HVIO
+
+**Other supported boards (beta):**
+KMC 4 Outlet, Gosund WS1, Smart Dual Plug, MakerFocus Intelligent Module LM33 for Lamps
 
 ## License
 

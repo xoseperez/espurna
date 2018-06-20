@@ -22,6 +22,10 @@ std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
 
+bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "api", 3) == 0);
+}
+
 void _apiWebSocketOnSend(JsonObject& root) {
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
@@ -84,11 +88,11 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         }
 
         // Get response from callback
-        char value[API_BUFFER_SIZE];
+        char value[API_BUFFER_SIZE] = {0};
         (api.getFn)(value, API_BUFFER_SIZE);
 
         // The response will be a 404 NOT FOUND if the resource is not available
-        if (!value) {
+        if (0 == value[0]) {
             DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
             request->send(404);
             return;
@@ -98,7 +102,11 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
         // Format response according to the Accept header
         if (_asJson(request)) {
             char buffer[64];
-            snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+            if (isNumber(value)) {
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+            } else {
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key, value);
+            }
             request->send(200, "application/json", buffer);
         } else {
             request->send(200, "text/plain", value);
@@ -126,6 +134,7 @@ void _onAPIs(AsyncWebServerRequest *request) {
             root[_apis[i].key] = String(buffer);
         }
         root.printTo(output);
+        jsonBuffer.clear();
         request->send(200, "application/json", output);
 
     } else {
@@ -187,6 +196,7 @@ void apiSetup() {
     webServer()->on("/apis", HTTP_GET, _onAPIs);
     webServer()->on("/rpc", HTTP_GET, _onRPC);
     wsOnSendRegister(_apiWebSocketOnSend);
+    wsOnReceiveRegister(_apiWebSocketOnReceive);
 }
 
 #endif // WEB_SUPPORT

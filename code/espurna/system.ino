@@ -6,7 +6,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 
 // -----------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ unsigned short int _load_average = 100;
 bool _systemStable = true;
 
 void systemCheck(bool stable) {
-    unsigned char value = EEPROM.read(EEPROM_CRASH_COUNTER);
+    unsigned char value = EEPROMr.read(EEPROM_CRASH_COUNTER);
     if (stable) {
         value = 0;
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
@@ -41,8 +41,8 @@ void systemCheck(bool stable) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         }
     }
-    EEPROM.write(EEPROM_CRASH_COUNTER, value);
-    EEPROM.commit();
+    EEPROMr.write(EEPROM_CRASH_COUNTER, value);
+    EEPROMr.commit();
 }
 
 bool systemCheck() {
@@ -68,6 +68,11 @@ void systemSendHeartbeat() {
 
 unsigned long systemLoopDelay() {
     return _loop_delay;
+}
+
+
+unsigned long systemLoadAverage() {
+    return _load_average;
 }
 
 void systemLoop() {
@@ -100,11 +105,12 @@ void systemLoop() {
 
     static unsigned long last_loadcheck = 0;
     static unsigned long load_counter_temp = 0;
-    static unsigned long load_counter = 0;
-    static unsigned long load_counter_max = 1;
     load_counter_temp++;
 
     if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
+
+        static unsigned long load_counter = 0;
+        static unsigned long load_counter_max = 1;
 
         load_counter = load_counter_temp;
         load_counter_temp = 0;
@@ -124,18 +130,23 @@ void systemLoop() {
 
 }
 
-void systemSetup() {
+void _systemSetupSpecificHardware() {
 
-    EEPROM.begin(EEPROM_SIZE);
+    //The ESPLive has an ADC MUX which needs to be configured.
+    #if defined(MANCAVEMADE_ESPLIVE)
+        pinMode(16, OUTPUT);
+        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
+    #endif
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.begin(SERIAL_BAUDRATE);
-        #if DEBUG_ESP_WIFI
-            DEBUG_PORT.setDebugOutput(true);
-        #endif
-    #elif defined(SERIAL_BAUDRATE)
+    // These devices use the hardware UART
+    // to communicate to secondary microcontrollers
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(STM_RELAY)
         Serial.begin(SERIAL_BAUDRATE);
     #endif
+
+}
+
+void systemSetup() {
 
     #if SPIFFS_SUPPORT
         SPIFFS.begin();
@@ -146,11 +157,8 @@ void systemSetup() {
         systemCheck(false);
     #endif
 
-    #if defined(ESPLIVE)
-        //The ESPLive has an ADC MUX which needs to be configured.
-        pinMode(16, OUTPUT);
-        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
-    #endif
+    // Init device-specific hardware
+    _systemSetupSpecificHardware();
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
@@ -159,8 +167,4 @@ void systemSetup() {
     // Register Loop
     espurnaRegisterLoop(systemLoop);
 
-}
-
-unsigned long getLoadAverage() {
-    return _load_average;
 }

@@ -23,10 +23,9 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
     unsigned char type = magnitudeType(i);
     config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
-    config["platform"] = "mqtt";
-    config["device_class"] = "sensor";
+    config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = String("\"") + magnitudeUnits(type) + String("\"");
+    config["unit_of_measurement"] = magnitudeUnits(type);
 
 }
 
@@ -45,6 +44,7 @@ void _haSendMagnitudes() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
             config.printTo(output);
+            jsonBuffer.clear();
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -67,8 +67,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
         name += String(" #") + String(i);
     }
 
-    config["name"] = name;
-    config["platform"] = "mqtt";
+    config.set("name", name);
+    config.set("platform", "mqtt");
 
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
@@ -124,6 +124,7 @@ void _haSendSwitches() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendSwitch(i, config);
             config.printTo(output);
+            jsonBuffer.clear();
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -164,6 +165,8 @@ String _haGetConfig() {
         }
         output += "\n";
 
+        jsonBuffer.clear();
+
     }
 
     #if SENSOR_SUPPORT
@@ -186,6 +189,8 @@ String _haGetConfig() {
                 output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
             }
             output += "\n";
+
+            jsonBuffer.clear();
 
         }
 
@@ -224,6 +229,10 @@ void _haConfigure() {
 
 #if WEB_SUPPORT
 
+bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "ha", 2) == 0);
+}
+
 void _haWebSocketOnSend(JsonObject& root) {
     root["haVisible"] = 1;
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
@@ -252,13 +261,17 @@ void _haInitCommands() {
     settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
     settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 }
@@ -275,6 +288,7 @@ void haSetup() {
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnAfterParseRegister(_haConfigure);
         wsOnActionRegister(_haWebSocketOnAction);
+        wsOnReceiveRegister(_haWebSocketOnReceive);
     #endif
 
     // On MQTT connect check if we have something to send

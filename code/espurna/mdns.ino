@@ -28,7 +28,7 @@ void _mdnsFindMQTT() {
 #endif
 
 void _mdnsServerStart() {
-    if (MDNS.begin(WiFi.getMode() == WIFI_AP ? APP_NAME : (char *) WiFi.hostname().c_str())) {
+    if (MDNS.begin((char *) getSetting("hostname").c_str())) {
         DEBUG_MSG_P(PSTR("[MDNS] OK\n"));
     } else {
         DEBUG_MSG_P(PSTR("[MDNS] FAIL\n"));
@@ -67,9 +67,6 @@ void mdnsServerSetup() {
         itoa(ESP.getFreeSketchSpace(), buffer, 10);
         MDNS.addServiceTxt("arduino", "tcp", "free_space", (const char *) buffer);
     }
-    #ifdef APP_BUILD_FLAGS
-        //MDNS.addServiceTxt("arduino", "tcp", "build_flags", APP_BUILD_FLAGS);
-    #endif
 
     wifiRegister([](justwifi_messages_t code, char * parameter) {
 

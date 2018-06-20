@@ -58,11 +58,17 @@ void _ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) 
 }
 
 #if WEB_SUPPORT
+
+bool _ledWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "led", 3) == 0);
+}
+
 void _ledWebSocketOnSend(JsonObject& root) {
     if (_ledCount() == 0) return;
     root["ledVisible"] = 1;
     root["ledMode0"] = _ledMode(0);
 }
+
 #endif
 
 #if MQTT_SUPPORT
@@ -163,6 +169,7 @@ void ledSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_ledWebSocketOnSend);
         wsOnAfterParseRegister(_ledConfigure);
+        wsOnReceiveRegister(_ledWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
@@ -175,16 +182,18 @@ void ledSetup() {
 
 void ledLoop() {
 
+    uint8_t wifi_state = wifiState();
+
     for (unsigned char i=0; i<_leds.size(); i++) {
 
         if (_ledMode(i) == LED_MODE_WIFI) {
 
-            if (wifiConnected()) {
-                if (WiFi.getMode() == WIFI_AP) {
-                    _ledBlink(i, 900, 100);
-                } else {
-                    _ledBlink(i, 4900, 100);
-                }
+            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
+                _ledBlink(i, 100, 100);
+            } else if (wifi_state & WIFI_STATE_STA) {
+                _ledBlink(i, 4900, 100);
+            } else if (wifi_state & WIFI_STATE_AP) {
+                _ledBlink(i, 900, 100);
             } else {
                 _ledBlink(i, 500, 500);
             }
@@ -193,19 +202,19 @@ void ledLoop() {
 
         if (_ledMode(i) == LED_MODE_FINDME_WIFI) {
 
-            if (wifiConnected()) {
+            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
+                _ledBlink(i, 100, 100);
+            } else if (wifi_state & WIFI_STATE_STA) {
                 if (relayStatus(_leds[i].relay-1)) {
-                    if (WiFi.getMode() == WIFI_AP) {
-                        _ledBlink(i, 900, 100);
-                    } else {
-                        _ledBlink(i, 4900, 100);
-                    }
+                    _ledBlink(i, 4900, 100);
                 } else {
-                    if (WiFi.getMode() == WIFI_AP) {
-                        _ledBlink(i, 100, 900);
-                    } else {
-                        _ledBlink(i, 100, 4900);
-                    }
+                    _ledBlink(i, 100, 4900);
+                }
+            } else if (wifi_state & WIFI_STATE_AP) {
+                if (relayStatus(_leds[i].relay-1)) {
+                    _ledBlink(i, 900, 100);
+                } else {
+                    _ledBlink(i, 100, 900);
                 }
             } else {
                 _ledBlink(i, 500, 500);
@@ -215,19 +224,19 @@ void ledLoop() {
 
         if (_ledMode(i) == LED_MODE_RELAY_WIFI) {
 
-            if (wifiConnected()) {
+            if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
+                _ledBlink(i, 100, 100);
+            } else if (wifi_state & WIFI_STATE_STA) {
                 if (relayStatus(_leds[i].relay-1)) {
-                    if (WiFi.getMode() == WIFI_AP) {
-                        _ledBlink(i, 100, 900);
-                    } else {
-                        _ledBlink(i, 100, 4900);
-                    }
+                    _ledBlink(i, 100, 4900);
                 } else {
-                    if (WiFi.getMode() == WIFI_AP) {
-                        _ledBlink(i, 900, 100);
-                    } else {
-                        _ledBlink(i, 4900, 100);
-                    }
+                    _ledBlink(i, 4900, 100);
+                }
+            } else if (wifi_state & WIFI_STATE_AP) {
+                if (relayStatus(_leds[i].relay-1)) {
+                    _ledBlink(i, 100, 900);
+                } else {
+                    _ledBlink(i, 900, 100);
                 }
             } else {
                 _ledBlink(i, 500, 500);

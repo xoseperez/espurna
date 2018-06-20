@@ -16,6 +16,10 @@ SyncClient _idb_client;
 
 // -----------------------------------------------------------------------------
 
+bool _idbWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "idb", 3) == 0);
+}
+
 void _idbWebSocketOnSend(JsonObject& root) {
     root["idbVisible"] = 1;
     root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
@@ -88,7 +92,7 @@ bool idbSend(const char * topic, const char * payload) {
 bool idbSend(const char * topic, unsigned char id, const char * payload) {
     char measurement[64];
     snprintf(measurement, sizeof(measurement), "%s,id=%d", topic, id);
-    return idbSend(topic, payload);
+    return idbSend(measurement, payload);
 }
 
 bool idbEnabled() {
@@ -100,6 +104,7 @@ void idbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
         wsOnAfterParseRegister(_idbConfigure);
+        wsOnReceiveRegister(_idbWebSocketOnReceive);
     #endif
 }
 

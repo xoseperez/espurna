@@ -4,7 +4,8 @@ var maxNetworks;
 var maxSchedules;
 var messages = [];
 var free_size = 0;
-var webhost;
+
+var urls = {};
 
 var numChanged = 0;
 var numReboot = 0;
@@ -12,6 +13,7 @@ var numReconnect = 0;
 var numReload = 0;
 
 var useWhite = false;
+var useCCT = false;
 
 var now = 0;
 var ago = 0;
@@ -37,7 +39,8 @@ function sensorName(id) {
         "DHT", "Dallas", "Emon Analog", "Emon ADC121", "Emon ADS1X15",
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
-        "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD"
+        "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
+        "TMP3X", "HC-SR04", "SenseAir", "GeigerTicks", "GeigerCPM"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -51,7 +54,8 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Events",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV"
+        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
+        "Local Dose Rate", "Local Dose Rate"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -62,7 +66,7 @@ function magnitudeType(type) {
 function magnitudeError(error) {
     var errors = [
         "OK", "Out of Range", "Warming Up", "Timeout", "Wrong ID",
-        "Data Error", "I2C Error", "GPIO Error"
+        "Data Error", "I2C Error", "GPIO Error", "Calibration error"
     ];
     if (0 <= error && error < errors.length) {
         return errors[error];
@@ -86,22 +90,17 @@ $.fn.enterKey = function (fnc) {
 };
 
 function keepTime() {
+
+    $("span[name='ago']").html(ago);
+    ago++;
+
     if (0 === now) { return; }
     var date = new Date(now * 1000);
     var text = date.toISOString().substring(0, 19).replace("T", " ");
     $("input[name='now']").val(text);
     $("span[name='now']").html(text);
-    $("span[name='ago']").html(ago);
     now++;
-    ago++;
-}
 
-// http://www.the-art-of-web.com/javascript/validate-password/
-function checkPassword(str) {
-    // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
-    return re.test(str);
 }
 
 function zeroPad(number, positions) {
@@ -141,9 +140,14 @@ function loadTimeZones() {
 
 function validateForm(form) {
 
+    // http://www.the-art-of-web.com/javascript/validate-password/
+    // at least one lowercase and one uppercase letter or number
+    // at least five characters (letters, numbers or special characters)
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !checkPassword(adminPass1)) {
+    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
         alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
         return false;
     }
@@ -151,6 +155,23 @@ function validateForm(form) {
     var adminPass2 = $("input[name='adminPass']", form).last().val();
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
+        return false;
+    }
+
+    // RFCs mandate that a hostname's labels may contain only
+    // the ASCII letters 'a' through 'z' (case-insensitive),
+    // the digits '0' through '9', and the hyphen.
+    // Hostname labels cannot begin or end with a hyphen.
+    // No other symbols, punctuation characters, or blank spaces are permitted.
+
+    // Negative lookbehind does not work in Javascript
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+
+    var hostname = $("input[name='hostname']", form).val();
+    if (!re_hostname.test(hostname)) {
+        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
         return false;
     }
 
@@ -177,7 +198,7 @@ function addValue(data, name, value) {
     // These fields will always be a list of values
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs",
+        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
@@ -322,7 +343,7 @@ function doUpgrade() {
         $.ajax({
 
             // Your server script to process the upload
-            url: webhost + "upgrade",
+            url: urls.upgrade.href,
             type: "POST",
 
             // Form data
@@ -466,7 +487,7 @@ function doUpdate() {
 }
 
 function doBackup() {
-    document.getElementById("downloader").src = webhost + "config";
+    document.getElementById("downloader").src = urls.config.href;
     return false;
 }
 
@@ -490,7 +511,7 @@ function onFileUpload(event) {
         if (data) {
             sendAction("restore", data);
         } else {
-            alert(messages[4]);
+            window.alert(messages[4]);
         }
     };
     reader.readAsText(inputFile);
@@ -799,6 +820,22 @@ function initColorRGB() {
 
 }
 
+function initCCT() {
+
+  // check if already initialized
+  var done = $("#cct > div").length;
+  if (done > 0) { return; }
+
+  $("#miredsTemplate").children().clone().appendTo("#cct");
+
+  $("#mireds").on("change", function() {
+    var value = $(this).val();
+    var parent = $(this).parents(".pure-g");
+    $("span", parent).html(value);
+    sendAction("mireds", {mireds: value});
+  });
+}
+
 function initColorHSV() {
 
     // check if already initialized
@@ -836,6 +873,9 @@ function initChannels(num) {
         max = num % 3;
         if ((max > 0) & useWhite) {
             max--;
+            if (useCCT) {
+              max--;
+            }
         }
     }
     var start = num - max;
@@ -849,20 +889,23 @@ function initChannels(num) {
     };
 
     // add templates
+    var i = 0;
     var template = $("#channelTemplate").children();
-    for (var i=0; i<max; i++) {
+    for (i=0; i<max; i++) {
 
         var channel_id = start + i;
         var line = $(template).clone();
         $("span.slider", line).attr("data", channel_id);
         $("input.slider", line).attr("data", channel_id).on("change", onChannelSliderChange);
-        $("label", line).html("Channel " + (channel_id + 1));
+        $("label", line).html("Channel #" + channel_id);
 
         line.appendTo("#channels");
 
+    }
+
+    for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
-
     }
 
 }
@@ -1014,8 +1057,19 @@ function processData(data) {
             return;
         }
 
+        if ("mireds" === key) {
+            $("#mireds").val(value);
+            $("span.mireds").html(value);
+            return;
+        }
+
         if ("useWhite" === key) {
             useWhite = value;
+        }
+
+        if ("useCCT" === key) {
+            initCCT();
+            useCCT = value;
         }
 
         // ---------------------------------------------------------------------
@@ -1030,7 +1084,9 @@ function processData(data) {
                 var text = (0 === error) ?
                     magnitude.value + magnitude.units :
                     magnitudeError(error);
-                $("input[name='magnitude'][data='" + i + "']").val(text);
+                var element = $("input[name='magnitude'][data='" + i + "']");
+                element.val(text);
+                $("div.hint", element.parent().parent()).html(magnitude.description);
             }
             return;
         }
@@ -1161,7 +1217,7 @@ function processData(data) {
 
         // Web log
         if ("weblog" === key) {
-            $("#weblog").append(value);
+            $("#weblog").append(new Text(value));
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
         }
@@ -1170,13 +1226,18 @@ function processData(data) {
         var position = key.indexOf("Visible");
         if (position > 0 && position === key.length - 7) {
             var module = key.slice(0,-7);
-            $(".module-" + module).show();
+            $(".module-" + module).css("display", "inherit");
             return;
+        }
+
+        if ("deviceip" === key) {
+            var a_href = $("span[name='" + key + "']").parent();
+            a_href.attr("href", "http://" + value);
+            a_href.next().attr("href", "telnet://" + value);
         }
 
         if ("now" === key) {
             now = value;
-            ago = 0;
             return;
         }
 
@@ -1185,9 +1246,6 @@ function processData(data) {
         }
 
         // Pre-process
-        if ("network" === key) {
-            value = value.toUpperCase();
-        }
         if ("mqttStatus" === key) {
             value = value ? "CONNECTED" : "NOT CONNECTED";
         }
@@ -1195,6 +1253,7 @@ function processData(data) {
             value = value ? "SYNC'D" : "NOT SYNC'D";
         }
         if ("uptime" === key) {
+            ago = 0;
             var uptime  = parseInt(value, 10);
             var seconds = uptime % 60; uptime = parseInt(uptime / 60, 10);
             var minutes = uptime % 60; uptime = parseInt(uptime / 60, 10);
@@ -1291,28 +1350,56 @@ function hasChanged() {
 // Init & connect
 // -----------------------------------------------------------------------------
 
-function connect(host) {
+function initUrls(root) {
 
-    if (typeof host === "undefined") {
-        host = window.location.href.replace("#", "");
+    var paths = ["ws", "upgrade", "config", "auth"];
+
+    urls["root"] = root;
+    paths.forEach(function(path) {
+        urls[path] = new URL(path, root);
+        urls[path].protocol = root.protocol;
+    });
+
+    if (root.protocol == "https:") {
+        urls.ws.protocol = "wss:";
     } else {
-        if (host.indexOf("http") !== 0) {
-            host = "http://" + host + "/";
-        }
+        urls.ws.protocol = "ws:";
     }
-    if (host.indexOf("http") !== 0) { return; }
 
-    webhost = host;
-    var wshost = host.replace("http", "ws") + "ws";
+}
 
-    if (websock) { websock.close(); }
-    websock = new WebSocket(wshost);
-    websock.onmessage = function(evt) {
-        var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-        if (data) {
-            processData(data);
-        }
-    };
+function connectToURL(url) {
+
+    initUrls(url);
+
+    $.ajax({
+        'method': 'GET',
+        'url': urls.auth.href,
+        'xhrFields': { 'withCredentials': true }
+    }).done(function(data) {
+        if (websock) { websock.close(); }
+        websock = new WebSocket(urls.ws.href);
+        websock.onmessage = function(evt) {
+            var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+            if (data) {
+                processData(data);
+            }
+        };
+    }).fail(function() {
+        // Nothing to do, reload page and retry
+    });
+
+}
+
+function connect(host) {
+    if (!host.startsWith("http:") && !host.startsWith("https:")) {
+        host = "http://" + host;
+    }
+    connectToURL(new URL(host));
+}
+
+function connectToCurrentURL() {
+    connectToURL(new URL(window.location));
 }
 
 $(function() {
@@ -1358,6 +1445,8 @@ $(function() {
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);
 
-    connect();
+    // don't autoconnect when opening from filesystem
+    if (window.location.protocol === "file:") { return; }
+    connectToCurrentURL();
 
 });

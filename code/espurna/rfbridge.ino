@@ -11,6 +11,10 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <queue>
 #include <Ticker.h>
 
+#if RFB_DIRECT
+#include <RCSwitch.h>
+#endif
+
 // -----------------------------------------------------------------------------
 // DEFINITIONS
 // -----------------------------------------------------------------------------
@@ -50,6 +54,11 @@ typedef struct {
 static std::queue<rfb_message_t> _rfb_message_queue;
 Ticker _rfb_ticker;
 bool _rfb_ticker_active = false;
+
+#if RFB_DIRECT
+    RCSwitch * _rfModem;
+    bool _learning = false;
+#endif
 
 // -----------------------------------------------------------------------------
 // PRIVATES
@@ -105,24 +114,30 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& 
 }
 
 void _rfbAck() {
-    DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending ACK\n"));
-    Serial.println();
-    Serial.write(RF_CODE_START);
-    Serial.write(RF_CODE_ACK);
-    Serial.write(RF_CODE_STOP);
-    Serial.flush();
-    Serial.println();
+    #if not RFB_DIRECT
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending ACK\n"));
+        Serial.println();
+        Serial.write(RF_CODE_START);
+        Serial.write(RF_CODE_ACK);
+        Serial.write(RF_CODE_STOP);
+        Serial.flush();
+        Serial.println();
+    #endif
 }
 
 void _rfbLearn() {
-
-    DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending LEARN\n"));
-    Serial.println();
-    Serial.write(RF_CODE_START);
-    Serial.write(RF_CODE_LEARN);
-    Serial.write(RF_CODE_STOP);
-    Serial.flush();
-    Serial.println();
+    #if RFB_DIRECT
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Entering LEARN mode\n"));
+        _learning = true;
+    #else
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Sending LEARN\n"));
+        Serial.println();
+        Serial.write(RF_CODE_START);
+        Serial.write(RF_CODE_LEARN);
+        Serial.write(RF_CODE_STOP);
+        Serial.flush();
+        Serial.println();
+    #endif
 
     #if WEB_SUPPORT
         char buffer[100];
@@ -139,13 +154,32 @@ void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
 }
 
 void _rfbSend(byte * message) {
-    Serial.println();
-    Serial.write(RF_CODE_START);
-    Serial.write(RF_CODE_RFOUT);
-    _rfbSendRaw(message);
-    Serial.write(RF_CODE_STOP);
-    Serial.flush();
-    Serial.println();
+    #if RFB_DIRECT
+        unsigned int protocol = message[1];
+        unsigned int timing =
+            (message[2] <<  8) |
+            (message[3] <<  0) ;
+        unsigned int bitlength = message[4];
+        unsigned long rf_code =
+            (message[5] << 24) |
+            (message[6] << 16) |
+            (message[7] <<  8) |
+            (message[8] <<  0) ;
+        _rfModem->setProtocol(protocol);
+        if (timing > 0) {
+            _rfModem->setPulseLength(timing);
+        }
+        _rfModem->send(rf_code, bitlength);
+        _rfModem->resetAvailable();
+    #else
+        Serial.println();
+        Serial.write(RF_CODE_START);
+        Serial.write(RF_CODE_RFOUT);
+        _rfbSendRaw(message);
+        Serial.write(RF_CODE_STOP);
+        Serial.flush();
+        Serial.println();
+    #endif
 }
 
 void _rfbSend() {
@@ -175,6 +209,9 @@ void _rfbSend() {
 }
 
 void _rfbSend(byte * code, unsigned char times) {
+    #if RFB_DIRECT
+        times = 1;
+    #endif
 
     char buffer[RF_MESSAGE_SIZE];
     _rfbToChar(code, buffer);
@@ -204,7 +241,7 @@ void _rfbSendRawOnce(byte *code, unsigned char length) {
 
 #endif // RF_RAW_SUPPORT
 
-bool _rfbMatch(char * code, unsigned char& relayID, unsigned char& value) {
+bool _rfbMatch(char* code, unsigned char& relayID, unsigned char& value, char* buffer = NULL) {
 
     if (strlen(code) != 18) return false;
 
@@ -220,6 +257,7 @@ bool _rfbMatch(char * code, unsigned char& relayID, unsigned char& value) {
             DEBUG_MSG_P(PSTR("[RFBRIDGE] Match ON code for relay %d\n"), i);
             value = 1;
             found = true;
+            if (buffer) strcpy(buffer, code_on.c_str());
         }
 
         String code_off = rfbRetrieve(i, false);
@@ -227,6 +265,7 @@ bool _rfbMatch(char * code, unsigned char& relayID, unsigned char& value) {
             DEBUG_MSG_P(PSTR("[RFBRIDGE] Match OFF code for relay %d\n"), i);
             if (found) value = 2;
             found = true;
+            if (buffer) strcpy(buffer, code_off.c_str());
         }
 
         if (found) {
@@ -258,12 +297,25 @@ void _rfbDecode() {
         #endif
     }
 
+    unsigned char id;
+    unsigned char status;
+    bool matched = false;
+
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
+        _rfbAck();
+        _rfbToChar(&_uartbuf[1], buffer);
+
+        /* Look for the code, possibly replacing the code with the exact learned one on match
+         * we want to do this on learn too to be sure that the learned code is the same if it 
+         * is equivalent
+         */
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Received message '%s'\n"), buffer);
+        matched = _rfbMatch(buffer, id, status, buffer);
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] Matched  message '%s'\n"), buffer);
+
         #if MQTT_SUPPORT
-            _rfbToChar(&_uartbuf[1], buffer);
             mqttSend(MQTT_TOPIC_RFIN, buffer);
         #endif
-        _rfbAck();
     }
 
     if (action == RF_CODE_LEARN_OK) {
@@ -281,13 +333,8 @@ void _rfbDecode() {
     }
 
     if (action == RF_CODE_RFIN) {
-
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Forward message '%s'\n"), buffer);
-
-        // Look for the code
-        unsigned char id;
-        unsigned char status = 0;
-        if (_rfbMatch(buffer, id, status)) {
+        if (matched) {
             _rfbin = true;
             if (status == 2) {
                 relayToggle(id);
@@ -301,33 +348,77 @@ void _rfbDecode() {
 }
 
 void _rfbReceive() {
-
-    static bool receiving = false;
-
-    while (Serial.available()) {
-
-        yield();
-        byte c = Serial.read();
-        //DEBUG_MSG_P(PSTR("[RFBRIDGE] Received 0x%02X\n"), c);
-
-        if (receiving) {
-            if (c == RF_CODE_STOP && (_uartpos == 1 || _uartpos == RF_MESSAGE_SIZE + 1)) {
-                _rfbDecode();
-                receiving = false;
-            } else if (_uartpos <= RF_MESSAGE_SIZE) {
-                _uartbuf[_uartpos++] = c;
-            } else {
-                // wrong message, should have received a RF_CODE_STOP
-                receiving = false;
+    #if RFB_DIRECT
+        static long learn_start = 0;
+        if (!_learning && learn_start) {
+            learn_start = 0;
+        }
+        if (_learning) {
+            if (!learn_start) {
+                DEBUG_MSG_P(PSTR("[RFBRIDGE] arming learn timeout\n"));
+                learn_start = millis();
             }
-        } else if (c == RF_CODE_START) {
-            _uartpos = 0;
-            receiving = true;
+            if (learn_start > 0 && millis() - learn_start > RF_LEARN_TIMEOUT) {
+                DEBUG_MSG_P(PSTR("[RFBRIDGE] learn timeout triggered\n"));
+                memset(_uartbuf, 0, sizeof(_uartbuf));
+                _uartbuf[0] = RF_CODE_LEARN_KO;
+                _rfbDecode();
+                _learning = false;
+            }
         }
 
-    }
+        if (_rfModem->available()) {
+            static unsigned long last = 0;
+            if (millis() - last > RF_DEBOUNCE) {
+                last = millis();
+                unsigned long rf_code = _rfModem->getReceivedValue();
+                if ( rf_code > 0) {
+                    DEBUG_MSG_P(PSTR("[RFBRIDGE] Received code: %08X\n"), rf_code);
+                    unsigned int timing = _rfModem->getReceivedDelay();
+                    memset(_uartbuf, 0, sizeof(_uartbuf));
+                    unsigned char *msgbuf = _uartbuf + 1;
+                    _uartbuf[0] = _learning ? RF_CODE_LEARN_OK: RF_CODE_RFIN;
+                    msgbuf[0] = 0xC0;
+                    msgbuf[1] = _rfModem->getReceivedProtocol();
+                    msgbuf[2] = timing  >>  8;
+                    msgbuf[3] = timing  >>  0;
+                    msgbuf[4] = _rfModem->getReceivedBitlength();
+                    msgbuf[5] = rf_code >> 24;
+                    msgbuf[6] = rf_code >> 16;
+                    msgbuf[7] = rf_code >>  8;
+                    msgbuf[8] = rf_code >>  0;
+                    _rfbDecode();
+                    _learning = false;
+                }
+            }
+            _rfModem->resetAvailable();
+        }
+    #else
+        static bool receiving = false;
 
+        while (Serial.available()) {
 
+            yield();
+            byte c = Serial.read();
+            //DEBUG_MSG_P(PSTR("[RFBRIDGE] Received 0x%02X\n"), c);
+
+            if (receiving) {
+                if (c == RF_CODE_STOP && (_uartpos == 1 || _uartpos == RF_MESSAGE_SIZE + 1)) {
+                    _rfbDecode();
+                    receiving = false;
+                } else if (_uartpos <= RF_MESSAGE_SIZE) {
+                    _uartbuf[_uartpos++] = c;
+                } else {
+                    // wrong message, should have received a RF_CODE_STOP
+                    receiving = false;
+                }
+            } else if (c == RF_CODE_START) {
+                _uartpos = 0;
+                receiving = true;
+            }
+
+        }
+    #endif
 }
 
 bool _rfbCompare(const char * code1, const char * code2) {
@@ -346,9 +437,9 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         snprintf_P(buffer, sizeof(buffer), PSTR("%s/+"), MQTT_TOPIC_RFLEARN);
         mqttSubscribe(buffer);
         mqttSubscribe(MQTT_TOPIC_RFOUT);
-		#if RF_RAW_SUPPORT
-	        mqttSubscribe(MQTT_TOPIC_RFRAW);
-		#endif
+        #if RF_RAW_SUPPORT
+            mqttSubscribe(MQTT_TOPIC_RFRAW);
+        #endif
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -522,7 +613,16 @@ void rfbSetup() {
         wsOnActionRegister(_rfbWebSocketOnAction);
     #endif
 
-    // Register oop
+    #if RFB_DIRECT
+        _rfModem = new RCSwitch();
+        _rfModem->enableReceive(RFB_RX_PIN);
+        _rfModem->enableTransmit(RFB_TX_PIN);
+        _rfModem->setRepeatTransmit(6);
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] RF receiver on GPIO %u\n"), RFB_RX_PIN);
+        DEBUG_MSG_P(PSTR("[RFBRIDGE] RF transmitter on GPIO %u\n"), RFB_TX_PIN);
+    #endif
+
+    // Register loop
     espurnaRegisterLoop(rfbLoop);
 
 }

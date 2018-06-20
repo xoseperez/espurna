@@ -6,25 +6,14 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 #include <vector>
 #include "libs/EmbedisWrap.h"
 #include <Stream.h>
+#include "libs/StreamInjector.h"
 
-#ifdef DEBUG_PORT
-    #define EMBEDIS_PORT    DEBUG_PORT
-#else
-    #define EMBEDIS_PORT    Serial
-#endif
-
-#if TELNET_SUPPORT
-    #include "libs/StreamInjector.h"
-    StreamInjector _serial = StreamInjector(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
-    #undef EMBEDIS_PORT
-    #define EMBEDIS_PORT    _serial
-#endif
-
-EmbedisWrap embedis(EMBEDIS_PORT, TERMINAL_BUFFER_SIZE);
+StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
+EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 
 #if TERMINAL_SUPPORT
 #if SERIAL_RX_ENABLED
@@ -41,7 +30,7 @@ bool _settings_save = false;
 
 unsigned long settingsSize() {
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
-    while (size_t len = EEPROM.read(pos)) {
+    while (size_t len = EEPROMr.read(pos)) {
         pos = pos - len - 2;
     }
     return SPI_FLASH_SEC_SIZE - pos;
@@ -52,9 +41,9 @@ unsigned long settingsSize() {
 unsigned int _settingsKeyCount() {
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
-    while (size_t len = EEPROM.read(pos)) {
+    while (size_t len = EEPROMr.read(pos)) {
         pos = pos - len - 2;
-        len = EEPROM.read(pos);
+        len = EEPROMr.read(pos);
         pos = pos - len - 2;
         count ++;
     }
@@ -67,17 +56,17 @@ String _settingsKeyName(unsigned int index) {
 
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
-    while (size_t len = EEPROM.read(pos)) {
+    while (size_t len = EEPROMr.read(pos)) {
         pos = pos - len - 2;
         if (count == index) {
             s.reserve(len);
             for (unsigned char i = 0 ; i < len; i++) {
-                s += (char) EEPROM.read(pos + i + 1);
+                s += (char) EEPROMr.read(pos + i + 1);
             }
             break;
         }
         count++;
-        len = EEPROM.read(pos);
+        len = EEPROMr.read(pos);
         pos = pos - len - 2;
     }
 
@@ -162,32 +151,21 @@ void _settingsKeysCommand() {
     DEBUG_MSG_P(PSTR("Current settings:\n"));
     for (unsigned int i=0; i<keys.size(); i++) {
         String value = getSetting(keys[i]);
-        DEBUG_MSG_P(PSTR("> %s => %s\n"), (keys[i]).c_str(), value.c_str());
+        DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), (keys[i]).c_str(), value.c_str());
     }
 
     unsigned long freeEEPROM = SPI_FLASH_SEC_SIZE - settingsSize();
     DEBUG_MSG_P(PSTR("Number of keys: %d\n"), keys.size());
+    DEBUG_MSG_P(PSTR("Current EEPROM sector: %u\n"), EEPROMr.current());
     DEBUG_MSG_P(PSTR("Free EEPROM: %d bytes (%d%%)\n"), freeEEPROM, 100 * freeEEPROM / SPI_FLASH_SEC_SIZE);
 
 }
 
 void _settingsFactoryResetCommand() {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-        EEPROM.write(i, 0xFF);
+        EEPROMr.write(i, 0xFF);
     }
-    EEPROM.commit();
-}
-
-void _settingsDumpCommand(bool ascii) {
-    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
-        if (i % 16 == 0) DEBUG_MSG_P(PSTR("\n[%04X] "), i);
-        byte c = EEPROM.read(i);
-        if (ascii && 32 <= c && c <= 126) {
-            DEBUG_MSG_P(PSTR(" %c "), c);
-        } else {
-            DEBUG_MSG_P(PSTR("%02X "), c);
-        }
-    }
+    EEPROMr.commit();
 }
 
 void _settingsInitCommands() {
@@ -203,13 +181,6 @@ void _settingsInitCommands() {
     settingsRegisterCommand(F("COMMANDS"), [](Embedis* e) {
         _settingsHelpCommand();
         DEBUG_MSG_P(PSTR("+OK\n"));
-    });
-
-    settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
-        bool ascii = false;
-        if (e->argc == 2) ascii = String(e->argv[1]).toInt() == 1;
-        _settingsDumpCommand(ascii);
-        DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
     settingsRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
@@ -268,7 +239,7 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("INFO"), [](Embedis* e) {
         info();
-        wifiStatus();
+        wifiDebug();
         //StreamString s;
         //WiFi.printDiag(s);
         //DEBUG_MSG(s.c_str());
@@ -280,7 +251,40 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    settingsRegisterCommand(F("GET"), [](Embedis* e) {
+        if (e->argc < 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+
+        for (unsigned char i = 1; i < e->argc; i++) {
+            String key = String(e->argv[i]);
+            String value;
+            if (!Embedis::get(key, value)) {
+                DEBUG_MSG_P(PSTR("> %s =>\n"), key.c_str());
+                continue;
+            }
+
+            DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
+        }
+
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    #if WEB_SUPPORT
+        settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
+            wsReload();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif
+    
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("+OK\n"));
+        deferredReset(100, CUSTOM_RESET_TERMINAL);
+    });
+
+    settingsRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
+        EEPROMr.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
         DEBUG_MSG_P(PSTR("+OK\n"));
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
@@ -354,11 +358,13 @@ void resetSettings() {
 // Settings
 // -----------------------------------------------------------------------------
 
-#if TELNET_SUPPORT
-    void settingsInject(void *data, size_t len) {
-        _serial.inject((char *) data, len);
-    }
-#endif
+void settingsInject(void *data, size_t len) {
+    _serial.inject((char *) data, len);
+}
+
+Stream & settingsSerial() {
+    return (Stream &) _serial;
+}
 
 size_t settingsMaxSize() {
     size_t size = EEPROM_SIZE;
@@ -373,7 +379,7 @@ bool settingsRestoreJson(JsonObject& data) {
     if (strcmp(app, APP_NAME) != 0) return false;
 
     for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
-        EEPROM.write(i, 0xFF);
+        EEPROMr.write(i, 0xFF);
     }
 
     for (auto element : data) {
@@ -389,7 +395,7 @@ bool settingsRestoreJson(JsonObject& data) {
 
 }
 
-bool settingsGetJson(JsonObject& root) {
+void settingsGetJson(JsonObject& root) {
 
     // Get sorted list of keys
     std::vector<String> keys = _settingsKeys();
@@ -412,18 +418,21 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*)) {
 
 void settingsSetup() {
 
-    EEPROM.begin(SPI_FLASH_SEC_SIZE);
+    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
 
-    #if TELNET_SUPPORT
-        _serial.callback([](uint8_t ch) {
+    _serial.callback([](uint8_t ch) {
+        #if TELNET_SUPPORT
             telnetWrite(ch);
-        });
-    #endif
+        #endif
+        #if DEBUG_SERIAL_SUPPORT
+            DEBUG_PORT.write(ch);
+        #endif
+    });
 
     Embedis::dictionary( F("EEPROM"),
         SPI_FLASH_SEC_SIZE,
-        [](size_t pos) -> char { return EEPROM.read(pos); },
-        [](size_t pos, char value) { EEPROM.write(pos, value); },
+        [](size_t pos) -> char { return EEPROMr.read(pos); },
+        [](size_t pos, char value) { EEPROMr.write(pos, value); },
         #if SETTINGS_AUTOSAVE
             []() { _settings_save = true; }
         #else
@@ -447,11 +456,18 @@ void settingsSetup() {
 void settingsLoop() {
 
     if (_settings_save) {
-        EEPROM.commit();
+        EEPROMr.commit();
         _settings_save = false;
     }
 
+
     #if TERMINAL_SUPPORT
+
+        #if DEBUG_SERIAL_SUPPORT
+            while (DEBUG_PORT.available()) {
+                _serial.inject(DEBUG_PORT.read());
+            }
+        #endif
 
         embedis.process();
 

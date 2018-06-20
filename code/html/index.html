@@ -66,7 +66,7 @@
 
         <div id="layout" class="webmode">
 
-            <a href="#menu" id="menuLink" class="menu-link">
+            <a id="menuLink" class="menu-link">
                 <span></span>
             </a>
 
@@ -179,6 +179,8 @@
 
                                 <div id="colors"></div>
 
+                                <div id="cct"></div>
+
                                 <div id="channels"></div>
 
                                 <div id="magnitudes"></div>
@@ -194,36 +196,38 @@
                                     <div class="pure-u-1-2">Chip ID</div>
                                     <div class="pure-u-11-24"><span class="right" name="chipid"></span></div>
 
+                                    <div class="pure-u-1-2">Wifi MAC</div>
+                                    <div class="pure-u-11-24"><span class="right" name="mac"></span></div>
+
+                                    <div class="pure-u-1-2">SDK version</div>
+                                    <div class="pure-u-11-24"><span class="right" name="sdk"></span></div>
+
+                                    <div class="pure-u-1-2">Core version</div>
+                                    <div class="pure-u-11-24"><span class="right" name="core"></span></div>
+
                                     <div class="pure-u-1-2">Firmware name</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_name"></span></div>
 
                                     <div class="pure-u-1-2">Firmware version</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_version"></span></div>
 
-                                    <div class="pure-u-1-2">Firmware build</div>
+                                    <!--
+                                    <div class="pure-u-1-2">Firmware revision</div>
+                                    <div class="pure-u-11-24"><span class="right" name="app_revision"></span></div>
+                                    -->
+
+                                    <div class="pure-u-1-2">Firmware build date</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_build"></span></div>
 
-                                    <div class="pure-u-1-2">Current time</div>
-                                    <div class="pure-u-11-24"><span class="right" name="now"></span></div>
+                                    <div class="pure-u-1-2">Firmware size</div>
+                                    <div class="pure-u-11-24"><span class="right" name="sketch_size" post=" bytes"></span></div>
 
-                                    <div class="pure-u-1-2">Uptime</div>
-                                    <div class="pure-u-11-24"><span class="right" name="uptime"></span></div>
-
-                                    <div class="pure-u-1-2">Load average</div>
-                                    <div class="pure-u-11-24"><span class="right" name="loadaverage"></span><span>%</span></div>
-
-                                    <div class="pure-u-1-2">VCC</div>
-                                    <div class="pure-u-11-24"><span class="right" name="vcc"></span><span>mV</span></div>
-
-                                    <div class="pure-u-1-2">MQTT Status</div>
-                                    <div class="pure-u-11-24"><span class="right" name="mqttStatus">NOT AVAILABLE</span></div>
+                                    <div class="pure-u-1-2">Free space</div>
+                                    <div class="pure-u-11-24"><span class="right" name="free_size" post=" bytes"></span></div>
 
                                 </div>
 
                                 <div class="pure-u-1 pure-u-lg-11-24 state">
-
-                                    <div class="pure-u-1-2">Wifi MAC</div>
-                                    <div class="pure-u-11-24"><span class="right" name="mac"></span></div>
 
                                     <div class="pure-u-1-2">Network</div>
                                     <div class="pure-u-11-24"><span class="right" name="network"></span></div>
@@ -238,22 +242,32 @@
                                     <div class="pure-u-11-24"><span class="right" name="rssi"></span></div>
 
                                     <div class="pure-u-1-2">IP</div>
-                                    <div class="pure-u-11-24"><span class="right" name="deviceip"></span></div>
+                                    <div class="pure-u-11-24"><a href=""><span class="right" name="deviceip"></span></a> (<a href=""><span class="right">telnet</span></a>)</div>
 
                                     <div class="pure-u-1-2">Free heap</div>
                                     <div class="pure-u-11-24"><span class="right" name="heap" post=" bytes"></span></div>
 
-                                    <div class="pure-u-1-2">Firmware size</div>
-                                    <div class="pure-u-11-24"><span class="right" name="sketch_size" post=" bytes"></span></div>
+                                    <div class="pure-u-1-2">Load average</div>
+                                    <div class="pure-u-11-24"><span class="right" name="loadaverage"></span><span>%</span></div>
 
-                                    <div class="pure-u-1-2">Free space</div>
-                                    <div class="pure-u-11-24"><span class="right" name="free_size" post=" bytes"></span></div>
+                                    <div class="pure-u-1-2">VCC</div>
+                                    <div class="pure-u-11-24"><span class="right" name="vcc">? </span><span>mV</span></div>
 
-                                    <div class="pure-u-1-2">NTP Status</div>
-                                    <div class="pure-u-11-24"><span class="right" name="ntpStatus">NOT AVAILABLE</span></div>
+                                    <div class="pure-u-1-2 module module-mqtt">MQTT Status</div>
+                                    <div class="pure-u-11-24 module module-mqtt"><span class="right" name="mqttStatus"></span></div>
+
+                                    <div class="pure-u-1-2 module module-ntp">NTP Status</div>
+                                    <div class="pure-u-11-24 module module-ntp"><span class="right" name="ntpStatus"></span></div>
+
+                                    <div class="pure-u-1-2 module module-ntp">Current time</div>
+                                    <div class="pure-u-11-24 module module-ntp"><span class="right" name="now"></span></div>
+
+                                    <div class="pure-u-1-2">Uptime</div>
+                                    <div class="pure-u-11-24"><span class="right" name="uptime"></span></div>
 
                                     <div class="pure-u-1-2">Last update</div>
                                     <div class="pure-u-11-24"><span class="right" name="ago">?</span><span> seconds ago</span></div>
+
                                 </div>
 
                             </fieldset>
@@ -277,11 +291,13 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
+                                        This name will identify this device in your network (http://&lt;hostname&gt;.local).<br />
+                                        Hostname may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-'). They can neither start or end with an hyphen.<br />
+                                        For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
                                     </div>
                                 </div>
 
@@ -398,12 +414,20 @@
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Reload the page to update the web interface.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as (cold) white light calculated out of the RGB values.<br />Will only work if the device has at least 4 dimmable channels.<br />Enabling this will render useless the "Channel 4" slider in the status page.<br />Reload the page to update the web interface.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use white color temperature</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCCT" action="reload" tabindex="10" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use fifth dimmable channel as warm white light and the forth dimmable channel as cold white.<br />Will only work if the device has at least 5 dimmable channels and "white channel" above is also ON.<br />Enabling this will render useless the "Channel 5" slider in the status page.<br />Reload the page to update the web interface.</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use gamma correction</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useGamma" tabindex="10" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useGamma" tabindex="11" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
@@ -411,7 +435,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use CSS style</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="11" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="12" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"</div>
@@ -419,15 +443,23 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="12" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="13" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Transition time</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="lightTime" min="10" max="5000" tabindex="14" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Time in millisecons to transition from one color to another.</div>
+                                </div>
+
+                                <div class="pure-g">
                                     <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="13" action="reconnect" /></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="15" action="reconnect" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Sync color between different lights.</div>
                                 </div>
@@ -974,7 +1006,7 @@
 
                             <fieldset>
 
-                                <div class="pure-g module module-telnet">
+                                <div class="pure-g module module-cmd">
                                     <div class="pure-u-1 hint">
                                         Write a command and click send to execute it on the device. The output will be shown in the debug text area below.
                                     </div>
@@ -1037,13 +1069,13 @@
 
                                 <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Power units</label>
-                                    <select name="powerUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
+                                    <select name="pwrUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="0">Watts (W)</option>
                                         <option value="1">Kilowatts (kW)</option>
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
                                     <select name="energyUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="0">Joules (J)</option>
@@ -1079,7 +1111,7 @@
                                     </div>
                                 </div>
 
-                                <legend class="module module-hlw module-emon">Energy monitor</legend>
+                                <legend class="module module-hlw module-cse module-emon">Energy monitor</legend>
 
                                 <div class="pure-g module module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
@@ -1088,28 +1120,28 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Mains voltage in your system (in V).</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw">
+                                <div class="pure-g module module-hlw module-cse">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw">
+                                <div class="pure-g module module-hlw module-cse">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Voltage</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedV" type="text" tabindex="53" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Power</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" tabindex="54" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="55" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
@@ -1117,7 +1149,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset energy</label>
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetE" tabindex="56" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
@@ -1234,6 +1266,9 @@
                 </div>
                 <div class="pure-u-0 pure-u-lg-1-3"></div>
 
+                <label class="pure-u-1 pure-u-lg-1-4">Use UTC time</label>
+                <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schUTC" /></div>
+
                 <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
                 <div class="pure-u-2-5 pure-u-lg-1-5">
                     <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" maxlength="15" tabindex="0" value="1,2,3,4,5,6,7" />
@@ -1316,7 +1351,7 @@
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="mqttOnDisc">
+                <select class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc">
                     <option value="0">Don't change</option>
                     <option value="1">Turn the switch OFF</option>
                     <option value="2">Turn the switch ON</option>
@@ -1379,6 +1414,14 @@
                 <label class="pure-u-1 pure-u-lg-1-4">Channel #</label>
                 <input type="range" min="0" max="255" class="slider channels pure-u-lg-1-4" data="99">
                 <span class="slider pure-u-lg-1-4"></span>
+            </div>
+        </div>
+
+        <div id="miredsTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Mireds (Cold &harr; Warm)</label>
+                <input type="range" min="153" max="500" class="slider pure-u-lg-1-4" id="mireds">
+                <span class="slider mireds pure-u-lg-1-4"></span>
             </div>
         </div>
 

@@ -108,6 +108,31 @@
 #define BUTTON8_DBLCLICK    BUTTON_MODE_NONE
 #endif
 
+#ifndef BUTTON1_TRIPLECLICK
+#define BUTTON1_TRIPLECLICK    BUTTON_MODE_SMART_CONFIG
+#endif
+#ifndef BUTTON2_TRIPLECLICK
+#define BUTTON2_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON3_TRIPLECLICK
+#define BUTTON3_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON4_TRIPLECLICK
+#define BUTTON4_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON5_TRIPLECLICK
+#define BUTTON5_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON6_TRIPLECLICK
+#define BUTTON6_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON7_TRIPLECLICK
+#define BUTTON7_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+#ifndef BUTTON8_TRIPLECLICK
+#define BUTTON8_TRIPLECLICK    BUTTON_MODE_NONE
+#endif
+
 #ifndef BUTTON1_LNGCLICK
 #define BUTTON1_LNGCLICK    BUTTON_MODE_RESET
 #endif
@@ -399,17 +424,9 @@
 // General
 // -----------------------------------------------------------------------------
 
-// Default hostname will be ESPURNA_XXXXXX, where XXXXXX is last 3 octets of chipID
+// Default hostname will be ESPURNA-XXXXXX, where XXXXXX is last 3 octets of chipID
 #ifndef HOSTNAME
 #define HOSTNAME ""
-#endif
-
-// Needed for ESP8285 boards under Windows using PlatformIO (?)
-#ifndef BUTTON_PUSHBUTTON
-#define BUTTON_PUSHBUTTON   0
-#define BUTTON_SWITCH       1
-#define BUTTON_DEFAULT_HIGH 2
-#define BUTTON_SET_PULLUP   4
 #endif
 
 // Relay providers

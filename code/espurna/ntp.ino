@@ -21,6 +21,12 @@ bool _ntp_configure = false;
 // NTP
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _ntpWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "ntp", 3) == 0);
+}
+
 void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpVisible"] = 1;
     root["ntpStatus"] = (timeStatus() == timeSet);
@@ -30,6 +36,8 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
     if (ntpSynced()) root["now"] = now();
 }
+
+#endif
 
 void _ntpStart() {
 
@@ -80,8 +88,10 @@ void _ntpUpdate() {
         wsSend(_ntpWebSocketOnSend);
     #endif
 
-    if (strlen(ntpDateTime().c_str())) {
-        DEBUG_MSG_P(PSTR("[NTP] Time: %s\n"), (char *) ntpDateTime().c_str());
+    if (ntpSynced()) {
+        time_t t = now();
+        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), (char *) ntpDateTime(ntpLocal2UTC(t)).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) ntpDateTime(t).c_str());
     }
 
 }
@@ -121,15 +131,24 @@ bool ntpSynced() {
     return (year() > 2017);
 }
 
-String ntpDateTime() {
-    if (!ntpSynced()) return String();
+String ntpDateTime(time_t t) {
     char buffer[20];
-    time_t t = now();
     snprintf_P(buffer, sizeof(buffer),
         PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
         year(t), month(t), day(t), hour(t), minute(t), second(t)
     );
     return String(buffer);
+}
+
+String ntpDateTime() {
+    if (ntpSynced()) return ntpDateTime(now());
+    return String();
+}
+
+time_t ntpLocal2UTC(time_t local) {
+    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    if (NTP.isSummerTime()) offset += 60;
+    return local - offset * 60;
 }
 
 // -----------------------------------------------------------------------------
@@ -159,6 +178,7 @@ void ntpSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ntpWebSocketOnSend);
+        wsOnReceiveRegister(_ntpWebSocketOnReceive);
         wsOnAfterParseRegister([]() { _ntp_configure = true; });
     #endif
 

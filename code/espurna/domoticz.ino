@@ -43,7 +43,13 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
     String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
     if (type == MQTT_CONNECT_EVENT) {
+
+        // Subscribe to domoticz action topics
         mqttSubscribeRaw(dczTopicOut.c_str());
+
+        // Send relays state on connection
+        domoticzSendRelays();
+
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -75,6 +81,10 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 };
 
 #if WEB_SUPPORT
+
+bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "dcz", 3) == 0);
+}
 
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
@@ -134,6 +144,12 @@ void domoticzSendRelay(unsigned char relayID) {
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
 }
 
+void domoticzSendRelays() {
+    for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
+        domoticzSendRelay(relayID);
+    }
+}
+
 unsigned int domoticzIdx(unsigned char relayID) {
     char buffer[15];
     snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
@@ -145,6 +161,7 @@ void domoticzSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
         wsOnAfterParseRegister(_domoticzConfigure);
+        wsOnReceiveRegister(_domoticzWebSocketOnReceive);
     #endif
     mqttRegister(_domoticzMqtt);
 }
