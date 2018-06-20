@@ -113,20 +113,20 @@ gulp.task('buildfs_inline', function() {
         light: false,
         rfbridge: false
     };
-    var modules = process.env.MODULES || false;
-    if (modules) {
+    var modules = 'MODULES' in process.env ? process.env.MODULES : false;
+    if (false === modules) {
+        for (var i in remover_config) {
+            remover_config[i] = true;
+        }
+    } else {
         var list = modules.split(' ');
         for (var i in list) {
             if (list[i] != "") {
                 remover_config[list[i]] = true;
             }
         }
-    } else {
-        for (var i in remover_config) {
-            remover_config[i] = true;
-        }
     }
-    log.info("[WEBUI] " + JSON.stringify(remover_config));
+    log.info("Modules: " + JSON.stringify(remover_config));
 
     return gulp.src('html/*.html').
         pipe(htmllint({

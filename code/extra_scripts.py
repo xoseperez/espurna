@@ -61,10 +61,9 @@ def check_size(source, target, env):
 
 def build_webui(source, target, env):
     config = util.load_project_config()
-    try:
-        os.environ['MODULES'] = config.get("env:" + env.get('PIOENV'), "modules")
-    except:
-        None
+    kv = dict(config.items("env:" + env.get('PIOENV')))
+    if 'modules' in kv:
+        os.environ['MODULES'] = kv["modules"]
     call(["gulp"])
 
 # ------------------------------------------------------------------------------
