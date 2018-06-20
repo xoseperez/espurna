@@ -377,6 +377,15 @@
 #define WEB_PORT                    80          // HTTP port
 #endif
 
+// Defining a WEB_REMOTE_DOMAIN will enable Cross-Origin Resource Sharing (CORS)
+// so you will be able to login to this device from another domain. This will allow
+// you to manage all ESPurna devices in your local network from a unique installation
+// of the web UI. This installation could be in a local server (a Raspberry Pi, for instance)
+// or in the Internet. Since the WebUI is just one compressed file with HTML, CSS and JS
+// there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
+// The only requirement is that the resource must be available under this domain.
+#define WEB_REMOTE_DOMAIN           "http://tinkerman.cat"
+
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
 // -----------------------------------------------------------------------------

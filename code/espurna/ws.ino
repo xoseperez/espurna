@@ -489,12 +489,22 @@ void wsReload() {
 }
 
 void wsSetup() {
+
     _ws.onEvent(_wsEvent);
     webServer()->addHandler(&_ws);
+
+    // CORS
+    #ifdef WEB_REMOTE_DOMAIN
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", WEB_REMOTE_DOMAIN);
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
+    #endif
+
     webServer()->on("/auth", HTTP_GET, _onAuth);
+
     #if MQTT_SUPPORT
         mqttRegister(_wsMQTTCallback);
     #endif
+
     wsOnSendRegister(_wsOnStart);
     wsOnReceiveRegister(_wsOnReceive);
     espurnaRegisterLoop(_wsLoop);

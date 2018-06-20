@@ -1432,6 +1432,7 @@ function connectToURL(url) {
 
     $.ajax({
         'method': 'GET',
+        'crossDomain': true,
         'url': urls.auth.href,
         'xhrFields': { 'withCredentials': true }
     }).done(function(data) {
@@ -1458,6 +1459,11 @@ function connect(host) {
 
 function connectToCurrentURL() {
     connectToURL(new URL(window.location));
+}
+
+function getParameterByName(name) {
+    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
 }
 
 $(function() {
@@ -1508,6 +1514,12 @@ $(function() {
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") { return; }
-    connectToCurrentURL();
+
+    // Check host param in query string
+    if (host = getParameterByName('host')) {
+        connect(host);
+    } else {
+        connectToCurrentURL();
+    }
 
 });
