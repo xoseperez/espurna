@@ -383,7 +383,27 @@
 #define HLW8012_VOLTAGE_R_DOWN          ( 1000 )        // Downstream voltage resistor
 #endif
 
+#ifndef HLW8012_CURRENT_RATIO
+#define HLW8012_CURRENT_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_VOLTAGE_RATIO
+#define HLW8012_VOLTAGE_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_POWER_RATIO
+#define HLW8012_POWER_RATIO             0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_USE_INTERRUPTS
 #define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
+#endif
+
+#ifndef HLW8012_INTERRUPT_ON
+#define HLW8012_INTERRUPT_ON            CHANGE  // When to trigger the interrupt
+                                                // Use CHANGE for HLW8012
+                                                // Use FALLING for BL0937 / HJL0
+#endif
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor

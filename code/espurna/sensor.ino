@@ -644,13 +644,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", 0).toFloat();
+                value = getSetting("pwrRatioC", HLW8012_CURRENT_RATIO).toFloat();
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", 0).toFloat();
+                value = getSetting("pwrRatioV", HLW8012_VOLTAGE_RATIO).toFloat();
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", 0).toFloat();
+                value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
             }

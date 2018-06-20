@@ -2241,6 +2241,52 @@
     #define LED4_RELAY          4
 
 // -----------------------------------------------------------------------------
+// Several boards under different names uing a power chip labelled BL0937 or HJL-01
+// * Blitzwolf (https://www.amazon.es/Inteligente-Temporización-Dispositivos-Cualquier-BlitzWolf/dp/B07BMQP142)
+// * HomeCube (https://www.amazon.de/Steckdose-Homecube-intelligente-Verbrauchsanzeige-funktioniert/dp/B076Q2LKHG)
+// * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
+// * Goosund (http://www.gosund.com/?m=content&c=index&a=show&catid=6&id=5)
+// -----------------------------------------------------------------------------
+
+#elif defined(BLITZWOLF_BWSHP2)
+
+    // Info
+    #define MANUFACTURER        "BLITZWOLF"
+    #define DEVICE              "BWSHP2"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          15
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            0
+    #define LED2_PIN_INVERSE    1
+    #define LED2_MODE           LED_MODE_FINDME
+    #define LED2_RELAY          1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     12
+    #define HLW8012_CF1_PIN     14
+    #define HLW8012_CF_PIN      5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
