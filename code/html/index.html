@@ -11,7 +11,6 @@
         <link rel="stylesheet" href="vendor/pure-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/pure-grids-responsive-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/side-menu.css" />
-        <link rel="stylesheet" href="vendor/checkboxes.css" />
         <!-- removeIf(!light)-->
         <link rel="stylesheet" href="vendor/jquery.wheelcolorpicker-3.0.3.css" />
         <!-- endRemoveIf(!light)-->
@@ -353,7 +352,7 @@
 
                                 <div class="pure-g module module-alexa">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" tabindex="13" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" /></div>
                                 </div>
 
                             </fieldset>
@@ -1339,7 +1338,7 @@
         <div id="relayTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
-                <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" class="relayStatus pure-u-1 pure-u-lg-1-4" data="0" /></div>
+                <input name="relay" type="checkbox" on="ON" off="OFF" />
             </div>
         </div>
 
@@ -1479,7 +1478,6 @@
     <!-- build:js script.js -->
     <script src="vendor/jquery-3.2.1.min.js"></script>
     <script src="custom.js"></script>
-    <script src="vendor/checkboxes.js"></script>
     <!-- removeIf(!light)-->
     <script src="vendor/jquery.wheelcolorpicker-3.0.3.min.js"></script>
     <!-- endRemoveIf(!light)-->

@@ -454,12 +454,8 @@ function doUpdate() {
 
         // Empty special fields
         $(".pwrExpected").val(0);
-        $("input[name='pwrResetCalibration']").
-            prop("checked", false).
-            iphoneStyle("refresh");
-        $("input[name='pwrResetE']").
-            prop("checked", false).
-            iphoneStyle("refresh");
+        $("input[name='pwrResetCalibration']").prop("checked", false);
+        $("input[name='pwrResetE']").prop("checked", false);
 
         // Change handling
         numChanged = 0;
@@ -541,8 +537,7 @@ function doFactoryReset() {
     return false;
 }
 
-function doToggle(element, value) {
-    var id = parseInt(element.attr("data"), 10);
+function doToggle(id, value) {
     sendAction("relay", {id: id, status: value ? 1 : 0 });
     return false;
 }
@@ -586,10 +581,7 @@ function toggleMenu() {
 function showPanel() {
     $(".panel").hide();
     if ($("#layout").hasClass("active")) { toggleMenu(); }
-    $("#" + $(this).attr("data")).show().
-        find("input[type='checkbox']").
-        iphoneStyle("calculateDimensions").
-        iphoneStyle("refresh");
+    $("#" + $(this).attr("data")).show();
 }
 
 // -----------------------------------------------------------------------------
@@ -682,6 +674,7 @@ function moreSchedule() {
 }
 
 function addSchedule(event) {
+
     var numSchedules = $("#schedules > div").length;
     if (numSchedules >= maxSchedules) {
         alert("Max number of schedules reached");
@@ -704,13 +697,12 @@ function addSchedule(event) {
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
     line.appendTo("#schedules");
+    $(line).find("input[type='checkbox']").prop("checked", false);
 
-    $(line).find("input[type='checkbox']").
-        prop("checked", false).
-        iphoneStyle("calculateDimensions").
-        iphoneStyle("refresh");
+    initCheckboxes();
 
     return line;
+
 }
 
 // -----------------------------------------------------------------------------
@@ -728,21 +720,68 @@ function initRelays(data) {
         // Add relay fields
         var line = $(template).clone();
         $(".id", line).html(i);
-        $("input", line).attr("data", i);
+        $(":checkbox", line).prop('checked', data[i]).attr("data", i);
         line.appendTo("#relays");
-        $("input[type='checkbox']", line).iphoneStyle({
-            onChange: doToggle,
-            resizeContainer: true,
-            resizeHandle: true,
-            checkedLabel: "ON",
-            uncheckedLabel: "OFF"
-        });
 
         // Populate the relay SELECTs
         $("select.isrelay").append(
             $("<option></option>").attr("value",i).text("Switch #" + i));
 
     }
+
+}
+
+function initCheckboxes() {
+
+    var setCheckbox = function(element, value) {
+        var container = $(".toggle-container", $(element));
+        if (value) {
+            container.css("clipPath", "inset(0 0 0 50%)");
+            container.css("backgroundColor", "#00c000");
+        } else {
+            container.css("clipPath", "inset(0 50% 0 0)");
+            container.css("backgroundColor", "#c00000");
+        }
+    }
+
+    $(".checkbox-container")
+
+        .each(function() {
+            var status = $(this).next().prop('checked');
+            setCheckbox(this, status);
+        })
+        .off('click')
+        .on('click', function() {
+
+            var checkbox = $(this).next();
+
+            var status = checkbox.prop('checked');
+            status = !status;
+            checkbox.prop('checked', status);
+            setCheckbox(this, status);
+
+            if ("relay" == checkbox.attr('name')) {
+                var id = checkbox.prop('data');
+                doToggle(id, status);
+            }
+
+        });
+
+}
+
+function createCheckboxes() {
+
+    $("input[type='checkbox']").each(function() {
+
+        var text_on = $(this).attr("on") || "YES";
+        var text_off = $(this).attr("off") || "NO";
+
+        var toggles = "<div class=\"toggle\"><p>" + text_on + "</p></div><div class=\"toggle\"><p>" + text_off + "</p></div>";
+        var content = "<div class=\"checkbox-container\"><div class=\"inner-container\">" + toggles
+            + "</div><div class=\"inner-container toggle-container\">" + toggles + "</div></div>";
+        $(this).before(content).hide();
+
+    });
 
 }
 
@@ -1165,9 +1204,7 @@ function processData(data) {
                     var sch_value = schedule[key];
                     $("input[name='" + key + "']", sch_line).val(sch_value);
                     $("select[name='" + key + "']", sch_line).prop("value", sch_value);
-                    $("input[type='checkbox'][name='" + key + "']", sch_line).
-                        prop("checked", sch_value).
-                        iphoneStyle("refresh");
+                    $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
                 });
             }
             return;
@@ -1180,12 +1217,7 @@ function processData(data) {
         if ("relayStatus" === key) {
             initRelays(value);
             for (i in value) {
-
-                // Set the status for each relay
-                $("input.relayStatus[data='" + i + "']").
-                    prop("checked", value[i]).
-                    iphoneStyle("refresh");
-
+                $("input[name='relay'][data='" + i + "']").prop("checked", value[i]);
             }
             return;
         }
@@ -1300,9 +1332,7 @@ function processData(data) {
         var input = $("input[name='" + key + "']");
         if (input.length > 0) {
             if (input.attr("type") === "checkbox") {
-                input.
-                    prop("checked", value).
-                    iphoneStyle("refresh");
+                input.prop("checked", value);
             } else if (input.attr("type") === "radio") {
                 input.val([value]);
             } else {
@@ -1334,6 +1364,7 @@ function processData(data) {
     }
 
     resetOriginals();
+    initCheckboxes();
 
 }
 
@@ -1433,6 +1464,7 @@ $(function() {
 
     initMessages();
     loadTimeZones();
+    createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
     $("#menuLink").on("click", toggleMenu);
