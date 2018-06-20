@@ -754,7 +754,6 @@
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #endif
 
-
 #ifndef LIGHT_MAX_PWM
 #define LIGHT_MAX_PWM           255
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
@@ -815,7 +814,6 @@
 #define LIGHT_WHITE_FACTOR      1           // When using LIGHT_USE_WHITE with uneven brightness LEDs,
                                             // this factor is used to scale the white channel to match brightness
 #endif
-
 
 #ifndef LIGHT_USE_TRANSITIONS
 #define LIGHT_USE_TRANSITIONS   1           // Transitions between colors
