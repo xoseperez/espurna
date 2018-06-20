@@ -26,21 +26,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 const fs = require('fs');
 const gulp = require('gulp');
 const htmlmin = require('gulp-htmlmin');
-const cleancss = require('gulp-clean-css');
 const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
-<<<<<<< Updated upstream
-=======
 const htmllint = require('gulp-htmllint');
-const gutil = require('gulp-util');
+const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 const i18n = require('gulp-international');
-
-// -----------------------------------------------------------------------------
->>>>>>> Stashed changes
+const crass = require('gulp-crass');
+const replace = require('gulp-replace');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
@@ -68,19 +64,6 @@ var buildHeaderFile = function() {
             console.log(err);
         });
 
-<<<<<<< Updated upstream
-    wstream.write('#define ' + safename + '_len ' + data.length + '\n');
-    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {')
-
-    for (i=0; i<data.length; i++) {
-        if (i % 20 == 0) wstream.write("\n");
-        wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i<data.length-1) wstream.write(',');
-    }
-
-    wstream.write('\n};')
-    wstream.end();
-=======
         var data = fs.readFileSync(file.path);
 
         wstream.write('#define ' + safename + '_len ' + data.length + '\n');
@@ -100,13 +83,34 @@ var buildHeaderFile = function() {
         cb(0, file);
 
    });
->>>>>>> Stashed changes
 
 }
+
+var htmllintReporter = function(filepath, issues) {
+	if (issues.length > 0) {
+		issues.forEach(function (issue) {
+			log.info(
+                '[gulp-htmllint] ' +
+                filepath + ' [' +
+                issue.line + ',' +
+                issue.column + ']: ' +
+                '(' + issue.code + ') ' +
+                issue.msg
+            );
+		});
+		process.exitCode = 1;
+	}
+};
 
 gulp.task('build_certs', function() {
     toHeader('server.cer');
     toHeader('server.key');
+});
+
+gulp.task('csslint', function() {
+    gulp.src('html/*.css').
+        pipe(csslint({ids: false})).
+        pipe(csslint.formatter());
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
@@ -116,11 +120,18 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 
 gulp.task('buildfs_inline', function() {
     return gulp.src('html/*.html')
+        .pipe(htmllint({
+            'failOnError': true,
+            'rules': {
+                'id-class-style': false,
+                'label-req-for': false,
+            }
+        }, htmllintReporter))
         .pipe(favicon())
         .pipe(inline({
             base: 'html/',
-            js: uglify,
-            css: [cleancss, inlineImages],
+            js: [uglify],
+            css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
         }))
         .pipe(htmlmin({
@@ -135,6 +146,7 @@ gulp.task('buildfs_inline', function() {
             filename: '${name}.${lang}.${ext}',
             locales: './html/locales/'
         }))
+        .pipe(replace('pure-', 'p-'))
         .pipe(gzip())
         .pipe(gulp.dest(dataFolder));
 })

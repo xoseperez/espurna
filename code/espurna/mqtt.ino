@@ -8,7 +8,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MQTT_SUPPORT
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
@@ -38,7 +38,7 @@ bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
-unsigned char _mqtt_keepalive = MQTT_KEEPALIVE;
+unsigned long _mqtt_keepalive = MQTT_KEEPALIVE;
 String _mqtt_topic;
 String _mqtt_topic_json;
 String _mqtt_setter;
@@ -55,8 +55,9 @@ unsigned long _mqtt_connected_at = 0;
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 typedef struct {
+    unsigned char parent = 255;
     char * topic;
-    char * message;
+    char * message = NULL;
 } mqtt_message_t;
 std::vector<mqtt_message_t> _mqtt_queue;
 Ticker _mqtt_flush_ticker;
@@ -214,11 +215,12 @@ void _mqttConfigure() {
 
     // Get base topic
     _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
-    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
+    if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
 
     // Placeholders
-    _mqtt_topic.replace("{identifier}", getSetting("hostname"));
     _mqtt_topic.replace("{hostname}", getSetting("hostname"));
+    _mqtt_topic.replace("{magnitude}", "#");
+    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
     String mac = WiFi.macAddress();
     mac.replace(":", "");
     _mqtt_topic.replace("{mac}", mac);
@@ -247,6 +249,14 @@ void _mqttConfigure() {
 
 }
 
+void _mqttBackwards() {
+    String mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
+    if (mqttTopic.indexOf("{identifier}") > 0) {
+        mqttTopic.replace("{identifier}", "{hostname}");
+        setSetting("mqttTopic", mqttTopic);
+    }
+}
+
 unsigned long _mqttNextMessageId() {
 
     static unsigned long id = 0;
@@ -255,7 +265,7 @@ unsigned long _mqttNextMessageId() {
     if (id == 0) {
 
         // read id from EEPROM and shift it
-        id = EEPROM.read(EEPROM_MESSAGE_ID);
+        id = EEPROMr.read(EEPROM_MESSAGE_ID);
         if (id == 0xFF) {
 
             // There was nothing in EEPROM,
@@ -264,9 +274,9 @@ unsigned long _mqttNextMessageId() {
 
         } else {
 
-            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 1);
-            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 2);
-            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 3);
+            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 1);
+            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 2);
+            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 3);
 
             // Calculate next block and start from there
             id = MQTT_MESSAGE_ID_SHIFT * (1 + (id / MQTT_MESSAGE_ID_SHIFT));
@@ -277,11 +287,11 @@ unsigned long _mqttNextMessageId() {
 
     // Save to EEPROM every MQTT_MESSAGE_ID_SHIFT
     if (id % MQTT_MESSAGE_ID_SHIFT == 0) {
-        EEPROM.write(EEPROM_MESSAGE_ID + 0, (id >> 24) & 0xFF);
-        EEPROM.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
-        EEPROM.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
-        EEPROM.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
-        EEPROM.commit();
+        EEPROMr.write(EEPROM_MESSAGE_ID + 0, (id >> 24) & 0xFF);
+        EEPROMr.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
+        EEPROMr.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
+        EEPROMr.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
+        EEPROMr.commit();
     }
 
     id++;
@@ -295,22 +305,26 @@ unsigned long _mqttNextMessageId() {
 
 #if WEB_SUPPORT
 
+bool _mqttWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "mqtt", 3) == 0);
+}
+
 void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttVisible"] = 1;
     root["mqttStatus"] = mqttConnected();
     root["mqttEnabled"] = mqttEnabled();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
-    root["mqttUser"] = getSetting("mqttUser");
+    root["mqttUser"] = getSetting("mqttUser", MQTT_USER);
     root["mqttClientID"] = getSetting("mqttClientID");
-    root["mqttPassword"] = getSetting("mqttPassword");
+    root["mqttPassword"] = getSetting("mqttPassword", MQTT_PASS);
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
         root["mqttsslVisible"] = 1;
-        root["mqttUseSSL"] = getSetting("mqttUseSSL", 0).toInt() == 1;
-        root["mqttFP"] = getSetting("mqttFP");
+        root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
     root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
@@ -355,7 +369,7 @@ void _mqttCallback(unsigned int type, const char * topic, const char * payload) 
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Match topic
-        String t = mqttTopicKey((char *) topic);
+        String t = mqttMagnitude((char *) topic);
 
         // Actions
         if (t.equals(MQTT_TOPIC_ACTION)) {
@@ -424,7 +438,13 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
 // Public API
 // -----------------------------------------------------------------------------
 
-String mqttTopicKey(char * topic) {
+/**
+    Returns the magnitude part of a topic
+
+    @param topic the full MQTT topic
+    @return String object with the magnitude part.
+*/
+String mqttMagnitude(char * topic) {
 
     String pattern = _mqtt_topic + _mqtt_setter;
     int position = pattern.indexOf("#");
@@ -432,43 +452,135 @@ String mqttTopicKey(char * topic) {
     String start = pattern.substring(0, position);
     String end = pattern.substring(position + 1);
 
-    String response = String(topic);
-    if (response.startsWith(start) && response.endsWith(end)) {
-        response.replace(start, "");
-        response.replace(end, "");
+    String magnitude = String(topic);
+    if (magnitude.startsWith(start) && magnitude.endsWith(end)) {
+        magnitude.replace(start, "");
+        magnitude.replace(end, "");
     } else {
-        response = String();
+        magnitude = String();
     }
 
-    return response;
+    return magnitude;
 
 }
 
-String mqttTopic(const char * topic, bool is_set) {
+/**
+    Returns a full MQTT topic from the magnitude
+
+    @param magnitude the magnitude part of the topic.
+    @param is_set whether to build a command topic (true)
+        or a state topic (false).
+    @return String full MQTT topic.
+*/
+String mqttTopic(const char * magnitude, bool is_set) {
     String output = _mqtt_topic;
-    output.replace("#", topic);
+    output.replace("#", magnitude);
     output += is_set ? _mqtt_setter : _mqtt_getter;
     return output;
 }
 
-String mqttTopic(const char * topic, unsigned int index, bool is_set) {
-    char buffer[strlen(topic)+5];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
+/**
+    Returns a full MQTT topic from the magnitude
+
+    @param magnitude the magnitude part of the topic.
+    @param index index of the magnitude when more than one such magnitudes.
+    @param is_set whether to build a command topic (true)
+        or a state topic (false).
+    @return String full MQTT topic.
+*/
+String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
+    char buffer[strlen(magnitude)+5];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), magnitude, index);
     return mqttTopic(buffer, is_set);
 }
 
 // -----------------------------------------------------------------------------
 
-void mqttSendRaw(const char * topic, const char * message) {
+void mqttSendRaw(const char * topic, const char * message, bool retain) {
+
     if (_mqtt.connected()) {
         #if MQTT_USE_ASYNC
-            unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, _mqtt_retain, message);
+            unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, retain, message);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
         #else
-            _mqtt.publish(topic, message, _mqtt_retain);
+            _mqtt.publish(topic, message, retain);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
     }
+}
+
+
+void mqttSendRaw(const char * topic, const char * message) {
+    mqttSendRaw (topic, message, _mqtt_retain);
+}
+
+void mqttSend(const char * topic, const char * message, bool force, bool retain) {
+
+    bool useJson = force ? false : _mqtt_use_json;
+
+    // Equeue message
+    if (useJson) {
+
+        // Set default queue topic
+        mqttQueueTopic(MQTT_TOPIC_JSON);
+
+        // Enqueue new message
+        mqttEnqueue(topic, message);
+
+        // Reset flush timer
+        _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, mqttFlush);
+
+    // Send it right away
+    } else {
+        mqttSendRaw(mqttTopic(topic, false).c_str(), message, retain);
+
+    }
+
+}
+
+void mqttSend(const char * topic, const char * message, bool force) {
+    mqttSend(topic, message, force, _mqtt_retain);
+}
+
+void mqttSend(const char * topic, const char * message) {
+    mqttSend(topic, message, false);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
+    char buffer[strlen(topic)+5];
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
+    mqttSend(buffer, message, force, retain);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
+    mqttSend(topic, index, message, force, _mqtt_retain);
+}
+
+void mqttSend(const char * topic, unsigned int index, const char * message) {
+    mqttSend(topic, index, message, false);
+}
+
+// -----------------------------------------------------------------------------
+
+unsigned char _mqttBuildTree(JsonObject& root, char parent) {
+
+    unsigned char count = 0;
+
+    // Add enqueued messages
+    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
+        mqtt_message_t element = _mqtt_queue[i];
+        if (element.parent == parent) {
+            ++count;
+            JsonObject& elements = root.createNestedObject(element.topic);
+            unsigned char num = _mqttBuildTree(elements, i);
+            if (0 == num) {
+                root.set(element.topic, element.message);
+            }
+        }
+    }
+
+    return count;
+
 }
 
 void mqttFlush() {
@@ -476,14 +588,10 @@ void mqttFlush() {
     if (!_mqtt.connected()) return;
     if (_mqtt_queue.size() == 0) return;
 
+    // Build tree recursively
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
-
-    // Add enqueued messages
-    for (unsigned char i=0; i<_mqtt_queue.size(); i++) {
-        mqtt_message_t element = _mqtt_queue[i];
-        root[element.topic] = element.message;
-    }
+    _mqttBuildTree(root, 255);
 
     // Add extra propeties
     #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
@@ -505,13 +613,17 @@ void mqttFlush() {
     // Send
     String output;
     root.printTo(output);
-    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str());
+    jsonBuffer.clear();
+
+    mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
 
     // Clear queue
     for (unsigned char i = 0; i < _mqtt_queue.size(); i++) {
         mqtt_message_t element = _mqtt_queue[i];
         free(element.topic);
-        free(element.message);
+        if (element.message) {
+            free(element.message);
+        }
     }
     _mqtt_queue.clear();
 
@@ -525,59 +637,32 @@ void mqttQueueTopic(const char * topic) {
     }
 }
 
-void mqttEnqueue(const char * topic, const char * message) {
+int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent) {
 
     // Queue is not meant to send message "offline"
     // We must prevent the queue does not get full while offline
-    if (!_mqtt.connected()) return;
+    if (!_mqtt.connected()) return -1;
 
     // Force flusing the queue if the MQTT_QUEUE_MAX_SIZE has been reached
     if (_mqtt_queue.size() >= MQTT_QUEUE_MAX_SIZE) mqttFlush();
 
+    int8_t index = _mqtt_queue.size();
+
     // Enqueue new message
     mqtt_message_t element;
+    element.parent = parent;
     element.topic = strdup(topic);
-    element.message = strdup(message);
+    if (NULL != message) {
+        element.message = strdup(message);
+    }
     _mqtt_queue.push_back(element);
 
-}
-
-void mqttSend(const char * topic, const char * message, bool force) {
-
-    bool useJson = force ? false : _mqtt_use_json;
-
-    // Equeue message
-    if (useJson) {
-
-        // Set default queue topic
-        mqttQueueTopic(MQTT_TOPIC_JSON);
-
-        // Enqueue new message
-        mqttEnqueue(topic, message);
-
-        // Reset flush timer
-        _mqtt_flush_ticker.once_ms(MQTT_USE_JSON_DELAY, mqttFlush);
-
-    // Send it right away
-    } else {
-        mqttSendRaw(mqttTopic(topic, false).c_str(), message);
-
-    }
+    return index;
 
 }
 
-void mqttSend(const char * topic, const char * message) {
-    mqttSend(topic, message, false);
-}
-
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
-    char buffer[strlen(topic)+5];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
-    mqttSend(buffer, message, force);
-}
-
-void mqttSend(const char * topic, unsigned int index, const char * message) {
-    mqttSend(topic, index, message, false);
+int8_t mqttEnqueue(const char * topic, const char * message) {
+    return mqttEnqueue(topic, message, 255);
 }
 
 // -----------------------------------------------------------------------------
@@ -665,6 +750,8 @@ void mqttReset() {
 
 void mqttSetup() {
 
+    _mqttBackwards();
+    
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
@@ -723,6 +810,7 @@ void mqttSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
         wsOnAfterParseRegister(_mqttConfigure);
+        wsOnReceiveRegister(_mqttWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT

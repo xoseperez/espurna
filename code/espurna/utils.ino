@@ -11,8 +11,16 @@ Ticker _defer_reset;
 
 String getIdentifier() {
     char buffer[20];
-    snprintf_P(buffer, sizeof(buffer), PSTR("%s_%06X"), APP_NAME, ESP.getChipId());
+    snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
     return String(buffer);
+}
+
+void setDefaultHostname() {
+    if (strlen(HOSTNAME) > 0) {
+        setSetting("hostname", HOSTNAME);
+    } else {
+        setSetting("hostname", getIdentifier());
+    }
 }
 
 void setBoardName() {
@@ -32,6 +40,7 @@ String getCoreVersion() {
             version = String(ARDUINO_ESP8266_RELEASE);
         }
     #endif
+    version.replace("_", ".");
     return version;
 }
 
@@ -43,6 +52,10 @@ String getCoreRevision() {
     #endif
 }
 
+unsigned long maxSketchSpace() {
+    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+}
+
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
@@ -50,6 +63,16 @@ unsigned int getFreeHeap() {
     if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
     return ESP.getFreeHeap();
 }
+
+String getEspurnaModules() {
+    return FPSTR(espurna_modules);
+}
+
+#if SENSOR_SUPPORT
+String getEspurnaSensors() {
+    return FPSTR(espurna_sensors);
+}
+#endif
 
 String buildTime() {
 
@@ -114,7 +137,7 @@ void heartbeat() {
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
-        #if ADC_VCC_ENABLED
+        #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
         #if NTP_SUPPORT
@@ -136,6 +159,9 @@ void heartbeat() {
             #endif
             #if (HEARTBEAT_REPORT_VERSION)
                 mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
+            #endif
+            #if (HEARTBEAT_REPORT_BOARD)
+                mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
             #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
@@ -165,12 +191,15 @@ void heartbeat() {
                 lightMQTT();
             #endif
             #if (HEARTBEAT_REPORT_VCC)
-            #if ADC_VCC_ENABLED
+            #if ADC_MODE_VALUE == ADC_VCC
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
             #endif
             #endif
             #if (HEARTBEAT_REPORT_STATUS)
                 mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            #endif
+            #if (LOADAVG_REPORT)
+                mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
             #endif
         }
     #endif
@@ -192,8 +221,40 @@ void heartbeat() {
 
 #endif /// HEARTBEAT_ENABLED
 
-unsigned int sectors(size_t size) {
+// -----------------------------------------------------------------------------
+// INFO
+// -----------------------------------------------------------------------------
+
+extern "C" uint32_t _SPIFFS_start;
+extern "C" uint32_t _SPIFFS_end;
+
+unsigned int info_bytes2sectors(size_t size) {
     return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+}
+
+unsigned long info_ota_space() {
+    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+}
+
+unsigned long info_filesystem_space() {
+    return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
+}
+
+unsigned long info_eeprom_space() {
+    return EEPROMr.reserved() * SPI_FLASH_SEC_SIZE;
+}
+
+void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool reset) {
+    static unsigned long index = 0;
+    if (reset) index = 0;
+    if (0 == bytes) return;
+    unsigned int _sectors = info_bytes2sectors(bytes);
+    DEBUG_MSG_P(PSTR("[INIT] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
+    index += _sectors;
+}
+
+void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
+    _info_print_memory_layout_line(name, bytes, false);
 }
 
 void info() {
@@ -216,29 +277,27 @@ void info() {
     DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[INIT] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
-    DEBUG_MSG_P(PSTR("[INIT] Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("[INIT] Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
-    DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
-    DEBUG_MSG_P(PSTR("[INIT] OTA size:          %8u bytes / %4d sectors\n"), ESP.getFreeSketchSpace(), sectors(ESP.getFreeSketchSpace()));
-    #if SPIFFS_SUPPORT
-        FSInfo fs_info;
-        bool fs = SPIFFS.info(fs_info);
-        if (fs) {
-            DEBUG_MSG_P(PSTR("[INIT] SPIFFS size:       %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
-        }
-    #else
-        DEBUG_MSG_P(PSTR("[INIT] SPIFFS size:       %8u bytes / %4d sectors\n"), 0, 0);
-    #endif
-    DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+
+    _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
+    _info_print_memory_layout_line("Flash size (SDK)", ESP.getFlashChipSize(), true);
+    _info_print_memory_layout_line("Reserved", 1 * SPI_FLASH_SEC_SIZE, true);
+    _info_print_memory_layout_line("Firmware size", ESP.getSketchSize());
+    _info_print_memory_layout_line("Max OTA size", info_ota_space());
+    _info_print_memory_layout_line("SPIFFS size", info_filesystem_space());
+    _info_print_memory_layout_line("EEPROM size", info_eeprom_space());
+    _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("\n"));
+
+    DEBUG_MSG_P(PSTR("[INIT] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
     #if SPIFFS_SUPPORT
+        FSInfo fs_info;
+        bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes\n"), fs_info.totalBytes);
+            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
             DEBUG_MSG_P(PSTR("[INIT]        used size:  %8u bytes\n"), fs_info.usedBytes);
             DEBUG_MSG_P(PSTR("[INIT]        block size: %8u bytes\n"), fs_info.blockSize);
             DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
@@ -253,137 +312,11 @@ void info() {
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
-
-    #if ALEXA_SUPPORT
-        DEBUG_MSG_P(PSTR(" ALEXA"));
-    #endif
-    #if BROKER_SUPPORT
-        DEBUG_MSG_P(PSTR(" BROKER"));
-    #endif
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
-    #endif
-    #if DEBUG_TELNET_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_TELNET"));
-    #endif
-    #if DEBUG_UDP_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
-    #endif
-    #if DOMOTICZ_SUPPORT
-        DEBUG_MSG_P(PSTR(" DOMOTICZ"));
-    #endif
-    #if HOMEASSISTANT_SUPPORT
-        DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
-    #endif
-    #if I2C_SUPPORT
-        DEBUG_MSG_P(PSTR(" I2C"));
-    #endif
-    #if INFLUXDB_SUPPORT
-        DEBUG_MSG_P(PSTR(" INFLUXDB"));
-    #endif
-    #if LLMNR_SUPPORT
-        DEBUG_MSG_P(PSTR(" LLMNR"));
-    #endif
-    #if MDNS_SERVER_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS_SERVER"));
-    #endif
-    #if MDNS_CLIENT_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
-    #endif
-    #if NETBIOS_SUPPORT
-        DEBUG_MSG_P(PSTR(" NETBIOS"));
-    #endif
-    #if NOFUSS_SUPPORT
-        DEBUG_MSG_P(PSTR(" NOFUSS"));
-    #endif
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(PSTR(" NTP"));
-    #endif
-    #if RF_SUPPORT
-        DEBUG_MSG_P(PSTR(" RF"));
-    #endif
-    #if SCHEDULER_SUPPORT
-        DEBUG_MSG_P(PSTR(" SCHEDULER"));
-    #endif
+    DEBUG_MSG_P(PSTR("[INIT] SUPPORT: %s\n"), getEspurnaModules().c_str());
     #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR(" SENSOR"));
-    #endif
-    #if SPIFFS_SUPPORT
-        DEBUG_MSG_P(PSTR(" SPIFFS"));
-    #endif
-    #if SSDP_SUPPORT
-        DEBUG_MSG_P(PSTR(" SSDP"));
-    #endif
-    #if TELNET_SUPPORT
-        DEBUG_MSG_P(PSTR(" TELNET"));
-    #endif
-    #if TERMINAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" TERMINAL"));
-    #endif
-    #if THINGSPEAK_SUPPORT
-        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
-    #endif
-    #if WEB_SUPPORT
-        DEBUG_MSG_P(PSTR(" WEB"));
-    #endif
-
-    #if SENSOR_SUPPORT
-
-        DEBUG_MSG_P(PSTR("\n[INIT] SENSORS:"));
-
-        #if ANALOG_SUPPORT
-            DEBUG_MSG_P(PSTR(" ANALOG"));
-        #endif
-        #if BMX280_SUPPORT
-            DEBUG_MSG_P(PSTR(" BMX280"));
-        #endif
-        #if DALLAS_SUPPORT
-            DEBUG_MSG_P(PSTR(" DALLAS"));
-        #endif
-        #if DHT_SUPPORT
-            DEBUG_MSG_P(PSTR(" DHTXX"));
-        #endif
-        #if DIGITAL_SUPPORT
-            DEBUG_MSG_P(PSTR(" DIGITAL"));
-        #endif
-        #if ECH1560_SUPPORT
-            DEBUG_MSG_P(PSTR(" ECH1560"));
-        #endif
-        #if EMON_ADC121_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ADC121"));
-        #endif
-        #if EMON_ADS1X15_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
-        #endif
-        #if EMON_ANALOG_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
-        #endif
-        #if EVENTS_SUPPORT
-            DEBUG_MSG_P(PSTR(" EVENTS"));
-        #endif
-        #if HLW8012_SUPPORT
-            DEBUG_MSG_P(PSTR(" HLW8012"));
-        #endif
-        #if MHZ19_SUPPORT
-            DEBUG_MSG_P(PSTR(" MHZ19"));
-        #endif
-        #if PMSX003_SUPPORT
-            DEBUG_MSG_P(PSTR(" PMSX003"));
-        #endif
-        #if SHT3X_I2C_SUPPORT
-            DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
-        #endif
-        #if SI7021_SUPPORT
-            DEBUG_MSG_P(PSTR(" SI7021"));
-        #endif
-        #if V9261F_SUPPORT
-            DEBUG_MSG_P(PSTR(" V9261F"));
-        #endif
-
+        DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-
-    DEBUG_MSG_P(PSTR("\n\n"));
+    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
@@ -398,11 +331,11 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
-    #if ADC_VCC_ENABLED
+    #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
     #endif
 
-    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), _loopDelay);
+    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
     #if SYSTEM_CHECK_ENABLED
         if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
@@ -462,7 +395,7 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 unsigned char resetReason() {
     static unsigned char status = 255;
     if (status == 255) {
-        status = EEPROM.read(EEPROM_CUSTOM_RESET);
+        status = EEPROMr.read(EEPROM_CUSTOM_RESET);
         if (status > 0) resetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
@@ -470,8 +403,8 @@ unsigned char resetReason() {
 }
 
 void resetReason(unsigned char reason) {
-    EEPROM.write(EEPROM_CUSTOM_RESET, reason);
-    EEPROM.commit();
+    EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
+    EEPROMr.commit();
 }
 
 void reset(unsigned char reason) {
@@ -500,4 +433,25 @@ double roundTo(double num, unsigned char positions) {
 void nice_delay(unsigned long ms) {
     unsigned long start = millis();
     while (millis() - start < ms) delay(1);
+}
+
+// This method is called by the SDK to know where to connect the ADC
+int __get_adc_mode() {
+    return (int) (ADC_MODE_VALUE);
+}
+
+bool isNumber(const char * s) {
+    unsigned char len = strlen(s);
+    bool decimal = false;
+    for (unsigned char i=0; i<len; i++) {
+        if (s[i] == '-') {
+            if (i>0) return false;
+        } else if (s[i] == '.') {
+            if (decimal) return false;
+            decimal = true;
+        } else if (!isdigit(s[i])) {
+            return false;
+        }
+    }
+    return true;
 }

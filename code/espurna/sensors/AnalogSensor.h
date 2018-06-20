@@ -7,6 +7,10 @@
 
 #pragma once
 
+// Set ADC to TOUT pin
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
+
 #include "Arduino.h"
 #include "BaseSensor.h"
 
@@ -30,11 +34,12 @@ class AnalogSensor : public BaseSensor {
         // Initialization method, must be idempotent
         void begin() {
             pinMode(0, INPUT);
+            _ready = true;
         }
 
         // Descriptive name of the sensor
         String description() {
-            return String("ANALOG @ GPIO0");
+            return String("ANALOG @ TOUT");
         }
 
         // Descriptive name of the slot # index
@@ -49,17 +54,13 @@ class AnalogSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_ANALOG;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return analogRead(0);
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

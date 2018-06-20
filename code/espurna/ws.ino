@@ -21,9 +21,61 @@ Ticker _web_defer;
 std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
 std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
 std::vector<ws_on_after_parse_callback_f> _ws_on_after_parse_callbacks;
+std::vector<ws_on_receive_callback_f> _ws_on_receive_callbacks;
 
 // -----------------------------------------------------------------------------
 // Private methods
+// -----------------------------------------------------------------------------
+
+typedef struct {
+    IPAddress ip;
+    unsigned long timestamp = 0;
+} ws_ticket_t;
+ws_ticket_t _ticket[WS_BUFFER_SIZE];
+
+void _onAuth(AsyncWebServerRequest *request) {
+
+    webLog(request);
+    if (!webAuthenticate(request)) return request->requestAuthentication();
+
+    IPAddress ip = request->client()->remoteIP();
+    unsigned long now = millis();
+    unsigned short index;
+    for (index = 0; index < WS_BUFFER_SIZE; index++) {
+        if (_ticket[index].ip == ip) break;
+        if (_ticket[index].timestamp == 0) break;
+        if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
+    }
+    if (index == WS_BUFFER_SIZE) {
+        request->send(429);
+    } else {
+        _ticket[index].ip = ip;
+        _ticket[index].timestamp = now;
+        request->send(200, "text/plain", "OK");
+    }
+
+}
+
+bool _wsAuth(AsyncWebSocketClient * client) {
+
+    IPAddress ip = client->remoteIP();
+    unsigned long now = millis();
+    unsigned short index = 0;
+
+    for (index = 0; index < WS_BUFFER_SIZE; index++) {
+        if ((_ticket[index].ip == ip) && (now - _ticket[index].timestamp < WS_TIMEOUT)) break;
+    }
+
+    if (index == WS_BUFFER_SIZE) {
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
+        wsSend_P(client->id(), PSTR("{\"message\": 10}"));
+        return false;
+    }
+
+    return true;
+
+}
+
 // -----------------------------------------------------------------------------
 
 #if MQTT_SUPPORT
@@ -93,8 +145,22 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
-        if (strcmp(action, "reboot") == 0) deferredReset(100, CUSTOM_RESET_WEB);
-        if (strcmp(action, "reconnect") == 0) _web_defer.once_ms(100, wifiDisconnect);
+        if (strcmp(action, "reboot") == 0) {
+            deferredReset(100, CUSTOM_RESET_WEB);
+            return;
+        }
+
+        if (strcmp(action, "reconnect") == 0) {
+            _web_defer.once_ms(100, wifiDisconnect);
+            return;
+        }
+
+        if (strcmp(action, "factory_reset") == 0) {
+            DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
+            resetSettings();
+            deferredReset(100, CUSTOM_RESET_FACTORY);
+            return;
+        }
 
         JsonObject& data = root["data"];
         if (data.success()) {
@@ -112,6 +178,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     wsSend_P(client_id, PSTR("{\"message\": 4}"));
                 }
             }
+
+            return;
 
         }
 
@@ -154,6 +222,19 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 continue;
             }
 
+            // Check if key has to be processed
+            bool found = false;
+            for (unsigned char i = 0; i < _ws_on_receive_callbacks.size(); i++) {
+                found |= (_ws_on_receive_callbacks[i])(key.c_str(), value);
+                // TODO: remove this to call all OnReceiveCallbacks with the
+                // current key/value
+                if (found) break;
+            }
+            if (!found) {
+                delSetting(key);
+                continue;
+            }
+
             // Store values
             if (value.is<JsonArray&>()) {
                 if (_wsStore(key, value.as<JsonArray&>())) changed = true;
@@ -175,9 +256,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (save) {
 
             // Callbacks
-            for (unsigned char i = 0; i < _ws_on_after_parse_callbacks.size(); i++) {
-                (_ws_on_after_parse_callbacks[i])();
-            }
+            wsReload();
 
             // This should got to callback as well
             // but first change management has to be in place
@@ -204,10 +283,21 @@ void _wsUpdate(JsonObject& root) {
     root["heap"] = getFreeHeap();
     root["uptime"] = getUptime();
     root["rssi"] = WiFi.RSSI();
-    root["distance"] = wifiDistance(WiFi.RSSI());
+    root["loadaverage"] = systemLoadAverage();
+    #if ADC_MODE_VALUE == ADC_VCC
+        root["vcc"] = ESP.getVcc();
+    #endif
     #if NTP_SUPPORT
         if (ntpSynced()) root["now"] = now();
     #endif
+}
+
+bool _wsOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, "ws", 2) == 0) return true;
+    if (strncmp(key, "admin", 5) == 0) return true;
+    if (strncmp(key, "hostname", 8) == 0) return true;
+    if (strncmp(key, "webPort", 7) == 0) return true;
+    return false;
 }
 
 void _wsOnStart(JsonObject& root) {
@@ -239,6 +329,7 @@ void _wsOnStart(JsonObject& root) {
         root["app_name"] = APP_NAME;
         root["app_version"] = APP_VERSION;
         root["app_build"] = buildTime();
+        root["app_revision"] = APP_REVISION;
         root["manufacturer"] = MANUFACTURER;
         root["chipid"] = String(chipid);
         root["mac"] = WiFi.macAddress();
@@ -250,13 +341,17 @@ void _wsOnStart(JsonObject& root) {
         root["deviceip"] = getIP();
         root["sketch_size"] = ESP.getSketchSize();
         root["free_size"] = ESP.getFreeSketchSpace();
+        root["sdk"] = ESP.getSdkVersion();
+        root["core"] = getCoreVersion();
 
         _wsUpdate(root);
 
         root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
         root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-        root["tmpUnits"] = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-        root["tmpCorrection"] = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+        root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
+        #if TERMINAL_SUPPORT
+            root["cmdVisible"] = 1;
+        #endif
 
     }
 
@@ -271,6 +366,11 @@ void _wsStart(uint32_t client_id) {
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 
     if (type == WS_EVT_CONNECT) {
+
+        #ifndef NOWSAUTH
+            if (!_wsAuth(client)) return;
+        #endif
+
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsStart(client->id());
@@ -310,7 +410,7 @@ void _wsLoop() {
 }
 
 // -----------------------------------------------------------------------------
-// Piblic API
+// Public API
 // -----------------------------------------------------------------------------
 
 bool wsConnected() {
@@ -319,6 +419,10 @@ bool wsConnected() {
 
 void wsOnSendRegister(ws_on_send_callback_f callback) {
     _ws_on_send_callbacks.push_back(callback);
+}
+
+void wsOnReceiveRegister(ws_on_receive_callback_f callback) {
+    _ws_on_receive_callbacks.push_back(callback);
 }
 
 void wsOnActionRegister(ws_on_action_callback_f callback) {
@@ -336,6 +440,7 @@ void wsSend(ws_on_send_callback_f callback) {
         callback(root);
         String output;
         root.printTo(output);
+        jsonBuffer.clear();
         _ws.textAll((char *) output.c_str());
     }
 }
@@ -360,6 +465,7 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     callback(root);
     String output;
     root.printTo(output);
+    jsonBuffer.clear();
     _ws.text(client_id, (char *) output.c_str());
 }
 
@@ -373,21 +479,24 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
     _ws.text(client_id, buffer);
 }
 
-void wsConfigure() {
-    #if USE_PASSWORD
-        _ws.setAuthentication(WEB_USERNAME, (const char *) getSetting("adminPass", ADMIN_PASS).c_str());
-    #endif
+// This method being public makes
+// _ws_on_after_parse_callbacks strange here,
+// it should belong somewhere else.
+void wsReload() {
+    for (unsigned char i = 0; i < _ws_on_after_parse_callbacks.size(); i++) {
+        (_ws_on_after_parse_callbacks[i])();
+    }
 }
 
 void wsSetup() {
     _ws.onEvent(_wsEvent);
-    wsConfigure();
     webServer()->addHandler(&_ws);
+    webServer()->on("/auth", HTTP_GET, _onAuth);
     #if MQTT_SUPPORT
         mqttRegister(_wsMQTTCallback);
     #endif
     wsOnSendRegister(_wsOnStart);
-    wsOnAfterParseRegister(wsConfigure);
+    wsOnReceiveRegister(_wsOnReceive);
     espurnaRegisterLoop(_wsLoop);
 }
 

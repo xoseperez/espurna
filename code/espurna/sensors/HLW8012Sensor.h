@@ -48,6 +48,10 @@ class HLW8012Sensor : public BaseSensor {
             _hlw8012->resetMultipliers();
         }
 
+        void resetEnergy() {
+            _hlw8012->resetEnergy();
+        }
+
         // ---------------------------------------------------------------------
 
         void setSEL(unsigned char sel) {
@@ -153,6 +157,8 @@ class HLW8012Sensor : public BaseSensor {
                 });
             #endif
 
+            _ready = true;
+
         }
 
         // Descriptive name of the sensor
@@ -176,7 +182,6 @@ class HLW8012Sensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
@@ -184,13 +189,11 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 4) return MAGNITUDE_POWER_APPARENT;
             if (index == 5) return MAGNITUDE_POWER_FACTOR;
             if (index == 6) return MAGNITUDE_ENERGY;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _hlw8012->getCurrent();
             if (index == 1) return _hlw8012->getVoltage();
             if (index == 2) return _hlw8012->getActivePower();
@@ -198,7 +201,6 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 4) return _hlw8012->getApparentPower();
             if (index == 5) return 100 * _hlw8012->getPowerFactor();
             if (index == 6) return _hlw8012->getEnergy();
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

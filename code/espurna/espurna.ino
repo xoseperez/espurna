@@ -42,7 +42,15 @@ void setup() {
     // Basic modules, will always run
     // -------------------------------------------------------------------------
 
-    // Init EEPROM, Serial, SPIFFS and system check
+    // Serial debug
+    #if DEBUG_SUPPORT
+        debugSetup();
+    #endif
+
+    // Init EEPROM
+    eepromSetup();
+    
+    // Init Serial, SPIFFS and system check
     systemSetup();
 
     // Init persistance and terminal features
@@ -50,7 +58,7 @@ void setup() {
 
     // Hostname & board name initialization
     if (getSetting("hostname").length() == 0) {
-        setSetting("hostname", getIdentifier());
+        setDefaultHostname();
     }
     setBoardName();
 
@@ -80,6 +88,9 @@ void setup() {
         webSetup();
         wsSetup();
         apiSetup();
+        #if DEBUG_WEB_SUPPORT
+            debugWebSetup();
+        #endif
     #endif
 
     // lightSetup must be called before relaySetup
@@ -147,6 +158,10 @@ void setup() {
     #if SCHEDULER_SUPPORT
         schSetup();
     #endif
+    #if UART_MQTT_SUPPORT
+        uartmqttSetup();
+    #endif
+
 
     // 3rd party code hook
     #if USE_EXTRA

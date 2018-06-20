@@ -7,13 +7,13 @@
 
 #pragma once
 
+#undef I2C_SUPPORT
+#define I2C_SUPPORT 1 // Explicitly request I2C support.
+
+
+
 #include "Arduino.h"
 #include "I2CSensor.h"
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
-#include <Wire.h>
-#endif
 
 #define SI7021_SCL_FREQUENCY    200
 
@@ -46,18 +46,9 @@ class SI7021Sensor : public I2CSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-
             if (!_dirty) return;
-            _dirty = false;
-
-            // I2C auto-discover
-            unsigned char addresses[] = {0x40};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
-
-            // Initialize sensor
             _init();
-
+            _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
@@ -81,10 +72,8 @@ class SI7021Sensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             if (index == 1) return MAGNITUDE_HUMIDITY;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -110,10 +99,8 @@ class SI7021Sensor : public I2CSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
@@ -125,71 +112,54 @@ class SI7021Sensor : public I2CSensor {
 
         void _init() {
 
+            // I2C auto-discover
+            unsigned char addresses[] = {0x40};
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
+
             // Check device
-            #if I2C_USE_BRZO
-                uint8_t buffer[2] = {0xFC, 0xC9};
-                brzo_i2c_start_transaction(_address, SI7021_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 2, false);
-                brzo_i2c_read(buffer, 1, false);
-                brzo_i2c_end_transaction();
-                _chip = buffer[0];
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(0xFC);
-                Wire.write(0xC9);
-                Wire.endTransmission();
-                Wire.requestFrom(_address, (unsigned char) 1);
-                _chip = Wire.read();
-            #endif
+            i2c_write_uint8(_address, 0xFC, 0xC9);
+            _chip = i2c_read_uint8(_address);
 
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
-                i2cReleaseLock(_address);
-                _error = SENSOR_ERROR_UNKNOWN_ID;
+
                 _count = 0;
+                i2cReleaseLock(_address);
+                _previous_address = 0;
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+
+                // Setting _address to 0 forces auto-discover
+                // This might be necessary at this stage if there is a
+                // different sensor in the hardcoded address
+                _address = 0;
+
             } else {
                 _count = 2;
             }
+
+            _ready = true;
 
         }
 
         unsigned int _read(uint8_t command) {
 
-            unsigned char bytes = (command == 0xE0) ? 2 : 3;
-
-            #if I2C_USE_BRZO
-                uint8_t buffer[2] = {command, 0x00};
-                brzo_i2c_start_transaction(_address, SI7021_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 1, false);
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(command);
-                Wire.endTransmission();
-            #endif
+            // Request measurement
+            i2c_write_uint8(_address, command);
 
             // When not using clock stretching (*_NOHOLD commands) delay here
             // is needed to wait for the measurement.
             // According to datasheet the max. conversion time is ~22ms
             unsigned long start = millis();
-            while (millis() - start < 50) delay(1);
-
-            #if I2C_USE_BRZO
-                brzo_i2c_read(buffer, 2, false);
-                brzo_i2c_end_transaction();
-                unsigned int msb = buffer[0];
-                unsigned int lsb = buffer[1];
-            #else
-                Wire.requestFrom(_address, bytes);
-                unsigned int msb = Wire.read();
-                unsigned int lsb = Wire.read();
-            #endif
+            nice_delay(50);
 
             // Clear the last to bits of LSB to 00.
             // According to datasheet LSB of RH is always xxxxxx10
-            lsb &= 0xFC;
+            unsigned int value = i2c_read_uint16(_address) & 0xFFFC;
 
-            unsigned int value = (msb << 8) | lsb;
-
+            // We should be checking there are no pending bytes in the buffer
+            // and raise a CRC error if there are
             _error = SENSOR_ERROR_OK;
+
             return value;
 
         }

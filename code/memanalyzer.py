@@ -50,7 +50,7 @@ description = "ESPurna Memory Analyzer v0.1"
 def file_size(file):
     try:
         return os.stat(file).st_size
-    except:
+    except OSError:
         return 0
 
 
@@ -65,7 +65,7 @@ def analyse_memory(elf_file):
     # print("------------------------------------------------------------------------------");
     ret = {}
 
-    for (id_, descr) in list(sections.items()):
+    for (id_, _) in list(sections.items()):
         section_start_token = " _%s_start" % id_
         section_end_token = " _%s_end" % id_
         section_start = -1

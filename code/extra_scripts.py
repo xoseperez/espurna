@@ -1,12 +1,15 @@
 #!/usr/bin/env python
+from subprocess import call
+import os
 import time
+
 Import("env")
 
 # ------------------------------------------------------------------------------
 # Utils
 # ------------------------------------------------------------------------------
 
-class Color:
+class Color(object):
     BLACK = '\x1b[1;30m'
     RED = '\x1b[1;31m'
     GREEN = '\x1b[1;32m'
@@ -31,8 +34,24 @@ def clr(color, text):
 # Callbacks
 # ------------------------------------------------------------------------------
 
+def remove_float_support():
+
+    flags = " ".join(env['LINKFLAGS'])
+    flags = flags.replace("-u _printf_float", "")
+    flags = flags.replace("-u _scanf_float", "")
+    newflags = flags.split()
+
+    env.Replace(
+        LINKFLAGS = newflags
+    )
+
+def cpp_check(source, target, env):
+    print("Started cppcheck...\n")
+    call(["cppcheck", os.getcwd()+"/espurna", "--force", "--enable=all"])
+    print("Finished cppcheck...\n")
+
 def check_size(source, target, env):
-    time.sleep(1)
+    time.sleep(2)
     size = target[0].get_size()
     print clr(Color.LIGHT_BLUE, "Binary size: %s bytes" % size)
     #if size > 512000:
@@ -43,4 +62,7 @@ def check_size(source, target, env):
 # Hooks
 # ------------------------------------------------------------------------------
 
+remove_float_support()
+
+#env.AddPreAction("buildprog", cpp_check)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)

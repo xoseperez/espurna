@@ -72,13 +72,16 @@ class MHZ19Sensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_serial) delete _serial;
 
             _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 32);
+            _serial->enableIntTx(false);
             _serial->begin(9600);
             calibrateAuto(false);
+
+            _ready = true;
+            _dirty = false;
 
         }
 
@@ -103,9 +106,7 @@ class MHZ19Sensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CO2;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -115,9 +116,7 @@ class MHZ19Sensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _co2;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

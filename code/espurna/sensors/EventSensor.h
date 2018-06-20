@@ -72,6 +72,7 @@ class EventSensor : public BaseSensor {
         void begin() {
             pinMode(_gpio, _mode);
             _enableInterrupts(true);
+            _ready = true;
         }
 
         // Descriptive name of the sensor
@@ -93,21 +94,17 @@ class EventSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_EVENTS;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) {
                 double value = _events;
                 _events = 0;
                 return value;
             };
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

@@ -7,13 +7,12 @@
 
 #pragma once
 
+#undef I2C_SUPPORT
+#define I2C_SUPPORT 1 // Explicitly request I2C support.
+
+
 #include "Arduino.h"
 #include "I2CSensor.h"
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
-#include <Wire.h>
-#endif
 
 class SHT3XI2CSensor : public I2CSensor {
 
@@ -36,12 +35,14 @@ class SHT3XI2CSensor : public I2CSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // I2C auto-discover
             unsigned char addresses[] = {0x45};
             _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
+
+            _ready = true;
+            _dirty = false;
 
         }
 
@@ -54,12 +55,8 @@ class SHT3XI2CSensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index < _count) {
-                _error = SENSOR_ERROR_OK;
-                if (index == 0) return MAGNITUDE_TEMPERATURE;
-                if (index == 1) return MAGNITUDE_HUMIDITY;
-            }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
+            if (index == 0) return MAGNITUDE_TEMPERATURE;
+            if (index == 1) return MAGNITUDE_HUMIDITY;
             return MAGNITUDE_NONE;
         }
 
@@ -67,38 +64,11 @@ class SHT3XI2CSensor : public I2CSensor {
         void pre() {
 
             _error = SENSOR_ERROR_OK;
-            
+
             unsigned char buffer[6];
-
-            #if I2C_USE_BRZO
-                buffer[0] = 0x2C;
-                buffer[1] = 0x06;
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 2, false);
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(0x2C);
-                Wire.write(0x06);
-                if (Wire.endTransmission() != 0) {
-                    _error = SENSOR_ERROR_TIMEOUT;
-                    return;
-                }
-            #endif
-
-            delay(500);
-
-            #if I2C_USE_BRZO
-                brzo_i2c_read(buffer, 6, false);
-                brzo_i2c_end_transaction();
-            #else
-                Wire.requestFrom(_address, (unsigned char) 6);
-                for (int i=0; i<6; i++) buffer[i] = Wire.read();
-                delay(50);
-                if (Wire.available() != 0) {
-                    _error = SENSOR_ERROR_CRC;
-                    return;
-                }
-            #endif
+            i2c_write_uint8(_address, 0x2C, 0x06);
+            nice_delay(500);
+            i2c_read_buffer(_address, buffer, 6);
 
             // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
             _temperature = ((((buffer[0] * 256.0) + buffer[1]) * 175) / 65535.0) - 45;
@@ -108,10 +78,8 @@ class SHT3XI2CSensor : public I2CSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

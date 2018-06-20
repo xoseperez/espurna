@@ -11,20 +11,47 @@
 //   - BUTTON_SWITCH: button event is fired when pressed or released
 //   - BUTTON_DEFAULT_HIGH: there is a pull up in place
 //   - BUTTON_SET_PULLUP: set pullup by software
-// RELAY#_PIN: GPIO for the n-th relay (1-based, up to 4 relays)
-// RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE or RELAY_TYPE_LATCHED
-// LED#_PIN: GPIO for the n-th LED (1-based, up to 4 LEDs)
+// RELAY#_PIN: GPIO for the n-th relay (1-based, up to 8 relays)
+// RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+// LED#_PIN: GPIO for the n-th LED (1-based, up to 8 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
-// LED#_MODE: Check hardware.h for LED_MODE_%
+// LED#_MODE: Check general.h for LED_MODE_%
 // LED#_RELAY: Linked relay (1-based)
 //
 // Besides, other hardware specific information should be stated here
 
 // -----------------------------------------------------------------------------
+// ESPurna Core
+// -----------------------------------------------------------------------------
+
+#if defined(ESPURNA_CORE)
+
+    // This is a special device targeted to generate a light-weight binary image
+    // meant to be able to do two-step-updates:
+    // https://github.com/xoseperez/espurna/wiki/TwoStepUpdates
+
+    // Info
+    #define MANUFACTURER            "ESPRESSIF"
+    #define DEVICE                  "ESPURNA_CORE"
+
+    // Disable non-core modules
+    #define ALEXA_SUPPORT           0
+    #define BROKER_SUPPORT          0
+    #define DOMOTICZ_SUPPORT        0
+    #define HOMEASSISTANT_SUPPORT   0
+    #define I2C_SUPPORT             0
+    #define MQTT_SUPPORT            0
+    #define NTP_SUPPORT             0
+    #define SCHEDULER_SUPPORT       0
+    #define SENSOR_SUPPORT          0
+    #define THINGSPEAK_SUPPORT      0
+    #define WEB_SUPPORT             0
+
+// -----------------------------------------------------------------------------
 // Development boards
 // -----------------------------------------------------------------------------
 
-#if defined(NODEMCU_LOLIN)
+#elif defined(NODEMCU_LOLIN)
 
     // Info
     #define MANUFACTURER        "NODEMCU"
@@ -42,6 +69,12 @@
     // LEDs
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
+
+#elif defined(NODEMCU_BASIC)
+    // Info
+    // Generic NodeMCU Board without any buttons or relays connected.
+    #define MANUFACTURER        "NODEMCU"
+    #define DEVICE              "BASIC"
 
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
@@ -74,10 +107,6 @@
     // Info
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_TARPUNA_SHIELD"
-
-    // Relays
-    #define RELAY1_PIN          12
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
 // ESPurna
@@ -356,6 +385,34 @@
     #define HLW8012_CF1_PIN     13
     #define HLW8012_CF_PIN      14
 
+#elif defined(ITEAD_SONOFF_POW_R2)
+
+    // Info
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_POW_R2"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // CSE7766
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
+    #endif
+    #define CSE7766_PIN         1
+
 #elif defined(ITEAD_SONOFF_DUAL)
 
     // Info
@@ -365,7 +422,6 @@
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
-    #define TERMINAL_SUPPORT        0
 
     // Buttons
     #define BUTTON3_RELAY       1
@@ -476,12 +532,14 @@
     // and disables any possibly harmful combination with S6 set to 0.
     // If you are sure you will only use S6 to 1 you can comment the
     // BUTTON1_LNGCLICK and BUTTON1_LNGLNGCLICK options below to recover the
-    // AP mode and factory reset functionalities.
+    // reset mode and factory reset functionalities, or link other actions like
+    // AP mode in the commented line below.
 
     #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON1_CLICK       BUTTON_MODE_NONE
     #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
     #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    //#define BUTTON1_LNGCLICK    BUTTON_MODE_AP
     #define BUTTON1_LNGLNGCLICK BUTTON_MODE_NONE
     #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
     #define BUTTON2_CLICK       BUTTON_MODE_NONE
@@ -575,16 +633,12 @@
     // Info
     #define MANUFACTURER        "ITEAD"
     #define DEVICE              "SONOFF_RFBRIDGE"
-    #define SERIAL_BAUDRATE     19200
     #define RELAY_PROVIDER      RELAY_PROVIDER_RFBRIDGE
 
+    // Number of virtual switches
     #ifndef DUMMY_RELAY_COUNT
     #define DUMMY_RELAY_COUNT   8
     #endif
-
-    // Remove UART noise on serial line
-    #define TERMINAL_SUPPORT        0
-    #define DEBUG_SERIAL_SUPPORT    0
 
     // Buttons
     #define BUTTON1_PIN         0
@@ -593,6 +647,28 @@
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
+
+    // RFB Direct hack thanks to @wildwiz
+    // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+    #ifndef RFB_DIRECT
+    #define RFB_DIRECT          0
+    #endif
+
+    #ifndef RFB_RX_PIN
+    #define RFB_RX_PIN          4   // GPIO for RX when RFB_DIRECT
+    #endif
+
+    #ifndef RFB_TX_PIN
+    #define RFB_TX_PIN          5   // GPIO for TX when RFB_DIRECT
+    #endif
+
+    // When using un-modified harware, ESPurna communicates with the secondary
+    // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
+    // the port and remove UART noise on serial line
+    #if not RFB_DIRECT
+    #define SERIAL_BAUDRATE         19200
+    #define DEBUG_SERIAL_SUPPORT    0
+    #endif
 
 #elif defined(ITEAD_SONOFF_B1)
 
@@ -611,6 +687,7 @@
     #define MY92XX_DCKI_PIN     14
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     #define MY92XX_MAPPING      4, 3, 5, 0, 1
+    #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
 #elif defined(ITEAD_SONOFF_LED)
 
@@ -743,6 +820,31 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(ITEAD_SONOFF_S31)
+
+    // Info
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_S31"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // CSE7766
+    #define CSE7766_SUPPORT         1
+    #define CSE7766_PIN             1
 
 // -----------------------------------------------------------------------------
 // YJZK
@@ -914,35 +1016,6 @@
     #define IR_PIN              4
     #define IR_BUTTON_SET       1
 
-#elif defined(MAGICHOME_LED_CONTROLLER_23)
-
-    // Info
-    #define MANUFACTURER        "MAGICHOME"
-    #define DEVICE              "LED_CONTROLLER_23"
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
-    #define DUMMY_RELAY_COUNT   1
-
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
-
-    // Light
-    #define LIGHT_CHANNELS      4
-    #define LIGHT_CH1_PIN       12      // RED
-    #define LIGHT_CH2_PIN       5       // GREEN
-    #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH4_PIN       15      // WHITE
-    #define LIGHT_CH1_INVERSE   0
-    #define LIGHT_CH2_INVERSE   0
-    #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-
-    // IR
-    #define IR_SUPPORT          1
-    #define IR_PIN              4
-    #define IR_BUTTON_SET       1
-
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
@@ -956,7 +1029,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
-    #define SERIAL_RX_PORT      Serial
+    #define SERIAL_RX_ENABLED   1
 
     // LEDs
     #define LED1_PIN            5
@@ -984,7 +1057,7 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define DEBUG_PORT          Serial1
-    #define SERIAL_RX_PORT      Serial
+    #define SERIAL_RX_ENABLED   1
 
     // Light
     #define LIGHT_CHANNELS      4
@@ -1201,7 +1274,7 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
-    // DB18B20
+    // DS18B20
     #ifndef DALLAS_SUPPORT
     #define DALLAS_SUPPORT             	1
     #endif
@@ -1248,16 +1321,13 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Light
-    #define LIGHT_CHANNELS      4
+    #define LIGHT_CHANNELS      3
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH4_PIN       14      // WHITE1
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0
-
 
 #elif defined(ARILUX_AL_LC02)
 
@@ -1301,7 +1371,6 @@
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
 
-
 #elif defined(ARILUX_AL_LC11)
 
     // Info
@@ -1323,7 +1392,6 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
-
 
 #elif defined(ARILUX_E27)
 
@@ -1393,6 +1461,104 @@
 
     #define LIGHT_ENABLE_PIN    15
 
+#elif defined(GIZWITS_WITTY_CLOUD)
+
+    // Info
+    #define MANUFACTURER        "GIZWITS"
+    #define DEVICE              "WITTY_CLOUD"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define ANALOG_SUPPORT      1
+
+    // LEDs
+    #define LED1_PIN            2      // BLUE build-in
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       15       // RED
+    #define LIGHT_CH2_PIN       12       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// KMC 70011
+// https://www.amazon.com/KMC-Monitoring-Required-Control-Compatible/dp/B07313TH7B
+// -----------------------------------------------------------------------------
+
+#elif defined(KMC_70011)
+
+    // Info
+    #define MANUFACTURER        "KMC"
+    #define DEVICE              "70011"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     12
+    #define HLW8012_CF1_PIN     5
+    #define HLW8012_CF_PIN      4
+
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
+
+// -----------------------------------------------------------------------------
+// Euromate (?) Wifi Stecker Shuko
+// https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko/p/2291706
+// Thanks to @Geitde
+// -----------------------------------------------------------------------------
+
+#elif defined(EUROMATE_WIFI_STECKER_SCHUKO)
+
+    // Info
+    #define MANUFACTURER        "EUROMATE"
+    #define DEVICE              "WIFI_STECKER_SCHUKO"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // The relay in the device is not a bistable (latched) relay.
+    // The device is reported to have a flip-flop circuit to drive the relay
+    // So @Geitde hack is still the only possible
+
+    // Hack: drive GPIO12 low and use GPIO5 as normal relay pin:
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define LED2_PIN            12 /* DUMMY: exploit default off state for GPIO12=low */
+    #define LED2_PIN_INVERSE    0
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    0
+
 // -----------------------------------------------------------------------------
 // Generic 8CH
 // -----------------------------------------------------------------------------
@@ -1422,12 +1588,821 @@
     #define RELAY8_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
+// STM RELAY
+// -----------------------------------------------------------------------------
+
+#elif defined(STM_RELAY)
+
+    // Info
+    #define MANUFACTURER            "STM_RELAY"
+    #define DEVICE                  "2CH"
+
+    // Relays
+    #define DUMMY_RELAY_COUNT       2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_STM
+
+    // Remove UART noise on serial line
+    #define DEBUG_SERIAL_SUPPORT    0
+
+// -----------------------------------------------------------------------------
+// Tonbux Powerstrip02
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_POWERSTRIP02)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "POWERSTRIP02"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       0
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY2_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY3_PIN          12
+    #define RELAY3_TYPE         RELAY_TYPE_INVERSE
+    #define RELAY4_PIN          14
+    #define RELAY4_TYPE         RELAY_TYPE_INVERSE
+    // Not a relay. USB ports on/off
+    #define RELAY5_PIN          16
+    #define RELAY5_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // 1 blue led
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            3   // 3 red leds
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Lingan SWA1
+// -----------------------------------------------------------------------------
+
+#elif defined(LINGAN_SWA1)
+
+    // Info
+    #define MANUFACTURER        "LINGAN"
+    #define DEVICE              "SWA1"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// HEYGO HY02
+// -----------------------------------------------------------------------------
+
+#elif defined(HEYGO_HY02)
+
+    // Info
+    #define MANUFACTURER		"HEYGO"
+    #define DEVICE				"HY02"
+
+    // Buttons
+    #define BUTTON1_PIN			13
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			12
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			4
+    #define LED1_PIN_INVERSE	0
+
+// -----------------------------------------------------------------------------
+// Maxcio W-US002S
+// -----------------------------------------------------------------------------
+
+#elif defined(MAXCIO_WUS002S)
+
+    // Info
+    #define MANUFACTURER		"MAXCIO"
+    #define DEVICE				"WUS002S"
+
+    // Buttons
+    #define BUTTON1_PIN			2
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			13
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			3
+    #define LED1_PIN_INVERSE	0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT		1
+    #endif
+    #define HLW8012_SEL_PIN		12
+    #define HLW8012_CF1_PIN		5
+    #define HLW8012_CF_PIN		4
+
+    #define HLW8012_CURRENT_R               0.002            // Current resistor
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
+
+// -----------------------------------------------------------------------------
+// YiDian XS-SSA05
+// -----------------------------------------------------------------------------
+
+#elif defined(YIDIAN_XSSSA05)
+
+    // Info
+    #define MANUFACTURER		"YIDIAN"
+    #define DEVICE				"XSSSA05"
+
+    // Buttons
+    #define BUTTON1_PIN			13
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			12
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			4
+    #define LED1_PIN_INVERSE	0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     3
+    #define HLW8012_CF1_PIN     14
+    #define HLW8012_CF_PIN      5
+
+    #define HLW8012_CURRENT_R               0.001            // Current resistor
+    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
+
+// -----------------------------------------------------------------------------
+// TONBUX XS-SSA06
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_XSSSA06)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "XSSSA06"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          15
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // R - 8 rgb led ring
+    #define LED1_PIN_INVERSE    0
+    #define LED2_PIN            5   // G
+    #define LED2_PIN_INVERSE    0
+    #define LED3_PIN            2   // B
+    #define LED3_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// GREEN ESP8266 RELAY MODULE
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180323113846&SearchText=Green+ESP8266
+// -----------------------------------------------------------------------------
+
+#elif defined(GREEN_ESP8266RELAY)
+
+    // Info
+    #define MANUFACTURER        "GREEN"
+    #define DEVICE              "ESP8266RELAY"
+
+    // Buttons
+    // Not a button but input via Optocoupler
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Henrique Gravina ESPIKE
+// https://github.com/Henriquegravina/Espike
+// -----------------------------------------------------------------------------
+
+#elif defined(IKE_ESPIKE)
+
+    #define MANUFACTURER            "IKE"
+    #define DEVICE                  "ESPIKE"
+
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+
+    #define BUTTON1_PIN             13
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON2_PIN             12
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON3_PIN             14
+    #define BUTTON3_RELAY           2
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define RELAY1_PIN              4
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN              5
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    #define RELAY3_PIN              16
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
+
+// -----------------------------------------------------------------------------
+// SWIFITCH
+// https://github.com/ArnieX/swifitch
+// -----------------------------------------------------------------------------
+
+#elif defined(ARNIEX_SWIFITCH)
+
+    // Info
+    #define MANUFACTURER          "ARNIEX"
+    #define DEVICE                "SWIFITCH"
+
+    // Buttons
+    #define BUTTON1_PIN           4 // D2
+    #define BUTTON1_MODE          BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY         1
+
+    #define BUTTON1_PRESS         BUTTON_MODE_NONE
+    #define BUTTON1_CLICK         BUTTON_MODE_TOGGLE
+    #define BUTTON1_DBLCLICK      BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK      BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK   BUTTON_MODE_NONE
+
+    // Relays
+    #define RELAY1_PIN            5 // D1
+    #define RELAY1_TYPE           RELAY_TYPE_INVERSE
+
+    // LEDs
+    #define LED1_PIN              12 // D6
+    #define LED1_PIN_INVERSE      1
+
+// -----------------------------------------------------------------------------
+// ESP-01S RELAY v4.0
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404024035&SearchText=esp-01s+relay
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01S_RELAY_V40)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_RELAY_40"
+
+    // Relays
+    #define RELAY1_PIN          0
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
+// ESP-01S RGB LED v1.0 (some sold with ws2818)
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404023816&SearchText=esp-01s+led+controller
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01S_RGBLED_V10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_RGBLED_10"
+
+    // This board is sold as RGB LED module BUT it has on board 3 pin ph2.0 connector (VCC, GPIO2, GND)
+    // so, if you wish, you may connect LED, BUTTON, RELAY, SENSOR etc.
+
+    // Buttons
+    //#define BUTTON1_PIN         2
+
+    // Relays
+    //#define RELAY1_PIN          2
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    0
+
+
+// -----------------------------------------------------------------------------
+// ESP-01S DHT11 v1.0
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105907&SearchText=esp-01s+dht11
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01S_DHT11_V10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_DHT11_10"
+
+    // DHT11
+    #ifndef DHT_SUPPORT
+    #define DHT_SUPPORT         1
+    #endif
+    #define DHT_PIN             2
+    #define DHT_TYPE            DHT_CHIP_DHT11
+
+// -----------------------------------------------------------------------------
+// ESP-01S DS18B20 v1.0
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105933&SearchText=esp-01s+ds18b20
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_ESP01S_DS18B20_V10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP01S_DS18B20_10"
+
+    // DB18B20
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          2
+
+// -----------------------------------------------------------------------------
+// ESP-DIN relay board V1
+// https://github.com/pilotak/esp_din
+// -----------------------------------------------------------------------------
+
+#elif defined(PILOTAK_ESP_DIN_V1)
+
+    // Info
+    #define MANUFACTURER        "PILOTAK"
+    #define DEVICE              "ESP_DIN_V1"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    #define I2C_SDA_PIN         12
+    #define I2C_SCL_PIN         13
+
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          2
+
+    #ifndef RF_SUPPORT
+    #define RF_SUPPORT          1
+    #endif
+    #define RF_PIN              14
+
+    #ifndef DIGITAL_SUPPORT
+    #define DIGITAL_SUPPORT      1
+    #endif
+    #define DIGITAL_PIN          16
+    #define DIGITAL_PIN_MODE     INPUT
+
+// -----------------------------------------------------------------------------
+// Heltec Touch Relay
+// https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180408043114&SearchText=esp8266+touch+relay
+// -----------------------------------------------------------------------------
+
+#elif defined(HELTEC_TOUCHRELAY)
+
+    // Info
+    #define MANUFACTURER        "HELTEC"
+    #define DEVICE              "TOUCH_RELAY"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+
+// -----------------------------------------------------------------------------
+// Zhilde ZLD-EU44-W
+// http://www.zhilde.com/product/60705150109-805652505/EU_WiFi_Surge_Protector_Extension_Socket_4_Outlets_works_with_Amazon_Echo_Smart_Power_Strip.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ZHILDE_EU44_W)
+
+    // Info
+    #define MANUFACTURER            "ZHILDE"
+    #define DEVICE                  "EU44_W"
+
+    // Based on the reporter, this product uses GPIO1 and 3 for the button
+    // and onboard LED, so hardware serial should be disabled...
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN             3
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN              5
+    #define RELAY2_PIN              4
+    #define RELAY3_PIN              12
+    #define RELAY4_PIN              13
+    #define RELAY5_PIN              14
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY5_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                1
+    #define LED1_PIN_INVERSE        1
+
+    // -----------------------------------------------------------------------------
+    // Allnet 4duino ESP8266-UP-Relais
+    // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+    // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
+    // -----------------------------------------------------------------------------
+
+#elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
+
+    // Info
+    #define MANUFACTURER            "ALLNET"
+    #define DEVICE                  "4DUINO_IOT_WLAN_RELAIS"
+
+    // Relays
+    #define RELAY1_PIN              14
+    #define RELAY1_RESET_PIN        12
+    #define RELAY1_TYPE             RELAY_TYPE_LATCHED
+
+    // LEDs
+    #define LED1_PIN                0
+    #define LED1_PIN_INVERSE        1
+
+    // Buttons
+    //#define BUTTON1_PIN             0
+    //#define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Using pins labelled as SDA & SCL as buttons
+    #define BUTTON2_PIN             4
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON
+    #define BUTTON2_PRESS           BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK           BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    #define BUTTON3_PIN             5
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON
+
+    // Using pins labelled as SDA & SCL for I2C
+    //#define I2C_SDA_PIN             4
+    //#define I2C_SCL_PIN             5
+
+
+// -----------------------------------------------------------------------------
+// Luani HVIO
+// https://luani.de/projekte/esp8266-hvio/
+// https://luani.de/blog/esp8266-230v-io-modul/
+// -----------------------------------------------------------------------------
+
+#elif defined(LUANI_HVIO)
+
+    // Info
+    #define MANUFACTURER            "LUANI"
+    #define DEVICE                  "HVIO"
+
+    // Buttons
+    #define BUTTON1_PIN             12
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+
+    #define BUTTON2_PIN             13
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              5
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                15
+    #define LED1_PIN_INVERSE        0
+
+// -----------------------------------------------------------------------------
+// Tonbux 50-100M Smart Mosquito Killer USB
+// https://www.aliexpress.com/item/Original-Tonbux-50-100M-Smart-Mosquito-Killer-USB-Plug-No-Noise-Repellent-App-Smart-Module/32859330820.html
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_MOSQUITO_KILLER)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "MOSQUITO_KILLER"
+
+    // Buttons
+    #define BUTTON1_PIN         2
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5   // not a relay, fan
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15  // blue led
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_WIFI
+    #define LED2_PIN            14  // red led
+    #define LED2_PIN_INVERSE    1
+    #define LED2_MODE           LED_MODE_RELAY
+
+    #define LED3_PIN            12  // UV leds (1-2-3-4-5-6-7-8)
+    #define LED3_PIN_INVERSE    0
+    #define LED3_RELAY          1
+    #define LED4_PIN            16  // UV leds (9-10-11)
+    #define LED4_PIN_INVERSE    0
+    #define LED4_RELAY          1
+
+// -----------------------------------------------------------------------------
+// NEO Coolcam Power Plug
+// https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
+// -----------------------------------------------------------------------------
+
+#elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+
+    // Info
+    #define MANUFACTURER        "NEO_COOLCAM"
+    #define DEVICE              "POWER_PLUG_WIFI"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+
+// ------------------------------------------------------------------------------
+// Estink Wifi Power Strip
+// https://www.amazon.de/Steckdosenleiste-Ladeger%C3%A4t-Sprachsteuerung-SmartphonesTablets-Android/dp/B0796W5FZY
+// Fornorm Wi-Fi USB Extension Socket (ZLD-34EU)
+// https://www.aliexpress.com/item/Fornorm-WiFi-Extension-Socket-with-Surge-Protector-Smart-Power-Strip-3-Outlets-and-4-USB-Charging/32849743948.html
+// -----------------------------------------------------------------------------
+
+#elif defined(ESTINK_WIFI_POWER_STRIP)
+
+    // Info
+    #define MANUFACTURER        "ESTINK"
+    #define DEVICE              "WIFI_POWER_STRIP"
+
+    // Disable UART noise since this board uses GPIO3
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_PIN         16
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       4
+
+    // Relays
+    #define RELAY1_PIN          14  // USB power
+    #define RELAY2_PIN          13  // power plug 1
+    #define RELAY3_PIN          4   // power plug 2
+    #define RELAY4_PIN          15  // power plug 3
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            0   // power led
+    #define LED2_PIN            12  // power plug 1
+    #define LED3_PIN            3   // power plug 2
+    #define LED4_PIN            5   // power plug 3
+
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN_INVERSE    1
+    #define LED3_PIN_INVERSE    1
+    #define LED4_PIN_INVERSE    1
+
+    #define LED1_MODE           LED_MODE_FINDME
+    #define LED2_MODE           LED_MODE_FOLLOW
+    #define LED3_MODE           LED_MODE_FOLLOW
+    #define LED4_MODE           LED_MODE_FOLLOW
+
+    #define LED2_RELAY          2
+    #define LED3_RELAY          3
+    #define LED4_RELAY          4
+
+// -----------------------------------------------------------------------------
+// TEST boards (do not use!!)
+// -----------------------------------------------------------------------------
+
+#elif defined(TRAVIS01)
+
+    // Info
+    #define MANUFACTURER            "TravisCI"
+    #define DEVICE                  "Virtual board 01"
+
+    // Some buttons - pin 0
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Some relays - pin 1
+    #define RELAY1_PIN          1
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Some LEDs - pin 2
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // A bit of I2C - pins 3,4
+    #define I2C_SDA_PIN         3
+    #define I2C_SCL_PIN         4
+
+    // And, as they say in "From Dusk till Dawn":
+    // This is a sensor blow out!
+    // Alright, we got white sensor, black sensor, spanish sensor, yellow sensor. We got hot sensor, cold sensor.
+    // We got wet sensor. We got smelly sensor. We got hairy sensor, bloody sensor. We got snapping sensor.
+    // We got silk sensor, velvet sensor, naugahyde sensor. We even got horse sensor, dog sensor, chicken sensor.
+    // C'mon, you want sensor, come on in sensor lovers!
+    // If we don’t got it, you don't want it!
+    #define AM2320_SUPPORT        1
+    #define BH1750_SUPPORT        1
+    #define BMX280_SUPPORT        1
+    #define SHT3X_I2C_SUPPORT     1
+    #define EMON_ADC121_SUPPORT   1
+    #define EMON_ADS1X15_SUPPORT  1
+    #define SHT3X_I2C_SUPPORT     1
+    #define SI7021_SUPPORT        1
+
+
+    // A bit of lights - pin 5
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_CHANNELS      1
+    #define LIGHT_CH1_PIN       5
+    #define LIGHT_CH1_INVERSE   0
+
+    // A bit of HLW8012 - pins 6,7,8
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     6
+    #define HLW8012_CF1_PIN     7
+    #define HLW8012_CF_PIN      8
+
+    // A bit of Dallas - pin 9
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          9
+
+    // A bit of ECH1560 - pins 10,11, 12
+    #ifndef ECH1560_SUPPORT
+    #define ECH1560_SUPPORT     1
+    #endif
+    #define ECH1560_CLK_PIN     10
+    #define ECH1560_MISO_PIN    11
+    #define ECH1560_INVERTED    12
+
+#elif defined(TRAVIS02)
+
+    // Relay provider dual
+    #define MANUFACTURER            "TravisCI"
+    #define DEVICE                  "Virtual board 02"
+
+    // A bit of CSE7766 - pin 1
+    #ifndef CSE7766_SUPPORT
+    #define CSE7766_SUPPORT     1
+    #endif
+    #define CSE7766_PIN         1
+
+    // Relay type dual  - pins 2,3
+    #define RELAY_PROVIDER      RELAY_PROVIDER_DUAL
+    #define RELAY1_PIN          2
+    #define RELAY2_PIN          3
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // IR - pin 4
+    #define IR_SUPPORT          1
+    #define IR_PIN              4
+    #define IR_BUTTON_SET       1
+
+    // A bit of DHT - pin 5
+    #ifndef DHT_SUPPORT
+    #define DHT_SUPPORT         1
+    #endif
+    #define DHT_PIN             5
+
+    // A bit of TMP3X (analog)
+    #define TMP3X_SUPPORT       1
+
+    // A bit of EVENTS - pin 10
+    #define EVENTS_SUPPORT      1
+    #define EVENTS_PIN          6
+
+    // HC-RS04
+    #define HCSR04_SUPPORT      1
+    #define HCSR04_TRIGGER      7
+    #define HCSR04_ECHO         8
+
+    // MHZ19
+    #define MHZ19_SUPPORT       1
+    #define MHZ19_RX_PIN        9
+    #define MHZ19_TX_PIN        10
+
+    // PZEM004T
+    #define PZEM004T_SUPPORT    0   // not working?
+    #define PZEM004T_RX_PIN     11
+    #define PZEM004T_TX_PIN     12
+
+    // V9261F
+    #define V9261F_SUPPORT      1
+    #define V9261F_PIN          13
+
+    // GUVAS12SD
+    #define GUVAS12SD_SUPPORT   1
+    #define GUVAS12SD_PIN       14
+
+#elif defined(TRAVIS03)
+
+    // Relay provider light/my92XX
+    #define MANUFACTURER            "TravisCI"
+    #define DEVICE                  "Virtual board 03"
+
+    // MY9231 Light - pins 1,2
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
+    #define MY92XX_CHIPS        2
+    #define MY92XX_DI_PIN       1
+    #define MY92XX_DCKI_PIN     2
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      4, 3, 5, 0, 1
+
+    // A bit of Analog EMON (analog)
+    #ifndef EMON_ANALOG_SUPPORT
+    #define EMON_ANALOG_SUPPORT 1
+    #endif
 
 #endif
 
 // -----------------------------------------------------------------------------
 // Check definitions
 // -----------------------------------------------------------------------------
+
 #if not defined(MANUFACTURER) || not defined(DEVICE)
     #error "UNSUPPORTED HARDWARE!!"
 #endif

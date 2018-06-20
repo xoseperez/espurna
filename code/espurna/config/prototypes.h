@@ -8,6 +8,12 @@ extern "C" {
 }
 
 // -----------------------------------------------------------------------------
+// EEPROM_ROTATE
+// -----------------------------------------------------------------------------
+#include <EEPROM_Rotate.h>
+EEPROM_Rotate EEPROMr;
+
+// -----------------------------------------------------------------------------
 // WebServer
 // -----------------------------------------------------------------------------
 #include <ESPAsyncWebServer.h>
@@ -33,6 +39,9 @@ void wsOnActionRegister(ws_on_action_callback_f callback);
 typedef std::function<void(void)> ws_on_after_parse_callback_f;
 void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
 
+typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
+void wsOnReceiveRegister(ws_on_receive_callback_f callback);
+
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
@@ -45,7 +54,7 @@ void wifiRegister(wifi_callback_f callback);
 // -----------------------------------------------------------------------------
 typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
 void mqttRegister(mqtt_callback_f callback);
-String mqttTopicKey(char * topic);
+String mqttMagnitude(char * topic);
 
 // -----------------------------------------------------------------------------
 // Broker
@@ -60,16 +69,36 @@ template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
-bool settingsGetJson(JsonObject& data);
+void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
 void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
+void settingsInject(void *data, size_t len);
+Stream & settingsSerial();
 
 // -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
-unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
+void i2cScan();
+void i2cClearBus();
 bool i2cGetLock(unsigned char address);
 bool i2cReleaseLock(unsigned char address);
+unsigned char i2cFindAndLock(size_t size, unsigned char * addresses);
+
+void i2c_wakeup(uint8_t address);
+uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len);
+uint8_t i2c_write_uint8(uint8_t address, uint8_t value);
+uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value);
+uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value1, uint8_t value2);
+uint8_t i2c_write_uint16(uint8_t address, uint16_t value);
+uint8_t i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value);
+uint8_t i2c_read_uint8(uint8_t address);
+uint8_t i2c_read_uint8(uint8_t address, uint8_t reg);
+uint16_t i2c_read_uint16(uint8_t address);
+uint16_t i2c_read_uint16(uint8_t address, uint8_t reg);
+uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg);
+int16_t i2c_read_int16(uint8_t address, uint8_t reg);
+int16_t i2c_read_int16_le(uint8_t address, uint8_t reg);
+void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 
 // -----------------------------------------------------------------------------
 // GPIO
@@ -94,3 +123,7 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
 // Utils
 // -----------------------------------------------------------------------------
 char * ltrim(char * s);
+void nice_delay(unsigned long ms);
+
+#define ARRAYINIT(type, name, ...) \
+    type name[] = {__VA_ARGS__};

@@ -7,6 +7,10 @@
 
 #pragma once
 
+// Set ADC to TOUT pin
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
+
 #include "Arduino.h"
 #include "EmonSensor.h"
 
@@ -66,7 +70,6 @@ class EmonAnalogSensor : public EmonSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return MAGNITUDE_CURRENT;
@@ -77,7 +80,6 @@ class EmonAnalogSensor : public EmonSensor {
             #if EMON_REPORT_ENERGY
                 if (index == i) return MAGNITUDE_ENERGY;
             #endif
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -100,10 +102,7 @@ class EmonAnalogSensor : public EmonSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-
-            _error = SENSOR_ERROR_OK;
             unsigned char channel = index / _magnitudes;
-
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return _current[channel];
@@ -114,10 +113,7 @@ class EmonAnalogSensor : public EmonSensor {
             #if EMON_REPORT_ENERGY
                 if (index == i) return _energy[channel];
             #endif
-
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
-
         }
 
     protected:
