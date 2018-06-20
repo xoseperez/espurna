@@ -114,7 +114,7 @@ def get_boards():
 
 def get_device_size(device):
     if device.get('mem_size', 0) == device.get('sdk_size', 0):
-        return int(device.get('mem_size', 0) / 1024
+        return int(device.get('mem_size', 0)) / 1024
     return 0
 
 def get_empty_board():
