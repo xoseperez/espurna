@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Abstract sensor class (other sensor classes extend this class)
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT
@@ -10,8 +10,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#define GPIO_NONE                   0x99
-
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
@@ -20,6 +18,10 @@
 #define SENSOR_ERROR_CRC            5       // Sensor data corrupted
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
+#define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
+#define SENSOR_ERROR_OTHER          99      // Any other error
+
+typedef std::function<void(unsigned char, const char *)> TSensorCallback;
 
 class BaseSensor {
 
@@ -46,6 +48,12 @@ class BaseSensor {
         // Descriptive name of the sensor
         virtual String description() {}
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        virtual String address(unsigned char index) {}
+
+        // Descriptive name of the slot # index
+        virtual String slot(unsigned char index) {};
+
         // Type for slot # index
         virtual unsigned char type(unsigned char index) {}
 
@@ -61,14 +69,14 @@ class BaseSensor {
         // Load the configuration manifest
         static void manifest(JsonArray& root) {};
 
-        // Descriptive name of the slot # index
-        String slot(unsigned char index) { return description(); }
-
         // Sensor ID
         unsigned char getID() { return _sensor_id; };
 
-        // Return sensor status (true for ready)
-        bool status() { return _error == 0; }
+        // Return status (true if no errors)
+        bool status() { return 0 == _error; }
+
+        // Return ready status (true for ready)
+        bool ready() { return _ready; }
 
         // Return sensor last internal error
         int error() { return _error; }
@@ -76,12 +84,17 @@ class BaseSensor {
         // Number of available slots
         unsigned char count() { return _count; }
 
+        // Hook for event callback
+        void onEvent(TSensorCallback fn) { _callback = fn; };
+
     protected:
 
+        TSensorCallback _callback = NULL;
         unsigned char _sensor_id = 0x00;
         int _error = 0;
         bool _dirty = true;
         unsigned char _count = 0;
+        bool _ready = false;
 
 };
 

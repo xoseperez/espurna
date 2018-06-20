@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // ADS121-based Energy Monitor Sensor over I2C
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ADC121_SUPPORT
@@ -8,13 +8,7 @@
 #pragma once
 
 #include "Arduino.h"
-#include "EmonAnalogSensor.h"
-
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
-#include <Wire.h>
-#endif
+#include "EmonSensor.h"
 
 // ADC121 Registers
 #define ADC121_REG_RESULT       0x00
@@ -29,7 +23,7 @@
 #define ADC121_RESOLUTION       12
 #define ADC121_CHANNELS         1
 
-class EmonADC121Sensor : public EmonAnalogSensor {
+class EmonADC121Sensor : public EmonSensor {
 
     public:
 
@@ -37,7 +31,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        EmonADC121Sensor(): EmonAnalogSensor() {
+        EmonADC121Sensor(): EmonSensor() {
             _channels = ADC121_CHANNELS;
             _sensor_id = SENSOR_EMON_ADC121_ID;
             init();
@@ -59,19 +53,7 @@ class EmonADC121Sensor : public EmonAnalogSensor {
             if (_address == 0) return;
 
             // Init sensor
-            #if I2C_USE_BRZO
-                uint8_t buffer[2];
-                buffer[0] = ADC121_REG_CONFIG;
-                buffer[1] = 0x00;
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 2, false);
-                brzo_i2c_end_transaction();
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(ADC121_REG_CONFIG);
-                Wire.write(0x00);
-                Wire.endTransmission();
-            #endif
+            _init();
 
             // Just one channel
             _count = _magnitudes;
@@ -102,8 +84,49 @@ class EmonADC121Sensor : public EmonAnalogSensor {
                 return;
             }
 
-            EmonAnalogSensor:pre();
+            _current[0] = read(0);
 
+            #if EMON_REPORT_ENERGY
+                static unsigned long last = 0;
+                if (last > 0) {
+                    _energy[0] += (_current[0] * _voltage * (millis() - last) / 1000);
+                }
+                last = millis();
+            #endif
+
+            _error = SENSOR_ERROR_OK;
+
+        }
+
+        // Type for slot # index
+        unsigned char type(unsigned char index) {
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return MAGNITUDE_CURRENT;
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return MAGNITUDE_POWER_APPARENT;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return MAGNITUDE_ENERGY;
+            #endif
+            return MAGNITUDE_NONE;
+        }
+
+        // Current value for slot # index
+        double value(unsigned char index) {
+            unsigned char channel = index / _magnitudes;
+            unsigned char i=0;
+            #if EMON_REPORT_CURRENT
+                if (index == i++) return _current[channel];
+            #endif
+            #if EMON_REPORT_POWER
+                if (index == i++) return _current[channel] * _voltage;
+            #endif
+            #if EMON_REPORT_ENERGY
+                if (index == i) return _energy[channel];
+            #endif
+            return 0;
         }
 
     protected:
@@ -112,32 +135,14 @@ class EmonADC121Sensor : public EmonAnalogSensor {
         // Protected
         // ---------------------------------------------------------------------
 
+        void _init() {
+            i2c_write_uint8(_address, ADC121_REG_CONFIG, 0);
+        }
+
         unsigned int readADC(unsigned char channel) {
-
             (void) channel;
-
-            unsigned int value;
-
-            #if I2C_USE_BRZO
-                uint8_t buffer[2];
-                buffer[0] = ADC121_REG_RESULT;
-                brzo_i2c_start_transaction(_address, I2C_SCL_FREQUENCY);
-                brzo_i2c_write(buffer, 1, false);
-                brzo_i2c_read(buffer, 2, false);
-                brzo_i2c_end_transaction();
-                value = (buffer[0] & 0x0F) << 8;
-                value |= buffer[1];
-            #else
-                Wire.beginTransmission(_address);
-                Wire.write(ADC121_REG_RESULT);
-                Wire.endTransmission();
-                Wire.requestFrom(_address, (unsigned char) 2);
-                value = (Wire.read() & 0x0F) << 8;
-                value = value + Wire.read();
-            #endif
-
+            unsigned int value = i2c_read_uint16(_address, ADC121_REG_RESULT) & 0x0FFF;
             return value;
-
         }
 
 };

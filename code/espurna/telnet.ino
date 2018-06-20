@@ -2,7 +2,7 @@
 
 TELNET MODULE
 
-Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 (https://github.com/sarfata/kbox-firmware/tree/master/src/esp)
 
@@ -14,15 +14,24 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
 AsyncServer * _telnetServer;
 AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
+bool _telnetFirst = true;
 
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "telnet", 6) == 0);
+}
+
 void _telnetWebSocketOnSend(JsonObject& root) {
     root["telnetVisible"] = 1;
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
 }
+
+#endif
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
@@ -49,8 +58,23 @@ unsigned char _telnetWrite(void *data, size_t len) {
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
 
+    // Skip first message since it's always garbage
+    if (_telnetFirst) {
+        _telnetFirst = false;
+        return;
+    }
+
     // Capture close connection
     char * p = (char *) data;
+
+    // C-d is sent as two bytes (sometimes repeating)
+    if (len >= 2) {
+        if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
+            _telnetClients[clientId]->close(true);
+            return;
+        }
+    }
+
     if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {
         _telnetClients[clientId]->close();
         return;
@@ -64,7 +88,14 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 void _telnetNewClient(AsyncClient *client) {
 
     if (client->localIP() != WiFi.softAPIP()) {
-        bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+
+        // Telnet is always available for the ESPurna Core image
+        #ifdef ESPURNA_CORE
+            bool telnetSTA = true;
+        #else
+            bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+        #endif
+
         if (!telnetSTA) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
             client->onDisconnect([](void *s, AsyncClient *c) {
@@ -74,6 +105,7 @@ void _telnetNewClient(AsyncClient *client) {
             client->close(true);
             return;
         }
+
     }
 
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
@@ -93,15 +125,25 @@ void _telnetNewClient(AsyncClient *client) {
             }, 0);
 
             client->onError([i](void *s, AsyncClient *c, int8_t error) {
-                DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%d\n"), c->errorToString(error), error, i);
+                DEBUG_MSG_P(PSTR("[TELNET] Error %s (%d) on client #%u\n"), c->errorToString(error), error, i);
             }, 0);
 
             client->onTimeout([i](void *s, AsyncClient *c, uint32_t time) {
-                DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%d at %i\n"), i, time);
+                DEBUG_MSG_P(PSTR("[TELNET] Timeout on client #%u at %lu\n"), i, time);
                 c->close();
             }, 0);
 
-            DEBUG_MSG_P(PSTR("[TELNET] Client #%d connected\n"), i);
+            DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+
+            // If there is no terminal support automatically dump info and crash data
+            #if TERMINAL_SUPPORT == 0
+                info();
+                wifiDebug();
+                debugDumpCrashInfo();
+                debugClearCrashInfo();
+            #endif
+
+            _telnetFirst = true;
             wifiReconnectCheck();
             return;
 
@@ -144,6 +186,7 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_telnetWebSocketOnSend);
+        wsOnReceiveRegister(_telnetWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);

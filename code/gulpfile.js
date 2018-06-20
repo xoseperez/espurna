@@ -2,7 +2,7 @@
 
 ESP8266 file system builder
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+/*eslint quotes: ["error", "single"]*/
+/*eslint-env es6*/
+
 // -----------------------------------------------------------------------------
 // File system builder
 // -----------------------------------------------------------------------------
@@ -26,62 +29,76 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 const fs = require('fs');
 const gulp = require('gulp');
 const htmlmin = require('gulp-htmlmin');
-const cleancss = require('gulp-clean-css');
 const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
-const gutil = require('gulp-util');
+const log = require('fancy-log');
+const csslint = require('gulp-csslint');
+const crass = require('gulp-crass');
+const replace = require('gulp-replace');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
-
-String.prototype.replaceAll = function(search, replacement) {
-    var target = this;
-    return target.split(search).join(replacement);
-};
 
 var toHeader = function(filename) {
 
     var source = dataFolder + filename;
     var destination = staticFolder + filename + '.h';
-    var safename = filename.replaceAll('.', '_');
+    var safename = filename.split('.').join('_');
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
-        console.log(err);
+        log.error(err);
     });
 
     var data = fs.readFileSync(source);
 
     wstream.write('#define ' + safename + '_len ' + data.length + '\n');
-    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {')
+    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
 
-    for (i=0; i<data.length; i++) {
-        if (i % 20 == 0) wstream.write("\n");
+    for (var i=0; i<data.length; i++) {
+        if (0 === (i % 20)) {
+            wstream.write('\n');
+        }
         wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i<data.length-1) wstream.write(',');
+        if (i < (data.length - 1)) {
+          wstream.write(',');
+        }
     }
 
-    wstream.write('\n};')
+    wstream.write('\n};');
     wstream.end();
 
-}
+};
 
-function htmllintReporter(filepath, issues) {
+var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
 		issues.forEach(function (issue) {
-			gutil.log(gutil.colors.cyan('[gulp-htmllint] ') + gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') + gutil.colors.red('(' + issue.code + ') ' + issue.msg));
+			log.info(
+                '[gulp-htmllint] ' +
+                filepath + ' [' +
+                issue.line + ',' +
+                issue.column + ']: ' +
+                '(' + issue.code + ') ' +
+                issue.msg
+            );
 		});
 		process.exitCode = 1;
 	}
-}
+};
 
 gulp.task('build_certs', function() {
     toHeader('server.cer');
     toHeader('server.key');
+});
+
+gulp.task('csslint', function() {
+    gulp.src('html/*.css').
+        pipe(csslint({ids: false})).
+        pipe(csslint.formatter());
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
@@ -89,29 +106,31 @@ gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
 });
 
 gulp.task('buildfs_inline', function() {
-    return gulp.src('html/*.html')
-        .pipe(htmllint({
+    return gulp.src('html/*.html').
+        pipe(htmllint({
             'failOnError': true,
             'rules': {
                 'id-class-style': false,
                 'label-req-for': false,
             }
-        }, htmllintReporter))
-        .pipe(favicon())
-        .pipe(inline({
+        }, htmllintReporter)).
+        pipe(favicon()).
+        pipe(inline({
             base: 'html/',
             js: [uglify],
-            css: [cleancss, inlineImages],
+            css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
-        }))
-        .pipe(htmlmin({
+        })).
+        pipe(htmlmin({
             collapseWhitespace: true,
             removeComments: true,
             minifyCSS: true,
             minifyJS: true
-        }))
-        .pipe(gzip())
-        .pipe(gulp.dest(dataFolder));
-})
+        })).
+        pipe(replace('pure-', 'p-')).
+        pipe(gzip()).
+        pipe(gulp.dest(dataFolder));
+});
+
 
 gulp.task('default', ['buildfs_embeded']);

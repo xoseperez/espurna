@@ -3,7 +3,7 @@
 // Based on: https://github.com/nara256/mhz19_uart
 // http://www.winsen-sensor.com/d/files/infrared-gas-sensor/mh-z19b-co2-ver1_0.pdf
 // Uses SoftwareSerial library
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && MHZ19_SUPPORT
@@ -72,28 +72,41 @@ class MHZ19Sensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_serial) delete _serial;
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 256);
+            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 32);
+            _serial->enableIntTx(false);
             _serial->begin(9600);
             calibrateAuto(false);
+
+            _ready = true;
+            _dirty = false;
 
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%i,%i)", _pin_rx, _pin_tx);
+            snprintf(buffer, sizeof(buffer), "MHZ19 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[6];
+            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
             return String(buffer);
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CO2;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -103,9 +116,7 @@ class MHZ19Sensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _co2;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
@@ -185,6 +196,8 @@ class MHZ19Sensor : public BaseSensor {
                     _error = SENSOR_ERROR_OUT_OF_RANGE;
                 }
 
+            } else {
+                _error = SENSOR_ERROR_CRC;
             }
 
         }

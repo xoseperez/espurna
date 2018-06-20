@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // V9261F based power monitor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && V9261F_SUPPORT
@@ -9,6 +9,9 @@
 
 #include "Arduino.h"
 #include "BaseSensor.h"
+extern "C" {
+    #include "libs/fs_math.h"
+}
 
 #include <SoftwareSerial.h>
 
@@ -20,7 +23,7 @@ class V9261FSensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        V9261FSensor(): BaseSensor() {
+        V9261FSensor(): BaseSensor(), _data() {
             _count = 6;
             _sensor_id = SENSOR_V9261F_ID;
         }
@@ -61,20 +64,33 @@ class V9261FSensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             if (_serial) delete _serial;
 
-            _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 256);
+            _serial = new SoftwareSerial(_pin_rx, SW_SERIAL_UNUSED_PIN, _inverted, 32);
+            _serial->enableIntTx(false);
             _serial->begin(V9261F_BAUDRATE);
+
+            _ready = true;
+            _dirty = false;
 
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "V9261F @ SwSerial(%i,NULL)", _pin_rx);
+            snprintf(buffer, sizeof(buffer), "V9261F @ SwSerial(%u,NULL)", _pin_rx);
             return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_pin_rx);
         }
 
         // Loop-like method, call it in your main loop
@@ -84,27 +100,23 @@ class V9261FSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
             if (index == 3) return MAGNITUDE_POWER_REACTIVE;
             if (index == 4) return MAGNITUDE_POWER_APPARENT;
             if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _active;
             if (index == 3) return _reactive;
             if (index == 4) return _apparent;
             if (index == 5) return _apparent > 0 ? 100 * _active / _apparent : 100;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
@@ -194,7 +206,7 @@ class V9261FSensor : public BaseSensor {
                     if (_voltage < 0) _voltage = 0;
                     if (_current < 0) _current = 0;
 
-                    _apparent = sqrt(_reactive * _reactive + _active * _active);
+                    _apparent = fs_sqrt(_reactive * _reactive + _active * _active);
 
                 }
 

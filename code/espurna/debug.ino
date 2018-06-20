@@ -2,7 +2,7 @@
 
 DEBUG MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -10,6 +10,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <EEPROM_Rotate.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -17,8 +18,79 @@ extern "C" {
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
-WiFiUDP udpDebug;
+WiFiUDP _udp_debug;
+#if DEBUG_UDP_PORT == 514
+char _udp_syslog_header[40] = {0};
 #endif
+#endif
+
+void _debugSend(char * message) {
+
+    bool pause = false;
+
+    #if DEBUG_ADD_TIMESTAMP
+        static bool add_timestamp = true;
+        char timestamp[10] = {0};
+        if (add_timestamp) snprintf_P(timestamp, sizeof(timestamp), PSTR("[%06lu] "), millis() % 1000000);
+        add_timestamp = (message[strlen(message)-1] == 10) || (message[strlen(message)-1] == 13);
+    #endif
+
+    #if DEBUG_SERIAL_SUPPORT
+        #if DEBUG_ADD_TIMESTAMP
+            DEBUG_PORT.printf(timestamp);
+        #endif
+        DEBUG_PORT.printf(message);
+    #endif
+
+    #if DEBUG_UDP_SUPPORT
+        #if SYSTEM_CHECK_ENABLED
+        if (systemCheck()) {
+        #endif
+            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
+            #if DEBUG_UDP_PORT == 514
+                _udp_debug.write(_udp_syslog_header);
+            #endif
+            _udp_debug.write(message);
+            _udp_debug.endPacket();
+            pause = true;
+        #if SYSTEM_CHECK_ENABLED
+        }
+        #endif
+    #endif
+
+    #if DEBUG_TELNET_SUPPORT
+        #if DEBUG_ADD_TIMESTAMP
+            _telnetWrite(timestamp, strlen(timestamp));
+        #endif
+        _telnetWrite(message, strlen(message));
+        pause = true;
+    #endif
+
+    #if DEBUG_WEB_SUPPORT
+        if (wsConnected() && (getFreeHeap() > 10000)) {
+            DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(1) + strlen(message) + 17);
+            JsonObject &root = jsonBuffer.createObject();
+            #if DEBUG_ADD_TIMESTAMP
+                char buffer[strlen(timestamp) + strlen(message) + 1];
+                snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
+                root.set("weblog", buffer);
+            #else
+                root.set("weblog", message);
+            #endif
+            String out;
+            root.printTo(out);
+            jsonBuffer.clear();
+
+            wsSend(out.c_str());
+            pause = true;
+        }
+    #endif
+
+    if (pause) optimistic_yield(100);
+
+}
+
+// -----------------------------------------------------------------------------
 
 void debugSend(const char * format, ...) {
 
@@ -30,66 +102,67 @@ void debugSend(const char * format, ...) {
     ets_vsnprintf(buffer, len, format, args);
     va_end(args);
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.printf(buffer);
-    #endif
+    _debugSend(buffer);
 
-    #if DEBUG_UDP_SUPPORT
-        #if SYSTEM_CHECK_ENABLED
-        if (systemCheck()) {
-        #endif
-            udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            udpDebug.write(buffer);
-            udpDebug.endPacket();
-            delay(1);
-        #if SYSTEM_CHECK_ENABLED
-        }
-        #endif
-    #endif
-
-    #if DEBUG_TELNET_SUPPORT
-        _telnetWrite(buffer, strlen(buffer));
-    #endif
-
-    free(buffer);
+    delete[] buffer;
 
 }
 
-void debugSend_P(PGM_P format, ...) {
+void debugSend_P(PGM_P format_P, ...) {
 
-    char f[DEBUG_FORMAT_MAX_LENGTH+1];
-    memcpy_P(f, format, DEBUG_FORMAT_MAX_LENGTH);
+    char format[strlen_P(format_P)+1];
+    memcpy_P(format, format_P, sizeof(format));
 
     va_list args;
-    va_start(args, format);
+    va_start(args, format_P);
     char test[1];
-    int len = ets_vsnprintf(test, 1, f, args) + 1;
+    int len = ets_vsnprintf(test, 1, format, args) + 1;
     char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, f, args);
+    ets_vsnprintf(buffer, len, format, args);
     va_end(args);
 
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.printf(buffer);
-    #endif
+    _debugSend(buffer);
+
+    delete[] buffer;
+
+}
+
+#if DEBUG_WEB_SUPPORT
+
+void debugWebSetup() {
+
+    wsOnSendRegister([](JsonObject& root) {
+        root["dbgVisible"] = 1;
+    });
+
+    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
+        if (strcmp(action, "dbgcmd") == 0) {
+            const char* command = data.get<const char*>("command");
+            char buffer[strlen(command) + 2];
+            snprintf(buffer, sizeof(buffer), "%s\n", command);
+            settingsInject((void*) buffer, strlen(buffer));
+        }
+    });
 
     #if DEBUG_UDP_SUPPORT
-        #if SYSTEM_CHECK_ENABLED
-        if (systemCheck()) {
-        #endif
-            udpDebug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            udpDebug.write(buffer);
-            udpDebug.endPacket();
-            delay(1);
-        #if SYSTEM_CHECK_ENABLED
-        }
-        #endif
+    #if DEBUG_UDP_PORT == 514
+        snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
+    #endif
     #endif
 
-    #if DEBUG_TELNET_SUPPORT
-        _telnetWrite(buffer, strlen(buffer));
-    #endif
 
-    free(buffer);
+}
+
+#endif // DEBUG_WEB_SUPPORT
+
+void debugSetup() {
+
+    #if DEBUG_SERIAL_SUPPORT
+        DEBUG_PORT.begin(SERIAL_BAUDRATE);
+        #if DEBUG_ESP_WIFI
+            DEBUG_PORT.setDebugOutput(true);
+        #endif
+    #endif
 
 }
 
@@ -141,31 +214,31 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     // write crash time to EEPROM
     uint32_t crash_time = millis();
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
 
     // write reset info to EEPROM
-    EEPROM.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rst_info->reason);
-    EEPROM.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rst_info->exccause);
+    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rst_info->reason);
+    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rst_info->exccause);
 
     // write epc1, epc2, epc3, excvaddr and depc to EEPROM
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rst_info->epc1);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rst_info->epc2);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rst_info->epc3);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rst_info->depc);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rst_info->epc1);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rst_info->epc2);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rst_info->epc3);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rst_info->depc);
 
     // write stack start and end address to EEPROM
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
 
     // write stack trace to EEPROM
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     for (uint32_t i = stack_start; i < stack_end; i++) {
         byte* byteValue = (byte*) i;
-        EEPROM.write(current_address++, *byteValue);
+        EEPROMr.write(current_address++, *byteValue);
     }
 
-    EEPROM.commit();
+    EEPROMr.commit();
 
 }
 
@@ -174,8 +247,8 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
  */
 void debugClearCrashInfo() {
     uint32_t crash_time = 0xFFFFFFFF;
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    EEPROM.commit();
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+    EEPROMr.commit();
 }
 
 /**
@@ -184,28 +257,28 @@ void debugClearCrashInfo() {
 void debugDumpCrashInfo() {
 
     uint32_t crash_time;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
     if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
         DEBUG_MSG_P(PSTR("[DEBUG] No crash info\n"));
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[DEBUG] Crash at %ld ms\n"), crash_time);
-    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %d\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %d\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
+    DEBUG_MSG_P(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
+    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
+    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 
     uint32_t epc1, epc2, epc3, excvaddr, depc;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
     DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
     DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
 
     uint32_t stack_start, stack_end;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
+    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
     DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     int16_t stack_len = stack_end - stack_start;
@@ -213,7 +286,7 @@ void debugDumpCrashInfo() {
     for (int16_t i = 0; i < stack_len; i += 0x10) {
         DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
         for (byte j = 0; j < 4; j++) {
-            EEPROM.get(current_address, stack_trace);
+            EEPROMr.get(current_address, stack_trace);
             DEBUG_MSG_P(PSTR("%08x "), stack_trace);
             current_address += 4;
         }
@@ -222,4 +295,5 @@ void debugDumpCrashInfo() {
     DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
 
 }
+
 #endif // DEBUG_SUPPORT

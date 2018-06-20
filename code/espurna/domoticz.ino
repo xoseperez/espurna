@@ -2,7 +2,7 @@
 
 DOMOTICZ MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -11,28 +11,18 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 bool _dcz_enabled = false;
-unsigned long _dcz_skip_time = 0;
-unsigned long _dcz_last_idx = 0;
-unsigned long _dcz_last_time = 0;
 
 //------------------------------------------------------------------------------
 // Private methods
 //------------------------------------------------------------------------------
 
-int _domoticzRelay(unsigned int idx) {
-    for (int relayID=0; relayID<relayCount(); relayID++) {
+unsigned char _domoticzRelay(unsigned int idx) {
+    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
         if (domoticzIdx(relayID) == idx) {
             return relayID;
         }
     }
     return -1;
-}
-
-bool _domoticzSkip(unsigned long idx) {
-    if (idx == _dcz_last_idx && (millis() - _dcz_last_time < _dcz_skip_time)) return true;
-    _dcz_last_idx = idx;
-    _dcz_last_time = millis();
-    return false;
 }
 
 void _domoticzMqttSubscribe(bool value) {
@@ -53,7 +43,13 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
     String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
     if (type == MQTT_CONNECT_EVENT) {
+
+        // Subscribe to domoticz action topics
         mqttSubscribeRaw(dczTopicOut.c_str());
+
+        // Send relays state on connection
+        domoticzSendRelays();
+
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
@@ -70,17 +66,12 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
             }
 
             // IDX
-            unsigned long idx = root["idx"];
-            int relayID = _domoticzRelay(idx);
+            unsigned int idx = root["idx"];
+            unsigned char relayID = _domoticzRelay(idx);
             if (relayID >= 0) {
-
-                // Skip message if recursive
-                if (_domoticzSkip(idx)) return;
-
-                unsigned long value = root["nvalue"];
-                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %d for IDX %d\n"), value, idx);
+                unsigned char value = root["nvalue"];
+                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
                 relayStatus(relayID, value == 1);
-
             }
 
         }
@@ -89,16 +80,21 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
 };
 
+#if WEB_SUPPORT
+
+bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "dcz", 3) == 0);
+}
+
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
     root["dczVisible"] = 1;
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
-    root["dczSkip"] = getSetting("dczSkip", DOMOTICZ_SKIP_TIME);
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
 
-    JsonArray& relays = root.createNestedArray("dczRelayIdx");
-    for (byte i=0; i<relayCount(); i++) {
+    JsonArray& relays = root.createNestedArray("dczRelays");
+    for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
 
@@ -115,10 +111,12 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
 
 }
 
+#endif // WEB_SUPPORT
+
 void _domoticzConfigure() {
-    _dcz_enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
-    _dcz_skip_time = 1000 * getSetting("dczSkip", DOMOTICZ_SKIP_TIME).toInt();
-    _domoticzMqttSubscribe(_dcz_enabled);
+    bool enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
+    if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
+    _dcz_enabled = enabled;
 }
 
 //------------------------------------------------------------------------------
@@ -129,14 +127,9 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
     if (!_dcz_enabled) return;
     unsigned int idx = getSetting(key).toInt();
     if (idx > 0) {
-
-        // Skip message if recursive
-        if (_domoticzSkip(idx)) return;
-
         char payload[128];
-        snprintf(payload, sizeof(payload), "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
+        snprintf(payload, sizeof(payload), "{\"idx\": %u, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
         mqttSendRaw(getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
-
     }
 }
 
@@ -144,16 +137,22 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
     domoticzSend(key, nvalue, "");
 }
 
-void domoticzSendRelay(unsigned int relayID) {
+void domoticzSendRelay(unsigned char relayID) {
     if (!_dcz_enabled) return;
     char buffer[15];
-    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%d"), relayID);
+    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
 }
 
-int domoticzIdx(unsigned int relayID) {
+void domoticzSendRelays() {
+    for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
+        domoticzSendRelay(relayID);
+    }
+}
+
+unsigned int domoticzIdx(unsigned char relayID) {
     char buffer[15];
-    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%d"), relayID);
+    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     return getSetting(buffer).toInt();
 }
 
@@ -162,6 +161,7 @@ void domoticzSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
         wsOnAfterParseRegister(_domoticzConfigure);
+        wsOnReceiveRegister(_domoticzWebSocketOnReceive);
     #endif
     mqttRegister(_domoticzMqtt);
 }

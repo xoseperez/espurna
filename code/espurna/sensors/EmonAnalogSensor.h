@@ -1,11 +1,15 @@
 // -----------------------------------------------------------------------------
 // Energy Monitor Sensor using builtin ADC
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
 
 #pragma once
+
+// Set ADC to TOUT pin
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
 
 #include "Arduino.h"
 #include "EmonSensor.h"
@@ -59,9 +63,13 @@ class EmonAnalogSensor : public EmonSensor {
             return String("EMON @ ANALOG @ GPIO0");
         }
 
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String("0");
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return MAGNITUDE_CURRENT;
@@ -72,7 +80,6 @@ class EmonAnalogSensor : public EmonSensor {
             #if EMON_REPORT_ENERGY
                 if (index == i) return MAGNITUDE_ENERGY;
             #endif
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
@@ -89,14 +96,13 @@ class EmonAnalogSensor : public EmonSensor {
                 last = millis();
             #endif
 
+            _error = SENSOR_ERROR_OK;
+
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-
-            _error = SENSOR_ERROR_OK;
             unsigned char channel = index / _magnitudes;
-
             unsigned char i=0;
             #if EMON_REPORT_CURRENT
                 if (index == i++) return _current[channel];
@@ -107,10 +113,7 @@ class EmonAnalogSensor : public EmonSensor {
             #if EMON_REPORT_ENERGY
                 if (index == i) return _energy[channel];
             #endif
-
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
-
         }
 
     protected:

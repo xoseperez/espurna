@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Event Counter Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && HLW8012_SUPPORT
@@ -46,6 +46,10 @@ class HLW8012Sensor : public BaseSensor {
 
         void resetRatios() {
             _hlw8012->resetMultipliers();
+        }
+
+        void resetEnergy() {
+            _hlw8012->resetEnergy();
         }
 
         // ---------------------------------------------------------------------
@@ -153,18 +157,31 @@ class HLW8012Sensor : public BaseSensor {
                 });
             #endif
 
+            _ready = true;
+
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[25];
-            snprintf(buffer, sizeof(buffer), "HLW8012 @ GPIO(%i,%i,%i)", _sel, _cf, _cf1);
+            snprintf(buffer, sizeof(buffer), "HLW8012 @ GPIO(%u,%u,%u)", _sel, _cf, _cf1);
+            return String(buffer);
+        }
+
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            char buffer[10];
+            snprintf(buffer, sizeof(buffer), "%u:%u:%u", _sel, _cf, _cf1);
             return String(buffer);
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
@@ -172,13 +189,11 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 4) return MAGNITUDE_POWER_APPARENT;
             if (index == 5) return MAGNITUDE_POWER_FACTOR;
             if (index == 6) return MAGNITUDE_ENERGY;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _hlw8012->getCurrent();
             if (index == 1) return _hlw8012->getVoltage();
             if (index == 2) return _hlw8012->getActivePower();
@@ -186,7 +201,6 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 4) return _hlw8012->getApparentPower();
             if (index == 5) return 100 * _hlw8012->getPowerFactor();
             if (index == 6) return _hlw8012->getEnergy();
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
@@ -243,10 +257,10 @@ class HLW8012Sensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char _sel;
-        unsigned char _cf;
-        unsigned char _cf1;
-        bool _sel_current;
+        unsigned char _sel = GPIO_NONE;
+        unsigned char _cf = GPIO_NONE;
+        unsigned char _cf1 = GPIO_NONE;
+        bool _sel_current = true;
 
         HLW8012 * _hlw8012 = NULL;
 
@@ -295,7 +309,7 @@ void HLW8012Sensor::_attach(HLW8012Sensor * instance, unsigned char gpio, unsign
     _hlw8012_sensor_instance[index] = instance;
     attachInterrupt(gpio, _hlw8012_sensor_isr_list[index], mode);
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt attached to %s\n"), gpio, instance->description().c_str());
     #endif
 }
 
@@ -305,7 +319,7 @@ void HLW8012Sensor::_detach(unsigned char gpio) {
     if (_hlw8012_sensor_instance[index]) {
         detachInterrupt(gpio);
         #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
+            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%u interrupt detached from %s\n"), gpio, _hlw8012_sensor_instance[index]->description().c_str());
         #endif
         _hlw8012_sensor_instance[index] = NULL;
     }

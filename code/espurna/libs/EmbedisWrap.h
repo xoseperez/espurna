@@ -12,11 +12,11 @@ class EmbedisWrap : public Embedis {
 
         EmbedisWrap(Stream& stream, size_t buflen = 128, size_t argvlen = 8): Embedis(stream, buflen, argvlen) {}
 
-        unsigned char getCommandsCount() {
+        unsigned char getCommandCount() {
             return commands.size();
         }
 
-        String getCommandName(unsigned char i) {
+        String getCommandName(unsigned int i) {
             if (i < commands.size()) return commands[i].name;
             return String();
         }

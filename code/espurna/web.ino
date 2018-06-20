@@ -2,7 +2,7 @@
 
 WEBSERVER MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -43,32 +43,35 @@ void _onReset(AsyncWebServerRequest *request) {
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
-    AsyncJsonResponse * response = new AsyncJsonResponse();
-    JsonObject& root = response->getRoot();
+    AsyncResponseStream *response = request->beginResponseStream("text/json");
 
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
-
-    unsigned int size = settingsKeyCount();
-    for (unsigned int i=0; i<size; i++) {
-        String key = settingsKeyName(i);
-        String value = getSetting(key);
-        root[key] = value;
-    }
+    settingsGetJson(root);
+    root.prettyPrintTo(*response);
+    jsonBuffer.clear();
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
-    response->setLength();
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
     request->send(response);
 
 }
 
 void _onPostConfig(AsyncWebServerRequest *request) {
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
@@ -78,7 +81,7 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
     if (final && (index == 0)) {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.parseObject((char *) data);
-        if (root.success()) _webConfigSuccess = settingsRestore(root);
+        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
         return;
     }
 
@@ -105,7 +108,7 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
         // Parse JSON
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.parseObject((char *) _webConfigBuffer->data());
-        if (root.success()) _webConfigSuccess = settingsRestore(root);
+        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
         delete _webConfigBuffer;
 
     }
@@ -116,7 +119,9 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
 void _onHome(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
 
@@ -155,6 +160,9 @@ void _onHome(AsyncWebServerRequest *request) {
 
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Last-Modified", _last_modified);
+	response->addHeader("X-XSS-Protection", "1; mode=block");
+	response->addHeader("X-Content-Type-Options", "nosniff");
+	response->addHeader("X-Frame-Options", "deny");
         request->send(response);
 
     }
@@ -216,7 +224,9 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     char buffer[10];
     if (!Update.hasError()) {
@@ -227,7 +237,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
-    if (!Update.hasError()) {
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+    if (Update.hasError()) {
+        eepromRotate(true);
+    } else {
         deferredReset(100, CUSTOM_RESET_UPGRADE);
     }
     request->send(response);
@@ -235,7 +250,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
     if (!index) {
+
+        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+        eepromRotate(false);
+
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
@@ -243,7 +263,9 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
                 Update.printError(DEBUG_PORT);
             #endif
         }
+
     }
+
     if (!Update.hasError()) {
         if (Update.write(data, len) != len) {
             #ifdef DEBUG_PORT
@@ -251,6 +273,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     }
+
     if (final) {
         if (Update.end(true)){
             DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
@@ -266,17 +289,29 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 
 // -----------------------------------------------------------------------------
 
-bool _authenticate(AsyncWebServerRequest *request) {
-    String password = getSetting("adminPass", ADMIN_PASS);
-    char httpPassword[password.length() + 1];
-    password.toCharArray(httpPassword, password.length() + 1);
-    return request->authenticate(WEB_USERNAME, httpPassword);
+bool webAuthenticate(AsyncWebServerRequest *request) {
+    #if USE_PASSWORD
+        String password = getSetting("adminPass", ADMIN_PASS);
+        char httpPassword[password.length() + 1];
+        password.toCharArray(httpPassword, password.length() + 1);
+        return request->authenticate(WEB_USERNAME, httpPassword);
+    #else
+        return true;
+    #endif
 }
 
 // -----------------------------------------------------------------------------
 
 AsyncWebServer * webServer() {
     return _server;
+}
+
+unsigned int webPort() {
+    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+        return 443;
+    #else
+        return getSetting("webPort", WEB_PORT).toInt();
+    #endif
 }
 
 void webLog(AsyncWebServerRequest *request) {
@@ -289,11 +324,7 @@ void webSetup() {
     snprintf_P(_last_modified, sizeof(_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Create server
-    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
-    unsigned int port = 443;
-    #else
-    unsigned int port = getSetting("webPort", WEB_PORT).toInt();
-    #endif
+    unsigned int port = webPort();
     _server = new AsyncWebServer(port);
 
     // Rewrites
@@ -325,12 +356,12 @@ void webSetup() {
 
     // Run server
     #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
-    _server->onSslFileRequest(_onCertificate, NULL);
-    _server->beginSecure("server.cer", "server.key", NULL);
+        _server->onSslFileRequest(_onCertificate, NULL);
+        _server->beginSecure("server.cer", "server.key", NULL);
     #else
-    _server->begin();
+        _server->begin();
     #endif
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %d\n"), port);
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
 
 }
 

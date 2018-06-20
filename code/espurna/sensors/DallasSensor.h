@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Dallas OneWire Sensor
 // Uses OneWire library
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DALLAS_SUPPORT
@@ -18,14 +18,12 @@
 #define DS_CHIP_DS18B20             0x28
 #define DS_CHIP_DS1825              0x3B
 
+#define DS_DATA_SIZE                9
 #define DS_PARASITE                 1
 #define DS_DISCONNECTED             -127
 
 #define DS_CMD_START_CONVERSION     0x44
 #define DS_CMD_READ_SCRATCHPAD      0xBE
-
-#define DS_ERROR_FAILED_RESET       -2
-#define DS_ERROR_FAILED_READ        -3
 
 class DallasSensor : public BaseSensor {
 
@@ -41,7 +39,7 @@ class DallasSensor : public BaseSensor {
 
         ~DallasSensor() {
             if (_wire) delete _wire;
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
         }
 
         // ---------------------------------------------------------------------
@@ -66,11 +64,10 @@ class DallasSensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // Manage GPIO lock
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
-            _previous = 0xFF;
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            _previous = GPIO_NONE;
             if (!gpioGetLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
@@ -95,6 +92,8 @@ class DallasSensor : public BaseSensor {
             } else {
                 _previous = _gpio;
             }
+            _ready = true;
+            _dirty = false;
 
         }
 
@@ -121,38 +120,26 @@ class DallasSensor : public BaseSensor {
 
                     // Read scratchpad
                     if (_wire->reset() == 0) {
-                        _error = DS_ERROR_FAILED_RESET;
+                        // Force a CRC check error
+                        _devices[index].data[0] = _devices[index].data[0] + 1;
                         return;
                     }
 
                     _wire->select(_devices[index].address);
                     _wire->write(DS_CMD_READ_SCRATCHPAD);
 
-                    uint8_t data[9];
-                    for (unsigned char i = 0; i < 9; i++) {
+                    uint8_t data[DS_DATA_SIZE];
+                    for (unsigned char i = 0; i < DS_DATA_SIZE; i++) {
                         data[i] = _wire->read();
                     }
 
-                    #if false
-                        Serial.printf("[DS18B20] Data = ");
-                        for (unsigned char i = 0; i < 9; i++) {
-                          Serial.printf("%02X ", data[i]);
-                        }
-                        Serial.printf(" CRC = %02X\n", OneWire::crc8(data, 8));
-                    #endif
-
-
                     if (_wire->reset() != 1) {
-                        _error = DS_ERROR_FAILED_READ;
+                        // Force a CRC check error
+                        _devices[index].data[0] = _devices[index].data[0] + 1;
                         return;
                     }
 
-                    if (OneWire::crc8(data, 8) != data[8]) {
-                        _error = SENSOR_ERROR_CRC;
-                        return;
-                    }
-
-                    memcpy(_devices[index].data, data, 9);
+                    memcpy(_devices[index].data, data, DS_DATA_SIZE);
 
                 }
 
@@ -170,9 +157,21 @@ class DallasSensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Address of the device
+        String address(unsigned char index) {
+            char buffer[20] = {0};
+            if (index < _count) {
+                uint8_t * address = _devices[index].address;
+                snprintf(buffer, sizeof(buffer), "%02X%02X%02X%02X%02X%02X%02X%02X",
+                    address[0], address[1], address[2], address[3],
+                    address[4], address[5], address[6], address[7]
+                );
+            }
+            return String(buffer);
+        }
+
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index < _count) {
                 char buffer[40];
                 uint8_t * address = _devices[index].address;
@@ -184,27 +183,31 @@ class DallasSensor : public BaseSensor {
                 );
                 return String(buffer);
             }
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return String();
         }
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index < _count) return MAGNITUDE_TEMPERATURE;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
+        }
+
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        void pre() {
+            _error = SENSOR_ERROR_OK;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
 
-            if (index >= _count) {
-                _error = SENSOR_ERROR_OUT_OF_RANGE;
-                return 0;
-            }
+            if (index >= _count) return 0;
 
             uint8_t * data = _devices[index].data;
+
+            if (OneWire::crc8(data, DS_DATA_SIZE-1) != data[DS_DATA_SIZE-1]) {
+                _error = SENSOR_ERROR_CRC;
+                return 0;
+            }
 
             // Registers
             // byte 0: temperature LSB
@@ -239,7 +242,7 @@ class DallasSensor : public BaseSensor {
                 _error = SENSOR_ERROR_CRC;
                 return 0;
             }
-            _error = SENSOR_ERROR_OK;
+
             return value;
 
         }
@@ -294,12 +297,12 @@ class DallasSensor : public BaseSensor {
 
         typedef struct {
             uint8_t address[8];
-            uint8_t data[9];
+            uint8_t data[DS_DATA_SIZE];
         } ds_device_t;
         std::vector<ds_device_t> _devices;
 
-        unsigned char _gpio;
-        unsigned char _previous = 0xFF;
+        unsigned char _gpio = GPIO_NONE;
+        unsigned char _previous = GPIO_NONE;
         OneWire * _wire = NULL;
 
 };

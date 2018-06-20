@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Digital Sensor (maps to a digitalRead)
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DIGITAL_SUPPORT
@@ -58,6 +58,7 @@ class DigitalSensor : public BaseSensor {
         // Initialization method, must be idempotent
         void begin() {
             pinMode(_gpio, _mode);
+            _ready = true;
         }
 
         // Descriptive name of the sensor
@@ -67,19 +68,25 @@ class DigitalSensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_gpio);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_DIGITAL;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return (digitalRead(_gpio) == _default) ? 0 : 1;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 

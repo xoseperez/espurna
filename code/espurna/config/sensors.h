@@ -7,6 +7,7 @@
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
 #define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
 #define SENSOR_READ_MAX_INTERVAL            3600            // Maximum read interval
+#define SENSOR_INIT_INTERVAL                10000           // Try to re-init non-ready sensors every 10s
 
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
 #define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
@@ -15,8 +16,8 @@
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                             // even if just one sensor (0 for backwards compatibility)
 
-#ifndef SENSOR_TEMPERATURE_UNITS
-#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#ifndef SENSOR_POWER_CHECK_STATUS
+#define SENSOR_POWER_CHECK_STATUS           1               // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
 #endif
 
 #ifndef SENSOR_TEMPERATURE_CORRECTION
@@ -27,68 +28,47 @@
 #define TEMPERATURE_MIN_CHANGE              0.0             // Minimum temperature change to report
 #endif
 
+#ifndef SENSOR_HUMIDITY_CORRECTION
+#define SENSOR_HUMIDITY_CORRECTION          0.0             // Offset correction
+#endif
+
 #ifndef HUMIDITY_MIN_CHANGE
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
-#define HUMIDITY_NORMAL                     0
-#define HUMIDITY_COMFORTABLE                1
-#define HUMIDITY_DRY                        2
-#define HUMIDITY_WET                        3
+#define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
+#define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
 
-//--------------------------------------------------------------------------------
-// Sensor ID
-// These should remain over time, do not modify them, only add new ones at the end
-//--------------------------------------------------------------------------------
 
-#define SENSOR_DHTXX_ID                     0x01
-#define SENSOR_DALLAS_ID                    0x02
-#define SENSOR_EMON_ANALOG_ID               0x03
-#define SENSOR_EMON_ADC121_ID               0x04
-#define SENSOR_EMON_ADS1X15_ID              0x05
-#define SENSOR_HLW8012_ID                   0x06
-#define SENSOR_V9261F_ID                    0x07
-#define SENSOR_ECH1560_ID                   0x08
-#define SENSOR_ANALOG_ID                    0x09
-#define SENSOR_DIGITAL_ID                   0x10
-#define SENSOR_EVENTS_ID                    0x11
-#define SENSOR_PMSX003_ID                   0x12
-#define SENSOR_BMX280_ID                    0x13
-#define SENSOR_MHZ19_ID                     0x14
-#define SENSOR_SI7021_ID                    0x15
-#define SENSOR_SHT3X_I2C_ID                 0x16
-#define SENSOR_BH1750_ID                    0x17
+#ifndef SENSOR_TEMPERATURE_UNITS
+#define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
+#endif
 
-//--------------------------------------------------------------------------------
-// Magnitudes
-//--------------------------------------------------------------------------------
+#ifndef SENSOR_ENERGY_UNITS
+#define SENSOR_ENERGY_UNITS                 ENERGY_JOULES   // Energy units (ENERGY_JOULES | ENERGY_KWH)
+#endif
 
-#define MAGNITUDE_NONE                      0
-#define MAGNITUDE_TEMPERATURE               1
-#define MAGNITUDE_HUMIDITY                  2
-#define MAGNITUDE_PRESSURE                  3
-#define MAGNITUDE_CURRENT                   4
-#define MAGNITUDE_VOLTAGE                   5
-#define MAGNITUDE_POWER_ACTIVE              6
-#define MAGNITUDE_POWER_APPARENT            7
-#define MAGNITUDE_POWER_REACTIVE            8
-#define MAGNITUDE_POWER_FACTOR              9
-#define MAGNITUDE_ENERGY                    10
-#define MAGNITUDE_ENERGY_DELTA              11
-#define MAGNITUDE_ANALOG                    12
-#define MAGNITUDE_DIGITAL                   13
-#define MAGNITUDE_EVENTS                    14
-#define MAGNITUDE_PM1dot0                   15
-#define MAGNITUDE_PM2dot5                   16
-#define MAGNITUDE_PM10                      17
-#define MAGNITUDE_CO2                       18
-#define MAGNITUDE_LUX                       19
+#ifndef SENSOR_POWER_UNITS
+#define SENSOR_POWER_UNITS                  POWER_WATTS     // Power units (POWER_WATTS | POWER_KILOWATTS)
+#endif
 
-#define MAGNITUDE_MAX                       20
 
 // =============================================================================
 // Specific data for each sensor
 // =============================================================================
+
+//------------------------------------------------------------------------------
+// AM2320 Humidity & Temperature sensor over I2C
+// Enable support by passing AM2320_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef AM2320_SUPPORT
+#define AM2320_SUPPORT                  0
+#endif
+
+#ifndef AM2320_ADDRESS
+#define AM2320_ADDRESS                  0x00    // 0x00 means auto
+#endif
 
 //------------------------------------------------------------------------------
 // Analog sensor
@@ -97,11 +77,6 @@
 
 #ifndef ANALOG_SUPPORT
 #define ANALOG_SUPPORT                  0
-#endif
-
-#if ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -120,11 +95,6 @@
 
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
 
-#if BH1750_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // BME280/BMP280
 // Enable support by passing BMX280_SUPPORT=1 build flag
@@ -138,15 +108,14 @@
 #define BMX280_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
-#define BMX280_MODE                     1       // 1 for forced mode, 3 for normal mode
+#define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
+#define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
+                                                // 3 for 250ms, 4 for 500ms, 5 for 1000ms
+                                                // 6 for 10ms, 7 for 20ms
+#define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
-
-#if BMX280_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
 
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
@@ -161,8 +130,8 @@
 #define DALLAS_PIN                      14
 #endif
 
-#define DALLAS_RESOLUTION               9        // Not used atm
-#define DALLAS_READ_INTERVAL            2000     // Force sensor read & cache every 2 seconds
+#define DALLAS_RESOLUTION               9           // Not used atm
+#define DALLAS_READ_INTERVAL            2000        // Force sensor read & cache every 2 seconds
 
 //------------------------------------------------------------------------------
 // DHTXX temperature/humidity sensor
@@ -180,6 +149,30 @@
 #ifndef DHT_TYPE
 #define DHT_TYPE                        DHT_CHIP_DHT22
 #endif
+
+//------------------------------------------------------------------------------
+// CSE7766 based power sensor
+// Enable support by passing CSE7766_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef CSE7766_SUPPORT
+#define CSE7766_SUPPORT                 0
+#endif
+
+#ifndef CSE7766_PIN
+#define CSE7766_PIN                     1       // TX pin from the CSE7766
+#endif
+
+#ifndef CSE7766_PIN_INVERSE
+#define CSE7766_PIN_INVERSE             0       // Signal is inverted
+#endif
+
+#define CSE7766_SYNC_INTERVAL           300     // Safe time between transmissions (ms)
+#define CSE7766_BAUDRATE                4800    // UART baudrate
+
+#define CSE7766_V1R                     1.0     // 1mR current resistor
+#define CSE7766_V2R                     1.0     // 1M voltage resistor
+
 
 //------------------------------------------------------------------------------
 // Digital sensor
@@ -248,11 +241,6 @@
 
 #define EMON_ADC121_I2C_ADDRESS         0x00    // 0x00 means auto
 
-#if EMON_ADC121_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
-
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADS1X15
 // Enable support by passing EMON_ADS1X15_SUPPORT=1 build flag
@@ -265,12 +253,7 @@
 #define EMON_ADS1X15_I2C_ADDRESS        0x00    // 0x00 means auto
 #define EMON_ADS1X15_TYPE               ADS1X15_CHIP_ADS1115
 #define EMON_ADS1X15_GAIN               ADS1X15_REG_CONFIG_PGA_4_096V
-#define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A4=8
-
-#if EMON_ADS1X15_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
-#endif
+#define EMON_ADS1X15_MASK               0x0F    // A0=1 A1=2 A2=4 A3=8
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on interval analog GPIO
@@ -279,11 +262,6 @@
 
 #ifndef EMON_ANALOG_SUPPORT
 #define EMON_ANALOG_SUPPORT             0       // Do not build support by default
-#endif
-
-#if EMON_ANALOG_SUPPORT
-#undef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -307,7 +285,66 @@
 #define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
 #endif
 
-#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
+#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 50 millis
+
+//------------------------------------------------------------------------------
+// Geiger sensor
+// Enable support by passing GEIGER_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef GEIGER_SUPPORT
+#define GEIGER_SUPPORT                  0       // Do not build with geiger support by default
+#endif
+
+#ifndef GEIGER_PIN
+#define GEIGER_PIN                      D1       // GPIO to monitor "D1" => "GPIO5"
+#endif
+
+#ifndef GEIGER_PIN_MODE
+#define GEIGER_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef GEIGER_INTERRUPT_MODE
+#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#endif
+
+#define GEIGER_DEBOUNCE                 25      // Do not register events within less than 25 millis.
+                                                // Value derived here: Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+
+#define GEIGER_CPM2SIEVERT              240     // CPM to µSievert per hour conversion factor
+                                                // Typically the literature uses the invers, but I find an integer type more convienient.
+#define GEIGER_REPORT_SIEVERTS          1       // Enabler for local dose rate reports in µSv/h
+#define GEIGER_REPORT_CPM               1       // Enabler for local dose rate reports in counts per minute
+
+//------------------------------------------------------------------------------
+// GUVAS12SD UV Sensor (analog)
+// Enable support by passing GUVAS12SD_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef GUVAS12SD_SUPPORT
+#define GUVAS12SD_SUPPORT               0
+#endif
+
+#ifndef GUVAS12SD_PIN
+#define GUVAS12SD_PIN                   14
+#endif
+
+//------------------------------------------------------------------------------
+// HC-SR04
+// Enable support by passing HCSR04_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef HCSR04_SUPPORT
+#define HCSR04_SUPPORT                  0
+#endif
+
+#ifndef HCSR04_TRIGGER
+#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
+#endif
+
+#ifndef HCSR04_ECHO
+#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
+#endif
 
 //------------------------------------------------------------------------------
 // HLW8012 Energy monitor IC
@@ -357,11 +394,33 @@
 #define MHZ19_SUPPORT                   0
 #endif
 
+#ifndef MHZ19_RX_PIN
 #define MHZ19_RX_PIN                    13
+#endif
+
+#ifndef MHZ19_TX_PIN
 #define MHZ19_TX_PIN                    15
+#endif
 
 //------------------------------------------------------------------------------
-// Particle Monitor based on Plantower PMSX003
+// SenseAir CO2 sensor
+// Enable support by passing SENSEAIR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SENSEAIR_SUPPORT
+#define SENSEAIR_SUPPORT                0
+#endif
+
+#ifndef SENSEAIR_RX_PIN
+#define SENSEAIR_RX_PIN                 0
+#endif
+
+#ifndef SENSEAIR_TX_PIN
+#define SENSEAIR_TX_PIN                 2
+#endif
+
+//------------------------------------------------------------------------------
+// Particle Monitor based on Plantower PMS
 // Enable support by passing PMSX003_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
@@ -369,8 +428,49 @@
 #define PMSX003_SUPPORT                 0
 #endif
 
+#ifndef PMS_TYPE
+#define PMS_TYPE                        PMS_TYPE_X003
+#endif
+
+// You can enable smart sleep (read 6-times then sleep on 24-reading-cycles) to extend PMS sensor's life.
+// Otherwise the default lifetime of PMS sensor is about 8000-hours/1-years.
+// The PMS's fan will stop working on sleeping cycle, and will wake up on reading cycle.
+#ifndef PMS_SMART_SLEEP
+#define PMS_SMART_SLEEP                 0
+#endif
+
+#ifndef PMS_RX_PIN
 #define PMS_RX_PIN                      13
+#endif
+
+#ifndef PMS_TX_PIN
 #define PMS_TX_PIN                      15
+#endif
+
+//------------------------------------------------------------------------------
+// PZEM004T based power monitor
+// Enable support by passing PZEM004T_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PZEM004T_SUPPORT
+#define PZEM004T_SUPPORT                0
+#endif
+
+#ifndef PZEM004T_USE_SOFT
+#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
+#endif
+
+#ifndef PZEM004T_RX_PIN
+#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_TX_PIN
+#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_HW_PORT
+#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#endif
 
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
@@ -383,11 +483,6 @@
 
 #ifndef SHT3X_I2C_ADDRESS
 #define SHT3X_I2C_ADDRESS               0x00    // 0x00 means auto
-#endif
-
-#if SHT3X_I2C_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
 #endif
 
 //------------------------------------------------------------------------------
@@ -403,9 +498,17 @@
 #define SI7021_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
-#if SI7021_SUPPORT
-#undef I2C_SUPPORT
-#define I2C_SUPPORT                     1
+//------------------------------------------------------------------------------
+// TMP3X analog temperature sensor
+// Enable support by passing TMP3X_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef TMP3X_SUPPORT
+#define TMP3X_SUPPORT                   0
+#endif
+
+#ifndef TMP3X_TYPE
+#define TMP3X_TYPE                      TMP3X_TMP35
 #endif
 
 //------------------------------------------------------------------------------
@@ -435,18 +538,46 @@
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
 
 // =============================================================================
-// Sensor helpers configuration
+// Sensor helpers configuration - can't move to dependencies.h
 // =============================================================================
 
-#if ANALOG_SUPPORT || BH1750_SUPPORT || BMX280_SUPPORT || DALLAS_SUPPORT \
-    || DHT_SUPPORT || DIGITAL_SUPPORT || ECH1560_SUPPORT \
-    || EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT \
-    || EMON_ANALOG_SUPPORT || EVENTS_SUPPORT || HLW8012_SUPPORT \
-    || MHZ19_SUPPORT || PMSX003_SUPPORT || SHT3X_I2C_SUPPORT \
-    || SI7021_SUPPORT || V9261F_SUPPORT
+#ifndef SENSOR_SUPPORT
+#define SENSOR_SUPPORT ( \
+    AM2320_SUPPORT || \
+    ANALOG_SUPPORT || \
+    BH1750_SUPPORT || \
+    BMX280_SUPPORT || \
+    CSE7766_SUPPORT || \
+    DALLAS_SUPPORT || \
+    DHT_SUPPORT || \
+    DIGITAL_SUPPORT || \
+    ECH1560_SUPPORT || \
+    EMON_ADC121_SUPPORT || \
+    EMON_ADS1X15_SUPPORT || \
+    EMON_ANALOG_SUPPORT || \
+    EVENTS_SUPPORT || \
+    GEIGER_SUPPORT || \
+    GUVAS12SD_SUPPORT || \
+    HCSR04_SUPPORT || \
+    HLW8012_SUPPORT || \
+    MHZ19_SUPPORT || \
+    SENSEAIR_SUPPORT || \
+    PMSX003_SUPPORT || \
+    PZEM004T_SUPPORT || \
+    SHT3X_I2C_SUPPORT || \
+    SI7021_SUPPORT || \
+    TMP3X_SUPPORT || \
+    V9261F_SUPPORT \
+)
+#endif
 
-#define SENSOR_SUPPORT                      1
+// -----------------------------------------------------------------------------
+// ADC
+// -----------------------------------------------------------------------------
 
+// Default ADC mode is to monitor internal power supply
+#ifndef ADC_MODE_VALUE
+#define ADC_MODE_VALUE                  ADC_VCC
 #endif
 
 // -----------------------------------------------------------------------------
@@ -469,21 +600,8 @@
 
 #define I2C_CLOCK_STRETCH_TIME          200     // BRZO clock stretch time
 #define I2C_SCL_FREQUENCY               1000    // BRZO SCL frequency
-#define I2C_CLEAR_BUS                   0       // Clear I2C bus at boot
-
-//--------------------------------------------------------------------------------
-// Internal power monitor
-// Enable support by passing ADC_VCC_ENABLED=1 build flag
-// Do not enable this if using the analog GPIO for any other thing
-//--------------------------------------------------------------------------------
-
-#ifndef ADC_VCC_ENABLED
-#define ADC_VCC_ENABLED                 1
-#endif
-
-#if ADC_VCC_ENABLED
-    ADC_MODE(ADC_VCC);
-#endif
+#define I2C_CLEAR_BUS                   0       // Clear I2C bus on boot
+#define I2C_PERFORM_SCAN                1       // Perform a bus scan on boot
 
 //--------------------------------------------------------------------------------
 // Class loading
@@ -491,70 +609,15 @@
 
 #if SENSOR_SUPPORT
 
-PROGMEM const unsigned char magnitude_decimals[] = {
-    0,
-    1, 0, 2,
-    3, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0, 0
-};
-
-PROGMEM const char magnitude_unknown_topic[] = "unknown";
-PROGMEM const char magnitude_temperature_topic[] =  "temperature";
-PROGMEM const char magnitude_humidity_topic[] = "humidity";
-PROGMEM const char magnitude_pressure_topic[] = "pressure";
-PROGMEM const char magnitude_current_topic[] = "current";
-PROGMEM const char magnitude_voltage_topic[] = "voltage";
-PROGMEM const char magnitude_active_power_topic[] = "power";
-PROGMEM const char magnitude_apparent_power_topic[] = "apparent";
-PROGMEM const char magnitude_reactive_power_topic[] = "reactive";
-PROGMEM const char magnitude_power_factor_topic[] = "factor";
-PROGMEM const char magnitude_energy_topic[] = "energy";
-PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
-PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
-PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
-PROGMEM const char magnitude_pm10_topic[] = "pm10";
-PROGMEM const char magnitude_analog_topic[] = "analog";
-PROGMEM const char magnitude_digital_topic[] = "digital";
-PROGMEM const char magnitude_events_topic[] = "events";
-PROGMEM const char magnitude_co2_topic[] = "co2";
-PROGMEM const char magnitude_lux_topic[] = "lux";
-
-PROGMEM const char* const magnitude_topics[] = {
-    magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
-    magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
-    magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
-    magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
-    magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
-    magnitude_co2_topic, magnitude_lux_topic
-};
-
-PROGMEM const char magnitude_empty[] = "";
-PROGMEM const char magnitude_celsius[] =  "C";
-PROGMEM const char magnitude_fahrenheit[] =  "F";
-PROGMEM const char magnitude_percentage[] = "%";
-PROGMEM const char magnitude_hectopascals[] = "hPa";
-PROGMEM const char magnitude_amperes[] = "A";
-PROGMEM const char magnitude_volts[] = "V";
-PROGMEM const char magnitude_watts[] = "W";
-PROGMEM const char magnitude_joules[] = "J";
-PROGMEM const char magnitude_ugm3[] = "µg/m3";
-PROGMEM const char magnitude_ppm[] = "ppm";
-PROGMEM const char magnitude_lux[] = "lux";
-
-PROGMEM const char* const magnitude_units[] = {
-    magnitude_empty, magnitude_celsius, magnitude_percentage,
-    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
-    magnitude_watts, magnitude_watts, magnitude_watts,
-    magnitude_percentage, magnitude_joules, magnitude_joules,
-    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
-    magnitude_empty, magnitude_empty, magnitude_empty,
-    magnitude_ppm, magnitude_lux
-};
+#if SENSOR_DEBUG
+    #include "../config/debug.h"
+#endif
 
 #include "../sensors/BaseSensor.h"
+
+#if AM2320_SUPPORT
+    #include "../sensors/AM2320Sensor.h"
+#endif
 
 #if ANALOG_SUPPORT
     #include "../sensors/AnalogSensor.h"
@@ -565,8 +628,12 @@ PROGMEM const char* const magnitude_units[] = {
 #endif
 
 #if BMX280_SUPPORT
-    #include <SparkFunBME280.h>
     #include "../sensors/BMX280Sensor.h"
+#endif
+
+#if CSE7766_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/CSE7766Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
@@ -602,6 +669,18 @@ PROGMEM const char* const magnitude_units[] = {
     #include "../sensors/EventSensor.h"
 #endif
 
+#if GEIGER_SUPPORT
+    #include "../sensors/GeigerSensor.h"       // The main file for geiger counting module
+#endif
+
+#if GUVAS12SD_SUPPORT
+    #include "../sensors/GUVAS12SDSensor.h"
+#endif
+
+#if HCSR04_SUPPORT
+    #include "../sensors/HCSR04Sensor.h"
+#endif
+
 #if HLW8012_SUPPORT
     #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
@@ -612,10 +691,19 @@ PROGMEM const char* const magnitude_units[] = {
     #include "../sensors/MHZ19Sensor.h"
 #endif
 
+#if SENSEAIR_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/SenseAirSensor.h"
+#endif
+
 #if PMSX003_SUPPORT
     #include <SoftwareSerial.h>
-    #include <PMS.h>
     #include "../sensors/PMSX003Sensor.h"
+#endif
+
+#if PZEM004T_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/PZEM004TSensor.h"
 #endif
 
 #if SI7021_SUPPORT
@@ -624,6 +712,10 @@ PROGMEM const char* const magnitude_units[] = {
 
 #if SHT3X_I2C_SUPPORT
     #include "../sensors/SHT3XI2CSensor.h"
+#endif
+
+#if TMP3X_SUPPORT
+    #include "../sensors/TMP3XSensor.h"
 #endif
 
 #if V9261F_SUPPORT

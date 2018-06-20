@@ -2,7 +2,7 @@
 
 NOFUSS MODULE
 
-Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -18,15 +18,27 @@ bool _nofussEnabled = false;
 // NOFUSS
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _nofussWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "nofuss", 6) == 0);
+}
+
 void _nofussWebSocketOnSend(JsonObject& root) {
     root["nofussVisible"] = 1;
     root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
     root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
 
+#endif
+
 void _nofussConfigure() {
 
     String nofussServer = getSetting("nofussServer", NOFUSS_SERVER);
+    #if MDNS_CLIENT_SUPPORT
+        nofussServer = mdnsResolve(nofussServer);
+    #endif
+
     if (nofussServer.length() == 0) {
         setSetting("nofussEnabled", 0);
         _nofussEnabled = false;
@@ -57,6 +69,19 @@ void _nofussConfigure() {
     }
 
 }
+
+#if TERMINAL_SUPPORT
+
+void _nofussInitCommands() {
+
+    settingsRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("+OK\n"));
+        nofussRun();
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -118,7 +143,7 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
-            delay(100);
+            nice_delay(100);
         }
 
         if (code == NOFUSS_END) {
@@ -130,7 +155,15 @@ void nofussSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_nofussWebSocketOnSend);
         wsOnAfterParseRegister(_nofussConfigure);
+        wsOnReceiveRegister(_nofussWebSocketOnReceive);
     #endif
+
+    #if TERMINAL_SUPPORT
+        _nofussInitCommands();
+    #endif
+
+    // Register loop
+    espurnaRegisterLoop(nofussLoop);
 
 }
 

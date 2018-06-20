@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // DHTXX Sensor
-// Copyright (C) 2017 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DHT_SUPPORT
@@ -33,7 +33,7 @@ class DHTSensor : public BaseSensor {
         }
 
         ~DHTSensor() {
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
         }
 
         // ---------------------------------------------------------------------
@@ -66,8 +66,8 @@ class DHTSensor : public BaseSensor {
             _count = 0;
 
             // Manage GPIO lock
-            if (_previous != 0xFF) gpioReleaseLock(_previous);
-            _previous = 0xFF;
+            if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
+            _previous = GPIO_NONE;
             if (!gpioGetLock(_gpio)) {
                 _error = SENSOR_ERROR_GPIO_USED;
                 return;
@@ -75,11 +75,13 @@ class DHTSensor : public BaseSensor {
             _previous = _gpio;
 
             _count = 2;
+            _ready = true;
 
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
+            _error = SENSOR_ERROR_OK;
             _read();
         }
 
@@ -90,21 +92,27 @@ class DHTSensor : public BaseSensor {
             return String(buffer);
         }
 
+        // Descriptive name of the slot # index
+        String slot(unsigned char index) {
+            return description();
+        };
+
+        // Address of the sensor (it could be the GPIO or I2C address)
+        String address(unsigned char index) {
+            return String(_gpio);
+        }
+
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return MAGNITUDE_TEMPERATURE;
             if (index == 1) return MAGNITUDE_HUMIDITY;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
-            _error = SENSOR_ERROR_OK;
             if (index == 0) return _temperature;
             if (index == 1) return _humidity;
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
             return 0;
         }
 
@@ -132,12 +140,16 @@ class DHTSensor : public BaseSensor {
         	if (++_errors > DHT_MAX_ERRORS) {
                 _errors = 0;
                 digitalWrite(_gpio, HIGH);
-                delay(250);
+                nice_delay(250);
             }
             pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
-            delayMicroseconds(_type == DHT_CHIP_DHT11 ? 20000 : 500);
+            if (_type == DHT_CHIP_DHT11) {
+                nice_delay(20);
+            } else {
+                delayMicroseconds(500);
+            }
             digitalWrite(_gpio, HIGH);
             delayMicroseconds(40);
             pinMode(_gpio, INPUT_PULLUP);
@@ -218,15 +230,15 @@ class DHTSensor : public BaseSensor {
         	return uSec;
         }
 
-        unsigned char _gpio;
-        unsigned char _previous = 0xFF;
+        unsigned char _gpio = GPIO_NONE;
+        unsigned char _previous = GPIO_NONE;
         unsigned char _type = DHT_CHIP_DHT22;
 
         unsigned long _last_ok = 0;
         unsigned char _errors = 0;
 
-        double _temperature;
-        unsigned int _humidity;
+        double _temperature = 0;
+        unsigned int _humidity = 0;
 
 };
 

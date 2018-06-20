@@ -5,8 +5,6 @@ WebSocketIncommingBuffer
 Code by Hermann Kraus (https://bitbucket.org/hermr2d2/)
 and slightly modified.
 
-https://bitbucket.org/xoseperez/espurna/pull-requests/30/safer-buffer-handling-for-websocket-data
-
 */
 
 #pragma once
@@ -82,8 +80,8 @@ class WebSocketIncommingBuffer {
     private:
 
         AwsMessageHandler _cb;
-        bool _cb_on_fragments;
         bool _terminate_string;
+        bool _cb_on_fragments;
         std::vector<uint8_t> *_buffer;
 
 };
