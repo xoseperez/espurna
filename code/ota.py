@@ -8,12 +8,13 @@
 # -------------------------------------------------------------------------------
 from __future__ import print_function
 
+import shutil
 import argparse
 import re
 import socket
 import subprocess
 import sys
-from time import sleep
+import time
 
 from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 
@@ -25,9 +26,11 @@ except NameError:
 
 # -------------------------------------------------------------------------------
 
-devices = []
-description = "ESPurna OTA Manager v0.1"
+DISCOVER_TIMEOUT = 2
 
+description = "ESPurna OTA Manager v0.3"
+devices = []
+discover_last = 0
 
 # -------------------------------------------------------------------------------
 
@@ -37,23 +40,26 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
     """
 
     if state_change is ServiceStateChange.Added:
+        discover_last = time.time()
         info = zeroconf.get_service_info(service_type, name)
         if info:
+
             hostname = info.server.split(".")[0]
             device = {
                 'hostname': hostname.upper(),
-                'ip': socket.inet_ntoa(info.address)
+                'ip': socket.inet_ntoa(info.address),
+                'mac': '',
+                'app_name': '',
+                'app_version': '',
+                'target_board': '',
+                'mem_size': '',
+                'sdk_size': '',
+                'free_space': '',
             }
-            device['mac'] = info.properties.get('mac', '')
-            device['app'] = info.properties.get('app_name', '')
-            device['version'] = info.properties.get('app_version', '')
-            device['device'] = info.properties.get('target_board', '')
-            if 'mem_size' in info.properties:
-                device['mem_size'] = info.properties.get('mem_size')
-            if 'sdk_size' in info.properties:
-                device['sdk_size'] = info.properties.get('sdk_size')
-            if 'free_space' in info.properties:
-                device['free_space'] = info.properties.get('free_space')
+
+            for key, item in info.properties.items():
+                device[key.decode('UTF-8')] = item.decode('UTF-8');
+
             devices.append(device)
 
 
@@ -84,9 +90,9 @@ def list_devices():
             device.get('hostname', ''),
             device.get('ip', ''),
             device.get('mac', ''),
-            device.get('app', ''),
-            device.get('version', ''),
-            device.get('device', ''),
+            device.get('app_name', ''),
+            device.get('app_version', ''),
+            device.get('target_board', ''),
             device.get('mem_size', ''),
             device.get('sdk_size', ''),
             device.get('free_space', ''),
@@ -106,11 +112,16 @@ def get_boards():
             boards.append(m.group(1))
     return sorted(boards)
 
+def get_device_size(device):
+    if device.get('mem_size', 0) == device.get('sdk_size', 0):
+        return int(device.get('mem_size', 0)) / 1024
+    return 0
+
 def get_empty_board():
     """
     Returns the empty structure of a board to flash
     """
-    board = {'board': '', 'ip': '', 'size': 0, 'auth': '', 'flags': ''}
+    board = {'board': '', 'ip': '', 'size': 0, 'auth': '', 'flags': '', 'modules': ''}
     return board
 
 def get_board_by_index(index):
@@ -121,10 +132,27 @@ def get_board_by_index(index):
     if 1 <= index and index <= len(devices):
         device = devices[index - 1]
         board['hostname'] = device.get('hostname')
-        board['board'] = device.get('device', '')
+        board['board'] = device.get('target_board', '')
         board['ip'] = device.get('ip', '')
-        board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
+        board['size'] = get_device_size(device)
     return board
+
+def get_board_by_mac(mac):
+    """
+    Returns the required data to flash a given board
+    """
+    hostname = hostname.lower()
+    for device in devices:
+        if device.get('mac', '').lower() == mac:
+            board = {}
+            board['hostname'] = device.get('hostname')
+            board['board'] = device.get('device')
+            board['ip'] = device.get('ip')
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
+                return None
+            return board
+    return None
 
 def get_board_by_hostname(hostname):
     """
@@ -135,14 +163,10 @@ def get_board_by_hostname(hostname):
         if device.get('hostname', '').lower() == hostname:
             board = {}
             board['hostname'] = device.get('hostname')
-            board['board'] = device.get('device')
-            if not board['board']:
-                return None
+            board['board'] = device.get('target_board')
             board['ip'] = device.get('ip')
-            if not board['ip']:
-                return None
-            board['size'] = int(device.get('sdk_size', 0)) / 1024
-            if board['size'] == 0:
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
                 return None
             return board
     return None
@@ -196,13 +220,20 @@ def input_board():
 
     return board
 
+def boardname(board):
+    return board.get('hostname', board['ip'])
+
+def store(device, env):
+    source = ".pioenvs/%s/firmware.elf" % env
+    destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+    shutil.move(source, destination)
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "export ESPURNA_IP=\"%s\"; export ESPURNA_BOARD=\"%s\"; export ESPURNA_AUTH=\"%s\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s -t upload"
-    command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
+    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" WEBUI_MODULES=\"%s\" platformio run --silent --environment %s -t upload"
+    command = command % (device['ip'], device['board'], device['auth'], device['flags'], device['modules'], env)
     subprocess.check_call(command, shell=True)
-
+    store(device, env)
 
 # -------------------------------------------------------------------------------
 
@@ -214,6 +245,7 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--flash", help="flash device", default=0, action='count')
     parser.add_argument("-o", "--flags", help="extra flags", default='')
     parser.add_argument("-p", "--password", help="auth password", default='')
+    parser.add_argument("-m", "--modules", help="webui modules", default='')
     parser.add_argument("-s", "--sort", help="sort devices list by field", default='hostname')
     parser.add_argument("-y", "--yes", help="do not ask for confirmation", default=0, action='count')
     parser.add_argument("hostnames", nargs='*', help="Hostnames to update")
@@ -226,8 +258,10 @@ if __name__ == '__main__':
     # Look for sevices
     zeroconf = Zeroconf()
     browser = ServiceBrowser(zeroconf, "_arduino._tcp.local.", handlers=[on_service_state_change])
-    sleep(5)
-    zeroconf.close()
+    discover_last = time.time()
+    while time.time() < discover_last + DISCOVER_TIMEOUT:
+        None
+    #zeroconf.close()
 
     if len(devices) == 0:
         print("Nothing found!\n")
@@ -255,6 +289,7 @@ if __name__ == '__main__':
             if board:
                 board['auth'] = args.password
                 board['flags'] = args.flags
+                board['modules'] = args.modules
                 queue.append(board)
 
         # If no boards ask the user
@@ -263,6 +298,7 @@ if __name__ == '__main__':
             if board:
                 board['auth'] = args.password or input("Authorization key of the device to flash: ")
                 board['flags'] = args.flags or input("Extra flags for the build: ")
+                board['modules'] = args.modules or input("WebUI modules to build: ")
                 queue.append(board)
 
         # If still no boards quit
@@ -280,12 +316,13 @@ if __name__ == '__main__':
 
             # Summary
             print()
-            print("HOST  = %s" % board.get('hostname', board['ip']))
-            print("IP    = %s" % board['ip'])
-            print("BOARD = %s" % board['board'])
-            print("AUTH  = %s" % board['auth'])
-            print("FLAGS = %s" % board['flags'])
-            print("ENV   = %s" % env)
+            print("HOST    = %s" % boardname(board))
+            print("IP      = %s" % board['ip'])
+            print("BOARD   = %s" % board['board'])
+            print("AUTH    = %s" % board['auth'])
+            print("FLAGS   = %s" % board['flags'])
+            print("MODULES = %s" % board['modules'])
+            print("ENV     = %s" % env)
 
             response = True
             if args.yes == 0:

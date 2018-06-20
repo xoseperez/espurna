@@ -11,8 +11,9 @@
         <link rel="stylesheet" href="vendor/pure-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/pure-grids-responsive-1.0.0.min.css" />
         <link rel="stylesheet" href="vendor/side-menu.css" />
-        <link rel="stylesheet" href="vendor/checkboxes.css" />
+        <!-- removeIf(!light)-->
         <link rel="stylesheet" href="vendor/jquery.wheelcolorpicker-3.0.3.css" />
+        <!-- endRemoveIf(!light)-->
         <link rel="stylesheet" href="custom.css" />
         <!-- endbuild -->
 
@@ -98,9 +99,11 @@
                             <a class="pure-menu-link" href="#/influxdb">INFLUXDB</a>
                         </li>
 
+                        <!-- removeIf(!light)-->
                         <li class="pure-menu-item module module-color">
                             <a class="pure-menu-link" href="#/color">LIGHTS</a>
                         </li>
+                        <!-- endRemoveIf(!light)-->
 
                         <li class="pure-menu-item module module-mqtt">
                             <a class="pure-menu-link" href="#/mqtt">MQTT</a>
@@ -110,17 +113,21 @@
                             <a class="pure-menu-link" href="#/ntp">NTP</a>
                         </li>
 
+                        <!-- removeIf(!rfbridge)-->
                         <li class="pure-menu-item module module-rfb">
                             <a class="pure-menu-link" href="#/rfbridge">RF</a>
                         </li>
+                        <!-- endRemoveIf(!rfbridge)-->
 
                         <li class="pure-menu-item module module-sch">
                             <a class="pure-menu-link" href="#/schedule">SCHEDULE</a>
                         </li>
 
+                        <!-- removeIf(!sensor)-->
                         <li class="pure-menu-item module module-sensors">
                             <a class="pure-menu-link" href="#/sensors">SENSORS</a>
                         </li>
+                        <!-- endRemoveIf(!sensor)-->
 
                         <li class="pure-menu-item module module-relay">
                             <a class="pure-menu-link" href="#/switches">SWITCHES</a>
@@ -177,11 +184,15 @@
 
                                 <div id="relays"></div>
 
+                                <!-- removeIf(!light)-->
                                 <div id="colors"></div>
-
+                                <div id="cct"></div>
                                 <div id="channels"></div>
+                                <!-- endRemoveIf(!light)-->
 
+                                <!-- removeIf(!sensor)-->
                                 <div id="magnitudes"></div>
+                                <!-- endRemoveIf(!sensor)-->
 
                                 <div class="pure-u-1 pure-u-lg-1-2 state">
 
@@ -240,7 +251,7 @@
                                     <div class="pure-u-11-24"><span class="right" name="rssi"></span></div>
 
                                     <div class="pure-u-1-2">IP</div>
-                                    <div class="pure-u-11-24"><span class="right" name="deviceip"></span></div>
+                                    <div class="pure-u-11-24"><a href=""><span class="right" name="deviceip"></span></a> (<a href=""><span class="right">telnet</span></a>)</div>
 
                                     <div class="pure-u-1-2">Free heap</div>
                                     <div class="pure-u-11-24"><span class="right" name="heap" post=" bytes"></span></div>
@@ -293,7 +304,9 @@
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This name will identify this device in your network (http://&lt;hostname&gt;.local). For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
+                                        This name will identify this device in your network (http://&lt;hostname&gt;.local).<br />
+                                        Hostname may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-'). They can neither start or end with an hyphen.<br />
+                                        For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
                                     </div>
                                 </div>
 
@@ -339,7 +352,7 @@
 
                                 <div class="pure-g module module-alexa">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" tabindex="13" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" /></div>
                                 </div>
 
                             </fieldset>
@@ -378,6 +391,7 @@
                         </div>
                     </div>
 
+                    <!-- removeIf(!light)-->
                     <div class="panel" id="panel-color">
 
                         <div class="header">
@@ -410,12 +424,20 @@
                                     <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as white when first 3 have the same RGB value.<br />Will only work if the device has at least 4 dimmable channels.<br />Enabling this will render useless the "Channel 4" slider in the status page.<br />Reload the page to update the web interface.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as (cold) white light calculated out of the RGB values.<br />Will only work if the device has at least 4 dimmable channels.<br />Enabling this will render useless the "Channel 4" slider in the status page.<br />Reload the page to update the web interface.</div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Use white color temperature</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCCT" action="reload" tabindex="10" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Use fifth dimmable channel as warm white light and the forth dimmable channel as cold white.<br />Will only work if the device has at least 5 dimmable channels and "white channel" above is also ON.<br />Enabling this will render useless the "Channel 5" slider in the status page.<br />Reload the page to update the web interface.</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use gamma correction</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useGamma" tabindex="10" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useGamma" tabindex="11" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
@@ -423,7 +445,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use CSS style</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="11" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="12" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"</div>
@@ -431,7 +453,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="12" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="13" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
@@ -439,7 +461,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Transition time</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="lightTime" min="10" max="5000" tabindex="13" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="lightTime" min="10" max="5000" tabindex="14" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Time in millisecons to transition from one color to another.</div>
@@ -447,7 +469,7 @@
 
                                 <div class="pure-g">
                                     <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="14" action="reconnect" /></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4"><input name="mqttGroupColor" class="pure-u-1" tabindex="15" action="reconnect" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Sync color between different lights.</div>
                                 </div>
@@ -455,6 +477,7 @@
                             </fieldset>
                         </div>
                     </div>
+                    <!-- endRemoveIf(!light)-->
 
                     <div class="panel" id="panel-admin">
 
@@ -626,7 +649,9 @@
                                 <div id="schedules"></div>
 
                                 <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
+                                <!-- removeIf(!light)-->
                                 <button type="button" class="pure-button button-add-light-schedule module module-color">Add channel schedule</button>
+                                <!-- endRemoveIf(!light)-->
 
                             </fieldset>
 
@@ -723,11 +748,13 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the root topic for this device. The {hostname} and {mac} placeholders will be replaced by the device hostname and MAC address.<br />
                                         - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
+                                        <!-- removeIf(!light)-->
                                         <span class="module module-color">- <strong>&lt;root&gt;/rgb/set</strong> Set the color using this topic, your can either send an "#RRGGBB" value or "RRR,GGG,BBB" (0-255 each).<br /></span>
                                         <span class="module module-color">- <strong>&lt;root&gt;/hsv/set</strong> Set the color using hue (0-360), saturation (0-100) and value (0-100) values, comma separated.<br /></span>
                                         <span class="module module-color">- <strong>&lt;root&gt;/brightness/set</strong> Set the brighness (0-255).<br /></span>
                                         <span class="module module-color">- <strong>&lt;root&gt;/channel/#/set</strong> Set the value for a single color channel (0-255). Replace # with the channel ID (starting from 0 and up to 4 for RGBWC lights).<br /></span>
                                         <span class="module module-color">- <strong>&lt;root&gt;/mired/set</strong> Set the temperature color in mired.<br /></span>
+                                        <!-- endRemoveIf(!light)-->
                                         - <strong>&lt;root&gt;/status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.<br />
                                         - Other values reported (depending on the build) are: <strong>firmware</strong> and <strong>version</strong>, <strong>hostname</strong>, <strong>IP</strong>, <strong>MAC</strong>, signal strenth (<strong>RSSI</strong>), <strong>uptime</strong> (in seconds), <strong>free heap</strong> and <strong>power supply</strong>.
                                     </div>
@@ -832,7 +859,9 @@
 
                                 <div id="dczRelays"></div>
 
+                                <!-- removeIf(!sensor)-->
                                 <div id="dczMagnitudes"></div>
+                                <!-- endRemoveIf(!sensor)-->
 
                             </fieldset>
                         </div>
@@ -860,7 +889,9 @@
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         Home Assistant auto-discovery feature. Enable and save to add the device to your HA console.
+                                        <!-- removeIf(!light)-->
                                         When using a colour light you might want to disable CSS style so Home Assistant can parse the color.
+                                        <!-- endRemoveIf(!light)-->
                                     </div>
                                 </div>
 
@@ -890,8 +921,6 @@
                         </div>
 
                     </div>
-
-
 
                     <div class="panel" id="panel-thingspeak">
 
@@ -926,7 +955,9 @@
 
                                 <div id="tspkRelays"></div>
 
+                                <!-- removeIf(!sensor)-->
                                 <div id="tspkMagnitudes"></div>
+                                <!-- endRemoveIf(!sensor)-->
 
                             </fieldset>
                         </div>
@@ -1013,6 +1044,7 @@
 
                     </div>
 
+                    <!-- removeIf(!sensor)-->
                     <div class="panel" id="panel-sensors">
 
                         <div class="header">
@@ -1149,7 +1181,9 @@
                         </div>
 
                     </div>
+                    <!-- endRemoveIf(!sensor)-->
 
+                    <!-- removeIf(!rfbridge)-->
                     <div class="panel" id="panel-rfbridge">
 
                         <div class="header">
@@ -1170,6 +1204,7 @@
                             </fieldset>
                         </div>
                     </div>
+                    <!-- endRemoveIf(!rfbridge)-->
 
                 </form>
 
@@ -1179,6 +1214,7 @@
 
         <!-- Templates -->
 
+        <!-- removeIf(!rfbridge)-->
         <div id="rfbNodeTemplate" class="template">
 
             <legend>Switch #<span></span></legend>
@@ -1200,6 +1236,7 @@
             </div>
 
         </div>
+        <!-- endRemoveIf(!rfbridge)-->
 
         <div id="networkTemplate" class="template">
 
@@ -1287,6 +1324,7 @@
             <input type="hidden" name="schType" value="1">
         </div>
 
+        <!-- removeIf(!light)-->
         <div id="lightActionTemplate" class="template">
             <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
             <div class="pure-u-1 pure-u-lg-1-5">
@@ -1295,11 +1333,12 @@
             <select class="pure-u-1 pure-u-lg-1-5 islight" name="schSwitch"></select>
             <input type="hidden" name="schType" value="2">
         </div>
+        <!-- endRemoveIf(!light)-->
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
-                <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" class="relayStatus pure-u-1 pure-u-lg-1-4" data="0" /></div>
+                <input name="relay" type="checkbox" on="ON" off="OFF" />
             </div>
         </div>
 
@@ -1339,7 +1378,7 @@
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="mqttOnDisc">
+                <select class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc">
                     <option value="0">Don't change</option>
                     <option value="1">Turn the switch OFF</option>
                     <option value="2">Turn the switch ON</option>
@@ -1354,6 +1393,7 @@
             </div>
         </div>
 
+        <!-- removeIf(!sensor)-->
         <div id="dczMagnitudeTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
@@ -1361,6 +1401,7 @@
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
             </div>
         </div>
+        <!-- endRemoveIf(!sensor)-->
 
         <div id="tspkRelayTemplate" class="template">
             <div class="pure-g">
@@ -1369,6 +1410,7 @@
             </div>
         </div>
 
+        <!-- removeIf(!sensor)-->
         <div id="tspkMagnitudeTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
@@ -1376,7 +1418,9 @@
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
             </div>
         </div>
+        <!-- endRemoveIf(!sensor)-->
 
+        <!-- removeIf(!light)-->
         <div id="colorRGBTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Color</label>
@@ -1405,6 +1449,16 @@
             </div>
         </div>
 
+        <div id="miredsTemplate" class="template">
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Mireds (Cold &harr; Warm)</label>
+                <input type="range" min="153" max="500" class="slider pure-u-lg-1-4" id="mireds">
+                <span class="slider mireds pure-u-lg-1-4"></span>
+            </div>
+        </div>
+        <!-- endRemoveIf(!light)-->
+
+        <!-- removeIf(!sensor)-->
         <div id="magnitudeTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4"></label>
@@ -1414,6 +1468,7 @@
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
             </div>
         </div>
+        <!-- endRemoveIf(!sensor)-->
 
         <iframe id="downloader"></iframe>
         <input id="uploader" type="file" />
@@ -1423,8 +1478,9 @@
     <!-- build:js script.js -->
     <script src="vendor/jquery-3.2.1.min.js"></script>
     <script src="custom.js"></script>
-    <script src="vendor/checkboxes.js"></script>
+    <!-- removeIf(!light)-->
     <script src="vendor/jquery.wheelcolorpicker-3.0.3.min.js"></script>
+    <!-- endRemoveIf(!light)-->
     <!-- endbuild -->
 
 </html>

@@ -8,6 +8,12 @@ extern "C" {
 }
 
 // -----------------------------------------------------------------------------
+// EEPROM_ROTATE
+// -----------------------------------------------------------------------------
+#include <EEPROM_Rotate.h>
+EEPROM_Rotate EEPROMr;
+
+// -----------------------------------------------------------------------------
 // WebServer
 // -----------------------------------------------------------------------------
 #include <ESPAsyncWebServer.h>
@@ -67,6 +73,7 @@ void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
 void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
 void settingsInject(void *data, size_t len);
+Stream & settingsSerial();
 
 // -----------------------------------------------------------------------------
 // I2C

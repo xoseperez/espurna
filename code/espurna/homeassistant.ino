@@ -24,9 +24,8 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     unsigned char type = magnitudeType(i);
     config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
     config.set("platform", "mqtt");
-    config.set("device_class", "sensor");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = String("\"") + magnitudeUnits(type) + String("\"");
+    config["unit_of_measurement"] = magnitudeUnits(type);
 
 }
 
@@ -45,6 +44,7 @@ void _haSendMagnitudes() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
             config.printTo(output);
+            jsonBuffer.clear();
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -124,6 +124,7 @@ void _haSendSwitches() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendSwitch(i, config);
             config.printTo(output);
+            jsonBuffer.clear();
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -164,6 +165,8 @@ String _haGetConfig() {
         }
         output += "\n";
 
+        jsonBuffer.clear();
+
     }
 
     #if SENSOR_SUPPORT
@@ -186,6 +189,8 @@ String _haGetConfig() {
                 output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
             }
             output += "\n";
+
+            jsonBuffer.clear();
 
         }
 
@@ -256,13 +261,17 @@ void _haInitCommands() {
     settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
     settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 }

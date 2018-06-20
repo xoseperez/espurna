@@ -92,7 +92,7 @@ bool idbSend(const char * topic, const char * payload) {
 bool idbSend(const char * topic, unsigned char id, const char * payload) {
     char measurement[64];
     snprintf(measurement, sizeof(measurement), "%s,id=%d", topic, id);
-    return idbSend(topic, payload);
+    return idbSend(measurement, payload);
 }
 
 bool idbEnabled() {
