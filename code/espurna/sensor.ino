@@ -451,6 +451,18 @@ void _sensorLoad() {
     }
     #endif
 
+    #if GEIGER_SUPPORT
+    {
+        GeigerSensor * sensor = new GeigerSensor();        // Create instance of thr Geiger module.
+        sensor->setGPIO(GEIGER_PIN);                       // Interrupt pin of the attached geiger counter board.
+        sensor->setMode(GEIGER_PIN_MODE);                  // This pin is an input.
+        sensor->setDebounceTime(GEIGER_DEBOUNCE);          // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);   // Interrupt triggering: edge detection rising.
+        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);  // Conversion factor from counts per minute to µSv/h
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if GUVAS12SD_SUPPORT
     {
         GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
@@ -593,7 +605,7 @@ void _sensorInit() {
             new_magnitude.min_change = 0;
             if (type == MAGNITUDE_DIGITAL) {
                 new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_EVENTS) {
+            } else if (type == MAGNITUDE_EVENTS || type == MAGNITUDE_GEIGER_CPM|| type == MAGNITUDE_GEIGER_SIEVERT) {  // For geiger counting moving average filter is the most appropriate if needed at all.
                 new_magnitude.filter = new MovingAverageFilter();
             } else {
                 new_magnitude.filter = new MedianFilter();

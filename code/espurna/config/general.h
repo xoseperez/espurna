@@ -142,12 +142,17 @@
 //------------------------------------------------------------------------------
 
 #define EEPROM_SIZE             4096            // EEPROM size in bytes
+//#define EEPROM_RORATE_SECTORS   2             // Number of sectors to use for EEPROM rotation
+                                                // If not defined the firmware will use a number based
+                                                // on the number of available sectors
+
 #define EEPROM_RELAY_STATUS     0               // Address for the relay status (1 byte)
 #define EEPROM_ENERGY_COUNT     1               // Address for the energy counter (4 bytes)
 #define EEPROM_CUSTOM_RESET     5               // Address for the reset reason (1 byte)
 #define EEPROM_CRASH_COUNTER    6               // Address for the crash counter (1 byte)
 #define EEPROM_MESSAGE_ID       7               // Address for the MQTT message id (4 bytes)
-#define EEPROM_DATA_END         11              // End of custom EEPROM data block
+#define EEPROM_ROTATE_DATA      11              // Reserved for the EEPROM_ROTATE library (3 bytes)
+#define EEPROM_DATA_END         14              // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
 // HEARTBEAT
@@ -276,9 +281,6 @@
 #define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
 #endif
 
-#ifndef WIFI_AP_MODE
-#define WIFI_AP_MODE                AP_MODE_ALONE
-#endif
 
 #ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
@@ -682,6 +684,7 @@
 #define MQTT_TOPIC_UARTOUT          "uartout"
 #define MQTT_TOPIC_LOADAVG          "loadavg"
 #define MQTT_TOPIC_BOARD            "board"
+#define MQTT_TOPIC_PULSE            "pulse"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"

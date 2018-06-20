@@ -8,7 +8,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MQTT_SUPPORT
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
@@ -265,7 +265,7 @@ unsigned long _mqttNextMessageId() {
     if (id == 0) {
 
         // read id from EEPROM and shift it
-        id = EEPROM.read(EEPROM_MESSAGE_ID);
+        id = EEPROMr.read(EEPROM_MESSAGE_ID);
         if (id == 0xFF) {
 
             // There was nothing in EEPROM,
@@ -274,9 +274,9 @@ unsigned long _mqttNextMessageId() {
 
         } else {
 
-            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 1);
-            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 2);
-            id = (id << 8) + EEPROM.read(EEPROM_MESSAGE_ID + 3);
+            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 1);
+            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 2);
+            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 3);
 
             // Calculate next block and start from there
             id = MQTT_MESSAGE_ID_SHIFT * (1 + (id / MQTT_MESSAGE_ID_SHIFT));
@@ -287,11 +287,11 @@ unsigned long _mqttNextMessageId() {
 
     // Save to EEPROM every MQTT_MESSAGE_ID_SHIFT
     if (id % MQTT_MESSAGE_ID_SHIFT == 0) {
-        EEPROM.write(EEPROM_MESSAGE_ID + 0, (id >> 24) & 0xFF);
-        EEPROM.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
-        EEPROM.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
-        EEPROM.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
-        EEPROM.commit();
+        EEPROMr.write(EEPROM_MESSAGE_ID + 0, (id >> 24) & 0xFF);
+        EEPROMr.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
+        EEPROMr.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
+        EEPROMr.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
+        EEPROMr.commit();
     }
 
     id++;
@@ -613,6 +613,8 @@ void mqttFlush() {
     // Send
     String output;
     root.printTo(output);
+    jsonBuffer.clear();
+
     mqttSendRaw(_mqtt_topic_json.c_str(), output.c_str(), false);
 
     // Clear queue

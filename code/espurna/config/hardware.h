@@ -70,6 +70,12 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+#elif defined(NODEMCU_BASIC)
+    // Info
+    // Generic NodeMCU Board without any buttons or relays connected.
+    #define MANUFACTURER        "NODEMCU"
+    #define DEVICE              "BASIC"
+
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
     // Info
