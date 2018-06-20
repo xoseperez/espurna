@@ -73,6 +73,9 @@ var toHeader = function(filename) {
     wstream.write('\n};');
     wstream.end();
 
+    var fstat = fs.statSync(source);
+    console.log("index.html.gz size: " + fstat.size + " bytes.");
+
 };
 
 var htmllintReporter = function(filepath, issues) {
