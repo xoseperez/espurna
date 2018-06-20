@@ -63,7 +63,7 @@ def build_webui(source, target, env):
     config = util.load_project_config()
     kv = dict(config.items("env:" + env.get('PIOENV')))
     if 'modules' in kv:
-        os.environ['MODULES'] = kv["modules"]
+        os.environ['WEBUI_MODULES'] = kv["modules"]
     call(["gulp"])
 
 # ------------------------------------------------------------------------------

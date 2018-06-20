@@ -113,8 +113,8 @@ gulp.task('buildfs_inline', function() {
         light: false,
         rfbridge: false
     };
-    var modules = 'MODULES' in process.env ? process.env.MODULES : false;
-    if (false === modules) {
+    var modules = 'WEBUI_MODULES' in process.env ? process.env.WEBUI_MODULES : false;
+    if (false === modules || "all" === modules) {
         for (var i in remover_config) {
             remover_config[i] = true;
         }
