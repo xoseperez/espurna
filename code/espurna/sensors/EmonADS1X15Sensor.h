@@ -147,7 +147,6 @@ class EmonADS1X15Sensor : public EmonSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // Discover
             unsigned char addresses[] = {0x48, 0x49, 0x4A, 0x4B};
@@ -302,10 +301,6 @@ class EmonADS1X15Sensor : public EmonSensor {
             }
             config |= ((channel + 4) << 12);                // Set single-ended input channel (0x4000 - 0x7000)
 
-            #if SENSOR_DEBUG
-                //Serial.printf("[EMON] ADS1X115 Config Registry: %04X\n", config);
-            #endif
-
             // Write config register to the ADC
             i2c_write_uint16(_address, ADS1X15_REG_POINTER_CONFIG, config);
 
@@ -319,7 +314,7 @@ class EmonADS1X15Sensor : public EmonSensor {
                 setConfigRegistry(channel, true, false);
                 setConfigRegistry(channel, false, false);
                 setConfigRegistry(channel, false, true);
-                delay(10);
+                nice_delay(10);
                 readADC(channel);
                 previous = channel;
             }

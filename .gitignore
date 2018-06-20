@@ -13,3 +13,5 @@ code/utils
 custom.h
 .python
 .env
+.DS_Store
+.vscode

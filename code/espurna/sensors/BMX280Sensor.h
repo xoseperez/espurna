@@ -7,6 +7,9 @@
 
 #pragma once
 
+#undef I2C_SUPPORT
+#define I2C_SUPPORT 1 // Explicitly request I2C support.
+
 #include "Arduino.h"
 #include "I2CSensor.h"
 
@@ -67,18 +70,9 @@ class BMX280Sensor : public I2CSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-
             if (!_dirty) return;
-            _dirty = false;
-            _chip = 0;
-
-            // I2C auto-discover
-            _address = _begin_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
-            if (_address == 0) return;
-
-            // Init
             _init();
-
+            _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
@@ -192,15 +186,31 @@ class BMX280Sensor : public I2CSensor {
         void _init() {
 
             // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
-            delay(10);
+            nice_delay(10);
+
+            // No chip ID by default
+            _chip = 0;
+
+            // I2C auto-discover
+            _address = _begin_i2c(_address, sizeof(BMX280Sensor::addresses), BMX280Sensor::addresses);
+            if (_address == 0) return;
 
             // Check sensor correctly initialized
             _chip = i2c_read_uint8(_address, BMX280_REGISTER_CHIPID);
             if ((_chip != BMX280_CHIP_BME280) && (_chip != BMX280_CHIP_BMP280)) {
+
                 _chip = 0;
                 i2cReleaseLock(_address);
+                _previous_address = 0;
                 _error = SENSOR_ERROR_UNKNOWN_ID;
+
+                // Setting _address to 0 forces auto-discover
+                // This might be necessary at this stage if there is a
+                // different sensor in the hardcoded address
+                _address = 0;
+
                 return;
+
             }
 
             _count = 0;
@@ -233,6 +243,7 @@ class BMX280Sensor : public I2CSensor {
 
             _measurement_delay = _measurementTime();
             _run_init = false;
+            _ready = true;
 
         }
 
@@ -293,7 +304,7 @@ class BMX280Sensor : public I2CSensor {
             value = (value & 0xFC) + 0x01;
             i2c_write_uint8(_address, BMX280_REGISTER_CONTROL, value);
 
-            delay(_measurement_delay);
+            nice_delay(_measurement_delay);
 
         }
 

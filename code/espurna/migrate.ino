@@ -698,6 +698,312 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(KMC_70011)
+
+            setSetting("board", 53);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+
+        #elif defined(GIZWITS_WITTY_CLOUD)
+
+            setSetting("board", 54);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 4);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 15);
+            setSetting("chGPIO", 1, 12);
+            setSetting("chGPIO", 2, 13);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("relays", 1);
+
+        #elif defined(EUROMATE_WIFI_STECKER_SCHUKO)
+
+            setSetting("board", 55);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 0);
+            setSetting("ledGPIO", 1, 12);
+            setSetting("ledLogic", 1, 0);
+            setSetting("btnGPIO", 0, 14);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(TONBUX_POWERSTRIP02)
+
+            setSetting("board", 56);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 13);
+            setSetting("relayGPIO", 2, 12);
+            setSetting("relayGPIO", 3, 14);
+            setSetting("relayGPIO", 4, 16);
+            setSetting("relayType", 0, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 1, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 2, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 3, RELAY_TYPE_INVERSE);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);  // Not a relay. USB ports on/off
+            setSetting("ledGPIO", 0, 0);    // 1 blue led
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 3);    // 3 red leds
+            setSetting("ledLogic", 1, 1);
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnRelay", 0, 1);
+
+        #elif defined(LINGAN_SWA1)
+
+            setSetting("board", 57);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(HEYGO_HY02)
+
+            setSetting("board", 58);
+            setSetting("ledGPIO", 0, 0);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 15);
+            setSetting("ledLogic", 1, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 3);
+            setSetting("cf1GPIO", 14);
+            setSetting("cfGPIO", 5);
+
+        #elif defined(MAXCIO_WUS002S)
+
+            setSetting("board", 59);
+            setSetting("ledGPIO", 0, 3);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 2);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 13);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+
+        #elif defined(YIDIAN_XSSSA05)
+
+            setSetting("board", 60);
+            setSetting("ledGPIO", 0, 0);
+            setSetting("ledLogic", 0, 0);
+            setSetting("ledGPIO", 1, 5);
+            setSetting("ledLogic", 1, 0);
+            setSetting("ledGPIO", 2, 2);
+            setSetting("ledLogic", 2, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(TONBUX_XSSSA06)
+
+            setSetting("board", 61);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(GREEN_ESP8266RELAY)
+
+            setSetting("board", 62);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(IKE_ESPIKE)
+
+            setSetting("board", 63);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnGPIO", 1, 12);
+            setSetting("btnRelay", 1, 1);
+            setSetting("btnGPIO", 2, 13);
+            setSetting("btnRelay", 2, 2);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 2, 16);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+
+        #elif defined(ARNIEX_SWIFITCH)
+
+            setSetting("board", 64);
+            setSetting("ledGPIO", 0, 12);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 4);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_INVERSE);
+
+        #elif defined(GENERIC_ESP01S_RELAY_V40)
+
+            setSetting("board", 65);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 0);
+            setSetting("relayGPIO", 0, 0);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(GENERIC_ESP01S_RGBLED_V10)
+
+            setSetting("board", 66);
+            setSetting("ledGPIO", 0, 2);
+
+        #elif defined(HELTEC_TOUCHRELAY)
+
+            setSetting("board", 67);
+            setSetting("btnGPIO", 0, 14);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(GENERIC_ESP01S_DHT11_V10)
+
+            setSetting("board", 68);
+
+        #elif defined(GENERIC_ESP01S_DS18B20_V10)
+
+            setSetting("board", 69);
+
+        #elif defined(ZHILDE_EU44_W)
+
+            setSetting("board", 70);
+            setSetting("btnGPIO", 0, 3);
+            setSetting("ledGPIO", 0, 1);
+            setSetting("ledLogic", 0, 1);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayGPIO", 1, 4);
+            setSetting("relayGPIO", 2, 12);
+            setSetting("relayGPIO", 3, 13);
+            setSetting("relayGPIO", 4, 14);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 4, RELAY_TYPE_NORMAL);
+
+        #elif defined(ITEAD_SONOFF_POW_R2)
+
+            setSetting("board", 71);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 5);
+            setSetting("cf1GPIO", 13);
+            setSetting("cfGPIO", 14);
+
+        #elif defined(LUANI_HVIO)
+
+            setSetting("board", 72);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
+
+            setSetting("board", 73);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayResetGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+
+        #elif defined(TONBUX_MOSQUITO_KILLER)
+
+            setSetting("board", 74);
+            setSetting("ledGPIO", 0, 15);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 14);
+            setSetting("ledLogic", 1, 1);
+            setSetting("ledGPIO", 2, 12);
+            setSetting("ledLogic", 2, 0);
+            setSetting("ledGPIO", 3, 16);
+            setSetting("ledLogic", 3, 0);
+            setSetting("btnGPIO", 0, 2);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+
+            setSetting("board", 75);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+          #elif defined(PILOTAK_ESP_DIN_V1)
+
+            setSetting("board", 76);
+            setSetting("ledGPIO", 0, 16);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(ESTINK_WIFI_POWER_STRIP)
+
+            setSetting("board", 76);
+            setSetting("btnGPIO", 0, 16);
+            setSetting("btnRelay", 0, 3);
+            setSetting("ledGPIO", 0, 0);
+            setSetting("ledGPIO", 1, 12);
+            setSetting("ledGPIO", 2, 3);
+            setSetting("ledGPIO", 3, 5);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledLogic", 1, 1);
+            setSetting("ledLogic", 2, 1);
+            setSetting("ledLogic", 3, 1);
+            setSetting("ledMode", 0, LED_MODE_FINDME);
+            setSetting("ledMode", 1, LED_MODE_FOLLOW);
+            setSetting("ledMode", 2, LED_MODE_FOLLOW);
+            setSetting("ledMode", 3, LED_MODE_FOLLOW);
+            setSetting("ledRelay", 1, 1);
+            setSetting("ledRelay", 2, 2);
+            setSetting("ledRelay", 3, 3);
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayGPIO", 1, 13);
+            setSetting("relayGPIO", 2, 4);
+            setSetting("relayGPIO", 3, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

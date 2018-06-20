@@ -72,6 +72,7 @@ class EventSensor : public BaseSensor {
         void begin() {
             pinMode(_gpio, _mode);
             _enableInterrupts(true);
+            _ready = true;
         }
 
         // Descriptive name of the sensor

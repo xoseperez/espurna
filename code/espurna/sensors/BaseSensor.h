@@ -18,6 +18,8 @@
 #define SENSOR_ERROR_CRC            5       // Sensor data corrupted
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
+#define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
+#define SENSOR_ERROR_OTHER          99      // Any other error
 
 typedef std::function<void(unsigned char, const char *)> TSensorCallback;
 
@@ -70,8 +72,11 @@ class BaseSensor {
         // Sensor ID
         unsigned char getID() { return _sensor_id; };
 
-        // Return sensor status (true for ready)
-        bool status() { return _error == 0; }
+        // Return status (true if no errors)
+        bool status() { return 0 == _error; }
+
+        // Return ready status (true for ready)
+        bool ready() { return _ready; }
 
         // Return sensor last internal error
         int error() { return _error; }
@@ -89,6 +94,7 @@ class BaseSensor {
         int _error = 0;
         bool _dirty = true;
         unsigned char _count = 0;
+        bool _ready = false;
 
 };
 

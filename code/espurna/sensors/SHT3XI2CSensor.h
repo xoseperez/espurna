@@ -7,6 +7,10 @@
 
 #pragma once
 
+#undef I2C_SUPPORT
+#define I2C_SUPPORT 1 // Explicitly request I2C support.
+
+
 #include "Arduino.h"
 #include "I2CSensor.h"
 
@@ -31,12 +35,14 @@ class SHT3XI2CSensor : public I2CSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // I2C auto-discover
             unsigned char addresses[] = {0x45};
             _address = _begin_i2c(_address, sizeof(addresses), addresses);
             if (_address == 0) return;
+
+            _ready = true;
+            _dirty = false;
 
         }
 
@@ -61,7 +67,7 @@ class SHT3XI2CSensor : public I2CSensor {
 
             unsigned char buffer[6];
             i2c_write_uint8(_address, 0x2C, 0x06);
-            delay(500);
+            nice_delay(500);
             i2c_read_buffer(_address, buffer, 6);
 
             // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc

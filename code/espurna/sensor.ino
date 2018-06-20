@@ -28,39 +28,87 @@ typedef struct {
 
 std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
+bool _sensors_ready = false;
 
 unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
+unsigned char _sensor_power_units = SENSOR_POWER_UNITS;
+unsigned char _sensor_energy_units = SENSOR_ENERGY_UNITS;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
+double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
+
+String _sensor_energy_reset_ts = String();
 
 // -----------------------------------------------------------------------------
 // Private
 // -----------------------------------------------------------------------------
 
 unsigned char _magnitudeDecimals(unsigned char type) {
+
+    // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
+
+    if (type == MAGNITUDE_ENERGY ||
+        type == MAGNITUDE_ENERGY_DELTA) {
+        if (_sensor_energy_units == ENERGY_KWH) return 3;
+    }
+    if (type == MAGNITUDE_POWER_ACTIVE ||
+        type == MAGNITUDE_POWER_APPARENT ||
+        type == MAGNITUDE_POWER_REACTIVE) {
+        if (_sensor_power_units == POWER_KILOWATTS) return 3;
+    }
     if (type < MAGNITUDE_MAX) return pgm_read_byte(magnitude_decimals + type);
     return 0;
+
 }
 
 double _magnitudeProcess(unsigned char type, double value) {
+
+    // Hardcoded conversions (these should be linked to the unit, instead of the magnitude)
+
     if (type == MAGNITUDE_TEMPERATURE) {
         if (_sensor_temperature_units == TMP_FAHRENHEIT) value = value * 1.8 + 32;
         value = value + _sensor_temperature_correction;
     }
+
+    if (type == MAGNITUDE_HUMIDITY) {
+        value = constrain(value + _sensor_humidity_correction, 0, 100);
+    }
+
+    if (type == MAGNITUDE_ENERGY ||
+        type == MAGNITUDE_ENERGY_DELTA) {
+        if (_sensor_energy_units == ENERGY_KWH) value = value  / 3600000;
+    }
+    if (type == MAGNITUDE_POWER_ACTIVE ||
+        type == MAGNITUDE_POWER_APPARENT ||
+        type == MAGNITUDE_POWER_REACTIVE) {
+        if (_sensor_power_units == POWER_KILOWATTS) value = value  / 1000;
+    }
+
     return roundTo(value, _magnitudeDecimals(type));
+
 }
 
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
 
+bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, "pwr", 3) == 0) return true;
+    if (strncmp(key, "sns", 3) == 0) return true;
+    if (strncmp(key, "tmp", 3) == 0) return true;
+    if (strncmp(key, "hum", 3) == 0) return true;
+    if (strncmp(key, "energy", 6) == 0) return true;
+    return false;
+}
+
 void _sensorWebSocketSendData(JsonObject& root) {
 
     char buffer[10];
     bool hasTemperature = false;
+    bool hasHumidity = false;
 
     JsonArray& list = root.createNestedArray("magnitudes");
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
@@ -74,14 +122,22 @@ void _sensorWebSocketSendData(JsonObject& root) {
         element["type"] = int(magnitude.type);
         element["value"] = String(buffer);
         element["units"] = magnitudeUnits(magnitude.type);
-        element["description"] = magnitude.sensor->slot(magnitude.local);
         element["error"] = magnitude.sensor->error();
 
+        if (magnitude.type == MAGNITUDE_ENERGY) {
+            if (_sensor_energy_reset_ts.length() == 0) _sensorReset();
+            element["description"] = magnitude.sensor->slot(magnitude.local) + _sensor_energy_reset_ts;
+        } else {
+            element["description"] = magnitude.sensor->slot(magnitude.local);
+        }
+
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
+        if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
 
     }
 
     if (hasTemperature) root["temperatureVisible"] = 1;
+    if (hasHumidity) root["humidityVisible"] = 1;
 
 }
 
@@ -94,6 +150,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if EMON_ANALOG_SUPPORT
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
                 root["emonVisible"] = 1;
+                root["pwrVisible"] = 1;
                 root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
             }
         #endif
@@ -101,6 +158,32 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if HLW8012_SUPPORT
             if (sensor->getID() == SENSOR_HLW8012_ID) {
                 root["hlwVisible"] = 1;
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if CSE7766_SUPPORT
+            if (sensor->getID() == SENSOR_CSE7766_ID) {
+                root["cseVisible"] = 1;
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if V9261F_SUPPORT
+            if (sensor->getID() == SENSOR_V9261F_ID) {
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if ECH1560_SUPPORT
+            if (sensor->getID() == SENSOR_ECH1560_ID) {
+                root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if PZEM004T_SUPPORT
+            if (sensor->getID() == SENSOR_PZEM004T_ID) {
+                root["pwrVisible"] = 1;
             }
         #endif
 
@@ -109,8 +192,11 @@ void _sensorWebSocketStart(JsonObject& root) {
     if (_magnitudes.size() > 0) {
         root["sensorsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
+        root["pwrUnits"] = _sensor_power_units;
+        root["energyUnits"] = _sensor_energy_units;
         root["tmpUnits"] = _sensor_temperature_units;
         root["tmpCorrection"] = _sensor_temperature_correction;
+        root["humCorrection"] = _sensor_humidity_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
     }
@@ -199,11 +285,19 @@ void _sensorPost() {
     }
 }
 
+void _sensorReset() {
+    #if NTP_SUPPORT
+        if (ntpSynced()) {
+            _sensor_energy_reset_ts = String(" (since ") + ntpDateTime() + String(")");
+        }
+    #endif
+}
+
 // -----------------------------------------------------------------------------
 // Sensor initialization
 // -----------------------------------------------------------------------------
 
-void _sensorInit() {
+void _sensorLoad() {
 
     /*
 
@@ -217,6 +311,14 @@ void _sensorInit() {
     Check the DHT block below for an example
 
      */
+
+     #if AM2320_SUPPORT
+     {
+         AM2320Sensor * sensor = new AM2320Sensor();
+         sensor->setAddress(AM2320_ADDRESS);
+         _sensors.push_back(sensor);
+     }
+     #endif
 
     #if ANALOG_SUPPORT
     {
@@ -238,6 +340,14 @@ void _sensorInit() {
     {
         BMX280Sensor * sensor = new BMX280Sensor();
         sensor->setAddress(BMX280_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if CSE7766_SUPPORT
+    {
+        CSE7766Sensor * sensor = new CSE7766Sensor();
+        sensor->setRX(CSE7766_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -340,6 +450,35 @@ void _sensorInit() {
     }
     #endif
 
+    #if GEIGER_SUPPORT
+    {
+        GeigerSensor * sensor = new GeigerSensor();        // Create instance of thr Geiger module.
+        sensor->setGPIO(GEIGER_PIN);                       // Interrupt pin of the attached geiger counter board.
+        sensor->setMode(GEIGER_PIN_MODE);                  // This pin is an input.
+        sensor->setDebounceTime(GEIGER_DEBOUNCE);          // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);   // Interrupt triggering: edge detection rising.
+        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);  // Conversion factor from counts per minute to µSv/h
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if GUVAS12SD_SUPPORT
+    {
+        GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
+        sensor->setGPIO(GUVAS12SD_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if HCSR04_SUPPORT
+    {
+        HCSR04Sensor * sensor = new HCSR04Sensor();
+        sensor->setTrigger(HCSR04_TRIGGER);
+        sensor->setEcho(HCSR04_ECHO);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if HLW8012_SUPPORT
     {
         HLW8012Sensor * sensor = new HLW8012Sensor();
@@ -360,11 +499,34 @@ void _sensorInit() {
     }
     #endif
 
+    #if SENSEAIR_SUPPORT
+    {
+        SenseAirSensor * sensor = new SenseAirSensor();
+        sensor->setRX(SENSEAIR_RX_PIN);
+        sensor->setTX(SENSEAIR_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
         sensor->setRX(PMS_RX_PIN);
         sensor->setTX(PMS_TX_PIN);
+        sensor->setType(PMS_TYPE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PZEM004T_SUPPORT
+    {
+        PZEM004TSensor * sensor = new PZEM004TSensor();
+        #if PZEM004T_USE_SOFT
+            sensor->setRX(PZEM004T_RX_PIN);
+            sensor->setTX(PZEM004T_TX_PIN);
+        #else
+            sensor->setSerial(& PZEM004T_HW_PORT);
+        #endif
         _sensors.push_back(sensor);
     }
     #endif
@@ -385,6 +547,14 @@ void _sensorInit() {
     }
     #endif
 
+    #if TMP3X_SUPPORT
+    {
+        TMP3XSensor * sensor = new TMP3XSensor();
+        sensor->setType(TMP3X_TYPE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if V9261F_SUPPORT
     {
         V9261FSensor * sensor = new V9261FSensor();
@@ -397,131 +567,34 @@ void _sensorInit() {
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, const char * payload) {
-
     DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, payload);
-
 }
 
-void _sensorConfigure() {
+void _sensorInit() {
+
+    _sensors_ready = true;
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
-        #if EMON_ANALOG_SUPPORT
-
-            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-
-                double value;
-                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-
-                if (value = (getSetting("pwrExpectedP", 0).toInt() == 0)) {
-                    value = getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat();
-                    if (value > 0) sensor->setCurrentRatio(0, value);
-                } else {
-                    sensor->expectedPower(0, value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio(0));
-                }
-
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
-                    sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-                    delSetting("pwrRatioC");
-                }
-
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
-
-
-            }
-
-        #endif // EMON_ANALOG_SUPPORT
+        // Do not process an already initialized sensor
+        if (_sensors[i]->ready()) continue;
+        DEBUG_MSG_P(PSTR("[SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
 
         // Force sensor to reload config
         _sensors[i]->begin();
+        if (!_sensors[i]->ready()) {
+            if (_sensors[i]->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
+            _sensors_ready = false;
+            continue;
+        }
 
-        // Hook callback
-        _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
-            _sensorCallback(i, type, payload);
-        });
+        // Initialize magnitudes
+        for (unsigned char k=0; k<_sensors[i]->count(); k++) {
 
-        #if HLW8012_SUPPORT
-
-
-            if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
-
-                double value;
-                HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
-
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
-                    sensor->expectedCurrent(value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio());
-                } else {
-                    value = getSetting("pwrRatioC", 0).toFloat();
-                    if (value > 0) sensor->setCurrentRatio(value);
-                }
-
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
-                    sensor->expectedVoltage(value);
-                    setSetting("pwrRatioV", sensor->getVoltageRatio());
-                } else {
-                    value = getSetting("pwrRatioV", 0).toFloat();
-                    if (value > 0) sensor->setVoltageRatio(value);
-                }
-
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
-                    sensor->expectedPower(value);
-                    setSetting("pwrRatioP", sensor->getPowerRatio());
-                } else {
-                    value = getSetting("pwrRatioP", 0).toFloat();
-                    if (value > 0) sensor->setPowerRatio(value);
-                }
-
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
-                    sensor->resetRatios();
-                    delSetting("pwrRatioC");
-                    delSetting("pwrRatioV");
-                    delSetting("pwrRatioP");
-                }
-
-            }
-
-        #endif // HLW8012_SUPPORT
-
-    }
-
-    // General sensor settings
-    _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
-    _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
-    _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
-
-    // Update filter sizes
-    for (unsigned char i=0; i<_magnitudes.size(); i++) {
-        _magnitudes[i].filter->resize(_sensor_report_every);
-    }
-
-    // Save settings
-    delSetting("pwrExpectedP");
-    delSetting("pwrExpectedC");
-    delSetting("pwrExpectedV");
-    delSetting("pwrResetCalibration");
-    //saveSettings();
-
-}
-
-void _magnitudesInit() {
-
-    for (unsigned char i=0; i<_sensors.size(); i++) {
-
-        BaseSensor * sensor = _sensors[i];
-
-        DEBUG_MSG_P(PSTR("[SENSOR] %s\n"), sensor->description().c_str());
-        if (sensor->error() != 0) DEBUG_MSG_P(PSTR("[SENSOR]  -> ERROR %d\n"), sensor->error());
-
-        for (unsigned char k=0; k<sensor->count(); k++) {
-
-            unsigned char type = sensor->type(k);
+            unsigned char type = _sensors[i]->type(k);
 
             sensor_magnitude_t new_magnitude;
-            new_magnitude.sensor = sensor;
+            new_magnitude.sensor = _sensors[i];
             new_magnitude.local = k;
             new_magnitude.type = type;
             new_magnitude.global = _counts[type];
@@ -531,7 +604,7 @@ void _magnitudesInit() {
             new_magnitude.min_change = 0;
             if (type == MAGNITUDE_DIGITAL) {
                 new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_EVENTS) {
+            } else if (type == MAGNITUDE_EVENTS || type == MAGNITUDE_GEIGER_CPM|| type == MAGNITUDE_GEIGER_SIEVERT) {  // For geiger counting moving average filter is the most appropriate if needed at all.
                 new_magnitude.filter = new MovingAverageFilter();
             } else {
                 new_magnitude.filter = new MedianFilter();
@@ -545,7 +618,223 @@ void _magnitudesInit() {
 
         }
 
+        // Hook callback
+        _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
+            _sensorCallback(i, type, payload);
+        });
+
+        // Custom initializations
+
+        #if EMON_ANALOG_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
+                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
+                sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
+                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+            }
+
+        #endif // EMON_ANALOG_SUPPORT
+
+        #if HLW8012_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
+
+                HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
+
+                double value;
+
+                value = getSetting("pwrRatioC", 0).toFloat();
+                if (value > 0) sensor->setCurrentRatio(value);
+
+                value = getSetting("pwrRatioV", 0).toFloat();
+                if (value > 0) sensor->setVoltageRatio(value);
+
+                value = getSetting("pwrRatioP", 0).toFloat();
+                if (value > 0) sensor->setPowerRatio(value);
+
+            }
+
+        #endif // HLW8012_SUPPORT
+
+        #if CSE7766_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
+
+                CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
+
+                double value;
+
+                value = getSetting("pwrRatioC", 0).toFloat();
+                if (value > 0) sensor->setCurrentRatio(value);
+
+                value = getSetting("pwrRatioV", 0).toFloat();
+                if (value > 0) sensor->setVoltageRatio(value);
+
+                value = getSetting("pwrRatioP", 0).toFloat();
+                if (value > 0) sensor->setPowerRatio(value);
+
+            }
+
+        #endif // CSE7766_SUPPORT
+
     }
+
+}
+
+void _sensorConfigure() {
+
+    // General sensor settings
+    _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
+    _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
+    _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    _sensor_power_units = getSetting("pwrUnits", SENSOR_POWER_UNITS).toInt();
+    _sensor_energy_units = getSetting("energyUnits", SENSOR_ENERGY_UNITS).toInt();
+    _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
+    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+    _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION).toFloat();
+
+    // Specific sensor settings
+    for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        #if EMON_ANALOG_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
+
+                double value;
+                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
+
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                    sensor->expectedPower(0, value);
+                    setSetting("pwrRatioC", sensor->getCurrentRatio(0));
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
+                    delSetting("pwrRatioC");
+                }
+
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    _sensorReset();
+                }
+
+                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+
+            }
+
+        #endif // EMON_ANALOG_SUPPORT
+
+        #if EMON_ADC121_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_EMON_ADC121_ID) {
+                EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    _sensorReset();
+                }
+            }
+        #endif
+
+        #if EMON_ADS1X15_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_EMON_ADS1X15_ID) {
+                EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    _sensorReset();
+                }
+            }
+        #endif
+
+        #if HLW8012_SUPPORT
+
+
+            if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
+
+                double value;
+                HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
+
+                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                    sensor->expectedCurrent(value);
+                    setSetting("pwrRatioC", sensor->getCurrentRatio());
+                }
+
+                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                    sensor->expectedVoltage(value);
+                    setSetting("pwrRatioV", sensor->getVoltageRatio());
+                }
+
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                    sensor->expectedPower(value);
+                    setSetting("pwrRatioP", sensor->getPowerRatio());
+                }
+
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    _sensorReset();
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    sensor->resetRatios();
+                    delSetting("pwrRatioC");
+                    delSetting("pwrRatioV");
+                    delSetting("pwrRatioP");
+                }
+
+            }
+
+        #endif // HLW8012_SUPPORT
+
+        #if CSE7766_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
+
+                double value;
+                CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
+
+                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                    sensor->expectedCurrent(value);
+                    setSetting("pwrRatioC", sensor->getCurrentRatio());
+                }
+
+                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                    sensor->expectedVoltage(value);
+                    setSetting("pwrRatioV", sensor->getVoltageRatio());
+                }
+
+                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                    sensor->expectedPower(value);
+                    setSetting("pwrRatioP", sensor->getPowerRatio());
+                }
+
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    _sensorReset();
+                }
+
+                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                    sensor->resetRatios();
+                    delSetting("pwrRatioC");
+                    delSetting("pwrRatioV");
+                    delSetting("pwrRatioP");
+                }
+
+            }
+
+        #endif // CSE7766_SUPPORT
+
+    }
+
+    // Update filter sizes
+    for (unsigned char i=0; i<_magnitudes.size(); i++) {
+        _magnitudes[i].filter->resize(_sensor_report_every);
+    }
+
+    // Save settings
+    delSetting("pwrExpectedP");
+    delSetting("pwrExpectedC");
+    delSetting("pwrExpectedV");
+    delSetting("pwrResetCalibration");
+    delSetting("pwrResetE");
+    saveSettings();
 
 }
 
@@ -608,6 +897,14 @@ String magnitudeUnits(unsigned char type) {
     if (type < MAGNITUDE_MAX) {
         if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
             strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
+        } else if (
+            (type == MAGNITUDE_ENERGY || type == MAGNITUDE_ENERGY_DELTA) &&
+            (_sensor_energy_units == ENERGY_KWH)) {
+            strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
+        } else if (
+            (type == MAGNITUDE_POWER_ACTIVE || type == MAGNITUDE_POWER_APPARENT || type == MAGNITUDE_POWER_REACTIVE) &&
+            (_sensor_power_units == POWER_KILOWATTS)) {
+            strncpy_P(buffer, magnitude_kw, sizeof(buffer));
         } else {
             strncpy_P(buffer, magnitude_units[type], sizeof(buffer));
         }
@@ -619,19 +916,21 @@ String magnitudeUnits(unsigned char type) {
 
 void sensorSetup() {
 
+    // Backwards compatibility
+    moveSetting("powerUnits", "pwrUnits");
+
     // Load sensors
+    _sensorLoad();
     _sensorInit();
 
     // Configure stored values
     _sensorConfigure();
 
-    // Load magnitudes
-    _magnitudesInit();
-
     #if WEB_SUPPORT
 
         // Websockets
         wsOnSendRegister(_sensorWebSocketStart);
+        wsOnReceiveRegister(_sensorWebSocketOnReceive);
         wsOnSendRegister(_sensorWebSocketSendData);
         wsOnAfterParseRegister(_sensorConfigure);
 
@@ -651,8 +950,14 @@ void sensorSetup() {
 
 void sensorLoop() {
 
-    static unsigned long last_update = 0;
-    static unsigned long report_count = 0;
+    // Check if we still have uninitialized sensors
+    static unsigned long last_init = 0;
+    if (!_sensors_ready) {
+        if (millis() - last_init > SENSOR_INIT_INTERVAL) {
+            last_init = millis();
+            _sensorInit();
+        }
+    }
 
     if (_magnitudes.size() == 0) return;
 
@@ -660,6 +965,8 @@ void sensorLoop() {
     _sensorTick();
 
     // Check if we should read new data
+    static unsigned long last_update = 0;
+    static unsigned long report_count = 0;
     if (millis() - last_update > _sensor_read_interval) {
 
         last_update = millis();
@@ -672,6 +979,11 @@ void sensorLoop() {
         // Pre-read hook
         _sensorPre();
 
+        // Get the first relay state
+        #if SENSOR_POWER_CHECK_STATUS
+            bool relay_off = (relayCount() > 0) && (relayStatus(0) == 0);
+        #endif
+
         // Get readings
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
 
@@ -679,16 +991,33 @@ void sensorLoop() {
 
             if (magnitude.sensor->status()) {
 
-                unsigned char decimals = _magnitudeDecimals(magnitude.type);
-
                 current = magnitude.sensor->value(magnitude.local);
+
+                // Completely remove spurious values if relay is OFF
+                #if SENSOR_POWER_CHECK_STATUS
+                    if (relay_off) {
+                        if (magnitude.type == MAGNITUDE_POWER_ACTIVE ||
+                            magnitude.type == MAGNITUDE_POWER_REACTIVE ||
+                            magnitude.type == MAGNITUDE_POWER_APPARENT ||
+                            magnitude.type == MAGNITUDE_CURRENT ||
+                            magnitude.type == MAGNITUDE_ENERGY_DELTA
+                        ) {
+                            current = 0;
+                        }
+                    }
+                #endif
+
                 magnitude.filter->add(current);
 
                 // Special case
-                if (magnitude.type == MAGNITUDE_EVENTS) current = magnitude.filter->result();
+                if (magnitude.type == MAGNITUDE_EVENTS) {
+                    current = magnitude.filter->result();
+                }
 
                 current = _magnitudeProcess(magnitude.type, current);
                 _magnitudes[i].current = current;
+
+                unsigned char decimals = _magnitudeDecimals(magnitude.type);
 
                 // Debug
                 #if SENSOR_DEBUG

@@ -20,10 +20,18 @@ bool _telnetFirst = true;
 // Private methods
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "telnet", 6) == 0);
+}
+
 void _telnetWebSocketOnSend(JsonObject& root) {
     root["telnetVisible"] = 1;
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
 }
+
+#endif
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
@@ -58,6 +66,15 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
 
     // Capture close connection
     char * p = (char *) data;
+
+    // C-d is sent as two bytes (sometimes repeating)
+    if (len >= 2) {
+        if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
+            _telnetClients[clientId]->close(true);
+            return;
+        }
+    }
+
     if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {
         _telnetClients[clientId]->close();
         return;
@@ -117,6 +134,15 @@ void _telnetNewClient(AsyncClient *client) {
             }, 0);
 
             DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+
+            // If there is no terminal support automatically dump info and crash data
+            #if TERMINAL_SUPPORT == 0
+                info();
+                wifiDebug();
+                debugDumpCrashInfo();
+                debugClearCrashInfo();
+            #endif
+
             _telnetFirst = true;
             wifiReconnectCheck();
             return;
@@ -160,6 +186,7 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_telnetWebSocketOnSend);
+        wsOnReceiveRegister(_telnetWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);

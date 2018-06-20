@@ -10,10 +10,25 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 
 uint32_t _wifi_scan_client_id = 0;
+bool _wifi_wps_running = false;
+bool _wifi_smartconfig_running = false;
+uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 
 // -----------------------------------------------------------------------------
 // PRIVATE
 // -----------------------------------------------------------------------------
+
+void _wifiCheckAP() {
+
+    if ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
+        (jw.connected()) &&
+        ((WiFi.getMode() & WIFI_AP) > 0) &&
+        (WiFi.softAPgetStationNum() == 0)
+    ) {
+        jw.enableAP(false);
+    }
+
+}
 
 void _wifiConfigure() {
 
@@ -25,8 +40,10 @@ void _wifiConfigure() {
     #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
-    jw.setAPMode(WIFI_AP_MODE);
+    jw.enableAPFallback(true);
     jw.cleanNetworks();
+
+    _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK).toInt();
 
     // If system is flagged unstable we do not init wifi networks
     #if SYSTEM_CHECK_ENABLED
@@ -56,7 +73,7 @@ void _wifiConfigure() {
         }
     }
 
-    jw.scanNetworks(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
+    jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
 
 }
 
@@ -196,9 +213,75 @@ void _wifiInject() {
     }
 }
 
+void _wifiCallback(justwifi_messages_t code, char * parameter) {
+
+    if (MESSAGE_WPS_START == code) {
+        _wifi_wps_running = true;
+    }
+
+    if (MESSAGE_SMARTCONFIG_START == code) {
+        _wifi_smartconfig_running = true;
+    }
+
+    if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
+        _wifi_wps_running = false;
+        _wifi_smartconfig_running = false;
+    }
+
+    if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
+
+        String ssid = WiFi.SSID();
+        String pass = WiFi.psk();
+
+        // Look for the same SSID
+        uint8_t count = 0;
+        while (count < WIFI_MAX_NETWORKS) {
+            if (!hasSetting("ssid", count)) break;
+            if (ssid.equals(getSetting("ssid", count, ""))) break;
+            count++;
+        }
+
+        // If we have reached the max we overwrite the first one
+        if (WIFI_MAX_NETWORKS == count) count = 0;
+
+        setSetting("ssid", count, ssid);
+        setSetting("pass", count, pass);
+
+        _wifi_wps_running = false;
+        _wifi_smartconfig_running = false;
+
+    }
+
+}
+
+#if WIFI_AP_CAPTIVE
+
+#include "DNSServer.h"
+
+DNSServer _wifi_dnsServer;
+
+void _wifiCaptivePortal(justwifi_messages_t code, char * parameter) {
+
+    if (MESSAGE_ACCESSPOINT_CREATED == code) {
+        _wifi_dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+        _wifi_dnsServer.start(53, "*", WiFi.softAPIP());
+        DEBUG_MSG_P(PSTR("[WIFI] Captive portal enabled\n"));
+    }
+
+    if (MESSAGE_CONNECTED == code) {
+        _wifi_dnsServer.stop();
+        DEBUG_MSG_P(PSTR("[WIFI] Captive portal disabled\n"));
+    }
+
+}
+
+#endif // WIFI_AP_CAPTIVE
+
 #if DEBUG_SUPPORT
 
-void _wifiDebug(justwifi_messages_t code, char * parameter) {
+void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
+
+    // -------------------------------------------------------------------------
 
     if (code == MESSAGE_SCANNING) {
         DEBUG_MSG_P(PSTR("[WIFI] Scanning\n"));
@@ -220,6 +303,8 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
         DEBUG_MSG_P(PSTR("[WIFI] %s\n"), parameter);
     }
 
+    // -------------------------------------------------------------------------
+
     if (code == MESSAGE_CONNECTING) {
         DEBUG_MSG_P(PSTR("[WIFI] Connecting to %s\n"), parameter);
     }
@@ -233,23 +318,57 @@ void _wifiDebug(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_CONNECTED) {
-        wifiStatus();
-    }
-
-    if (code == MESSAGE_ACCESSPOINT_CREATED) {
-        wifiStatus();
+        wifiDebug(WIFI_STA);
     }
 
     if (code == MESSAGE_DISCONNECTED) {
         DEBUG_MSG_P(PSTR("[WIFI] Disconnected\n"));
     }
 
+    // -------------------------------------------------------------------------
+
     if (code == MESSAGE_ACCESSPOINT_CREATING) {
         DEBUG_MSG_P(PSTR("[WIFI] Creating access point\n"));
     }
 
+    if (code == MESSAGE_ACCESSPOINT_CREATED) {
+        wifiDebug(WIFI_AP);
+    }
+
     if (code == MESSAGE_ACCESSPOINT_FAILED) {
         DEBUG_MSG_P(PSTR("[WIFI] Could not create access point\n"));
+    }
+
+    if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
+        DEBUG_MSG_P(PSTR("[WIFI] Access point destroyed\n"));
+    }
+
+    // -------------------------------------------------------------------------
+
+    if (code == MESSAGE_WPS_START) {
+        DEBUG_MSG_P(PSTR("[WIFI] WPS started\n"));
+    }
+
+    if (code == MESSAGE_WPS_SUCCESS) {
+        DEBUG_MSG_P(PSTR("[WIFI] WPS succeded!\n"));
+    }
+
+    if (code == MESSAGE_WPS_ERROR) {
+        DEBUG_MSG_P(PSTR("[WIFI] WPS failed\n"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    if (code == MESSAGE_SMARTCONFIG_START) {
+        DEBUG_MSG_P(PSTR("[WIFI] Smart Config started\n"));
+    }
+
+    if (code == MESSAGE_SMARTCONFIG_SUCCESS) {
+        DEBUG_MSG_P(PSTR("[WIFI] Smart Config succeded!\n"));
+    }
+
+    if (code == MESSAGE_SMARTCONFIG_ERROR) {
+        DEBUG_MSG_P(PSTR("[WIFI] Smart Config failed\n"));
     }
 
 }
@@ -271,9 +390,23 @@ void _wifiInitCommands() {
     });
 
     settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
-        createAP();
+        wifiStartAP();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
+    #if defined(JUSTWIFI_ENABLE_WPS)
+        settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+            wifiStartWPS();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif // defined(JUSTWIFI_ENABLE_WPS)
+
+    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+        settingsRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
+            wifiStartSmartConfig();
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        });
+    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
     settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
@@ -289,6 +422,17 @@ void _wifiInitCommands() {
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
+
+bool _wifiWebSocketOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, "wifi", 4) == 0) return true;
+    if (strncmp(key, "ssid", 4) == 0) return true;
+    if (strncmp(key, "pass", 4) == 0) return true;
+    if (strncmp(key, "ip", 2) == 0) return true;
+    if (strncmp(key, "gw", 2) == 0) return true;
+    if (strncmp(key, "mask", 4) == 0) return true;
+    if (strncmp(key, "dns", 3) == 0) return true;
+    return false;
+}
 
 void _wifiWebSocketOnSend(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
@@ -313,6 +457,59 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 #endif
 
 // -----------------------------------------------------------------------------
+// INFO
+// -----------------------------------------------------------------------------
+
+void wifiDebug(WiFiMode_t modes) {
+
+    bool footer = false;
+
+    if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
+
+        uint8_t * bssid = WiFi.BSSID();
+        DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE STA\n"));
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.macAddress().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] HOST  http://%s.local\n"), WiFi.hostname().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
+            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
+        );
+        DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
+        DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
+        footer = true;
+
+    }
+
+    if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
+        DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
+        footer = true;
+    }
+
+    if (WiFi.getMode() == 0) {
+        DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE OFF\n"));
+        DEBUG_MSG_P(PSTR("[WIFI] No connection\n"));
+        footer = true;
+    }
+
+    if (footer) {
+        DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
+    }
+
+}
+
+void wifiDebug() {
+    wifiDebug(WIFI_AP_STA);
+}
+
+// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 
@@ -330,11 +527,6 @@ String getNetwork() {
     return WiFi.SSID();
 }
 
-double wifiDistance(int rssi) {
-    double exponent = (double) (WIFI_RSSI_1M - rssi) / WIFI_PROPAGATION_CONST / 10.0;
-    return round(pow(10, exponent));
-}
-
 bool wifiConnected() {
     return jw.connected();
 }
@@ -343,11 +535,30 @@ void wifiDisconnect() {
     jw.disconnect();
 }
 
-bool createAP() {
-    jw.disconnect();
-    jw.resetReconnectTimeout();
-    return jw.createAP();
+void wifiStartAP(bool only) {
+    if (only) {
+        jw.enableSTA(false);
+        jw.disconnect();
+        jw.resetReconnectTimeout();
+    }
+    jw.enableAP(true);
 }
+
+void wifiStartAP() {
+    wifiStartAP(true);
+}
+
+#if defined(JUSTWIFI_ENABLE_WPS)
+void wifiStartWPS() {
+    jw.startWPS();
+}
+#endif // defined(JUSTWIFI_ENABLE_WPS)
+
+#if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+void wifiStartSmartConfig() {
+    jw.startSmartConfig();
+}
+#endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
 void wifiReconnectCheck() {
     bool connected = false;
@@ -360,44 +571,13 @@ void wifiReconnectCheck() {
     jw.setReconnectTimeout(connected ? 0 : WIFI_RECONNECT_INTERVAL);
 }
 
-void wifiStatus() {
-
-    if (WiFi.getMode() == WIFI_AP_STA) {
-        DEBUG_MSG_P(PSTR("[WIFI] MODE AP + STA --------------------------------\n"));
-    } else if (WiFi.getMode() == WIFI_AP) {
-        DEBUG_MSG_P(PSTR("[WIFI] MODE AP --------------------------------------\n"));
-    } else if (WiFi.getMode() == WIFI_STA) {
-        DEBUG_MSG_P(PSTR("[WIFI] MODE STA -------------------------------------\n"));
-    } else {
-        DEBUG_MSG_P(PSTR("[WIFI] MODE OFF -------------------------------------\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] No connection\n"));
-    }
-
-    if ((WiFi.getMode() & WIFI_AP) == WIFI_AP) {
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), jw.getAPSSID().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
-    }
-
-    if ((WiFi.getMode() & WIFI_STA) == WIFI_STA) {
-        uint8_t * bssid = WiFi.BSSID();
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.macAddress().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] HOST  %s\n"), WiFi.hostname().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
-            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
-        );
-        DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
-        DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
-    }
-
-    DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
-
+uint8_t wifiState() {
+    uint8_t state = 0;
+    if (jw.connected()) state += WIFI_STATE_STA;
+    if (jw.connectable()) state += WIFI_STATE_AP;
+    if (_wifi_wps_running) state += WIFI_STATE_WPS;
+    if (_wifi_smartconfig_running) state += WIFI_STATE_SMARTCONFIG;
+    return state;
 }
 
 void wifiRegister(wifi_callback_f callback) {
@@ -410,20 +590,23 @@ void wifiRegister(wifi_callback_f callback) {
 
 void wifiSetup() {
 
-    #if WIFI_SLEEP_ENABLED
-        wifi_set_sleep_type(LIGHT_SLEEP_T);
-    #endif
+    WiFi.setSleepMode(WIFI_SLEEP_MODE);
 
     _wifiInject();
     _wifiConfigure();
 
     // Message callbacks
+    wifiRegister(_wifiCallback);
+    #if WIFI_AP_CAPTIVE
+        wifiRegister(_wifiCaptivePortal);
+    #endif
     #if DEBUG_SUPPORT
-        wifiRegister(_wifiDebug);
+        wifiRegister(_wifiDebugCallback);
     #endif
 
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
+        wsOnReceiveRegister(_wifiWebSocketOnReceive);
         wsOnAfterParseRegister(_wifiConfigure);
         wsOnActionRegister(_wifiWebSocketOnAction);
     #endif
@@ -439,11 +622,27 @@ void wifiSetup() {
 
 void wifiLoop() {
 
+    // Main wifi loop
     jw.loop();
 
+    // Process captrive portal DNS queries if in AP mode only
+    #if WIFI_AP_CAPTIVE
+        if ((WiFi.getMode() & WIFI_AP) == WIFI_AP) {
+            _wifi_dnsServer.processNextRequest();
+        }
+    #endif
+
+    // Do we have a pending scan?
     if (_wifi_scan_client_id > 0) {
         _wifiScan(_wifi_scan_client_id);
         _wifi_scan_client_id = 0;
+    }
+
+    // Check if we should disable AP
+    static unsigned long last = 0;
+    if (millis() - last > 60000) {
+        last = millis();
+        _wifiCheckAP();
     }
 
 }

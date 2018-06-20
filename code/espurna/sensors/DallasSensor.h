@@ -64,7 +64,6 @@ class DallasSensor : public BaseSensor {
         void begin() {
 
             if (!_dirty) return;
-            _dirty = false;
 
             // Manage GPIO lock
             if (_previous != GPIO_NONE) gpioReleaseLock(_previous);
@@ -93,6 +92,8 @@ class DallasSensor : public BaseSensor {
             } else {
                 _previous = _gpio;
             }
+            _ready = true;
+            _dirty = false;
 
         }
 
@@ -131,15 +132,6 @@ class DallasSensor : public BaseSensor {
                     for (unsigned char i = 0; i < DS_DATA_SIZE; i++) {
                         data[i] = _wire->read();
                     }
-
-                    #if false
-                        Serial.printf("[DS18B20] Data = ");
-                        for (unsigned char i = 0; i < DS_DATA_SIZE; i++) {
-                          Serial.printf("%02X ", data[i]);
-                        }
-                        Serial.printf(" CRC = %02X\n", OneWire::crc8(data, DS_DATA_SIZE-1));
-                    #endif
-
 
                     if (_wire->reset() != 1) {
                         // Force a CRC check error

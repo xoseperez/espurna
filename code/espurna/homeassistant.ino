@@ -14,124 +14,190 @@ bool _haEnabled = false;
 bool _haSendFlag = false;
 
 // -----------------------------------------------------------------------------
-
-void _haWebSocketOnSend(JsonObject& root) {
-    root["haVisible"] = 1;
-    root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-    root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
-}
+// SENSORS
+// -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT
 
-void _haSendMagnitude(unsigned char i) {
+void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
-    String output;
-
-    if (_haEnabled) {
-
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
-
-        unsigned char type = magnitudeType(i);
-
-        root["device_class"] = "sensor";
-        root["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
-        root["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-        root["unit_of_measurement"] = magnitudeUnits(type);
-
-        root.printTo(output);
-
-    }
-
-    String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
-        "/sensor/" +
-        getSetting("hostname") + "_" + String(i) +
-        "/config";
-
-    mqttSendRaw(topic.c_str(), output.c_str());
-    mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+    unsigned char type = magnitudeType(i);
+    config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
+    config.set("platform", "mqtt");
+    config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
+    config["unit_of_measurement"] = magnitudeUnits(type);
 
 }
 
 void _haSendMagnitudes() {
+
     for (unsigned char i=0; i<magnitudeCount(); i++) {
-        _haSendMagnitude(i);
+
+        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
+            "/sensor/" +
+            getSetting("hostname") + "_" + String(i) +
+            "/config";
+
+        String output;
+        if (_haEnabled) {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& config = jsonBuffer.createObject();
+            _haSendMagnitude(i, config);
+            config.printTo(output);
+            jsonBuffer.clear();
+        }
+
+        mqttSendRaw(topic.c_str(), output.c_str());
+        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+
     }
+
 }
 
-#endif
+#endif // SENSOR_SUPPORT
 
-void _haSendSwitch(unsigned char i) {
+// -----------------------------------------------------------------------------
+// SWITCHES & LIGHTS
+// -----------------------------------------------------------------------------
 
-    String output;
+void _haSendSwitch(unsigned char i, JsonObject& config) {
 
-    if (_haEnabled) {
-
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
-
-        String name = getSetting("hostname");
-        if (relayCount() > 1) {
-            name += String(" switch #") + String(i);
-        }
-
-        root["name"] = name;
-        root["platform"] = "mqtt";
-
-        if (relayCount()) {
-            root["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
-            root["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
-            root["payload_on"] = String("1");
-            root["payload_off"] = String("0");
-            root["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-            root["payload_available"] = String("1");
-            root["payload_not_available"] = String("0");
-        }
-
-        #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
-            if (i == 0) {
-
-                if (lightHasColor()) {
-                    root["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
-                    root["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
-                    root["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
-                    root["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
-                    root["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
-                }
-
-                if (lightChannels() > 3) {
-                    root["white_value_state_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, false);
-                    root["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
-                }
-
-            }
-
-        #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
-        root.printTo(output);
+    String name = getSetting("hostname");
+    if (relayCount() > 1) {
+        name += String(" #") + String(i);
     }
 
-    #if LIGHT_PROVIDER == LIGHT_PROVIDER_NONE
-        String component = String("switch");
-    #else
-        String component = String("light");
-    #endif
+    config.set("name", name);
+    config.set("platform", "mqtt");
 
-    String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
-        "/" + component +
-        "/" + getSetting("hostname") + "_" + String(i) +
-        "/config";
+    if (relayCount()) {
+        config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
+        config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
+        config["payload_on"] = String("1");
+        config["payload_off"] = String("0");
+        config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
+        config["payload_available"] = String("1");
+        config["payload_not_available"] = String("0");
+    }
 
-    mqttSendRaw(topic.c_str(), output.c_str());
-    mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
+        if (i == 0) {
+
+            if (lightHasColor()) {
+                config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
+                config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
+                config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
+                config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
+                config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
+            }
+
+            if (lightChannels() > 3) {
+                config["white_value_state_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, false);
+                config["white_value_command_topic"] = mqttTopic(MQTT_TOPIC_CHANNEL, 3, true);
+            }
+
+        }
+
+    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 }
 
 void _haSendSwitches() {
+
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
+        String type = String("light");
+    #else
+        String type = String("switch");
+    #endif
+
     for (unsigned char i=0; i<relayCount(); i++) {
-        _haSendSwitch(i);
+
+        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
+            "/" + type +
+            "/" + getSetting("hostname") + "_" + String(i) +
+            "/config";
+
+        String output;
+        if (_haEnabled) {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& config = jsonBuffer.createObject();
+            _haSendSwitch(i, config);
+            config.printTo(output);
+            jsonBuffer.clear();
+        }
+
+        mqttSendRaw(topic.c_str(), output.c_str());
+        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+
     }
+
+}
+
+// -----------------------------------------------------------------------------
+
+String _haGetConfig() {
+
+    String output;
+
+    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
+        String type = String("light");
+    #else
+        String type = String("switch");
+    #endif
+
+    for (unsigned char i=0; i<relayCount(); i++) {
+
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& config = jsonBuffer.createObject();
+        _haSendSwitch(i, config);
+
+        output += type + ":\n";
+        bool first = true;
+        for (auto kv : config) {
+            if (first) {
+                output += "  - ";
+                first = false;
+            } else {
+                output += "    ";
+            }
+            output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
+        }
+        output += "\n";
+
+        jsonBuffer.clear();
+
+    }
+
+    #if SENSOR_SUPPORT
+
+        for (unsigned char i=0; i<magnitudeCount(); i++) {
+
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& config = jsonBuffer.createObject();
+            _haSendMagnitude(i, config);
+
+            output += "sensor:\n";
+            bool first = true;
+            for (auto kv : config) {
+                if (first) {
+                    output += "  - ";
+                    first = false;
+                } else {
+                    output += "    ";
+                }
+                output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
+            }
+            output += "\n";
+
+            jsonBuffer.clear();
+
+        }
+
+    #endif
+
+    return output;
+
 }
 
 void _haSend() {
@@ -161,6 +227,57 @@ void _haConfigure() {
     _haSend();
 }
 
+#if WEB_SUPPORT
+
+bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "ha", 2) == 0);
+}
+
+void _haWebSocketOnSend(JsonObject& root) {
+    root["haVisible"] = 1;
+    root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
+    root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
+}
+
+void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+    if (strcmp(action, "haconfig") == 0) {
+        String output = _haGetConfig();
+        output.replace(" ", "&nbsp;");
+        output.replace("\n", "<br />");
+        output = String("{\"haConfig\": \"") + output + String("\"}");
+        wsSend(client_id, output.c_str());
+    }
+}
+
+#endif
+
+#if TERMINAL_SUPPORT
+
+void _haInitCommands() {
+    settingsRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
+        DEBUG_MSG(_haGetConfig().c_str());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+    settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
+        setSetting("haEnabled", "1");
+        _haConfigure();
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+    settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
+        setSetting("haEnabled", "0");
+        _haConfigure();
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+}
+
+#endif
+
 // -----------------------------------------------------------------------------
 
 void haSetup() {
@@ -170,12 +287,19 @@ void haSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnAfterParseRegister(_haConfigure);
+        wsOnActionRegister(_haWebSocketOnAction);
+        wsOnReceiveRegister(_haWebSocketOnReceive);
     #endif
 
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
         if (type == MQTT_CONNECT_EVENT) _haSend();
     });
+
+    #if TERMINAL_SUPPORT
+        _haInitCommands();
+    #endif
+
 
 }
 

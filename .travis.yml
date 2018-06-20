@@ -9,7 +9,7 @@ install:
 - pip install -U platformio
 - cd code ; npm install --only=dev ; cd ..
 script:
-- cd code ; ./build.sh; cd ..
+- cd code && ./build.sh &&  cd ..
 before_deploy:
 - mv firmware/*/espurna-*.bin firmware/
 deploy:

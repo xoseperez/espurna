@@ -7,6 +7,11 @@
 
 #pragma once
 
+#undef I2C_SUPPORT
+#define I2C_SUPPORT 1 // Explicitly request I2C support.
+
+
+
 #include "Arduino.h"
 #include "I2CSensor.h"
 
@@ -41,18 +46,9 @@ class SI7021Sensor : public I2CSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-
             if (!_dirty) return;
-            _dirty = false;
-
-            // I2C auto-discover
-            unsigned char addresses[] = {0x40};
-            _address = _begin_i2c(_address, sizeof(addresses), addresses);
-            if (_address == 0) return;
-
-            // Initialize sensor
             _init();
-
+            _dirty = !_ready;
         }
 
         // Descriptive name of the sensor
@@ -116,17 +112,32 @@ class SI7021Sensor : public I2CSensor {
 
         void _init() {
 
+            // I2C auto-discover
+            unsigned char addresses[] = {0x40};
+            _address = _begin_i2c(_address, sizeof(addresses), addresses);
+            if (_address == 0) return;
+
             // Check device
             i2c_write_uint8(_address, 0xFC, 0xC9);
             _chip = i2c_read_uint8(_address);
 
             if ((_chip != SI7021_CHIP_SI7021) & (_chip != SI7021_CHIP_HTU21D)) {
-                i2cReleaseLock(_address);
-                _error = SENSOR_ERROR_UNKNOWN_ID;
+
                 _count = 0;
+                i2cReleaseLock(_address);
+                _previous_address = 0;
+                _error = SENSOR_ERROR_UNKNOWN_ID;
+
+                // Setting _address to 0 forces auto-discover
+                // This might be necessary at this stage if there is a
+                // different sensor in the hardcoded address
+                _address = 0;
+
             } else {
                 _count = 2;
             }
+
+            _ready = true;
 
         }
 
@@ -139,7 +150,7 @@ class SI7021Sensor : public I2CSensor {
             // is needed to wait for the measurement.
             // According to datasheet the max. conversion time is ~22ms
             unsigned long start = millis();
-            while (millis() - start < 50) delay(1);
+            nice_delay(50);
 
             // Clear the last to bits of LSB to 00.
             // According to datasheet LSB of RH is always xxxxxx10

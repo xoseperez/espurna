@@ -29,15 +29,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 const fs = require('fs');
 const gulp = require('gulp');
 const htmlmin = require('gulp-htmlmin');
-const cleancss = require('gulp-clean-css');
 const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
-const gutil = require('gulp-util');
+const log = require('fancy-log');
 const csslint = require('gulp-csslint');
+const crass = require('gulp-crass');
+const replace = require('gulp-replace');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
@@ -50,7 +51,7 @@ var toHeader = function(filename) {
 
     var wstream = fs.createWriteStream(destination);
     wstream.on('error', function (err) {
-        console.log(err);
+        log.error(err);
     });
 
     var data = fs.readFileSync(source);
@@ -76,10 +77,13 @@ var toHeader = function(filename) {
 var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
 		issues.forEach(function (issue) {
-			gutil.log(
-                gutil.colors.cyan('[gulp-htmllint] ') +
-                gutil.colors.white(filepath + ' [' + issue.line + ',' + issue.column + ']: ') +
-                gutil.colors.red('(' + issue.code + ') ' + issue.msg)
+			log.info(
+                '[gulp-htmllint] ' +
+                filepath + ' [' +
+                issue.line + ',' +
+                issue.column + ']: ' +
+                '(' + issue.code + ') ' +
+                issue.msg
             );
 		});
 		process.exitCode = 1;
@@ -114,7 +118,7 @@ gulp.task('buildfs_inline', function() {
         pipe(inline({
             base: 'html/',
             js: [uglify],
-            css: [cleancss, inlineImages],
+            css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
         })).
         pipe(htmlmin({
@@ -123,6 +127,7 @@ gulp.task('buildfs_inline', function() {
             minifyCSS: true,
             minifyJS: true
         })).
+        pipe(replace('pure-', 'p-')).
         pipe(gzip()).
         pipe(gulp.dest(dataFolder));
 });

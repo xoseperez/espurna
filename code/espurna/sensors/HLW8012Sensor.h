@@ -48,6 +48,10 @@ class HLW8012Sensor : public BaseSensor {
             _hlw8012->resetMultipliers();
         }
 
+        void resetEnergy() {
+            _hlw8012->resetEnergy();
+        }
+
         // ---------------------------------------------------------------------
 
         void setSEL(unsigned char sel) {
@@ -152,6 +156,8 @@ class HLW8012Sensor : public BaseSensor {
                     _enableInterrupts(false);
                 });
             #endif
+
+            _ready = true;
 
         }
 
