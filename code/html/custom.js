@@ -761,7 +761,7 @@ function initCheckboxes() {
             setCheckbox(this, status);
 
             if ("relay" == checkbox.attr('name')) {
-                var id = checkbox.prop('data');
+                var id = parseInt(checkbox.attr('data'), 10);
                 doToggle(id, status);
             }
 
