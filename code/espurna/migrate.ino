@@ -1016,6 +1016,28 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
+        #elif defined(BLITZWOLF_BWSHP2)
+
+            setSetting("board", 79);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 0);
+            setSetting("ledLogic", 1, 1);
+            setSetting("ledMode", 1, LED_MODE_FINDME);
+            setSetting("ledRelay", 1, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 14);
+            setSetting("cfGPIO", 5);
+            setSetting("pwrRatioC", 25740);
+            setSetting("pwrRatioV", 313400);
+            setSetting("pwrRatioP", 3414290);
+            setSetting("hlwSelC", LOW);
+            setSetting("hlwIntM", FALLING);
+
         #else
 
             // Allow users to define new settings without migration config
