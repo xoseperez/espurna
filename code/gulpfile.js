@@ -35,7 +35,6 @@ const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
-const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 const crass = require('gulp-crass');
 const replace = require('gulp-replace');
@@ -61,7 +60,7 @@ var buildHeaderFile = function() {
 
         var wstream = fs.createWriteStream(destination);
         wstream.on('error', function (err) {
-            log.error(err);
+            console.error(err);
         });
 
         var data = fs.readFileSync(file.path);
@@ -83,7 +82,7 @@ var buildHeaderFile = function() {
         wstream.end();
 
         var fstat = fs.statSync(file.path);
-        log("Created '" + filename + "' size: " + fstat.size + " bytes");
+        console.log("Created '" + filename + "' size: " + fstat.size + " bytes");
 
         cb(0, destination);
 
@@ -94,7 +93,7 @@ var buildHeaderFile = function() {
 var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
 		issues.forEach(function (issue) {
-			log.info(
+			console.info(
                 '[gulp-htmllint] ' +
                 filepath + ' [' +
                 issue.line + ',' +
@@ -143,7 +142,7 @@ gulp.task('buildfs_inline', function() {
             }
         }
     }
-    log.info("Modules " + JSON.stringify(remover_config));
+    console.info("Modules " + JSON.stringify(remover_config));
 
     return gulp.src('html/*.html').
         pipe(htmllint({

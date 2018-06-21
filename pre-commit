@@ -124,7 +124,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     os.chdir("code")
-    if call(["node", "node_modules/gulp/bin/gulp.js"]):
+    if call(["node", "node_modules/gulp/bin/gulp.js", "--silent"]):
         sys.exit(2)
 
     sys.exit(0);
