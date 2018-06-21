@@ -38,7 +38,7 @@ unsigned long settingsSize() {
 
 // -----------------------------------------------------------------------------
 
-unsigned int _settingsKeyCount() {
+unsigned int settingsKeyCount() {
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
@@ -50,7 +50,7 @@ unsigned int _settingsKeyCount() {
     return count;
 }
 
-String _settingsKeyName(unsigned int index) {
+String settingsKeyName(unsigned int index) {
 
     String s;
 
@@ -80,11 +80,11 @@ std::vector<String> _settingsKeys() {
     std::vector<String> keys;
 
     //unsigned int size = settingsKeyCount();
-    unsigned int size = _settingsKeyCount();
+    unsigned int size = settingsKeyCount();
     for (unsigned int i=0; i<size; i++) {
 
         //String key = settingsKeyName(i);
-        String key = _settingsKeyName(i);
+        String key = settingsKeyName(i);
         bool inserted = false;
         for (unsigned char j=0; j<keys.size(); j++) {
 
@@ -277,7 +277,7 @@ void _settingsInitCommands() {
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
-    
+
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
         deferredReset(100, CUSTOM_RESET_TERMINAL);

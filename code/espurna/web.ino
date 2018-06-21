@@ -67,20 +67,24 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
-    root["app"] = APP_NAME;
-    root["version"] = APP_VERSION;
-    settingsGetJson(root);
-    root.prettyPrintTo(*response);
-    jsonBuffer.clear();
-
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
+
+    response->printf("{\n  \"app\": \"%s\",\n  \"version\": \"%s\"", APP_NAME, APP_VERSION);
+
+    // Write the keys line by line (not sorted)
+    unsigned long count = settingsKeyCount();
+    for (unsigned int i=0; i<count; i++) {
+        String key = settingsKeyName(i);
+        String value = getSetting(key);
+        response->printf(",\n  \"%s\": \"%s\"", key.c_str(), value.c_str());
+    }
+    response->printf("\n}");
+
     request->send(response);
 
 }
