@@ -1827,7 +1827,7 @@
     #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON3_PIN             14
-    #define BUTTON3_RELAY           2
+    #define BUTTON3_RELAY           3
     #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define RELAY1_PIN              4
