@@ -40,40 +40,56 @@ const csslint = require('gulp-csslint');
 const crass = require('gulp-crass');
 const replace = require('gulp-replace');
 const remover = require('gulp-remove-code');
+const map = require('map-stream');
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
 
-var toHeader = function(filename) {
+var buildHeaderFile = function() {
 
-    var source = dataFolder + filename;
-    var destination = staticFolder + filename + '.h';
-    var safename = filename.split('.').join('_');
+    String.prototype.replaceAll = function(search, replacement) {
+        var target = this;
+        return target.split(search).join(replacement);
+    };
 
-    var wstream = fs.createWriteStream(destination);
-    wstream.on('error', function (err) {
-        log.error(err);
-    });
+    return map(function(file, cb) {
 
-    var data = fs.readFileSync(source);
+        var parts = file.path.split("/");
+        var filename = parts[parts.length - 1];
+        var destination = staticFolder + filename + ".h";
+        var safename = filename.replaceAll('.', '_');
 
-    wstream.write('#define ' + safename + '_len ' + data.length + '\n');
-    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
+        var wstream = fs.createWriteStream(destination);
+        wstream.on('error', function (err) {
+            log.error(err);
+        });
 
-    for (var i=0; i<data.length; i++) {
-        if (0 === (i % 20)) {
-            wstream.write('\n');
+        var data = fs.readFileSync(file.path);
+
+        wstream.write('#define ' + safename + '_len ' + data.length + '\n');
+        wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
+
+        for (var i=0; i<data.length; i++) {
+            if (0 === (i % 20)) {
+                wstream.write('\n');
+            }
+            wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
+            if (i < (data.length - 1)) {
+                wstream.write(',');
+            }
         }
-        wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i < (data.length - 1)) {
-          wstream.write(',');
-        }
-    }
 
-    wstream.write('\n};');
-    wstream.end();
+        wstream.write('\n};');
+        wstream.end();
 
-};
+        var fstat = fs.statSync(file.path);
+        log("Created '" + filename + "' size: " + fstat.size + " bytes");
+
+        cb(0, destination);
+
+   });
+
+}
 
 var htmllintReporter = function(filepath, issues) {
 	if (issues.length > 0) {
@@ -92,8 +108,8 @@ var htmllintReporter = function(filepath, issues) {
 };
 
 gulp.task('build_certs', function() {
-    toHeader('server.cer');
-    toHeader('server.key');
+    gulp.src(dataFolder + 'server.*').
+        pipe(buildHeaderFile());
 });
 
 gulp.task('csslint', function() {
@@ -103,7 +119,8 @@ gulp.task('csslint', function() {
 });
 
 gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
-    toHeader('index.html.gz');
+    gulp.src(dataFolder + 'index.*').
+        pipe(buildHeaderFile());
 });
 
 gulp.task('buildfs_inline', function() {
@@ -126,7 +143,7 @@ gulp.task('buildfs_inline', function() {
             }
         }
     }
-    log.info("Modules: " + JSON.stringify(remover_config));
+    log.info("Modules " + JSON.stringify(remover_config));
 
     return gulp.src('html/*.html').
         pipe(htmllint({
@@ -154,17 +171,5 @@ gulp.task('buildfs_inline', function() {
         pipe(gzip()).
         pipe(gulp.dest(dataFolder));
 });
-
-
-gulp.task('test', function() {
-    return gulp.src('html/custom.js').
-        pipe(remover({
-            sensor: false,
-            light: false,
-            rfbridge: false
-        })).
-        pipe(gulp.dest('/home/xose/tmp/'));
-});
-
 
 gulp.task('default', ['buildfs_embeded']);

@@ -977,7 +977,7 @@ void migrate() {
 
         #elif defined(ESTINK_WIFI_POWER_STRIP)
 
-            setSetting("board", 76);
+            setSetting("board", 77);
             setSetting("btnGPIO", 0, 16);
             setSetting("btnRelay", 0, 3);
             setSetting("ledGPIO", 0, 0);
@@ -1003,6 +1003,18 @@ void migrate() {
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
             setSetting("relayType", 2, RELAY_TYPE_NORMAL);
             setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
+        #elif defined(BH_ONOFRE)
+
+            setSetting("board", 78);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
         #else
 

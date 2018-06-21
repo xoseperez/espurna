@@ -230,7 +230,7 @@ def store(device, env):
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" WEBUI_MODULES=\"%s\" platformio run --environment %s -t upload"
+    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" WEBUI_MODULES=\"%s\" platformio run --silent --environment %s -t upload"
     command = command % (device['ip'], device['board'], device['auth'], device['flags'], device['modules'], env)
     subprocess.check_call(command, shell=True)
     store(device, env)

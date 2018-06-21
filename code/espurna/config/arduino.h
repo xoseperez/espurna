@@ -86,6 +86,7 @@
 //#define ESTINK_WIFI_POWER_STRIP
 //#define PILOTAK_ESP_DIN_V1
 //#define BLITZWOLF_BWSHP2
+//#define BH_ONOFRE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

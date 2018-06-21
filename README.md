@@ -4,7 +4,10 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smar
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
 [![version](https://img.shields.io/badge/version-1.13.0c-brightgreen.svg)](CHANGELOG.md)
-[![branch](https://img.shields.io/badge/branch-sensors-orange.svg)](https://github.org/xoseperez/espurna/tree/sensors/)
+[![branch](https://img.shields.io/badge/branch-sensors-orange.svg)](https://github.com/xoseperez/espurna/tree/sensors/)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=sensors)](https://travis-ci.org/xoseperez/espurna)
+[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/sensors.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
+[![branch](https://img.shields.io/badge/branch-sensors-orange.svg)](https://github.com/xoseperez/espurna/tree/sensors/)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=sensors)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/sensors.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
@@ -241,8 +244,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**IKE ESPike**|**STM_RELAY**|**Arniex Swifitch**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
-|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)||
-|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**||
+|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)|![Bruno Horta's OnOfre](images/devices/bh-onofre.jpg)|
+|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**|**Bruno Horta's OnOfre**|
 |![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|||
 |**Tonbux Mosquito Killer**|||
 
