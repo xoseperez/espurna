@@ -120,4 +120,11 @@ if __name__ == "__main__":
         for line in readme:
             sys.stdout.write(fmt_line(line))
 
-    sys.exit(call(["git", "add", README]))
+    if call(["git", "add", README]):
+        sys.exit(1)
+
+    os.chdir("code")
+    if call(["node", "node_modules/gulp/bin/gulp.js"]):
+        sys.exit(2)
+
+    sys.exit(0);
