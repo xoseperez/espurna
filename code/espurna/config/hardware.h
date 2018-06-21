@@ -2240,6 +2240,33 @@
     #define LED3_RELAY          3
     #define LED4_RELAY          4
 
+
+// -----------------------------------------------------------------------------
+// Bruno Horta's OnOfre
+// https://www.bhonofre.pt/
+// https://github.com/brunohorta82/BH_OnOfre/
+// -----------------------------------------------------------------------------
+
+#elif defined(BH_ONOFRE)
+
+    // Info
+    #define MANUFACTURER        "BH"
+    #define DEVICE              "ONOFRE"
+
+    // Buttons
+    #define BUTTON1_PIN         12
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_PIN         13
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------

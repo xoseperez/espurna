@@ -1004,6 +1004,18 @@ void migrate() {
             setSetting("relayType", 2, RELAY_TYPE_NORMAL);
             setSetting("relayType", 3, RELAY_TYPE_NORMAL);
 
+        #elif defined(BH_ONOFRE)
+
+            setSetting("board", 77);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
