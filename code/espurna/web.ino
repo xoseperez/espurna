@@ -16,7 +16,17 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 #if WEB_EMBEDDED
-#include "static/index.html.gz.h"
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+#include "static/index.light.html.gz.h"
+#elif SENSOR_SUPPORT
+#include "static/index.sensor.html.gz.h"
+#elif ITEAD_SONOFF_RFBRIDGE
+#include "static/index.rfbridge.html.gz.h"
+#else
+#include "static/index.small.html.gz.h"
+#endif
+
 #endif // WEB_EMBEDDED
 
 #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
@@ -161,12 +171,12 @@ void _onHome(AsyncWebServerRequest *request) {
             AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 
                 // Get the chunk based on the index and maxLen
-                size_t len = index_html_gz_len - index;
+                size_t len = webui_image_len - index;
                 if (len > maxLen) len = maxLen;
                 if (len > max) len = max;
-                if (len > 0) memcpy_P(buffer, index_html_gz + index, len);
+                if (len > 0) memcpy_P(buffer, webui_image + index, len);
 
-                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / index_html_gz_len), max);
+                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
                 if (len == 0) DEBUG_MSG_P(PSTR("\n"));
 
                 // Return the actual length of the chunk (0 for end of file)
@@ -176,7 +186,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
         #else
 
-            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", webui_image, webui_image_len);
 
         #endif
 

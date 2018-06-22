@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*eslint-env es6*/
 
 // -----------------------------------------------------------------------------
-// File system builder
+// Dependencies
 // -----------------------------------------------------------------------------
 
 const fs = require('fs');
@@ -40,9 +40,19 @@ const crass = require('gulp-crass');
 const replace = require('gulp-replace');
 const remover = require('gulp-remove-code');
 const map = require('map-stream');
+const rename = require('gulp-rename');
+const runSequence = require('run-sequence');
+
+// -----------------------------------------------------------------------------
+// Configuration
+// -----------------------------------------------------------------------------
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
+
+// -----------------------------------------------------------------------------
+// Methods
+// -----------------------------------------------------------------------------
 
 var buildHeaderFile = function() {
 
@@ -56,7 +66,7 @@ var buildHeaderFile = function() {
         var parts = file.path.split("/");
         var filename = parts[parts.length - 1];
         var destination = staticFolder + filename + ".h";
-        var safename = filename.replaceAll('.', '_');
+        var safename = "webui_image";
 
         var wstream = fs.createWriteStream(destination);
         wstream.on('error', function (err) {
@@ -106,43 +116,16 @@ var htmllintReporter = function(filepath, issues) {
 	}
 };
 
-gulp.task('build_certs', function() {
-    gulp.src(dataFolder + 'server.*').
-        pipe(buildHeaderFile());
-});
+var buildWebUI = function(module) {
 
-gulp.task('csslint', function() {
-    gulp.src('html/*.css').
-        pipe(csslint({ids: false})).
-        pipe(csslint.formatter());
-});
-
-gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
-    gulp.src(dataFolder + 'index.*').
-        pipe(buildHeaderFile());
-});
-
-gulp.task('buildfs_inline', function() {
-
-    var remover_config = {
-        sensor: false,
-        light: false,
-        rfbridge: false
-    };
-    var modules = 'WEBUI_MODULES' in process.env ? process.env.WEBUI_MODULES : false;
-    if (false === modules || "all" === modules) {
-        for (var i in remover_config) {
-            remover_config[i] = true;
-        }
-    } else {
-        var list = modules.split(' ');
-        for (var i in list) {
-            if (list[i] != "") {
-                remover_config[list[i]] = true;
-            }
-        }
+    var modules = {"light": false, "sensor": false, "rfbridge": false};
+    if ("all" == module) {
+        modules["light"] = true;
+        modules["rfbridge"] = true;
+        modules["sensor"] = true;
+    } else if ("small" != module) {
+        modules[module] = true;
     }
-    console.info("Modules " + JSON.stringify(remover_config));
 
     return gulp.src('html/*.html').
         pipe(htmllint({
@@ -159,7 +142,7 @@ gulp.task('buildfs_inline', function() {
             css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
         })).
-        pipe(remover(remover_config)).
+        pipe(remover(modules)).
         pipe(htmlmin({
             collapseWhitespace: true,
             removeComments: true,
@@ -168,7 +151,58 @@ gulp.task('buildfs_inline', function() {
         })).
         pipe(replace('pure-', 'p-')).
         pipe(gzip()).
+        pipe(rename("index." + module + ".html.gz")).
         pipe(gulp.dest(dataFolder));
+
+};
+
+// -----------------------------------------------------------------------------
+// Tasks
+// -----------------------------------------------------------------------------
+
+gulp.task('build_certs', function() {
+    gulp.src(dataFolder + 'server.*').
+        pipe(buildHeaderFile());
+});
+
+gulp.task('csslint', function() {
+    gulp.src('html/*.css').
+        pipe(csslint({ids: false})).
+        pipe(csslint.formatter());
+});
+
+gulp.task('build_webui_small', function() {
+    return buildWebUI("small");
+})
+
+gulp.task('build_webui_sensor', function() {
+    return buildWebUI("sensor");
+})
+
+gulp.task('build_webui_light', function() {
+    return buildWebUI("light");
+})
+
+gulp.task('build_webui_rfbridge', function() {
+    return buildWebUI("rfbridge");
+})
+
+gulp.task('build_webui_all', function() {
+    return buildWebUI("all");
+})
+
+gulp.task('buildfs_inline', function(cb) {
+    runSequence([
+        'build_webui_small',
+        'build_webui_sensor',
+        'build_webui_light',
+        'build_webui_rfbridge'
+    ], cb);
+});
+
+gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
+    gulp.src(dataFolder + 'index.*').
+        pipe(buildHeaderFile());
 });
 
 gulp.task('default', ['buildfs_embeded']);

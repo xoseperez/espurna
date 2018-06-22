@@ -82,20 +82,10 @@ def check_size(source, target, env):
         print_warning("https://github.com/xoseperez/espurna/wiki/TwoStepUpdates", color=Color.LIGHT_CYAN)
         print_filler("*", color=Color.LIGHT_YELLOW, err=True)
 
-def build_webui(env):
-    if distutils.spawn.find_executable("node"):
-        config = util.load_project_config()
-        kv = dict(config.items("env:" + env.get('PIOENV')))
-        modules = kv["modules"] if "modules" in kv else "all"
-        env.Execute("WEBUI_MODULES=\"%s\" node node_modules/gulp/bin/gulp.js" % modules)
-    else:
-        print_warning("Not building the web UI image ('node' does not exist in the path)")
-
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
 
 remove_float_support()
-build_webui(env)
 
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)

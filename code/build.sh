@@ -54,6 +54,11 @@ revision=${revision:0:7}
 cp espurna/config/version.h espurna/config/version.h.original
 sed -i -e "s/APP_REVISION            \".*\"/APP_REVISION            \"$revision\"/g" espurna/config/version.h
 
+# Recreate web interface
+echo "--------------------------------------------------------------"
+echo "Building web interface..."
+node node_modules/gulp/bin/gulp.js || exit
+
 # Build all the required firmware images
 echo "--------------------------------------------------------------"
 echo "Building firmware images..."
