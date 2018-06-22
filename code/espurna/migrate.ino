@@ -953,7 +953,7 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
-        #elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+        #elif defined(NEO_COOLCAM_NAS_WR01W)
 
             setSetting("board", 75);
             setSetting("ledGPIO", 0, 4);
