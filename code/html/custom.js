@@ -7,6 +7,9 @@ var free_size = 0;
 
 var urls = {};
 
+var configInputs = [];
+var configFragment = null;
+
 var numChanged = 0;
 var numReboot = 0;
 var numReconnect = 0;
@@ -17,6 +20,17 @@ var useCCT = false;
 
 var now = 0;
 var ago = 0;
+
+const VALUE_GROUPS = [
+    "adminPass", "ssid", "pass", "gw", "mask", "ip", "dns",
+    "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
+    "relayBoot", "relayPulse", "relayTime",
+    "mqttGroup", "mqttGroupInv", "relayOnDisc",
+    "dczRelayIdx", "dczMagnitude",
+    "tspkRelay", "tspkMagnitude",
+    "ledMode",
+    "adminPass"
+];
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -198,23 +212,12 @@ function getValue(element) {
 function addValue(data, name, value) {
 
     // These fields will always be a list of values
-    var is_group = [
-        "ssid", "pass", "gw", "mask", "ip", "dns",
-        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime",
-        "mqttGroup", "mqttGroupInv", "relayOnDisc",
-        "dczRelayIdx", "dczMagnitude",
-        "tspkRelay", "tspkMagnitude",
-        "ledMode",
-        "adminPass"
-    ];
-
     if (name in data) {
         if (!Array.isArray(data[name])) {
             data[name] = [data[name]];
         }
         data[name].push(value);
-    } else if (is_group.indexOf(name) >= 0) {
+    } else if (VALUE_GROUPS.indexOf(name) >= 0) {
         data[name] = [value];
     } else {
         data[name] = value;
@@ -228,6 +231,8 @@ function getData(form) {
 
     // Populate data
     $("input,select", form).each(function() {
+        if ($(this).prop("readonly")) return;
+
         var name = $(this).attr("name");
         var value = getValue(this);
         if (null !== value) {
@@ -236,7 +241,7 @@ function getData(form) {
     });
 
     // Post process
-    addValue(data, "schSwitch", 0xFF);
+    delete data["dbgcmd"];
     delete data["filename"];
     delete data["rfbcode"];
 
@@ -450,7 +455,10 @@ function doUpdate() {
     if (validateForm(form)) {
 
         // Get data
-        sendConfig(getData(form));
+        var data = getData(form);
+        addValue(data, "schSwitch", 0xFF);
+
+        sendConfig(data);
 
         // Empty special fields
         $(".pwrExpected").val(0);
@@ -485,7 +493,49 @@ function doUpdate() {
 }
 
 function doBackup() {
-    document.getElementById("downloader").src = urls.config.href;
+    var form = $(configFragment).find("#formSave");
+
+    var data = getData(form);
+    if (data.hostname === undefined) {
+        return;
+    }
+
+    // Pre-process data before sending
+    // - split arrays into keyN=key[N]
+    // - remove keys with no values
+    var pop = [];
+    for (key in data) {
+        if (!data.hasOwnProperty(key)) continue;
+        if (data[key].length === 0) {
+            pop.push(key);
+            continue;
+        }
+
+        if (!VALUE_GROUPS.includes(key)) continue;
+        for (var i = 0; i<data[key].length; i++) {
+            if (data[key][i].length === 0) continue;
+            data[key.concat(i)] = data[key][i];
+        }
+
+        pop.push(key);
+    }
+
+    pop.forEach(function(key) { delete data[key]; });
+
+    // XXX store as constants?
+    data["app"] = $("span[name='app_name']").text();
+    data["version"] = $("span[name='app_version']").text();
+
+    var downloader = $("#downloader");
+    if (downloader[0].href !== undefined) {
+        window.URL.revokeObjectURL(downloader[0].href);
+    }
+
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type: "text/json"});
+    downloader.attr("href", window.URL.createObjectURL(blob));
+    downloader.attr("download", data.hostname.concat("-backup.json"));
+    downloader[0].click();
+
     return false;
 }
 
@@ -767,6 +817,28 @@ function initCheckboxes() {
 
         });
 
+}
+
+function initConfigFragment() {
+    if (configInputs.length === 0) {
+        return;
+    }
+
+    var form = null;
+    if (configFragment === null) {
+        configFragment = document.createDocumentFragment();
+        form = document.createElement("form");
+        form.setAttribute("id", "formSave");
+        configFragment.appendChild(form);
+    }
+
+    if (form === null) {
+        form = configFragment.getElementById("formSave");
+    }
+
+    while (configInputs.length > 0) {
+        form.appendChild(configInputs.pop());
+    }
 }
 
 function createCheckboxes() {
@@ -1340,6 +1412,7 @@ function processData(data) {
                 post = input.attr("post") || "";
                 input.val(pre + value + post);
             }
+            input.each(function() { configInputs.push(this); });
         }
 
         // Look for SPANs
@@ -1354,6 +1427,7 @@ function processData(data) {
         var select = $("select[name='" + key + "']");
         if (select.length > 0) {
             select.val(value);
+            select.each(function() { configInputs.push(this); });
         }
 
     });
@@ -1365,6 +1439,7 @@ function processData(data) {
 
     resetOriginals();
     initCheckboxes();
+    initConfigFragment();
 
 }
 

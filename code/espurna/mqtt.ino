@@ -316,7 +316,7 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
     root["mqttUser"] = getSetting("mqttUser", MQTT_USER);
-    root["mqttClientID"] = getSetting("mqttClientID");
+    root["mqttClientID"] = getSetting("mqttClientID", getIdentifier());
     root["mqttPassword"] = getSetting("mqttPassword", MQTT_PASS);
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
