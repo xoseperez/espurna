@@ -3,6 +3,64 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.0] 2018-06-22
+### Fixed
+- Fixed PZEM004T compilation issues, working when using hardware serial ([#837](https://github.com/xoseperez/espurna/issues/837))
+- Fixed per channel state on/off for lights ([#830](https://github.com/xoseperez/espurna/issues/830))
+- Fixed overflow in CSE7766 energy calculation ([#856](https://github.com/xoseperez/espurna/issues/856))
+- Fixed On MQTT disconnect in web UI ([#845](https://github.com/xoseperez/espurna/issues/845))
+- Check valid hostnames ([#874](https://github.com/xoseperez/espurna/issues/874), [#879](https://github.com/xoseperez/espurna/issues/879))
+- Fix Sonoff POW R2 configuration
+- Fixed InfluxDB sensor by id ([#882](https://github.com/xoseperez/espurna/issues/882))
+- Fix build when disabling WEB_SUPPORT ([#923](https://github.com/xoseperez/espurna/issues/923))
+- Fix calibration error in EmonSensor ([#876](https://github.com/xoseperez/espurna/issues/876))
+- Fix telnet and web debug responsiveness ([#896](https://github.com/xoseperez/espurna/issues/896))
+- Use double quotes in JSON for non-numeric values ([#929](https://github.com/xoseperez/espurna/issues/929))
+- Support connections over HTTPS via proxy ([#937](https://github.com/xoseperez/espurna/issues/937))
+
+### Added
+- EEPROM sector rotation using EEPROM_Rotate library
+- Code filtering when building web UI images
+- Added pulsing a relay via MQTT and REST API ([#896](https://github.com/xoseperez/espurna/issues/896), [#902](https://github.com/xoseperez/espurna/issues/902))
+- Support for WPS (not available in pre-built binaries)
+- Support for Smart Config (not available in pre-built binaries)
+- Support for CCT lights (thanks to @Skaronator)
+- Allow RELAYx_DELAY_ON/OFF also for none GPIO relay types (thanks to @zafrirron)
+- Added relay status to Domoticz on MQTT connection ([#872](https://github.com/xoseperez/espurna/issues/872))
+- Added configurable UART-to-MQTT terminator
+- Added telnet link to web UI
+- Reload terminal command to force all modules to reload settings from config ([#816](https://github.com/xoseperez/espurna/issues/816))
+- Added security headers to each HTTP response (thanks to @ITNerdBox)
+- Customized GET terminal command (thanks to @mcspr)
+- More RC codes supported on TX for RF Bridge (thanks to @wildwiz)
+- Support for BL0937 power monitoring chip with unmodified HLW8012 library ([#737](https://github.com/xoseperez/espurna/issues/737))
+- Enable CORS
+- Support for Allnet ESP8266 UP Relay (thanks to @bajo)
+- Support for Tonbux Mosquito Killer (thanks to @gn0st1c)
+- Support for Neo Coolcam NAS-WR01W WiFi Smart Power Plug
+- Support for TYWE3S-based Estink WiFi Power Strip (thanks to @sandman, [#852](https://github.com/xoseperez/espurna/issues/852))
+- Support for Pilotak ESP DIN V1
+- Support for DIY Geiger counter (thanks to @Trickx)
+- Support for HomeCube / Blitzwolf BW-SHP2
+* Support for Vanzavanzu Smart Wifi Plug Mini
+- Support for Bruno Horta's OnOfre board
+
+### Changed
+- Updated PlatformIO to use Core 3.5.3
+- Updated to JustWifi 2.0
+- CSS optimizations ([#870](https://github.com/xoseperez/espurna/issues/870), [#871](https://github.com/xoseperez/espurna/issues/871))
+- Several changes in OTA Manager
+- Better memory layout info
+- MQTT keep alive time increased to 300s
+- Using ticket-based authentication for WS
+- Refactor module and sensor listings ([#896](https://github.com/xoseperez/espurna/issues/896))
+- Using alternative math methods to save ~8Kb with lights
+- Simpligying mired/kelvin methods
+- Changed web UI checkboxes with pure CSS versions
+
+### Deprecated
+- {identifier} place-holder in MQTT base topic
+
 ## [1.12.6] 2018-05-02
 ### Fixed
 - Check NTP_SUPPORT for sensors (thanks to @mcspr)
