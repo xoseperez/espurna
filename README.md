@@ -7,9 +7,6 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
-[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
-[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
