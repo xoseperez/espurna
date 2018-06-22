@@ -1291,7 +1291,7 @@ function processData(data) {
 
         if ("deviceip" === key) {
             var a_href = $("span[name='" + key + "']").parent();
-            a_href.attr("href", "http://" + value);
+            a_href.attr("href", "//" + value);
             a_href.next().attr("href", "telnet://" + value);
         }
 
