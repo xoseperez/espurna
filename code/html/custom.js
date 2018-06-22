@@ -228,6 +228,8 @@ function getData(form) {
 
     // Populate data
     $("input,select", form).each(function() {
+        if ($(this).prop("readonly")) return;
+
         var name = $(this).attr("name");
         var value = getValue(this);
         if (null !== value) {
