@@ -32,7 +32,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
     #endif
 #endif
 
-#if SENSOR_SUPPORT == 0
+#if SENSOR_SUPPORT == 1
     #ifndef WEBUI_MODULE
         #define WEBUI_MODULE    WEBUI_MODULE_SENSOR
     #else
@@ -41,7 +41,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
     #endif
 #endif
 
-#if defined(ITEAD_SONOFF_RFBRIDGE)
+#if ITEAD_SONOFF_RFBRIDGE == 1
     #ifndef WEBUI_MODULE
         #define WEBUI_MODULE    WEBUI_MODULE_RFBRIDGE
     #else
