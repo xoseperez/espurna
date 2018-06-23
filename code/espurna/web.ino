@@ -21,7 +21,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include "static/index.light.html.gz.h"
 #elif SENSOR_SUPPORT
 #include "static/index.sensor.html.gz.h"
-#elif ITEAD_SONOFF_RFBRIDGE
+#elif defined(ITEAD_SONOFF_RFBRIDGE)
 #include "static/index.rfbridge.html.gz.h"
 #else
 #include "static/index.small.html.gz.h"
