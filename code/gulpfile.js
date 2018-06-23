@@ -196,7 +196,8 @@ gulp.task('buildfs_inline', function(cb) {
         'build_webui_small',
         'build_webui_sensor',
         'build_webui_light',
-        'build_webui_rfbridge'
+        'build_webui_rfbridge',
+        'build_webui_all'
     ], cb);
 });
 

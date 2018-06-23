@@ -17,14 +17,53 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_EMBEDDED
 
+#define WEBUI_MODULE_SMALL      0
+#define WEBUI_MODULE_LIGHT      1
+#define WEBUI_MODULE_SENSOR     2
+#define WEBUI_MODULE_RFBRIDGE   4
+#define WEBUI_MODULE_ALL        7
+
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-#include "static/index.light.html.gz.h"
-#elif SENSOR_SUPPORT
-#include "static/index.sensor.html.gz.h"
-#elif defined(ITEAD_SONOFF_RFBRIDGE)
-#include "static/index.rfbridge.html.gz.h"
-#else
-#include "static/index.small.html.gz.h"
+    #ifdef WEBUI_MODULE
+        #undef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_ALL
+    #else
+        #define WEBUI_MODULE    WEBUI_MODULE_LIGHT
+    #endif
+#endif
+
+#if SENSOR_SUPPORT == 0
+    #ifndef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_SENSOR
+    #else
+        #undef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_ALL
+    #endif
+#endif
+
+#if defined(ITEAD_SONOFF_RFBRIDGE)
+    #ifndef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_RFBRIDGE
+    #else
+        #undef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_ALL
+    #endif
+#endif
+
+#ifndef WEBUI_MODULE
+    #define WEBUI_MODULE        WEBUI_MODULE_SMALL
+#endif
+
+#if WEBUI_MODULE == WEBUI_MODULE_SMALL
+    #include "static/index.small.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_LIGHT
+    #include "static/index.light.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_SENSOR
+    #include "static/index.sensor.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_RFBRIDGE
+    #include "static/index.rfbridge.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_ALL
+    #include "static/index.all.html.gz.h"
 #endif
 
 #endif // WEB_EMBEDDED
