@@ -41,7 +41,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
     #endif
 #endif
 
-#if ITEAD_SONOFF_RFBRIDGE == 1
+#if defined(ITEAD_SONOFF_RFBRIDGE)
     #ifndef WEBUI_MODULE
         #define WEBUI_MODULE    WEBUI_MODULE_RFBRIDGE
     #else
