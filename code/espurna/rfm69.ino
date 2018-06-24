@@ -95,9 +95,23 @@ void _rfm69Configure() {
 // Radio
 // -----------------------------------------------------------------------------
 
-void _rfm69Process(packet_t * data) {
+void _rfm69Debug(const char * level, packet_t * data) {
 
-    char response[4] = "OK ";
+    DEBUG_MSG_P(
+        PSTR("[RFM69] %s: messageID:%05d senderID:%03d targetID:%03d packetID:%03d rssi:%-04d name:%s value:%s\n"),
+        level,
+        data->messageID,
+        data->senderID,
+        data->targetID,
+        data->packetID,
+        data->rssi,
+        data->name,
+        data->value
+    );
+
+}
+
+void _rfm69Process(packet_t * data) {
 
     // Count seen nodes and packets
     if (_rfm69_node_info[data->senderID].count == 0) ++_rfm69_node_count;
@@ -111,30 +125,20 @@ void _rfm69Process(packet_t * data) {
             unsigned char gap = data->packetID - _rfm69_node_info[data->senderID].lastPacketID;
 
             if (gap == 0) {
-                strncpy(response, "DUP", sizeof(response));
                 _rfm69_node_info[data->senderID].duplicates = _rfm69_node_info[data->senderID].duplicates + 1;
+                //_rfm69Debug("DUP", data);
                 return;
             }
 
             if ((gap > 1) && (data->packetID > 1)) {
-                strncpy(response, "MIS", sizeof(response));
                 _rfm69_node_info[data->senderID].missing = _rfm69_node_info[data->senderID].missing + gap - 1;
+                DEBUG_MSG_P(PSTR("[RFM69] %u missing packets detected\n"), gap - 1);
             }
         }
 
     }
 
-    DEBUG_MSG_P(
-        PSTR("[RFM69] %s: messageID:%05d senderID:%03d targetID:%03d packetID:%03d rssi:%-04d name:%s value:%s\n"),
-        response,
-        data->messageID,
-        data->senderID,
-        data->targetID,
-        data->packetID,
-        data->rssi,
-        data->name,
-        data->value
-    );
+    _rfm69Debug("OK ", data);
 
     _rfm69_node_info[data->senderID].lastPacketID = data->packetID;
     _rfm69_node_info[data->senderID].count = _rfm69_node_info[data->senderID].count + 1;
@@ -153,7 +157,7 @@ void _rfm69Process(packet_t * data) {
     }
 
     // If we are the target of the message, forward it via MQTT, otherwise quit
-    //if (RFM69_GATEWAY_ID != data->targetID) return;
+    if (!RFM69_PROMISCUOUS_SENDS && (RFM69_GATEWAY_ID != data->targetID)) return;
 
     // Try to find a matching mapping
     for (unsigned int i=0; i<RFM69_MAX_TOPICS; i++) {
