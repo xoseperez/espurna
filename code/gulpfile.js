@@ -118,11 +118,12 @@ var htmllintReporter = function(filepath, issues) {
 
 var buildWebUI = function(module) {
 
-    var modules = {"light": false, "sensor": false, "rfbridge": false};
+    var modules = {"light": false, "sensor": false, "rfbridge": false, "rfm69": false};
     if ("all" == module) {
         modules["light"] = true;
-        modules["rfbridge"] = true;
         modules["sensor"] = true;
+        modules["rfbridge"] = false;   // we will never be adding this except when building RFBRIDGE
+        modules["rfm69"] = false;   // we will never be adding this except when building RFM69GW
     } else if ("small" != module) {
         modules[module] = true;
     }
@@ -187,6 +188,10 @@ gulp.task('build_webui_rfbridge', function() {
     return buildWebUI("rfbridge");
 })
 
+gulp.task('build_webui_rfm69', function() {
+    return buildWebUI("rfm69");
+})
+
 gulp.task('build_webui_all', function() {
     return buildWebUI("all");
 })
@@ -197,6 +202,7 @@ gulp.task('buildfs_inline', function(cb) {
         'build_webui_sensor',
         'build_webui_light',
         'build_webui_rfbridge',
+        'build_webui_rfm69',
         'build_webui_all'
     ], cb);
 });

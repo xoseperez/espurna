@@ -18,6 +18,11 @@ var useCCT = false;
 var now = 0;
 var ago = 0;
 
+<!-- removeIf(!rfm69)-->
+var packets;
+var filters = [];
+<!-- endRemoveIf(!rfm69)-->
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -206,7 +211,8 @@ function addValue(data, name, value) {
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
-        "adminPass"
+        "adminPass",
+        "node", "key", "topic"
     ];
 
     if (name in data) {
@@ -568,6 +574,51 @@ function doDebugClear() {
     return false;
 }
 
+<!-- removeIf(!rfm69)-->
+
+function doClearCounts() {
+    websock.send(JSON.stringify({'action': 'clear-counts'}));
+    return false;
+}
+
+function doFilter(e) {
+    var index = packets.cell(this).index();
+    if (index == 'undefined') return;
+    var c = index.column;
+    var column = packets.column(c);
+    if (filters[c]) {
+        filters[c] = false;
+        column.search("");
+        $(column.header()).removeClass("filtered");
+    } else {
+        filters[c] = true;
+        var data = packets.row(this).data();
+        if (e.which == 1) {
+            column.search('^' + data[c] + '$', true, false );
+        } else {
+            column.search('^((?!(' + data[c] + ')).)*$', true, false );
+        }
+        $(column.header()).addClass("filtered");
+    }
+    column.draw();
+    return false;
+}
+
+function doClearFilters() {
+    for (var i = 0; i < packets.columns()[0].length; i++) {
+        if (filters[i]) {
+            filters[i] = false;
+            var column = packets.column(i);
+            column.search("");
+            $(column.header()).removeClass("filtered");
+            column.draw();
+        }
+    }
+    return false;
+}
+
+<!-- endRemoveIf(!rfm69)-->
+
 // -----------------------------------------------------------------------------
 // Visualization
 // -----------------------------------------------------------------------------
@@ -621,6 +672,28 @@ function createMagnitudeList(data, container, template_name) {
 
 }
 <!-- endRemoveIf(!sensor)-->
+
+// -----------------------------------------------------------------------------
+// RFM69
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!rfm69)-->
+function addMapping() {
+    var template = $("#nodeTemplate .pure-g")[0];
+    var line = $(template).clone();
+    var tabindex = $("#mapping > div").length * 3 + 50;
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find("button").on('click', delMapping);
+    line.appendTo("#mapping");
+}
+
+function delMapping() {
+    var parent = $(this).parent().parent();
+    $(parent).remove();
+}
+<!-- endRemoveIf(!rfm69)-->
 
 // -----------------------------------------------------------------------------
 // Wifi
@@ -1073,6 +1146,50 @@ function processData(data) {
         <!-- endRemoveIf(!rfbridge)-->
 
         // ---------------------------------------------------------------------
+        // RFM69
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!rfm69)-->
+
+        if (key == "packet") {
+            var packet = data.packet;
+            var d = new Date();
+            packets.row.add([
+                d.toLocaleTimeString('en-US', { hour12: false }),
+                packet.senderID,
+                packet.packetID,
+                packet.targetID,
+                packet.name,
+                packet.value,
+                packet.rssi,
+                packet.duplicates,
+                packet.missing,
+            ]).draw(false);
+            return;
+        }
+
+        if (key == "mapping") {
+			for (var i in data.mapping) {
+
+				// add a new row
+				addMapping();
+
+				// get group
+				var line = $("#mapping .pure-g")[i];
+
+				// fill in the blanks
+				var mapping = data.mapping[i];
+				Object.keys(mapping).forEach(function(key) {
+				    var id = "input[name=" + key + "]";
+				    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+				});
+			}
+			return;
+		}
+
+        <!-- endRemoveIf(!rfm69)-->
+
+        // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
@@ -1508,6 +1625,20 @@ $(function() {
     <!-- removeIf(!light)-->
     $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
     <!-- endRemoveIf(!light)-->
+
+    <!-- removeIf(!rfm69)-->
+    $(".button-add-mapping").on('click', addMapping);
+    $(".button-del-mapping").on('click', delMapping);
+    $(".button-clear-counts").on('click', doClearCounts);
+    $(".button-clear-filters").on('click', doClearFilters);
+    $('#packets tbody').on('mousedown', 'td', doFilter);
+    packets = $('#packets').DataTable({
+        "paging": false
+    });
+    for (var i = 0; i < packets.columns()[0].length; i++) {
+        filters[i] = false;
+    }
+    <!-- endRemoveIf(!rfm69)-->
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

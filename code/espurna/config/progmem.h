@@ -82,6 +82,9 @@ PROGMEM const char espurna_modules[] =
     #if RF_SUPPORT
         "RF "
     #endif
+    #if RFM69_SUPPORT
+        "RFM69 "
+    #endif
     #if SCHEDULER_SUPPORT
         "SCHEDULER "
     #endif

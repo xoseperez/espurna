@@ -1038,6 +1038,11 @@ void migrate() {
             setSetting("hlwSelC", LOW);
             setSetting("hlwIntM", FALLING);
 
+        #elif defined(TINKERMAN_RFM69GW)
+
+            setSetting("board", 80);
+            setSetting("btnGPIO", 0, 0);
+
         #else
 
             // Allow users to define new settings without migration config

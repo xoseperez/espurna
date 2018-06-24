@@ -49,7 +49,7 @@ void setup() {
 
     // Init EEPROM
     eepromSetup();
-    
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 
@@ -139,6 +139,9 @@ void setup() {
     #endif
     #if THINGSPEAK_SUPPORT
         tspkSetup();
+    #endif
+    #if RFM69_SUPPORT
+        rfm69Setup();
     #endif
     #if RF_SUPPORT
         rfSetup();

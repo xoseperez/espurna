@@ -1211,3 +1211,65 @@
 
 #define RF_DEBOUNCE                 500
 #define RF_LEARN_TIMEOUT            60000
+
+//--------------------------------------------------------------------------------
+// Custom RFM69 to MQTT bridge
+// Check http://tinkerman.cat/rfm69-wifi-gateway/
+// Enable support by passing RFM69_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef RFM69_SUPPORT
+#define RFM69_SUPPORT               0
+#endif
+
+#ifndef RFM69_MAX_TOPICS
+#define RFM69_MAX_TOPICS            50
+#endif
+
+#ifndef RFM69_DEFAULT_TOPIC
+#define RFM69_DEFAULT_TOPIC         "/rfm69gw/{node}/{key}"
+#endif
+
+#ifndef RFM69_NODE_ID
+#define RFM69_NODE_ID               2
+#endif
+
+#ifndef RFM69_GATEWAY_ID
+#define RFM69_GATEWAY_ID            2
+#endif
+
+#ifndef RFM69_NETWORK_ID
+#define RFM69_NETWORK_ID            164
+#endif
+
+#ifndef RFM69_PROMISCUOUS
+#define RFM69_PROMISCUOUS           1
+#endif
+
+#ifndef RFM69_PROMISCUOUS_SENDS
+#define RFM69_PROMISCUOUS_SENDS     0
+#endif
+
+#ifndef RFM69_FREQUENCY
+#define RFM69_FREQUENCY             RF69_868MHZ
+#endif
+
+#ifndef RFM69_ENCRYPTKEY
+#define RFM69_ENCRYPTKEY            "fibonacci0123456"
+#endif
+
+#ifndef RFM69_CS_PIN
+#define RFM69_CS_PIN                SS
+#endif
+
+#ifndef RFM69_IRQ_PIN
+#define RFM69_IRQ_PIN               5
+#endif
+
+#ifndef RFM69_RESET_PIN
+#define RFM69_RESET_PIN             7
+#endif
+
+#ifndef RFM69_IS_RFM69HW
+#define RFM69_IS_RFM69HW            0
+#endif
