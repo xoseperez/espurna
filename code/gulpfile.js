@@ -96,14 +96,14 @@ var buildHeaderFile = function() {
 
         cb(0, destination);
 
-   });
+    });
 
 }
 
 var htmllintReporter = function(filepath, issues) {
-	if (issues.length > 0) {
-		issues.forEach(function (issue) {
-			console.info(
+    if (issues.length > 0) {
+        issues.forEach(function (issue) {
+            console.info(
                 '[gulp-htmllint] ' +
                 filepath + ' [' +
                 issue.line + ',' +
@@ -111,9 +111,9 @@ var htmllintReporter = function(filepath, issues) {
                 '(' + issue.code + ') ' +
                 issue.msg
             );
-		});
-		process.exitCode = 1;
-	}
+        });
+        process.exitCode = 1;
+    }
 };
 
 var buildWebUI = function(module) {
