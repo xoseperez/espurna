@@ -309,11 +309,17 @@ function checkFirmware(file, callback) {
 
     reader.onloadend = function(evt) {
         if (FileReader.DONE === evt.target.readyState) {
-            callback(0xE9 === evt.target.result.charCodeAt(0));
+            if (0xE9 !== evt.target.result.charCodeAt(0)) callback(false);
+            if (0x03 !== evt.target.result.charCodeAt(2)) {
+                var response = window.confirm("Binary image is not using DOUT flash mode. This might cause resets in some devices. Press OK to continue.");
+                callback(response);
+            } else {
+                callback(true);
+            }
         }
     };
 
-    var blob = file.slice(0, 1);
+    var blob = file.slice(0, 3);
     reader.readAsBinaryString(blob);
 
 }
@@ -1430,12 +1436,14 @@ function connectToURL(url) {
 
     initUrls(url);
 
+    /*
     $.ajax({
         'method': 'GET',
         'crossDomain': true,
         'url': urls.auth.href,
         'xhrFields': { 'withCredentials': true }
     }).done(function(data) {
+    */
         if (websock) { websock.close(); }
         websock = new WebSocket(urls.ws.href);
         websock.onmessage = function(evt) {
@@ -1444,9 +1452,11 @@ function connectToURL(url) {
                 processData(data);
             }
         };
+    /*
     }).fail(function() {
         // Nothing to do, reload page and retry
     });
+    */
 
 }
 
