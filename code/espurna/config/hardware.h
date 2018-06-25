@@ -2298,6 +2298,7 @@
 // * HomeCube (https://www.amazon.de/Steckdose-Homecube-intelligente-Verbrauchsanzeige-funktioniert/dp/B076Q2LKHG)
 // * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
 // * Goosund (http://www.gosund.com/?m=content&c=index&a=show&catid=6&id=5)
+// * Ablue (https://www.amazon.de/Intelligente-Steckdose-Ablue-Funktioniert-Assistant/dp/B076DRFRZC)
 // -----------------------------------------------------------------------------
 
 #elif defined(BLITZWOLF_BWSHP2)
@@ -2425,6 +2426,8 @@
     #define EMON_ADS1X15_SUPPORT  1
     #define SHT3X_I2C_SUPPORT     1
     #define SI7021_SUPPORT        1
+    #define PMSX003_SUPPORT       1
+    #define SENSEAIR_SUPPORT      1
 
 
     // A bit of lights - pin 5
@@ -2505,7 +2508,7 @@
     #define MHZ19_TX_PIN        10
 
     // PZEM004T
-    #define PZEM004T_SUPPORT    0   // not working?
+    #define PZEM004T_SUPPORT    1
     #define PZEM004T_RX_PIN     11
     #define PZEM004T_TX_PIN     12
 
@@ -2516,6 +2519,13 @@
     // GUVAS12SD
     #define GUVAS12SD_SUPPORT   1
     #define GUVAS12SD_PIN       14
+
+    // Test non-default modules
+    #define MDNS_CLIENT_SUPPORT 1
+    #define NOFUSS_SUPPORT      1
+    #define UART_MQTT_SUPPORT   1
+    #define INFLUXDB_SUPPORT    1
+    #define IR_SUPPORT          1
 
 #elif defined(TRAVIS03)
 
@@ -2539,6 +2549,11 @@
     #ifndef EMON_ANALOG_SUPPORT
     #define EMON_ANALOG_SUPPORT 1
     #endif
+
+    // Test non-default modules
+    #define LLMNR_SUPPORT       1
+    #define NETBIOS_SUPPORT     1
+    #define SSDP_SUPPORT        1
 
 #endif
 
