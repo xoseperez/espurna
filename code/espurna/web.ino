@@ -231,9 +231,9 @@ void _onHome(AsyncWebServerRequest *request) {
 
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Last-Modified", _last_modified);
-	response->addHeader("X-XSS-Protection", "1; mode=block");
-	response->addHeader("X-Content-Type-Options", "nosniff");
-	response->addHeader("X-Frame-Options", "deny");
+        response->addHeader("X-XSS-Protection", "1; mode=block");
+        response->addHeader("X-Content-Type-Options", "nosniff");
+        response->addHeader("X-Frame-Options", "deny");
         request->send(response);
 
     }
