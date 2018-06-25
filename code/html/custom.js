@@ -1436,14 +1436,12 @@ function connectToURL(url) {
 
     initUrls(url);
 
-    /*
     $.ajax({
         'method': 'GET',
         'crossDomain': true,
         'url': urls.auth.href,
         'xhrFields': { 'withCredentials': true }
     }).done(function(data) {
-    */
         if (websock) { websock.close(); }
         websock = new WebSocket(urls.ws.href);
         websock.onmessage = function(evt) {
@@ -1452,11 +1450,9 @@ function connectToURL(url) {
                 processData(data);
             }
         };
-    /*
     }).fail(function() {
         // Nothing to do, reload page and retry
     });
-    */
 
 }
 
