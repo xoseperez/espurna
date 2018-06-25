@@ -148,10 +148,6 @@ div.state {
     letter-spacing: 0;
     margin-bottom: 10px;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-    text-transform: uppercase;
-    font-family: 'FreeSans','Arimo','Droid Sans','Helvetica','Arial','sans-serif';
-    font-size: .7em;
-    height: 37px;
     padding: 8px 8px;
 }
 
