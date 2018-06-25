@@ -168,6 +168,8 @@ div.state {
 .button-del-schedule,
 .button-dbg-clear,
 .button-upgrade,
+.button-clear-filters,
+.button-clear-counts,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
 }
@@ -176,8 +178,6 @@ div.state {
 .button-update-password,
 .button-add-network,
 .button-add-mapping,
-.button-clear-filters,
-.button-clear-counts,
 .button-upgrade-browse,
 .button-rfb-learn,
 .button-ha-add,
