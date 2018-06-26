@@ -423,9 +423,9 @@ void _relayBackwards() {
     float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
     if (relayPulseMode == RELAY_PULSE_NONE) relayPulseTime = 0;
     for (unsigned int i=0; i<_relays.size(); i++) {
-        if (!hasSetting("relayBoot", i)) setSetting("rlyBoot", i, relayMode);
-        if (!hasSetting("relayPulse", i)) setSetting("rlyPulse", i, relayPulseMode);
-        if (!hasSetting("relayTime", i)) setSetting("rlyTime", i, relayPulseTime);
+        if (!hasSetting("rlyBoot", i)) setSetting("rlyBoot", i, relayMode);
+        if (!hasSetting("rlyPulse", i)) setSetting("rlyPulse", i, relayPulseMode);
+        if (!hasSetting("rlyTime", i)) setSetting("rlyTime", i, relayPulseTime);
     }
     delSetting("relayMode");
     delSetting("relayPulseMode");
@@ -435,7 +435,7 @@ void _relayBackwards() {
     moveSettings("relayBoot", "rlyBoot");
     moveSettings("relayPulse", "rlyPulse");
     moveSettings("relayTime", "rlyTime");
-    moveSetting("relayOnDisc", "rlyOnDisc");
+    moveSettings("relayOnDisc", "rlyOnDisc");
     moveSetting("relaySync", "rlySync");
 
 }
@@ -454,7 +454,7 @@ void _relayBoot() {
     // Walk the relays
     bool status = false;
     for (unsigned int i=0; i<_relays.size(); i++) {
-        unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+        unsigned char boot_mode = getSetting("rlyBoot", i, RELAY_BOOT_MODE).toInt();
         DEBUG_MSG_P(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
@@ -511,7 +511,7 @@ void _relayConfigure() {
 #if WEB_SUPPORT
 
 bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "relay", 5) == 0);
+    return (strncmp(key, "rly", 3) == 0);
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
@@ -535,7 +535,7 @@ void _relayWebSocketOnStart(JsonObject& root) {
         line["gpio"] = _relays[i].pin;
         line["type"] = _relays[i].type;
         line["reset"] = _relays[i].reset_pin;
-        line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+        line["boot"] = getSetting("rlyBoot", i, RELAY_BOOT_MODE).toInt();
         line["pulse"] = _relays[i].pulse;
         line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
         #if MQTT_SUPPORT
