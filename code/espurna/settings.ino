@@ -414,6 +414,7 @@ bool settingsRestoreJson(JsonObject& data) {
         if (strcmp(element.key, "app") == 0) continue;
         if (strcmp(element.key, "version") == 0) continue;
         if (strcmp(element.key, "backup") == 0) continue;
+        if (strcmp(element.key, "timestamp") == 0) continue;
         setSetting(element.key, element.value.as<char*>());
     }
 
