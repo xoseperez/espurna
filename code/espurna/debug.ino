@@ -148,7 +148,7 @@ void debugWebSetup() {
 
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514
-        snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getSetting("hostname").c_str());
+        snprintf_P(_udp_syslog_header, sizeof(_udp_syslog_header), PSTR("<%u>%s ESPurna[0]: "), DEBUG_UDP_FAC_PRI, getHostname().c_str());
     #endif
     #endif
 

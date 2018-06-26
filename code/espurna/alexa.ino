@@ -62,7 +62,7 @@ void alexaSetup() {
     #endif
 
     unsigned int relays = relayCount();
-    String hostname = getSetting("hostname");
+    String hostname = getHostname();
     if (relays == 1) {
         alexa.addDevice(hostname.c_str());
     } else {

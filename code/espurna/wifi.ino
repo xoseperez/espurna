@@ -34,11 +34,11 @@ void _wifiCheckAP() {
 
 void _wifiConfigure() {
 
-    jw.setHostname(getSetting("hostname").c_str());
+    jw.setHostname(getHostname().c_str());
     #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+        jw.setSoftAP(getHostname().c_str(), getPassword().c_str());
     #else
-        jw.setSoftAP(getSetting("hostname").c_str());
+        jw.setSoftAP(getHostname().c_str());
     #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
@@ -488,8 +488,8 @@ void wifiDebug(WiFiMode_t modes) {
 
     if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getHostname().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getPassword().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
         footer = true;

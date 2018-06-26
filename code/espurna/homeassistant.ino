@@ -24,7 +24,7 @@ bool _haSendFlag = false;
 void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
     unsigned char type = magnitudeType(i);
-    config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
+    config["name"] = getHostname() + String(" ") + magnitudeTopic(type);
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
@@ -37,7 +37,7 @@ void _haSendMagnitudes() {
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/sensor/" +
-            getSetting("hostname") + "_" + String(i) +
+            getHostname() + "_" + String(i) +
             "/config";
 
         String output;
@@ -64,7 +64,7 @@ void _haSendMagnitudes() {
 
 void _haSendSwitch(unsigned char i, JsonObject& config) {
 
-    String name = getSetting("hostname");
+    String name = getHostname();
     if (relayCount() > 1) {
         name += String(" #") + String(i);
     }
@@ -117,7 +117,7 @@ void _haSendSwitches() {
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
             "/" + type +
-            "/" + getSetting("hostname") + "_" + String(i) +
+            "/" + getHostname() + "_" + String(i) +
             "/config";
 
         String output;

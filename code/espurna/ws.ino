@@ -4,6 +4,8 @@ WEBSOCKET MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: ws
+
 */
 
 #if WEB_SUPPORT
@@ -296,24 +298,16 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
     if (strncmp(key, "ws", 2) == 0) return true;
     if (strncmp(key, "admin", 5) == 0) return true;
     if (strncmp(key, "hostname", 8) == 0) return true;
-    if (strncmp(key, "webPort", 7) == 0) return true;
     return false;
 }
 
 void _wsOnStart(JsonObject& root) {
 
-    #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
-        String adminPass = getSetting("adminPass", ADMIN_PASS);
-        bool changePassword = adminPass.equals(ADMIN_PASS);
-    #else
-        bool changePassword = false;
-    #endif
+    unsigned char webMode = webMode();
 
-    if (changePassword) {
+    root["webMode"] =  webMode;
 
-        root["webMode"] = WEB_MODE_PASSWORD;
-
-    } else {
+    if (WEB_MODE_NORMAL == webMode) {
 
         char chipid[7];
         snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
@@ -323,8 +317,6 @@ void _wsOnStart(JsonObject& root) {
             PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
             bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
         );
-
-        root["webMode"] = WEB_MODE_NORMAL;
 
         root["app_name"] = APP_NAME;
         root["app_version"] = APP_VERSION;
@@ -336,7 +328,7 @@ void _wsOnStart(JsonObject& root) {
         root["bssid"] = String(bssid_str);
         root["channel"] = WiFi.channel();
         root["device"] = DEVICE;
-        root["hostname"] = getSetting("hostname");
+        root["hostname"] = getHostname();
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
         root["sketch_size"] = ESP.getSketchSize();
@@ -346,9 +338,8 @@ void _wsOnStart(JsonObject& root) {
 
         _wsUpdate(root);
 
-        root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-        root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
         root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
+
         #if TERMINAL_SUPPORT
             root["cmdVisible"] = 1;
         #endif

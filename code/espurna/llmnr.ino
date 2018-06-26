@@ -11,7 +11,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESP8266LLMNR.h>
 
 void llmnrSetup() {
-    LLMNR.begin(getSetting("hostname").c_str());
+    LLMNR.begin(getHostname().c_str());
     DEBUG_MSG_P(PSTR("[LLMNR] Configured\n"));
 }
 

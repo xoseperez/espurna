@@ -17,12 +17,21 @@ String getIdentifier() {
     return String(buffer);
 }
 
-void setDefaultHostname() {
-    if (strlen(HOSTNAME) > 0) {
-        setSetting("hostname", HOSTNAME);
-    } else {
-        setSetting("hostname", getIdentifier());
+String getHostname() {
+    String hostname = getSetting("hostname");
+    if (hostname.length() == 0) {
+        if (strlen(HOSTNAME) > 0) {
+            setSetting("hostname", HOSTNAME);
+        } else {
+            setSetting("hostname", getIdentifier());
+        }
+        hostname = getSetting("hostname");
     }
+    return hostname;
+}
+
+String getPassword() {
+    return getSetting("adminPass", ADMIN_PASS);
 }
 
 void setBoardName() {
@@ -166,7 +175,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
             #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
-                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+                mqttSend(MQTT_TOPIC_HOSTNAME, getHostname().c_str());
             #endif
             #if (HEARTBEAT_REPORT_IP)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());

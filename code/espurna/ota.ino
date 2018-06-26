@@ -16,9 +16,9 @@ Module key prefix: ota
 
 void _otaConfigure() {
     ArduinoOTA.setPort(OTA_PORT);
-    ArduinoOTA.setHostname(getSetting("hostname").c_str());
+    ArduinoOTA.setHostname(getHostname().c_str());
     #if USE_PASSWORD
-        ArduinoOTA.setPassword(getSetting("adminPass", ADMIN_PASS).c_str());
+        ArduinoOTA.setPassword(getPassword().c_str());
     #endif
 }
 
