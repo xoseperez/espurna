@@ -43,7 +43,7 @@ void espurnaRegisterLoop(void (*callback)()) {
 bool _espWebSocketOnReceive(const char * key, JsonVariant& value) {
     if (strncmp(key, "admin", 5) == 0) return true;
     if (strncmp(key, "hostname", 8) == 0) return true;
-    if (strncmp(key, "boardName", 9) == 0) return true;
+    if (strncmp(key, "board", 5) == 0) return true;
     if (strncmp(key, "loopDelay", 9) == 0) return true;
     if (strncmp(key, "wtfHeap", 7) == 0) return true;
     return false;
