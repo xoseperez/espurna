@@ -17,10 +17,6 @@ Module key prefix: sch
 
 #if WEB_SUPPORT
 
-bool _schWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "sch", 3) == 0);
-}
-
 void _schWebSocketOnSend(JsonObject &root){
 
     if (relayCount() > 0) {
@@ -48,6 +44,10 @@ void _schWebSocketOnSend(JsonObject &root){
 #endif // WEB_SUPPORT
 
 // -----------------------------------------------------------------------------
+
+bool _schKeyCheck(const char * key) {
+    return (strncmp(key, "sch", 3) == 0);
+}
 
 void _schConfigure() {
 
@@ -217,10 +217,11 @@ void schSetup() {
     // Update websocket clients
     #if WEB_SUPPORT
         wsOnSendRegister(_schWebSocketOnSend);
-        wsOnReceiveRegister(_schWebSocketOnReceive);
         wsOnAfterParseRegister(_schConfigure);
     #endif
 
+    settingsRegisterKeyCheck(_schKeyCheck);
+    
     // Register loop
     espurnaRegisterLoop(_schLoop);
 

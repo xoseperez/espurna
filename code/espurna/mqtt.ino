@@ -121,7 +121,7 @@ void _mqttConnect() {
 
         #if ASYNC_TCP_SSL_ENABLED
 
-            bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+            bool secure = getSetting("mqttSSL", MQTT_SSL_ENABLED).toInt() == 1;
             _mqtt.setSecure(secure);
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
@@ -149,7 +149,7 @@ void _mqttConnect() {
 
         #if ASYNC_TCP_SSL_ENABLED
 
-            bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+            bool secure = getSetting("mqttSSL", MQTT_SSL_ENABLED).toInt() == 1;
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 if (_mqtt_client_secure.connect(host, port)) {
@@ -244,11 +244,15 @@ void _mqttConfigure() {
     } else {
         _mqtt_enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
     }
-    _mqtt_use_json = (getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
+    _mqtt_use_json = (getSetting("mqttJson", MQTT_USE_JSON).toInt() == 1);
     mqttQueueTopic(MQTT_TOPIC_JSON);
 
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
+}
+
+bool _mqttKeyCheck(const char * key) {
+    return (strncmp(key, "mqtt", 3) == 0);
 }
 
 void _mqttBackwards() {
@@ -260,7 +264,11 @@ void _mqttBackwards() {
         setSetting("mqttTopic", mqttTopic);
     }
 
-    moveSetting("mqttPassword", "mqttPass"); // 1.13.1 - 2018-06-26
+    moveSetting("mqttPassword", "mqttPass"); // 1.14.0 - 2018-06-26
+    moveSetting("mqttUseJson", "mqttJson"); // 1.14.0 - 2018-06-27
+    moveSetting("mqttUseSSL", "mqttSSL"); // 1.14.0 - 2018-06-27
+    delSetting("mqttOnDisc"); // 1.14.0 - 2018-06-27
+
 
 }
 
@@ -312,10 +320,6 @@ unsigned long _mqttNextMessageId() {
 
 #if WEB_SUPPORT
 
-bool _mqttWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "mqtt", 3) == 0);
-}
-
 void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttVisible"] = 1;
     root["mqttStatus"] = mqttConnected();
@@ -330,11 +334,11 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttQoS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
         root["mqttsslVisible"] = 1;
-        root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        root["mqttSSL"] = getSetting("mqttSSL", MQTT_SSL_ENABLED).toInt() == 1;
         root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
     root["mqttTopic"] = getSetting("mqttTopic", MQTT_TOPIC);
-    root["mqttUseJson"] = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+    root["mqttJson"] = getSetting("mqttJson", MQTT_USE_JSON).toInt() == 1;
 }
 
 #endif
@@ -818,15 +822,15 @@ void mqttSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
         wsOnAfterParseRegister(_mqttConfigure);
-        wsOnReceiveRegister(_mqttWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT
         _mqttInitCommands();
     #endif
 
-    // Register loop
+    // Register
     espurnaRegisterLoop(mqttLoop);
+    settingsRegisterKeyCheck(_mqttKeyCheck);
 
 }
 

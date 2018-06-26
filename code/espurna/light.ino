@@ -761,11 +761,6 @@ void lightBrightnessStep(int steps) {
 
 #if WEB_SUPPORT
 
-bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "lit", 3) == 0) return true;
-    return false;
-}
-
 void _lightWebSocketOnSend(JsonObject& root) {
     root["litVisible"] = 1;
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
@@ -1010,18 +1005,22 @@ void _lightConfigure() {
 
 }
 
+bool _lightKeyCheck(const char * key) {
+    return (strncmp(key, "lit", 3) == 0);
+}
+
 void _lightBackwards() {
-    moveSettings("ch", "litCH"); // 1.13.1 - 2018-06-26
-    moveSetting("useCSS", "litCSS"); // 1.13.1 - 2018-06-26
-    moveSetting("useRGB", "litRGB"); // 1.13.1 - 2018-06-26
-    moveSetting("useColor", "litColor"); // 1.13.1 - 2018-06-26
-    moveSetting("useWhite", "litWhite"); // 1.13.1 - 2018-06-26
-    moveSetting("useCCT", "litCCT"); // 1.13.1 - 2018-06-26
-    moveSetting("useGamma", "litGamma"); // 1.13.1 - 2018-06-26
-    moveSetting("useTransitions", "litTrans"); // 1.13.1 - 2018-06-26
-    moveSetting("lightTime", "litTime"); // 1.13.1 - 2018-06-26
-    moveSetting("brightness", "litBright"); // 1.13.1 - 2018-06-26
-    moveSetting("mireds", "litMireds"); // 1.13.1 - 2018-06-26
+    moveSettings("ch", "litCH"); // 1.14.0 - 2018-06-26
+    moveSetting("useCSS", "litCSS"); // 1.14.0 - 2018-06-26
+    moveSetting("useRGB", "litRGB"); // 1.14.0 - 2018-06-26
+    moveSetting("useColor", "litColor"); // 1.14.0 - 2018-06-26
+    moveSetting("useWhite", "litWhite"); // 1.14.0 - 2018-06-26
+    moveSetting("useCCT", "litCCT"); // 1.14.0 - 2018-06-26
+    moveSetting("useGamma", "litGamma"); // 1.14.0 - 2018-06-26
+    moveSetting("useTransitions", "litTrans"); // 1.14.0 - 2018-06-26
+    moveSetting("lightTime", "litTime"); // 1.14.0 - 2018-06-26
+    moveSetting("brightness", "litBright"); // 1.14.0 - 2018-06-26
+    moveSetting("mireds", "litMireds"); // 1.14.0 - 2018-06-26
 }
 
 void lightSetup() {
@@ -1089,7 +1088,6 @@ void lightSetup() {
         _lightAPISetup();
         wsOnSendRegister(_lightWebSocketOnSend);
         wsOnActionRegister(_lightWebSocketOnAction);
-        wsOnReceiveRegister(_lightWebSocketOnReceive);
         wsOnAfterParseRegister([]() {
             #if LIGHT_SAVE_ENABLED == 0
                 lightSave();
@@ -1105,6 +1103,8 @@ void lightSetup() {
     #if TERMINAL_SUPPORT
         _lightInitCommands();
     #endif
+
+    settingsRegisterKeyCheck(_lightKeyCheck);
 
 }
 

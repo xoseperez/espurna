@@ -35,23 +35,6 @@ void espurnaRegisterLoop(void (*callback)()) {
 }
 
 // -----------------------------------------------------------------------------
-// GLOBAL CONFIG KEYS
-// -----------------------------------------------------------------------------
-
-#if WEB_SUPPORT
-
-bool _espWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "admin", 5) == 0) return true;
-    if (strncmp(key, "hostname", 8) == 0) return true;
-    if (strncmp(key, "board", 5) == 0) return true;
-    if (strncmp(key, "loopDelay", 9) == 0) return true;
-    if (strncmp(key, "wtfHeap", 7) == 0) return true;
-    return false;
-}
-
-#endif
-
-// -----------------------------------------------------------------------------
 // BOOTING
 // -----------------------------------------------------------------------------
 
@@ -188,11 +171,6 @@ void setup() {
     migrate();
 
     saveSettings();
-
-    // Global configuration settings
-    #if WEB_SUPPORT
-        wsOnReceiveRegister(_espWebSocketOnReceive);
-    #endif
 
 }
 

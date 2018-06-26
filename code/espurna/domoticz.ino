@@ -82,11 +82,11 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
 };
 
-#if WEB_SUPPORT
-
-bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _domoticzKeyCheck(const char * key) {
     return (strncmp(key, "dcz", 3) == 0);
 }
+
+#if WEB_SUPPORT
 
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
@@ -163,8 +163,8 @@ void domoticzSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
         wsOnAfterParseRegister(_domoticzConfigure);
-        wsOnReceiveRegister(_domoticzWebSocketOnReceive);
     #endif
+    settingsRegisterKeyCheck(_domoticzKeyCheck);
     mqttRegister(_domoticzMqtt);
 }
 

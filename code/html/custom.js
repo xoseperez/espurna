@@ -199,12 +199,12 @@ function addValue(data, name, value) {
 
     // These fields will always be a list of values
     var is_group = [
-        "wifiName", "wifiPass", "wifiGW", "wifiMask", "wifiIP", "wifiDNS",
-        "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "rlyBoot", "rlyPulse", "rlyTime",
-        "mqttGroup", "mqttGroupInv", "rlyOnDisc",
-        "dczRelayIdx", "dczMagnitude",
-        "tspkRelay", "tspkMagnitude",
+        "wifiName","wifiPass","wifiGW","wifiMask","wifiIP","wifiDNS",
+        "schEnabled","schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
+        "rlyBoot","rlyPulse","rlyTime","rlyOnDisc",
+        "mqttGroup","mqttGroupInv",
+        "dczRelayIdx","dczMagnitude",
+        "tspkRelay","tspkMagnitude",
         "ledMode",
         "adminPass"
     ];

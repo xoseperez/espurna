@@ -24,7 +24,7 @@ std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
 
-bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _apiKeyCheck(const char * key) {
     return (strncmp(key, "api", 3) == 0);
 }
 
@@ -198,7 +198,7 @@ void apiSetup() {
     webServer()->on("/apis", HTTP_GET, _onAPIs);
     webServer()->on("/rpc", HTTP_GET, _onRPC);
     wsOnSendRegister(_apiWebSocketOnSend);
-    wsOnReceiveRegister(_apiWebSocketOnReceive);
+    settingsRegisterKeyCheck(_apiKeyCheck);
 }
 
 bool apiRealTime() {

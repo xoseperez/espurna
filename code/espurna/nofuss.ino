@@ -22,17 +22,13 @@ bool _nofussEnabled = false;
 
 #if WEB_SUPPORT
 
-bool _nofussWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "nof", 6) == 0);
-}
-
 void _nofussWebSocketOnSend(JsonObject& root) {
     root["nofVisible"] = 1;
     root["nofEnabled"] = getSetting("nofEnabled", NOFUSS_ENABLED).toInt() == 1;
     root["nofServer"] = getSetting("nofServer", NOFUSS_SERVER);
 }
 
-#endif
+#endif // WEB_SUPPORT
 
 void _nofussConfigure() {
 
@@ -72,10 +68,14 @@ void _nofussConfigure() {
 
 }
 
+bool _nofussKeyCheck(const char * key) {
+    return (strncmp(key, "nof", 6) == 0);
+}
+
 void _nofussBackwards() {
-    moveSettings("nofussServer", "nofServer"); // 1.13.1  2018-06-26
-    moveSettings("nofussEnabled", "nofEnabled"); // 1.13.1  2018-06-26
-    moveSettings("nofussInterval", "nofInterval"); // 1.13.1  2018-06-26
+    moveSettings("nofussServer", "nofServer"); // 1.14.0  2018-06-26
+    moveSettings("nofussEnabled", "nofEnabled"); // 1.14.0  2018-06-26
+    moveSettings("nofussInterval", "nofInterval"); // 1.14.0  2018-06-26
 }
 
 #if TERMINAL_SUPPORT
@@ -164,15 +164,15 @@ void nofussSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_nofussWebSocketOnSend);
         wsOnAfterParseRegister(_nofussConfigure);
-        wsOnReceiveRegister(_nofussWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT
         _nofussInitCommands();
     #endif
 
-    // Register loop
+    // Register
     espurnaRegisterLoop(nofussLoop);
+    settingsRegisterKeyCheck(_nofussKeyCheck);
 
 }
 

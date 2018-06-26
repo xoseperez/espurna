@@ -39,9 +39,6 @@ void wsOnActionRegister(ws_on_action_callback_f callback);
 typedef std::function<void(void)> ws_on_after_parse_callback_f;
 void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
 
-typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
-void wsOnReceiveRegister(ws_on_receive_callback_f callback);
-
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
@@ -74,6 +71,8 @@ bool settingsRestoreJson(JsonObject& data);
 void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
 void settingsInject(void *data, size_t len);
 Stream & settingsSerial();
+typedef std::function<bool(const char *)> setting_key_check_callback_f;
+void settingsRegisterKeyCheck(setting_key_check_callback_f callback);
 
 // -----------------------------------------------------------------------------
 // I2C

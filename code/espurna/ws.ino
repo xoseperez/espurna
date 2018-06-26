@@ -23,7 +23,6 @@ Ticker _web_defer;
 std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
 std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
 std::vector<ws_on_after_parse_callback_f> _ws_on_after_parse_callbacks;
-std::vector<ws_on_receive_callback_f> _ws_on_receive_callbacks;
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -225,14 +224,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             }
 
             // Check if key has to be processed
-            bool found = false;
-            for (unsigned char i = 0; i < _ws_on_receive_callbacks.size(); i++) {
-                found |= (_ws_on_receive_callbacks[i])(key.c_str(), value);
-                // TODO: remove this to call all OnReceiveCallbacks with the
-                // current key/value
-                if (found) break;
-            }
-            if (!found) {
+            if (!settingsKeyExists(key.c_str())) {
                 delSetting(key);
                 continue;
             }
@@ -294,11 +286,8 @@ void _wsUpdate(JsonObject& root) {
     #endif
 }
 
-bool _wsOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "ws", 2) == 0) return true;
-    if (strncmp(key, "admin", 5) == 0) return true;
-    if (strncmp(key, "hostname", 8) == 0) return true;
-    return false;
+bool _wsKeyCheck(const char * key) {
+    return (strncmp(key, "ws", 2) == 0);
 }
 
 void _wsOnStart(JsonObject& root) {
@@ -412,10 +401,6 @@ void wsOnSendRegister(ws_on_send_callback_f callback) {
     _ws_on_send_callbacks.push_back(callback);
 }
 
-void wsOnReceiveRegister(ws_on_receive_callback_f callback) {
-    _ws_on_receive_callbacks.push_back(callback);
-}
-
 void wsOnActionRegister(ws_on_action_callback_f callback) {
     _ws_on_action_callbacks.push_back(callback);
 }
@@ -497,8 +482,11 @@ void wsSetup() {
     #endif
 
     wsOnSendRegister(_wsOnStart);
-    wsOnReceiveRegister(_wsOnReceive);
+
+    settingsRegisterKeyCheck(_wsKeyCheck);
+
     espurnaRegisterLoop(_wsLoop);
+
 }
 
 #endif // WEB_SUPPORT

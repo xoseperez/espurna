@@ -34,11 +34,11 @@ unsigned long _tspk_last_flush = 0;
 
 // -----------------------------------------------------------------------------
 
-#if WEB_SUPPORT
-
-bool _tspkWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _tspkKeyCheck(const char * key) {
     return (strncmp(key, "tspk", 4) == 0);
 }
+
+#if WEB_SUPPORT
 
 void _tspkWebSocketOnSend(JsonObject& root) {
 
@@ -262,13 +262,14 @@ void tspkSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
         wsOnAfterParseRegister(_tspkConfigure);
-        wsOnReceiveRegister(_tspkWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
         THINGSPEAK_USE_ASYNC ? "ENABLED" : "DISABLED",
         THINGSPEAK_USE_SSL ? "ENABLED" : "DISABLED"
     );
+
+    settingsRegisterKeyCheck(_tspkKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(tspkLoop);

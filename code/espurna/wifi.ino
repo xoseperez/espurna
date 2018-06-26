@@ -425,11 +425,6 @@ void _wifiInitCommands() {
 
 #if WEB_SUPPORT
 
-bool _wifiWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "wifi", 4) == 0) return true;
-    return false;
-}
-
 void _wifiWebSocketOnSend(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
     root["wifiScan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
@@ -452,7 +447,13 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 
 #endif
 
+bool _wifiKeyCheck(const char * key) {
+    return (strncmp(key, "wifi", 4) == 0);
+}
+
 void _wifiBackwards() {
+
+    // 1.14.0 - 2018-06-27
     moveSettings("ssid", "wifiName");
     moveSettings("pass", "wifiPass");
     moveSettings("ip", "wifiIP");
@@ -460,6 +461,7 @@ void _wifiBackwards() {
     moveSettings("mask", "wifiMask");
     moveSettings("dns", "wifiDNS");
     moveSetting("apmode", "wifiMode");
+    delSetting("wifiGain");
 }
 
 // -----------------------------------------------------------------------------
@@ -613,7 +615,6 @@ void wifiSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
-        wsOnReceiveRegister(_wifiWebSocketOnReceive);
         wsOnAfterParseRegister(_wifiConfigure);
         wsOnActionRegister(_wifiWebSocketOnAction);
     #endif
@@ -621,6 +622,8 @@ void wifiSetup() {
     #if TERMINAL_SUPPORT
         _wifiInitCommands();
     #endif
+
+    settingsRegisterKeyCheck(_wifiKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(wifiLoop);

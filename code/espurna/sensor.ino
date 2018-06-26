@@ -97,17 +97,6 @@ double _magnitudeProcess(unsigned char type, double value) {
 
 #if WEB_SUPPORT
 
-bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "sns", 3) == 0) return true;
-    if (strncmp(key, "pwr", 3) == 0) return true;
-    if (strncmp(key, "ene", 3) == 0) return true;
-    if (strncmp(key, "cur", 3) == 0) return true;
-    if (strncmp(key, "vol", 3) == 0) return true;
-    if (strncmp(key, "tmp", 3) == 0) return true;
-    if (strncmp(key, "hum", 3) == 0) return true;
-    return false;
-}
-
 void _sensorWebSocketSendData(JsonObject& root) {
 
     char buffer[10];
@@ -842,20 +831,36 @@ void _sensorConfigure() {
 
 }
 
+bool _sensorKeyCheck(const char * key) {
+
+    if (strncmp(key, "sns", 3) == 0) return true;
+
+    if (strncmp(key, "pwr", 3) == 0) return true;
+    if (strncmp(key, "ene", 3) == 0) return true;
+    if (strncmp(key, "cur", 3) == 0) return true;
+    if (strncmp(key, "vol", 3) == 0) return true;
+    if (strncmp(key, "tmp", 3) == 0) return true;
+    if (strncmp(key, "hum", 3) == 0) return true;
+
+    if (strncmp(key, "hlw", 3) == 0) return true;
+
+    return false;
+}
+
 void _sensorBackwards() {
     moveSetting("powerUnits", "pwrUnits"); // 1.12.5 - 2018-04-03
-    moveSetting("tmpCorrection", "tmpOffset"); // 1.13.1 - 2018-06-26
-    moveSetting("humCorrection", "humOffset"); // 1.13.1 - 2018-06-26
-    moveSetting("energyUnits", "eneUnits"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrRatioC", "curRatio"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrRatioP", "pwrRatio"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrRatioV", "volRatio"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrVoltage", "volNominal"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrExpectedP", "pwrExpected"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrExpectedC", "curExpected"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrExpectedV", "volExpected"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrResetCalibration", "snsResetCalibration"); // 1.13.1 - 2018-06-26
-    moveSetting("pwrResetE", "eneReset"); // 1.13.1 - 2018-06-26
+    moveSetting("tmpCorrection", "tmpOffset"); // 1.14.0 - 2018-06-26
+    moveSetting("humCorrection", "humOffset"); // 1.14.0 - 2018-06-26
+    moveSetting("energyUnits", "eneUnits"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrRatioC", "curRatio"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrRatioP", "pwrRatio"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrRatioV", "volRatio"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrVoltage", "volNominal"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrExpectedP", "pwrExpected"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrExpectedC", "curExpected"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrExpectedV", "volExpected"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrResetCalibration", "snsResetCalibration"); // 1.14.0 - 2018-06-26
+    moveSetting("pwrResetE", "eneReset"); // 1.14.0 - 2018-06-26
 }
 
 // -----------------------------------------------------------------------------
@@ -950,7 +955,6 @@ void sensorSetup() {
 
         // Websockets
         wsOnSendRegister(_sensorWebSocketStart);
-        wsOnReceiveRegister(_sensorWebSocketOnReceive);
         wsOnSendRegister(_sensorWebSocketSendData);
         wsOnAfterParseRegister(_sensorConfigure);
 
@@ -962,6 +966,8 @@ void sensorSetup() {
     #if TERMINAL_SUPPORT
         _sensorInitCommands();
     #endif
+
+    settingsRegisterKeyCheck(_sensorKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(sensorLoop);

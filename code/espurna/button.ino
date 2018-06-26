@@ -36,15 +36,15 @@ void buttonMQTT(unsigned char id, uint8_t event) {
 
 #if WEB_SUPPORT
 
-bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "btn", 3) == 0);
-}
-
 void _buttonWebSocketOnSend(JsonObject& root) {
     root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
 }
 
 #endif
+
+bool _buttonKeyCheck(const char * key) {
+    return (strncmp(key, "btn", 3) == 0);
+}
 
 int buttonFromRelay(unsigned int relayID) {
     for (unsigned int i=0; i < _buttons.size(); i++) {
@@ -209,8 +209,9 @@ void buttonSetup() {
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsOnSendRegister(_buttonWebSocketOnSend);
-        wsOnReceiveRegister(_buttonWebSocketOnReceive);
     #endif
+
+    settingsRegisterKeyCheck(_buttonKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(buttonLoop);

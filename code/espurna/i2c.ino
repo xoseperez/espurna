@@ -106,13 +106,10 @@ int _i2cClearbus(int sda, int scl) {
 
 }
 
-#if WEB_SUPPORT
-
-bool _i2cWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _i2cKeyCheck(const char * key) {
     return (strncmp(key, "i2c", 3) == 0);
 }
 
-#endif // WEB_SUPPORT
 // ---------------------------------------------------------------------
 // I2C API
 // ---------------------------------------------------------------------
@@ -373,10 +370,6 @@ void i2cSetup() {
         Wire.begin(sda, scl);
     #endif
 
-    #if WEB_SUPPORT
-        wsOnReceiveRegister(_i2cWebSocketOnReceive);
-    #endif
-
     DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);
 
     #if I2C_CLEAR_BUS
@@ -386,6 +379,8 @@ void i2cSetup() {
     #if I2C_PERFORM_SCAN
         i2cScan();
     #endif
+
+    settingsRegisterKeyCheck(_i2cKeyCheck);
 
 }
 

@@ -26,6 +26,8 @@ EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 
 bool _settings_save = false;
 
+std::vector<setting_key_check_callback_f> _setting_key_check_callbacks;
+
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
 // -----------------------------------------------------------------------------
@@ -39,6 +41,13 @@ unsigned long settingsSize() {
 }
 
 // -----------------------------------------------------------------------------
+
+bool settingsKeyExists(const char * key) {
+    for (unsigned char i = 0; i < _setting_key_check_callbacks.size(); i++) {
+        if ((_setting_key_check_callbacks[i])(key)) return true;
+    }
+    return false;
+}
 
 unsigned int settingsKeyCount() {
     unsigned count = 0;
@@ -107,6 +116,16 @@ std::vector<String> _settingsKeys() {
     return keys;
 }
 
+bool _settingsKeyCheck(const char * key) {
+    if (strncmp(key, "admin", 5) == 0) return true;
+    if (strncmp(key, "hostname", 8) == 0) return true;
+    if (strncmp(key, "board", 5) == 0) return true;
+    if (strncmp(key, "loopDelay", 9) == 0) return true;
+    if (strncmp(key, "wtfHeap", 7) == 0) return true;
+    if (strncmp(key, "cfg", 3) == 0) return true;
+    return false;
+}
+
 // -----------------------------------------------------------------------------
 // Commands
 // -----------------------------------------------------------------------------
@@ -163,6 +182,28 @@ void _settingsKeysCommand() {
 
 }
 
+void _settingsCleanCommand(bool do_delete) {
+
+    // Get sorted list of keys
+    std::vector<String> keys = _settingsKeys();
+
+    unsigned int count = 0;
+    for (unsigned int i=0; i<keys.size(); i++) {
+        if (!settingsKeyExists((keys[i]).c_str())) {
+            if (do_delete) {
+                delSetting(keys[i]);
+                DEBUG_MSG_P(PSTR("> %s deleted\n"), (keys[i]).c_str());
+            } else {
+                DEBUG_MSG_P(PSTR("> %s is safe to delete\n"), (keys[i]).c_str());
+            }
+            ++count;
+        }
+    }
+
+    DEBUG_MSG_P(PSTR("%u unknown key(s) found\n"), count);
+
+}
+
 void _settingsFactoryResetCommand() {
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
@@ -179,6 +220,15 @@ void _settingsInitCommands() {
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
+
+    settingsRegisterCommand(F("CLEAN"), [](Embedis* e) {
+        bool do_delete = false;
+        if (e->argc > 1) {
+            do_delete = String(e->argv[1]).toInt() == 1;
+        }
+        _settingsCleanCommand(do_delete);
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
 
     settingsRegisterCommand(F("COMMANDS"), [](Embedis* e) {
         _settingsHelpCommand();
@@ -443,6 +493,10 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*)) {
     Embedis::command(name, call);
 };
 
+void settingsRegisterKeyCheck(setting_key_check_callback_f callback) {
+    _setting_key_check_callbacks.push_back(callback);
+}
+
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
@@ -478,6 +532,9 @@ void settingsSetup() {
         SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
     #endif // SERIAL_RX_ENABLED
     #endif // TERMINAL_SUPPORT
+
+    // Register key check
+    settingsRegisterKeyCheck(_settingsKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(settingsLoop);

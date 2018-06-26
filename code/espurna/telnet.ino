@@ -24,10 +24,6 @@ bool _telnetFirst = true;
 
 #if WEB_SUPPORT
 
-bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "telt", 3) == 0);
-}
-
 void _telnetWebSocketOnSend(JsonObject& root) {
     root["telVisible"] = 1;
     root["telSTA"] = getSetting("telSTA", TELNET_STA).toInt() == 1;
@@ -162,8 +158,12 @@ void _telnetNewClient(AsyncClient *client) {
 
 }
 
+bool _telnetKeyCheck(const char * key) {
+    return (strncmp(key, "telt", 3) == 0);
+}
+
 void _telnetBackwards() {
-    moveSetting("telnetSTA", "telSTA"); // 1.13.1 -- 2018-06-26
+    moveSetting("telnetSTA", "telSTA"); // 1.14.0 -- 2018-06-26
 }
 
 // -----------------------------------------------------------------------------
@@ -195,9 +195,10 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_telnetWebSocketOnSend);
-        wsOnReceiveRegister(_telnetWebSocketOnReceive);
     #endif
 
+    settingsRegisterKeyCheck(_telnetKeyCheck);
+    
     DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);
 
 }

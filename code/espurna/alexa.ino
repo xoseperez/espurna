@@ -25,23 +25,26 @@ static std::queue<AlexaDevChange> _alexa_dev_changes;
 // ALEXA
 // -----------------------------------------------------------------------------
 
-bool _alexaWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "alx", 3) == 0);
-}
-
+#if WEB_SUPPORT
 void _alexaWebSocketOnSend(JsonObject& root) {
     root["alxVisible"] = 1;
     root["alxEnabled"] = getSetting("alxEnabled", ALEXA_ENABLED).toInt() == 1;
 }
+#endif
 
 void _alexaConfigure() {
     alexa.enable(getSetting("alxEnabled", ALEXA_ENABLED).toInt() == 1);
 }
 
+bool _alexaKeyCheck(const char * key) {
+    return (strncmp(key, "alx", 3) == 0);
+}
+
 void _alexaBackwards() {
     moveSetting("fauxmoEnabled", "alxEnabled"); // 1.9.0 - 2017-08-25
-    moveSetting("alexaEnabled", "alxEnabled"); // 1.13.1 - 2018-06-27
+    moveSetting("alexaEnabled", "alxEnabled"); // 1.14.0 - 2018-06-27
 }
+
 // -----------------------------------------------------------------------------
 
 void alexaSetup() {
@@ -52,13 +55,10 @@ void alexaSetup() {
     // Load & cache settings
     _alexaConfigure();
 
+    // Websockets
     #if WEB_SUPPORT
-
-        // Websockets
         wsOnSendRegister(_alexaWebSocketOnSend);
         wsOnAfterParseRegister(_alexaConfigure);
-        wsOnReceiveRegister(_alexaWebSocketOnReceive);
-
     #endif
 
     unsigned int relays = relayCount();
@@ -79,6 +79,8 @@ void alexaSetup() {
     alexa.onGetState([](unsigned char device_id, const char * name) {
         return relayStatus(device_id);
     });
+
+    settingsRegisterKeyCheck(_alexaKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(alexaLoop);

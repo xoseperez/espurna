@@ -229,11 +229,11 @@ void _haConfigure() {
     _haSend();
 }
 
-#if WEB_SUPPORT
-
-bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _haKeyCheck(const char * key) {
     return (strncmp(key, "ha", 2) == 0);
 }
+
+#if WEB_SUPPORT
 
 void _haWebSocketOnSend(JsonObject& root) {
     root["haVisible"] = 1;
@@ -290,7 +290,6 @@ void haSetup() {
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnAfterParseRegister(_haConfigure);
         wsOnActionRegister(_haWebSocketOnAction);
-        wsOnReceiveRegister(_haWebSocketOnReceive);
     #endif
 
     // On MQTT connect check if we have something to send
@@ -302,6 +301,7 @@ void haSetup() {
         _haInitCommands();
     #endif
 
+    settingsRegisterKeyCheck(_haKeyCheck);
 
 }
 

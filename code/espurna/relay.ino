@@ -414,7 +414,10 @@ unsigned char relayParsePayload(const char * payload) {
 
 }
 
-// BACKWARDS COMPATIBILITY
+bool _relayKeyCheck(const char * key) {
+    return (strncmp(key, "rly", 3) == 0);
+}
+
 void _relayBackwards() {
 
     // 1.11.0 - 2017-12-26
@@ -431,7 +434,7 @@ void _relayBackwards() {
     delSetting("relayPulseMode");
     delSetting("relayPulseTime");
 
-    // 1.13.1 - 2018-06-26
+    // 1.14.0 - 2018-06-26
     moveSettings("relayBoot", "rlyBoot");
     moveSettings("relayPulse", "rlyPulse");
     moveSettings("relayTime", "rlyTime");
@@ -509,10 +512,6 @@ void _relayConfigure() {
 //------------------------------------------------------------------------------
 
 #if WEB_SUPPORT
-
-bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "rly", 3) == 0);
-}
 
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& relay = root.createNestedArray("relayStatus");
@@ -593,7 +592,6 @@ void relaySetupWS() {
     wsOnSendRegister(_relayWebSocketOnStart);
     wsOnActionRegister(_relayWebSocketOnAction);
     wsOnAfterParseRegister(_relayConfigure);
-    wsOnReceiveRegister(_relayWebSocketOnReceive);
 }
 
 #endif // WEB_SUPPORT
@@ -948,6 +946,7 @@ void relaySetup() {
     _relayBoot();
     _relayLoop();
 
+    settingsRegisterKeyCheck(_relayKeyCheck);
     espurnaRegisterLoop(_relayLoop);
 
     #if WEB_SUPPORT

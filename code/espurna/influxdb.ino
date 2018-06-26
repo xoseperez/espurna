@@ -20,10 +20,6 @@ SyncClient _idb_client;
 
 #if WEB_SUPPORT
 
-bool _idbWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "idb", 3) == 0);
-}
-
 void _idbWebSocketOnSend(JsonObject& root) {
     root["idbVisible"] = 1;
     root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
@@ -44,10 +40,14 @@ void _idbConfigure() {
 
 #endif // WEB_SUPPORT
 
+bool _idbKeyCheck(const char * key) {
+    return (strncmp(key, "idb", 3) == 0);
+}
+
 void _idbBackwards() {
-    moveSetting("idbDatabase", "idbDB"); // 1.13.1 - 2018-06-26
-    moveSetting("idbUserName", "idbUser"); // 1.13.1 - 2018-06-26
-    moveSetting("idbPassword", "idbPass"); // 1.13.1 - 2018-06-26
+    moveSetting("idbDatabase", "idbDB"); // 1.14.0 - 2018-06-26
+    moveSetting("idbUserName", "idbUser"); // 1.14.0 - 2018-06-26
+    moveSetting("idbPassword", "idbPass"); // 1.14.0 - 2018-06-26
 }
 
 // -----------------------------------------------------------------------------
@@ -119,8 +119,9 @@ void idbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
         wsOnAfterParseRegister(_idbConfigure);
-        wsOnReceiveRegister(_idbWebSocketOnReceive);
     #endif
+
+    settingsRegisterKeyCheck(_idbKeyCheck);
 
 }
 

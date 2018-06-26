@@ -367,9 +367,8 @@ void _webWebSocketOnSend(JsonObject& root) {
     root["webPort"] = webPort();
 }
 
-bool _webWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "web", 3) == 0) return true;
-    return false;
+bool _webKeyCheck(const char * key) {
+    return (strncmp(key, "web", 3) == 0);
 }
 
 // -----------------------------------------------------------------------------
@@ -459,7 +458,9 @@ void webSetup() {
 
     // Websocket Callbacks
     wsOnSendRegister(_webWebSocketOnSend);
-    wsOnReceiveRegister(_webWebSocketOnReceive);
+
+    // Settings key check register
+    settingsRegisterKeyCheck(_webKeyCheck);
 
 }
 

@@ -25,10 +25,6 @@ bool _ntp_configure = false;
 
 #if WEB_SUPPORT
 
-bool _ntpWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "ntp", 3) == 0);
-}
-
 void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpVisible"] = 1;
     root["ntpStatus"] = (timeStatus() == timeSet);
@@ -116,6 +112,10 @@ void _ntpLoop() {
 
 }
 
+bool _ntpKeyCheck(const char * key) {
+    return (strncmp(key, "ntp", 3) == 0);
+}
+
 void _ntpBackwards() {
 
     // 1.12.0 - 2018-01-21
@@ -186,12 +186,12 @@ void ntpSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ntpWebSocketOnSend);
-        wsOnReceiveRegister(_ntpWebSocketOnReceive);
         wsOnAfterParseRegister([]() { _ntp_configure = true; });
     #endif
 
-    // Register loop
+    // Register
     espurnaRegisterLoop(_ntpLoop);
+    settingsRegisterKeyCheck(_ntpKeyCheck);
 
 }
 

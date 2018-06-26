@@ -199,13 +199,9 @@ void _otaInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
-#if WEB_SUPPORT
-
-bool _otaWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _otaKeyCheck(const char * key) {
     return (strncmp(key, "ota", 3) == 0);
 }
-
-#endif // WEB_SUPPORT
 
 void _otaBackwards() {
     moveSetting("otafs", "otaFS");
@@ -220,12 +216,14 @@ void otaSetup() {
 
     #if WEB_SUPPORT
         wsOnAfterParseRegister(_otaConfigure);
-        wsOnReceiveRegister(_otaWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT
         _otaInitCommands();
     #endif
+
+    // Register settings key check
+    settingsRegisterKeyCheck(_otaKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(_otaLoop);
