@@ -123,14 +123,17 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
 
-    response->printf("{\n  \"app\": \"%s\",\n  \"version\": \"%s\"", APP_NAME, APP_VERSION);
+    response->printf("{\n\"app\": \"%s\"", APP_NAME);
+    response->printf(",\n\"version\": \"%s\"", APP_VERSION);
+    response->printf(",\n\"backup\": \"1\"");
+    response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
 
     // Write the keys line by line (not sorted)
     unsigned long count = settingsKeyCount();
     for (unsigned int i=0; i<count; i++) {
         String key = settingsKeyName(i);
         String value = getSetting(key);
-        response->printf(",\n  \"%s\": \"%s\"", key.c_str(), value.c_str());
+        response->printf(",\n\"%s\": \"%s\"", key.c_str(), value.c_str());
     }
     response->printf("\n}");
 

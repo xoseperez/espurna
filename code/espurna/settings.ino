@@ -375,19 +375,30 @@ size_t settingsMaxSize() {
 
 bool settingsRestoreJson(JsonObject& data) {
 
+    // Check this is an ESPurna configuration file (must have "app":"ESPURNA")
     const char* app = data["app"];
-    if (strcmp(app, APP_NAME) != 0) return false;
-
-    for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
-        EEPROMr.write(i, 0xFF);
+    if (!app || strcmp(app, APP_NAME) != 0) {
+        DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key\n"));
+        return false;
     }
 
+    // Clear settings
+    bool is_backup = data["backup"];
+    if (is_backup) {
+        for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
+            EEPROMr.write(i, 0xFF);
+        }
+    }
+
+    // Dump settings to memory buffer
     for (auto element : data) {
         if (strcmp(element.key, "app") == 0) continue;
         if (strcmp(element.key, "version") == 0) continue;
+        if (strcmp(element.key, "backup") == 0) continue;
         setSetting(element.key, element.value.as<char*>());
     }
 
+    // Persist to EEPROM
     saveSettings();
 
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
