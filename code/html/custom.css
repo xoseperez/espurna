@@ -198,6 +198,11 @@ div.state {
     background: rgb(255, 128, 0); /* orange */
 }
 
+.button-dbgrfdump0,
+.button-dbgrfdump1 {
+    background: rgb(144, 144, 144); /* gray */
+}
+
 .button-upgrade-browse,
 .button-dbgcmd,
 .button-ha-add,
