@@ -4,6 +4,8 @@ OTA MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: ota
+
 */
 
 #include "ArduinoOTA.h"
@@ -126,7 +128,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
         #if ASYNC_TCP_SSL_ENABLED
             if (443 == _ota_port) {
                 uint8_t fp[20] = {0};
-                sslFingerPrintArray(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp);
+                sslFingerPrintArray(getSetting("otaFP", OTA_GITHUB_FP).c_str(), fp);
                 SSL * ssl = _ota_client->getSSL();
                 if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
                     DEBUG_MSG_P(PSTR("[OTA] Warning: certificate doesn't match\n"));
@@ -197,14 +199,28 @@ void _otaInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+#if WEB_SUPPORT
+
+bool _otaWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "ota", 3) == 0);
+}
+
+#endif // WEB_SUPPORT
+
+void _otaBackwards() {
+    moveSetting("otafs", "otaFS");
+}
+
 // -----------------------------------------------------------------------------
 
 void otaSetup() {
 
+    _otaBackwards();
     _otaConfigure();
 
     #if WEB_SUPPORT
         wsOnAfterParseRegister(_otaConfigure);
+        wsOnReceiveRegister(_otaWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT

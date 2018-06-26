@@ -6,6 +6,8 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 (https://github.com/sarfata/kbox-firmware/tree/master/src/esp)
 
+Module key prefix: tel
+
 */
 
 #if TELNET_SUPPORT
@@ -23,12 +25,12 @@ bool _telnetFirst = true;
 #if WEB_SUPPORT
 
 bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "telnet", 6) == 0);
+    return (strncmp(key, "telt", 3) == 0);
 }
 
 void _telnetWebSocketOnSend(JsonObject& root) {
-    root["telnetVisible"] = 1;
-    root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+    root["telVisible"] = 1;
+    root["telSTA"] = getSetting("telSTA", TELNET_STA).toInt() == 1;
 }
 
 #endif
@@ -93,7 +95,7 @@ void _telnetNewClient(AsyncClient *client) {
         #ifdef ESPURNA_CORE
             bool telnetSTA = true;
         #else
-            bool telnetSTA = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+            bool telnetSTA = getSetting("telSTA", TELNET_STA).toInt() == 1;
         #endif
 
         if (!telnetSTA) {
@@ -160,6 +162,10 @@ void _telnetNewClient(AsyncClient *client) {
 
 }
 
+void _telnetBackwards() {
+    moveSetting("telnetSTA", "telSTA"); // 1.13.1 -- 2018-06-26
+}
+
 // -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
@@ -177,6 +183,9 @@ unsigned char telnetWrite(unsigned char ch) {
 }
 
 void telnetSetup() {
+
+    // Backwards compatibility
+    _telnetBackwards();
 
     _telnetServer = new AsyncServer(TELNET_PORT);
     _telnetServer->onClient([](void *s, AsyncClient* c) {

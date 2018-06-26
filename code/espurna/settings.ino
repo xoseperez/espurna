@@ -4,6 +4,8 @@ SETTINGS MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: cfg
+
 */
 
 #include <EEPROM_Rotate.h>
@@ -304,6 +306,23 @@ void moveSetting(const char * from, const char * to) {
     String value = getSetting(from);
     if (value.length() > 0) setSetting(to, value);
     delSetting(from);
+}
+
+void moveSetting(const char * from, const char * to, unsigned int index) {
+    String value = getSetting(from, index, "");
+    if (value.length() > 0) setSetting(to, index, value);
+    delSetting(from, index);
+}
+
+void moveSettings(const char * from, const char * to) {
+    unsigned int index = 0;
+    while (index < 100) {
+        String value = getSetting(from, index, "");
+        if (value.length() == 0) break;
+        setSetting(to, index, value);
+        delSetting(from, index);
+        index++;
+    }
 }
 
 template<typename T> String getSetting(const String& key, T defaultValue) {

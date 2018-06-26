@@ -5,6 +5,8 @@ IR MODULE
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 Copyright (C) 2017-2018 by François Déchery
 
+Module key prefix: ir
+
 */
 
 #if IR_SUPPORT

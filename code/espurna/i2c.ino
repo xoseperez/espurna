@@ -4,6 +4,8 @@ I2C MODULE
 
 Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: i2c
+
 */
 
 #if I2C_SUPPORT
@@ -104,6 +106,13 @@ int _i2cClearbus(int sda, int scl) {
 
 }
 
+#if WEB_SUPPORT
+
+bool _i2cWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "i2c", 3) == 0);
+}
+
+#endif // WEB_SUPPORT
 // ---------------------------------------------------------------------
 // I2C API
 // ---------------------------------------------------------------------
@@ -362,6 +371,10 @@ void i2cSetup() {
         brzo_i2c_setup(sda, scl, cst);
     #else
         Wire.begin(sda, scl);
+    #endif
+
+    #if WEB_SUPPORT
+        wsOnReceiveRegister(_i2cWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);

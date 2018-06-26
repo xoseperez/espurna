@@ -4,6 +4,8 @@ UTILS MODULE
 
 Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: esp (shared with others)
+
 */
 
 #include <Ticker.h>

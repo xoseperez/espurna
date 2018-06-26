@@ -4,6 +4,8 @@ LIGHT MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: lit
+
 */
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -462,19 +464,19 @@ void _lightProviderUpdate() {
 
 void _lightColorSave() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        setSetting("ch", i, _light_channel[i].inputValue);
+        setSetting("litCH", i, _light_channel[i].inputValue);
     }
-    setSetting("brightness", _light_brightness);
-    setSetting("mireds", _light_mireds);
+    setSetting("litBright", _light_brightness);
+    setSetting("litMireds", _light_mireds);
     saveSettings();
 }
 
 void _lightColorRestore() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        _light_channel[i].inputValue = getSetting("ch", i, i==0 ? 255 : 0).toInt();
+        _light_channel[i].inputValue = getSetting("litCH", i, i==0 ? 255 : 0).toInt();
     }
-    _light_brightness = getSetting("brightness", LIGHT_MAX_BRIGHTNESS).toInt();
-    _light_mireds = getSetting("mireds", _light_mireds).toInt();
+    _light_brightness = getSetting("litBright", LIGHT_MAX_BRIGHTNESS).toInt();
+    _light_mireds = getSetting("litMireds", _light_mireds).toInt();
     lightUpdate(false, false);
 }
 
@@ -574,7 +576,7 @@ void lightMQTT() {
     if (_light_has_color) {
 
         // Color
-        if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+        if (getSetting("litCSS", LIGHT_USE_CSS).toInt() == 1) {
             _toRGB(buffer, sizeof(buffer));
         } else {
             _toLong(buffer, sizeof(buffer));
@@ -760,25 +762,24 @@ void lightBrightnessStep(int steps) {
 #if WEB_SUPPORT
 
 bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "light", 5) == 0) return true;
-    if (strncmp(key, "use", 3) == 0) return true;
+    if (strncmp(key, "lit", 3) == 0) return true;
     return false;
 }
 
 void _lightWebSocketOnSend(JsonObject& root) {
-    root["colorVisible"] = 1;
+    root["litVisible"] = 1;
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
-    root["useColor"] = _light_has_color;
-    root["useWhite"] = _light_use_white;
-    root["useGamma"] = _light_use_gamma;
-    root["useTransitions"] = _light_use_transitions;
-    root["lightTime"] = _light_transition_time;
-    root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
-    bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
-    root["useRGB"] = useRGB;
+    root["litColor"] = _light_has_color;
+    root["litWhite"] = _light_use_white;
+    root["litGamma"] = _light_use_gamma;
+    root["litTrans"] = _light_use_transitions;
+    root["litTime"] = _light_transition_time;
+    root["litCSS"] = getSetting("litCSS", LIGHT_USE_CSS).toInt() == 1;
+    bool useRGB = getSetting("litRGB", LIGHT_USE_RGB).toInt() == 1;
+    root["litRGB"] = useRGB;
     if (_light_has_color) {
         if (_light_use_cct) {
-            root["useCCT"] = _light_use_cct;
+            root["litCCT"] = _light_use_cct;
             root["mireds"] = _light_mireds;
         }
         if (useRGB) {
@@ -831,7 +832,7 @@ void _lightAPISetup() {
   if (_light_has_color) {
     apiRegister(MQTT_TOPIC_COLOR_RGB,
         [](char * buffer, size_t len) {
-            if (getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1) {
+            if (getSetting("litCSS", LIGHT_USE_CSS).toInt() == 1) {
                 _toRGB(buffer, len);
             } else {
                 _toLong(buffer, len);
@@ -902,7 +903,7 @@ void _lightAPISetup() {
 
 void _lightInitCommands() {
 
-    settingsRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
+    settingsRegisterCommand(F("brightness"), [](Embedis* e) {
         if (e->argc > 1) {
             lightBrightness(String(e->argv[1]).toInt());
             lightUpdate(true, true);
@@ -985,31 +986,47 @@ unsigned long getIOFunc(unsigned long gpio) {
 
 void _lightConfigure() {
 
-    _light_has_color = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
+    _light_has_color = getSetting("litColor", LIGHT_USE_COLOR).toInt() == 1;
     if (_light_has_color && (_light_channel.size() < 3)) {
         _light_has_color = false;
-        setSetting("useColor", _light_has_color);
+        setSetting("litColor", _light_has_color);
     }
 
-    _light_use_white = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
+    _light_use_white = getSetting("litWhite", LIGHT_USE_WHITE).toInt() == 1;
     if (_light_use_white && (_light_channel.size() < 4)) {
         _light_use_white = false;
-        setSetting("useWhite", _light_use_white);
+        setSetting("litWhite", _light_use_white);
     }
 
-    _light_use_cct = getSetting("useCCT", LIGHT_USE_CCT).toInt() == 1;
+    _light_use_cct = getSetting("litCCT", LIGHT_USE_CCT).toInt() == 1;
     if (_light_use_cct && ((_light_channel.size() < 5) || !_light_use_white)) {
         _light_use_cct = false;
-        setSetting("useCCT", _light_use_cct);
+        setSetting("litCCT", _light_use_cct);
     }
 
-    _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
-    _light_use_transitions = getSetting("useTransitions", LIGHT_USE_TRANSITIONS).toInt() == 1;
-    _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME).toInt();
+    _light_use_gamma = getSetting("litGamma", LIGHT_USE_GAMMA).toInt() == 1;
+    _light_use_transitions = getSetting("litTrans", LIGHT_USE_TRANSITIONS).toInt() == 1;
+    _light_transition_time = getSetting("litTime", LIGHT_TRANSITION_TIME).toInt();
 
 }
 
+void _lightBackwards() {
+    moveSettings("ch", "litCH"); // 1.13.1 - 2018-06-26
+    moveSetting("useCSS", "litCSS"); // 1.13.1 - 2018-06-26
+    moveSetting("useRGB", "litRGB"); // 1.13.1 - 2018-06-26
+    moveSetting("useColor", "litColor"); // 1.13.1 - 2018-06-26
+    moveSetting("useWhite", "litWhite"); // 1.13.1 - 2018-06-26
+    moveSetting("useCCT", "litCCT"); // 1.13.1 - 2018-06-26
+    moveSetting("useGamma", "litGamma"); // 1.13.1 - 2018-06-26
+    moveSetting("useTransitions", "litTrans"); // 1.13.1 - 2018-06-26
+    moveSetting("lightTime", "litTime"); // 1.13.1 - 2018-06-26
+    moveSetting("brightness", "litBright"); // 1.13.1 - 2018-06-26
+    moveSetting("mireds", "litMireds"); // 1.13.1 - 2018-06-26
+}
+
 void lightSetup() {
+
+    _lightBackwards();
 
     #ifdef LIGHT_ENABLE_PIN
         pinMode(LIGHT_ENABLE_PIN, OUTPUT);

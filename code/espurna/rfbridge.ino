@@ -4,6 +4,8 @@ ITEAD RF BRIDGE MODULE
 
 Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: rfb (shared with RFBridge)
+
 */
 
 #ifdef ITEAD_SONOFF_RFBRIDGE
@@ -306,7 +308,7 @@ void _rfbDecode() {
         _rfbToChar(&_uartbuf[1], buffer);
 
         /* Look for the code, possibly replacing the code with the exact learned one on match
-         * we want to do this on learn too to be sure that the learned code is the same if it 
+         * we want to do this on learn too to be sure that the learned code is the same if it
          * is equivalent
          */
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Received message '%s'\n"), buffer);

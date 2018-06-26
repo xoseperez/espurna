@@ -4,6 +4,8 @@ RF MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: rfb (shared with RFBridge)
+
 */
 
 #if RF_SUPPORT

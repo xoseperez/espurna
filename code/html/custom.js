@@ -12,8 +12,8 @@ var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
 
-var useWhite = false;
-var useCCT = false;
+var litWhite = false;
+var litCCT = false;
 
 var now = 0;
 var ago = 0;
@@ -201,8 +201,8 @@ function addValue(data, name, value) {
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime",
-        "mqttGroup", "mqttGroupInv", "relayOnDisc",
+        "rlyBoot", "rlyPulse", "rlyTime",
+        "mqttGroup", "mqttGroupInv", "rlyOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
@@ -802,12 +802,12 @@ function initRelayConfig(data) {
         var line = $(template).clone();
         $("span.gpio", line).html(relay.gpio);
         $("span.id", line).html(i);
-        $("select[name='relayBoot']", line).val(relay.boot);
-        $("select[name='relayPulse']", line).val(relay.pulse);
-        $("input[name='relayTime']", line).val(relay.pulse_ms);
+        $("select[name='rlyBoot']", line).val(relay.boot);
+        $("select[name='rlyPulse']", line).val(relay.pulse);
+        $("input[name='rlyTime']", line).val(relay.pulse_ms);
         $("input[name='mqttGroup']", line).val(relay.group);
         $("select[name='mqttGroupInv']", line).val(relay.group_inv);
-        $("select[name='relayOnDisc']", line).val(relay.on_disc);
+        $("select[name='rlyOnDisc']", line).val(relay.on_disc);
         line.appendTo("#relayConfig");
     }
 
@@ -924,9 +924,9 @@ function initChannels(num) {
     var max = num;
     if (colors) {
         max = num % 3;
-        if ((max > 0) & useWhite) {
+        if ((max > 0) & litWhite) {
             max--;
-            if (useCCT) {
+            if (litCCT) {
               max--;
             }
         }
@@ -1125,13 +1125,13 @@ function processData(data) {
             return;
         }
 
-        if ("useWhite" === key) {
-            useWhite = value;
+        if ("litWhite" === key) {
+            litWhite = value;
         }
 
-        if ("useCCT" === key) {
+        if ("litCCT" === key) {
             initCCT();
-            useCCT = value;
+            litCCT = value;
         }
 
         <!-- endRemoveIf(!light)-->

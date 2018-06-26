@@ -4,6 +4,8 @@ API MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: api
+
 */
 
 #if WEB_SUPPORT
@@ -29,7 +31,7 @@ bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _apiWebSocketOnSend(JsonObject& root) {
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
-    root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    root["apiRealTime"] = apiRealTime();
 }
 
 // -----------------------------------------------------------------------------
@@ -197,6 +199,10 @@ void apiSetup() {
     webServer()->on("/rpc", HTTP_GET, _onRPC);
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
+}
+
+bool apiRealTime() {
+    return getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
 }
 
 #endif // WEB_SUPPORT

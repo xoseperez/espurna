@@ -2,6 +2,10 @@
 
 EEPROM MODULE
 
+Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+
+Module key prefix: eep
+
 */
 
 #include <EEPROM_Rotate.h>

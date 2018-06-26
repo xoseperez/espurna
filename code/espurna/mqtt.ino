@@ -4,6 +4,8 @@ MQTT MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: mqtt
+
 */
 
 #if MQTT_SUPPORT
@@ -99,7 +101,7 @@ void _mqttConnect() {
     if (_mqtt_clientid) free(_mqtt_clientid);
 
     _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
-    _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
+    _mqtt_pass = strdup(getSetting("mqttPass", MQTT_PASS).c_str());
     _mqtt_will = strdup(mqttTopic(MQTT_TOPIC_STATUS, false).c_str());
     _mqtt_clientid = strdup(getSetting("mqttClientID", getIdentifier()).c_str());
 
@@ -250,11 +252,16 @@ void _mqttConfigure() {
 }
 
 void _mqttBackwards() {
+
+    // 1.13.0 - 2018-05-30
     String mqttTopic = getSetting("mqttTopic", MQTT_TOPIC);
     if (mqttTopic.indexOf("{identifier}") > 0) {
         mqttTopic.replace("{identifier}", "{hostname}");
         setSetting("mqttTopic", mqttTopic);
     }
+
+    moveSetting("mqttPassword", "mqttPass"); // 1.13.1 - 2018-06-26
+
 }
 
 unsigned long _mqttNextMessageId() {
@@ -317,7 +324,7 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
     root["mqttUser"] = getSetting("mqttUser", MQTT_USER);
     root["mqttClientID"] = getSetting("mqttClientID");
-    root["mqttPassword"] = getSetting("mqttPassword", MQTT_PASS);
+    root["mqttPass"] = getSetting("mqttPass", MQTT_PASS);
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
@@ -750,8 +757,9 @@ void mqttReset() {
 
 void mqttSetup() {
 
+    // Check backwards compatibility
     _mqttBackwards();
-    
+
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",

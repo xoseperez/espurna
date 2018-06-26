@@ -100,7 +100,7 @@
                         </li>
 
                         <!-- removeIf(!light)-->
-                        <li class="pure-menu-item module module-color">
+                        <li class="pure-menu-item module module-lit">
                             <a href="#" class="pure-menu-link" data="panel-color">LIGHTS</a>
                         </li>
                         <!-- endRemoveIf(!light)-->
@@ -124,12 +124,12 @@
                         </li>
 
                         <!-- removeIf(!sensor)-->
-                        <li class="pure-menu-item module module-sensors">
+                        <li class="pure-menu-item module module-sns">
                             <a href="#" class="pure-menu-link" data="panel-sensors">SENSORS</a>
                         </li>
                         <!-- endRemoveIf(!sensor)-->
 
-                        <li class="pure-menu-item module module-relay">
+                        <li class="pure-menu-item module module-rly">
                             <a href="#" class="pure-menu-link" data="panel-relay">SWITCHES</a>
                         </li>
 
@@ -350,9 +350,9 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g module module-alexa">
+                                <div class="pure-g module module-alx">
                                     <label class="pure-u-1 pure-u-lg-1-4">Alexa integration</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alexaEnabled" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="alxEnabled" /></div>
                                 </div>
 
                             </fieldset>
@@ -370,11 +370,11 @@
 
                             <fieldset>
 
-                                <legend class="module module-multirelay">General</legend>
+                                <legend class="module module-mrly">General</legend>
 
-                                <div class="pure-g module module-multirelay">
+                                <div class="pure-g module module-mrly">
                                     <label class="pure-u-1 pure-u-lg-1-4">Switch sync mode</label>
-                                    <select name="relaySync" class="pure-u-1 pure-u-lg-3-4" tabindex="3">
+                                    <select name="rlySync" class="pure-u-1 pure-u-lg-3-4" tabindex="3">
                                         <option value="0">No synchronisation</option>
                                         <option value="1">Zero or one switches active</option>
                                         <option value="2">One and just one switch active</option>
@@ -405,7 +405,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use color</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useColor" action="reload" tabindex="8" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litColor" action="reload" tabindex="8" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use the first three channels as RGB channels. This will also enable the color picker in the web UI. Will only work if the device has at least 3 dimmable channels.<br />Reload the page to update the web interface.</div>
@@ -413,7 +413,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use RGB picker</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useRGB"  action="reload" tabindex="11" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litRGB"  action="reload" tabindex="11" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use RGB color picker if enabled (plus brightness), otherwise use HSV (hue-saturation-value) style</div>
@@ -421,7 +421,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use white channel</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useWhite" action="reload" tabindex="9" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litWhite" action="reload" tabindex="9" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use forth dimmable channel as (cold) white light calculated out of the RGB values.<br />Will only work if the device has at least 4 dimmable channels.<br />Enabling this will render useless the "Channel 4" slider in the status page.<br />Reload the page to update the web interface.</div>
@@ -429,7 +429,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use white color temperature</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCCT" action="reload" tabindex="10" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litCCT" action="reload" tabindex="10" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use fifth dimmable channel as warm white light and the forth dimmable channel as cold white.<br />Will only work if the device has at least 5 dimmable channels and "white channel" above is also ON.<br />Enabling this will render useless the "Channel 5" slider in the status page.<br />Reload the page to update the web interface.</div>
@@ -437,7 +437,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use gamma correction</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useGamma" tabindex="11" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litGamma" tabindex="11" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use gamma correction for RGB channels.<br />Will only work if "use colorpicker" above is also ON.</div>
@@ -445,7 +445,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use CSS style</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useCSS" tabindex="12" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litCSS" tabindex="12" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Use CSS style to report colors to MQTT and REST API. <br />Red will be reported as "#FF0000" if ON, otherwise "255,0,0"</div>
@@ -453,7 +453,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Color transitions</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="useTransitions" tabindex="13" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="litTrans" tabindex="13" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">If enabled color changes will be smoothed.</div>
@@ -461,7 +461,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Transition time</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="lightTime" min="10" max="5000" tabindex="14" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1" type="number" name="litTime" min="10" max="5000" tabindex="14" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Time in millisecons to transition from one color to another.</div>
@@ -555,23 +555,23 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g module module-telnet">
+                                <div class="pure-g module module-tel">
                                     <label class="pure-u-1 pure-u-lg-1-4">Enable TELNET</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="telnetSTA" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="telSTA" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Turn ON to be able to telnet to your device while connected to your home router.<br />TELNET is always enabled in AP mode.</div>
                                 </div>
 
 
-                                <div class="pure-g module module-nofuss">
+                                <div class="pure-g module module-nof">
                                     <label class="pure-u-1 pure-u-lg-1-4">Automatic remote updates (NoFUSS)</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofussEnabled" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofEnabled" /></div>
                                 </div>
 
-                                <div class="pure-g module module-nofuss">
+                                <div class="pure-g module module-nof">
                                     <label class="pure-u-1 pure-u-lg-1-4">NoFUSS server</label>
-                                    <input name="nofussServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15" />
+                                    <input name="nofServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">This name address of the NoFUSS server for automatic remote updates (see https://bitbucket.org/xoseperez/nofuss).</div>
                                 </div>
@@ -648,9 +648,9 @@
 
                                 <div id="schedules"></div>
 
-                                <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
+                                <button type="button" class="pure-button button-add-switch-schedule module module-rly">Add switch schedule</button>
                                 <!-- removeIf(!light)-->
-                                <button type="button" class="pure-button button-add-light-schedule module module-color">Add channel schedule</button>
+                                <button type="button" class="pure-button button-add-light-schedule module module-lit">Add channel schedule</button>
                                 <!-- endRemoveIf(!light)-->
 
                             </fieldset>
@@ -692,7 +692,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPassword" type="password" tabindex="24" placeholder="Leave blank if no pass" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPass" type="password" tabindex="24" placeholder="Leave blank if no pass" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -749,11 +749,11 @@
                                         This is the root topic for this device. The {hostname} and {mac} placeholders will be replaced by the device hostname and MAC address.<br />
                                         - <strong>&lt;root&gt;/relay/#/set</strong> Send a 0 or a 1 as a payload to this topic to switch it on or off. You can also send a 2 to toggle its current state. Replace # with the switch ID (starting from 0). If the board has only one switch it will be 0.<br />
                                         <!-- removeIf(!light)-->
-                                        <span class="module module-color">- <strong>&lt;root&gt;/rgb/set</strong> Set the color using this topic, your can either send an "#RRGGBB" value or "RRR,GGG,BBB" (0-255 each).<br /></span>
-                                        <span class="module module-color">- <strong>&lt;root&gt;/hsv/set</strong> Set the color using hue (0-360), saturation (0-100) and value (0-100) values, comma separated.<br /></span>
-                                        <span class="module module-color">- <strong>&lt;root&gt;/brightness/set</strong> Set the brighness (0-255).<br /></span>
-                                        <span class="module module-color">- <strong>&lt;root&gt;/channel/#/set</strong> Set the value for a single color channel (0-255). Replace # with the channel ID (starting from 0 and up to 4 for RGBWC lights).<br /></span>
-                                        <span class="module module-color">- <strong>&lt;root&gt;/mired/set</strong> Set the temperature color in mired.<br /></span>
+                                        <span class="module module-lit">- <strong>&lt;root&gt;/rgb/set</strong> Set the color using this topic, your can either send an "#RRGGBB" value or "RRR,GGG,BBB" (0-255 each).<br /></span>
+                                        <span class="module module-lit">- <strong>&lt;root&gt;/hsv/set</strong> Set the color using hue (0-360), saturation (0-100) and value (0-100) values, comma separated.<br /></span>
+                                        <span class="module module-lit">- <strong>&lt;root&gt;/brightness/set</strong> Set the brighness (0-255).<br /></span>
+                                        <span class="module module-lit">- <strong>&lt;root&gt;/channel/#/set</strong> Set the value for a single color channel (0-255). Replace # with the channel ID (starting from 0 and up to 4 for RGBWC lights).<br /></span>
+                                        <span class="module module-lit">- <strong>&lt;root&gt;/mired/set</strong> Set the temperature color in mired.<br /></span>
                                         <!-- endRemoveIf(!light)-->
                                         - <strong>&lt;root&gt;/status</strong> The device will report a 1 to this topic every few minutes. Upon MQTT disconnecting this will be set to 0.<br />
                                         - Other values reported (depending on the build) are: <strong>firmware</strong> and <strong>version</strong>, <strong>hostname</strong>, <strong>IP</strong>, <strong>MAC</strong>, signal strenth (<strong>RSSI</strong>), <strong>uptime</strong> (in seconds), <strong>free heap</strong> and <strong>power supply</strong>.
@@ -994,17 +994,17 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Database</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbDatabase" type="text" tabindex="43" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbDB" type="text" tabindex="43" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Username</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbUser" type="text" tabindex="44" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbPass" type="password" tabindex="45" autocomplete="false" />
                                 </div>
 
                             </fieldset>
@@ -1097,13 +1097,13 @@
 
                                 <div class="pure-g module module-hlw module-cse module-emon module-pzem">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
-                                    <select name="energyUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
+                                    <select name="eneUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="0">Joules (J)</option>
                                         <option value="1">Kilowatts·hour (kWh)</option>
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-temperature">
+                                <div class="pure-g module module-tmp">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature units</label>
                                     <select name="tmpUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="0">Celsius (&deg;C)</option>
@@ -1111,9 +1111,9 @@
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-temperature">
+                                <div class="pure-g module module-tmp">
                                     <label class="pure-u-1 pure-u-lg-1-4">Temperature correction</label>
-                                    <input name="tmpCorrection" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
+                                    <input name="tmpOffset" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -1121,9 +1121,9 @@
                                     </div>
                                 </div>
 
-                                <div class="pure-g module module-humidity">
+                                <div class="pure-g module module-hum">
                                     <label class="pure-u-1 pure-u-lg-1-4">Humidity correction</label>
-                                    <input name="humCorrection" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
+                                    <input name="humOffset" class="pure-u-1 pure-u-lg-1-4" type="number" action="reboot" min="-100" step="0.1" max="100" tabindex="18" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -1135,35 +1135,35 @@
 
                                 <div class="pure-g module module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Voltage</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="pwrVoltage" type="text" tabindex="51" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="volNominal" type="text" tabindex="51" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Mains voltage in your system (in V).</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw module-cse">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Current</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedC" type="text" tabindex="52" placeholder="0" />
+                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="curExpected" type="text" tabindex="52" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw module-cse">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Voltage</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedV" type="text" tabindex="53" placeholder="0" />
+                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="volExpected" type="text" tabindex="53" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Power</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" tabindex="54" placeholder="0" />
+                                    <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpected" type="text" tabindex="54" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="55" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="snsResetCalibrarion" tabindex="55" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
@@ -1171,7 +1171,7 @@
 
                                 <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset energy</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetE" tabindex="56" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="eneReset" tabindex="56" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to set energy count to 0.</div>
@@ -1346,7 +1346,7 @@
             <legend>Switch #<span class="id"></span> (GPIO<span class="gpio"></span>)</legend>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">
+                <select class="pure-u-1 pure-u-lg-3-4" name="rlyBoot">
                     <option value="0">Always OFF</option>
                     <option value="1">Always ON</option>
                     <option value="2">Same as before</option>
@@ -1355,7 +1355,7 @@
             </div>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse mode</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayPulse">
+                <select class="pure-u-1 pure-u-lg-3-4" name="rlyPulse">
                     <option value="0">Don't pulse</option>
                     <option value="1">Normally OFF</option>
                     <option value="2">Normally ON</option>
@@ -1363,7 +1363,7 @@
             </div>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse time (s)</label></div>
-                <div class="pure-u-1 pure-u-lg-1-4"><input name="relayTime" class="pure-u-1" type="number" min="0" step="0.1" max="3600" /></div>
+                <div class="pure-u-1 pure-u-lg-1-4"><input name="rlyTime" class="pure-u-1" type="number" min="0" step="0.1" max="3600" /></div>
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>
@@ -1378,7 +1378,7 @@
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>On MQTT disconnect</label></div>
-                <select class="pure-u-1 pure-u-lg-3-4" name="relayOnDisc">
+                <select class="pure-u-1 pure-u-lg-3-4" name="rlyOnDisc">
                     <option value="0">Don't change</option>
                     <option value="1">Turn the switch OFF</option>
                     <option value="2">Turn the switch ON</option>

@@ -17,6 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Module key prefix: esp (shared with others)
+
 */
 
 #include "config/all.h"
@@ -49,7 +51,7 @@ void setup() {
 
     // Init EEPROM
     eepromSetup();
-    
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 

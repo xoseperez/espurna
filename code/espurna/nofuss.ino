@@ -4,6 +4,8 @@ NOFUSS MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: nof
+
 */
 
 #if NOFUSS_SUPPORT
@@ -21,31 +23,31 @@ bool _nofussEnabled = false;
 #if WEB_SUPPORT
 
 bool _nofussWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "nofuss", 6) == 0);
+    return (strncmp(key, "nof", 6) == 0);
 }
 
 void _nofussWebSocketOnSend(JsonObject& root) {
-    root["nofussVisible"] = 1;
-    root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
-    root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
+    root["nofVisible"] = 1;
+    root["nofEnabled"] = getSetting("nofEnabled", NOFUSS_ENABLED).toInt() == 1;
+    root["nofServer"] = getSetting("nofServer", NOFUSS_SERVER);
 }
 
 #endif
 
 void _nofussConfigure() {
 
-    String nofussServer = getSetting("nofussServer", NOFUSS_SERVER);
+    String nofussServer = getSetting("nofServer", NOFUSS_SERVER);
     #if MDNS_CLIENT_SUPPORT
         nofussServer = mdnsResolve(nofussServer);
     #endif
 
     if (nofussServer.length() == 0) {
-        setSetting("nofussEnabled", 0);
+        setSetting("nofEnabled", 0);
         _nofussEnabled = false;
     } else {
-        _nofussEnabled = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+        _nofussEnabled = getSetting("nofEnabled", NOFUSS_ENABLED).toInt() == 1;
     }
-    _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL).toInt();
+    _nofussInterval = getSetting("nofInterval", NOFUSS_INTERVAL).toInt();
     _nofussLastCheck = 0;
 
     if (!_nofussEnabled) {
@@ -70,6 +72,12 @@ void _nofussConfigure() {
 
 }
 
+void _nofussBackwards() {
+    moveSettings("nofussServer", "nofServer"); // 1.13.1  2018-06-26
+    moveSettings("nofussEnabled", "nofEnabled"); // 1.13.1  2018-06-26
+    moveSettings("nofussInterval", "nofInterval"); // 1.13.1  2018-06-26
+}
+
 #if TERMINAL_SUPPORT
 
 void _nofussInitCommands() {
@@ -92,6 +100,7 @@ void nofussRun() {
 
 void nofussSetup() {
 
+    _nofussBackwards();
     _nofussConfigure();
 
     NoFUSSClient.onMessage([](nofuss_t code) {

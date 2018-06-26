@@ -4,6 +4,8 @@ RELAY MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: rly
+
 */
 
 #include <EEPROM_Rotate.h>
@@ -223,8 +225,8 @@ void relayPulse(unsigned char id) {
         DEBUG_MSG_P(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
         // Reconfigure after dynamic pulse
-        _relays[id].pulse = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
-        _relays[id].pulse_ms = 1000 * getSetting("relayTime", id, RELAY_PULSE_MODE).toFloat();
+        _relays[id].pulse = getSetting("rlyPulse", id, RELAY_PULSE_MODE).toInt();
+        _relays[id].pulse_ms = 1000 * getSetting("rlyTime", id, RELAY_PULSE_MODE).toFloat();
     }
 
 }
@@ -323,7 +325,7 @@ void relaySync(unsigned char id) {
     // Flag sync mode
     _relayRecursive = true;
 
-    byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
+    byte relaySync = getSetting("rlySync", RELAY_SYNC).toInt();
     bool status = _relays[id].target_status;
 
     // If RELAY_SYNC_SAME all relays should have the same state
@@ -415,20 +417,26 @@ unsigned char relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    // 1.11.0 - 2017-12-26
     byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
     if (relayPulseMode == RELAY_PULSE_NONE) relayPulseTime = 0;
-
     for (unsigned int i=0; i<_relays.size(); i++) {
-        if (!hasSetting("relayBoot", i)) setSetting("relayBoot", i, relayMode);
-        if (!hasSetting("relayPulse", i)) setSetting("relayPulse", i, relayPulseMode);
-        if (!hasSetting("relayTime", i)) setSetting("relayTime", i, relayPulseTime);
+        if (!hasSetting("relayBoot", i)) setSetting("rlyBoot", i, relayMode);
+        if (!hasSetting("relayPulse", i)) setSetting("rlyPulse", i, relayPulseMode);
+        if (!hasSetting("relayTime", i)) setSetting("rlyTime", i, relayPulseTime);
     }
-
     delSetting("relayMode");
     delSetting("relayPulseMode");
     delSetting("relayPulseTime");
+
+    // 1.13.1 - 2018-06-26
+    moveSettings("relayBoot", "rlyBoot");
+    moveSettings("relayPulse", "rlyPulse");
+    moveSettings("relayTime", "rlyTime");
+    moveSetting("relayOnDisc", "rlyOnDisc");
+    moveSetting("relaySync", "rlySync");
 
 }
 
@@ -491,8 +499,8 @@ void _relayConfigure() {
         if (_relays[i].type == RELAY_TYPE_LATCHED || _relays[i].type == RELAY_TYPE_LATCHED_INVERSE) {
             pinMode(_relays[i].reset_pin, OUTPUT);
         }
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+        _relays[i].pulse = getSetting("rlyPulse", i, RELAY_PULSE_MODE).toInt();
+        _relays[i].pulse_ms = 1000 * getSetting("rlyTime", i, RELAY_PULSE_MODE).toFloat();
     }
 }
 
@@ -533,16 +541,16 @@ void _relayWebSocketOnStart(JsonObject& root) {
         #if MQTT_SUPPORT
             line["group"] = getSetting("mqttGroup", i, "");
             line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
-            line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
+            line["on_disc"] = getSetting("rlyOnDisc", i, 0).toInt();
         #endif
     }
 
     if (relayCount() > 1) {
-        root["multirelayVisible"] = 1;
-        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
+        root["mrlyVisible"] = 1;
+        root["rlySync"] = getSetting("rlySync", RELAY_SYNC);
     }
 
-    root["relayVisible"] = 1;
+    root["rlyVisible"] = 1;
 
 }
 
@@ -812,7 +820,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
     if (type == MQTT_DISCONNECT_EVENT) {
         for (unsigned int i=0; i < _relays.size(); i++){
-            int reaction = getSetting("relayOnDisc", i, 0).toInt();
+            int reaction = getSetting("rlyOnDisc", i, 0).toInt();
             if (1 == reaction) {     // switch relay OFF
                 DEBUG_MSG_P(PSTR("[RELAY] Reset relay (%d) due to MQTT disconnection\n"), i);
                 relayStatusWrap(i, false, false);

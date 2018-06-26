@@ -1032,9 +1032,9 @@ void migrate() {
             setSetting("selGPIO", 12);
             setSetting("cf1GPIO", 14);
             setSetting("cfGPIO", 5);
-            setSetting("pwrRatioC", 25740);
-            setSetting("pwrRatioV", 313400);
-            setSetting("pwrRatioP", 3414290);
+            setSetting("curRatio", 25740);
+            setSetting("volRatio", 313400);
+            setSetting("pwrRatio", 3414290);
             setSetting("hlwSelC", LOW);
             setSetting("hlwIntM", FALLING);
 

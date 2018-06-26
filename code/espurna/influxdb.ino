@@ -4,6 +4,8 @@ INFLUXDB MODULE
 
 Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: idb
+
 */
 
 #if INFLUXDB_SUPPORT
@@ -16,6 +18,8 @@ SyncClient _idb_client;
 
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
 bool _idbWebSocketOnReceive(const char * key, JsonVariant& value) {
     return (strncmp(key, "idb", 3) == 0);
 }
@@ -25,9 +29,9 @@ void _idbWebSocketOnSend(JsonObject& root) {
     root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
     root["idbHost"] = getSetting("idbHost", INFLUXDB_HOST);
     root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
-    root["idbDatabase"] = getSetting("idbDatabase", INFLUXDB_DATABASE);
-    root["idbUsername"] = getSetting("idbUsername", INFLUXDB_USERNAME);
-    root["idbPassword"] = getSetting("idbPassword", INFLUXDB_PASSWORD);
+    root["idbDB"] = getSetting("idbDB", INFLUXDB_DATABASE);
+    root["idbUser"] = getSetting("idbUser", INFLUXDB_USERNAME);
+    root["idbPass"] = getSetting("idbPass", INFLUXDB_PASSWORD);
 }
 
 void _idbConfigure() {
@@ -36,6 +40,14 @@ void _idbConfigure() {
         _idb_enabled = false;
         setSetting("idbEnabled", 0);
     }
+}
+
+#endif // WEB_SUPPORT
+
+void _idbBackwards() {
+    moveSetting("idbDatabase", "idbDB"); // 1.13.1 - 2018-06-26
+    moveSetting("idbUserName", "idbUser"); // 1.13.1 - 2018-06-26
+    moveSetting("idbPassword", "idbPass"); // 1.13.1 - 2018-06-26
 }
 
 // -----------------------------------------------------------------------------
@@ -64,8 +76,8 @@ bool idbSend(const char * topic, const char * payload) {
 
         char request[256];
         snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%u\r\nContent-Length: %d\r\n\r\n%s",
-            getSetting("idbDatabase", INFLUXDB_DATABASE).c_str(),
-            getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
+            getSetting("idbDB", INFLUXDB_DATABASE).c_str(),
+            getSetting("idbUser", INFLUXDB_USERNAME).c_str(), getSetting("idbPass", INFLUXDB_PASSWORD).c_str(),
             host, port, strlen(data), data);
 
         if (_idb_client.printf(request) > 0) {
@@ -100,12 +112,16 @@ bool idbEnabled() {
 }
 
 void idbSetup() {
+
+    _idbBackwards();
     _idbConfigure();
+
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
         wsOnAfterParseRegister(_idbConfigure);
         wsOnReceiveRegister(_idbWebSocketOnReceive);
     #endif
+
 }
 
 #endif

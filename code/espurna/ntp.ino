@@ -4,6 +4,8 @@ NTP MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: ntp
+
 */
 
 #if NTP_SUPPORT
@@ -115,14 +117,19 @@ void _ntpLoop() {
 }
 
 void _ntpBackwards() {
+
+    // 1.12.0 - 2018-01-21
     moveSetting("ntpServer1", "ntpServer");
     delSetting("ntpServer2");
     delSetting("ntpServer3");
+
+    // 1.12.0 - 2018-01-20
     int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     if (-30 < offset && offset < 30) {
         offset *= 60;
         setSetting("ntpOffset", offset);
     }
+
 }
 
 // -----------------------------------------------------------------------------
@@ -155,6 +162,7 @@ time_t ntpLocal2UTC(time_t local) {
 
 void ntpSetup() {
 
+    // Check backwards compatibility
     _ntpBackwards();
 
     NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {

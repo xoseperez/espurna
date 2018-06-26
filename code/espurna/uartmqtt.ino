@@ -5,6 +5,8 @@ UART_MQTT MODULE
 Copyright (C) 2018 by Albert Weterings
 Adapted by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: u2m
+
 */
 
 #if UART_MQTT_SUPPORT

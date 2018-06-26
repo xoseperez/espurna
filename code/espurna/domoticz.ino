@@ -4,6 +4,8 @@ DOMOTICZ MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: dcz
+
 */
 
 #if DOMOTICZ_SUPPORT

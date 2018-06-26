@@ -4,6 +4,8 @@ SENSOR MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: sns pwr ene cur vol tmp hum
+
 */
 
 #if SENSOR_SUPPORT
@@ -96,11 +98,13 @@ double _magnitudeProcess(unsigned char type, double value) {
 #if WEB_SUPPORT
 
 bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "pwr", 3) == 0) return true;
     if (strncmp(key, "sns", 3) == 0) return true;
+    if (strncmp(key, "pwr", 3) == 0) return true;
+    if (strncmp(key, "ene", 3) == 0) return true;
+    if (strncmp(key, "cur", 3) == 0) return true;
+    if (strncmp(key, "vol", 3) == 0) return true;
     if (strncmp(key, "tmp", 3) == 0) return true;
     if (strncmp(key, "hum", 3) == 0) return true;
-    if (strncmp(key, "energy", 6) == 0) return true;
     return false;
 }
 
@@ -136,8 +140,8 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
     }
 
-    if (hasTemperature) root["temperatureVisible"] = 1;
-    if (hasHumidity) root["humidityVisible"] = 1;
+    if (hasTemperature) root["tmpVisible"] = 1;
+    if (hasHumidity) root["humVisible"] = 1;
 
 }
 
@@ -151,7 +155,7 @@ void _sensorWebSocketStart(JsonObject& root) {
             if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
                 root["emonVisible"] = 1;
                 root["pwrVisible"] = 1;
-                root["pwrVoltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
+                root["volNominal"] = ((EmonAnalogSensor *) sensor)->getVoltage();
             }
         #endif
 
@@ -191,13 +195,12 @@ void _sensorWebSocketStart(JsonObject& root) {
     }
 
     if (_magnitudes.size() > 0) {
-        root["sensorsVisible"] = 1;
-        //root["apiRealTime"] = _sensor_realtime;
+        root["snsVisible"] = 1;
         root["pwrUnits"] = _sensor_power_units;
-        root["energyUnits"] = _sensor_energy_units;
+        root["eneUnits"] = _sensor_energy_units;
         root["tmpUnits"] = _sensor_temperature_units;
-        root["tmpCorrection"] = _sensor_temperature_correction;
-        root["humCorrection"] = _sensor_humidity_correction;
+        root["tmpOffset"] = _sensor_temperature_correction;
+        root["humOffset"] = _sensor_humidity_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
     }
@@ -630,8 +633,8 @@ void _sensorInit() {
 
             if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-                sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+                sensor->setCurrentRatio(0, getSetting("curRatio", EMON_CURRENT_RATIO).toFloat());
+                sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
             }
 
         #endif // EMON_ANALOG_SUPPORT
@@ -644,13 +647,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", HLW8012_CURRENT_RATIO).toFloat();
+                value = getSetting("curRatio", HLW8012_CURRENT_RATIO).toFloat();
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", HLW8012_VOLTAGE_RATIO).toFloat();
+                value = getSetting("volRatio", HLW8012_VOLTAGE_RATIO).toFloat();
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
+                value = getSetting("pwrRatio", HLW8012_POWER_RATIO).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
             }
@@ -665,13 +668,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", 0).toFloat();
+                value = getSetting("curRatio", 0).toFloat();
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", 0).toFloat();
+                value = getSetting("volRatio", 0).toFloat();
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", 0).toFloat();
+                value = getSetting("pwrRatio", 0).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
             }
@@ -687,12 +690,12 @@ void _sensorConfigure() {
     // General sensor settings
     _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
     _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
-    _sensor_realtime = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    _sensor_realtime = apiRealTime();
     _sensor_power_units = getSetting("pwrUnits", SENSOR_POWER_UNITS).toInt();
-    _sensor_energy_units = getSetting("energyUnits", SENSOR_ENERGY_UNITS).toInt();
+    _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS).toInt();
     _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
-    _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
-    _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION).toFloat();
+    _sensor_temperature_correction = getSetting("tmpOffset", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+    _sensor_humidity_correction = getSetting("humOffset", SENSOR_HUMIDITY_CORRECTION).toFloat();
 
     // Specific sensor settings
     for (unsigned char i=0; i<_sensors.size(); i++) {
@@ -704,22 +707,22 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if (value = getSetting("pwrExpected", 0).toInt()) {
                     sensor->expectedPower(0, value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio(0));
+                    setSetting("curRatio", sensor->getCurrentRatio(0));
                 }
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                if (getSetting("snsResetCalibrarion", 0).toInt() == 1) {
                     sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-                    delSetting("pwrRatioC");
+                    delSetting("curRatio");
                 }
 
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
                     _sensorReset();
                 }
 
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
+                sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
 
             }
 
@@ -728,7 +731,7 @@ void _sensorConfigure() {
         #if EMON_ADC121_SUPPORT
             if (_sensors[i]->getID() == SENSOR_EMON_ADC121_ID) {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
                     _sensorReset();
                 }
@@ -738,7 +741,7 @@ void _sensorConfigure() {
         #if EMON_ADS1X15_SUPPORT
             if (_sensors[i]->getID() == SENSOR_EMON_ADS1X15_ID) {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
                     _sensorReset();
                 }
@@ -753,31 +756,31 @@ void _sensorConfigure() {
                 double value;
                 HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                if (value = getSetting("curExpected", 0).toFloat()) {
                     sensor->expectedCurrent(value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio());
+                    setSetting("curRatio", sensor->getCurrentRatio());
                 }
 
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                if (value = getSetting("volExpected", 0).toInt()) {
                     sensor->expectedVoltage(value);
-                    setSetting("pwrRatioV", sensor->getVoltageRatio());
+                    setSetting("volRatio", sensor->getVoltageRatio());
                 }
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if (value = getSetting("pwrExpected", 0).toInt()) {
                     sensor->expectedPower(value);
-                    setSetting("pwrRatioP", sensor->getPowerRatio());
+                    setSetting("pwrRatio", sensor->getPowerRatio());
                 }
 
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
                     _sensorReset();
                 }
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                if (getSetting("snsResetCalibrarion", 0).toInt() == 1) {
                     sensor->resetRatios();
-                    delSetting("pwrRatioC");
-                    delSetting("pwrRatioV");
-                    delSetting("pwrRatioP");
+                    delSetting("curRatio");
+                    delSetting("volRatio");
+                    delSetting("pwrRatio");
                 }
 
             }
@@ -791,31 +794,31 @@ void _sensorConfigure() {
                 double value;
                 CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                if (value = getSetting("curExpected", 0).toFloat()) {
                     sensor->expectedCurrent(value);
-                    setSetting("pwrRatioC", sensor->getCurrentRatio());
+                    setSetting("curRatio", sensor->getCurrentRatio());
                 }
 
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                if (value = getSetting("volExpected", 0).toInt()) {
                     sensor->expectedVoltage(value);
-                    setSetting("pwrRatioV", sensor->getVoltageRatio());
+                    setSetting("volRatio", sensor->getVoltageRatio());
                 }
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if (value = getSetting("pwrExpected", 0).toInt()) {
                     sensor->expectedPower(value);
-                    setSetting("pwrRatioP", sensor->getPowerRatio());
+                    setSetting("pwrRatio", sensor->getPowerRatio());
                 }
 
-                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
                     _sensorReset();
                 }
 
-                if (getSetting("pwrResetCalibration", 0).toInt() == 1) {
+                if (getSetting("snsResetCalibrarion", 0).toInt() == 1) {
                     sensor->resetRatios();
-                    delSetting("pwrRatioC");
-                    delSetting("pwrRatioV");
-                    delSetting("pwrRatioP");
+                    delSetting("curRatio");
+                    delSetting("volRatio");
+                    delSetting("pwrRatio");
                 }
 
             }
@@ -830,13 +833,29 @@ void _sensorConfigure() {
     }
 
     // Save settings
-    delSetting("pwrExpectedP");
-    delSetting("pwrExpectedC");
-    delSetting("pwrExpectedV");
-    delSetting("pwrResetCalibration");
-    delSetting("pwrResetE");
+    delSetting("pwrExpected");
+    delSetting("curExpected");
+    delSetting("volExpected");
+    delSetting("snsResetCalibrarion");
+    delSetting("eneReset");
     saveSettings();
 
+}
+
+void _sensorBackwards() {
+    moveSetting("powerUnits", "pwrUnits"); // 1.12.5 - 2018-04-03
+    moveSetting("tmpCorrection", "tmpOffset"); // 1.13.1 - 2018-06-26
+    moveSetting("humCorrection", "humOffset"); // 1.13.1 - 2018-06-26
+    moveSetting("energyUnits", "eneUnits"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrRatioC", "curRatio"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrRatioP", "pwrRatio"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrRatioV", "volRatio"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrVoltage", "volNominal"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrExpectedP", "pwrExpected"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrExpectedC", "curExpected"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrExpectedV", "volExpected"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrResetCalibration", "snsResetCalibration"); // 1.13.1 - 2018-06-26
+    moveSetting("pwrResetE", "eneReset"); // 1.13.1 - 2018-06-26
 }
 
 // -----------------------------------------------------------------------------
@@ -918,7 +937,7 @@ String magnitudeUnits(unsigned char type) {
 void sensorSetup() {
 
     // Backwards compatibility
-    moveSetting("powerUnits", "pwrUnits");
+    _sensorBackwards();
 
     // Load sensors
     _sensorLoad();

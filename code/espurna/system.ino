@@ -4,6 +4,8 @@ SYSTEM MODULE
 
 Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: esp (shared with others)
+
 */
 
 #include <EEPROM_Rotate.h>

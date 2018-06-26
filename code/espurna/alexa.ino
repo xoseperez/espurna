@@ -4,6 +4,8 @@ ALEXA MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
+Module key prefix: alx
+
 */
 
 #if ALEXA_SUPPORT
@@ -24,24 +26,28 @@ static std::queue<AlexaDevChange> _alexa_dev_changes;
 // -----------------------------------------------------------------------------
 
 bool _alexaWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "alexa", 5) == 0);
+    return (strncmp(key, "alx", 3) == 0);
 }
 
 void _alexaWebSocketOnSend(JsonObject& root) {
-    root["alexaVisible"] = 1;
-    root["alexaEnabled"] = getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1;
+    root["alxVisible"] = 1;
+    root["alxEnabled"] = getSetting("alxEnabled", ALEXA_ENABLED).toInt() == 1;
 }
 
 void _alexaConfigure() {
-    alexa.enable(getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1);
+    alexa.enable(getSetting("alxEnabled", ALEXA_ENABLED).toInt() == 1);
 }
 
+void _alexaBackwards() {
+    moveSetting("fauxmoEnabled", "alxEnabled"); // 1.9.0 - 2017-08-25
+    moveSetting("alexaEnabled", "alxEnabled"); // 1.13.1 - 2018-06-27
+}
 // -----------------------------------------------------------------------------
 
 void alexaSetup() {
 
-    // Backwards compatibility
-    moveSetting("fauxmoEnabled", "alexaEnabled");
+    // Check backwards compatibility
+    _alexaBackwards();
 
     // Load & cache settings
     _alexaConfigure();
