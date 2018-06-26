@@ -303,11 +303,11 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
 
 void _wsOnStart(JsonObject& root) {
 
-    unsigned char webMode = webMode();
+    unsigned char web_mode = webMode();
 
-    root["webMode"] =  webMode;
+    root["webMode"] =  web_mode;
 
-    if (WEB_MODE_NORMAL == webMode) {
+    if (WEB_MODE_NORMAL == web_mode) {
 
         char chipid[7];
         snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());

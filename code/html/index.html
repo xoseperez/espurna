@@ -220,11 +220,6 @@
                                     <div class="pure-u-1-2">Firmware version</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_version"></span></div>
 
-                                    <!--
-                                    <div class="pure-u-1-2">Firmware revision</div>
-                                    <div class="pure-u-11-24"><span class="right" name="app_revision"></span></div>
-                                    -->
-
                                     <div class="pure-u-1-2">Firmware build date</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_build"></span></div>
 
@@ -1243,29 +1238,29 @@
             <div class="pure-g">
 
                 <label class="pure-u-1 pure-u-lg-1-4">Network SSID</label>
-                <div class="pure-u-5-6 pure-u-lg-2-3"><input name="ssid" type="text" action="reconnect" class="pure-u-23-24" value="" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
+                <div class="pure-u-5-6 pure-u-lg-2-3"><input name="wifiName" type="text" action="reconnect" class="pure-u-23-24" value="" tabindex="0" placeholder="Network SSID" required autocomplete="false" /></div>
                 <div class="pure-u-1-6 pure-u-lg-1-12"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Password</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="pass" type="password" action="reconnect" value="" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="wifiPass" type="password" action="reconnect" value="" tabindex="0" autocomplete="false" />
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Static IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="ip" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="wifiIP" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Leave empty for DNS negotiation</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Gateway IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="gw" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="wifiGW" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set when using a static IP</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Network Mask</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="mask" type="text" action="reconnect" value="255.255.255.0" maxlength="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="wifiMask" type="text" action="reconnect" value="255.255.255.0" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Usually 255.255.255.0 for /24 networks</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">DNS IP</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="dns" type="text" action="reconnect" value="8.8.8.8" maxlength="15" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="wifiDNS" type="text" action="reconnect" value="8.8.8.8" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
                 <div class="pure-u-1 pure-u-lg-3-4 hint more">Set the Domain Name Server IP to use when using a static IP</div>
 
