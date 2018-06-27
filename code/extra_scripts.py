@@ -1,7 +1,14 @@
 #!/usr/bin/env python
-from subprocess import call
+from __future__ import print_function
+
 import os
-import time
+import sys
+from subprocess import call
+
+import click
+from platformio import util
+
+import distutils.spawn
 
 Import("env")
 
@@ -30,6 +37,17 @@ class Color(object):
 def clr(color, text):
     return color + str(text) + '\x1b[0m'
 
+def print_warning(message, color=Color.LIGHT_YELLOW):
+    print(clr(color, message), file=sys.stderr)
+
+def print_filler(fill, color=Color.WHITE, err=False):
+    width, _ = click.get_terminal_size()
+    if len(fill) > 1:
+        fill = fill[0]
+
+    out = sys.stderr if err else sys.stdout
+    print(clr(color, fill * width), file=out)
+
 # ------------------------------------------------------------------------------
 # Callbacks
 # ------------------------------------------------------------------------------
@@ -51,12 +69,18 @@ def cpp_check(source, target, env):
     print("Finished cppcheck...\n")
 
 def check_size(source, target, env):
-    time.sleep(2)
-    size = target[0].get_size()
-    print clr(Color.LIGHT_BLUE, "Binary size: %s bytes" % size)
-    #if size > 512000:
-    #    print clr(Color.LIGHT_RED, "File too large for OTA!")
-    #    Exit(1)
+    (binary,) = target
+    path = binary.get_abspath()
+    size = os.stat(path).st_size
+    print(clr(Color.LIGHT_BLUE, "Binary size: {} bytes".format(size)))
+
+    # Warn 1MB variants about exceeding OTA size limit
+    flash_size = int(env.BoardConfig().get("upload.maximum_size", 0))
+    if (flash_size == 1048576) and (size >= 512000):
+        print_filler("*", color=Color.LIGHT_YELLOW, err=True)
+        print_warning("File is too large for OTA! Here you can find instructions on how to flash it:")
+        print_warning("https://github.com/xoseperez/espurna/wiki/TwoStepUpdates", color=Color.LIGHT_CYAN)
+        print_filler("*", color=Color.LIGHT_YELLOW, err=True)
 
 # ------------------------------------------------------------------------------
 # Hooks
@@ -64,5 +88,4 @@ def check_size(source, target, env):
 
 remove_float_support()
 
-#env.AddPreAction("buildprog", cpp_check)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)

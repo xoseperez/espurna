@@ -285,7 +285,36 @@
 #define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
 #endif
 
-#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
+#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 50 millis
+
+//------------------------------------------------------------------------------
+// Geiger sensor
+// Enable support by passing GEIGER_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef GEIGER_SUPPORT
+#define GEIGER_SUPPORT                  0       // Do not build with geiger support by default
+#endif
+
+#ifndef GEIGER_PIN
+#define GEIGER_PIN                      D1       // GPIO to monitor "D1" => "GPIO5"
+#endif
+
+#ifndef GEIGER_PIN_MODE
+#define GEIGER_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef GEIGER_INTERRUPT_MODE
+#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#endif
+
+#define GEIGER_DEBOUNCE                 25      // Do not register events within less than 25 millis.
+                                                // Value derived here: Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+
+#define GEIGER_CPM2SIEVERT              240     // CPM to µSievert per hour conversion factor
+                                                // Typically the literature uses the invers, but I find an integer type more convienient.
+#define GEIGER_REPORT_SIEVERTS          1       // Enabler for local dose rate reports in µSv/h
+#define GEIGER_REPORT_CPM               1       // Enabler for local dose rate reports in counts per minute
 
 //------------------------------------------------------------------------------
 // GUVAS12SD UV Sensor (analog)
@@ -354,7 +383,27 @@
 #define HLW8012_VOLTAGE_R_DOWN          ( 1000 )        // Downstream voltage resistor
 #endif
 
+#ifndef HLW8012_CURRENT_RATIO
+#define HLW8012_CURRENT_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_VOLTAGE_RATIO
+#define HLW8012_VOLTAGE_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_POWER_RATIO
+#define HLW8012_POWER_RATIO             0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_USE_INTERRUPTS
 #define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
+#endif
+
+#ifndef HLW8012_INTERRUPT_ON
+#define HLW8012_INTERRUPT_ON            CHANGE  // When to trigger the interrupt
+                                                // Use CHANGE for HLW8012
+                                                // Use FALLING for BL0937 / HJL0
+#endif
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
@@ -428,7 +477,7 @@
 #endif
 
 #ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               1       // Use software serial
+#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
 #endif
 
 #ifndef PZEM004T_RX_PIN
@@ -440,7 +489,7 @@
 #endif
 
 #ifndef PZEM004T_HW_PORT
-#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
 //------------------------------------------------------------------------------
@@ -527,6 +576,7 @@
     EMON_ADS1X15_SUPPORT || \
     EMON_ANALOG_SUPPORT || \
     EVENTS_SUPPORT || \
+    GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
     HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
@@ -637,6 +687,10 @@
 
 #if EVENTS_SUPPORT
     #include "../sensors/EventSensor.h"
+#endif
+
+#if GEIGER_SUPPORT
+    #include "../sensors/GeigerSensor.h"       // The main file for geiger counting module
 #endif
 
 #if GUVAS12SD_SUPPORT

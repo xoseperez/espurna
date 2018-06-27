@@ -70,6 +70,12 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+#elif defined(NODEMCU_BASIC)
+    // Info
+    // Generic NodeMCU Board without any buttons or relays connected.
+    #define MANUFACTURER        "NODEMCU"
+    #define DEVICE              "BASIC"
+
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
     // Info
@@ -1821,7 +1827,7 @@
     #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define BUTTON3_PIN             14
-    #define BUTTON3_RELAY           2
+    #define BUTTON3_RELAY           3
     #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     #define RELAY1_PIN              4
@@ -1944,6 +1950,52 @@
     #define DALLAS_SUPPORT      1
     #endif
     #define DALLAS_PIN          2
+
+// -----------------------------------------------------------------------------
+// ESP-DIN relay board V1
+// https://github.com/pilotak/esp_din
+// -----------------------------------------------------------------------------
+
+#elif defined(PILOTAK_ESP_DIN_V1)
+
+    // Info
+    #define MANUFACTURER        "PILOTAK"
+    #define DEVICE              "ESP_DIN_V1"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+    #define I2C_SDA_PIN         12
+    #define I2C_SCL_PIN         13
+
+    #ifndef DALLAS_SUPPORT
+    #define DALLAS_SUPPORT      1
+    #endif
+    #define DALLAS_PIN          2
+
+    #ifndef RF_SUPPORT
+    #define RF_SUPPORT          1
+    #endif
+    #define RF_PIN              14
+
+    #ifndef DIGITAL_SUPPORT
+    #define DIGITAL_SUPPORT      1
+    #endif
+    #define DIGITAL_PIN          16
+    #define DIGITAL_PIN_MODE     INPUT
 
 // -----------------------------------------------------------------------------
 // Heltec Touch Relay
@@ -2112,15 +2164,16 @@
     #define LED4_RELAY          1
 
 // -----------------------------------------------------------------------------
-// NEO Coolcam Power Plug
+// NEO Coolcam NAS-WR01W Wifi Smart Power Plug
 // https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
+// https://www.fasttech.com/product/9649426-neo-coolcam-nas-wr01w-wifi-smart-power-plug-eu
 // -----------------------------------------------------------------------------
 
-#elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+#elif defined(NEO_COOLCAM_NAS_WR01W)
 
     // Info
     #define MANUFACTURER        "NEO_COOLCAM"
-    #define DEVICE              "POWER_PLUG_WIFI"
+    #define DEVICE              "NAS_WR01W"
 
     // Buttons
     #define BUTTON1_PIN         13
@@ -2188,6 +2241,124 @@
     #define LED3_RELAY          3
     #define LED4_RELAY          4
 
+
+// -----------------------------------------------------------------------------
+// Bruno Horta's OnOfre
+// https://www.bhonofre.pt/
+// https://github.com/brunohorta82/BH_OnOfre/
+// -----------------------------------------------------------------------------
+
+#elif defined(BH_ONOFRE)
+
+    // Info
+    #define MANUFACTURER        "BH"
+    #define DEVICE              "ONOFRE"
+
+    // Buttons
+    #define BUTTON1_PIN         12
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_PIN         13
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+// -----------------------------------------------------------------------------
+// Several boards under different names uing a power chip labelled BL0937 or HJL-01
+// * Blitzwolf (https://www.amazon.es/Inteligente-Temporización-Dispositivos-Cualquier-BlitzWolf/dp/B07BMQP142)
+// * HomeCube (https://www.amazon.de/Steckdose-Homecube-intelligente-Verbrauchsanzeige-funktioniert/dp/B076Q2LKHG)
+// * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
+// * Goosund (http://www.gosund.com/?m=content&c=index&a=show&catid=6&id=5)
+// * Ablue (https://www.amazon.de/Intelligente-Steckdose-Ablue-Funktioniert-Assistant/dp/B076DRFRZC)
+// -----------------------------------------------------------------------------
+
+#elif defined(BLITZWOLF_BWSHP2)
+
+    // Info
+    #define MANUFACTURER                "BLITZWOLF"
+    #define DEVICE                      "BWSHP2"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+    #define LED2_PIN                    0
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FINDME
+    #define LED2_RELAY                  1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+// -----------------------------------------------------------------------------
+// VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
+// https://www.amazon.com/Smart-Plug-Wifi-Mini-VANZAVANZU/dp/B078PHD6S5
+// -----------------------------------------------------------------------------
+
+#elif defined(VANZAVANZU_SMART_WIFI_PLUG_MINI)
+
+    // Info
+    #define MANUFACTURER                "VANZAVANZU"
+    #define DEVICE                      "SMART_WIFI_PLUG_MINI"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            1
+    #define LED2_PIN                    0
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_FINDME
+    #define LED2_RELAY                  1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT        0
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             3
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
@@ -2230,6 +2401,8 @@
     #define EMON_ADS1X15_SUPPORT  1
     #define SHT3X_I2C_SUPPORT     1
     #define SI7021_SUPPORT        1
+    #define PMSX003_SUPPORT       1
+    #define SENSEAIR_SUPPORT      1
 
 
     // A bit of lights - pin 5
@@ -2310,7 +2483,7 @@
     #define MHZ19_TX_PIN        10
 
     // PZEM004T
-    #define PZEM004T_SUPPORT    0   // not working?
+    #define PZEM004T_SUPPORT    1
     #define PZEM004T_RX_PIN     11
     #define PZEM004T_TX_PIN     12
 

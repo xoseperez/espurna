@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*eslint-env es6*/
 
 // -----------------------------------------------------------------------------
-// File system builder
+// Dependencies
 // -----------------------------------------------------------------------------
 
 const fs = require('fs');
@@ -35,49 +35,75 @@ const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');
 const htmllint = require('gulp-htmllint');
-const log = require('fancy-log');
 const csslint = require('gulp-csslint');
 const crass = require('gulp-crass');
 const replace = require('gulp-replace');
+const remover = require('gulp-remove-code');
+const map = require('map-stream');
+const rename = require('gulp-rename');
+const runSequence = require('run-sequence');
+
+// -----------------------------------------------------------------------------
+// Configuration
+// -----------------------------------------------------------------------------
 
 const dataFolder = 'espurna/data/';
 const staticFolder = 'espurna/static/';
 
-var toHeader = function(filename) {
+// -----------------------------------------------------------------------------
+// Methods
+// -----------------------------------------------------------------------------
 
-    var source = dataFolder + filename;
-    var destination = staticFolder + filename + '.h';
-    var safename = filename.split('.').join('_');
+var buildHeaderFile = function() {
 
-    var wstream = fs.createWriteStream(destination);
-    wstream.on('error', function (err) {
-        log.error(err);
+    String.prototype.replaceAll = function(search, replacement) {
+        var target = this;
+        return target.split(search).join(replacement);
+    };
+
+    return map(function(file, cb) {
+
+        var parts = file.path.split("/");
+        var filename = parts[parts.length - 1];
+        var destination = staticFolder + filename + ".h";
+        var safename = "webui_image";
+
+        var wstream = fs.createWriteStream(destination);
+        wstream.on('error', function (err) {
+            console.error(err);
+        });
+
+        var data = fs.readFileSync(file.path);
+
+        wstream.write('#define ' + safename + '_len ' + data.length + '\n');
+        wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
+
+        for (var i=0; i<data.length; i++) {
+            if (0 === (i % 20)) {
+                wstream.write('\n');
+            }
+            wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
+            if (i < (data.length - 1)) {
+                wstream.write(',');
+            }
+        }
+
+        wstream.write('\n};');
+        wstream.end();
+
+        var fstat = fs.statSync(file.path);
+        console.log("Created '" + filename + "' size: " + fstat.size + " bytes");
+
+        cb(0, destination);
+
     });
 
-    var data = fs.readFileSync(source);
-
-    wstream.write('#define ' + safename + '_len ' + data.length + '\n');
-    wstream.write('const uint8_t ' + safename + '[] PROGMEM = {');
-
-    for (var i=0; i<data.length; i++) {
-        if (0 === (i % 20)) {
-            wstream.write('\n');
-        }
-        wstream.write('0x' + ('00' + data[i].toString(16)).slice(-2));
-        if (i < (data.length - 1)) {
-          wstream.write(',');
-        }
-    }
-
-    wstream.write('\n};');
-    wstream.end();
-
-};
+}
 
 var htmllintReporter = function(filepath, issues) {
-	if (issues.length > 0) {
-		issues.forEach(function (issue) {
-			log.info(
+    if (issues.length > 0) {
+        issues.forEach(function (issue) {
+            console.info(
                 '[gulp-htmllint] ' +
                 filepath + ' [' +
                 issue.line + ',' +
@@ -85,27 +111,22 @@ var htmllintReporter = function(filepath, issues) {
                 '(' + issue.code + ') ' +
                 issue.msg
             );
-		});
-		process.exitCode = 1;
-	}
+        });
+        process.exitCode = 1;
+    }
 };
 
-gulp.task('build_certs', function() {
-    toHeader('server.cer');
-    toHeader('server.key');
-});
+var buildWebUI = function(module) {
 
-gulp.task('csslint', function() {
-    gulp.src('html/*.css').
-        pipe(csslint({ids: false})).
-        pipe(csslint.formatter());
-});
+    var modules = {"light": false, "sensor": false, "rfbridge": false};
+    if ("all" == module) {
+        modules["light"] = true;
+        modules["rfbridge"] = true;
+        modules["sensor"] = true;
+    } else if ("small" != module) {
+        modules[module] = true;
+    }
 
-gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
-    toHeader('index.html.gz');
-});
-
-gulp.task('buildfs_inline', function() {
     return gulp.src('html/*.html').
         pipe(htmllint({
             'failOnError': true,
@@ -117,10 +138,11 @@ gulp.task('buildfs_inline', function() {
         pipe(favicon()).
         pipe(inline({
             base: 'html/',
-            js: [uglify],
+            js: [],
             css: [crass, inlineImages],
             disabledTypes: ['svg', 'img']
         })).
+        pipe(remover(modules)).
         pipe(htmlmin({
             collapseWhitespace: true,
             removeComments: true,
@@ -129,8 +151,59 @@ gulp.task('buildfs_inline', function() {
         })).
         pipe(replace('pure-', 'p-')).
         pipe(gzip()).
+        pipe(rename("index." + module + ".html.gz")).
         pipe(gulp.dest(dataFolder));
+
+};
+
+// -----------------------------------------------------------------------------
+// Tasks
+// -----------------------------------------------------------------------------
+
+gulp.task('build_certs', function() {
+    gulp.src(dataFolder + 'server.*').
+        pipe(buildHeaderFile());
 });
 
+gulp.task('csslint', function() {
+    gulp.src('html/*.css').
+        pipe(csslint({ids: false})).
+        pipe(csslint.formatter());
+});
+
+gulp.task('build_webui_small', function() {
+    return buildWebUI("small");
+})
+
+gulp.task('build_webui_sensor', function() {
+    return buildWebUI("sensor");
+})
+
+gulp.task('build_webui_light', function() {
+    return buildWebUI("light");
+})
+
+gulp.task('build_webui_rfbridge', function() {
+    return buildWebUI("rfbridge");
+})
+
+gulp.task('build_webui_all', function() {
+    return buildWebUI("all");
+})
+
+gulp.task('buildfs_inline', function(cb) {
+    runSequence([
+        'build_webui_small',
+        'build_webui_sensor',
+        'build_webui_light',
+        'build_webui_rfbridge',
+        'build_webui_all'
+    ], cb);
+});
+
+gulp.task('buildfs_embeded', ['buildfs_inline'], function() {
+    gulp.src(dataFolder + 'index.*').
+        pipe(buildHeaderFile());
+});
 
 gulp.task('default', ['buildfs_embeded']);

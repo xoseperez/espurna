@@ -82,8 +82,11 @@
 //#define LUANI_HVIO
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
 //#define TONBUX_MOSQUITO_KILLER
-//#define NEO_COOLCAM_POWER_PLUG_WIFI
+//#define NEO_COOLCAM_NAS_WR01W
 //#define ESTINK_WIFI_POWER_STRIP
+//#define PILOTAK_ESP_DIN_V1
+//#define BLITZWOLF_BWSHP2
+//#define BH_ONOFRE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -144,3 +147,4 @@
 //#define SI7021_SUPPORT         1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
+//#define GEIGER_SUPPORT         1

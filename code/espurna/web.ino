@@ -16,7 +16,56 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 #if WEB_EMBEDDED
-#include "static/index.html.gz.h"
+
+#define WEBUI_MODULE_SMALL      0
+#define WEBUI_MODULE_LIGHT      1
+#define WEBUI_MODULE_SENSOR     2
+#define WEBUI_MODULE_RFBRIDGE   4
+#define WEBUI_MODULE_ALL        7
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    #ifdef WEBUI_MODULE
+        #undef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_ALL
+    #else
+        #define WEBUI_MODULE    WEBUI_MODULE_LIGHT
+    #endif
+#endif
+
+#if SENSOR_SUPPORT == 1
+    #ifndef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_SENSOR
+    #else
+        #undef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_ALL
+    #endif
+#endif
+
+#if defined(ITEAD_SONOFF_RFBRIDGE)
+    #ifndef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_RFBRIDGE
+    #else
+        #undef WEBUI_MODULE
+        #define WEBUI_MODULE    WEBUI_MODULE_ALL
+    #endif
+#endif
+
+#ifndef WEBUI_MODULE
+    #define WEBUI_MODULE        WEBUI_MODULE_SMALL
+#endif
+
+#if WEBUI_MODULE == WEBUI_MODULE_SMALL
+    #include "static/index.small.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_LIGHT
+    #include "static/index.light.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_SENSOR
+    #include "static/index.sensor.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_RFBRIDGE
+    #include "static/index.rfbridge.html.gz.h"
+#elif WEBUI_MODULE == WEBUI_MODULE_ALL
+    #include "static/index.all.html.gz.h"
+#endif
+
 #endif // WEB_EMBEDDED
 
 #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
@@ -40,10 +89,9 @@ void _onReset(AsyncWebServerRequest *request) {
     request->send(200);
 }
 
-void _onGetConfig(AsyncWebServerRequest *request) {
+void _onDiscover(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
@@ -51,12 +99,43 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
-    settingsGetJson(root);
-    root.prettyPrintTo(*response);
+    root["hostname"] = getSetting("hostname");
+    root["device"] = getBoardName();
+    root.printTo(*response);
+
+    request->send(response);
+
+}
+
+void _onGetConfig(AsyncWebServerRequest *request) {
+
+    webLog(request);
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
+    AsyncResponseStream *response = request->beginResponseStream("text/json");
 
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+
+    response->printf("{\n\"app\": \"%s\"", APP_NAME);
+    response->printf(",\n\"version\": \"%s\"", APP_VERSION);
+    response->printf(",\n\"backup\": \"1\"");
+    response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+
+    // Write the keys line by line (not sorted)
+    unsigned long count = settingsKeyCount();
+    for (unsigned int i=0; i<count; i++) {
+        String key = settingsKeyName(i);
+        String value = getSetting(key);
+        response->printf(",\n\"%s\": \"%s\"", key.c_str(), value.c_str());
+    }
+    response->printf("\n}");
 
     request->send(response);
 
@@ -64,7 +143,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfig(AsyncWebServerRequest *request) {
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
     request->send(_webConfigSuccess ? 200 : 400);
 }
 
@@ -112,7 +193,9 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
 void _onHome(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
 
@@ -130,12 +213,12 @@ void _onHome(AsyncWebServerRequest *request) {
             AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 
                 // Get the chunk based on the index and maxLen
-                size_t len = index_html_gz_len - index;
+                size_t len = webui_image_len - index;
                 if (len > maxLen) len = maxLen;
                 if (len > max) len = max;
-                if (len > 0) memcpy_P(buffer, index_html_gz + index, len);
+                if (len > 0) memcpy_P(buffer, webui_image + index, len);
 
-                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / index_html_gz_len), max);
+                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
                 if (len == 0) DEBUG_MSG_P(PSTR("\n"));
 
                 // Return the actual length of the chunk (0 for end of file)
@@ -145,12 +228,15 @@ void _onHome(AsyncWebServerRequest *request) {
 
         #else
 
-            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", webui_image, webui_image_len);
 
         #endif
 
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Last-Modified", _last_modified);
+        response->addHeader("X-XSS-Protection", "1; mode=block");
+        response->addHeader("X-Content-Type-Options", "nosniff");
+        response->addHeader("X-Frame-Options", "deny");
         request->send(response);
 
     }
@@ -212,7 +298,9 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
-    if (!_authenticate(request)) return request->requestAuthentication(getSetting("hostname").c_str());
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     char buffer[10];
     if (!Update.hasError()) {
@@ -223,7 +311,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buffer);
     response->addHeader("Connection", "close");
-    if (!Update.hasError()) {
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+    if (Update.hasError()) {
+        eepromRotate(true);
+    } else {
         deferredReset(100, CUSTOM_RESET_UPGRADE);
     }
     request->send(response);
@@ -231,7 +324,12 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 }
 
 void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
     if (!index) {
+
+        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+        eepromRotate(false);
+
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
@@ -239,7 +337,9 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
                 Update.printError(DEBUG_PORT);
             #endif
         }
+
     }
+
     if (!Update.hasError()) {
         if (Update.write(data, len) != len) {
             #ifdef DEBUG_PORT
@@ -247,6 +347,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     }
+
     if (final) {
         if (Update.end(true)){
             DEBUG_MSG_P(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
@@ -262,7 +363,7 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 
 // -----------------------------------------------------------------------------
 
-bool _authenticate(AsyncWebServerRequest *request) {
+bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
         String password = getSetting("adminPass", ADMIN_PASS);
         char httpPassword[password.length() + 1];
@@ -311,6 +412,7 @@ void webSetup() {
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files
     #if SPIFFS_SUPPORT

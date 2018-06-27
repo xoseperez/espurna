@@ -9,6 +9,9 @@
 
 #include "Arduino.h"
 #include "BaseSensor.h"
+extern "C" {
+    #include "libs/fs_math.h"
+}
 
 #include <SoftwareSerial.h>
 
@@ -203,7 +206,7 @@ class V9261FSensor : public BaseSensor {
                     if (_voltage < 0) _voltage = 0;
                     if (_current < 0) _current = 0;
 
-                    _apparent = sqrt(_reactive * _reactive + _active * _active);
+                    _apparent = fs_sqrt(_reactive * _reactive + _active * _active);
 
                 }
 

@@ -47,7 +47,10 @@ void setup() {
         debugSetup();
     #endif
 
-    // Init EEPROM, Serial, SPIFFS and system check
+    // Init EEPROM
+    eepromSetup();
+    
+    // Init Serial, SPIFFS and system check
     systemSetup();
 
     // Init persistance and terminal features
