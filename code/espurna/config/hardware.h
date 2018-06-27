@@ -70,12 +70,6 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-#elif defined(NODEMCU_BASIC)
-    // Info
-    // Generic NodeMCU Board without any buttons or relays connected.
-    #define MANUFACTURER        "NODEMCU"
-    #define DEVICE              "BASIC"
-
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
     // Info
@@ -102,12 +96,6 @@
     #define I2C_SDA_PIN         12  // D6
     #define I2C_SCL_PIN         14  // D5
 
-#elif defined(WEMOS_D1_TARPUNA_SHIELD)
-
-    // Info
-    #define MANUFACTURER        "WEMOS"
-    #define DEVICE              "D1_TARPUNA_SHIELD"
-
 // -----------------------------------------------------------------------------
 // ESPurna
 // -----------------------------------------------------------------------------
@@ -130,7 +118,7 @@
     #define RELAY1_TYPE         RELAY_TYPE_INVERSE
 
     // LEDs
-    #define LED1_PIN            2
+    #define LED1_PIN            5
     #define LED1_PIN_INVERSE    1
 
     // HLW8012
@@ -2358,6 +2346,23 @@
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
+
+// -----------------------------------------------------------------------------
+// Generic board with Geiger Counter
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_GEIGER_COUNTER)
+
+    // Info
+    #define MANUFACTURER                "GENERIC"
+    #define DEVICE                      "GEIGER_COUNTER"
+
+    // Enable Geiger Counter
+    #define GEIGER_SUPPORT              1
+
+    // Disable uneeded modules
+    #define ALEXA_SUPPORT               0
+    #define SCHEDULER_SUPPORT           0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

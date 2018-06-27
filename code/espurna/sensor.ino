@@ -4,7 +4,9 @@ SENSOR MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
-Module key prefix: sns pwr ene cur vol tmp hum
+Module key prefix: sns
+Magnitude-based key prefix: pwr ene cur vol tmp hum
+Sensor-based key previs: hlw bme dht ds cse v92 pze ech gei
 
 */
 
@@ -842,7 +844,15 @@ bool _sensorKeyCheck(const char * key) {
     if (strncmp(key, "tmp", 3) == 0) return true;
     if (strncmp(key, "hum", 3) == 0) return true;
 
+    if (strncmp(key, "bme", 3) == 0) return true;
+    if (strncmp(key, "dht", 3) == 0) return true;
+    if (strncmp(key, "ds" , 2) == 0) return true;
     if (strncmp(key, "hlw", 3) == 0) return true;
+    if (strncmp(key, "cse", 3) == 0) return true;
+    if (strncmp(key, "v92", 3) == 0) return true;
+    if (strncmp(key, "ech", 3) == 0) return true;
+    if (strncmp(key, "gei", 3) == 0) return true;
+    if (strncmp(key, "pze", 3) == 0) return true;
 
     return false;
 }

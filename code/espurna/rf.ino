@@ -89,9 +89,15 @@ bool _rfMatch(unsigned long code, unsigned char& relayID, unsigned char& value) 
 
 }
 
+bool _rfKeyCheck(const char * key) {
+    return (strncmp(key, "rfb", 3) == 0);
+}
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
+
+#if WEB_SUPPORT
 
 void _rfWebSocketOnSend(JsonObject& root) {
     char buffer[20];
@@ -114,6 +120,8 @@ void _rfWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
     if (strcmp(action, "rfbforget") == 0) _rfForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) _rfStore(data["id"], data["status"], data["data"].as<long>());
 }
+
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -185,6 +193,9 @@ void rfSetup() {
         wsOnSendRegister(_rfWebSocketOnSend);
         wsOnActionRegister(_rfWebSocketOnAction);
     #endif
+
+    // Key Check
+    settingsRegisterKeyCheck(_rfKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(rfLoop);

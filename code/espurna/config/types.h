@@ -300,3 +300,12 @@
 #define MAGNITUDE_GEIGER_SIEVERT    24
 
 #define MAGNITUDE_MAX               25
+
+//--------------------------------------------------------------------------------
+// GPIO
+//--------------------------------------------------------------------------------
+
+#define GPIO_INVALID                0xFF
+
+#define GPIO_LOGIC_DIRECT           0
+#define GPIO_LOGIC_INVERSE          1

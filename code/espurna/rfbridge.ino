@@ -518,6 +518,10 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 }
 #endif
 
+bool _rfbKeyCheck(const char * key) {
+    return (strncmp(key, "rfb", 3) == 0);
+}
+
 // -----------------------------------------------------------------------------
 // PUBLIC
 // -----------------------------------------------------------------------------
@@ -623,6 +627,9 @@ void rfbSetup() {
         DEBUG_MSG_P(PSTR("[RFBRIDGE] RF receiver on GPIO %u\n"), RFB_RX_PIN);
         DEBUG_MSG_P(PSTR("[RFBRIDGE] RF transmitter on GPIO %u\n"), RFB_TX_PIN);
     #endif
+
+    // Key Check
+    settingsRegisterKeyCheck(_rfbKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(rfbLoop);

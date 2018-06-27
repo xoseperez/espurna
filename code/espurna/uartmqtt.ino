@@ -82,6 +82,11 @@ void _uartmqttMQTTCallback(unsigned int type, const char * topic, const char * p
 
 }
 
+bool _uartmqttKeyCheck(const char * key) {
+    return (strncmp(key, "u2m", 3) == 0);
+}
+
+
 // -----------------------------------------------------------------------------
 // SETUP & LOOP
 // -----------------------------------------------------------------------------
@@ -98,6 +103,9 @@ void uartmqttSetup() {
 
     // Register MQTT callbackj
     mqttRegister(_uartmqttMQTTCallback);
+
+    // Register key check
+    settingsRegisterKeyCheck(_uartmqttKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(_uartmqttLoop);

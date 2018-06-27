@@ -157,6 +157,10 @@ void debugWebSetup() {
 
 #endif // DEBUG_WEB_SUPPORT
 
+bool _debugKeyCheck(const char * key) {
+    return (strncmp(key, "dbg", 3) == 0);
+}
+
 void debugSetup() {
 
     #if DEBUG_SERIAL_SUPPORT
@@ -165,6 +169,8 @@ void debugSetup() {
             DEBUG_PORT.setDebugOutput(true);
         #endif
     #endif
+
+    settingsRegisterKeyCheck(_debugKeyCheck);
 
 }
 

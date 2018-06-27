@@ -3,4 +3,4 @@
 #define APP_REVISION            "d543fee"
 #define APP_AUTHOR              "xose.perez@gmail.com"
 #define APP_WEBSITE             "http://tinkerman.cat"
-#define CFG_VERSION             3
+#define CFG_VERSION             4

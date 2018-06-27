@@ -99,6 +99,9 @@ void _irProcessCode(unsigned long code) {
 
 }
 
+bool _irKeyCheck(const char * key) {
+    return (strncmp(key, "ir", 2) == 0);
+}
 
 // -----------------------------------------------------------------------------
 // PUBLIC API
@@ -108,6 +111,9 @@ void irSetup() {
 
     _ir_recv = new IRrecv(IR_PIN);
     _ir_recv->enableIRIn();
+
+    // Key Check
+    settingsRegisterKeyCheck(_irKeyCheck);
 
     // Register loop
     espurnaRegisterLoop(irLoop);
