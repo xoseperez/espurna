@@ -4,7 +4,7 @@ LIGHT MODULE
 
 Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
-Module key prefix: lit
+Module key prefix: lit my
 
 */
 
@@ -1006,7 +1006,9 @@ void _lightConfigure() {
 }
 
 bool _lightKeyCheck(const char * key) {
-    return (strncmp(key, "lit", 3) == 0);
+    if (strncmp(key, "lit", 3) == 0) return true;
+    if (strncmp(key, "my" , 2) == 0) return true;
+    return false;
 }
 
 void _lightBackwards() {

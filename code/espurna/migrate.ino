@@ -66,63 +66,77 @@ void migrate() {
     #if defined(NODEMCU_LOLIN)
 
         setSetting("board", 2);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
         setSetting("board", 3);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_BASIC)
 
         setSetting("board", 4);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_TH)
 
         setSetting("board", 5);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_SV)
 
         setSetting("board", 6);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_TOUCH)
 
         setSetting("board", 7);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
@@ -131,17 +145,24 @@ void migrate() {
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_POW)
 
         setSetting("board", 8);
-        setSetting("ledGPIO", 0, 15);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 15);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -153,13 +174,17 @@ void migrate() {
     #elif defined(ITEAD_SONOFF_DUAL)
 
         setSetting("board", 9);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnRelay", 0, GPIO_INVALID);
         setSetting("btnRelay", 1, GPIO_INVALID);
         setSetting("btnRelay", 2, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyProvider", RELAY_PROVIDER_DUAL);
         setSetting("rlyCount", 2);
+
         setSetting("dbgSerial", 0);
         setSetting("dbgBaudrate", 19230);
 
@@ -175,19 +200,21 @@ void migrate() {
         // without problem.
 
         setSetting("board", 10);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_4CH)
 
         setSetting("board", 11);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
         setSetting("btnGPIO", 2, 10);
@@ -200,6 +227,10 @@ void migrate() {
         setSetting("btnRelay", 1, 1);
         setSetting("btnRelay", 2, 2);
         setSetting("btnRelay", 3, 3);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyGPIO", 2, 4);
@@ -212,36 +243,45 @@ void migrate() {
     #elif defined(ITEAD_SLAMPHER)
 
         setSetting("board", 12);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_S20)
 
         setSetting("board", 13);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ELECTRODRAGON_WIFI_IOT)
 
         setSetting("board", 14);
-        setSetting("ledGPIO", 0, 16);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 2);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
+        setSetting("ledGPIO", 0, 16);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 13);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
@@ -250,11 +290,14 @@ void migrate() {
     #elif defined(WORKCHOICE_ECOPLUG)
 
         setSetting("board", 15);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 15);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -264,12 +307,14 @@ void migrate() {
         // https://github.com/JanGoe/esp8266-wifi-relay
 
         setSetting("board", 16);
+
         setSetting("btnGPIO", 0, 12);
         setSetting("btnGPIO", 1, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
         setSetting("rlyGPIO", 0, 2);
         setSetting("rlyGPIO", 1, 14);
         setSetting("rlyType", 0, RELAY_TYPE_INVERSE);
@@ -278,12 +323,14 @@ void migrate() {
     #elif defined(JANGOE_WIFI_RELAY_NO)
 
         setSetting("board", 17);
+
         setSetting("btnGPIO", 0, 12);
         setSetting("btnGPIO", 1, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
         setSetting("rlyGPIO", 0, 2);
         setSetting("rlyGPIO", 1, 14);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
@@ -292,11 +339,14 @@ void migrate() {
     #elif defined(OPENENERGYMONITOR_MQTT_RELAY)
 
         setSetting("board", 18);
-        setSetting("ledGPIO", 0, 16);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 16);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -307,6 +357,7 @@ void migrate() {
         // https://github.com/jorgegarciadev/wifikit
 
         setSetting("board", 19);
+
         setSetting("rlyGPIO", 0, 0);
         setSetting("rlyGPIO", 1, 2);
         setSetting("rlyType", 0, RELAY_TYPE_INVERSE);
@@ -315,22 +366,33 @@ void migrate() {
     #elif defined(AITHINKER_AI_LIGHT)
 
         setSetting("board", 20);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
+
         setSetting("myModel", MY92XX_MODEL_MY9291); // 4 channels per chip
         setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
         setSetting("myMapping", "0123");
-        setSetting("rlyCount", 1);
 
     #elif defined(MAGICHOME_LED_CONTROLLER)
 
         setSetting("board", 21);
-        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
+
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("irEnabled", 1);
+        setSetting("irGPIO", 4);
+        setSetting("irSet", 1);
+
+        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 14);
         setSetting("litChGPIO", 1, 5);
         setSetting("litChGPIO", 2, 12);
@@ -339,31 +401,32 @@ void migrate() {
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
-
-        setSetting("irEnabled", 1);
-        setSetting("irGPIO", 4);
-        setSetting("irSet", 1);
 
     #elif defined(ITEAD_MOTOR)
 
         setSetting("board", 22);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(TINKERMAN_ESPURNA_H06)
 
         setSetting("board", 23);
-        setSetting("ledGPIO", 0, 5);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 5);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_INVERSE);
 
@@ -375,10 +438,17 @@ void migrate() {
     #elif defined(HUACANXING_H801)
 
         setSetting("board", 24);
-        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
+
         setSetting("ledGPIO", 0, 5);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("dbgPort", 1);
+        setSetting("dbgRXEnabled", 1);
+
+        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 15);
         setSetting("litChGPIO", 1, 13);
         setSetting("litChGPIO", 2, 12);
@@ -389,35 +459,33 @@ void migrate() {
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 4, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
-
-        setSetting("dbgPort", 1);
-        setSetting("dbgRXEnabled", 1);
 
     #elif defined(ITEAD_BNSZ01)
 
         setSetting("board", 25);
-        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
+
         setSetting("ledGPIO", 0, 13);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
         setSetting("board", 26);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyProvider", RELAY_PROVIDER_RFBRIDGE);
         setSetting("rlyCount", 8);
-
-        setSetting("rfbDirect", 0);
-        setSetting("rfbRXGPIO", 4);
-        setSetting("rfbTXGPIO", 5);
 
         // When using un-modified harware, ESPurna communicates with the secondary
         // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
@@ -425,11 +493,14 @@ void migrate() {
         setSetting("dbgSerial", 0);
         setSetting("dbgBaudrate", 19200);
 
+        setSetting("rfbDirect", 0);
+        setSetting("rfbRXGPIO", 4);
+        setSetting("rfbTXGPIO", 5);
+
     #elif defined(ITEAD_SONOFF_4CH_PRO)
 
         setSetting("board", 27);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
         setSetting("btnGPIO", 2, 10);
@@ -442,14 +513,6 @@ void migrate() {
         setSetting("btnRelay", 1, 1);
         setSetting("btnRelay", 2, 2);
         setSetting("btnRelay", 3, 3);
-        setSetting("rlyGPIO", 0, 12);
-        setSetting("rlyGPIO", 1, 5);
-        setSetting("rlyGPIO", 2, 4);
-        setSetting("rlyGPIO", 3, 15);
-        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
-        setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
-        setSetting("rlyType", 2, RELAY_TYPE_NORMAL);
-        setSetting("rlyType", 3, RELAY_TYPE_NORMAL);
 
         // Sonoff 4CH Pro uses a secondary STM32 microcontroller to handle
         // buttons and relays, but it also forwards button presses to the ESP8285.
@@ -470,99 +533,115 @@ void migrate() {
         // btnLngClick(0) and btnLngLngClick(0) options below to recover the
         // reset mode and factory reset functionalities, or link other actions like
         // AP mode in the commented line below.
-
         setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
         setSetting("btnClick", 0, BUTTON_MODE_NONE);
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE); // or BUTTON_MODE_AP
         setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE); // or BUTTON_MODE_FACTORY
-
         setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
         setSetting("btnClick", 1, BUTTON_MODE_NONE);
-
         setSetting("btnPress", 2, BUTTON_MODE_TOGGLE);
         setSetting("btnClick", 2, BUTTON_MODE_NONE);
-
         setSetting("btnPress", 3, BUTTON_MODE_TOGGLE);
         setSetting("btnClick", 3, BUTTON_MODE_NONE);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyGPIO", 0, 12);
+        setSetting("rlyGPIO", 1, 5);
+        setSetting("rlyGPIO", 2, 4);
+        setSetting("rlyGPIO", 3, 15);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 2, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 3, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_B1)
 
         setSetting("board", 28);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
+        setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright in the B1
+        setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright in the B1
+
         setSetting("myModel", MY92XX_MODEL_MY9231); // 3 channels per chip
         setSetting("myChips", 2);
         setSetting("myDIGPIO", 12);
         setSetting("myDCKIGPIO", 14);
         setSetting("myMapping", "43501"); // TODO
-        setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright in the B1
-        setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright in the B1
-        setSetting("rlyCount", 1);
 
     #elif defined(ITEAD_SONOFF_LED)
 
         setSetting("board", 29);
-        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
+
         setSetting("ledGPIO", 0, 13);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12); // Cold white
         setSetting("litChGPIO", 1, 14); // Warm white
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(ITEAD_SONOFF_T1_1CH)
 
         setSetting("board", 30);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
-        setSetting("rlyGPIO", 0, 12);
-        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
-
         setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
         setSetting("btnClick", 0, BUTTON_MODE_NONE);
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
 
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyGPIO", 0, 12);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+
     #elif defined(ITEAD_SONOFF_T1_2CH)
 
         setSetting("board", 31);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
+        setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
         setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
 
-        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
-        setSetting("btnClick", 0, BUTTON_MODE_NONE);
-        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
-        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
-        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
-
-        setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
-        setSetting("btnClick", 1, BUTTON_MODE_NONE);
-        setSetting("btnDblClick", 1, BUTTON_MODE_NONE);
-        setSetting("btnLngClick", 1, BUTTON_MODE_NONE);
-        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
-
     #elif defined(ITEAD_SONOFF_T1_3CH)
 
         setSetting("board", 32);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
         setSetting("btnGPIO", 2, 10);
@@ -572,6 +651,25 @@ void migrate() {
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("btnRelay", 2, 2);
+        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
+        setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
+        setSetting("btnPress", 2, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnClick", 2, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 2, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 2, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
+        setSetting("btnLngLngClick", 2, BUTTON_MODE_RESET);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyGPIO", 2, 4);
@@ -579,32 +677,17 @@ void migrate() {
         setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
         setSetting("rlyType", 2, RELAY_TYPE_NORMAL);
 
-        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
-        setSetting("btnClick", 0, BUTTON_MODE_NONE);
-        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
-        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
-        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
-
-        setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
-        setSetting("btnClick", 1, BUTTON_MODE_NONE);
-        setSetting("btnDblClick", 1, BUTTON_MODE_NONE);
-        setSetting("btnLngClick", 1, BUTTON_MODE_NONE);
-        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
-
-        setSetting("btnPress", 2, BUTTON_MODE_TOGGLE);
-        setSetting("btnClick", 2, BUTTON_MODE_NONE);
-        setSetting("btnDblClick", 2, BUTTON_MODE_NONE);
-        setSetting("btnLngClick", 2, BUTTON_MODE_NONE);
-        setSetting("btnLngLngClick", 2, BUTTON_MODE_RESET);
-
     #elif defined(ITEAD_SONOFF_RF)
 
         setSetting("board", 33);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -616,11 +699,14 @@ void migrate() {
         // Does not support power monitoring yet
 
         setSetting("board", 34);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 15);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -630,9 +716,11 @@ void migrate() {
         // https://ex-store.de/ESP8266-WiFi-Relay-V31
 
         setSetting("board", 35);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
         setSetting("rlyGPIO", 0, 13);
         setSetting("rlyResetGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_LATCHED);
@@ -640,7 +728,13 @@ void migrate() {
     #elif defined(HUACANXING_H802)
 
         setSetting("board", 36);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("dbgPort", 1);
+        setSetting("dbgRXEnabled", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);
         setSetting("litChGPIO", 1, 14);
@@ -650,10 +744,6 @@ void migrate() {
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
-
-        setSetting("dbgPort", 1);
-        setSetting("dbgRXEnabled", 1);
 
     #elif defined(GENERIC_V9261F)
 
@@ -675,11 +765,14 @@ void migrate() {
     #elif defined(TINKERMAN_ESPURNA_H08)
 
         setSetting("board", 39);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -694,12 +787,14 @@ void migrate() {
         // https://github.com/ManCaveMade/ESP-Live
 
         setSetting("board", 40);
+
         setSetting("btnGPIO", 0, 4);
         setSetting("btnGPIO", 1, 5);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 13);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
@@ -714,22 +809,33 @@ void migrate() {
         // http://blog.quindorian.org/2017/02/esp8266-led-lighting-quinled-v2-6-pcb.html
 
         setSetting("board", 41);
-        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
+
         setSetting("ledGPIO", 0, 5);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 0);
         setSetting("litChGPIO", 1, 2);
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
         setSetting("board", 42);
+
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
+        setSetting("irEnabled", 1);
+        setSetting("irGPIO", 4);
+        setSetting("irSet", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 5);
         setSetting("litChGPIO", 1, 12);
@@ -739,16 +845,14 @@ void migrate() {
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
-
-        setSetting("irEnabled", 1);
-        setSetting("irGPIO", 4);
-        setSetting("irSet", 1);
 
     #elif defined(ARILUX_AL_LC06)
 
         setSetting("board", 43);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 14);
         setSetting("litChGPIO", 1, 12);
@@ -760,16 +864,18 @@ void migrate() {
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 4, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(XENON_SM_PW702U)
 
         setSetting("board", 44);
-        setSetting("ledGPIO", 0, 4);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 4);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -779,7 +885,10 @@ void migrate() {
         // https://authometion.com/shop/en/home/13-lyt8266.html
 
         setSetting("board", 45);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 13);
         setSetting("litChGPIO", 1, 12);
@@ -789,33 +898,38 @@ void migrate() {
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
         setSetting("litEnableGPIO", 15);
         setSetting("litEnableLogic", GPIO_LOGIC_DIRECT);
 
     #elif defined(ARILUX_E27)
 
         setSetting("board", 46);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
+
         setSetting("myModel", MY92XX_MODEL_MY9291); // 4 channels per chip
         setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
         setSetting("myMapping", "0123");
-        setSetting("rlyCount", 1);
 
     #elif defined(YJZK_SWITCH_2CH)
 
         setSetting("board", 47);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
@@ -824,8 +938,7 @@ void migrate() {
     #elif defined(ITEAD_SONOFF_DUAL_R2)
 
         setSetting("board", 48);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
         setSetting("btnGPIO", 2, 10);
@@ -835,6 +948,10 @@ void migrate() {
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
         setSetting("btnRelay", 2, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
@@ -843,6 +960,7 @@ void migrate() {
     #elif defined(GENERIC_8CH)
 
         setSetting("board", 49);
+
         setSetting("rlyGPIO", 0, 0);
         setSetting("rlyGPIO", 1, 2);
         setSetting("rlyGPIO", 2, 4);
@@ -863,7 +981,10 @@ void migrate() {
     #elif defined(ARILUX_AL_LC01)
 
         setSetting("board", 50);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 5);
         setSetting("litChGPIO", 1, 12);
@@ -871,12 +992,14 @@ void migrate() {
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(ARILUX_AL_LC11)
 
         setSetting("board", 51);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 5);
         setSetting("litChGPIO", 1, 4);
@@ -888,12 +1011,14 @@ void migrate() {
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 4, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(ARILUX_AL_LC02)
 
         setSetting("board", 52);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);
         setSetting("litChGPIO", 1, 5);
@@ -903,7 +1028,6 @@ void migrate() {
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 3, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(KMC_70011)
 
@@ -911,11 +1035,14 @@ void migrate() {
         // https://www.amazon.com/KMC-Monitoring-Required-Control-Compatible/dp/B07313TH7B
 
         setSetting("board", 53);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 14);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -928,8 +1055,9 @@ void migrate() {
     #elif defined(GIZWITS_WITTY_CLOUD)
 
         setSetting("board", 54);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
+        setSetting("anaEnabled", 1);
+
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
@@ -937,7 +1065,13 @@ void migrate() {
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyCount", 1);
+
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 15);
         setSetting("litChGPIO", 1, 12);
@@ -945,7 +1079,6 @@ void migrate() {
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 1, GPIO_LOGIC_DIRECT);
         setSetting("litChLogic", 2, GPIO_LOGIC_DIRECT);
-        setSetting("rlyCount", 1);
 
     #elif defined(EUROMATE_WIFI_STECKER_SCHUKO)
 
@@ -953,25 +1086,38 @@ void migrate() {
         // https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko/p/2291706
         // Thanks to @Geitde
 
-        setSetting("board", 55);
-        setSetting("ledGPIO", 0, 4);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
-        setSetting("btnGPIO", 0, 14);
-        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-        setSetting("btnRelay", 0, 0);
-
         // The relay in the device is not a bistable (latched) relay.
         // The device is reported to have a flip-flop circuit to drive the relay
         // So @Geitde hack is still the only possible
         // Hack: drive GPIO12 low and use GPIO5 as normal relay pin:
+
+        setSetting("board", 55);
+
+        setSetting("btnGPIO", 0, 14);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
+        setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 4);
+        setSetting("ledGPIO", 1, 12);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+        setSetting("ledLogic", 1, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
-        setSetting("ledGPIO", 1, 12);
-        setSetting("ledLogic", 1, GPIO_LOGIC_DIRECT);
 
     #elif defined(TONBUX_POWERSTRIP02)
 
         setSetting("board", 56);
+
+        setSetting("btnGPIO", 0, 5);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 1);
+
+        setSetting("ledGPIO", 0, 0);    // 1 blue led
+        setSetting("ledGPIO", 1, 3);    // 3 red leds
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+        setSetting("ledLogic", 1, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 4);
         setSetting("rlyGPIO", 1, 13);
         setSetting("rlyGPIO", 2, 12);
@@ -982,44 +1128,46 @@ void migrate() {
         setSetting("rlyType", 2, RELAY_TYPE_INVERSE);
         setSetting("rlyType", 3, RELAY_TYPE_INVERSE);
         setSetting("rlyType", 4, RELAY_TYPE_NORMAL);  // Not a relay. USB ports on/off
-        setSetting("ledGPIO", 0, 0);    // 1 blue led
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
-        setSetting("ledGPIO", 1, 3);    // 3 red leds
-        setSetting("ledLogic", 1, GPIO_LOGIC_INVERSE);
-        setSetting("btnGPIO", 0, 5);
-        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
-        setSetting("btnRelay", 0, 1);
 
     #elif defined(LINGAN_SWA1)
 
         setSetting("board", 57);
-        setSetting("ledGPIO", 0, 4);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 4);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(HEYGO_HY02)
 
         setSetting("board", 58);
-        setSetting("ledGPIO", 0, 4);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 4);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(MAXCIO_WUS002S)
 
         setSetting("board", 59);
-        setSetting("ledGPIO", 0, 3);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 2);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 3);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 13);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1033,13 +1181,16 @@ void migrate() {
     #elif defined(YIDIAN_XSSSA05)
 
         setSetting("board", 60);
-        setSetting("ledGPIO", 0, 4);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
-        setSetting("ledGPIO", 2, 2);
-        setSetting("ledLogic", 2, 0);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 4);
+        setSetting("ledGPIO", 2, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+        setSetting("ledLogic", 2, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1052,15 +1203,18 @@ void migrate() {
     #elif defined(TONBUX_XSSSA06)
 
         setSetting("board", 61);
+
+        setSetting("btnGPIO", 0, 13);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 0);
+
         setSetting("ledGPIO", 0, 0); // Red
         setSetting("ledGPIO", 0, 5); // Green
         setSetting("ledGPIO", 0, 2); // Blue
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
-        setSetting("btnGPIO", 0, 13);
-        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
-        setSetting("btnRelay", 0, 0);
+
         setSetting("rlyGPIO", 0, 15);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1070,11 +1224,14 @@ void migrate() {
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180323113846&SearchText=Green+ESP8266
 
         setSetting("board", 62);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 5);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 4);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1084,8 +1241,7 @@ void migrate() {
         // https://github.com/Henriquegravina/Espike
 
         setSetting("board", 63);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnGPIO", 1, 12);
         setSetting("btnGPIO", 2, 14);
@@ -1098,6 +1254,10 @@ void migrate() {
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 4);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyGPIO", 2, 16);
@@ -1111,8 +1271,7 @@ void migrate() {
         // https://github.com/ArnieX/swifitch
 
         setSetting("board", 64);
-        setSetting("ledGPIO", 0, 12);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
         setSetting("btnRelay", 0, 1);
@@ -1121,6 +1280,10 @@ void migrate() {
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE);
+
+        setSetting("ledGPIO", 0, 12);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 5);
         setSetting("rlyType", 0, RELAY_TYPE_INVERSE);
 
@@ -1130,8 +1293,10 @@ void migrate() {
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404024035&SearchText=esp-01s+relay
 
         setSetting("board", 65);
+
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 0);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1141,6 +1306,7 @@ void migrate() {
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404023816&SearchText=esp-01s+led+controller
 
         setSetting("board", 66);
+
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
 
@@ -1150,9 +1316,11 @@ void migrate() {
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180408043114&SearchText=esp8266+touch+relay
 
         setSetting("board", 67);
+
         setSetting("btnGPIO", 0, 14);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 1);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1162,6 +1330,7 @@ void migrate() {
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105907&SearchText=esp-01s+dht11
 
         setSetting("board", 68);
+
         setSetting("dhtEnabled", 1);
         setSetting("dhtGPIO", 0, 2);
         setSetting("dhtType", 0, DHT_CHIP_DHT11);
@@ -1172,6 +1341,7 @@ void migrate() {
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105933&SearchText=esp-01s+ds18b20
 
         setSetting("board", 69);
+
         setSetting("dsEnabled", 1);
         setSetting("dsGPIO", 0, 2);
 
@@ -1207,18 +1377,21 @@ void migrate() {
     #elif defined(ITEAD_SONOFF_POW_R2)
 
         setSetting("board", 71);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
-        setSetting("dbgSerial", 0);
-
         setSetting("cseEnabled", 1);
         setSetting("cseGPIO", 1);
+
+        setSetting("dbgSerial", 0);
 
     #elif defined(LUANI_HVIO)
 
@@ -1266,6 +1439,10 @@ void migrate() {
 
         setSetting("board", 74);
 
+        setSetting("btnGPIO", 0, 2);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 0);
+
         setSetting("ledGPIO", 0, 15);
         setSetting("ledGPIO", 1, 14);
         setSetting("ledGPIO", 2, 12);
@@ -1278,10 +1455,6 @@ void migrate() {
         setSetting("ledMode", 1, LED_MODE_RELAY);
         setSetting("ledRelay", 1, 0);
 
-        setSetting("btnGPIO", 0, 2);
-        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
-        setSetting("btnRelay", 0, 0);
-
         setSetting("rlyGPIO", 0, 5); // Fan
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1292,11 +1465,14 @@ void migrate() {
         // https://www.fasttech.com/product/9649426-neo-coolcam-nas-wr01w-wifi-smart-power-plug-eu
 
         setSetting("board", 75);
-        setSetting("ledGPIO", 0, 4);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 4);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
@@ -1307,31 +1483,31 @@ void migrate() {
 
         setSetting("board", 76);
 
-        setSetting("ledGPIO", 0, 15);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
-
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 15);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
 
         setSetting("rlyGPIO", 0, 4);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
         setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
 
-        setSetting("i2cEnable", 1);
-        setSetting("i2cSDAGPIO", 12);
-        setSetting("i2cSCLGPIO", 13);
+        setSetting("digEnabled", 1);
+        setSetting("digGPIO", 0, 16);
+        setSetting("digMode", 0, INPUT);
 
         setSetting("dsEnabled", 1);
         setSetting("dsGPIO", 0, 2);
 
+        setSetting("i2cEnable", 1);
+        setSetting("i2cSDAGPIO", 12);
+        setSetting("i2cSCLGPIO", 13);
+
         setSetting("rfEnabled", 1);
         setSetting("rfGPIO", 14);
-
-        setSetting("digEnabled", 1);
-        setSetting("digGPIO", 0, 16);
-        setSetting("digMode", 0, INPUT);
 
     #elif defined(ESTINK_WIFI_POWER_STRIP)
 
@@ -1380,12 +1556,14 @@ void migrate() {
         // https://github.com/brunohorta82/BH_OnOfre/
 
         setSetting("board", 78);
+
         setSetting("btnGPIO", 0, 12);
         setSetting("btnGPIO", 1, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
         setSetting("rlyGPIO", 0, 4);
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
@@ -1426,11 +1604,11 @@ void migrate() {
         setSetting("volRatio", 313400);
         setSetting("pwrRatio", 3414290);
 
+
     #elif defined(TINKERMAN_ESPURNA_SWITCH)
 
         setSetting("board", 80);
-        setSetting("ledGPIO", 0, 2);
-        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON);
         setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
@@ -1439,30 +1617,39 @@ void migrate() {
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_S31)
 
         setSetting("board", 81);
-        setSetting("ledGPIO", 0, 13);
-        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
-
-        setSetting("dbgSerial", 0);
 
         setSetting("cseEnabled", 1);
         setSetting("cseGPIO", 1);
 
+        setSetting("dbgSerial", 0);
+
     #elif defined(STM_RELAY)
 
         setSetting("board", 82);
+
         setSetting("rlyCount", 2);
         setSetting("rlyProvider", RELAY_PROVIDER_STM)
+
         setSetting("dbgSerial", 0);
 
     #elif defined(VANZAVANZU_SMART_WIFI_PLUG_MINI)
@@ -1499,6 +1686,7 @@ void migrate() {
     #elif defined(GENERIC_GEIGER_COUNTER)
 
         setSetting("board", 83);
+        
         setSetting("geiEnabled", 1);
 
     #else
