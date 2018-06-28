@@ -27,12 +27,12 @@ while getopts "lp" opt; do
             ${par_total_threads} -ne ${par_total_threads} ]; then
                 echo "Parallel threads should be a number."
                 exit
-            fi
-            if [ ${par_thread} -ge ${par_total_threads} ]; then
-                echo "Current thread is greater than total threads. Doesn't make sense"
-                exit
-            fi
-            ;;
+        fi
+        if [ ${par_thread} -ge ${par_total_threads} ]; then
+            echo "Current thread is greater than total threads. Doesn't make sense"
+            exit
+        fi
+        ;;
     esac
 done
 
@@ -43,14 +43,14 @@ environments=$@
 # Environments to build
 if [ $# -eq 0 ]; then
 
-    environments=$available
-
-    # Hook to build travis test envs
-    if [[ "${TRAVIS_BRANCH}" != "" ]]; then
-        re='^[0-9]+\.[0-9]+\.[0-9]+$'
-        if ! [[ ${TRAVIS_BRANCH} =~ $re ]]; then
-            environments=$travis
-        fi
+    if [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Release" ]] && [ ${par_build} ]; then
+        environments=$(echo ${available} | \
+            awk -v par_thread=${par_thread} -v par_total_threads=${par_total_threads} \
+            '{ for (i = 1; i <= NF; i++) if (++j % par_total_threads == par_thread ) print $i; }')
+    elif [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]]; then
+        environments=$travis
+    else
+        environments=$available
     fi
 
 fi
@@ -84,13 +84,8 @@ node node_modules/gulp/bin/gulp.js || exit
 echo "--------------------------------------------------------------"
 echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
-if [ ${par_build} ]; then
-    to_build=$(echo ${environments} | awk -v par_thread=${par_thread} -v par_total_threads=${par_total_threads} '{ for (i = 1; i <= NF; i++) if (++j % par_total_threads == par_thread ) print $i; }')
-else
-    to_build=${environments}
-fi
 
-for environment in $to_build; do
+for environment in $environments; do
     echo -n "* espurna-$version-$environment.bin --- "
     platformio run --silent --environment $environment || exit 1
     stat -c %s .pioenvs/$environment/firmware.bin
