@@ -589,6 +589,7 @@ function doClearCounts() {
 
 function doClearMessages() {
     packets.clear().draw(false);
+    return false;
 }
 
 function doFilter(e) {
