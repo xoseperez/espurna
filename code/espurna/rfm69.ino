@@ -8,7 +8,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
-#include "RFM69Manager.h"
+#include "libs/RFM69Manager.h"
 
 // -----------------------------------------------------------------------------
 // Locals

@@ -122,11 +122,15 @@ template<typename T> void domoticzSend(const char * key, T nvalue, const char * 
 // -----------------------------------------------------------------------------
 // RFM69
 // -----------------------------------------------------------------------------
-#if RFM69_SUPPORT
-#include "RFM69Manager.h"
-#else
-#define packet_t char // prevents compiler complains
-#endif
+typedef struct {
+    unsigned long messageID;
+    unsigned char packetID;
+    unsigned char senderID;
+    unsigned char targetID;
+    char * name;
+    char * value;
+    int16_t rssi;
+} packet_t;
 
 // -----------------------------------------------------------------------------
 // Utils
