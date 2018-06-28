@@ -99,7 +99,9 @@ void setup() {
     #endif
 
     relaySetup();
-    buttonSetup();
+    #if BUTTON_SUPPORT
+        buttonSetup();
+    #endif
     #if LED_SUPPORT
         ledSetup();
     #endif

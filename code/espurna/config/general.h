@@ -201,6 +201,10 @@
 // BUTTON
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_SUPPORT
+#define BUTTON_SUPPORT              1
+#endif
+
 #ifndef BUTTON_DEBOUNCE_DELAY
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
 #endif

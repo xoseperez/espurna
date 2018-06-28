@@ -37,6 +37,7 @@
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
     #define BROKER_SUPPORT          0
+    #define BUTTON_SUPPORT          0
     #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
