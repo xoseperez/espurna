@@ -10,6 +10,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // LED
 // -----------------------------------------------------------------------------
 
+#if LED_SUPPORT
+
 typedef struct {
     unsigned char pin;
     bool reverse;
@@ -290,3 +292,5 @@ void ledLoop() {
     _led_update = false;
 
 }
+
+#endif LED_SUPPORT

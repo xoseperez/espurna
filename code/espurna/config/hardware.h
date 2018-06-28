@@ -52,6 +52,7 @@
     //#define DEBUG_SERIAL_SUPPORT    0
     //#define DEBUG_TELNET_SUPPORT    0
     //#define DEBUG_WEB_SUPPORT       0
+    //#define LED_SUPPORT             0
     //#define TELNET_SUPPORT          0
     //#define TERMINAL_SUPPORT        0
 

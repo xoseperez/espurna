@@ -49,7 +49,7 @@ void setup() {
 
     // Init EEPROM
     eepromSetup();
-    
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 
@@ -100,7 +100,9 @@ void setup() {
 
     relaySetup();
     buttonSetup();
-    ledSetup();
+    #if LED_SUPPORT
+        ledSetup();
+    #endif
     #if MQTT_SUPPORT
         mqttSetup();
     #endif
