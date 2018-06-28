@@ -201,6 +201,10 @@
 // BUTTON
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_SUPPORT
+#define BUTTON_SUPPORT              1
+#endif
+
 #ifndef BUTTON_DEBOUNCE_DELAY
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
 #endif
@@ -215,6 +219,14 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+//------------------------------------------------------------------------------
+// LED
+//------------------------------------------------------------------------------
+
+#ifndef LED_SUPPORT
+#define LED_SUPPORT                 1
 #endif
 
 //------------------------------------------------------------------------------

@@ -99,8 +99,12 @@ void setup() {
     #endif
 
     relaySetup();
-    buttonSetup();
-    ledSetup();
+    #if BUTTON_SUPPORT
+        buttonSetup();
+    #endif
+    #if LED_SUPPORT
+        ledSetup();
+    #endif
     #if MQTT_SUPPORT
         mqttSetup();
     #endif
