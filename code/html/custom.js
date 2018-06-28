@@ -1165,7 +1165,7 @@ function processData(data) {
                 packet.senderID,
                 packet.packetID,
                 packet.targetID,
-                packet.name,
+                packet.key,
                 packet.value,
                 packet.rssi,
                 packet.duplicates,

@@ -127,7 +127,7 @@ typedef struct {
     unsigned char packetID;
     unsigned char senderID;
     unsigned char targetID;
-    char * name;
+    char * key;
     char * value;
     int16_t rssi;
 } packet_t;

@@ -8,13 +8,15 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if RFM69_SUPPORT
 
-#include "libs/RFM69Manager.h"
+#include "libs/RFM69Wrap.h"
+
+#define RFM69_PACKET_SEPARATOR ':'
 
 // -----------------------------------------------------------------------------
 // Locals
 // -----------------------------------------------------------------------------
 
-RFM69Manager * _rfm69_radio;
+RFM69Wrap * _rfm69_radio;
 
 struct _node_t {
     unsigned long count = 0;
@@ -98,14 +100,14 @@ void _rfm69Configure() {
 void _rfm69Debug(const char * level, packet_t * data) {
 
     DEBUG_MSG_P(
-        PSTR("[RFM69] %s: messageID:%05d senderID:%03d targetID:%03d packetID:%03d rssi:%-04d name:%s value:%s\n"),
+        PSTR("[RFM69] %s: messageID:%05d senderID:%03d targetID:%03d packetID:%03d rssi:%-04d key:%s value:%s\n"),
         level,
         data->messageID,
         data->senderID,
         data->targetID,
         data->packetID,
         data->rssi,
-        data->name,
+        data->key,
         data->value
     );
 
@@ -149,9 +151,9 @@ void _rfm69Process(packet_t * data) {
         snprintf_P(
             buffer,
             sizeof(buffer) - 1,
-            PSTR("{\"nodeCount\": %d, \"packetCount\": %lu, \"packet\": {\"senderID\": %u, \"targetID\": %u, \"packetID\": %u, \"name\": \"%s\", \"value\": \"%s\", \"rssi\": %d, \"duplicates\": %d, \"missing\": %d}}"),
+            PSTR("{\"nodeCount\": %d, \"packetCount\": %lu, \"packet\": {\"senderID\": %u, \"targetID\": %u, \"packetID\": %u, \"key\": \"%s\", \"value\": \"%s\", \"rssi\": %d, \"duplicates\": %d, \"missing\": %d}}"),
             _rfm69_node_count, _rfm69_packet_count,
-            data->senderID, data->targetID, data->packetID, data->name, data->value, data->rssi,
+            data->senderID, data->targetID, data->packetID, data->key, data->value, data->rssi,
             _rfm69_node_info[data->senderID].duplicates , _rfm69_node_info[data->senderID].missing);
         wsSend(buffer);
     }
@@ -163,7 +165,7 @@ void _rfm69Process(packet_t * data) {
     for (unsigned int i=0; i<RFM69_MAX_TOPICS; i++) {
         unsigned char node = getSetting("node", i, 0).toInt();
         if (0 == node) break;
-        if ((node == data->senderID) && (getSetting("key", i, "").equals(data->name))) {
+        if ((node == data->senderID) && (getSetting("key", i, "").equals(data->key))) {
             mqttSendRaw((char *) getSetting("topic", i, "").c_str(), (char *) String(data->value).c_str());
             return;
         }
@@ -173,14 +175,63 @@ void _rfm69Process(packet_t * data) {
     String topic = getSetting("rfm69Topic", RFM69_DEFAULT_TOPIC);
     if (topic.length() > 0) {
         topic.replace("{node}", String(data->senderID));
-        topic.replace("{key}", String(data->name));
+        topic.replace("{key}", String(data->key));
         mqttSendRaw((char *) topic.c_str(), (char *) String(data->value).c_str());
     }
 
 }
 
 void _rfm69Loop() {
-    _rfm69_radio->loop();
+
+    if (_rfm69_radio->receiveDone()) {
+
+        uint8_t senderID = _rfm69_radio->SENDERID;
+        uint8_t targetID = _rfm69_radio->TARGETID;
+        int16_t rssi = _rfm69_radio->RSSI;
+        uint8_t length = _rfm69_radio->DATALEN;
+        char buffer[length + 1];
+        strncpy(buffer, (const char *) _rfm69_radio->DATA, length);
+        buffer[length] = 0;
+
+        // Do not send ACKs in promiscuous mode,
+        // we want to listen without being heard
+        if (!RFM69_PROMISCUOUS) {
+            if (_rfm69_radio->ACKRequested()) _rfm69_radio->sendACK();
+        }
+
+        uint8_t parts = 1;
+        for (uint8_t i=0; i<length; i++) {
+            if (buffer[i] == RFM69_PACKET_SEPARATOR) ++parts;
+        }
+
+        if (parts > 1) {
+
+            char sep[2] = {RFM69_PACKET_SEPARATOR, 0};
+
+            uint8_t packetID = 0;
+            char * key = strtok(buffer, sep);
+            char * value = strtok(NULL, sep);
+            if (parts > 2) {
+                char * packet = strtok(NULL, sep);
+                packetID = atoi(packet);
+            }
+
+            packet_t message;
+
+            message.messageID = ++_rfm69_packet_count;
+            message.packetID = packetID;
+            message.senderID = senderID;
+            message.targetID = targetID;
+            message.key = key;
+            message.value = value;
+            message.rssi = rssi;
+
+            _rfm69Process(&message);
+
+        }
+
+    }
+
 }
 
 void _rfm69Clear() {
@@ -202,10 +253,17 @@ void rfm69Setup() {
 
     _rfm69Configure();
 
-    _rfm69_radio = new RFM69Manager(RFM69_CS_PIN, RFM69_IRQ_PIN, RFM69_IS_RFM69HW, digitalPinToInterrupt(RFM69_IRQ_PIN));
-    _rfm69_radio->initialize(RFM69_FREQUENCY, RFM69_NODE_ID, RFM69_NETWORK_ID, RFM69_ENCRYPTKEY);
+    _rfm69_radio = new RFM69Wrap(RFM69_CS_PIN, RFM69_IRQ_PIN, RFM69_IS_RFM69HW, digitalPinToInterrupt(RFM69_IRQ_PIN));
+    _rfm69_radio->initialize(RFM69_FREQUENCY, RFM69_NODE_ID, RFM69_NETWORK_ID);
+    _rfm69_radio->encrypt(RFM69_ENCRYPTKEY);
     _rfm69_radio->promiscuous(RFM69_PROMISCUOUS);
-    _rfm69_radio->onMessage(_rfm69Process);
+    if (RFM69_IS_RFM69HW) _rfm69_radio->setHighPower();
+
+    DEBUG_MSG_P(PSTR("[RFM69] Worning at %u MHz\n"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
+    DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), RFM69_NODE_ID);
+    DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), RFM69_NETWORK_ID);
+    DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s\n"), RFM69_PROMISCUOUS ? "ON" : "OFF");
+    DEBUG_MSG_P(PSTR("[RFM69] Auto Transmission Control (ATC) enabled\n"));
 
     #if WEB_SUPPORT
         wsOnSendRegister(_rfm69WebSocketOnSend);
