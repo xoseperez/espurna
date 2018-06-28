@@ -169,6 +169,7 @@ div.state {
 .button-dbg-clear,
 .button-upgrade,
 .button-clear-filters,
+.button-clear-messages,
 .button-clear-counts,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
@@ -204,6 +205,7 @@ div.state {
 
 .button-upgrade-browse,
 .button-clear-filters,
+.button-clear-messages,
 .button-clear-counts,
 .button-dbgcmd,
 .button-ha-add,

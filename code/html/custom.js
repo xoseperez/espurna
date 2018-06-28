@@ -544,7 +544,7 @@ function doFactoryReset() {
     if (response === false) {
         return false;
     }
-    websock.send(JSON.stringify({"action": "factory_reset"}));
+    sendAction("factory_reset", {});
     doReload(5000);
     return false;
 }
@@ -583,8 +583,12 @@ function doDebugClear() {
 <!-- removeIf(!rfm69)-->
 
 function doClearCounts() {
-    websock.send(JSON.stringify({'action': 'clear-counts'}));
+    sendAction("clear-counts", {});
     return false;
+}
+
+function doClearMessages() {
+    packets.clear().draw(false);
 }
 
 function doFilter(e) {
@@ -1636,6 +1640,7 @@ $(function() {
     $(".button-add-mapping").on('click', addMapping);
     $(".button-del-mapping").on('click', delMapping);
     $(".button-clear-counts").on('click', doClearCounts);
+    $(".button-clear-messages").on('click', doClearMessages);
     $(".button-clear-filters").on('click', doClearFilters);
     $('#packets tbody').on('mousedown', 'td', doFilter);
     packets = $('#packets').DataTable({
