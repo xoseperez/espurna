@@ -196,7 +196,9 @@ void _relayProcess(bool mode) {
         #endif
 
         // Flag relay-based LEDs to update status
-        ledUpdate(true);
+        #if LED_SUPPORT
+            ledUpdate(true);
+        #endif
 
         _relays[id].report = false;
         _relays[id].group_report = false;

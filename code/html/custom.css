@@ -164,9 +164,13 @@ div.state {
 .button-ha-del,
 .button-rfb-forget,
 .button-del-network,
+.button-del-mapping,
 .button-del-schedule,
 .button-dbg-clear,
 .button-upgrade,
+.button-clear-filters,
+.button-clear-messages,
+.button-clear-counts,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
 }
@@ -174,8 +178,9 @@ div.state {
 .button-update,
 .button-update-password,
 .button-add-network,
-.button-rfb-learn,
+.button-add-mapping,
 .button-upgrade-browse,
+.button-rfb-learn,
 .button-ha-add,
 .button-ha-config,
 .button-settings-backup,
@@ -199,6 +204,9 @@ div.state {
 }
 
 .button-upgrade-browse,
+.button-clear-filters,
+.button-clear-messages,
+.button-clear-counts,
 .button-dbgcmd,
 .button-ha-add,
 .button-apikey,
@@ -367,6 +375,26 @@ span.slider {
     margin-top: 10px;
     display: none;
     padding: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+    Table
+   -------------------------------------------------------------------------- */
+
+.right {
+    text-align: right;
+}
+
+table.dataTable.display tbody td {
+    text-align: center;
+}
+
+#packets_filter {
+    display: none;
+}
+
+.filtered {
+    color: rgb(202, 60, 60);
 }
 
 /* -----------------------------------------------------------------------------

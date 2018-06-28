@@ -12,6 +12,8 @@ Module key prefix: btn
 // BUTTON
 // -----------------------------------------------------------------------------
 
+#if BUTTON_SUPPORT
+
 #include <DebounceEvent.h>
 #include <vector>
 
@@ -274,3 +276,5 @@ void buttonLoop() {
     #endif
 
 }
+
+#endif // BUTTON_SUPPORT

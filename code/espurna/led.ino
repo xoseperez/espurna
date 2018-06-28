@@ -12,6 +12,8 @@ Module key prefix: led
 // LED
 // -----------------------------------------------------------------------------
 
+#if LED_SUPPORT
+
 typedef struct {
     unsigned char pin;
     bool reverse;
@@ -294,3 +296,5 @@ void ledLoop() {
     _led_update = false;
 
 }
+
+#endif LED_SUPPORT

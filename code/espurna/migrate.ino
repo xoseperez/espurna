@@ -1568,6 +1568,18 @@ void migrate() {
 
         setSetting("geiEnabled", 1);
 
+    #elif defined(TINKERMAN_RFM69GW)
+
+        setSetting("board", 84);
+
+        setSetting("btnGPIO", 0, 0);
+
+        setSetting("rfm69Enabled", 1);
+        setSetting("rfm69CSGPIO", 15);
+        setSetting("rfm69IRQGPIO", 5);
+        setSetting("rfm69ResetGPIO", 7);
+        setSetting("rfm69HW", 0)
+
     #else
 
         // Allow users to define new settings without migration config

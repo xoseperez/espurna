@@ -123,10 +123,4 @@ if __name__ == "__main__":
     if call(["git", "add", README]):
         sys.exit(1)
 
-    os.chdir("code")
-    if call(["node", "node_modules/gulp/bin/gulp.js", "--silent"]):
-        sys.exit(2)
-    call(["git", "add", "espurna/data/index*"])
-    call(["git", "add", "espurna/static/index*"])
-
     sys.exit(0);
