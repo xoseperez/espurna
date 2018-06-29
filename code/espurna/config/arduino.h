@@ -142,6 +142,7 @@
 //#define HCSR04_SUPPORT         1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
+//#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
