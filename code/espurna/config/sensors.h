@@ -436,7 +436,7 @@
 //--------------------------------------------------------------------------------
 
 #ifndef NTC_SUPPORT
-#define NTC_SUPPORT                     1
+#define NTC_SUPPORT                     0
 #endif
 
 #ifndef NTC_SAMPLES
