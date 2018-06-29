@@ -90,8 +90,10 @@ else
     to_build=${environments}
 fi
 
-for environment in $to_build; do    echo "* espurna-$version-$environment.bin"
+for environment in $to_build; do
+    echo -n "* espurna-$version-$environment.bin --- "
     platformio run --silent --environment $environment || exit 1
+    stat -c %s .pioenvs/$environment/firmware.bin
     mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
 done
 echo "--------------------------------------------------------------"
