@@ -304,6 +304,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("GET"), [](Embedis* e) {
+
         if (e->argc < 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
             return;
@@ -321,6 +322,29 @@ void _settingsInitCommands() {
         }
 
         DEBUG_MSG_P(PSTR("+OK\n"));
+
+    });
+
+    settingsRegisterCommand(F("SET"), [](Embedis* e) {
+
+        if (e->argc != 3) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+
+        String key = String(e->argv[1]);
+        String value = String(e->argv[2]);
+
+        // Hacks for backwards compatibility
+        if (key.startsWith("ssid")) key.replace("ssid", "wifiName");
+        if (key.startsWith("pass")) key.replace("pass", "wifiPass");
+
+        if (Embedis::set(key, value)) {
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("-ERROR: Error storing key-value\n"));
+        }
+
     });
 
     #if WEB_SUPPORT
