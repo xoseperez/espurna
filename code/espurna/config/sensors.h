@@ -79,6 +79,14 @@
 #define ANALOG_SUPPORT                  0
 #endif
 
+#ifndef ANALOG_SAMPLES
+#define ANALOG_SAMPLES                  10      // Number of samples
+#endif
+
+#ifndef ANALOG_DELAY
+#define ANALOG_DELAY                    0       // Delay between samples in micros
+#endif
+
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag
