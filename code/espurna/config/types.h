@@ -77,6 +77,8 @@
 #define RELAY_PROVIDER_RFBRIDGE     3
 #define RELAY_PROVIDER_STM          4
 
+#define RELAY_NONE                  0xFF
+
 //------------------------------------------------------------------------------
 // UDP SYSLOG
 //------------------------------------------------------------------------------
@@ -305,7 +307,7 @@
 // GPIO
 //--------------------------------------------------------------------------------
 
-#define GPIO_INVALID                0xFF
+#define GPIO_NONE                0xFF
 
 #define GPIO_LOGIC_DIRECT           0
 #define GPIO_LOGIC_INVERSE          1

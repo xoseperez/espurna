@@ -67,7 +67,7 @@ void _onDiscover(AsyncWebServerRequest *request) {
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
     root["hostname"] = getHostname();
-    root["device"] = getBoardName();
+    root["device"] = getDevice();
     root.printTo(*response);
 
     request->send(response);

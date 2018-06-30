@@ -22,7 +22,7 @@ typedef struct {
 } led_t;
 
 std::vector<led_t> _leds;
-bool _led_update = false;            // For relay-based modes
+bool _led_update = true;            // For relay-based modes
 
 // -----------------------------------------------------------------------------
 
@@ -128,65 +128,7 @@ void _ledConfigure() {
     _led_update = true;
 }
 
-// -----------------------------------------------------------------------------
-
-void ledUpdate(bool value) {
-    _led_update = value;
-}
-
-void ledSetup() {
-
-    #if LED1_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE, LED1_RELAY });
-    #endif
-    #if LED2_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE, LED2_RELAY });
-    #endif
-    #if LED3_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE, LED3_RELAY });
-    #endif
-    #if LED4_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY });
-    #endif
-    #if LED5_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY });
-    #endif
-    #if LED6_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY });
-    #endif
-    #if LED7_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY });
-    #endif
-    #if LED8_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY });
-    #endif
-
-    for (unsigned int i=0; i < _leds.size(); i++) {
-        pinMode(_leds[i].pin, OUTPUT);
-        _ledStatus(i, false);
-    }
-
-    _ledConfigure();
-
-    #if MQTT_SUPPORT
-        mqttRegister(_ledMQTTCallback);
-    #endif
-
-    #if WEB_SUPPORT
-        wsOnSendRegister(_ledWebSocketOnSend);
-        wsOnAfterParseRegister(_ledConfigure);
-    #endif
-
-    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
-
-    // Registers
-    espurnaRegisterLoop(ledLoop);
-    settingsRegisterKeyCheck(_ledKeyCheck);
-
-
-}
-
-void ledLoop() {
+void _ledLoop() {
 
     uint8_t wifi_state = wifiState();
 
@@ -203,6 +145,8 @@ void ledLoop() {
             } else {
                 _ledBlink(i, 500, 500);
             }
+
+            continue;
 
         }
 
@@ -226,6 +170,8 @@ void ledLoop() {
                 _ledBlink(i, 500, 500);
             }
 
+            continue;
+
         }
 
         if (_ledMode(i) == LED_MODE_RELAY_WIFI) {
@@ -248,17 +194,25 @@ void ledLoop() {
                 _ledBlink(i, 500, 500);
             }
 
+            continue;
+
         }
 
         // Relay-based modes, update only if relays have been updated
         if (!_led_update) continue;
 
         if (_ledMode(i) == LED_MODE_FOLLOW) {
-            _ledStatus(i, relayStatus(_leds[i].relay-1));
+            if (RELAY_NONE != _leds[i].relay) {
+                _ledStatus(i, relayStatus(_leds[i].relay));
+            }
+            continue;
         }
 
         if (_ledMode(i) == LED_MODE_FOLLOW_INVERSE) {
-            _ledStatus(i, !relayStatus(_leds[i].relay-1));
+            if (RELAY_NONE != _leds[i].relay) {
+                _ledStatus(i, !relayStatus(_leds[i].relay));
+            }
+            continue;
         }
 
         if (_ledMode(i) == LED_MODE_FINDME) {
@@ -270,6 +224,7 @@ void ledLoop() {
                 }
             }
             _ledStatus(i, status);
+            continue;
         }
 
         if (_ledMode(i) == LED_MODE_RELAY) {
@@ -281,19 +236,64 @@ void ledLoop() {
                 }
             }
             _ledStatus(i, status);
+            continue;
         }
 
         if (_ledMode(i) == LED_MODE_ON) {
             _ledStatus(i, true);
+            continue;
         }
 
         if (_ledMode(i) == LED_MODE_OFF) {
             _ledStatus(i, false);
+            continue;
         }
 
     }
 
     _led_update = false;
+
+}
+
+// -----------------------------------------------------------------------------
+
+void ledUpdate(bool value) {
+    _led_update = value;
+}
+
+void ledSetup() {
+
+    unsigned char index = 0;
+    while (index < MAX_COMPONENTS) {
+
+        unsigned char pin = getSetting("ledGPIO", index, GPIO_NONE).toInt();
+        if (pin == GPIO_NONE) break;
+
+        bool inverse = getSetting("ledLogic", index, 0).toInt() == 1;
+        unsigned char mode = getSetting("ledMode", index, index==0 ? LED_MODE_WIFI : LED_MODE_MQTT).toInt();
+        unsigned char relayId = getSetting("ledRelay", index, RELAY_NONE).toInt();
+
+        _leds.push_back((led_t) { pin, inverse, mode, relayId });
+        pinMode(pin, OUTPUT);
+        _ledStatus(index, false);
+        ++index;
+
+    }
+
+    #if MQTT_SUPPORT
+        mqttRegister(_ledMQTTCallback);
+    #endif
+
+    #if WEB_SUPPORT
+        wsOnSendRegister(_ledWebSocketOnSend);
+        wsOnAfterParseRegister(_ledConfigure);
+    #endif
+
+    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
+
+    // Registers
+    espurnaRegisterLoop(_ledLoop);
+    settingsRegisterKeyCheck(_ledKeyCheck);
 
 }
 

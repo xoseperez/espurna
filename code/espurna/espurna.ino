@@ -58,8 +58,9 @@ void setup() {
     // Init persistance and terminal features
     settingsSetup();
 
-    // Board name initialization
-    setBoardName();
+    // Load board data
+    loadBoard();
+    migrate();
 
     // Show welcome message and system configuration
     info();

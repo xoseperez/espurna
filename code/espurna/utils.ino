@@ -34,14 +34,34 @@ String getPassword() {
     return getSetting("adminPass", ADMIN_PASS);
 }
 
-void setBoardName() {
+void loadBoard() {
     #ifndef ESPURNA_CORE
-        setSetting("boardName", DEVICE_NAME);
+        char buffer[device_config_len+1];
+        strncpy_P(buffer, (const char *) device_config, device_config_len);
+        buffer[device_config_len] = 0;
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buffer);
+        json["app"] = APP_NAME;
+        settingsRestoreJson(json);
     #endif
 }
 
+String getManufacturer() {
+    String device = getDevice();
+    uint8_t pos = device.indexOf("_");
+    if (pos > 0) return device.substring(0, pos);
+    return String();
+}
+
 String getBoardName() {
-    return getSetting("boardName", DEVICE_NAME);
+    String device = getDevice();
+    uint8_t pos = device.indexOf("_");
+    if (pos > 0) return device.substring(pos+1);
+    return device;
+}
+
+String getDevice() {
+    return getSetting("device", "GENERIC_CUSTOM");
 }
 
 String getCoreVersion() {

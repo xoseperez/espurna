@@ -51,7 +51,7 @@ void mdnsServerSetup() {
     MDNS.addServiceTxt("arduino", "tcp", "app_name", APP_NAME);
     MDNS.addServiceTxt("arduino", "tcp", "app_version", APP_VERSION);
     MDNS.addServiceTxt("arduino", "tcp", "mac", WiFi.macAddress());
-    MDNS.addServiceTxt("arduino", "tcp", "target_board", getBoardName());
+    MDNS.addServiceTxt("arduino", "tcp", "target_board", getDevice());
     {
         char buffer[6] = {0};
         itoa(ESP.getFlashChipRealSize() / 1024, buffer, 10);

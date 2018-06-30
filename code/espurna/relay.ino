@@ -907,39 +907,32 @@ void relaySetup() {
 
     // Dummy relays for AI Light, Magic Home LED Controller, H801,
     // Sonoff Dual and Sonoff RF Bridge
-    #if DUMMY_RELAY_COUNT > 0
-        unsigned int _delay_on[8] = {RELAY1_DELAY_ON, RELAY2_DELAY_ON, RELAY3_DELAY_ON, RELAY4_DELAY_ON, RELAY5_DELAY_ON, RELAY6_DELAY_ON, RELAY7_DELAY_ON, RELAY8_DELAY_ON};
-        unsigned int _delay_off[8] = {RELAY1_DELAY_OFF, RELAY2_DELAY_OFF, RELAY3_DELAY_OFF, RELAY4_DELAY_OFF, RELAY5_DELAY_OFF, RELAY6_DELAY_OFF, RELAY7_DELAY_OFF, RELAY8_DELAY_OFF};
-        for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-          _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL,0,_delay_on[i], _delay_off[i]});
+    #if DUMMY_RELAY_COUNT > 0 // TODO: this is yet hardcoded
+
+        for (unsigned char index=0; index < DUMMY_RELAY_COUNT; index++) {
+            unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
+            unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
+            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, delay_on, delay_off});
         }
 
     #else
 
-        #if RELAY1_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
-        #endif
-        #if RELAY2_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
-        #endif
-        #if RELAY3_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
-        #endif
-        #if RELAY4_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
-        #endif
-        #if RELAY5_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
-        #endif
-        #if RELAY6_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
-        #endif
-        #if RELAY7_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
-        #endif
-        #if RELAY8_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
-        #endif
+        unsigned char index = 0;
+        while (index < MAX_COMPONENTS) {
+
+            unsigned char pin = getSetting("rlyGPIO", index, GPIO_NONE).toInt();
+            if (GPIO_NONE == pin) break;
+            unsigned char type = getSetting("rlyType", index, 0).toInt();
+            unsigned char reset = getSetting("rlyResetGPIO", index, GPIO_NONE).toInt();
+            if (((type & RELAY_TYPE_LATCHED) == RELAY_TYPE_LATCHED) && (GPIO_NONE == reset)) break;
+
+            unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
+            unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
+
+            _relays.push_back((relay_t) { pin, type, reset, delay_on, delay_off });
+            ++index;
+
+        }
 
     #endif
 

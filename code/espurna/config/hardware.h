@@ -63,48 +63,11 @@
 
 #elif defined(NODEMCU_LOLIN)
 
-    // Info
-    #define MANUFACTURER        "NODEMCU"
-    #define DEVICE              "LOLIN"
-
-    // Buttons
-    #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-    // Relays
-    #define RELAY1_PIN          12
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
+    #include "devices/002_nodemcu_lolin.json.h"
 
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
-    // Info
-    #define MANUFACTURER        "WEMOS"
-    #define DEVICE              "D1_MINI_RELAYSHIELD"
-
-    // Buttons
-    // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
-    #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
-                                    // it's the same as using a Wemos one button shield
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-    // Relays
-    #define RELAY1_PIN          5
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
-
-    // When Wemos relay shield is connected GPIO5 (D1) is used for relay,
-    // so I2C must be remapped to other pins
-    #define I2C_SDA_PIN         12  // D6
-    #define I2C_SCL_PIN         14  // D5
+    #include "devices/003_wemos_d1_mini_relayshield.json.h"
 
 // -----------------------------------------------------------------------------
 // ESPurna
@@ -112,24 +75,7 @@
 
 #elif defined(TINKERMAN_ESPURNA_H06)
 
-    // Info
-    #define MANUFACTURER        "TINKERMAN"
-    #define DEVICE              "ESPURNA_H06"
-
-    // Buttons
-    #define BUTTON1_PIN         4
-    #define BUTTON1_RELAY       1
-
-    // Normal pushbutton
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-
-    // Relays
-    #define RELAY1_PIN          12
-    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
-
-    // LEDs
-    #define LED1_PIN            5
-    #define LED1_PIN_INVERSE    1
+    #include "devices/023_tinkerman_espurna_h06.json.h"
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
@@ -2576,6 +2522,6 @@
 // Check definitions
 // -----------------------------------------------------------------------------
 
-#if not defined(MANUFACTURER) || not defined(DEVICE)
-    #error "UNSUPPORTED HARDWARE!!"
-#endif
+//#if not defined(MANUFACTURER) || not defined(DEVICE)
+//    #error "UNSUPPORTED HARDWARE!!"
+//#endif

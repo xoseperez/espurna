@@ -311,12 +311,12 @@ void _wsOnStart(JsonObject& root) {
         root["app_version"] = APP_VERSION;
         root["app_build"] = buildTime();
         root["app_revision"] = APP_REVISION;
-        root["manufacturer"] = MANUFACTURER;
+        root["manufacturer"] = getManufacturer();
         root["chipid"] = String(chipid);
         root["mac"] = WiFi.macAddress();
         root["bssid"] = String(bssid_str);
         root["channel"] = WiFi.channel();
-        root["device"] = DEVICE;
+        root["device"] = getBoardName();
         root["hostname"] = getHostname();
         root["network"] = getNetwork();
         root["deviceip"] = getIP();

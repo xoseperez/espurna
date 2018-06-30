@@ -7,8 +7,6 @@
 // GENERAL
 //------------------------------------------------------------------------------
 
-#define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
-
 #ifndef ADMIN_PASS
 #define ADMIN_PASS              "fibonacci"     // Default password (WEB, OTA, WIFI)
 #endif
@@ -19,6 +17,10 @@
 
 #ifndef LOOP_DELAY_TIME
 #define LOOP_DELAY_TIME         10              // Delay for this millis in the main loop [0-250]
+#endif
+
+#ifndef MAX_COMPONENTS
+#define MAX_COMPONENTS          8               // Max number of components (buttons, leds, relays,...)
 #endif
 
 //------------------------------------------------------------------------------

@@ -56,7 +56,7 @@ void ssdpSetup() {
             APP_NAME,                           // modelName
             APP_VERSION,                        // modelNumber
             APP_WEBSITE,                        // modelURL
-            DEVICE_NAME,                        // manufacturer
+            getDevice(),                     // manufacturer
             "",                                 // manufacturerURL
             chipId                              // UUID
         );
