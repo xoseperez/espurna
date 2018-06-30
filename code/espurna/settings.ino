@@ -35,9 +35,10 @@ std::vector<setting_key_check_callback_f> _setting_key_check_callbacks;
 unsigned long settingsSize() {
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
+        if (0xFF == len) break;
         pos = pos - len - 2;
     }
-    return SPI_FLASH_SEC_SIZE - pos;
+    return SPI_FLASH_SEC_SIZE - pos + EEPROM_DATA_END;
 }
 
 // -----------------------------------------------------------------------------
@@ -53,6 +54,7 @@ unsigned int settingsKeyCount() {
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
+        if (0xFF == len) break;
         pos = pos - len - 2;
         len = EEPROMr.read(pos);
         pos = pos - len - 2;
@@ -68,6 +70,7 @@ String settingsKeyName(unsigned int index) {
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
+        if (0xFF == len) break;
         pos = pos - len - 2;
         if (count == index) {
             s.reserve(len);

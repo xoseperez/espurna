@@ -9,15 +9,36 @@ travis=$(grep env: platformio.ini | grep travis | sed 's/\[env://' | sed 's/\]/ 
 available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | grep -v travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
 
 # Parameters
+while getopts "lp" opt; do
+  case $opt in
+    l)
+        echo "--------------------------------------------------------------"
+        echo "Available environments:"
+        for environment in $available; do
+            echo "* $environment"
+        done
+        exit
+        ;;
+    p)
+        par_build=1
+        par_thread=${BUILDER_THREAD:-0}
+        par_total_threads=${BUILDER_TOTAL_THREADS:-4}
+        if [ ${par_thread} -ne ${par_thread} -o \
+            ${par_total_threads} -ne ${par_total_threads} ]; then
+                echo "Parallel threads should be a number."
+                exit
+            fi
+            if [ ${par_thread} -ge ${par_total_threads} ]; then
+                echo "Current thread is greater than total threads. Doesn't make sense"
+                exit
+            fi
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
 environments=$@
-if [ "$environments" == "list" ]; then
-    echo "--------------------------------------------------------------"
-    echo "Available environments:"
-    for environment in $available; do
-        echo "* $environment"
-    done
-    exit
-fi
 
 # Environments to build
 if [ $# -eq 0 ]; then
@@ -63,9 +84,16 @@ node node_modules/gulp/bin/gulp.js || exit
 echo "--------------------------------------------------------------"
 echo "Building firmware images..."
 mkdir -p ../firmware/espurna-$version
-for environment in $environments; do
-    echo "* espurna-$version-$environment.bin"
+if [ ${par_build} ]; then
+    to_build=$(echo ${environments} | awk -v par_thread=${par_thread} -v par_total_threads=${par_total_threads} '{ for (i = 1; i <= NF; i++) if (++j % par_total_threads == par_thread ) print $i; }')
+else
+    to_build=${environments}
+fi
+
+for environment in $to_build; do
+    echo -n "* espurna-$version-$environment.bin --- "
     platformio run --silent --environment $environment || exit 1
+    stat -c %s .pioenvs/$environment/firmware.bin
     mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
 done
 echo "--------------------------------------------------------------"

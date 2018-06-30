@@ -318,6 +318,8 @@ void _sensorLoad() {
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
+        sensor->setSamples(ANALOG_SAMPLES);
+        sensor->setDelay(ANALOG_DELAY);
         _sensors.push_back(sensor);
     }
     #endif
@@ -490,6 +492,20 @@ void _sensorLoad() {
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setRX(MHZ19_RX_PIN);
         sensor->setTX(MHZ19_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if NTC_SUPPORT
+    {
+        NTCSensor * sensor = new NTCSensor();
+        sensor->setSamples(NTC_SAMPLES);
+        sensor->setDelay(NTC_DELAY);
+        sensor->setUpstreamResistor(NTC_R_UP);
+        sensor->setDownstreamResistor(NTC_R_DOWN);
+        sensor->setBeta(NTC_BETA);
+        sensor->setR0(NTC_R0);
+        sensor->setT0(NTC_T0);
         _sensors.push_back(sensor);
     }
     #endif

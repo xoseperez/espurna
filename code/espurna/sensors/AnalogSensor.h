@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && ANALOG_SUPPORT
+#if SENSOR_SUPPORT && (ANALOG_SUPPORT || NTC_SUPPORT)
 
 #pragma once
 
@@ -25,6 +25,24 @@ class AnalogSensor : public BaseSensor {
         AnalogSensor(): BaseSensor() {
             _count = 1;
             _sensor_id = SENSOR_ANALOG_ID;
+        }
+
+        void setSamples(unsigned int samples) {
+            if (_samples > 0) _samples = samples;
+        }
+
+        void setDelay(unsigned long micros) {
+            _micros = micros;
+        }
+
+        // ---------------------------------------------------------------------
+
+        unsigned int getSamples() {
+            return _samples;
+        }
+
+        unsigned long getDelay() {
+            return _micros;
         }
 
         // ---------------------------------------------------------------------
@@ -60,10 +78,24 @@ class AnalogSensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return analogRead(0);
+            if (index == 0) return _read();
             return 0;
         }
 
+    protected:
+
+        unsigned int _read() {
+            if (1 == _samples) return analogRead(0);
+            unsigned long sum = 0;
+            for (unsigned int i=0; i<_samples; i++) {
+                if (i>0) delayMicroseconds(_micros);
+                sum += analogRead(0);
+            }
+            return sum / _samples;
+        }
+
+        unsigned int _samples = 1;
+        unsigned long _micros = 0;
 
 };
 

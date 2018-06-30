@@ -5,11 +5,21 @@ sudo: false
 cache:
   directories:
   - "~/.platformio"
+  - "$TRAVIS_BUILD_DIR/code/.piolibdeps"
+  - "$TRAVIS_BUILD_DIR/code/espurna/node_modules"
 install:
 - pip install -U platformio
 - cd code ; npm install --only=dev ; cd ..
+env:
+    global:
+        - BUILDER_TOTAL_THREADS=4
+    matrix:
+        - BUILDER_THREAD=0
+        - BUILDER_THREAD=1
+        - BUILDER_THREAD=2
+        - BUILDER_THREAD=3
 script:
-- cd code && ./build.sh &&  cd ..
+- cd code && ./build.sh -p &&  cd ..
 before_deploy:
 - mv firmware/*/espurna-*.bin firmware/
 deploy:
