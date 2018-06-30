@@ -121,11 +121,35 @@ unsigned char _ledCount() {
     return _leds.size();
 }
 
+void _ledClear() {
+    _leds.clear();
+}
+
 void _ledConfigure() {
-    for (unsigned int i=0; i < _leds.size(); i++) {
-        _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
+
+    _ledClear();
+
+    unsigned char index = 0;
+    while (index < MAX_COMPONENTS) {
+
+        unsigned char pin = getSetting("ledGPIO", index, GPIO_NONE).toInt();
+        if (pin == GPIO_NONE) break;
+
+        bool inverse = getSetting("ledLogic", index, 0).toInt() == 1;
+        unsigned char mode = getSetting("ledMode", index, index==0 ? LED_MODE_WIFI : LED_MODE_MQTT).toInt();
+        unsigned char relayId = getSetting("ledRelay", index, RELAY_NONE).toInt();
+
+        _leds.push_back((led_t) { pin, inverse, mode, relayId });
+        pinMode(pin, OUTPUT);
+        _ledStatus(index, false);
+        ++index;
+
     }
+
+    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
+
     _led_update = true;
+
 }
 
 void _ledLoop() {
@@ -263,22 +287,7 @@ void ledUpdate(bool value) {
 
 void ledSetup() {
 
-    unsigned char index = 0;
-    while (index < MAX_COMPONENTS) {
-
-        unsigned char pin = getSetting("ledGPIO", index, GPIO_NONE).toInt();
-        if (pin == GPIO_NONE) break;
-
-        bool inverse = getSetting("ledLogic", index, 0).toInt() == 1;
-        unsigned char mode = getSetting("ledMode", index, index==0 ? LED_MODE_WIFI : LED_MODE_MQTT).toInt();
-        unsigned char relayId = getSetting("ledRelay", index, RELAY_NONE).toInt();
-
-        _leds.push_back((led_t) { pin, inverse, mode, relayId });
-        pinMode(pin, OUTPUT);
-        _ledStatus(index, false);
-        ++index;
-
-    }
+    _ledConfigure();
 
     #if MQTT_SUPPORT
         mqttRegister(_ledMQTTCallback);
@@ -288,8 +297,6 @@ void ledSetup() {
         wsOnSendRegister(_ledWebSocketOnSend);
         wsOnAfterParseRegister(_ledConfigure);
     #endif
-
-    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 
     // Registers
     espurnaRegisterLoop(_ledLoop);

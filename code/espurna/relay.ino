@@ -498,15 +498,59 @@ void _relayBoot() {
 
 }
 
-void _relayConfigure() {
-    for (unsigned int i=0; i<_relays.size(); i++) {
-        pinMode(_relays[i].pin, OUTPUT);
-        if (_relays[i].type == RELAY_TYPE_LATCHED || _relays[i].type == RELAY_TYPE_LATCHED_INVERSE) {
-            pinMode(_relays[i].reset_pin, OUTPUT);
-        }
-        _relays[i].pulse = getSetting("rlyPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("rlyTime", i, RELAY_PULSE_MODE).toFloat();
+void _relayClear() {
+
+    for (unsigned char i = 0; i < _relays.size(); i++) {
+        relay_t element = _relays[i];
+        element.pulseTicker.detach();
     }
+    _relays.clear();
+
+}
+
+void _relayConfigure() {
+
+    _relayClear();
+
+    // Dummy relays for AI Light, Magic Home LED Controller, H801,
+    // Sonoff Dual and Sonoff RF Bridge
+    #if DUMMY_RELAY_COUNT > 0
+
+        for (unsigned char index=0; index < DUMMY_RELAY_COUNT; index++) {
+            unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
+            unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
+            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, delay_on, delay_off});
+        }
+
+    #else
+
+        unsigned char index = 0;
+        while (index < MAX_COMPONENTS) {
+
+            unsigned char pin = getSetting("rlyGPIO", index, GPIO_NONE).toInt();
+            if (GPIO_NONE == pin) break;
+            pinMode(pin, OUTPUT);
+
+            unsigned char type = getSetting("rlyType", index, RELAY_TYPE_NORMAL).toInt();
+            unsigned char reset = getSetting("rlyResetGPIO", index, GPIO_NONE).toInt();
+            if (((type & RELAY_TYPE_LATCHED) == RELAY_TYPE_LATCHED) && (GPIO_NONE == reset)) break;
+            if (GPIO_NONE != reset) pinMode(reset, OUTPUT);
+
+            unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
+            unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
+
+            unsigned char pulse = getSetting("rlyPulse", index, RELAY_PULSE_MODE).toInt();
+            float pulse_ms = 1000 * getSetting("rlyTime", index, RELAY_PULSE_TIME).toFloat();
+
+            _relays.push_back((relay_t) { pin, type, reset, delay_on, delay_off, pulse, pulse_ms });
+            ++index;
+
+        }
+
+    #endif
+
+    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
+
 }
 
 //------------------------------------------------------------------------------
@@ -905,37 +949,6 @@ void _relayLoop() {
 
 void relaySetup() {
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801,
-    // Sonoff Dual and Sonoff RF Bridge
-    #if DUMMY_RELAY_COUNT > 0 // TODO: this is yet hardcoded
-
-        for (unsigned char index=0; index < DUMMY_RELAY_COUNT; index++) {
-            unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
-            unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
-            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, delay_on, delay_off});
-        }
-
-    #else
-
-        unsigned char index = 0;
-        while (index < MAX_COMPONENTS) {
-
-            unsigned char pin = getSetting("rlyGPIO", index, GPIO_NONE).toInt();
-            if (GPIO_NONE == pin) break;
-            unsigned char type = getSetting("rlyType", index, 0).toInt();
-            unsigned char reset = getSetting("rlyResetGPIO", index, GPIO_NONE).toInt();
-            if (((type & RELAY_TYPE_LATCHED) == RELAY_TYPE_LATCHED) && (GPIO_NONE == reset)) break;
-
-            unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
-            unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
-
-            _relays.push_back((relay_t) { pin, type, reset, delay_on, delay_off });
-            ++index;
-
-        }
-
-    #endif
-
     _relayBackwards();
     _relayConfigure();
     _relayBoot();
@@ -954,7 +967,5 @@ void relaySetup() {
     #if TERMINAL_SUPPORT
         _relayInitCommands();
     #endif
-
-    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 
 }

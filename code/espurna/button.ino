@@ -139,6 +139,56 @@ void _buttonExecuteEvent(unsigned int id, unsigned char event) {
 
 }
 
+void _buttonClear() {
+    for (unsigned char i = 0; i < _buttons.size(); i++) {
+        button_t element = _buttons[i];
+        delete(element.button);
+    }
+    _buttons.clear();
+}
+
+void _buttonConfigure() {
+
+    _buttonClear();
+
+    #ifdef ITEAD_SONOFF_DUAL
+
+        unsigned char relayId = getSetting("btnRelay", 2, RELAY_NONE).toInt();
+        unsigned long actions = BUTTON_MODE_TOGGLE << 4;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, relayId});
+
+    #else
+
+        // TODO: maybe this setting should be changed, btnDelay => btnClickDelay?
+        unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+
+        unsigned char index = 0;
+        while (index < MAX_COMPONENTS) {
+
+            unsigned char pin = getSetting("btnGPIO", index, GPIO_NONE).toInt();
+            if (GPIO_NONE == pin) break;
+            unsigned char relayId = getSetting("btnRelay", index, RELAY_NONE).toInt();
+            unsigned char mode = getSetting("btnMode", index, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH).toInt();
+            unsigned long actions = _buttonGetActionMask(index);
+
+            // DebounceEvent takes 4 parameters
+            // * GPIO
+            // * Button mode
+            // * Debounce delay
+            // * Wait delay for more clicks
+            _buttons.push_back({new DebounceEvent(pin, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, relayId});
+            ++index;
+
+        }
+
+    #endif
+
+    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
+
+}
+
 void _buttonLoop() {
 
     #ifdef ITEAD_SONOFF_DUAL
@@ -200,45 +250,12 @@ void _buttonLoop() {
 
 void buttonSetup() {
 
-    #ifdef ITEAD_SONOFF_DUAL
-
-        unsigned char relayId = getSetting("btnRelay", 2, RELAY_NONE).toInt();
-        unsigned long actions = BUTTON_MODE_TOGGLE << 4;
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
-        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, relayId});
-
-    #else
-
-        // TODO: maybe this setting should be changed, btnDelay => btnClickDelay?
-        unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-
-        unsigned char index = 0;
-        while (index < MAX_COMPONENTS) {
-
-            unsigned char pin = getSetting("btnGPIO", index, GPIO_NONE).toInt();
-            if (GPIO_NONE == pin) break;
-            unsigned char relayId = getSetting("btnRelay", index, RELAY_NONE).toInt();
-            unsigned char mode = getSetting("btnMode", index, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH).toInt();
-            unsigned long actions = _buttonGetActionMask(index);
-
-            // DebounceEvent takes 4 parameters
-            // * GPIO
-            // * Button mode
-            // * Debounce delay
-            // * Wait delay for more clicks
-            _buttons.push_back({new DebounceEvent(pin, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, relayId});
-            ++index;
-
-        }
-
-    #endif
-
-    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
+    _buttonConfigure();
 
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsOnSendRegister(_buttonWebSocketOnSend);
+        wsOnAfterParseRegister(_buttonConfigure);
     #endif
 
     settingsRegisterKeyCheck(_buttonKeyCheck);
