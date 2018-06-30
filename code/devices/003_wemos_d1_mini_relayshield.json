@@ -1,0 +1,11 @@
+{
+    "board": 3,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "WEMOS_D1_MINI_RELAYSHIELD",
+    "ledGPIO0": 2,
+    "ledLogic0": 1,
+    "rlyGPIO0": 5,
+    "rlyType0": 0
+}

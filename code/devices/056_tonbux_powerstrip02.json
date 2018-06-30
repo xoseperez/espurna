@@ -1,0 +1,21 @@
+{
+    "board": 56,
+    "btnGPIO0": 5,
+    "btnMode0": 2,
+    "btnRelay0": 1,
+    "device": "TONBUX_POWERSTRIP02",
+    "ledGPIO0": 0,
+    "ledGPIO1": 3,
+    "ledLogic0": 1,
+    "ledLogic1": 1,
+    "rlyGPIO0": 4,
+    "rlyGPIO1": 13,
+    "rlyGPIO2": 12,
+    "rlyGPIO3": 14,
+    "rlyGPIO4": 16,
+    "rlyType0": 1,
+    "rlyType1": 1,
+    "rlyType2": 1,
+    "rlyType3": 1,
+    "rlyType4": 0
+}

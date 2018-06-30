@@ -1,0 +1,17 @@
+{
+    "board": 59,
+    "btnGPIO0": 2,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "MAXCIO_WUS002S",
+    "hlwCF1GPIO": 5,
+    "hlwCFGPIO": 4,
+    "hlwCurRes": 0.002,
+    "hlwEnabled": 1,
+    "hlwSELGPIO": 12,
+    "hlwVolResUp": 2000000,
+    "ledGPIO0": 3,
+    "ledLogic0": 0,
+    "rlyGPIO0": 13,
+    "rlyType0": 0
+}

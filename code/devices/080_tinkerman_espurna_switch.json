@@ -1,0 +1,16 @@
+{
+    "board": 80,
+    "btnClick0": 0,
+    "btnDblClick0": 0,
+    "btnGPIO0": 4,
+    "btnLngClick0": 0,
+    "btnLngLngClick0": 0,
+    "btnMode0": 0,
+    "btnPress0": 1,
+    "btnRelay0": 0,
+    "device": "TINKERMAN_ESPURNA_SWITCH",
+    "ledGPIO0": 2,
+    "ledLogic0": 0,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

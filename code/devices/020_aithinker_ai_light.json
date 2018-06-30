@@ -1,0 +1,12 @@
+{
+    "board": 20,
+    "device": "AITHINKER_AI_LIGHT",
+    "litProvider": 1,
+    "myChips": 1,
+    "myDCKIGPIO": 15,
+    "myDIGPIO": 13,
+    "myMapping": "0123",
+    "myModel": 0,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

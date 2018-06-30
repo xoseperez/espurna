@@ -1,0 +1,19 @@
+{
+    "board": 74,
+    "btnGPIO0": 2,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "TONBUX_MOSQUITO_KILLER",
+    "ledGPIO0": 15,
+    "ledGPIO1": 14,
+    "ledGPIO2": 12,
+    "ledGPIO3": 16,
+    "ledLogic0": 1,
+    "ledLogic1": 1,
+    "ledLogic2": 0,
+    "ledLogic3": 0,
+    "ledMode1": 8,
+    "ledRelay1": 0,
+    "rlyGPIO0": 5,
+    "rlyType0": 0
+}

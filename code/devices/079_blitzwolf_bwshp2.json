@@ -1,0 +1,23 @@
+{
+    "board": 79,
+    "btnGPIO0": 13,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "curRatio": 25740,
+    "device": "BLITZWOLF_BWSHP2",
+    "hlwCF1GPIO": 14,
+    "hlwCFGPIO": 5,
+    "hlwCurLevel": 0,
+    "hlwInt": 2,
+    "hlwSELGPIO": 12,
+    "ledGPIO0": 2,
+    "ledGPIO1": 0,
+    "ledLogic0": 1,
+    "ledLogic1": 1,
+    "ledMode1": 4,
+    "ledRelay1": 0,
+    "pwrRatio": 3414290,
+    "rlyGPIO0": 15,
+    "rlyType0": 0,
+    "volRatio": 313400
+}

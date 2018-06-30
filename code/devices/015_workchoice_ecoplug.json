@@ -1,0 +1,11 @@
+{
+    "board": 15,
+    "btnGPIO0": 13,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "WORKCHOICE_ECOPLUG",
+    "ledGPIO0": 2,
+    "ledLogic0": 0,
+    "rlyGPIO0": 15,
+    "rlyType0": 0
+}

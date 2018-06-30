@@ -1,0 +1,13 @@
+{
+    "board": 41,
+    "device": "INTERMITTECH_QUINLED",
+    "ledGPIO0": 5,
+    "ledLogic0": 1,
+    "litChGPIO0": 0,
+    "litChGPIO1": 2,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

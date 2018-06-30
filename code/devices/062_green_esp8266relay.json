@@ -1,0 +1,11 @@
+{
+    "board": 62,
+    "btnGPIO0": 5,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "GREEN_ESP8266RELAY",
+    "ledGPIO0": 2,
+    "ledLogic0": 1,
+    "rlyGPIO0": 4,
+    "rlyType0": 0
+}

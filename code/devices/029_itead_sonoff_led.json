@@ -1,0 +1,13 @@
+{
+    "board": 29,
+    "device": "ITEAD_SONOFF_LED",
+    "ledGPIO0": 13,
+    "ledLogic0": 1,
+    "litChGPIO0": 12,
+    "litChGPIO1": 14,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

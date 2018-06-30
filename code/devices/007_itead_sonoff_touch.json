@@ -1,0 +1,16 @@
+{
+    "board": 7,
+    "btnClick0": 0,
+    "btnDblClick0": 0,
+    "btnGPIO0": 0,
+    "btnLngClick0": 0,
+    "btnLngLngClick0": 5,
+    "btnMode0": 2,
+    "btnPress0": 1,
+    "btnRelay0": 0,
+    "device": "ITEAD_SONOFF_TOUCH",
+    "ledGPIO0": 13,
+    "ledLogic0": 1,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

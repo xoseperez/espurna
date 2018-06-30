@@ -1,0 +1,16 @@
+{
+    "board": 40,
+    "btnGPIO0": 4,
+    "btnGPIO1": 5,
+    "btnMode0": 2,
+    "btnMode1": 2,
+    "btnRelay0": 0,
+    "btnRelay1": 1,
+    "device": "MANCAVEMADE_ESPLIVE",
+    "dsEnabled": 1,
+    "dsGPIO0": 2,
+    "rlyGPIO0": 12,
+    "rlyGPIO1": 13,
+    "rlyType0": 0,
+    "rlyType1": 0
+}

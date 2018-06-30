@@ -1,0 +1,11 @@
+{
+    "board": 25,
+    "device": "ITEAD_BNSZ01",
+    "ledGPIO0": 13,
+    "ledLogic0": 1,
+    "litChGPIO0": 12,
+    "litChLogic0": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

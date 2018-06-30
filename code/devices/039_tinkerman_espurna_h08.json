@@ -1,0 +1,15 @@
+{
+    "board": 39,
+    "btnGPIO0": 4,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "TINKERMAN_ESPURNA_H08",
+    "hlwCF1GPIO": 13,
+    "hlwCFGPIO": 14,
+    "hlwEnabled": 1,
+    "hlwSELGPIO": 5,
+    "ledGPIO0": 2,
+    "ledLogic0": 0,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

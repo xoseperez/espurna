@@ -1,0 +1,20 @@
+{
+    "board": 49,
+    "device": "GENERIC_8CH",
+    "rlyGPIO0": 0,
+    "rlyGPIO1": 2,
+    "rlyGPIO2": 4,
+    "rlyGPIO3": 5,
+    "rlyGPIO4": 12,
+    "rlyGPIO5": 13,
+    "rlyGPIO6": 14,
+    "rlyGPIO7": 15,
+    "rlyType0": 0,
+    "rlyType1": 0,
+    "rlyType2": 0,
+    "rlyType3": 0,
+    "rlyType4": 0,
+    "rlyType5": 0,
+    "rlyType6": 0,
+    "rlyType7": 0
+}

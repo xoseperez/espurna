@@ -1,0 +1,14 @@
+{
+    "board": 16,
+    "btnGPIO0": 12,
+    "btnGPIO1": 13,
+    "btnMode0": 2,
+    "btnMode1": 2,
+    "btnRelay0": 0,
+    "btnRelay1": 1,
+    "device": "JANGOE_WIFI_RELAY_NC",
+    "rlyGPIO0": 2,
+    "rlyGPIO1": 14,
+    "rlyType0": 1,
+    "rlyType1": 1
+}

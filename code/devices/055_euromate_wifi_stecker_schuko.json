@@ -1,0 +1,13 @@
+{
+    "board": 55,
+    "btnGPIO0": 14,
+    "btnMode0": 6,
+    "btnRelay0": 0,
+    "device": "EUROMATE_WIFI_STECKER_SCHUKO",
+    "ledGPIO0": 4,
+    "ledGPIO1": 12,
+    "ledLogic0": 0,
+    "ledLogic1": 0,
+    "rlyGPIO0": 5,
+    "rlyType0": 0
+}

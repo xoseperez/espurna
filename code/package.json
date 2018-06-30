@@ -8,7 +8,9 @@
   "devDependencies": {
     "del": "^2.2.1",
     "gulp": "^3.9.1",
+    "gulp-append-prepend": "^1.0.4",
     "gulp-base64-favicon": "^1.0.2",
+    "gulp-concat": "^2.6.1",
     "gulp-crass": "^0.2.2",
     "gulp-css-base64": "^1.3.4",
     "gulp-csslint": "^1.0.0",
@@ -16,11 +18,12 @@
     "gulp-htmllint": "0.0.14",
     "gulp-htmlmin": "^2.0.0",
     "gulp-inline": "^0.1.1",
+    "gulp-jsonlint": "^1.2.1",
     "gulp-remove-code": "^3.0.2",
     "gulp-rename": "^1.3.0",
     "gulp-replace": "^1.0.0",
     "gulp-uglify": "^1.5.3",
-    "map-stream": "0.0.7",
-    "run-sequence": "^2.2.1"
+    "run-sequence": "^2.2.1",
+    "through2": "^2.0.3"
   }
 }

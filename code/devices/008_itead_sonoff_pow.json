@@ -1,0 +1,15 @@
+{
+    "board": 8,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "ITEAD_SONOFF_POW",
+    "hlwCF1GPIO": 13,
+    "hlwCFGPIO": 14,
+    "hlwEnabled": 1,
+    "hlwSELGPIO": 5,
+    "ledGPIO0": 15,
+    "ledLogic0": 0,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

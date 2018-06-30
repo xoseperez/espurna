@@ -1,0 +1,11 @@
+{
+    "board": 57,
+    "btnGPIO0": 13,
+    "btnMode0": 6,
+    "btnRelay0": 0,
+    "device": "LINGAN_SWA1",
+    "ledGPIO0": 4,
+    "ledLogic0": 1,
+    "rlyGPIO0": 5,
+    "rlyType0": 0
+}

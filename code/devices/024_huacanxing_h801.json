@@ -1,0 +1,21 @@
+{
+    "board": 24,
+    "dbgPort": 1,
+    "dbgRXEnabled": 1,
+    "device": "HUACANXING_H801",
+    "ledGPIO0": 5,
+    "ledLogic0": 1,
+    "litChGPIO0": 15,
+    "litChGPIO1": 13,
+    "litChGPIO2": 12,
+    "litChGPIO3": 14,
+    "litChGPIO4": 4,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litChLogic2": 0,
+    "litChLogic3": 0,
+    "litChLogic4": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

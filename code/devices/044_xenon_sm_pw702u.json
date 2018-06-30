@@ -1,0 +1,11 @@
+{
+    "board": 44,
+    "btnGPIO0": 13,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "XENON_SM_PW702U",
+    "ledGPIO0": 4,
+    "ledLogic0": 1,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

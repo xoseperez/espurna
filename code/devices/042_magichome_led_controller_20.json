@@ -1,0 +1,20 @@
+{
+    "board": 42,
+    "device": "MAGICHOME_LED_CONTROLLER_20",
+    "irEnabled": 1,
+    "irGPIO": 4,
+    "irSet": 1,
+    "ledGPIO0": 2,
+    "ledLogic0": 1,
+    "litChGPIO0": 5,
+    "litChGPIO1": 12,
+    "litChGPIO2": 13,
+    "litChGPIO3": 15,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litChLogic2": 0,
+    "litChLogic3": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

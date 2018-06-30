@@ -1,0 +1,11 @@
+{
+    "board": 18,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "OPENENERGYMONITOR_MQTT_RELAY",
+    "ledGPIO0": 16,
+    "ledLogic0": 0,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

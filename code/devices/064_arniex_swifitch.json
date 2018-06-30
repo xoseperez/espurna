@@ -1,0 +1,16 @@
+{
+    "board": 64,
+    "btnClick0": 1,
+    "btnDblClick0": 0,
+    "btnGPIO0": 4,
+    "btnLngClick0": 0,
+    "btnLngLngClick0": 0,
+    "btnMode0": 6,
+    "btnPress0": 0,
+    "btnRelay0": 1,
+    "device": "ARNIEX_SWIFITCH",
+    "ledGPIO0": 12,
+    "ledLogic0": 1,
+    "rlyGPIO0": 5,
+    "rlyType0": 1
+}

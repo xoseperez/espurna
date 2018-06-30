@@ -1,0 +1,14 @@
+{
+    "board": 28,
+    "device": "ITEAD_SONOFF_B1",
+    "litChFactor4": 0.1,
+    "litChFactor5": 0.1,
+    "litProvider": 1,
+    "myChips": 2,
+    "myDCKIGPIO": 14,
+    "myDIGPIO": 12,
+    "myMapping": "43501",
+    "myModel": 1,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

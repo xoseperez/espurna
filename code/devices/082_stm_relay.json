@@ -1,0 +1,7 @@
+{
+    "board": 82,
+    "dbgSerial": 0,
+    "device": "STM_RELAY",
+    "rlyCount": 2,
+    "rlyProvider": 4
+}

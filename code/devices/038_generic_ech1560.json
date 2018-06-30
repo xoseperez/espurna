@@ -1,0 +1,8 @@
+{
+    "board": 38,
+    "device": "GENERIC_ECH1560",
+    "echCLKGPIO": 4,
+    "echEnabled": 1,
+    "echLogic": 1,
+    "echMISOGPIO": 5
+}

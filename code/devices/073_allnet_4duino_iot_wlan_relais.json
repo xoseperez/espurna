@@ -1,0 +1,9 @@
+{
+    "board": 73,
+    "device": "ALLNET_4DUINO_IOT_WLAN_RELAIS",
+    "ledGPIO0": 0,
+    "ledLogic0": 1,
+    "rlyGPIO0": 14,
+    "rlyResetGPIO0": 12,
+    "rlyType0": 2
+}

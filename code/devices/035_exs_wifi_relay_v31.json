@@ -1,0 +1,10 @@
+{
+    "board": 35,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "EXS_WIFI_RELAY_V31",
+    "rlyGPIO0": 13,
+    "rlyResetGPIO0": 12,
+    "rlyType0": 2
+}

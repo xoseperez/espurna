@@ -1,0 +1,17 @@
+{
+    "board": 43,
+    "device": "ARILUX_AL_LC06",
+    "litChGPIO0": 14,
+    "litChGPIO1": 12,
+    "litChGPIO2": 13,
+    "litChGPIO3": 15,
+    "litChGPIO4": 5,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litChLogic2": 0,
+    "litChLogic3": 0,
+    "litChLogic4": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

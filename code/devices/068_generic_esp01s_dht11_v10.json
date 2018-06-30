@@ -1,0 +1,7 @@
+{
+    "board": 68,
+    "device": "GENERIC_ESP01S_DHT11_V10",
+    "dhtEnabled": 1,
+    "dhtGPIO0": 2,
+    "dhtType0": 11
+}

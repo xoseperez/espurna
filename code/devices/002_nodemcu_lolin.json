@@ -1,0 +1,11 @@
+{
+    "board": 2,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "NODEMCU_LOLIN",
+    "ledGPIO0": 2,
+    "ledLogic0": 1,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

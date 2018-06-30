@@ -1,0 +1,14 @@
+{
+    "board": 78,
+    "btnGPIO0": 12,
+    "btnGPIO1": 13,
+    "btnMode0": 6,
+    "btnMode1": 6,
+    "btnRelay0": 0,
+    "btnRelay1": 1,
+    "device": "BH_ONOFRE",
+    "rlyGPIO0": 4,
+    "rlyGPIO1": 5,
+    "rlyType0": 0,
+    "rlyType1": 0
+}

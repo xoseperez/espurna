@@ -1,0 +1,16 @@
+{
+    "board": 14,
+    "btnGPIO0": 0,
+    "btnGPIO1": 2,
+    "btnMode0": 2,
+    "btnMode1": 2,
+    "btnRelay0": 0,
+    "btnRelay1": 1,
+    "device": "ELECTRODRAGON_WIFI_IOT",
+    "ledGPIO0": 16,
+    "ledLogic0": 0,
+    "rlyGPIO0": 12,
+    "rlyGPIO1": 13,
+    "rlyType0": 0,
+    "rlyType1": 0
+}

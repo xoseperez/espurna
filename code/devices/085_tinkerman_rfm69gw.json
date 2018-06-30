@@ -1,0 +1,10 @@
+{
+    "board": 85,
+    "btnGPIO0": 0,
+    "device": "TINKERMAN_RFM69GW",
+    "rfm69CSGPIO": 15,
+    "rfm69Enabled": 1,
+    "rfm69HW": 0,
+    "rfm69IRQGPIO": 5,
+    "rfm69ResetGPIO": 7
+}

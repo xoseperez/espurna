@@ -1,0 +1,11 @@
+{
+    "board": 58,
+    "btnGPIO0": 13,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "HEYGO_HY02",
+    "ledGPIO0": 4,
+    "ledLogic0": 0,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

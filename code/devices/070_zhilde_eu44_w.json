@@ -1,0 +1,20 @@
+{
+    "board": 70,
+    "btnGPIO0": 3,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "dbgSerial": 0,
+    "device": "ZHILDE_EU44_W",
+    "ledGPIO0": 1,
+    "ledLogic0": 1,
+    "rlyGPIO0": 5,
+    "rlyGPIO1": 4,
+    "rlyGPIO2": 12,
+    "rlyGPIO3": 13,
+    "rlyGPIO4": 14,
+    "rlyType0": 0,
+    "rlyType1": 0,
+    "rlyType2": 0,
+    "rlyType3": 0,
+    "rlyType4": 0
+}

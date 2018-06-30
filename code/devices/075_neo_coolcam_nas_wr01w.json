@@ -1,0 +1,11 @@
+{
+    "board": 75,
+    "btnGPIO0": 13,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "NEO_COOLCAM_NAS_WR01W",
+    "ledGPIO0": 4,
+    "ledLogic0": 1,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

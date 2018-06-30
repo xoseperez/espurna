@@ -1,0 +1,23 @@
+{
+    "board": 76,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "PILOTAK_ESP_DIN_V1",
+    "digEnabled": 1,
+    "digGPIO0": 16,
+    "digMode0": 0,
+    "dsEnabled": 1,
+    "dsGPIO0": 2,
+    "i2cEnable": 1,
+    "i2cSCLGPIO": 13,
+    "i2cSDAGPIO": 12,
+    "ledGPIO0": 15,
+    "ledLogic0": 0,
+    "rfEnabled": 1,
+    "rfGPIO": 14,
+    "rlyGPIO0": 4,
+    "rlyGPIO1": 5,
+    "rlyType0": 0,
+    "rlyType1": 0
+}

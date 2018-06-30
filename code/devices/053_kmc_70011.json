@@ -1,0 +1,16 @@
+{
+    "board": 53,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "KMC_70011",
+    "hlwCF1GPIO": 5,
+    "hlwCFGPIO": 4,
+    "hlwEnabled": 1,
+    "hlwSELGPIO": 12,
+    "hlwVolResUp": 2000000,
+    "ledGPIO0": 13,
+    "ledLogic0": 0,
+    "rlyGPIO0": 14,
+    "rlyType0": 0
+}

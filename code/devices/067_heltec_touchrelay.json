@@ -1,0 +1,9 @@
+{
+    "board": 67,
+    "btnGPIO0": 14,
+    "btnMode0": 2,
+    "btnRelay0": 1,
+    "device": "HELTEC_TOUCHRELAY",
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

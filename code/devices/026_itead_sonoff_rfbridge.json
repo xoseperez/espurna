@@ -1,0 +1,15 @@
+{
+    "board": 26,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "dbgBaudrate": 19200,
+    "dbgSerial": 0,
+    "device": "ITEAD_SONOFF_RFBRIDGE",
+    "ledGPIO0": 13,
+    "ledLogic0": 1,
+    "rfbDirect": 0,
+    "rfbRXGPIO": 4,
+    "rfbTXGPIO": 5,
+    "rlyCount": 8,
+    "rlyProvider": 3
+}

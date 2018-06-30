@@ -1,0 +1,18 @@
+{
+    "board": 60,
+    "btnGPIO0": 13,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "YIDIAN_XSSSA05",
+    "hlwCF1GPIO": 14,
+    "hlwCFGPIO": 5,
+    "hlwEnabled": 1,
+    "hlwSELGPIO": 3,
+    "hlwVolResUp": 2400000,
+    "ledGPIO0": 4,
+    "ledGPIO2": 2,
+    "ledLogic0": 0,
+    "ledLogic2": 0,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

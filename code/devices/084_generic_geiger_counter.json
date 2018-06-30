@@ -1,0 +1,5 @@
+{
+    "board": 84,
+    "device": "GENERIC_GEIGER_COUNTER",
+    "geiEnabled": 1
+}

@@ -1,0 +1,6 @@
+{
+    "board": 66,
+    "device": "GENERIC_ESP01S_RGBLED_V10",
+    "ledGPIO0": 2,
+    "ledLogic0": 0
+}

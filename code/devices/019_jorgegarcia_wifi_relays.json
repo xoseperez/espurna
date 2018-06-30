@@ -1,0 +1,8 @@
+{
+    "board": 19,
+    "device": "JORGEGARCIA_WIFI_RELAYS",
+    "rlyGPIO0": 0,
+    "rlyGPIO1": 2,
+    "rlyType0": 1,
+    "rlyType1": 1
+}

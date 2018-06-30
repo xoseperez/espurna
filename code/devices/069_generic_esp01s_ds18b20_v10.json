@@ -1,0 +1,6 @@
+{
+    "board": 69,
+    "device": "GENERIC_ESP01S_DS18B20_V10",
+    "dsEnabled": 1,
+    "dsGPIO0": 2
+}

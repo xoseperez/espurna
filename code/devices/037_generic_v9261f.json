@@ -1,0 +1,7 @@
+{
+    "board": 37,
+    "device": "GENERIC_V9261F",
+    "v92Enabled": 1,
+    "v92GPIO": 2,
+    "v92Logic": 1
+}

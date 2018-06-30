@@ -1,0 +1,17 @@
+{
+    "board": 45,
+    "device": "AUTHOMETION_LYT8266",
+    "litChGPIO0": 13,
+    "litChGPIO1": 12,
+    "litChGPIO2": 14,
+    "litChGPIO3": 2,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litChLogic2": 0,
+    "litChLogic3": 0,
+    "litEnableGPIO": 15,
+    "litEnableLogic": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

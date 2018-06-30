@@ -1,0 +1,23 @@
+{
+    "anaEnabled": 1,
+    "board": 54,
+    "btnClick0": 0,
+    "btnDblClick0": 0,
+    "btnGPIO0": 4,
+    "btnLngClick0": 0,
+    "btnLngLngClick0": 5,
+    "btnMode0": 2,
+    "btnPress0": 1,
+    "device": "GIZWITS_WITTY_CLOUD",
+    "ledGPIO0": 2,
+    "ledLogic0": 1,
+    "litChGPIO0": 15,
+    "litChGPIO1": 12,
+    "litChGPIO2": 13,
+    "litChLogic0": 0,
+    "litChLogic1": 0,
+    "litChLogic2": 0,
+    "litProvider": 2,
+    "rlyCount": 1,
+    "rlyProvider": 2
+}

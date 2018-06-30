@@ -1,0 +1,19 @@
+{
+    "board": 48,
+    "btnGPIO0": 0,
+    "btnGPIO1": 9,
+    "btnGPIO2": 10,
+    "btnMode0": 2,
+    "btnMode1": 2,
+    "btnMode2": 2,
+    "btnRelay0": 0,
+    "btnRelay1": 1,
+    "btnRelay2": 0,
+    "device": "ITEAD_SONOFF_DUAL_R2",
+    "ledGPIO0": 13,
+    "ledLogic0": 1,
+    "rlyGPIO0": 12,
+    "rlyGPIO1": 5,
+    "rlyType0": 0,
+    "rlyType1": 0
+}

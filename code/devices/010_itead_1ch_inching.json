@@ -1,0 +1,11 @@
+{
+    "board": 10,
+    "btnGPIO0": 0,
+    "btnMode0": 2,
+    "btnRelay0": 0,
+    "device": "ITEAD_1CH_INCHING",
+    "ledGPIO0": 13,
+    "ledLogic0": 1,
+    "rlyGPIO0": 12,
+    "rlyType0": 0
+}

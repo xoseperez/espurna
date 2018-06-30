@@ -1,0 +1,8 @@
+{
+    "board": 65,
+    "device": "GENERIC_ESP01S_RELAY_V40",
+    "ledGPIO0": 2,
+    "ledLogic0": 0,
+    "rlyGPIO0": 0,
+    "rlyType0": 0
+}
