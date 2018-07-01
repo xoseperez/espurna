@@ -10,6 +10,6 @@
     "rfbDirect": 0,
     "rfbRXGPIO": 4,
     "rfbTXGPIO": 5,
-    "rlyCount": 8,
+    "rlyDummy": 8,
     "rlyProvider": 3
 }

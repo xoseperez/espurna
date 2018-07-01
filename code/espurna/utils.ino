@@ -34,18 +34,6 @@ String getPassword() {
     return getSetting("adminPass", ADMIN_PASS);
 }
 
-void loadBoard() {
-    #ifndef ESPURNA_CORE
-        char buffer[device_config_len+1];
-        strncpy_P(buffer, (const char *) device_config, device_config_len);
-        buffer[device_config_len] = 0;
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& json = jsonBuffer.parseObject(buffer);
-        json["app"] = APP_NAME;
-        settingsRestoreJson(json);
-    #endif
-}
-
 String getManufacturer() {
     String device = getDevice();
     uint8_t pos = device.indexOf("_");

@@ -514,15 +514,16 @@ void _relayConfigure() {
 
     // Dummy relays for AI Light, Magic Home LED Controller, H801,
     // Sonoff Dual and Sonoff RF Bridge
-    #if DUMMY_RELAY_COUNT > 0
+    unsigned char dummy = getSetting("rlyDummy", 0).toInt();
+    if (dummy > 0) {
 
-        for (unsigned char index=0; index < DUMMY_RELAY_COUNT; index++) {
+        for (unsigned char index=0; index < dummy; index++) {
             unsigned long delay_on = getSetting("rlyDelayOn", index, 0).toInt();
             unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
             _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, delay_on, delay_off});
         }
 
-    #else
+    } else {
 
         unsigned char index = 0;
         while (index < MAX_COMPONENTS) {
@@ -547,9 +548,9 @@ void _relayConfigure() {
 
         }
 
-    #endif
+    }
 
-    DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
+    DEBUG_MSG_P(PSTR("[RELAY] Relays: %d\n"), _relays.size());
 
 }
 

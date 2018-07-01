@@ -59,8 +59,7 @@ void setup() {
     settingsSetup();
 
     // Load board data
-    loadBoard();
-    migrate();
+    hardwareSetup();
 
     // Show welcome message and system configuration
     info();
@@ -169,14 +168,10 @@ void setup() {
         uartmqttSetup();
     #endif
 
-
     // 3rd party code hook
     #if USE_EXTRA
         extraSetup();
     #endif
-
-    // Prepare configuration for version 2.0
-    migrate();
 
     saveSettings();
 

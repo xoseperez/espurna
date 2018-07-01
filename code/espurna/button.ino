@@ -185,7 +185,7 @@ void _buttonConfigure() {
 
     #endif
 
-    DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
+    DEBUG_MSG_P(PSTR("[BUTTON] Buttons: %u\n"), _buttons.size());
 
 }
 

@@ -12,6 +12,6 @@
     "litEnableGPIO": 15,
     "litEnableLogic": 0,
     "litProvider": 2,
-    "rlyCount": 1,
+    "rlyDummy": 1,
     "rlyProvider": 2
 }

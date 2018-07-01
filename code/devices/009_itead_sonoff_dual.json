@@ -6,6 +6,6 @@
     "device": "ITEAD_SONOFF_DUAL",
     "ledGPIO0": 13,
     "ledLogic0": 1,
-    "rlyCount": 2,
+    "rlyDummy": 2,
     "rlyProvider": 1
 }

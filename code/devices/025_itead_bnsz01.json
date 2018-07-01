@@ -6,6 +6,6 @@
     "litChGPIO0": 12,
     "litChLogic0": 0,
     "litProvider": 2,
-    "rlyCount": 1,
+    "rlyDummy": 1,
     "rlyProvider": 2
 }

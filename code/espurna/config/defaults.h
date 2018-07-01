@@ -212,10 +212,6 @@
 // Relays
 // -----------------------------------------------------------------------------
 
-#ifndef DUMMY_RELAY_COUNT
-#define DUMMY_RELAY_COUNT     0
-#endif
-
 #ifndef RELAY1_PIN
 #define RELAY1_PIN            GPIO_NONE
 #endif

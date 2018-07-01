@@ -9,6 +9,6 @@
     "myDIGPIO": 12,
     "myMapping": "43501",
     "myModel": 1,
-    "rlyCount": 1,
+    "rlyDummy": 1,
     "rlyProvider": 2
 }

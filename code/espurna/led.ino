@@ -146,7 +146,7 @@ void _ledConfigure() {
 
     }
 
-    DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
+    DEBUG_MSG_P(PSTR("[LED] LEDs: %d\n"), _leds.size());
 
     _led_update = true;
 
