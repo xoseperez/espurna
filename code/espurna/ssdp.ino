@@ -56,7 +56,7 @@ void ssdpSetup() {
             APP_NAME,                           // modelName
             APP_VERSION,                        // modelNumber
             APP_WEBSITE,                        // modelURL
-            getDevice(),                     // manufacturer
+            getDevice().c_str(),                // manufacturer
             "",                                 // manufacturerURL
             chipId                              // UUID
         );
@@ -73,7 +73,7 @@ void ssdpSetup() {
     SSDP.setModelName(APP_NAME);
     SSDP.setModelNumber(APP_VERSION);
     SSDP.setModelURL(APP_WEBSITE);
-    SSDP.setManufacturer(DEVICE_NAME);
+    SSDP.setManufacturer(getDevice());
     SSDP.setManufacturerURL("");
     SSDP.setURL("/");
     SSDP.begin();
