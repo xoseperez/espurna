@@ -530,14 +530,12 @@ void settingsRegisterKeyCheck(setting_key_check_callback_f callback) {
 
 void settingsSetup() {
 
-    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
-
     _serial.callback([](uint8_t ch) {
         #if TELNET_SUPPORT
             telnetWrite(ch);
         #endif
         #if DEBUG_SERIAL_SUPPORT
-            DEBUG_PORT.write(ch);
+            debugSerialWrite(ch);
         #endif
     });
 
@@ -575,12 +573,11 @@ void settingsLoop() {
         _settings_save = false;
     }
 
-
     #if TERMINAL_SUPPORT
 
         #if DEBUG_SERIAL_SUPPORT
-            while (DEBUG_PORT.available()) {
-                _serial.inject(DEBUG_PORT.read());
+            while (debugSerialAvailable()) {
+                _serial.inject(debugSerialRead());
             }
         #endif
 

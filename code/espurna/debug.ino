@@ -26,6 +26,11 @@ char _udp_syslog_header[40] = {0};
 #endif
 #endif
 
+#if DEBUG_SERIAL_SUPPORT
+HardwareSerial & _dbg_port = DEBUG_PORT;
+bool _dbg_serial_enabled = true;
+#endif
+
 void _debugSend(char * message) {
 
     bool pause = false;
@@ -38,10 +43,12 @@ void _debugSend(char * message) {
     #endif
 
     #if DEBUG_SERIAL_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            DEBUG_PORT.printf(timestamp);
-        #endif
-        DEBUG_PORT.printf(message);
+        if (_dbg_serial_enabled) {
+            #if DEBUG_ADD_TIMESTAMP
+                _dbg_port.printf(timestamp);
+            #endif
+            _dbg_port.printf(message);
+        }
     #endif
 
     #if DEBUG_UDP_SUPPORT
@@ -161,13 +168,56 @@ bool _debugKeyCheck(const char * key) {
     return (strncmp(key, "dbg", 3) == 0);
 }
 
+int debugSerialAvailable() {
+    #if DEBUG_SERIAL_SUPPORT
+        if (_dbg_serial_enabled) {
+            return _dbg_port.available();
+        }
+    #endif
+    return 0;
+}
+
+int debugSerialRead() {
+    #if DEBUG_SERIAL_SUPPORT
+        if (_dbg_serial_enabled) {
+            return _dbg_port.read();
+        }
+    #endif
+    return 0;
+}
+
+void debugSerialWrite(uint8_t ch) {
+    #if DEBUG_SERIAL_SUPPORT
+        if (_dbg_serial_enabled) {
+            _dbg_port.write(ch);
+        }
+    #endif
+}
+
 void debugSetup() {
 
     #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.begin(SERIAL_BAUDRATE);
-        #if DEBUG_ESP_WIFI
-            DEBUG_PORT.setDebugOutput(true);
-        #endif
+
+        _dbg_serial_enabled = getSetting("dbgSerial", 1).toInt() == 1;
+
+        if (_dbg_serial_enabled) {
+
+            unsigned char port = getSetting("dbgPort", 0).toInt();
+            if (0 == port) {
+                _dbg_port = Serial;
+            } else {
+                _dbg_port = Serial1;
+            }
+
+            unsigned long speed = getSetting("dbgSpeed", DEBUG_SERIAL_SPEED).toInt();
+            _dbg_port.begin(speed);
+
+            #if DEBUG_ESP_WIFI
+                _dbg_port.setDebugOutput(true);
+            #endif
+
+        }
+
     #endif
 
     settingsRegisterKeyCheck(_debugKeyCheck);

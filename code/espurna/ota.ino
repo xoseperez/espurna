@@ -69,9 +69,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
             DEBUG_MSG_P(PSTR("[OTA] Success: %u bytes\n"), _ota_size);
             deferredReset(100, CUSTOM_RESET_OTA);
         } else {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
+            DEBUG_MSG_P(PSTR("[OTA] Error #%u\n"), Update.getError());
             eepromRotate(true);
         }
 
@@ -99,9 +97,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
 
             Update.runAsync(true);
             if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-                #ifdef DEBUG_PORT
-                    Update.printError(DEBUG_PORT);
-                #endif
+                DEBUG_MSG_P(PSTR("[OTA] Error #%u\n"), Update.getError());
             }
 
             p = strstr((char *)data, "\r\n\r\n") + 4;
@@ -111,9 +107,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
 
         if (!Update.hasError()) {
             if (Update.write((uint8_t *) p, len) != len) {
-                #ifdef DEBUG_PORT
-                    Update.printError(DEBUG_PORT);
-                #endif
+                DEBUG_MSG_P(PSTR("[OTA] Error #%u\n"), Update.getError());
             }
         }
 

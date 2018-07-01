@@ -60,7 +60,7 @@ void systemCheckLoop() {
     }
 }
 
-#endif
+#endif //SYSTEM_CHECK_ENABLED
 
 // -----------------------------------------------------------------------------
 
@@ -71,7 +71,6 @@ void systemSendHeartbeat() {
 unsigned long systemLoopDelay() {
     return _loop_delay;
 }
-
 
 unsigned long systemLoadAverage() {
     return _load_average;
@@ -132,22 +131,6 @@ void systemLoop() {
 
 }
 
-void _systemSetupSpecificHardware() {
-
-    //The ESPLive has an ADC MUX which needs to be configured.
-    #if defined(MANCAVEMADE_ESPLIVE)
-        pinMode(16, OUTPUT);
-        digitalWrite(16, HIGH); //Defualt CT input (pin B, solder jumper B)
-    #endif
-
-    // These devices use the hardware UART
-    // to communicate to secondary microcontrollers
-    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(STM_RELAY)
-        Serial.begin(SERIAL_BAUDRATE);
-    #endif
-
-}
-
 void systemSetup() {
 
     #if SPIFFS_SUPPORT
@@ -158,9 +141,6 @@ void systemSetup() {
     #if SYSTEM_CHECK_ENABLED
         systemCheck(false);
     #endif
-
-    // Init device-specific hardware
-    _systemSetupSpecificHardware();
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());

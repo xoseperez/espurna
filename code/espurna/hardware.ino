@@ -133,8 +133,11 @@ void _hardwareLoad() {
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
 
-        setSetting("dsGPIO", 0, 14);
+        setSetting("dhtEnabled", 1);
         setSetting("dhtGPIO", 0, 14);
+
+        setSetting("dsEnabled", 1);
+        setSetting("dsGPIO", 0, 14);
 
         setSetting("ledGPIO", 0, 13);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -855,6 +858,11 @@ void _hardwareLoad() {
         setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
+
+        // The ESPLive has an ADC MUX which needs to be enabled
+        setSetting("ledGPIO", 0, 16);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+        setSetting("ledMode", LED_MODE_ON);
 
         setSetting("rlyGPIO", 0, 12);
         setSetting("rlyGPIO", 1, 13);
@@ -1814,9 +1822,21 @@ void _hardwareLoad() {
 
 }
 
+void _hardwareSpecific() {
+
+    // These devices use the hardware UART
+    // to communicate to secondary microcontrollers
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(STM_RELAY)
+        Serial.begin(DEBUG_SERIAL_SPEED);
+    #endif
+
+}
+
+
 void hardwareSetup() {
     _hardwareMigrate();
     if (getSetting("board", 1).toInt() != 1) {
         _hardwareLoad();
     }
+    _hardwareSpecific();
 }

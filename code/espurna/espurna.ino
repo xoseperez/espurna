@@ -44,22 +44,25 @@ void setup() {
     // Basic modules, will always run
     // -------------------------------------------------------------------------
 
-    // Serial debug
-    #if DEBUG_SUPPORT
-        debugSetup();
-    #endif
-
     // Init EEPROM
     eepromSetup();
-
-    // Init Serial, SPIFFS and system check
-    systemSetup();
 
     // Init persistance and terminal features
     settingsSetup();
 
+    // Serial debug
+    // Requires SETTINGS
+    #if DEBUG_SUPPORT
+        debugSetup();
+    #endif
+
     // Load board data
+    // Requires SETTINGS
     hardwareSetup();
+
+    // Init Serial, SPIFFS and system check
+    // Requires EEPROM and DEBUG
+    systemSetup();
 
     // Show welcome message and system configuration
     info();

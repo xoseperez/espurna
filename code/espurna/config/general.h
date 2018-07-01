@@ -34,11 +34,11 @@
 #endif
 
 #ifndef DEBUG_PORT
-#define DEBUG_PORT              Serial          // Default debugging port
+#define DEBUG_PORT              Serial               // Enable serial debug log
 #endif
 
-#ifndef SERIAL_BAUDRATE
-#define SERIAL_BAUDRATE         115200          // Default baudrate
+#ifndef DEBUG_SERIAL_SPEED
+#define DEBUG_SERIAL_SPEED      115200          // Default baudrate
 #endif
 
 #ifndef DEBUG_ADD_TIMESTAMP
