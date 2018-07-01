@@ -216,7 +216,7 @@ void _hardwareLoad() {
         setSetting("rlyDummy", 2);
 
         setSetting("dbgSerial", 0);
-        setSetting("dbgBaudrate", 19230);
+        setSetting("dbgSpeed", 19230);
 
     #elif defined(ITEAD_1CH_INCHING)
 
@@ -491,7 +491,6 @@ void _hardwareLoad() {
         setSetting("rlyDummy", 1);
 
         setSetting("dbgPort", 1);
-        setSetting("dbgRXEnabled", 1);
 
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 15);
@@ -538,7 +537,7 @@ void _hardwareLoad() {
         // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
         // the port and remove UART noise on serial line
         setSetting("dbgSerial", 0);
-        setSetting("dbgBaudrate", 19200);
+        setSetting("dbgSpeed", 19200);
 
         setSetting("rfbDirect", 0);
         setSetting("rfbRXGPIO", 4);
@@ -793,7 +792,6 @@ void _hardwareLoad() {
         setSetting("rlyDummy", 1);
 
         setSetting("dbgPort", 1);
-        setSetting("dbgRXEnabled", 1);
 
         setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);

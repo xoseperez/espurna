@@ -2,7 +2,7 @@
     "board": 26,
     "btnGPIO0": 0,
     "btnMode0": 2,
-    "dbgBaudrate": 19200,
+    "dbgSpeed": 19200,
     "dbgSerial": 0,
     "device": "ITEAD_SONOFF_RFBRIDGE",
     "ledGPIO0": 13,

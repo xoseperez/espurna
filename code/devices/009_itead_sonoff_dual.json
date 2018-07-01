@@ -1,7 +1,7 @@
 {
     "board": 9,
     "btnRelay2": 0,
-    "dbgBaudrate": 19230,
+    "dbgSpeed": 19230,
     "dbgSerial": 0,
     "device": "ITEAD_SONOFF_DUAL",
     "ledGPIO0": 13,

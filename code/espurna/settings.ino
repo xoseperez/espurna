@@ -17,13 +17,6 @@ Module key prefix: cfg
 StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
 EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 
-#if TERMINAL_SUPPORT
-#if SERIAL_RX_ENABLED
-    char _serial_rx_buffer[TERMINAL_BUFFER_SIZE];
-    static unsigned char _serial_rx_pointer = 0;
-#endif // SERIAL_RX_ENABLED
-#endif // TERMINAL_SUPPORT
-
 bool _settings_save = false;
 
 std::vector<setting_key_check_callback_f> _setting_key_check_callbacks;
@@ -552,12 +545,6 @@ void settingsSetup() {
 
     _settingsInitCommands();
 
-    #if TERMINAL_SUPPORT
-    #if SERIAL_RX_ENABLED
-        SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
-    #endif // SERIAL_RX_ENABLED
-    #endif // TERMINAL_SUPPORT
-
     // Register key check
     settingsRegisterKeyCheck(_settingsKeyCheck);
 
@@ -582,19 +569,6 @@ void settingsLoop() {
         #endif
 
         embedis.process();
-
-        #if SERIAL_RX_ENABLED
-
-            while (SERIAL_RX_PORT.available() > 0) {
-                char rc = Serial.read();
-                _serial_rx_buffer[_serial_rx_pointer++] = rc;
-                if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
-                    settingsInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
-                    _serial_rx_pointer = 0;
-                }
-            }
-
-        #endif // SERIAL_RX_ENABLED
 
     #endif // TERMINAL_SUPPORT
 
