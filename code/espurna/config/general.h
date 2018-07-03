@@ -706,6 +706,7 @@
 #define MQTT_TOPIC_LOADAVG          "loadavg"
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
+#define MQTT_TOPIC_SPEED            "speed"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"

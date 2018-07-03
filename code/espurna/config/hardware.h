@@ -880,6 +880,36 @@
     #define CSE7766_SUPPORT         1
     #define CSE7766_PIN             1
 
+#elif defined(ITEAD_SONOFF_IFAN02)
+
+    // Info
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_IFAN02"
+
+    // These are virtual buttons triggered by the remote
+    #define BUTTON1_PIN             0
+    #define BUTTON2_PIN             9
+    #define BUTTON3_PIN             10
+    #define BUTTON4_PIN             14
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON4_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY2_PIN              5
+    #define RELAY3_PIN              4
+    #define RELAY4_PIN              15
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
+
 // -----------------------------------------------------------------------------
 // YJZK
 // -----------------------------------------------------------------------------

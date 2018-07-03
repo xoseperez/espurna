@@ -88,6 +88,7 @@
 //#define PILOTAK_ESP_DIN_V1
 //#define BLITZWOLF_BWSHP2
 //#define BH_ONOFRE
+//#define ITEAD_SONOFF_IFAN02
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

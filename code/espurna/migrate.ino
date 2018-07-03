@@ -1043,6 +1043,27 @@ void migrate() {
             setSetting("board", 80);
             setSetting("btnGPIO", 0, 0);
 
+        #elif defined(ITEAD_SONOFF_IFAN02)
+
+            setSetting("board", 81);
+
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnGPIO", 1, 9);
+            setSetting("btnGPIO", 2, 10);
+            setSetting("btnGPIO", 3, 14);
+
+            setSetting("ledGPIO", 1, 13);
+            setSetting("ledLogic", 1, 1);
+
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayGPIO", 2, 4);
+            setSetting("relayGPIO", 3, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
