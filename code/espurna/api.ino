@@ -11,6 +11,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <AsyncJson.h>
 #include <vector>
 
 typedef struct {
@@ -192,9 +193,41 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 
 }
 
+void _onDevice(AsyncWebServerRequest *request) {
+    webLog(request);
+    if (!_authAPI(request)) { return; }
+    if (!_asJson(request)) { return; } // TODO as plain text too?
+
+    AsyncJsonResponse *response = new AsyncJsonResponse();
+    JsonObject& root = response->getRoot();
+
+    info_device(root);
+
+    response->setLength();
+    request->send(response);
+}
+
+void _onStatus(AsyncWebServerRequest *request) {
+    webLog(request);
+    if (!_authAPI(request)) { return; }
+    if (!_asJson(request)) { return; } // TODO as plain text too?
+
+    AsyncJsonResponse *response = new AsyncJsonResponse();
+    JsonObject& root = response->getRoot();
+
+    info_status(root);
+
+    response->setLength();
+    request->send(response);
+}
+
 void apiSetup() {
     webServer()->on("/apis", HTTP_GET, _onAPIs);
     webServer()->on("/rpc", HTTP_GET, _onRPC);
+
+    webServer()->on("/api/device", HTTP_GET, _onDevice);
+    webServer()->on("/api/status", HTTP_GET, _onStatus);
+
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
 }
