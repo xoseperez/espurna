@@ -13,6 +13,8 @@ extern "C" {
 #if WEB_SUPPORT
     typedef std::function<void(char *, size_t)> api_get_callback_f;
     typedef std::function<void(const char *)> api_put_callback_f;
+    typedef std::function<void(JsonObject&)> json_api_get_callback_f;
+    typedef std::function<void(JsonObject&)> json_api_put_callback_f;
     void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
 #else
     #define api_get_callback_f void *

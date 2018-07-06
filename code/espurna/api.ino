@@ -21,6 +21,13 @@ typedef struct {
 } web_api_t;
 std::vector<web_api_t> _apis;
 
+typedef struct {
+    char * key;
+    json_api_get_callback_f getFn = NULL;
+    json_api_put_callback_f putFn = NULL;
+} web_json_api_t;
+std::vector<web_json_api_t> _json_apis;
+
 // -----------------------------------------------------------------------------
 
 bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
@@ -117,6 +124,23 @@ ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
 
 }
 
+ArRequestHandlerFunction _bindJsonAPI(unsigned int apiID) {
+    return [apiID](AsyncWebServerRequest *request) {
+        webLog(request);
+        if (!_authAPI(request)) { return; }
+        if (!_asJson(request)) { return; }
+
+        web_json_api_t api = _json_apis[apiID];
+
+        AsyncJsonResponse *response = new AsyncJsonResponse();
+        JsonObject& root = response->getRoot();
+        (api.getFn)(root);
+
+        response->setLength();
+        request->send(response);
+    };
+}
+
 void _onAPIs(AsyncWebServerRequest *request) {
 
     webLog(request);
@@ -133,6 +157,10 @@ void _onAPIs(AsyncWebServerRequest *request) {
         for (unsigned int i=0; i < _apis.size(); i++) {
             snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), _apis[i].key);
             root[_apis[i].key] = String(buffer);
+        }
+        for (unsigned int i=0; i < _json_apis.size(); i++) {
+            snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), _json_apis[i].key);
+            root[_json_apis[i].key] = String(buffer);
         }
         root.printTo(output);
         jsonBuffer.clear();
@@ -193,40 +221,26 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 
 }
 
-void _onDevice(AsyncWebServerRequest *request) {
-    webLog(request);
-    if (!_authAPI(request)) { return; }
-    if (!_asJson(request)) { return; } // TODO as plain text too?
+void apiRegister(const char * key, json_api_get_callback_f getFn, json_api_put_callback_f putFn) {
+    web_json_api_t api;
+    char buffer[40];
+    snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), key);
+    api.key = strdup(key);
+    api.getFn = getFn;
+    api.putFn = putFn;
+    _json_apis.push_back(api);
 
-    AsyncJsonResponse *response = new AsyncJsonResponse();
-    JsonObject& root = response->getRoot();
-
-    info_device(root);
-
-    response->setLength();
-    request->send(response);
-}
-
-void _onStatus(AsyncWebServerRequest *request) {
-    webLog(request);
-    if (!_authAPI(request)) { return; }
-    if (!_asJson(request)) { return; } // TODO as plain text too?
-
-    AsyncJsonResponse *response = new AsyncJsonResponse();
-    JsonObject& root = response->getRoot();
-
-    info_status(root);
-
-    response->setLength();
-    request->send(response);
+    unsigned int methods = HTTP_GET;
+    if (putFn != NULL) methods += HTTP_PUT;
+    webServer()->on(buffer, methods, _bindJsonAPI(_json_apis.size() - 1));
 }
 
 void apiSetup() {
     webServer()->on("/apis", HTTP_GET, _onAPIs);
     webServer()->on("/rpc", HTTP_GET, _onRPC);
 
-    webServer()->on("/api/device", HTTP_GET, _onDevice);
-    webServer()->on("/api/status", HTTP_GET, _onStatus);
+    apiRegister("device", info_device, NULL);
+    apiRegister("status", info_status, NULL);
 
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
