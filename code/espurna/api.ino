@@ -134,10 +134,32 @@ ArRequestHandlerFunction _bindJsonAPI(unsigned int apiID) {
 
         AsyncJsonResponse *response = new AsyncJsonResponse();
         JsonObject& root = response->getRoot();
-        (api.getFn)(root);
 
-        response->setLength();
-        request->send(response);
+        if (request->method() == HTTP_GET) {
+            (api.getFn)(root);
+
+            response->setLength();
+            request->send(response);
+
+            return;
+        }
+
+        if (request->method() == HTTP_PUT) {
+            if (!request->hasParam("value", true)) {
+                root.set("error", F("Missing \"value\" parameter"));
+                response->setCode(400); // Bad request
+            } else {
+                AsyncWebParameter* p = request->getParam("value", true);
+                (api.putFn)((p->value()).c_str(), root);
+            }
+
+            response->setLength();
+            request->send(response);
+
+            return;
+        }
+
+        request->send(405); // Method not allowed
     };
 }
 
