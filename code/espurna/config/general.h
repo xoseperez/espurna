@@ -990,7 +990,7 @@
 #endif
 
 #ifndef NTP_UPDATE_INTERVAL
-#define NTP_UPDATE_INTERVAL         1800            // NTP check every 30 minutes
+#define NTP_UPDATE_INTERVAL         180            // NTP check every 30 minutes
 #endif
 
 #ifndef NTP_START_DELAY

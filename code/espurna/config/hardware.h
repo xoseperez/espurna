@@ -112,6 +112,14 @@
     #define I2C_SDA_PIN         12  // D6
     #define I2C_SCL_PIN         14  // D5
 
+    // -----------------------------------------------------------------------------
+    // RTC_SUPPORT example
+    // -----------------------------------------------------------------------------
+    //#define RTC_SUPPORT              1                      // for test
+    //#define RTC_PROVIDER             RTC_PROVIDER_DS1307     // for test
+    //#define RTC_RECOVERY_CNT         3                      // 0 no recovery default 10
+    //#define RTC_NTP_SYNC_ENA         1                      // 0 rtc not synced with ntp default 1
+
 #elif defined(WEMOS_D1_TARPUNA_SHIELD)
 
     // Info
@@ -2594,6 +2602,56 @@
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
+
+#elif defined(SHAPEsp)
+
+    // Info
+    #define MANUFACTURER        "POULCH74"
+    #define DEVICE              "SHAPEsp"
+
+    // Buttons
+
+    //#define BUTTON1_PIN         2
+    //#define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_ONCE
+    //#define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    //#define BUTTON1_CLICK       BUTTON_MODE_TOGGLE
+    //#define BUTTON1_DBLCLICK    BUTTON_MODE_TOGGLE
+    //#define BUTTON1_LNGCLICK    BUTTON_MODE_TOGGLE
+    //#define BUTTON1_LNGLNGCLICK BUTTON_MODE_TOGGLE
+
+    //#define BUTTON1_RELAY       1
+
+    // Relays
+    //#define RELAY1_PIN          14
+    //#define RELAY1_PIN2         12
+    //#define RELAY1_PINP         13 // GPIO_NONE to leave it unused, so no pulse on start valve (autostop not used)
+    //#define RELAY1_TYPE         RELAY_TYPE_HBRIDGE
+    // pulse duration for pinP pulse to start valve
+    //#define RELAY1_HBPULSE       100
+
+    // Relays
+    //#define RELAY2_PIN          98 // fake pin for relay
+    //#define RELAY2_TYPE         RELAY_TYPE_BTNRESET
+    //#define RELAY2_BUTTON       1
+
+    // LEDs
+    #define LED1_PIN            2 //15 to free pin 2 which can be used for dallas support or water sensor for example
+    #define LED1_PIN_INVERSE    1
+
+    #define I2C_SDA_PIN         4
+    #define I2C_SCL_PIN         5 
+
+    //#define ADC_MODE_VALUE      ADC_VCC_CUSTOM
+    //#define ADC_VCC_CUSTOM_MUL (15.63)
+    //#define ADC_VCC_CUSTOM_ADD (0)
+
+    // -----------------------------------------------------------------------------
+    // RTC_SUPPORT
+    // -----------------------------------------------------------------------------
+    #define RTC_SUPPORT              1                      // for test
+    #define RTC_PROVIDER             RTC_PROVIDER_DS3231     // for test
+    #define RTC_RECOVERY_CNT         3                      // 0 no recovery
+    #define RTC_NTP_SYNC_ENA         1                      // 0 rtc not synced with ntp
 
 #endif
 

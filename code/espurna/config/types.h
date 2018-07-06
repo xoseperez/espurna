@@ -301,3 +301,10 @@
 #define MAGNITUDE_GEIGER_SIEVERT    24
 
 #define MAGNITUDE_MAX               25
+
+//-----------------------------------------------------------------------------
+// RTC providers
+//-----------------------------------------------------------------------------
+#define RTC_PROVIDER_DUMMY          0
+#define RTC_PROVIDER_DS3231         1
+#define RTC_PROVIDER_DS1307         2
