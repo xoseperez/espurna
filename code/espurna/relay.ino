@@ -121,15 +121,15 @@ void _relayProviderStatus(unsigned char id, bool status) {
         } else if (_relays[id].type == RELAY_TYPE_LATCHED || _relays[id].type == RELAY_TYPE_LATCHED_INVERSE) {
             bool pulse = RELAY_TYPE_LATCHED ? HIGH : LOW;
             digitalWrite(_relays[id].pin, !pulse);
-            digitalWrite(_relays[id].reset_pin, !pulse);
-            if (status) {
+            if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
+            if (status || (GPIO_NONE == _relays[id].reset_pin)) {
                 digitalWrite(_relays[id].pin, pulse);
             } else {
                 digitalWrite(_relays[id].reset_pin, pulse);
             }
             nice_delay(RELAY_LATCHING_PULSE);
             digitalWrite(_relays[id].pin, !pulse);
-            digitalWrite(_relays[id].reset_pin, !pulse);
+            if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
         }
     #endif
 
@@ -518,7 +518,7 @@ void _relayBoot() {
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
         pinMode(_relays[i].pin, OUTPUT);
-        if (_relays[i].type == RELAY_TYPE_LATCHED || _relays[i].type == RELAY_TYPE_LATCHED_INVERSE) {
+        if (GPIO_NONE != _relays[i].reset_pin) {
             pinMode(_relays[i].reset_pin, OUTPUT);
         }
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
