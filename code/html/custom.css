@@ -267,6 +267,7 @@ span.slider {
 .inner-container:nth-child(2) {
 	background: #c00000;
 	color: white;
+	-webkit-clip-path: inset(0 50% 0 0);
 	clip-path: inset(0 50% 0 0);
 	transition: .3s cubic-bezier(0,0,0,1);
 }
