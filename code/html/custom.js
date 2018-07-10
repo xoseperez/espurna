@@ -820,10 +820,12 @@ function initCheckboxes() {
     var setCheckbox = function(element, value) {
         var container = $(".toggle-container", $(element));
         if (value) {
-            container.css("clipPath", "inset(0 0 0 50%)");
+            container.css("-webkit-clip-path", "inset(0 0 0 50%)");
+            container.css("clip-path", "inset(0 0 0 50%)");
             container.css("backgroundColor", "#00c000");
         } else {
-            container.css("clipPath", "inset(0 50% 0 0)");
+            container.css("-webkit-clip-path", "inset(0 50% 0 0)");
+            container.css("clip-path", "inset(0 50% 0 0)");
             container.css("backgroundColor", "#c00000");
         }
     }
