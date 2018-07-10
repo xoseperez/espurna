@@ -89,8 +89,9 @@ build_environments() {
     mkdir -p ../firmware/espurna-$version
 
     for environment in $environments; do
-        echo "* espurna-$version-$environment.bin"
+        echo -n "* espurna-$version-$environment.bin --- "
         platformio run --silent --environment $environment || exit 1
+        stat -c %s .pioenvs/$environment/firmware.bin
         [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
             mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
     done
@@ -130,4 +131,3 @@ fi
 
 build_webui
 build_environments
-
