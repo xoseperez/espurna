@@ -230,7 +230,7 @@ def store(device, env):
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "export ESPURNA_IP=\"%s\"; export ESPURNA_BOARD=\"%s\"; export ESPURNA_AUTH=\"%s\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s -t upload"
+    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s -t upload"
     command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
     subprocess.check_call(command, shell=True)
     store(device, env)
@@ -313,12 +313,12 @@ if __name__ == '__main__':
 
             # Summary
             print()
-            print("HOST  = %s" % boardname(board))
-            print("IP    = %s" % board['ip'])
-            print("BOARD = %s" % board['board'])
-            print("AUTH  = %s" % board['auth'])
-            print("FLAGS = %s" % board['flags'])
-            print("ENV   = %s" % env)
+            print("HOST    = %s" % boardname(board))
+            print("IP      = %s" % board['ip'])
+            print("BOARD   = %s" % board['board'])
+            print("AUTH    = %s" % board['auth'])
+            print("FLAGS   = %s" % board['flags'])
+            print("ENV     = %s" % env)
 
             response = True
             if args.yes == 0:

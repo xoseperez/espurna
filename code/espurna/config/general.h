@@ -201,6 +201,10 @@
 // BUTTON
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_SUPPORT
+#define BUTTON_SUPPORT              1
+#endif
+
 #ifndef BUTTON_DEBOUNCE_DELAY
 #define BUTTON_DEBOUNCE_DELAY       50          // Debounce delay (ms)
 #endif
@@ -215,6 +219,14 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+//------------------------------------------------------------------------------
+// LED
+//------------------------------------------------------------------------------
+
+#ifndef LED_SUPPORT
+#define LED_SUPPORT                 1
 #endif
 
 //------------------------------------------------------------------------------
@@ -376,6 +388,15 @@
 #ifndef WEB_PORT
 #define WEB_PORT                    80          // HTTP port
 #endif
+
+// Defining a WEB_REMOTE_DOMAIN will enable Cross-Origin Resource Sharing (CORS)
+// so you will be able to login to this device from another domain. This will allow
+// you to manage all ESPurna devices in your local network from a unique installation
+// of the web UI. This installation could be in a local server (a Raspberry Pi, for instance)
+// or in the Internet. Since the WebUI is just one compressed file with HTML, CSS and JS
+// there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
+// The only requirement is that the resource must be available under this domain.
+#define WEB_REMOTE_DOMAIN           "http://tinkerman.cat"
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -685,6 +706,7 @@
 #define MQTT_TOPIC_LOADAVG          "loadavg"
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
+#define MQTT_TOPIC_SPEED            "speed"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -1202,3 +1224,65 @@
 
 #define RF_DEBOUNCE                 500
 #define RF_LEARN_TIMEOUT            60000
+
+//--------------------------------------------------------------------------------
+// Custom RFM69 to MQTT bridge
+// Check http://tinkerman.cat/rfm69-wifi-gateway/
+// Enable support by passing RFM69_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef RFM69_SUPPORT
+#define RFM69_SUPPORT               0
+#endif
+
+#ifndef RFM69_MAX_TOPICS
+#define RFM69_MAX_TOPICS            50
+#endif
+
+#ifndef RFM69_DEFAULT_TOPIC
+#define RFM69_DEFAULT_TOPIC         "/rfm69gw/{node}/{key}"
+#endif
+
+#ifndef RFM69_NODE_ID
+#define RFM69_NODE_ID               2
+#endif
+
+#ifndef RFM69_GATEWAY_ID
+#define RFM69_GATEWAY_ID            2
+#endif
+
+#ifndef RFM69_NETWORK_ID
+#define RFM69_NETWORK_ID            164
+#endif
+
+#ifndef RFM69_PROMISCUOUS
+#define RFM69_PROMISCUOUS           1
+#endif
+
+#ifndef RFM69_PROMISCUOUS_SENDS
+#define RFM69_PROMISCUOUS_SENDS     0
+#endif
+
+#ifndef RFM69_FREQUENCY
+#define RFM69_FREQUENCY             RF69_868MHZ
+#endif
+
+#ifndef RFM69_ENCRYPTKEY
+#define RFM69_ENCRYPTKEY            "fibonacci0123456"
+#endif
+
+#ifndef RFM69_CS_PIN
+#define RFM69_CS_PIN                SS
+#endif
+
+#ifndef RFM69_IRQ_PIN
+#define RFM69_IRQ_PIN               5
+#endif
+
+#ifndef RFM69_RESET_PIN
+#define RFM69_RESET_PIN             7
+#endif
+
+#ifndef RFM69_IS_RFM69HW
+#define RFM69_IS_RFM69HW            0
+#endif

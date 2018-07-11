@@ -11,6 +11,7 @@
 //#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
+//#define TINKERMAN_RFM69GW
 //#define ITEAD_SONOFF_BASIC
 //#define ITEAD_SONOFF_RF
 //#define ITEAD_SONOFF_TH
@@ -82,9 +83,12 @@
 //#define LUANI_HVIO
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
 //#define TONBUX_MOSQUITO_KILLER
-//#define NEO_COOLCAM_POWER_PLUG_WIFI
+//#define NEO_COOLCAM_NAS_WR01W
 //#define ESTINK_WIFI_POWER_STRIP
 //#define PILOTAK_ESP_DIN_V1
+//#define BLITZWOLF_BWSHP2
+//#define BH_ONOFRE
+//#define ITEAD_SONOFF_IFAN02
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -139,6 +143,7 @@
 //#define HCSR04_SUPPORT         1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
+//#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1

@@ -43,9 +43,9 @@
 #endif
 
 #include <c_types.h>
-#include <pwm.h>
 #include <eagle_soc.h>
 #include <ets_sys.h>
+#include "libs/pwm.h"
 
 // from SDK hw_timer.c
 #define TIMER1_DIVIDE_BY_16             0x0004

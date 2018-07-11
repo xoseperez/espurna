@@ -16,7 +16,21 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 #if WEB_EMBEDDED
-#include "static/index.html.gz.h"
+
+#if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
+    #include "static/index.small.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
+    #include "static/index.light.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
+    #include "static/index.sensor.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
+    #include "static/index.rfbridge.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
+    #include "static/index.rfm69.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
+    #include "static/index.all.html.gz.h"
+#endif
+
 #endif // WEB_EMBEDDED
 
 #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
@@ -40,6 +54,24 @@ void _onReset(AsyncWebServerRequest *request) {
     request->send(200);
 }
 
+void _onDiscover(AsyncWebServerRequest *request) {
+
+    webLog(request);
+
+    AsyncResponseStream *response = request->beginResponseStream("text/json");
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &root = jsonBuffer.createObject();
+    root["app"] = APP_NAME;
+    root["version"] = APP_VERSION;
+    root["hostname"] = getSetting("hostname");
+    root["device"] = getBoardName();
+    root.printTo(*response);
+
+    request->send(response);
+
+}
+
 void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
@@ -49,20 +81,27 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
-    root["app"] = APP_NAME;
-    root["version"] = APP_VERSION;
-    settingsGetJson(root);
-    root.prettyPrintTo(*response);
-    jsonBuffer.clear();
-
     char buffer[100];
     snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
     response->addHeader("Content-Disposition", buffer);
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
+
+    response->printf("{\n\"app\": \"%s\"", APP_NAME);
+    response->printf(",\n\"version\": \"%s\"", APP_VERSION);
+    response->printf(",\n\"backup\": \"1\"");
+    response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+
+    // Write the keys line by line (not sorted)
+    unsigned long count = settingsKeyCount();
+    for (unsigned int i=0; i<count; i++) {
+        String key = settingsKeyName(i);
+        String value = getSetting(key);
+        response->printf(",\n\"%s\": \"%s\"", key.c_str(), value.c_str());
+    }
+    response->printf("\n}");
+
     request->send(response);
 
 }
@@ -139,12 +178,12 @@ void _onHome(AsyncWebServerRequest *request) {
             AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 
                 // Get the chunk based on the index and maxLen
-                size_t len = index_html_gz_len - index;
+                size_t len = webui_image_len - index;
                 if (len > maxLen) len = maxLen;
                 if (len > max) len = max;
-                if (len > 0) memcpy_P(buffer, index_html_gz + index, len);
+                if (len > 0) memcpy_P(buffer, webui_image + index, len);
 
-                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / index_html_gz_len), max);
+                DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
                 if (len == 0) DEBUG_MSG_P(PSTR("\n"));
 
                 // Return the actual length of the chunk (0 for end of file)
@@ -154,15 +193,15 @@ void _onHome(AsyncWebServerRequest *request) {
 
         #else
 
-            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html_gz, index_html_gz_len);
+            AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", webui_image, webui_image_len);
 
         #endif
 
         response->addHeader("Content-Encoding", "gzip");
         response->addHeader("Last-Modified", _last_modified);
-	response->addHeader("X-XSS-Protection", "1; mode=block");
-	response->addHeader("X-Content-Type-Options", "nosniff");
-	response->addHeader("X-Frame-Options", "deny");
+        response->addHeader("X-XSS-Protection", "1; mode=block");
+        response->addHeader("X-Content-Type-Options", "nosniff");
+        response->addHeader("X-Frame-Options", "deny");
         request->send(response);
 
     }
@@ -338,6 +377,7 @@ void webSetup() {
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files
     #if SPIFFS_SUPPORT

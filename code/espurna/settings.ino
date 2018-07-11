@@ -31,17 +31,19 @@ bool _settings_save = false;
 unsigned long settingsSize() {
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
+        if (0xFF == len) break;
         pos = pos - len - 2;
     }
-    return SPI_FLASH_SEC_SIZE - pos;
+    return SPI_FLASH_SEC_SIZE - pos + EEPROM_DATA_END;
 }
 
 // -----------------------------------------------------------------------------
 
-unsigned int _settingsKeyCount() {
+unsigned int settingsKeyCount() {
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
+        if (0xFF == len) break;
         pos = pos - len - 2;
         len = EEPROMr.read(pos);
         pos = pos - len - 2;
@@ -50,13 +52,14 @@ unsigned int _settingsKeyCount() {
     return count;
 }
 
-String _settingsKeyName(unsigned int index) {
+String settingsKeyName(unsigned int index) {
 
     String s;
 
     unsigned count = 0;
     unsigned pos = SPI_FLASH_SEC_SIZE - 1;
     while (size_t len = EEPROMr.read(pos)) {
+        if (0xFF == len) break;
         pos = pos - len - 2;
         if (count == index) {
             s.reserve(len);
@@ -80,11 +83,11 @@ std::vector<String> _settingsKeys() {
     std::vector<String> keys;
 
     //unsigned int size = settingsKeyCount();
-    unsigned int size = _settingsKeyCount();
+    unsigned int size = settingsKeyCount();
     for (unsigned int i=0; i<size; i++) {
 
         //String key = settingsKeyName(i);
-        String key = _settingsKeyName(i);
+        String key = settingsKeyName(i);
         bool inserted = false;
         for (unsigned char j=0; j<keys.size(); j++) {
 
@@ -277,7 +280,7 @@ void _settingsInitCommands() {
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
-    
+
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
         deferredReset(100, CUSTOM_RESET_TERMINAL);
@@ -375,19 +378,30 @@ size_t settingsMaxSize() {
 
 bool settingsRestoreJson(JsonObject& data) {
 
+    // Check this is an ESPurna configuration file (must have "app":"ESPURNA")
     const char* app = data["app"];
-    if (strcmp(app, APP_NAME) != 0) return false;
-
-    for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
-        EEPROMr.write(i, 0xFF);
+    if (!app || strcmp(app, APP_NAME) != 0) {
+        DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key\n"));
+        return false;
     }
 
+    // Clear settings
+    bool is_backup = data["backup"];
+    if (is_backup) {
+        for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
+            EEPROMr.write(i, 0xFF);
+        }
+    }
+
+    // Dump settings to memory buffer
     for (auto element : data) {
         if (strcmp(element.key, "app") == 0) continue;
         if (strcmp(element.key, "version") == 0) continue;
+        if (strcmp(element.key, "backup") == 0) continue;
         setSetting(element.key, element.value.as<char*>());
     }
 
+    // Persist to EEPROM
     saveSettings();
 
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
