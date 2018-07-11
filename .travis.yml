@@ -2,6 +2,7 @@ language: python
 python:
 - '2.7'
 sudo: false
+conditions: v1
 cache:
   directories:
   - "~/.npm"
@@ -19,7 +20,7 @@ script:
 stages:
 - name: Test
 - name: Release
-  if: tag IS present AND branch = master
+  if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
   - stage: Test
@@ -42,7 +43,6 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    branch: master
     repo: xoseperez/espurna
     condition: $TRAVIS_BUILD_STAGE_NAME = Release
 notifications:
