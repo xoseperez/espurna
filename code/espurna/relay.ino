@@ -285,8 +285,8 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 
     } else {
 
-        unsigned int current_time = millis();
-        unsigned int fw_end = _relays[id].fw_start + 1000 * RELAY_FLOOD_WINDOW;
+        unsigned long current_time = millis();
+        unsigned long fw_end = _relays[id].fw_start + 1000 * RELAY_FLOOD_WINDOW;
         unsigned long delay = status ? _relays[id].delay_on : _relays[id].delay_off;
 
         _relays[id].fw_count++;
