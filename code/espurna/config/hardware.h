@@ -2595,6 +2595,50 @@
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
 
+#elif defined(AG_L4)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "AG_L4"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // button 1: "power" button
+    #define BUTTON1_PIN         4
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    // button 2: "wifi" button
+    #define BUTTON2_PIN         2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_NONE
+
+    // LEDs
+    #define LED1_PIN            5      // red status led
+    #define LED1_PIN_INVERSE    0
+
+    #define LED2_PIN            16      // master light power
+    #define LED2_PIN_INVERSE    1
+    #define LED2_MODE           LED_MODE_RELAY
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       14       // RED
+    #define LIGHT_CH2_PIN       13       // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
 #endif
 
 // -----------------------------------------------------------------------------
