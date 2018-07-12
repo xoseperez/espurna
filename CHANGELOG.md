@@ -3,6 +3,30 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.1] 2018-07-10
+### Fixed
+- Build issues with Arduino IDE ([#975](https://github.com/xoseperez/espurna/issues/975))
+- Right web interface image for with RF Bridge
+- Full web interface image if light and sensor together ([#981](https://github.com/xoseperez/espurna/issues/981))
+- Some devices still not using DOUT flash mode
+- Crash on loading malformed configuration file
+- Mismatch between memory size and layout size for some boards (this might require reflashing)
+- Wrong settings report after factory reset
+- Memory leak in JustWifi library
+- New buttons not rendering right in Safari ([#1028](https://github.com/xoseperez/espurna/issues/1028))
+
+### Added
+- Support for RFM69GW board (see http://tinkerman.cat/rfm69-wifi-gateway/)
+- Support for Sonoff IFAN02
+- Support for NTC sensors ([#1001](https://github.com/xoseperez/espurna/issues/1001))
+- Support for single-pin latched relays ([#1039](https://github.com/xoseperez/espurna/issues/1039))
+- Check binary flash mode in web upgrade
+- Sampling to AnalogSensor
+- Parallel builds in Travis (thanks to @lobradov)
+
+### Changed
+- Reworked platformio.ini, build.sh files (thanks to @gn0st1c and @mcspr)
+
 ## [1.13.0] 2018-06-22
 ### Fixed
 - Fixed PZEM004T compilation issues, working when using hardware serial ([#837](https://github.com/xoseperez/espurna/issues/837))
