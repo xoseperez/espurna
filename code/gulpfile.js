@@ -42,6 +42,7 @@ const remover = require('gulp-remove-code');
 const map = require('map-stream');
 const rename = require('gulp-rename');
 const runSequence = require('run-sequence');
+const path = require('path');
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -63,7 +64,7 @@ var buildHeaderFile = function() {
 
     return map(function(file, cb) {
 
-        var parts = file.path.split("/");
+        var parts = file.path.split(path.sep);
         var filename = parts[parts.length - 1];
         var destination = staticFolder + filename + ".h";
         var safename = "webui_image";
