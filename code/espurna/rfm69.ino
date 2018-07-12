@@ -257,13 +257,13 @@ void rfm69Setup() {
     _rfm69_radio->initialize(RFM69_FREQUENCY, RFM69_NODE_ID, RFM69_NETWORK_ID);
     _rfm69_radio->encrypt(RFM69_ENCRYPTKEY);
     _rfm69_radio->promiscuous(RFM69_PROMISCUOUS);
+    _rfm69_radio->enableAutoPower(0);
     if (RFM69_IS_RFM69HW) _rfm69_radio->setHighPower();
 
     DEBUG_MSG_P(PSTR("[RFM69] Worning at %u MHz\n"), RFM69_FREQUENCY == RF69_433MHZ ? 433 : RFM69_FREQUENCY == RF69_868MHZ ? 868 : 915);
     DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), RFM69_NODE_ID);
     DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), RFM69_NETWORK_ID);
     DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s\n"), RFM69_PROMISCUOUS ? "ON" : "OFF");
-    DEBUG_MSG_P(PSTR("[RFM69] Auto Transmission Control (ATC) enabled\n"));
 
     #if WEB_SUPPORT
         wsOnSendRegister(_rfm69WebSocketOnSend);
