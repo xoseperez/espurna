@@ -17,6 +17,11 @@ unsigned long _ntp_start = 0;
 bool _ntp_update = false;
 bool _ntp_configure = false;
 
+#if RTC_SUPPORT && RTC_NTP_SYNC_ENA
+bool _rtc_update = false;
+#endif
+
+
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
@@ -44,6 +49,12 @@ void _ntpStart() {
     _ntp_start = 0;
 
     NTP.begin(getSetting("ntpServer", NTP_SERVER));
+
+#if RTC_SUPPORT
+    // set alter sync provider. two attempts for NTP synchro at start occure...
+    setSyncProvider(ntp_getTime);
+#endif    
+
     NTP.setInterval(NTP_SYNC_INTERVAL, NTP_UPDATE_INTERVAL);
     NTP.setNTPTimeout(NTP_TIMEOUT);
     _ntpConfigure();
@@ -90,6 +101,11 @@ void _ntpUpdate() {
 
     if (ntpSynced()) {
         time_t t = now();
+        #if RTC_SUPPORT && RTC_NTP_SYNC_ENA
+            // sync/update rtc here!!!!!!!!!!!!
+            if(_rtc_update) setTime_rtc(t);
+        #endif
+
         DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), (char *) ntpDateTime(ntpLocal2UTC(t)).c_str());
         DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) ntpDateTime(t).c_str());
     }
@@ -167,13 +183,24 @@ void ntpSetup() {
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
+            _ntp_update = false;
         } else {
             _ntp_update = true;
+            #if RTC_SUPPORT && RTC_NTP_SYNC_ENA
+                _rtc_update = true;
+            #endif
+
         }
     });
 
     wifiRegister([](justwifi_messages_t code, char * parameter) {
         if (code == MESSAGE_CONNECTED) _ntp_start = millis() + NTP_START_DELAY;
+        #if RTC_SUPPORT
+          // system time from local RTC, but still try recovery if enabled (without success)
+        else 
+            if(code == MESSAGE_ACCESSPOINT_CREATED) _ntp_start = millis() + NTP_START_DELAY;
+        #endif                
+
     });
 
     #if WEB_SUPPORT
@@ -184,6 +211,12 @@ void ntpSetup() {
 
     // Register loop
     espurnaRegisterLoop(_ntpLoop);
+    
+    #if RTC_SUPPORT
+        #if TERMINAL_SUPPORT
+            _rtcInitCommands();
+        #endif
+    #endif        
 
 }
 
