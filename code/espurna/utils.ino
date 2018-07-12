@@ -137,9 +137,8 @@ void heartbeat() {
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
         DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
-        #if ADC_MODE_VALUE == ADC_VCC
-            DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
-        #endif
+        int Vcc = custom_getVcc(ADC_MODE_VALUE);
+        DEBUG_MSG_P(PSTR("[MAIN] Power: %s \n"), (Vcc==(-1) ? "Unknown" : String(Vcc).c_str()));
         #if NTP_SUPPORT
             if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
         #endif
@@ -191,9 +190,8 @@ void heartbeat() {
                 lightMQTT();
             #endif
             #if (HEARTBEAT_REPORT_VCC)
-            #if ADC_MODE_VALUE == ADC_VCC
-                mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-            #endif
+                int Vcc = custom_getVcc(ADC_MODE_VALUE);
+                mqttSend(MQTT_TOPIC_VCC, (Vcc==(-1) ? "Unknown" : String(Vcc).c_str()));
             #endif
             #if (HEARTBEAT_REPORT_STATUS)
                 mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
@@ -332,9 +330,8 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
     DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
-    #if ADC_MODE_VALUE == ADC_VCC
-        DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
-    #endif
+    int Vcc = custom_getVcc(ADC_MODE_VALUE);
+    DEBUG_MSG_P(PSTR("[MAIN] Power: %s \n"), (Vcc==(-1) ? "Unknown" : String(Vcc).c_str()));
 
     DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
@@ -437,9 +434,21 @@ void nice_delay(unsigned long ms) {
 }
 
 // This method is called by the SDK to know where to connect the ADC
+// poulch74: add custom Vcc (see #define ADC_VCC_CUSTOM)
 int __get_adc_mode() {
-    return (int) (ADC_MODE_VALUE);
+    return (int) ((ADC_MODE_VALUE==ADC_VCC_CUSTOM) ? ADC_TOUT:ADC_MODE_VALUE);
 }
+
+int custom_getVcc(int mode) {
+    if(mode == ADC_VCC_CUSTOM) {
+        double vcc = analogRead(0)*ADC_VCC_CUSTOM_MUL+ADC_VCC_CUSTOM_ADD;
+        if(vcc < 0) vcc = 0;
+        return (int)vcc;
+    }
+    if(mode == ADC_VCC) return ESP.getVcc();
+    return -1;// decode for string as Unknown
+}
+
 
 bool isNumber(const char * s) {
     unsigned char len = strlen(s);

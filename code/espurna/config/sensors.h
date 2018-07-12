@@ -646,6 +646,17 @@
 #define ADC_MODE_VALUE                  ADC_VCC
 #endif
 
+// custom Vcc mode (ADC_TOUT mode with correction)
+#define ADC_VCC_CUSTOM                  1
+
+#ifndef ADC_VCC_CUSTOM_MUL
+    #define ADC_VCC_CUSTOM_MUL          (1.0)
+#endif
+
+#ifndef ADC_VCC_CUSTOM_ADD
+    #define ADC_VCC_CUSTOM_ADD          (0.0)
+#endif
+
 // -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
