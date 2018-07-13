@@ -208,6 +208,7 @@ function addValue(data, name, value) {
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
+        "btnMqttTopic", "btnSensorDef",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
@@ -893,6 +894,22 @@ function initRelayConfig(data) {
 
 }
 
+function initButtonConfig(data) {
+    var current = $("#btnConfig > div").length;
+    if (current > 0) { return; }
+
+    var template = $("#btnConfigTemplate").children();
+    for (var i in data) {
+        var btnData = data[i];
+        var line = $(template).clone();
+        $("span.gpio", line).html(btnData.gpio);
+        $("span.id", line).html(i);
+        $("input[name='btnMqttTopic']", line).val(btnData.btnMqttTopic);
+        $("select[name='btnSensorDef']", line).val(btnData.btnSensorDef);
+        line.appendTo("#btnConfig");
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
@@ -1355,6 +1372,12 @@ function processData(data) {
         // Relay configuration
         if ("relayConfig" === key) {
             initRelayConfig(value);
+            return;
+        }
+
+        //Button configuration
+        if ("btnConfig" === key) {
+            initButtonConfig(value);
             return;
         }
 

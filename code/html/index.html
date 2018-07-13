@@ -146,6 +146,10 @@
                             <a href="#" class="pure-menu-link" data="panel-relay">SWITCHES</a>
                         </li>
 
+                        <li class="pure-menu-item module module-btn">
+                            <a href="#" class="pure-menu-link" data="panel-btn">BUTTONS</a>
+                        </li>
+                        
                         <li class="pure-menu-item module module-tspk">
                             <a href="#" class="pure-menu-link" data="panel-thingspeak">THINGSPEAK</a>
                         </li>
@@ -408,6 +412,20 @@
 
                             </fieldset>
 
+                        </div>
+                    </div>
+
+                    <div class="panel" id="panel-btn">
+                        <div class="header">
+                            <h1>BUTTONS</h1>
+                            <h2>Open/closed notifications will be published to the defined topic when the button is configured as door sensor.
+                                If nothing is defined then the default {hostname}/button/# will be used as the topic.
+                            </h2>
+                        </div>
+                        <div class="page">
+                            <fieldset>
+                                <div id="btnConfig"></div>                                
+                            </fieldset>
                         </div>
                     </div>
 
@@ -1475,6 +1493,21 @@
                     <option value="0">Don't change</option>
                     <option value="1">Turn the switch OFF</option>
                     <option value="2">Turn the switch ON</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="btnConfigTemplate" class="template">
+            <legend>Button #<span class="id"></span> (GPIO<span class="gpio"></span>)</legend>                                
+            <div class="pure-g module module-mqtt">
+                <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT topic</label></div>
+                <div class="pure-u-1 pure-u-lg-3-4"><input name="btnMqttTopic" class="pure-u-1" tabindex="0" data="0" /></div>
+            </div>
+            <div class="pure-g module module-mqtt">
+                <div class="pure-u-1 pure-u-lg-1-4"><label>Default sensor state</label></div>
+                <select class="pure-u-1 pure-u-lg-3-4" name="btnSensorDef">
+                    <option value="0">Open</option>
+                    <option value="1">Closed</option>
                 </select>
             </div>
         </div>

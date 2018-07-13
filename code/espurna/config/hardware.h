@@ -2593,7 +2593,12 @@
     // Test non-default modules
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
-    #define SSDP_SUPPORT        1    
+    #define SSDP_SUPPORT        1
+
+    //Button as door sensor
+    #define BUTTON1_PIN                 12
+    #define BUTTON1_MODE                BUTTON_DOOR_SENSOR | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS               BUTTON_MODE_PRESSED_OPEN
 
 #elif defined(GARAGE_OPENER)
 

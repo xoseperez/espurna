@@ -39,6 +39,8 @@
 #define BUTTON_MODE_FACTORY         7
 #define BUTTON_MODE_WPS             8
 #define BUTTON_MODE_SMART_CONFIG    9
+#define BUTTON_MODE_PRESSED_CLOSED  10
+#define BUTTON_MODE_PRESSED_OPEN    11
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON
@@ -46,6 +48,7 @@
 #define BUTTON_SWITCH               1
 #define BUTTON_DEFAULT_HIGH         2
 #define BUTTON_SET_PULLUP           4
+#define BUTTON_DOOR_SENSOR          8
 #endif
 
 //------------------------------------------------------------------------------
