@@ -2593,7 +2593,32 @@
     // Test non-default modules
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
-    #define SSDP_SUPPORT        1
+    #define SSDP_SUPPORT        1    
+
+#elif defined(GARAGE_OPENER)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "ESP12_GARAGE_OPENER"
+
+    // Relays
+    #define RELAY1_PIN              13
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                15
+    #define LED1_PIN_INVERSE        0       
+
+    #define ALEXA_SUPPORT           0
+    #define DOMOTICZ_SUPPORT        0
+    #define I2C_SUPPORT             0
+    #define MDNS_SERVER_SUPPORT     0
+    #define SCHEDULER_SUPPORT       0    
+    #define THINGSPEAK_SUPPORT      0
+        
+    #define BUTTON1_PIN                 12
+    #define BUTTON1_MODE                BUTTON_DOOR_SENSOR | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS               BUTTON_MODE_PRESSED_OPEN
 
 #endif
 
