@@ -176,8 +176,13 @@ function validateForm(form) {
 
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
 
-    var hostname = $("input[name='hostname']", form).val();
-    if (!re_hostname.test(hostname)) {
+    var hostname = $("input[name='hostname']", form);
+    var hasChanged = hostname.attr("hasChanged") || 0;
+    if (0 === hasChanged) {
+        return true;
+    }
+
+    if (!re_hostname.test(hostname.val())) {
         alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
         return false;
     }
