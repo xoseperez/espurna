@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.1a-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.13.1-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/dev.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
@@ -41,6 +41,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for **relay synchronization** (all equal, only one ON, one and only on ON)
     * Support for **MQTT groups** to sync switches between devices
     * Support for **delayed ON/OFF**
+    * Support for **latched relays**
 * **MQTT** enabled
     * **SSL/TLS support** (not on regular builds, see [#64](https://github.com/xoseperez/espurna/issues/64))
     * Switch on/off and toggle relays, group topics (sync relays between different devices)
@@ -70,6 +71,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
         * **TMP35** and **TMP36** analog temperature sensors
+        * **NTC** temperature sensors
         * **SI7021** temperature and humidity sensor
         * **SHT3X** temperature and humidity sensor over I2C (Wemos shield)
         * **AM2320** temperature and humidity sensor over I2C
@@ -206,8 +208,8 @@ Here is the list of supported hardware. For more information please refer to the
 
 ||||
 |---|---|---|
-|![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)|||
-|**Tinkerman ESPurna H**|||
+|![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)|![Tinkerman RFM69GW](images/devices/tinkerman-rfm69gw.jpg)||
+|**Tinkerman ESPurna H**|**Tinkerman RFM69GW**||
 |![Itead Sonoff RF Bridge](images/devices/itead-sonoff-rfbridge.jpg)|![Itead Sonoff RF](images/devices/itead-sonoff-rf.jpg)|![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|
 |**Itead Sonoff RF Bridge**|**Itead Sonoff RF**|**Itead Sonoff 4CH**|
 |![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)|||
@@ -256,8 +258,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**|**Bruno Horta's OnOfre**|
 |![Allnet ESP8266-UP-Relay](images/devices/allnet-esp8266-up-relay.jpg)|![RH Electronics Geiger Counter](images/devices/generic-geiger-diy.png)|![Luani HVIO](images/devices/luani-hvio.jpg)|
 |**Allnet ESP8266-UP-Relay**|**RH Electronics Geiger Counter**|**Luani HVIO**|
-|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|||
-|**Tonbux Mosquito Killer**||||
+|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|![Itead Sonoff IFAN02](images/devices/itead-sonoff-ifan02.jpg)||
+|**Tonbux Mosquito Killer**|**Itead Sonoff IFAN02**|||
 
 **Other supported boards (beta):**
 KMC 4 Outlet, Gosund WS1, Smart Dual Plug, MakerFocus Intelligent Module LM33 for Lamps
