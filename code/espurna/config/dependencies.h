@@ -78,7 +78,7 @@
     #endif
 #endif
 
-#if ITEAD_SONOFF_RFBRIDGE == 1
+#if defined(ITEAD_SONOFF_RFBRIDGE)
     #ifndef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_RFBRIDGE
     #else
