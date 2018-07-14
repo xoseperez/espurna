@@ -123,11 +123,14 @@ void setup() {
     #if SSDP_SUPPORT
         ssdpSetup();
     #endif
+    #if I2C_SUPPORT
+        i2cSetup();
+    #endif
     #if NTP_SUPPORT
         ntpSetup();
     #endif
-    #if I2C_SUPPORT
-        i2cSetup();
+    #if RTC_SUPPORT
+        rtcSetup(); // Always after NTP and I2C
     #endif
     #ifdef ITEAD_SONOFF_RFBRIDGE
         rfbSetup();

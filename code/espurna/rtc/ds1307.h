@@ -10,9 +10,6 @@ Copyright (C) 2018 by Pavel Chauzov <poulch at mail dot ru>
 
 #pragma once
 
-#undef I2C_SUPPORT
-#define I2C_SUPPORT 1 // Explicitly request I2C support.
-
 #include <TimeLib.h>
 
 #define DS1307ADDR 0x68
@@ -20,7 +17,7 @@ Copyright (C) 2018 by Pavel Chauzov <poulch at mail dot ru>
 #define _bcdToDec(val) ((uint8_t) ((val / 16 * 10) + (val % 16)))
 #define _decToBcd(val) ((uint8_t) ((val / 10 * 16) + (val % 10)))
 
-time_t getTime_rtc() {
+time_t rtcGetTime() {
     uint8_t data[7];
     tmElements_t tm;
 
@@ -37,7 +34,7 @@ time_t getTime_rtc() {
     return makeTime(tm);
 }
 
-uint8_t setTime_rtc(time_t nt) {
+uint8_t rtcSetTime(time_t nt) {
     uint8_t data[8];
     tmElements_t ct;
     breakTime(nt, ct);

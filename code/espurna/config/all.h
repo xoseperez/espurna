@@ -31,7 +31,6 @@
 #include "general.h"
 #include "prototypes.h"
 #include "sensors.h"
-#include "rtc.h"
 #include "dependencies.h"
 #include "progmem.h"
 #include "debug.h"

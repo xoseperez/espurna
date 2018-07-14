@@ -594,8 +594,8 @@ void mqttFlush() {
     _mqttBuildTree(root, 255);
 
     // Add extra propeties
-    #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
-        if (ntpSynced()) root[MQTT_TOPIC_TIME] = ntpDateTime();
+    #if MQTT_ENQUEUE_DATETIME
+        if (rtcReady()) root[MQTT_TOPIC_TIME] = rtcDateTime();
     #endif
     #if MQTT_ENQUEUE_MAC
         root[MQTT_TOPIC_MAC] = WiFi.macAddress();
@@ -751,7 +751,7 @@ void mqttReset() {
 void mqttSetup() {
 
     _mqttBackwards();
-    
+
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",

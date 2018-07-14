@@ -91,7 +91,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->printf("{\n\"app\": \"%s\"", APP_NAME);
     response->printf(",\n\"version\": \"%s\"", APP_VERSION);
     response->printf(",\n\"backup\": \"1\"");
-    response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+    response->printf(",\n\"timestamp\": \"%s\"", rtcDateTime().c_str());
 
     // Write the keys line by line (not sorted)
     unsigned long count = settingsKeyCount();

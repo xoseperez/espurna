@@ -103,6 +103,23 @@ String buildTime() {
 
 }
 
+bool rtcReady() {
+    return (year() > 2017);
+}
+
+String rtcDateTime(time_t t) {
+    char buffer[20];
+    snprintf_P(buffer, sizeof(buffer),
+        PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
+        year(t), month(t), day(t), hour(t), minute(t), second(t)
+    );
+    return String(buffer);
+}
+
+String rtcDateTime() {
+    if (rtcReady()) return rtcDateTime(now());
+    return String();
+}
 
 unsigned long getUptime() {
 
@@ -141,7 +158,7 @@ void heartbeat() {
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
         #if NTP_SUPPORT
-            if (ntpSynced()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) ntpDateTime().c_str());
+            if (rtcReady()) DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), (char *) rtcDateTime().c_str());
         #endif
     }
 
@@ -179,7 +196,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
             #endif
             #if (HEARTBEAT_REPORT_DATETIME) && (NTP_SUPPORT)
-                if (ntpSynced())  mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+                if (rtcReady())  mqttSend(MQTT_TOPIC_DATETIME, rtcDateTime().c_str());
             #endif
             #if (HEARTBEAT_REPORT_FREEHEAP)
                 mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());

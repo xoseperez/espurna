@@ -89,7 +89,8 @@
 //#define BLITZWOLF_BWSHP2
 //#define BH_ONOFRE
 //#define ITEAD_SONOFF_IFAN02
-//#define SHAPEsp
+//#define POULCH74_SHAPESP
+
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------

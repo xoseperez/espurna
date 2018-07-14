@@ -194,7 +194,7 @@ void _schCheck() {
 void _schLoop() {
 
     // Check time has been sync'ed
-    if (!ntpSynced()) return;
+    if (!rtcReady()) return;
 
     // Check schedules every minute at hh:mm:00
     static unsigned long last_minute = 60;

@@ -17,11 +17,6 @@ unsigned long _ntp_start = 0;
 bool _ntp_update = false;
 bool _ntp_configure = false;
 
-#if RTC_SUPPORT && RTC_NTP_SYNC_ENA
-bool _rtc_update = false;
-#endif
-
-
 // -----------------------------------------------------------------------------
 // NTP
 // -----------------------------------------------------------------------------
@@ -39,26 +34,17 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
     root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-    if (ntpSynced()) root["now"] = now();
+    if (rtcReady()) root["now"] = now();
 }
 
 #endif
 
 void _ntpStart() {
-
     _ntp_start = 0;
-
     NTP.begin(getSetting("ntpServer", NTP_SERVER));
-
-#if RTC_SUPPORT
-    // set alter sync provider. two attempts for NTP synchro at start occure...
-    setSyncProvider(ntp_getTime);
-#endif    
-
     NTP.setInterval(NTP_SYNC_INTERVAL, NTP_UPDATE_INTERVAL);
     NTP.setNTPTimeout(NTP_TIMEOUT);
     _ntpConfigure();
-
 }
 
 void _ntpConfigure() {
@@ -99,15 +85,17 @@ void _ntpUpdate() {
         wsSend(_ntpWebSocketOnSend);
     #endif
 
-    if (ntpSynced()) {
+    if (rtcReady()) {
+
         time_t t = now();
+
         #if RTC_SUPPORT && RTC_NTP_SYNC_ENA
-            // sync/update rtc here!!!!!!!!!!!!
-            if(_rtc_update) setTime_rtc(t);
+            rtcSetTime(t);
         #endif
 
-        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), (char *) ntpDateTime(ntpLocal2UTC(t)).c_str());
-        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) ntpDateTime(t).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), (char *) rtcDateTime(ntpLocal2UTC(t)).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) rtcDateTime(t).c_str());
+
     }
 
 }
@@ -122,9 +110,9 @@ void _ntpLoop() {
 
     #if BROKER_SUPPORT
         static unsigned char last_minute = 60;
-        if (ntpSynced() && (minute() != last_minute)) {
+        if (rtcReady() && (minute() != last_minute)) {
             last_minute = minute();
-            brokerPublish(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            brokerPublish(MQTT_TOPIC_DATETIME, rtcDateTime(now()).c_str());
         }
     #endif
 
@@ -142,24 +130,6 @@ void _ntpBackwards() {
 }
 
 // -----------------------------------------------------------------------------
-
-bool ntpSynced() {
-    return (year() > 2017);
-}
-
-String ntpDateTime(time_t t) {
-    char buffer[20];
-    snprintf_P(buffer, sizeof(buffer),
-        PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        year(t), month(t), day(t), hour(t), minute(t), second(t)
-    );
-    return String(buffer);
-}
-
-String ntpDateTime() {
-    if (ntpSynced()) return ntpDateTime(now());
-    return String();
-}
 
 time_t ntpLocal2UTC(time_t local) {
     int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
@@ -186,20 +156,16 @@ void ntpSetup() {
             _ntp_update = false;
         } else {
             _ntp_update = true;
-            #if RTC_SUPPORT && RTC_NTP_SYNC_ENA
-                _rtc_update = true;
-            #endif
-
         }
     });
 
     wifiRegister([](justwifi_messages_t code, char * parameter) {
         if (code == MESSAGE_CONNECTED) _ntp_start = millis() + NTP_START_DELAY;
         #if RTC_SUPPORT
-          // system time from local RTC, but still try recovery if enabled (without success)
-        else 
-            if(code == MESSAGE_ACCESSPOINT_CREATED) _ntp_start = millis() + NTP_START_DELAY;
-        #endif                
+            // system time from local RTC, but still try recovery if enabled (without success)
+        else
+            if (code == MESSAGE_ACCESSPOINT_CREATED) _ntp_start = millis() + NTP_START_DELAY;
+        #endif
 
     });
 
@@ -211,12 +177,6 @@ void ntpSetup() {
 
     // Register loop
     espurnaRegisterLoop(_ntpLoop);
-    
-    #if RTC_SUPPORT
-        #if TERMINAL_SUPPORT
-            _rtcInitCommands();
-        #endif
-    #endif        
 
 }
 

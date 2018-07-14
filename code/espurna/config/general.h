@@ -1286,3 +1286,24 @@
 #ifndef RFM69_IS_RFM69HW
 #define RFM69_IS_RFM69HW            0
 #endif
+
+//--------------------------------------------------------------------------------
+// Real Time Clock support
+// Enable support by passing RTC_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef RTC_SUPPORT
+#define RTC_SUPPORT              0              // Enable battery backed RTC for ntp
+#endif
+
+#ifndef RTC_PROVIDER
+#define RTC_PROVIDER             RTC_PROVIDER_DS1307    // RTC chip (only if RTC_SUPPORT == 1)
+#endif
+
+#ifndef RTC_RECOVERY_CNT
+#define RTC_RECOVERY_CNT         10             // 0 no recovery
+#endif
+
+#ifndef RTC_NTP_SYNC_ENA
+#define RTC_NTP_SYNC_ENA         1              // enable sync RTC on NTP sync success
+#endif

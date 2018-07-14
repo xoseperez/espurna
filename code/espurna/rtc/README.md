@@ -12,6 +12,6 @@
                                                   1 rtc synced with ntp on ntp success
 ## to add new rtc ic support
    - see ds3231.h as example, create your_ic.h file and write two
-     functions time_t getTime_rtc() and uint8_t setTime_rtc(time_t nt)
+     functions time_t rtcGetTime() and uint8_t rtcSetTime(time_t nt)
    - define your provider constant in config/types.h
    - add your provider section in config/rtc.h
