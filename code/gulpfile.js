@@ -47,6 +47,7 @@ const rename = require('gulp-rename');
 const replace = require('gulp-replace');
 const remover = require('gulp-remove-code');
 const gzip = require('gulp-gzip');
+const path = require('path');
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -71,7 +72,7 @@ var toHeader = function(name, debug) {
 
     return through.obj(function (source, encoding, callback) {
 
-        var parts = source.path.split("/");
+        var parts = source.path.split(path.sep);
         var filename = parts[parts.length - 1];
         var safename = name || filename.replaceAll('.', '_');
 

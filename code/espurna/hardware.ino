@@ -1816,6 +1816,58 @@ void _hardwareLoad() {
         setSetting("rfm69ResetGPIO", 7);
         setSetting("rfm69HW", 0)
 
+    #elif defined(ITEAD_SONOFF_IFAN02)
+
+        setSetting("board", 86);
+
+        setSetting("btnGPIO", 0, 0);
+        setSetting("btnGPIO", 1, 9);
+        setSetting("btnGPIO", 2, 10);
+        setSetting("btnGPIO", 3, 14);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, 1);
+        setSetting("ledMode", 0, LED_MODE_WIFI);
+
+        setSetting("rlyGPIO", 0, 12);
+        setSetting("rlyGPIO", 1, 5);
+        setSetting("rlyGPIO", 2, 4);
+        setSetting("rlyGPIO", 3, 15);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 2, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 3, RELAY_TYPE_NORMAL);
+
+    #elif defined(GENERIC_AG_L4)
+
+        setSetting("board", 87);
+
+        setSetting("btnGPIO", 0, 4);
+        setSetting("btnGPIO", 1, 2);
+        setSetting("btnRelay", 0, 0);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON);
+        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE);
+
+        setSetting("ledGPIO", 0, 5);
+        setSetting("ledGPIO", 1, 16);
+        setSetting("ledLogic", 0, 0);
+        setSetting("ledLogic", 1, 1);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyDummy", 1);
+
+        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
+        setSetting("litChGPIO", 0, 14);
+        setSetting("litChGPIO", 1, 13);
+        setSetting("litChGPIO", 2, 12);
+        setSetting("litChLogic", 0, 0);
+        setSetting("litChLogic", 1, 0);
+        setSetting("litChLogic", 2, 0);
+
     #endif
 
 }
