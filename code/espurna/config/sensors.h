@@ -281,6 +281,11 @@
 #define EVENTS_SUPPORT                  0       // Do not build with counter support by default
 #endif
 
+#ifndef EVENTS_TRIGGER
+#define EVENTS_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
 #ifndef EVENTS_PIN
 #define EVENTS_PIN                      2       // GPIO to monitor
 #endif
