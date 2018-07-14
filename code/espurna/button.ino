@@ -135,7 +135,7 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
     if (event == EVENT_PRESSED) return BUTTON_EVENT_PRESSED;
     if (event == EVENT_CHANGED) return BUTTON_EVENT_CLICK;
     if (event == EVENT_RELEASED) {
-        if (1 == count) {            
+        if (1 == count) {
             if (length > BUTTON_LNGLNGCLICK_DELAY) return BUTTON_EVENT_LNGLNGCLICK;
             if (length > BUTTON_LNGCLICK_DELAY) return BUTTON_EVENT_LNGCLICK;
             return BUTTON_EVENT_CLICK;
