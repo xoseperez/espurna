@@ -15,7 +15,7 @@
 // RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
 // LED#_PIN: GPIO for the n-th LED (1-based, up to 8 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
-// LED#_MODE: Check general.h for LED_MODE_%
+// LED#_MODE: Check types.h for LED_MODE_%
 // LED#_RELAY: Linked relay (1-based)
 //
 // Besides, other hardware specific information should be stated here
