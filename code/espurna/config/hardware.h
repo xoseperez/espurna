@@ -1580,7 +1580,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
