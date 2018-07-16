@@ -260,7 +260,11 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
 void info() {
 
     DEBUG_MSG_P(PSTR("\n\n"));
-    DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+    if (strlen(APP_REVISION) > 0) {
+        DEBUG_MSG_P(PSTR("[INIT] %s %s (%s)\n"), (char *) APP_NAME, (char *) APP_VERSION, (char *) APP_REVISION);
+    } else {
+        DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+    }
     DEBUG_MSG_P(PSTR("[INIT] %s\n"), (char *) APP_AUTHOR);
     DEBUG_MSG_P(PSTR("[INIT] %s\n\n"), (char *) APP_WEBSITE);
     DEBUG_MSG_P(PSTR("[INIT] CPU chip ID: 0x%06X\n"), ESP.getChipId());
