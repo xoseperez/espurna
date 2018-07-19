@@ -79,6 +79,14 @@
 #define ANALOG_SUPPORT                  0
 #endif
 
+#ifndef ANALOG_SAMPLES
+#define ANALOG_SAMPLES                  10      // Number of samples
+#endif
+
+#ifndef ANALOG_DELAY
+#define ANALOG_DELAY                    0       // Delay between samples in micros
+#endif
+
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag
@@ -383,7 +391,27 @@
 #define HLW8012_VOLTAGE_R_DOWN          ( 1000 )        // Downstream voltage resistor
 #endif
 
+#ifndef HLW8012_CURRENT_RATIO
+#define HLW8012_CURRENT_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_VOLTAGE_RATIO
+#define HLW8012_VOLTAGE_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_POWER_RATIO
+#define HLW8012_POWER_RATIO             0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_USE_INTERRUPTS
 #define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
+#endif
+
+#ifndef HLW8012_INTERRUPT_ON
+#define HLW8012_INTERRUPT_ON            CHANGE  // When to trigger the interrupt
+                                                // Use CHANGE for HLW8012
+                                                // Use FALLING for BL0937 / HJL0
+#endif
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
@@ -400,6 +428,43 @@
 
 #ifndef MHZ19_TX_PIN
 #define MHZ19_TX_PIN                    15
+#endif
+
+//------------------------------------------------------------------------------
+// NTC sensor
+// Enable support by passing NTC_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef NTC_SUPPORT
+#define NTC_SUPPORT                     0
+#endif
+
+#ifndef NTC_SAMPLES
+#define NTC_SAMPLES                     10      // Number of samples
+#endif
+
+#ifndef NTC_DELAY
+#define NTC_DELAY                       0       // Delay between samples in micros
+#endif
+
+#ifndef NTC_R_UP
+#define NTC_R_UP                        0       // Resistor upstream, set to 0 if none
+#endif
+
+#ifndef NTC_R_DOWN
+#define NTC_R_DOWN                      10000   // Resistor downstream, set to 0 if none
+#endif
+
+#ifndef NTC_T0
+#define NTC_T0                          298.15  // 25 Celsius
+#endif
+
+#ifndef NTC_R0
+#define NTC_R0                          10000   // Resistance at T0
+#endif
+
+#ifndef NTC_BETA
+#define NTC_BETA                        3977    // Beta coeficient
 #endif
 
 //------------------------------------------------------------------------------
@@ -469,7 +534,7 @@
 #endif
 
 #ifndef PZEM004T_HW_PORT
-#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
 //------------------------------------------------------------------------------
@@ -561,6 +626,7 @@
     HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
+    NTC_SUPPORT || \
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
@@ -689,6 +755,11 @@
 #if MHZ19_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
+#endif
+
+#if NTC_SUPPORT
+    #include "../sensors/AnalogSensor.h"
+    #include "../sensors/NTCSensor.h"
 #endif
 
 #if SENSEAIR_SUPPORT

@@ -183,6 +183,7 @@ void _sensorWebSocketStart(JsonObject& root) {
 
         #if PZEM004T_SUPPORT
             if (sensor->getID() == SENSOR_PZEM004T_ID) {
+                root["pzemVisible"] = 1;
                 root["pwrVisible"] = 1;
             }
         #endif
@@ -323,6 +324,8 @@ void _sensorLoad() {
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
+        sensor->setSamples(ANALOG_SAMPLES);
+        sensor->setDelay(ANALOG_DELAY);
         _sensors.push_back(sensor);
     }
     #endif
@@ -499,6 +502,20 @@ void _sensorLoad() {
     }
     #endif
 
+    #if NTC_SUPPORT
+    {
+        NTCSensor * sensor = new NTCSensor();
+        sensor->setSamples(NTC_SAMPLES);
+        sensor->setDelay(NTC_DELAY);
+        sensor->setUpstreamResistor(NTC_R_UP);
+        sensor->setDownstreamResistor(NTC_R_DOWN);
+        sensor->setBeta(NTC_BETA);
+        sensor->setR0(NTC_R0);
+        sensor->setT0(NTC_T0);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if SENSEAIR_SUPPORT
     {
         SenseAirSensor * sensor = new SenseAirSensor();
@@ -643,13 +660,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", 0).toFloat();
+                value = getSetting("pwrRatioC", HLW8012_CURRENT_RATIO).toFloat();
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", 0).toFloat();
+                value = getSetting("pwrRatioV", HLW8012_VOLTAGE_RATIO).toFloat();
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", 0).toFloat();
+                value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
             }

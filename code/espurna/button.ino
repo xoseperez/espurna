@@ -10,6 +10,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // BUTTON
 // -----------------------------------------------------------------------------
 
+#if BUTTON_SUPPORT
+
 #include <DebounceEvent.h>
 #include <vector>
 
@@ -266,3 +268,5 @@ void buttonLoop() {
     #endif
 
 }
+
+#endif // BUTTON_SUPPORT

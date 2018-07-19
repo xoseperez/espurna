@@ -234,13 +234,13 @@ class HLW8012Sensor : public BaseSensor {
 
                 if (_interrupt_cf != _cf) {
                     if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
-                    _attach(this, _cf, CHANGE);
+                    _attach(this, _cf, HLW8012_INTERRUPT_ON);
                     _interrupt_cf = _cf;
                 }
 
                 if (_interrupt_cf1 != _cf1) {
                     if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
-                    _attach(this, _cf1, CHANGE);
+                    _attach(this, _cf1, HLW8012_INTERRUPT_ON);
                     _interrupt_cf1 = _cf1;
                 }
 

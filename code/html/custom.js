@@ -19,6 +19,11 @@ var ago = 0;
 
 const WEB_MODE_PASSWORD = 1;
 
+<!-- removeIf(!rfm69)-->
+var packets;
+var filters = [];
+<!-- endRemoveIf(!rfm69)-->
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -172,8 +177,13 @@ function validateForm(form) {
 
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
 
-    var hostname = $("input[name='hostname']", form).val();
-    if (!re_hostname.test(hostname)) {
+    var hostname = $("input[name='hostname']", form);
+    var hasChanged = hostname.attr("hasChanged") || 0;
+    if (0 === hasChanged) {
+        return true;
+    }
+
+    if (!re_hostname.test(hostname.val())) {
         alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
         return false;
     }
@@ -207,7 +217,8 @@ function addValue(data, name, value) {
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
-        "adminPass"
+        "adminPass",
+        "node", "key", "topic"
     ];
 
     if (name in data) {
@@ -310,11 +321,17 @@ function checkFirmware(file, callback) {
 
     reader.onloadend = function(evt) {
         if (FileReader.DONE === evt.target.readyState) {
-            callback(0xE9 === evt.target.result.charCodeAt(0));
+            if (0xE9 !== evt.target.result.charCodeAt(0)) callback(false);
+            if (0x03 !== evt.target.result.charCodeAt(2)) {
+                var response = window.confirm("Binary image is not using DOUT flash mode. This might cause resets in some devices. Press OK to continue.");
+                callback(response);
+            } else {
+                callback(true);
+            }
         }
     };
 
-    var blob = file.slice(0, 1);
+    var blob = file.slice(0, 3);
     reader.readAsBinaryString(blob);
 
 }
@@ -533,7 +550,7 @@ function doFactoryReset() {
     if (response === false) {
         return false;
     }
-    websock.send(JSON.stringify({"action": "factory_reset"}));
+    sendAction("factory_reset", {});
     doReload(5000);
     return false;
 }
@@ -568,6 +585,56 @@ function doDebugClear() {
     $("#weblog").text("");
     return false;
 }
+
+<!-- removeIf(!rfm69)-->
+
+function doClearCounts() {
+    sendAction("clear-counts", {});
+    return false;
+}
+
+function doClearMessages() {
+    packets.clear().draw(false);
+    return false;
+}
+
+function doFilter(e) {
+    var index = packets.cell(this).index();
+    if (index == 'undefined') return;
+    var c = index.column;
+    var column = packets.column(c);
+    if (filters[c]) {
+        filters[c] = false;
+        column.search("");
+        $(column.header()).removeClass("filtered");
+    } else {
+        filters[c] = true;
+        var data = packets.row(this).data();
+        if (e.which == 1) {
+            column.search('^' + data[c] + '$', true, false );
+        } else {
+            column.search('^((?!(' + data[c] + ')).)*$', true, false );
+        }
+        $(column.header()).addClass("filtered");
+    }
+    column.draw();
+    return false;
+}
+
+function doClearFilters() {
+    for (var i = 0; i < packets.columns()[0].length; i++) {
+        if (filters[i]) {
+            filters[i] = false;
+            var column = packets.column(i);
+            column.search("");
+            $(column.header()).removeClass("filtered");
+            column.draw();
+        }
+    }
+    return false;
+}
+
+<!-- endRemoveIf(!rfm69)-->
 
 // -----------------------------------------------------------------------------
 // Visualization
@@ -636,6 +703,28 @@ function createMagnitudeList(data, container, template_name) {
 
 }
 <!-- endRemoveIf(!sensor)-->
+
+// -----------------------------------------------------------------------------
+// RFM69
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!rfm69)-->
+function addMapping() {
+    var template = $("#nodeTemplate .pure-g")[0];
+    var line = $(template).clone();
+    var tabindex = $("#mapping > div").length * 3 + 50;
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find("button").on('click', delMapping);
+    line.appendTo("#mapping");
+}
+
+function delMapping() {
+    var parent = $(this).parent().parent();
+    $(parent).remove();
+}
+<!-- endRemoveIf(!rfm69)-->
 
 // -----------------------------------------------------------------------------
 // Wifi
@@ -751,10 +840,12 @@ function initCheckboxes() {
     var setCheckbox = function(element, value) {
         var container = $(".toggle-container", $(element));
         if (value) {
-            container.css("clipPath", "inset(0 0 0 50%)");
+            container.css("-webkit-clip-path", "inset(0 0 0 50%)");
+            container.css("clip-path", "inset(0 0 0 50%)");
             container.css("backgroundColor", "#00c000");
         } else {
-            container.css("clipPath", "inset(0 50% 0 0)");
+            container.css("-webkit-clip-path", "inset(0 50% 0 0)");
+            container.css("clip-path", "inset(0 50% 0 0)");
             container.css("backgroundColor", "#c00000");
         }
     }
@@ -1102,6 +1193,50 @@ function processData(data) {
         <!-- endRemoveIf(!rfbridge)-->
 
         // ---------------------------------------------------------------------
+        // RFM69
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!rfm69)-->
+
+        if (key == "packet") {
+            var packet = data.packet;
+            var d = new Date();
+            packets.row.add([
+                d.toLocaleTimeString('en-US', { hour12: false }),
+                packet.senderID,
+                packet.packetID,
+                packet.targetID,
+                packet.key,
+                packet.value,
+                packet.rssi,
+                packet.duplicates,
+                packet.missing,
+            ]).draw(false);
+            return;
+        }
+
+        if (key == "mapping") {
+			for (var i in data.mapping) {
+
+				// add a new row
+				addMapping();
+
+				// get group
+				var line = $("#mapping .pure-g")[i];
+
+				// fill in the blanks
+				var mapping = data.mapping[i];
+				Object.keys(mapping).forEach(function(key) {
+				    var id = "input[name=" + key + "]";
+				    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+				});
+			}
+			return;
+		}
+
+        <!-- endRemoveIf(!rfm69)-->
+
+        // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
@@ -1320,7 +1455,7 @@ function processData(data) {
 
         if ("deviceip" === key) {
             var a_href = $("span[name='" + key + "']").parent();
-            a_href.attr("href", "http://" + value);
+            a_href.attr("href", "//" + value);
             a_href.next().attr("href", "telnet://" + value);
         }
 
@@ -1536,6 +1671,21 @@ $(function() {
     <!-- removeIf(!light)-->
     $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
     <!-- endRemoveIf(!light)-->
+
+    <!-- removeIf(!rfm69)-->
+    $(".button-add-mapping").on('click', addMapping);
+    $(".button-del-mapping").on('click', delMapping);
+    $(".button-clear-counts").on('click', doClearCounts);
+    $(".button-clear-messages").on('click', doClearMessages);
+    $(".button-clear-filters").on('click', doClearFilters);
+    $('#packets tbody').on('mousedown', 'td', doFilter);
+    packets = $('#packets').DataTable({
+        "paging": false
+    });
+    for (var i = 0; i < packets.columns()[0].length; i++) {
+        filters[i] = false;
+    }
+    <!-- endRemoveIf(!rfm69)-->
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

@@ -84,7 +84,11 @@ class PZEM004TSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "PZEM004T @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            if (_serial) {
+                snprintf(buffer, sizeof(buffer), "PZEM004T @ HwSerial");
+            } else {
+                snprintf(buffer, sizeof(buffer), "PZEM004T @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            }
             return String(buffer);
         }
 
@@ -109,11 +113,13 @@ class PZEM004TSensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return _pzem->current(_ip);
-            if (index == 1) return _pzem->voltage(_ip);
-            if (index == 2) return _pzem->power(_ip);
-            if (index == 3) return _pzem->energy(_ip);
-            return 0;
+            double response = 0;
+            if (index == 0) response = _pzem->current(_ip);
+            if (index == 1) response = _pzem->voltage(_ip);
+            if (index == 2) response = _pzem->power(_ip);
+            if (index == 3) response = _pzem->energy(_ip) * 3600;
+            if (response < 0) response = 0;
+            return response;
         }
 
     protected:

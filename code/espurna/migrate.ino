@@ -953,7 +953,7 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
-        #elif defined(NEO_COOLCAM_POWER_PLUG_WIFI)
+        #elif defined(NEO_COOLCAM_NAS_WR01W)
 
             setSetting("board", 75);
             setSetting("ledGPIO", 0, 4);
@@ -977,7 +977,7 @@ void migrate() {
 
         #elif defined(ESTINK_WIFI_POWER_STRIP)
 
-            setSetting("board", 76);
+            setSetting("board", 77);
             setSetting("btnGPIO", 0, 16);
             setSetting("btnRelay", 0, 3);
             setSetting("ledGPIO", 0, 0);
@@ -1003,6 +1003,89 @@ void migrate() {
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
             setSetting("relayType", 2, RELAY_TYPE_NORMAL);
             setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
+        #elif defined(BH_ONOFRE)
+
+            setSetting("board", 78);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 0, 1);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(BLITZWOLF_BWSHP2)
+
+            setSetting("board", 79);
+            setSetting("ledGPIO", 0, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 0);
+            setSetting("ledLogic", 1, 1);
+            setSetting("ledMode", 1, LED_MODE_FINDME);
+            setSetting("ledRelay", 1, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 14);
+            setSetting("cfGPIO", 5);
+            setSetting("pwrRatioC", 25740);
+            setSetting("pwrRatioV", 313400);
+            setSetting("pwrRatioP", 3414290);
+            setSetting("hlwSelC", LOW);
+            setSetting("hlwIntM", FALLING);
+
+        #elif defined(TINKERMAN_RFM69GW)
+
+            setSetting("board", 80);
+            setSetting("btnGPIO", 0, 0);
+
+        #elif defined(ITEAD_SONOFF_IFAN02)
+
+            setSetting("board", 81);
+
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnGPIO", 1, 9);
+            setSetting("btnGPIO", 2, 10);
+            setSetting("btnGPIO", 3, 14);
+
+            setSetting("ledGPIO", 1, 13);
+            setSetting("ledLogic", 1, 1);
+
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayGPIO", 2, 4);
+            setSetting("relayGPIO", 3, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 2, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 3, RELAY_TYPE_NORMAL);
+
+        #elif defined(GENERIC_AG_L4)
+
+            setSetting("board", 82);
+
+            setSetting("btnGPIO", 0, 4);
+            setSetting("btnGPIO", 1, 2);
+            setSetting("btnRelay", 0, 0);
+
+            setSetting("ledGPIO", 0, 5);
+            setSetting("ledGPIO", 1, 16);
+            setSetting("ledLogic", 0, 0);
+            setSetting("ledLogic", 1, 1);
+
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 14);
+            setSetting("chGPIO", 1, 13);
+            setSetting("chGPIO", 2, 12);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("relays", 1);
 
         #else
 

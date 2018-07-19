@@ -268,6 +268,7 @@
 #define SENSOR_HCSR04_ID            0x23
 #define SENSOR_SENSEAIR_ID          0x24
 #define SENSOR_GEIGER_ID            0x25
+#define SENSOR_NTC_ID               0x26
 
 //--------------------------------------------------------------------------------
 // Magnitudes

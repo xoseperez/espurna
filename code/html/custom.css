@@ -148,10 +148,6 @@ div.state {
     letter-spacing: 0;
     margin-bottom: 10px;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-    text-transform: uppercase;
-    font-family: 'FreeSans','Arimo','Droid Sans','Helvetica','Arial','sans-serif';
-    font-size: .7em;
-    height: 37px;
     padding: 8px 8px;
 }
 
@@ -168,9 +164,13 @@ div.state {
 .button-ha-del,
 .button-rfb-forget,
 .button-del-network,
+.button-del-mapping,
 .button-del-schedule,
 .button-dbg-clear,
 .button-upgrade,
+.button-clear-filters,
+.button-clear-messages,
+.button-clear-counts,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
 }
@@ -178,8 +178,9 @@ div.state {
 .button-update,
 .button-update-password,
 .button-add-network,
-.button-rfb-learn,
+.button-add-mapping,
 .button-upgrade-browse,
+.button-rfb-learn,
 .button-ha-add,
 .button-ha-config,
 .button-settings-backup,
@@ -203,6 +204,9 @@ div.state {
 }
 
 .button-upgrade-browse,
+.button-clear-filters,
+.button-clear-messages,
+.button-clear-counts,
 .button-dbgcmd,
 .button-ha-add,
 .button-apikey,
@@ -263,6 +267,7 @@ span.slider {
 .inner-container:nth-child(2) {
 	background: #c00000;
 	color: white;
+	-webkit-clip-path: inset(0 50% 0 0);
 	clip-path: inset(0 50% 0 0);
 	transition: .3s cubic-bezier(0,0,0,1);
 }
@@ -371,6 +376,26 @@ span.slider {
     margin-top: 10px;
     display: none;
     padding: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+    Table
+   -------------------------------------------------------------------------- */
+
+.right {
+    text-align: right;
+}
+
+table.dataTable.display tbody td {
+    text-align: center;
+}
+
+#packets_filter {
+    display: none;
+}
+
+.filtered {
+    color: rgb(202, 60, 60);
 }
 
 /* -----------------------------------------------------------------------------
