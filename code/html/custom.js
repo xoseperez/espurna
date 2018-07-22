@@ -814,7 +814,6 @@ function initRelays(data) {
         $(":checkbox", line).prop('checked', data[i]).attr("data", i)
             .prop("id", "relay" + i)
             .on("change", function (event) {
-                console.log("sending message");
                 var id = parseInt($(event.target).attr("data"), 10);
                 var status = $(event.target).prop("checked");
                 doToggle(id, status);
@@ -1523,6 +1522,9 @@ function initUrls(root) {
     } else {
         urls.ws.protocol = "ws:";
     }
+    <!-- removeIf(!cleanIt) -->
+    urls.ws.port = Number(urls.ws.port) + 1;
+    <!-- endRemoveIf(!cleanIt) -->
 
 }
 
@@ -1530,24 +1532,37 @@ function connectToURL(url) {
 
     initUrls(url);
 
+    <!-- removeIf(!cleanIt) -->
+    /*
+<!-- endRemoveIf(!cleanIt) -->
     $.ajax({
         'method': 'GET',
         'crossDomain': true,
         'url': urls.auth.href,
         'xhrFields': { 'withCredentials': true }
     }).done(function(data) {
-        if (websock) { websock.close(); }
-        websock = new WebSocket(urls.ws.href);
-        websock.onmessage = function(evt) {
-            var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
-            if (data) {
-                processData(data);
-            }
-        };
+<!-- removeIf(!cleanIt) -->
+*/
+    <!-- endRemoveIf(!cleanIt) -->
+    if (websock) {
+        websock.close();
+    }
+    websock = new WebSocket(urls.ws.href);
+    websock.onmessage = function (evt) {
+        var data = getJson(evt.data.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t"));
+        if (data) {
+            processData(data);
+        }
+    };
+    <!-- removeIf(!cleanIt) -->
+    /*
+<!-- endRemoveIf(!cleanIt) -->
     }).fail(function() {
         // Nothing to do, reload page and retry
     });
-
+<!-- removeIf(!cleanIt) -->
+*/
+    <!-- endRemoveIf(!cleanIt) -->
 }
 
 function connect(host) {
