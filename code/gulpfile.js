@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-/*eslint quotes: ["error", "single"]*/
+/*eslint quotes: ['error', 'single']*/
 /*eslint-env es6*/
 
 // -----------------------------------------------------------------------------
@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 const gulp = require('gulp');
 const runSequence = require('run-sequence');
-const through = require('through2')
+const through = require('through2');
 
 const htmlmin = require('gulp-htmlmin');
 const uglify = require('gulp-uglify');
@@ -39,10 +39,11 @@ const crass = require('gulp-crass');
 
 const htmllint = require('gulp-htmllint');
 const csslint = require('gulp-csslint');
-const jsonlint = require("gulp-jsonlint");
+const jsonlint = require('gulp-jsonlint');
 
 const concat = require('gulp-concat');
 const gap = require('gulp-append-prepend');
+
 const rename = require('gulp-rename');
 const replace = require('gulp-replace');
 const remover = require('gulp-remove-code');
@@ -65,19 +66,14 @@ const devicesFolder = 'devices/';
 
 var toHeader = function(name, debug) {
 
-    String.prototype.replaceAll = function(search, replacement) {
-        var target = this;
-        return target.split(search).join(replacement);
-    };
-
     return through.obj(function (source, encoding, callback) {
 
         var parts = source.path.split(path.sep);
         var filename = parts[parts.length - 1];
-        var safename = name || filename.replaceAll('.', '_');
+        var safename = name || filename.split('.').join('_');
 
         // Generate output
-        var output = "";
+        var output = '';
         output += '#define ' + safename + '_len ' + source.contents.length + '\n';
         output += 'const uint8_t ' + safename + '[] PROGMEM = {';
         for (var i=0; i<source.contents.length; i++) {
@@ -89,18 +85,18 @@ var toHeader = function(name, debug) {
 
         // clone the contents
         var destination = source.clone();
-        destination.path = source.path + ".h";
+        destination.path = source.path + '.h';
         destination.contents = Buffer.from(output);
 
         if (debug) {
-            console.info("Image '" + filename + "' \tsize: " + source.contents.length + " bytes");
+            console.info('Image "' + filename + '" \tsize: ' + source.contents.length + ' bytes');
         }
 
         callback(null, destination);
 
     });
 
-}
+};
 
 var htmllintReporter = function(filepath, issues) {
     if (issues.length > 0) {
@@ -120,13 +116,13 @@ var htmllintReporter = function(filepath, issues) {
 
 var buildWebUI = function(module) {
 
-    var modules = {"light": false, "sensor": false, "rfbridge": false, "rfm69": false};
-    if ("all" == module) {
-        modules["light"] = true;
-        modules["sensor"] = true;
-        modules["rfbridge"] = false;   // we will never be adding this except when building RFBRIDGE
-        modules["rfm69"] = false;   // we will never be adding this except when building RFM69GW
-    } else if ("small" != module) {
+    var modules = {'light': false, 'sensor': false, 'rfbridge': false, 'rfm69': false};
+    if ('all' === module) {
+        modules['light'] = true;
+        modules['sensor'] = true;
+        modules['rfbridge'] = false;   // we will never be adding this except when building RFBRIDGE
+        modules['rfm69'] = false;   // we will never be adding this except when building RFM69GW
+    } else if ('small' !== module) {
         modules[module] = true;
     }
 
@@ -154,9 +150,9 @@ var buildWebUI = function(module) {
         })).
         pipe(replace('pure-', 'p-')).
         pipe(gzip()).
-        pipe(rename("index." + module + ".html.gz")).
+        pipe(rename('index.' + module + '.html.gz')).
         pipe(gulp.dest(dataFolder)).
-        pipe(toHeader("webui_image", true)).
+        pipe(toHeader('webui_image', true)).
         pipe(gulp.dest(staticFolder));
 
 };
@@ -207,28 +203,28 @@ gulp.task('csslint', function() {
 });
 
 gulp.task('webui_small', function() {
-    return buildWebUI("small");
-})
+    return buildWebUI('small');
+});
 
 gulp.task('webui_sensor', function() {
-    return buildWebUI("sensor");
-})
+    return buildWebUI('sensor');
+});
 
 gulp.task('webui_light', function() {
-    return buildWebUI("light");
-})
+    return buildWebUI('light');
+});
 
 gulp.task('webui_rfbridge', function() {
-    return buildWebUI("rfbridge");
-})
+    return buildWebUI('rfbridge');
+});
 
 gulp.task('webui_rfm69', function() {
-    return buildWebUI("rfm69");
-})
+    return buildWebUI('rfm69');
+});
 
 gulp.task('webui_all', function() {
-    return buildWebUI("all");
-})
+    return buildWebUI('all');
+});
 
 gulp.task('webui', ['devices'], function(cb) {
     runSequence([
