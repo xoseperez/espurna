@@ -129,5 +129,6 @@ if [[ "${CI}" = true ]]; then
     print_environments
 fi
 
-build_webui
+# see extra_scripts.py
+#build_webui
 build_environments
