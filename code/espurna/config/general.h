@@ -784,7 +784,7 @@
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define LIGHT_MAX_PWM           10000        // 5000 * 200ns => 1 kHz
+#define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
 #endif
 
 #endif // LIGHT_MAX_PWM
