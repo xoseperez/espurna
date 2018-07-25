@@ -73,8 +73,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
         config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
-        config["payload_on"] = String("1");
-        config["payload_off"] = String("0");
+        config["payload_on"] = MQTT_TOPIC_RELAY_ON;
+        config["payload_off"] = MQTT_TOPIC_RELAY_OFF;
         config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
         config["payload_available"] = String("1");
         config["payload_not_available"] = String("0");

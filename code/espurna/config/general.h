@@ -708,6 +708,15 @@
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
 
+#ifndef MQTT_TOPIC_RELAY_ON
+#define MQTT_TOPIC_RELAY_ON         "1"
+#endif
+
+#ifndef MQTT_TOPIC_RELAY_OFF
+#define MQTT_TOPIC_RELAY_OFF        "0"
+#endif
+
+
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
@@ -784,7 +793,7 @@
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define LIGHT_MAX_PWM           10000        // 5000 * 200ns => 1 kHz
+#define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
 #endif
 
 #endif // LIGHT_MAX_PWM
