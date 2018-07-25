@@ -91,7 +91,7 @@
     // Info
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_MINI_RELAYSHIELD"
-
+    
     // Buttons
     // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
     #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
@@ -2682,6 +2682,22 @@
 	#define BUTTON1_PIN             12
 	#define BUTTON1_MODE            BUTTON_DOOR_SENSOR | BUTTON_DEFAULT_HIGH
 	#define BUTTON1_PRESS           BUTTON_MODE_PRESSED_OPEN
+
+#elif defined(ESP8266_THERMISTOR)
+    #define MANUFACTURER            "INDU"
+    #define DEVICE                  "ESP8266_THERMISTOR"
+
+    #define ALEXA_SUPPORT           0
+    #define DOMOTICZ_SUPPORT        0
+    #define I2C_SUPPORT             0
+    #define MDNS_SERVER_SUPPORT     0
+    #define SCHEDULER_SUPPORT       0    
+    #define THINGSPEAK_SUPPORT      0
+    
+    //#define ANALOG_SUPPORT        1
+    #define THERMISTOR_SUPPORT      1
+    #define SENSOR_DEBUG            1
+    #define DEBUG_SERIAL_SUPPORT    1
 
 #endif
 
