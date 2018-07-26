@@ -293,4 +293,4 @@ void ledLoop() {
 
 }
 
-#endif LED_SUPPORT
+#endif // LED_SUPPORT

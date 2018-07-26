@@ -33,12 +33,16 @@ class EventSensor : public BaseSensor {
             _gpio = gpio;
         }
 
-        void setMode(unsigned char mode) {
-            _mode = mode;
+        void setTrigger(bool trigger) {
+            _trigger = trigger;
         }
 
-        void setInterruptMode(unsigned char mode) {
-            _interrupt_mode = mode;
+        void setPinMode(unsigned char pin_mode) {
+            _pin_mode = pin_mode;
+        }
+
+        void setInterruptMode(unsigned char interrupt_mode) {
+            _interrupt_mode = interrupt_mode;
         }
 
         void setDebounceTime(unsigned long debounce) {
@@ -51,8 +55,12 @@ class EventSensor : public BaseSensor {
             return _gpio;
         }
 
-        unsigned char getMode() {
-            return _mode;
+        bool getTrigger() {
+            return _trigger;
+        }
+
+        unsigned char getPinMode() {
+            return _pin_mode;
         }
 
         unsigned char getInterruptMode() {
@@ -70,8 +78,9 @@ class EventSensor : public BaseSensor {
         // Initialization method, must be idempotent
         // Defined outside the class body
         void begin() {
-            pinMode(_gpio, _mode);
+            pinMode(_gpio, _pin_mode);
             _enableInterrupts(true);
+            _count = _trigger ? 2 : 1;
             _ready = true;
         }
 
@@ -94,7 +103,8 @@ class EventSensor : public BaseSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_EVENTS;
+            if (index == 0) return MAGNITUDE_COUNT;
+            if (index == 1) return MAGNITUDE_EVENT;
             return MAGNITUDE_NONE;
         }
 
@@ -113,8 +123,14 @@ class EventSensor : public BaseSensor {
             (void) gpio;
             static unsigned long last = 0;
             if (millis() - last > _debounce) {
-                _events = _events + 1;
+
                 last = millis();
+                _events = _events + 1;
+
+                if (_trigger) {
+                    if (_callback) _callback(MAGNITUDE_EVENT, digitalRead(gpio));
+                }
+
             }
         }
 
@@ -148,9 +164,10 @@ class EventSensor : public BaseSensor {
 
         volatile unsigned long _events = 0;
         unsigned long _debounce = EVENTS_DEBOUNCE;
-        unsigned char _gpio;
-        unsigned char _mode;
-        unsigned char _interrupt_mode;
+        unsigned char _gpio = GPIO_NONE;
+        bool _trigger = false;
+        unsigned char _pin_mode = INPUT;
+        unsigned char _interrupt_mode = RISING;
 
 };
 
