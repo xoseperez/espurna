@@ -245,6 +245,9 @@
                                     <div class="pure-u-1-2">Firmware version</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_version"></span></div>
 
+                                    <div class="pure-u-1-2">Firmware revision</div>
+                                    <div class="pure-u-11-24"><span class="right" name="app_revision"></span></div>
+
                                     <div class="pure-u-1-2">Firmware build date</div>
                                     <div class="pure-u-11-24"><span class="right" name="app_build"></span></div>
 
@@ -634,7 +637,6 @@
                                         ESPurna will scan for visible WiFi SSIDs and try to connect to networks defined below in order of <strong>signal strength</strong>, even if multiple AP share the same SSID.
                                         When disabled, ESPurna will try to connect to the networks in the same order they are listed below.
                                         Disable this option if you are <strong>connecting to a single access point</strong> (or router) or to a <strong>hidden SSID</strong>.
-                                        </thead>
                                     </div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <button class="pure-button button-wifi-scan" type="button">Scan now</button>
@@ -855,7 +857,8 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Use JSON payload</label>
-                                    <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="mqttUseJson" tabindex="32" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="mqttUseJson" tabindex="32" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-2"></div>
                                     <div class="pure-u-1 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         All messages (except the device status) will be included in a JSON payload along with the timestamp and hostname
@@ -1387,6 +1390,7 @@
                 <label class="pure-u-1 pure-u-lg-1-4">Use UTC time</label>
                 <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schUTC" /></div>
 
+                <div class="pure-u-0 pure-u-lg-1-2"></div>
                 <label class="pure-u-1 pure-u-lg-1-4">And weekday is one of</label>
                 <div class="pure-u-2-5 pure-u-lg-1-5">
                     <input class="pure-u-23-24 pure-u-lg-23-24" name="schWDs" type="text" maxlength="15" tabindex="0" value="1,2,3,4,5,6,7" />
@@ -1399,7 +1403,7 @@
                 <label class="pure-u-1 pure-u-lg-1-4">Enabled</label>
                 <div class="pure-u-1 pure-u-lg-3-4"><input type="checkbox" name="schEnabled" /></div>
 
-                <div class="pure-u-0 pure-u-lg-1-4"></div>
+                <div class="pure-u-1 pure-u-lg-1-2"></div>
                 <button class="pure-button button-del-schedule" type="button">Delete schedule</button>
             </div>
         </div>
@@ -1431,7 +1435,7 @@
         <div id="relayTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
-                <input name="relay" type="checkbox" on="ON" off="OFF" />
+                <div><input name="relay" type="checkbox" on="ON" off="OFF" /></div>
             </div>
         </div>
 

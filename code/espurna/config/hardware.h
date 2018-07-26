@@ -15,7 +15,7 @@
 // RELAY#_TYPE: Relay can be RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
 // LED#_PIN: GPIO for the n-th LED (1-based, up to 8 LEDs)
 // LED#_PIN_INVERSE: LED has inversed logic (lit when pulled down)
-// LED#_MODE: Check general.h for LED_MODE_%
+// LED#_MODE: Check types.h for LED_MODE_%
 // LED#_RELAY: Linked relay (1-based)
 //
 // Besides, other hardware specific information should be stated here
@@ -1580,7 +1580,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
@@ -2174,13 +2174,19 @@
     // Buttons
     #define BUTTON1_PIN             12
     #define BUTTON1_RELAY           1
-    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_MODE            BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
+    
+    #define BUTTON1_PRESS           BUTTON_MODE_NONE
+    #define BUTTON1_CLICK           BUTTON_MODE_TOGGLE
     #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
 
     #define BUTTON2_PIN             13
     #define BUTTON2_RELAY           2
-    #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_MODE            BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
 
+    #define BUTTON2_CLICK          BUTTON_MODE_TOGGLE
 
     // Relays
     #define RELAY1_PIN              4
@@ -2423,7 +2429,50 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+#elif defined(GENERIC_AG_L4)
 
+    // Info
+    #define MANUFACTURER                "GENERIC"
+    #define DEVICE                      "AG_L4"
+    #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT           1
+
+    // button 1: "power" button
+    #define BUTTON1_PIN                 4
+    #define BUTTON1_RELAY               1
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS               BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK               BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK            BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK            BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK         BUTTON_MODE_RESET
+
+    // button 2: "wifi" button
+    #define BUTTON2_PIN                 2
+    #define BUTTON2_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS               BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK               BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK            BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK            BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK         BUTTON_MODE_NONE
+
+    // LEDs
+    #define LED1_PIN                    5      // red status led
+    #define LED1_PIN_INVERSE            0
+
+    #define LED2_PIN                    16      // master light power
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_RELAY
+
+    // Light
+    #define LIGHT_CHANNELS              3
+    #define LIGHT_CH1_PIN               14       // RED
+    #define LIGHT_CH2_PIN               13       // GREEN
+    #define LIGHT_CH3_PIN               12      // BLUE
+    #define LIGHT_CH1_INVERSE           0
+    #define LIGHT_CH2_INVERSE           0
+    #define LIGHT_CH3_INVERSE           0
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------

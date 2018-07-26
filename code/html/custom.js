@@ -177,8 +177,13 @@ function validateForm(form) {
 
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
 
-    var hostname = $("input[name='hostname']", form).val();
-    if (!re_hostname.test(hostname)) {
+    var hostname = $("input[name='hostname']", form);
+    var hasChanged = hostname.attr("hasChanged") || 0;
+    if (0 === hasChanged) {
+        return true;
+    }
+
+    if (!re_hostname.test(hostname.val())) {
         alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
         return false;
     }
@@ -781,10 +786,12 @@ function addSchedule(event) {
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
+    $(line).find("input[name='schUTC']").prop("id", "schUTC" + (numSchedules + 1))
+        .next().prop("for", "schUTC" + (numSchedules + 1));
+    $(line).find("input[name='schEnabled']").prop("id", "schEnabled" + (numSchedules + 1))
+        .next().prop("for", "schEnabled" + (numSchedules + 1));
     line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
-
-    initCheckboxes();
 
     return line;
 
@@ -805,7 +812,14 @@ function initRelays(data) {
         // Add relay fields
         var line = $(template).clone();
         $(".id", line).html(i);
-        $(":checkbox", line).prop('checked', data[i]).attr("data", i);
+        $(":checkbox", line).prop('checked', data[i]).attr("data", i)
+            .prop("id", "relay" + i)
+            .on("change", function (event) {
+                var id = parseInt($(event.target).attr("data"), 10);
+                var status = $(event.target).prop("checked");
+                doToggle(id, status);
+            });
+        $("label.toggle", line).prop("for", "relay" + i)
         line.appendTo("#relays");
 
         // Populate the relay SELECTs
@@ -816,57 +830,13 @@ function initRelays(data) {
 
 }
 
-function initCheckboxes() {
-
-    var setCheckbox = function(element, value) {
-        var container = $(".toggle-container", $(element));
-        if (value) {
-            container.css("-webkit-clip-path", "inset(0 0 0 50%)");
-            container.css("clip-path", "inset(0 0 0 50%)");
-            container.css("backgroundColor", "#00c000");
-        } else {
-            container.css("-webkit-clip-path", "inset(0 50% 0 0)");
-            container.css("clip-path", "inset(0 50% 0 0)");
-            container.css("backgroundColor", "#c00000");
-        }
-    }
-
-    $(".checkbox-container")
-
-        .each(function() {
-            var status = $(this).next().prop('checked');
-            setCheckbox(this, status);
-        })
-        .off('click')
-        .on('click', function() {
-
-            var checkbox = $(this).next();
-
-            var status = checkbox.prop('checked');
-            status = !status;
-            checkbox.prop('checked', status);
-            setCheckbox(this, status);
-
-            if ("relay" == checkbox.attr('name')) {
-                var id = parseInt(checkbox.attr('data'), 10);
-                doToggle(id, status);
-            }
-
-        });
-
-}
-
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
 
-        var text_on = $(this).attr("on") || "YES";
-        var text_off = $(this).attr("off") || "NO";
-
-        var toggles = "<div class=\"toggle\"><p>" + text_on + "</p></div><div class=\"toggle\"><p>" + text_off + "</p></div>";
-        var content = "<div class=\"checkbox-container\"><div class=\"inner-container\">" + toggles
-            + "</div><div class=\"inner-container toggle-container\">" + toggles + "</div></div>";
-        $(this).before(content).hide();
+        if($(this).prop("name"))$(this).prop("id", $(this).prop("name"));
+        $(this).parent().addClass("toggleWrapper");
+        $(this).after('<label for="' + $(this).prop("name") + '" class="toggle"><span class="toggle__handler"></span></label>')
 
     });
 
@@ -1495,7 +1465,6 @@ function processData(data) {
     }
 
     resetOriginals();
-    initCheckboxes();
 
 }
 
