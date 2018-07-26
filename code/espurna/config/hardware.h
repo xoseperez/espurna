@@ -2683,6 +2683,22 @@
 	#define BUTTON1_MODE            BUTTON_DOOR_SENSOR | BUTTON_DEFAULT_HIGH
 	#define BUTTON1_PRESS           BUTTON_MODE_PRESSED_OPEN
 
+#elif defined(ESP8266_THERMISTOR)
+    #define MANUFACTURER            "INDU"
+    #define DEVICE                  "ESP8266_THERMISTOR"
+
+    #define ALEXA_SUPPORT           0
+    #define DOMOTICZ_SUPPORT        0
+    #define I2C_SUPPORT             0
+    #define MDNS_SERVER_SUPPORT     0
+    #define SCHEDULER_SUPPORT       0
+    #define THINGSPEAK_SUPPORT      0
+    
+    #define THERMISTOR_SUPPORT      1    
+
+    #define LED1_PIN                15
+	#define LED1_PIN_INVERSE        0
+
 #endif
 
 // -----------------------------------------------------------------------------

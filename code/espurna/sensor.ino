@@ -330,6 +330,13 @@ void _sensorLoad() {
     }
     #endif
 
+    #if THERMISTOR_SUPPORT
+    {
+        ThermistorSensor * sensor = new ThermistorSensor();
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if BH1750_SUPPORT
     {
         BH1750Sensor * sensor = new BH1750Sensor();
