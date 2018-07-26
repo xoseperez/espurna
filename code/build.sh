@@ -1,19 +1,26 @@
 #!/bin/bash
 set -e
 
+# Utility
+is_git() {
+    command -v git >/dev/null 2>&1 || return 1
+    command git rev-parse >/dev/null 2>&1 || return 1
+
+    return 0
+}
+
 # Script settings
 version=$(grep APP_VERSION espurna/config/version.h | awk '{print $3}' | sed 's/"//g')
 
-(command -v git && git rev-parse --is-inside-work-tree) 2>&1>/dev/null
-if [ $? -eq 0 ]; then
+if is_git; then
     git_revision=$(git rev-parse --short HEAD)
-    git_version=$(git describe --tags)
+    git_version=${version}-${git_revision}
 else
     git_revision=
     git_version=$version
 fi
 
-par_build=0
+par_build=false
 par_thread=${BUILDER_THREAD:-0}
 par_total_threads=${BUILDER_TOTAL_THREADS:-4}
 if [ ${par_thread} -ne ${par_thread} -o \
@@ -52,7 +59,7 @@ print_environments() {
 
 set_default_environments() {
     # Hook to build in parallel when using travis
-    if [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Release" ]] && [ ${par_build} ]; then
+    if [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Release" ]] && ${par_build}; then
         environments=$(echo ${available} | \
             awk -v par_thread=${par_thread} -v par_total_threads=${par_total_threads} \
             '{ for (i = 1; i <= NF; i++) if (++j % par_total_threads == par_thread ) print $i; }')
@@ -106,7 +113,7 @@ while getopts "lp" opt; do
         exit
         ;;
     p)
-        par_build=1
+        par_build=true
         ;;
     esac
 done
@@ -125,7 +132,7 @@ if [ $# -eq 0 ]; then
     set_default_environments
 fi
 
-if [[ "${CI}" = true ]]; then
+if ${CI:-false}; then
     print_environments
 fi
 
