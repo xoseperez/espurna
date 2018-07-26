@@ -2691,13 +2691,13 @@
     #define DOMOTICZ_SUPPORT        0
     #define I2C_SUPPORT             0
     #define MDNS_SERVER_SUPPORT     0
-    #define SCHEDULER_SUPPORT       0    
+    #define SCHEDULER_SUPPORT       0
     #define THINGSPEAK_SUPPORT      0
     
-    //#define ANALOG_SUPPORT        1
-    #define THERMISTOR_SUPPORT      1
-    #define SENSOR_DEBUG            1
-    #define DEBUG_SERIAL_SUPPORT    1
+    #define THERMISTOR_SUPPORT      1    
+
+    #define LED1_PIN                15
+	#define LED1_PIN_INVERSE        0
 
 #endif
 

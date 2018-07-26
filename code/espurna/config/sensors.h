@@ -614,6 +614,7 @@
 #define THERMISTOR_NOMINAL_RESISTANCE       10000
 #define THERMISTOR_SERIES_RESISTANCE        10000
 #define THERMISTOR_BETA_COEFFICIENT         3950
+#define THERMISTOR_SAMPLES                  10
 
 // =============================================================================
 // Sensor helpers configuration - can't move to dependencies.h
