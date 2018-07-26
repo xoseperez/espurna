@@ -34,8 +34,12 @@ if [ ${par_thread} -ge ${par_total_threads} ]; then
 fi
 
 # Available environments
-travis=$(grep env: platformio.ini | grep travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
-available=$(grep env: platformio.ini | grep -v ota  | grep -v ssl  | grep -v travis | sed 's/\[env://' | sed 's/\]/ /' | sort)
+list_envs() {
+    grep env: platformio.ini | sed 's/\[env:\(.*\)\]/\1/g'
+}
+
+travis=$(list_envs | grep travis | sort)
+available=$(list_envs | grep -Ev -- '-ota$|-ssl$|^travis' | sort)
 
 # Build tools settings
 export PLATFORMIO_BUILD_FLAGS="${PLATFORMIO_BUILD_FLAGS} -DAPP_REVISION='\"$git_revision\"'"
