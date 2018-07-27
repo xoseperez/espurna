@@ -164,7 +164,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(MQTT_TOPIC_RELAY, id, target ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
+            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
         #endif
 
         // Send MQTT
@@ -718,7 +718,7 @@ void relayMQTT(unsigned char id) {
     // Send state topic
     if (_relays[id].report) {
         _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
+        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? "1" : "0");
     }
 
     // Check group topic
@@ -728,7 +728,7 @@ void relayMQTT(unsigned char id) {
         if (t.length() > 0) {
             bool status = relayStatus(id);
             if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
+            mqttSendRaw(t.c_str(), status ? "1" : "0");
         }
     }
 
@@ -743,7 +743,7 @@ void relayMQTT(unsigned char id) {
 
 void relayMQTT() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
+        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? "1" : "0");
     }
 }
 
@@ -906,7 +906,7 @@ void relaySetupMQTT() {
 
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
-    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
+    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
 }
 
 #endif
