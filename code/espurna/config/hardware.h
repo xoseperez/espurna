@@ -2644,6 +2644,61 @@
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
 
+#elif defined(EMERSON_SWITCH)    
+    #define MANUFACTURER            "INDU"
+    #define DEVICE                  "ESP01_EMERSON"
+    
+    #define RELAY1_PIN          2
+    #define RELAY1_TYPE         RELAY_TYPE_INVERSE
+
+    // Disable non-core modules
+    #define ALEXA_SUPPORT           0
+    #define BUTTON_SUPPORT          0
+    #define DOMOTICZ_SUPPORT        0
+    #define I2C_SUPPORT             0
+    #define SENSOR_SUPPORT          0
+    #define THINGSPEAK_SUPPORT      0
+    #define LED_SUPPORT             0
+
+    #define MQTT_TOPIC_RELAY_ON     "on"
+    #define MQTT_TOPIC_RELAY_OFF    "off"
+
+#elif defined(GARAGE_OPENER)
+	#define MANUFACTURER            "INDU"
+	#define DEVICE                  "ESP12_GARAGE_OPENER"
+	
+	#define RELAY1_PIN              13
+	#define RELAY1_TYPE             RELAY_TYPE_NORMAL
+	
+	#define LED1_PIN                15
+	#define LED1_PIN_INVERSE        0
+
+	#define ALEXA_SUPPORT           0
+	#define DOMOTICZ_SUPPORT        0
+	#define I2C_SUPPORT             0
+	#define SCHEDULER_SUPPORT       0
+	#define THINGSPEAK_SUPPORT      0
+
+	#define BUTTON1_PIN             12
+	#define BUTTON1_MODE            BUTTON_DOOR_SENSOR | BUTTON_DEFAULT_HIGH
+	#define BUTTON1_PRESS           BUTTON_MODE_PRESSED_OPEN
+
+#elif defined(ESP8266_THERMISTOR)
+    #define MANUFACTURER            "INDU"
+    #define DEVICE                  "ESP8266_THERMISTOR"
+
+    #define ALEXA_SUPPORT           0
+    #define DOMOTICZ_SUPPORT        0
+    #define I2C_SUPPORT             0
+    #define MDNS_SERVER_SUPPORT     0
+    #define SCHEDULER_SUPPORT       0
+    #define THINGSPEAK_SUPPORT      0
+    
+    #define THERMISTOR_SUPPORT      1    
+
+    #define LED1_PIN                15
+	#define LED1_PIN_INVERSE        0
+
 #endif
 
 // -----------------------------------------------------------------------------

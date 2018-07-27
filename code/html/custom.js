@@ -59,9 +59,10 @@ function magnitudeType(type) {
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
-        "Analog", "Digital", "Events",
+        "Analog", "Digital", "Event",
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
-        "Local Dose Rate", "Local Dose Rate"
+        "Local Dose Rate", "Local Dose Rate",
+        "Count"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];

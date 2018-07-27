@@ -164,7 +164,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            brokerPublish(MQTT_TOPIC_RELAY, id, target ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
         #endif
 
         // Send MQTT
@@ -521,6 +521,10 @@ void _relayConfigure() {
         if (GPIO_NONE != _relays[i].reset_pin) {
             pinMode(_relays[i].reset_pin, OUTPUT);
         }
+        if (_relays[i].type == RELAY_TYPE_INVERSE) {
+            //set to high to block short opening of relay
+            digitalWrite(_relays[i].pin, HIGH);
+        }
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
         _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
     }
@@ -714,7 +718,7 @@ void relayMQTT(unsigned char id) {
     // Send state topic
     if (_relays[id].report) {
         _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? "1" : "0");
+        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
     }
 
     // Check group topic
@@ -724,7 +728,7 @@ void relayMQTT(unsigned char id) {
         if (t.length() > 0) {
             bool status = relayStatus(id);
             if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? "1" : "0");
+            mqttSendRaw(t.c_str(), status ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
         }
     }
 
@@ -739,7 +743,7 @@ void relayMQTT(unsigned char id) {
 
 void relayMQTT() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? "1" : "0");
+        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
     }
 }
 
@@ -902,7 +906,7 @@ void relaySetupMQTT() {
 
 void relayInfluxDB(unsigned char id) {
     if (id >= _relays.size()) return;
-    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
+    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? MQTT_TOPIC_RELAY_ON : MQTT_TOPIC_RELAY_OFF);
 }
 
 #endif

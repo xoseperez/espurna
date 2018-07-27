@@ -21,7 +21,7 @@
 #define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
 #define SENSOR_ERROR_OTHER          99      // Any other error
 
-typedef std::function<void(unsigned char, const char *)> TSensorCallback;
+typedef std::function<void(unsigned char, double)> TSensorCallback;
 
 class BaseSensor {
 

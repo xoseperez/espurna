@@ -708,6 +708,15 @@
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
 
+#ifndef MQTT_TOPIC_RELAY_ON
+#define MQTT_TOPIC_RELAY_ON         "1"
+#endif
+
+#ifndef MQTT_TOPIC_RELAY_OFF
+#define MQTT_TOPIC_RELAY_OFF        "0"
+#endif
+
+
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
 #define MQTT_TOPIC_COLOR_RGB        "rgb"
