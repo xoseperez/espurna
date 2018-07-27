@@ -330,7 +330,7 @@ void _sensorLoad() {
         sensor->setDelay(ANALOG_DELAY);
         _sensors.push_back(sensor);
     }
-    #endif    
+    #endif
 
     #if BH1750_SUPPORT
     {
