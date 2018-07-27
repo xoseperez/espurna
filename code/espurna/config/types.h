@@ -269,6 +269,7 @@
 #define SENSOR_SENSEAIR_ID          0x24
 #define SENSOR_GEIGER_ID            0x25
 #define SENSOR_NTC_ID               0x26
+#define SENSOR_THERMISTOR_ID        0x27
 
 //--------------------------------------------------------------------------------
 // Magnitudes

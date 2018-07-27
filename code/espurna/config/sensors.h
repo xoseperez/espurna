@@ -607,6 +607,20 @@
 #define V9261F_POWER_FACTOR             153699.0
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
 
+//------------------------------------------------------------------------------
+// Thermistor setting
+// Enable support by passing THERMISTOR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+#ifndef THERMISTOR_SUPPORT
+#define THERMISTOR_SUPPORT                  0
+#endif
+
+#define THERMISTOR_NOMIMAL_TEMPERATURE      25
+#define THERMISTOR_NOMINAL_RESISTANCE       10000
+#define THERMISTOR_SERIES_RESISTANCE        10000
+#define THERMISTOR_BETA_COEFFICIENT         3950
+#define THERMISTOR_SAMPLES                  10
+
 // =============================================================================
 // Sensor helpers configuration - can't move to dependencies.h
 // =============================================================================
@@ -638,7 +652,8 @@
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
     TMP3X_SUPPORT || \
-    V9261F_SUPPORT \
+    V9261F_SUPPORT || \
+    THERMISTOR_SUPPORT \
 )
 #endif
 
@@ -797,6 +812,10 @@
 #if V9261F_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
+#endif
+
+#if THERMISTOR_SUPPORT
+    #include "../sensors/ThermistorSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT

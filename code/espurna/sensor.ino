@@ -584,6 +584,12 @@ void _sensorLoad() {
     }
     #endif
 
+    #if THERMISTOR_SUPPORT
+    {
+        ThermistorSensor * sensor = new ThermistorSensor();
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
