@@ -199,6 +199,9 @@ PROGMEM const char espurna_sensors[] =
     #if V9261F_SUPPORT
         "V9261F "
     #endif
+    #if THERMISTOR_SUPPORT
+        "THERMISTOR "
+    #endif
     "";
 
 
@@ -280,7 +283,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_ppm, magnitude_lux, magnitude_uv,
     magnitude_distance, magnitude_mgm3,
-    magnitude_geiger_cpm, magnitude_geiger_sv       // Geiger counter units
+    magnitude_geiger_cpm, magnitude_geiger_sv,       // Geiger counter units
+    magnitude_empty
 };
 
 #endif
