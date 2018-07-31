@@ -146,6 +146,10 @@
                             <a href="#" class="pure-menu-link" data="panel-relay">SWITCHES</a>
                         </li>
 
+                        <li class="pure-menu-item module module-btn">
+                            <a href="#" class="pure-menu-link" data="panel-btn">BUTTONS</a>
+                        </li>
+
                         <li class="pure-menu-item module module-tspk">
                             <a href="#" class="pure-menu-link" data="panel-thingspeak">THINGSPEAK</a>
                         </li>
@@ -408,6 +412,24 @@
                                 </div>
 
                                 <div id="relayConfig"></div>
+
+                            </fieldset>
+
+                        </div>
+                    </div>
+
+                    <div class="panel" id="panel-btn">
+
+                        <div class="header">
+                            <h1>BUTTONS</h1>
+                            <h2>Button configuration</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <div id="btnConfig"></div>
 
                             </fieldset>
 
@@ -1480,6 +1502,66 @@
                     <option value="1">Turn the switch OFF</option>
                     <option value="2">Turn the switch ON</option>
                 </select>
+            </div>
+        </div>
+
+        <div id="btnConfigTemplate" class="template">
+            <legend>Button #<span class="id"></span> (GPIO<span class="gpio"></span>)</legend>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Button mode</label>
+                <select class="pure-u-1 pure-u-lg-3-4" name="btnMode">
+                    <option value="0">Pushbutton</option>
+                    <option value="1">Toggle switch</option>
+                </select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Default high</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="btnDefaultHigh" /></div>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Enable pullup</label>
+                <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="btnPullup" /></div>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Assigned switch</label>
+                <select class="pure-u-1 pure-u-lg-3-4 isrelay" name="btnRelay">
+                    <option value="-1">None</option>
+                </select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Action on press</label>
+                <select class="pure-u-1 pure-u-lg-3-4" name="btnActPres">
+                    <option value="0">None</option>
+                    <option value="1">Toggle Relay</option>
+                    <option value="2">Switch Relay On</option>
+                    <option value="3">Switch Relay Off</option>                    
+                    <option value="6">Pulse Relay</option>
+                    <option value="4">Start AP Mode</option>
+                    <option value="5">Reset Module</option>
+                    <option value="7">Factory Reset</option>
+                    <option value="8">Enable WPS</option>
+                    <option value="9">Enable Smart Config</option>
+                </select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Action on release / click</label>
+                <select class="pure-u-1 pure-u-lg-3-4 isBtnAction" name="btnActRelCl"></select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Action on double click</label>
+                <select class="pure-u-1 pure-u-lg-3-4 isBtnAction" name="btnActDblCl"></select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Action on long press</label>
+                <select class="pure-u-1 pure-u-lg-3-4 isBtnAction" name="btnActLngCl"></select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Action on very long press</label>
+                <select class="pure-u-1 pure-u-lg-3-4 isBtnAction" name="btnActLngLngCl"></select>
+            </div>
+            <div class="pure-g">
+                <label class="pure-u-1 pure-u-lg-1-4">Action on triple click</label>
+                <select class="pure-u-1 pure-u-lg-3-4 isBtnAction" name="btnActTplCl"></select>
             </div>
         </div>
 

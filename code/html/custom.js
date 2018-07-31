@@ -213,6 +213,8 @@ function addValue(data, name, value) {
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
+        "btnActDblCl", "btnActLngCl", "btnActLngLngCl", "btnActPress", "btnActRelCl", "btnActTplCl", 
+        "btnDefaultHigh", "btnMode", "btnPullup", "btnRelay",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
@@ -865,6 +867,46 @@ function initRelayConfig(data) {
 }
 
 // -----------------------------------------------------------------------------
+// Buttons
+// -----------------------------------------------------------------------------
+
+function initButtonConfig(data) {
+    var num = 1;
+
+    var current = $("#btnConfig > div").length;
+    if (current > 0) { return; }
+
+    var template = $("#btnConfigTemplate").children();
+    for (var i in data) {
+        var btn = data[i];
+        var line = $(template).clone();
+        //copy select options
+        $($("select[name='btnActPress']", line).children()).clone().appendTo(".isBtnAction", line);
+
+        $("span.gpio", line).html(btn.gpio);
+        $("span.id", line).html(i);
+        $("select[name='btnMode']", line).val(btn.mode);
+        $("input[type='checkbox'][name='btnDefaultHigh']", line).prop("checked", btn.defaultHigh);
+        $("input[type='checkbox'][name='btnPullup']", line).prop("checked", btn.pullup);
+        $("select[name='btnRelay']", line).val(btn.relay);
+        $("select[name='btnActPres']", line).val(btn.actPres);
+        $("select[name='btnActRelCl']", line).val(btn.actRelCl);
+        $("select[name='btnActDblCl']", line).val(btn.actDblCl);
+        $("select[name='btnActLngCl']", line).val(btn.actLngCl);
+        $("select[name='btnActLngLngCl']", line).val(btn.actLngLngCl);
+        $("select[name='btnActTplCl']", line).val(btn.actTplCl);
+
+        $("input[name='btnDefaultHigh']", line).prop("id", "btnDefaultHigh" + num)
+            .next().prop("for", "btnDefaultHigh" + num);
+        $("input[name='btnPullup']", line).prop("id", "btnPullup" + num)
+            .next().prop("for", "btnPullup" + num);
+        num++;
+
+        line.appendTo("#btnConfig");
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
 
@@ -1326,6 +1368,15 @@ function processData(data) {
         // Relay configuration
         if ("relayConfig" === key) {
             initRelayConfig(value);
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // Buttons
+        // ---------------------------------------------------------------------
+
+        if ("btnConfig" === key) {
+            initButtonConfig(value);
             return;
         }
 
