@@ -55,8 +55,8 @@ void _buttonWebSocketOnSend(JsonObject& root) {
         line["mode"] = (_buttons[i].mode & BUTTON_SWITCH) > 0 ? 1 : 0;
         line["defaultHigh"] = (_buttons[i].mode & BUTTON_DEFAULT_HIGH) > 0;
         line["pullup"] = (_buttons[i].mode & BUTTON_SET_PULLUP) > 0;       
-        line["relay"] = _buttons[i].relayID - 1 < 0 ? "-1" : _buttons[i].relayID - 1;
-        line["actPress"] = buttonAction(i, BUTTON_EVENT_PRESSED);
+        line["relay"] = static_cast<signed int>(_buttons[i].relayID) - 1;
+        line["actPres"] = buttonAction(i, BUTTON_EVENT_PRESSED);
         line["actRelCl"] = buttonAction(i, BUTTON_EVENT_CLICK);
         line["actDblCl"] = buttonAction(i, BUTTON_EVENT_DBLCLICK);
         line["actLngCl"] = buttonAction(i, BUTTON_EVENT_LNGCLICK);
@@ -205,50 +205,56 @@ void buttonSetup() {
         #endif
         #if BUTTON3_PIN != GPIO_NONE
         {
-            unsigned char mode = getSetting("btnMode", 3, BUTTON3_MODE).toInt();
-            unsigned int actions = getSetting("btnActions", 3, buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK)).toInt();
-            unsigned int relay = getSetting("btnRelay", 3, BUTTON3_RELAY).toInt();
-            _buttons.push_back({new DebounceEvent(BUTTON3_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), mode, actions, relay});
+            unsigned char mode      = getSetting("btnMode", 2, (BUTTON3_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 2, (BUTTON3_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 2, (BUTTON3_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned int actions    = buttonStore(getSetting("btnActPres", 2, BUTTON3_PRESS).toInt(), getSetting("btnActRelCl", 2, BUTTON3_CLICK).toInt(), getSetting("btnActDblCl", 2, BUTTON3_DBLCLICK).toInt(),\
+                                        getSetting("btnActLngCl", 2, BUTTON3_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 2, BUTTON3_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 2, BUTTON3_TRIPLECLICK).toInt());
+            unsigned int relay      = getSetting("btnRelay", 2, BUTTON3_RELAY).toInt() + 1;
+            _buttons.push_back({new DebounceEvent(BUTTON3_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), BUTTON3_PIN, mode, actions, relay});
         }
         #endif
         #if BUTTON4_PIN != GPIO_NONE
         {
-            unsigned char mode = getSetting("btnMode", 4, BUTTON4_MODE).toInt();
-            unsigned int actions = getSetting("btnActions", 4, buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK)).toInt();
-            unsigned int relay = getSetting("btnRelay", 4, BUTTON4_RELAY).toInt();
-            _buttons.push_back({new DebounceEvent(BUTTON4_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), mode, actions, relay});
+            unsigned char mode      = getSetting("btnMode", 3, (BUTTON4_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 3, (BUTTON4_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 3, (BUTTON4_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned int actions    = buttonStore(getSetting("btnActPres", 3, BUTTON4_PRESS).toInt(), getSetting("btnActRelCl", 3, BUTTON4_CLICK).toInt(), getSetting("btnActDblCl", 3, BUTTON4_DBLCLICK).toInt(),\
+                                        getSetting("btnActLngCl", 3, BUTTON4_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 3, BUTTON4_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 3, BUTTON4_TRIPLECLICK).toInt());
+            unsigned int relay      = getSetting("btnRelay", 3, BUTTON4_RELAY).toInt() + 1;
+            _buttons.push_back({new DebounceEvent(BUTTON4_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), BUTTON4_PIN, mode, actions, relay});
         }
         #endif
         #if BUTTON5_PIN != GPIO_NONE
         {
-            unsigned char mode = getSetting("btnMode", 5, BUTTON5_MODE).toInt();
-            unsigned int actions = getSetting("btnActions", 5, buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK)).toInt();
-            unsigned int relay = getSetting("btnRelay", 5, BUTTON5_RELAY).toInt();
-            _buttons.push_back({new DebounceEvent(BUTTON5_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), mode, actions, relay});
+            unsigned char mode      = getSetting("btnMode", 4, (BUTTON5_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 4, (BUTTON5_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 4, (BUTTON5_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned int actions    = buttonStore(getSetting("btnActPres", 4, BUTTON5_PRESS).toInt(), getSetting("btnActRelCl", 4, BUTTON5_CLICK).toInt(), getSetting("btnActDblCl", 4, BUTTON5_DBLCLICK).toInt(),\
+                                        getSetting("btnActLngCl", 4, BUTTON5_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 4, BUTTON5_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 4, BUTTON5_TRIPLECLICK).toInt());
+            unsigned int relay      = getSetting("btnRelay", 4, BUTTON5_RELAY).toInt() + 1;
+            _buttons.push_back({new DebounceEvent(BUTTON5_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), BUTTON5_PIN, mode, actions, relay});
         }
         #endif
         #if BUTTON6_PIN != GPIO_NONE
         {
-            unsigned char mode = getSetting("btnMode", 6, BUTTON6_MODE).toInt();
-            unsigned int actions = getSetting("btnActions", 6, buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK)).toInt();
-            unsigned int relay = getSetting("btnRelay", 6, BUTTON6_RELAY).toInt();
-            _buttons.push_back({new DebounceEvent(BUTTON6_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), mode, actions, relay});
+            unsigned char mode      = getSetting("btnMode", 5, (BUTTON6_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 5, (BUTTON6_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 5, (BUTTON6_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned int actions    = buttonStore(getSetting("btnActPres", 5, BUTTON6_PRESS).toInt(), getSetting("btnActRelCl", 5, BUTTON6_CLICK).toInt(), getSetting("btnActDblCl", 5, BUTTON6_DBLCLICK).toInt(),\
+                                        getSetting("btnActLngCl", 5, BUTTON6_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 5, BUTTON6_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 5, BUTTON6_TRIPLECLICK).toInt());
+            unsigned int relay      = getSetting("btnRelay", 5, BUTTON6_RELAY).toInt() + 1;
+            _buttons.push_back({new DebounceEvent(BUTTON6_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), BUTTON6_PIN, mode, actions, relay});
         }
         #endif
         #if BUTTON7_PIN != GPIO_NONE
         {
-            unsigned char mode = getSetting("btnMode", 7, BUTTON7_MODE).toInt();
-            unsigned int actions = getSetting("btnActions", 7, buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK)).toInt();
-            unsigned int relay = getSetting("btnRelay", 7, BUTTON7_RELAY).toInt();
-            _buttons.push_back({new DebounceEvent(BUTTON7_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), mode, actions, relay});
+            unsigned char mode      = getSetting("btnMode", 6, (BUTTON7_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 6, (BUTTON7_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 6, (BUTTON7_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned int actions    = buttonStore(getSetting("btnActPres", 6, BUTTON7_PRESS).toInt(), getSetting("btnActRelCl", 6, BUTTON7_CLICK).toInt(), getSetting("btnActDblCl", 6, BUTTON7_DBLCLICK).toInt(),\
+                                        getSetting("btnActLngCl", 6, BUTTON7_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 6, BUTTON7_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 6, BUTTON7_TRIPLECLICK).toInt());
+            unsigned int relay      = getSetting("btnRelay", 6, BUTTON7_RELAY).toInt() + 1;
+            _buttons.push_back({new DebounceEvent(BUTTON7_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), BUTTON7_PIN, mode, actions, relay});
         }
         #endif
         #if BUTTON8_PIN != GPIO_NONE
         {
-            unsigned char mode = getSetting("btnMode", 8, BUTTON8_MODE).toInt();
-            unsigned int actions = getSetting("btnActions", 8, buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK)).toInt();
-            unsigned int relay = getSetting("btnRelay", 8, BUTTON8_RELAY).toInt();
-            _buttons.push_back({new DebounceEvent(BUTTON8_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), mode, actions, relay});
+            unsigned char mode      = getSetting("btnMode", 7, (BUTTON8_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 7, (BUTTON8_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 7, (BUTTON8_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned int actions    = buttonStore(getSetting("btnActPres", 7, BUTTON8_PRESS).toInt(), getSetting("btnActRelCl", 7, BUTTON8_CLICK).toInt(), getSetting("btnActDblCl", 7, BUTTON8_DBLCLICK).toInt(),\
+                                        getSetting("btnActLngCl", 7, BUTTON8_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 7, BUTTON8_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 7, BUTTON8_TRIPLECLICK).toInt());
+            unsigned int relay      = getSetting("btnRelay", 7, BUTTON8_RELAY).toInt() + 1;
+            _buttons.push_back({new DebounceEvent(BUTTON8_PIN, mode, BUTTON_DEBOUNCE_DELAY, btnDelay), BUTTON8_PIN, mode, actions, relay});
         }
         #endif
 

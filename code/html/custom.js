@@ -213,7 +213,7 @@ function addValue(data, name, value) {
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
-        "btnActDblCl", "btnActLngCl", "btnActLngLngCl", "btnActPress", "btnActRelCl", "btnActTplCl", 
+        "btnActDblCl", "btnActLngCl", "btnActLngLngCl", "btnActPres", "btnActRelCl", "btnActTplCl", 
         "btnDefaultHigh", "btnMode", "btnPullup", "btnRelay",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
@@ -875,17 +875,25 @@ function initButtonConfig(data) {
 
     var current = $("#btnConfig > div").length;
     if (current > 0) { return; }
+    
+    //copy select options
+    $($("select[name='btnActPres']").children()).clone().appendTo(".isBtnAction");
 
     var template = $("#btnConfigTemplate").children();
     for (var i in data) {
         var btn = data[i];
         var line = $(template).clone();
-        //copy select options
-        $($("select[name='btnActPress']", line).children()).clone().appendTo(".isBtnAction", line);
 
         $("span.gpio", line).html(btn.gpio);
         $("span.id", line).html(i);
         $("select[name='btnMode']", line).val(btn.mode);
+        //Show Pushbutton actions only if Pushbutton is selected!
+        $("select[name='btnMode']", line).on("change", function() {
+            var parent = $(this).parents(".pure-g");
+            $(".pbonly", parent).toggle($(this).val() == 0);
+          });
+        $(".pbonly", line).toggle(btn.mode == 0);
+
         $("input[type='checkbox'][name='btnDefaultHigh']", line).prop("checked", btn.defaultHigh);
         $("input[type='checkbox'][name='btnPullup']", line).prop("checked", btn.pullup);
         $("select[name='btnRelay']", line).val(btn.relay);
@@ -903,7 +911,7 @@ function initButtonConfig(data) {
         num++;
 
         line.appendTo("#btnConfig");
-    }
+    }    
 }
 
 // -----------------------------------------------------------------------------
