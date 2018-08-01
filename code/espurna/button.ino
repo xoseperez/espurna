@@ -187,7 +187,7 @@ void buttonSetup() {
     
         #if BUTTON1_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 0, (BUTTON1_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 0, (BUTTON1_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 0, (BUTTON1_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 0, BUTTON1_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 0, (BUTTON1_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 0, (BUTTON1_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 0, BUTTON1_PRESS).toInt(), getSetting("btnActRelCl", 0, BUTTON1_CLICK).toInt(), getSetting("btnActDblCl", 0, BUTTON1_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 0, BUTTON1_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 0, BUTTON1_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 0, BUTTON1_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 0, BUTTON1_RELAY - 1).toInt() + 1;
@@ -196,7 +196,7 @@ void buttonSetup() {
         #endif
         #if BUTTON2_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 1, (BUTTON2_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 1, (BUTTON2_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 1, (BUTTON2_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 1, BUTTON2_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 1, (BUTTON2_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 1, (BUTTON2_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 1, BUTTON2_PRESS).toInt(), getSetting("btnActRelCl", 1, BUTTON2_CLICK).toInt(), getSetting("btnActDblCl", 1, BUTTON2_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 1, BUTTON2_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 1, BUTTON2_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 1, BUTTON2_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 1, BUTTON2_RELAY - 1).toInt() + 1;
@@ -205,7 +205,7 @@ void buttonSetup() {
         #endif
         #if BUTTON3_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 2, (BUTTON3_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 2, (BUTTON3_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 2, (BUTTON3_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 2, BUTTON3_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 2, (BUTTON3_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 2, (BUTTON3_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 2, BUTTON3_PRESS).toInt(), getSetting("btnActRelCl", 2, BUTTON3_CLICK).toInt(), getSetting("btnActDblCl", 2, BUTTON3_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 2, BUTTON3_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 2, BUTTON3_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 2, BUTTON3_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 2, BUTTON3_RELAY - 1).toInt() + 1;
@@ -214,7 +214,7 @@ void buttonSetup() {
         #endif
         #if BUTTON4_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 3, (BUTTON4_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 3, (BUTTON4_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 3, (BUTTON4_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 3, BUTTON4_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 3, (BUTTON4_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 3, (BUTTON4_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 3, BUTTON4_PRESS).toInt(), getSetting("btnActRelCl", 3, BUTTON4_CLICK).toInt(), getSetting("btnActDblCl", 3, BUTTON4_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 3, BUTTON4_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 3, BUTTON4_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 3, BUTTON4_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 3, BUTTON4_RELAY - 1).toInt() + 1;
@@ -223,7 +223,7 @@ void buttonSetup() {
         #endif
         #if BUTTON5_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 4, (BUTTON5_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 4, (BUTTON5_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 4, (BUTTON5_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 4, BUTTON5_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 4, (BUTTON5_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 4, (BUTTON5_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 4, BUTTON5_PRESS).toInt(), getSetting("btnActRelCl", 4, BUTTON5_CLICK).toInt(), getSetting("btnActDblCl", 4, BUTTON5_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 4, BUTTON5_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 4, BUTTON5_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 4, BUTTON5_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 4, BUTTON5_RELAY - 1).toInt() + 1;
@@ -232,7 +232,7 @@ void buttonSetup() {
         #endif
         #if BUTTON6_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 5, (BUTTON6_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 5, (BUTTON6_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 5, (BUTTON6_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 5, BUTTON6_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 5, (BUTTON6_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 5, (BUTTON6_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 5, BUTTON6_PRESS).toInt(), getSetting("btnActRelCl", 5, BUTTON6_CLICK).toInt(), getSetting("btnActDblCl", 5, BUTTON6_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 5, BUTTON6_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 5, BUTTON6_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 5, BUTTON6_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 5, BUTTON6_RELAY - 1).toInt() + 1;
@@ -241,7 +241,7 @@ void buttonSetup() {
         #endif
         #if BUTTON7_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 6, (BUTTON7_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 6, (BUTTON7_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 6, (BUTTON7_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 6, BUTTON7_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 6, (BUTTON7_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 6, (BUTTON7_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 6, BUTTON7_PRESS).toInt(), getSetting("btnActRelCl", 6, BUTTON7_CLICK).toInt(), getSetting("btnActDblCl", 6, BUTTON7_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 6, BUTTON7_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 6, BUTTON7_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 6, BUTTON7_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 6, BUTTON7_RELAY - 1).toInt() + 1;
@@ -250,7 +250,7 @@ void buttonSetup() {
         #endif
         #if BUTTON8_PIN != GPIO_NONE
         {
-            unsigned char mode      = getSetting("btnMode", 7, (BUTTON8_MODE & BUTTON_SWITCH) > 0).toInt() + (getSetting("btnDefaultHigh", 7, (BUTTON8_MODE & BUTTON_DEFAULT_HIGH) > 0).toInt() << 1) + (getSetting("btnPullup", 7, (BUTTON8_MODE & BUTTON_SET_PULLUP) > 0).toInt() << 2);
+            unsigned char mode      = getSetting("btnMode", 7, BUTTON8_MODE & BUTTON_SWITCH).toInt() + (getSetting("btnDefaultHigh", 7, (BUTTON8_MODE & BUTTON_DEFAULT_HIGH) >> 1).toInt() << 1) + (getSetting("btnPullup", 7, (BUTTON8_MODE & BUTTON_SET_PULLUP) >> 2).toInt() << 2);
             unsigned int actions    = buttonStore(getSetting("btnActPres", 7, BUTTON8_PRESS).toInt(), getSetting("btnActRelCl", 7, BUTTON8_CLICK).toInt(), getSetting("btnActDblCl", 7, BUTTON8_DBLCLICK).toInt(),\
                                         getSetting("btnActLngCl", 7, BUTTON8_LNGCLICK).toInt(), getSetting("btnActLngLngCl", 7, BUTTON8_LNGLNGCLICK).toInt(), getSetting("btnActTplCl", 7, BUTTON8_TRIPLECLICK).toInt());
             unsigned int relay      = getSetting("btnRelay", 7, BUTTON8_RELAY - 1).toInt() + 1;
