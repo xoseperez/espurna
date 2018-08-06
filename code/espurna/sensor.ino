@@ -115,7 +115,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
         sensor_magnitude_t magnitude = _magnitudes[i];
         if (magnitude.type == MAGNITUDE_EVENT) continue;
-        
+
         unsigned char decimals = _magnitudeDecimals(magnitude.type);
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
