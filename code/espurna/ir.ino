@@ -34,7 +34,7 @@ void _irProcessCode(unsigned long code) {
 
     for (unsigned char i = 0; i < IR_BUTTON_COUNT ; i++) {
 
-        unsigned long button_code = pgm_read_dword(&IR_BUTTON[i][0]);
+        uint32_t button_code = pgm_read_dword(&IR_BUTTON[i][0]);
         if (code == button_code) {
 
             unsigned long button_mode = pgm_read_dword(&IR_BUTTON[i][1]);

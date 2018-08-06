@@ -2555,6 +2555,11 @@
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 02"
 
+    // Some buttons - pin 0
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
     // A bit of CSE7766 - pin 1
     #ifndef CSE7766_SUPPORT
     #define CSE7766_SUPPORT     1
@@ -2621,6 +2626,11 @@
     // Relay provider light/my92XX
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 03"
+
+    // Some buttons - pin 0
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // MY9231 Light - pins 1,2
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT

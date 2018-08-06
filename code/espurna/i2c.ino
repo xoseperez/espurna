@@ -230,7 +230,7 @@ uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
     Wire.beginTransmission((uint8_t) address);
     Wire.requestFrom(address, (uint8_t) len);
-    for (int i=0; i<len; i++) buffer[i] = Wire.read();
+    for (size_t i=0; i<len; i++) buffer[i] = Wire.read();
     Wire.endTransmission();
 }
 
@@ -332,7 +332,7 @@ unsigned char i2cFind(size_t size, unsigned char * addresses) {
 unsigned char i2cFindAndLock(size_t size, unsigned char * addresses) {
     unsigned char start = 0;
     unsigned char address = 0;
-    while (address = i2cFind(size, addresses, start)) {
+    while ((address = i2cFind(size, addresses, start))) {
         if (i2cGetLock(address)) break;
         start++;
     }

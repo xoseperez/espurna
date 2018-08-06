@@ -1080,7 +1080,7 @@
 
     #define IR_BUTTON_COUNT 24
 
-    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+    const uint32_t IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
 
         { 0xFF906F, IR_BUTTON_MODE_BRIGHTER, 1 },
         { 0xFFB847, IR_BUTTON_MODE_BRIGHTER, 0 },
