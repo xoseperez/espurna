@@ -146,7 +146,7 @@ class EmonSensor : public I2CSensor {
             #endif
         }
 
-        virtual unsigned int readADC(unsigned char channel) {}
+        virtual unsigned int readADC(unsigned char channel) = 0;
 
         void calculateFactors(unsigned char channel) {
 
