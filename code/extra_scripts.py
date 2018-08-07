@@ -94,63 +94,6 @@ def check_size(source, target, env):
         print_warning("https://github.com/xoseperez/espurna/wiki/TwoStepUpdates", color=Color.LIGHT_CYAN)
         print_filler("*", color=Color.LIGHT_YELLOW, err=True)
 
-def parse_config_headers(env, headers=("$PROJECT_DIR/espurna/config/all.h",)):
-    # config[env:xxx][build_flags] + $PLATFORMIO_BUILD_FLAGS
-    # TODO does scons parse this somewhere as list?
-    cmd = [env.WhereIs(env.get("CC", "gcc"))]
-
-    (build_flags, ) = env.get("BUILD_FLAGS", [""])
-    cmd.extend(build_flags.split())
-
-    # use c++ language, do not expand definitions, stop after preprocessor
-    # can debug using -C flag - it will insert comments with origin of #define
-    # XXX does break re-difinitions. better turn on warnings for all build!
-    cmd.extend(["-x", "c++", "-dD", "-E"])
-    cmd.extend(env.subst(header) for header in headers)
-
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-
-    defines = {}
-    for line in proc.stdout:
-        line = line.decode('utf-8')
-        if not line or not u"#define" in line:
-            continue
-        line = line.strip()
-
-        match = re_define.search(line)
-        if not match:
-            continue
-
-        key, value = match.groups()
-        if key.startswith(u"_"):
-            continue
-
-        value = value.strip()
-
-        # often, define is dependent on some other one
-        # they are always in order, so it is expected to be in dict
-        if value in defines.keys():
-            value = defines.get(value)
-            defines[key] = value
-            continue
-
-        if value in (u"true", u"false"):
-            value = True if (value == u"true") else False
-        elif value.startswith(u'"') and value.endswith(u'"'):
-            value = value.replace(u'"', u'')
-        elif value.startswith(u"0x"):
-            value = int(value, 16)
-        elif value.isdecimal():
-            value = int(value, 10)
-
-        if (key.endswith(u"_SUPPORT") or key.endswith(u"_ENABLED")) \
-                and not isinstance(value, bool):
-            value = bool(value)
-
-        defines[key] = value
-
-    return defines
-
 def build_webui(**kwargs):
     cmd = "node node_modules/gulp/bin/gulp.js webui_${WEBUI_MODULE}"
     if env.Execute(cmd):
@@ -194,7 +137,7 @@ def inject_gulp(env):
         print_warning("Not building the web UI header")
 
 def inject_webui_module(env):
-    defines = parse_config_headers(env)
+    defines = env.get("ESPURNA_DEFINES")
 
     env["WEBUI_SUPPORT"] = defines[u"WEB_SUPPORT"]
     if not env["WEBUI_SUPPORT"]:
