@@ -476,11 +476,13 @@ void _sensorLoad() {
     }
     #endif
 
-    #if HCSR04_SUPPORT
+    #if SONAR_SUPPORT
     {
-        HCSR04Sensor * sensor = new HCSR04Sensor();
-        sensor->setTrigger(HCSR04_TRIGGER);
-        sensor->setEcho(HCSR04_ECHO);
+        SonarSensor * sensor = new SonarSensor();
+        sensor->setEcho(SONAR_ECHO);
+        sensor->setIterations(SONAR_ITERATIONS);
+        sensor->setMaxDistance(SONAR_MAX_DISTANCE);
+        sensor->setTrigger(SONAR_TRIGGER);
         _sensors.push_back(sensor);
     }
     #endif

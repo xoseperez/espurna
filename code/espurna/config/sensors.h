@@ -343,21 +343,29 @@
 #endif
 
 //------------------------------------------------------------------------------
-// HC-SR04
-// Enable support by passing HCSR04_SUPPORT=1 build flag
+// Sonar
+// Enable support by passing SONAR_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
-#ifndef HCSR04_SUPPORT
-#define HCSR04_SUPPORT                  0
+#ifndef SONAR_SUPPORT
+#define SONAR_SUPPORT                  0
 #endif
 
-#ifndef HCSR04_TRIGGER
-#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
+#ifndef SONAR_TRIGGER
+#define SONAR_TRIGGER                  12                            // GPIO for the trigger pin (output)
 #endif
 
-#ifndef HCSR04_ECHO
-#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
+#ifndef SONAR_ECHO
+#define SONAR_ECHO                     14                            // GPIO for the echo pin (input)
 #endif
+
+#ifndef SONAR_MAX_DISTANCE
+#define SONAR_MAX_DISTANCE             MAX_SENSOR_DISTANCE           // Max sensor distance in cm
+#endif
+
+#ifndef SONAR_ITERATIONS
+#define SONAR_ITERATIONS               5                             // Number of iterations to ping for
+#endif                                                               // error correction.
 
 //------------------------------------------------------------------------------
 // HLW8012 Energy monitor IC
@@ -628,7 +636,7 @@
     EVENTS_SUPPORT || \
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
-    HCSR04_SUPPORT || \
+    SONAR_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
     NTC_SUPPORT || \
@@ -748,8 +756,8 @@
     #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
-#if HCSR04_SUPPORT
-    #include "../sensors/HCSR04Sensor.h"
+#if SONAR_SUPPORT
+    #include "../sensors/SonarSensor.h"
 #endif
 
 #if HLW8012_SUPPORT
