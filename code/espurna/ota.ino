@@ -238,8 +238,14 @@ void otaSetup() {
         deferredReset(100, CUSTOM_RESET_OTA);
     });
 
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), (progress / (total / 100)));
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {        
+        static unsigned int _progOld;
+
+        unsigned int _prog = (progress / (total / 100));
+        if (_prog != _progOld) {
+            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
+            _progOld = _prog;
+        }
     });
 
     ArduinoOTA.onError([](ota_error_t error) {

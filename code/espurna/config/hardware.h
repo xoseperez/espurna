@@ -2384,6 +2384,60 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// ----------------------------------------------------------------------------------------
+//  Homecube 16A is similar but some pins differ and it also has RGB LEDs
+//  https://www.amazon.de/gp/product/B07D7RVF56/ref=oh_aui_detailpage_o00_s01?ie=UTF8&psc=1
+// ----------------------------------------------------------------------------------------
+#elif defined(HOMECUBE_16A)
+
+    // Info
+    #define MANUFACTURER                "HOMECUBE"
+    #define DEVICE                      "16A"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    //LED Pin 4 - ESP8266 onboard LED
+    //Red   LED: 0
+    //Green LED: 12
+    //Blue  LED: 2
+    
+    // Blue
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            0
+
+    // Green
+    #define LED2_PIN                    12
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_RELAY
+    
+    // Red
+    #define LED3_PIN                    0
+    #define LED3_PIN_INVERSE            0
+    #define LED2_MODE                   LED_MODE_OFF
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             16
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+    
+    
 // -----------------------------------------------------------------------------
 // VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
 // https://www.amazon.com/Smart-Plug-Wifi-Mini-VANZAVANZU/dp/B078PHD6S5

@@ -521,6 +521,10 @@ void _relayConfigure() {
         if (GPIO_NONE != _relays[i].reset_pin) {
             pinMode(_relays[i].reset_pin, OUTPUT);
         }
+        if (_relays[i].type == RELAY_TYPE_INVERSE) {
+            //set to high to block short opening of relay
+            digitalWrite(_relays[i].pin, HIGH);
+        }
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
         _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
     }
