@@ -1,4 +1,4 @@
-#Added MQTT<-->IR Bridge
+# Added MQTT<-->IR Bridge
 
 IR_Bridge.ino
 Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB_TX_PIN=12 -DIRB_SUPPORT=1
