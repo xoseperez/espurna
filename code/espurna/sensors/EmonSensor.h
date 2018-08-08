@@ -146,7 +146,7 @@ class EmonSensor : public I2CSensor {
             #endif
         }
 
-        virtual unsigned int readADC(unsigned char channel) {}
+        virtual unsigned int readADC(unsigned char channel) = 0;
 
         void calculateFactors(unsigned char channel) {
 
@@ -154,8 +154,8 @@ class EmonSensor : public I2CSensor {
 
             unsigned int s = 1;
             unsigned int i = 1;
-            unsigned int m = s * i;
-            unsigned int multiplier;
+            unsigned int m = 1;
+            unsigned int multiplier = 1;
             while (m * _current_factor[channel] < 1) {
                 multiplier = m;
                 i = (i == 1) ? 2 : (i == 2) ? 5 : 1;

@@ -99,7 +99,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
         if (_relays.size() == lightChannels()) {
             lightState(id, status);
             lightState(true);
-        } else if (_relays.size() == lightChannels() + 1) {
+        } else if (_relays.size() == (lightChannels() + 1u)) {
             if (id == 0) {
                 lightState(status);
             } else {

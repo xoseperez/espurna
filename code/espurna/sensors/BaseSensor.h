@@ -46,19 +46,19 @@ class BaseSensor {
         virtual void post() {}
 
         // Descriptive name of the sensor
-        virtual String description() {}
+        virtual String description() = 0;
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        virtual String address(unsigned char index) {}
+        virtual String address(unsigned char index) = 0;
 
         // Descriptive name of the slot # index
-        virtual String slot(unsigned char index) {};
+        virtual String slot(unsigned char index) = 0;
 
         // Type for slot # index
-        virtual unsigned char type(unsigned char index) {}
+        virtual unsigned char type(unsigned char index) = 0;
 
         // Current value for slot # index
-        virtual double value(unsigned char index) {}
+        virtual double value(unsigned char index) = 0;
 
         // Retrieve current instance configuration
         virtual void getConfig(JsonObject& root) {};

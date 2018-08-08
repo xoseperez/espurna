@@ -732,7 +732,7 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
                     sensor->expectedPower(0, value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio(0));
                 }
@@ -819,17 +819,17 @@ void _sensorConfigure() {
                 double value;
                 CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                if ((value = getSetting("pwrExpectedC", 0).toFloat())) {
                     sensor->expectedCurrent(value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio());
                 }
 
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedV", 0).toInt())) {
                     sensor->expectedVoltage(value);
                     setSetting("pwrRatioV", sensor->getVoltageRatio());
                 }
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
                 }
@@ -1111,13 +1111,11 @@ void sensorLoop() {
                 current = _magnitudeProcess(magnitude.type, current);
                 _magnitudes[i].current = current;
 
-                unsigned char decimals = _magnitudeDecimals(magnitude.type);
-
                 // Debug
                 #if SENSOR_DEBUG
                 {
                     char buffer[64];
-                    dtostrf(current, 1-sizeof(buffer), decimals, buffer);
+                    dtostrf(current, 1-sizeof(buffer), _magnitudeDecimals(magnitude.type), buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
