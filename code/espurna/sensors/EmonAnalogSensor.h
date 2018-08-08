@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
+#if EMON_ANALOG_SUPPORT
 
 #pragma once
 
@@ -125,4 +125,4 @@ class EmonAnalogSensor : public EmonSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
+#endif // EMON_ANALOG_SUPPORT

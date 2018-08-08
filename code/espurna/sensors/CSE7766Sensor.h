@@ -4,7 +4,7 @@
 // http://www.chipsea.com/UploadFiles/2017/08/11144342F01B5662.pdf
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && CSE7766_SUPPORT
+#if CSE7766_SUPPORT
 
 #pragma once
 
@@ -375,4 +375,4 @@ class CSE7766Sensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && CSE7766_SUPPORT
+#endif // CSE7766_SUPPORT

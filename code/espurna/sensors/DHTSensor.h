@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && DHT_SUPPORT
+#if DHT_SUPPORT
 
 #pragma once
 
@@ -242,4 +242,4 @@ class DHTSensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && DHT_SUPPORT
+#endif // DHT_SUPPORT

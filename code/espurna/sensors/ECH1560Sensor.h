@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && ECH1560_SUPPORT
+#if ECH1560_SUPPORT
 
 #pragma once
 
@@ -346,4 +346,4 @@ void ECH1560Sensor::_detach(unsigned char gpio) {
     }
 }
 
-#endif // SENSOR_SUPPORT && ECH1560_SUPPORT
+#endif // ECH1560_SUPPORT

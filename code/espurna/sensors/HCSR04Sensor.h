@@ -3,7 +3,7 @@
 // Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && HCSR04_SUPPORT
+#if HCSR04_SUPPORT
 
 #pragma once
 
@@ -116,4 +116,4 @@ class HCSR04Sensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && HCSR04_SUPPORT
+#endif // HCSR04_SUPPORT

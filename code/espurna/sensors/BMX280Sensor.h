@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && BMX280_SUPPORT
+#if BMX280_SUPPORT
 
 #pragma once
 
@@ -438,4 +438,4 @@ class BMX280Sensor : public I2CSensor {
 
 unsigned char BMX280Sensor::addresses[2] = {0x76, 0x77};
 
-#endif // SENSOR_SUPPORT && BMX280_SUPPORT
+#endif // BMX280_SUPPORT

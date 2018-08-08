@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && EMON_ADC121_SUPPORT
+#if EMON_ADC121_SUPPORT
 
 #pragma once
 
@@ -147,4 +147,4 @@ class EmonADC121Sensor : public EmonSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && EMON_ADC121_SUPPORT
+#endif // EMON_ADC121_SUPPORT

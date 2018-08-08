@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <Arduino.h>
+//#include <Arduino.h>
 #include <ArduinoJson.h>
 
 #define SENSOR_ERROR_OK             0       // No error

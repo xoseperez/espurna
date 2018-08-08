@@ -14,6 +14,114 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include "filters/MovingAverageFilter.h"
 #include "sensors/BaseSensor.h"
 
+#if AM2320_SUPPORT
+    #include "sensors/AM2320Sensor.h"
+#endif
+
+#if ANALOG_SUPPORT
+    #include "sensors/AnalogSensor.h"
+#endif
+
+#if BH1750_SUPPORT
+    #include "sensors/BH1750Sensor.h"
+#endif
+
+#if BMX280_SUPPORT
+    #include "sensors/BMX280Sensor.h"
+#endif
+
+#if CSE7766_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/CSE7766Sensor.h"
+#endif
+
+#if DALLAS_SUPPORT
+    #include <OneWire.h>
+    #include "sensors/DallasSensor.h"
+#endif
+
+#if DHT_SUPPORT
+    #include "sensors/DHTSensor.h"
+#endif
+
+#if DIGITAL_SUPPORT
+    #include "sensors/DigitalSensor.h"
+#endif
+
+#if ECH1560_SUPPORT
+    #include "sensors/ECH1560Sensor.h"
+#endif
+
+#if EMON_ADC121_SUPPORT
+    #include "sensors/EmonADC121Sensor.h"
+#endif
+
+#if EMON_ADS1X15_SUPPORT
+    #include "sensors/EmonADS1X15Sensor.h"
+#endif
+
+#if EMON_ANALOG_SUPPORT
+    #include "sensors/EmonAnalogSensor.h"
+#endif
+
+#if EVENTS_SUPPORT
+    #include "sensors/EventSensor.h"
+#endif
+
+#if GEIGER_SUPPORT
+    #include "sensors/GeigerSensor.h"       // The main file for geiger counting module
+#endif
+
+#if GUVAS12SD_SUPPORT
+    #include "sensors/GUVAS12SDSensor.h"
+#endif
+
+#if HCSR04_SUPPORT
+    #include "sensors/HCSR04Sensor.h"
+#endif
+
+#if HLW8012_SUPPORT
+    #include <HLW8012.h>
+    #include "sensors/HLW8012Sensor.h"
+#endif
+
+#if MHZ19_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/MHZ19Sensor.h"
+#endif
+
+#if SENSEAIR_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/SenseAirSensor.h"
+#endif
+
+#if PMSX003_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/PMSX003Sensor.h"
+#endif
+
+#if PZEM004T_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/PZEM004TSensor.h"
+#endif
+
+#if SI7021_SUPPORT
+    #include "sensors/SI7021Sensor.h"
+#endif
+
+#if SHT3X_I2C_SUPPORT
+    #include "sensors/SHT3XI2CSensor.h"
+#endif
+
+#if TMP3X_SUPPORT
+    #include "sensors/TMP3XSensor.h"
+#endif
+
+#if V9261F_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "sensors/V9261FSensor.h"
+#endif
+
 typedef struct {
     BaseSensor * sensor;        // Sensor object
     BaseFilter * filter;        // Filter object

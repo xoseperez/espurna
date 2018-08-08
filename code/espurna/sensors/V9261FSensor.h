@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && V9261F_SUPPORT
+#if V9261F_SUPPORT
 
 #pragma once
 
@@ -259,4 +259,4 @@ class V9261FSensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && V9261F_SUPPORT
+#endif // V9261F_SUPPORT

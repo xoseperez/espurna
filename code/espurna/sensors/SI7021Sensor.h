@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && SI7021_SUPPORT
+#if SI7021_SUPPORT
 
 #pragma once
 
@@ -170,4 +170,4 @@ class SI7021Sensor : public I2CSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && SI7021_SUPPORT
+#endif // SI7021_SUPPORT

@@ -3,7 +3,7 @@
 // Copyright (C) 2018 by Mustafa Tufan
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && AM2320_SUPPORT
+#if AM2320_SUPPORT
 
 #pragma once
 
@@ -195,4 +195,4 @@ class AM2320Sensor : public I2CSensor {
         double _humidity = 0;
 };
 
-#endif // SENSOR_SUPPORT && AM2320_SUPPORT
+#endif // AM2320_SUPPORT

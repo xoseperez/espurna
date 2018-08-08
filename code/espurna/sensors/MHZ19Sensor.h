@@ -6,7 +6,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && MHZ19_SUPPORT
+#if MHZ19_SUPPORT
 
 #pragma once
 
@@ -218,4 +218,4 @@ class MHZ19Sensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && MHZ19_SUPPORT
+#endif // MHZ19_SUPPORT

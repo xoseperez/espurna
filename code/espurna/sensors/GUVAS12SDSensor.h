@@ -4,7 +4,7 @@
 //                         by Mustafa Tufan
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && GUVAS12SD_SUPPORT
+#if GUVAS12SD_SUPPORT
 
 #pragma once
 
@@ -171,4 +171,4 @@ class GUVAS12SDSensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && GUVAS12SD_SUPPORT
+#endif // GUVAS12SD_SUPPORT

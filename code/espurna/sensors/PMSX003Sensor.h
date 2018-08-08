@@ -5,7 +5,7 @@
 // Refine to support PMS5003T/PMS5003ST by Yonsm Guo
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && PMSX003_SUPPORT
+#if PMSX003_SUPPORT
 
 #pragma once
 
@@ -322,4 +322,4 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
 };
 
-#endif // SENSOR_SUPPORT && PMS_SUPPORT
+#endif // PMS_SUPPORT

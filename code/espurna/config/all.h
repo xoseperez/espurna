@@ -19,21 +19,12 @@
 
 */
 
-#ifdef USE_CUSTOM_H
-#include "custom.h"
-#endif
-
-#include "version.h"
 #include "types.h"
 #include "arduino.h"
-#include "hardware.h"
-#include "defaults.h"
-#include "general.h"
-#include "prototypes.h"
-#include "sensors.h"
-#include "dependencies.h"
-#include "progmem.h"
+#include "config.h"
 #include "debug.h"
+#include "prototypes.h"
+#include "progmem.h"
 
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"

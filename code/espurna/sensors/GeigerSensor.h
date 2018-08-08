@@ -4,7 +4,7 @@
 // Documentation: https://github.com/Trickx/espurna/wiki/Geiger-counter
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && GEIGER_SUPPORT
+#if GEIGER_SUPPORT
 
 #pragma once
 
@@ -295,4 +295,4 @@ void GeigerSensor::_detach(unsigned char gpio) {
         }
 }
 
-#endif // SENSOR_SUPPORT && GEIGER_SUPPORT
+#endif // GEIGER_SUPPORT

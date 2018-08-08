@@ -3,11 +3,11 @@ Import("env")
 #from SCons.cpp import PreProcessor
 #flags = env.ParseFlags(env.get("BUILD_FLAGS"))
 #
-#pp = PreProcessor(current=env.subst('$PROJECT_DIR/espurna/config'), dict=defines)
+#pp = PreProcessor(current=env.subst('$PROJECT_DIR/espurna/config'), dict={"ESPURNA_CORE": None})
+#
 #print(pp(env.subst('$PROJECT_DIR/espurna/config/all.h')))
 #res = pp.cpp_namespace
-#print(res["MANUFACTURER"])
-#print(res["DEVICE"])
+#print(res["DEVICE_NAME"])
 #
 #import sys
 #sys.exit()
@@ -17,6 +17,7 @@ import re
 from io import StringIO
 from subprocess import call, Popen, PIPE
 from SCons.Scanner.C import dictify_CPPDEFINES
+from SCons.cpp import CPP_to_Python
 
 
 re_define = re.compile(r"^[\s]*?#define[\s]+?(?P<key>\w+)[\s]+?(?P<value>.*$)")
@@ -29,8 +30,6 @@ def read_header(header):
         lines = []
         for line in h_file:
             line = line.decode('utf-8')
-            if u"prototypes" in line:
-                continue
             lines.append(line)
         header_data = u"".join(lines)
 
@@ -45,7 +44,7 @@ def prepare_cmdline(env):
     build_flags_defines = dictify_CPPDEFINES(env.ParseFlags(env.get("BUILD_FLAGS")))
     for k, v in build_flags_defines.items():
         if v:
-            flag = "-D{}=v".format(k, v)
+            flag = "-D{}={}".format(k, v)
         else:
             flag = "-D{}".format(k)
         cmd.append(flag)
@@ -55,12 +54,12 @@ def prepare_cmdline(env):
 
     # use c++ language, do not expand definitions, stop after preprocessor
     # can debug using -C flag - it will insert comments with origin of #define
-    cmd.extend(["-x", "c++", "-dD", "-E", "-"])
+    cmd.extend(["-x", "c++", "-dM", "-E", "-"])
 
     return cmd
 
 
-def parse_config_header(env, header=env.subst("$PROJECT_DIR/espurna/config/all.h")):
+def parse_config_header(env, header=env.subst("$PROJECT_DIR/espurna/config/config.h")):
     header_data = read_header(header)
     cmd = prepare_cmdline(env)
     
@@ -84,25 +83,29 @@ def parse_config_header(env, header=env.subst("$PROJECT_DIR/espurna/config/all.h
             continue
 
         value = value.strip()
-
-        # often, define is dependent on some other one
-        # they are always in order, so it is expected to be in dict
-        if value in defines.keys():
-            value = defines.get(value)
-            defines[key] = value
-            continue
-
-        if value in (u"true", u"false"):
-            value = True if (value == u"true") else False
-        elif value.startswith(u'"') and value.endswith(u'"'):
+        if value.startswith(u'"') and value.endswith(u'"'):
             value = value.replace(u'"', u'')
+        elif value in (u"true", u"false"):
+            value = True if (value == u"true") else False
         elif value.startswith(u"0x"):
             value = int(value, 16)
         elif value.isdecimal():
             value = int(value, 10)
 
+        defines[key] = value
+
+    # 2nd pass to resolve tokens. gcc output *can* be out of order
+    # XXX DEVICE_NAME = MANUFACTURER " " DEVICE is not valid python syntax
+    for key, value in defines.items():
+        if isinstance(value, unicode):
+            value = CPP_to_Python(value)
+            try:
+                value = eval(value, defines)
+            except (NameError, TypeError, SyntaxError) as e:
+                value = None
+
         if (key.endswith(u"_SUPPORT") or key.endswith(u"_ENABLED")) \
-                and not isinstance(value, bool):
+                and isinstance(value, int):
             value = bool(value)
 
         defines[key] = value
@@ -113,4 +116,3 @@ def parse_config_header(env, header=env.subst("$PROJECT_DIR/espurna/config/all.h
 env["ESPURNA_DEFINES"] = parse_config_header(env)
 # for k, v in env["ESPURNA_DEFINES"].items():
 #     print(k,v)
-

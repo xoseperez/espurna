@@ -4,7 +4,7 @@
 // Contribution by Yonsm Guo
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && SENSEAIR_SUPPORT
+#if SENSEAIR_SUPPORT
 
 #pragma once
 
@@ -230,4 +230,4 @@ class SenseAirSensor : public BaseSensor, SenseAir {
 };
 
 
-#endif // SENSOR_SUPPORT && SENSEAIR_SUPPORT
+#endif // SENSEAIR_SUPPORT

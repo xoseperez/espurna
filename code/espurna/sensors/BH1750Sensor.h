@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && BH1750_SUPPORT
+#if BH1750_SUPPORT
 
 #pragma once
 
@@ -135,4 +135,4 @@ class BH1750Sensor : public I2CSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && BH1750_SUPPORT
+#endif // BH1750_SUPPORT

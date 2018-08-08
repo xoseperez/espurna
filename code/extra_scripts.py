@@ -144,8 +144,10 @@ def inject_webui_module(env):
         return
 
     modules_to_defines = {
-        "rfbridge": defines[u"RELAY_PROVIDER_RFBRIDGE"] == defines[u"RELAY_PROVIDER"],
-        "light": defines.has_key(u"LIGHT_PROVIDER") and defines.get(u"LIGHT_PROVIDER") != defines[u"LIGHT_PROVIDER_NONE"],
+        "rfbridge": defines.has_key(u"RELAY_PROVIDER_RFBRIDGE") and \
+                (defines.get(u"RELAY_PROVIDER_RFBRIDGE") == defines.get(u"RELAY_PROVIDER")),
+        "light": defines.has_key(u"LIGHT_PROVIDER") and \
+                (defines.get(u"LIGHT_PROVIDER") != defines.get(u"LIGHT_PROVIDER_NONE")),
         "sensor": defines.has_key(u"SENSOR_SUPPORT") and defines.get(u"SENSOR_SUPPORT")
     }
 

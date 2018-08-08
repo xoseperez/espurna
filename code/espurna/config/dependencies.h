@@ -49,6 +49,41 @@
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
+// Have any debug enabled
+#define DEBUG_SUPPORT           DEBUG_SERIAL_SUPPORT || DEBUG_UDP_SUPPORT || DEBUG_TELNET_SUPPORT || DEBUG_WEB_SUPPORT
+
+// Have any sensor enabled
+#ifndef SENSOR_SUPPORT
+#define SENSOR_SUPPORT ( \
+    AM2320_SUPPORT || \
+    ANALOG_SUPPORT || \
+    BH1750_SUPPORT || \
+    BMX280_SUPPORT || \
+    CSE7766_SUPPORT || \
+    DALLAS_SUPPORT || \
+    DHT_SUPPORT || \
+    DIGITAL_SUPPORT || \
+    ECH1560_SUPPORT || \
+    EMON_ADC121_SUPPORT || \
+    EMON_ADS1X15_SUPPORT || \
+    EMON_ANALOG_SUPPORT || \
+    EVENTS_SUPPORT || \
+    GEIGER_SUPPORT || \
+    GUVAS12SD_SUPPORT || \
+    HCSR04_SUPPORT || \
+    HLW8012_SUPPORT || \
+    MHZ19_SUPPORT || \
+    NTC_SUPPORT || \
+    SENSEAIR_SUPPORT || \
+    PMSX003_SUPPORT || \
+    PZEM004T_SUPPORT || \
+    SHT3X_I2C_SUPPORT || \
+    SI7021_SUPPORT || \
+    TMP3X_SUPPORT || \
+    V9261F_SUPPORT \
+)
+#endif
+
 // -----------------------------------------------------------------------------
 // WEB UI IMAGE
 // -----------------------------------------------------------------------------
@@ -99,3 +134,4 @@
 #ifndef WEBUI_IMAGE
     #define WEBUI_IMAGE        WEBUI_IMAGE_SMALL
 #endif
+

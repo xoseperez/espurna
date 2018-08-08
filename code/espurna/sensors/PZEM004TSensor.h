@@ -3,7 +3,7 @@
 // Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && PZEM004T_SUPPORT
+#if PZEM004T_SUPPORT
 
 #pragma once
 
@@ -136,4 +136,4 @@ class PZEM004TSensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && PZEM004T_SUPPORT
+#endif // PZEM004T_SUPPORT

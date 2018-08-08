@@ -3,7 +3,7 @@
 // Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && TMP3X_SUPPORT
+#if TMP3X_SUPPORT
 
 #pragma once
 
@@ -91,4 +91,4 @@ class TMP3XSensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && TMP3X_SUPPORT
+#endif // TMP3X_SUPPORT

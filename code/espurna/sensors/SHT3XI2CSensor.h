@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && SHT3X_I2C_SUPPORT
+#if SHT3X_I2C_SUPPORT
 
 #pragma once
 
@@ -90,4 +90,4 @@ class SHT3XI2CSensor : public I2CSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && SHT3X_I2C_SUPPORT
+#endif // SHT3X_I2C_SUPPORT

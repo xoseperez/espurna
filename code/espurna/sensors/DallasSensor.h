@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && DALLAS_SUPPORT
+#if DALLAS_SUPPORT
 
 #pragma once
 
@@ -307,4 +307,4 @@ class DallasSensor : public BaseSensor {
 
 };
 
-#endif // SENSOR_SUPPORT && DALLAS_SUPPORT
+#endif // DALLAS_SUPPORT
