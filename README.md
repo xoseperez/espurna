@@ -1,3 +1,5 @@
+Added MQTT<-->IR Bridge
+
 # ESPurna Firmware
 
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
