@@ -1,4 +1,14 @@
-Added MQTT<-->IR Bridge
+#Added MQTT<-->IR Bridge
+
+IR_Bridge.ino
+Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB_TX_PIN=12 -DIRB_SUPPORT=1
+
+MQTT input topic: {root}/IRB_RAW_IN
+MQTT output topic: {root}/IRB_RAW/set
+
+Uses Raw codes from IRremoteESP8266 library.
+Codes is unsigned integers followd by comma. It's a time of pulses in microseconds. Odd pulses is 1. Even pulses is 0.
+
 
 # ESPurna Firmware
 
