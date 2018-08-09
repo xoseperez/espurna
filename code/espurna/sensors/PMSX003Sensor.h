@@ -322,4 +322,4 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
 };
 
-#endif // SENSOR_SUPPORT && PMS_SUPPORT
+#endif // SENSOR_SUPPORT && PMSX003_SUPPORT
