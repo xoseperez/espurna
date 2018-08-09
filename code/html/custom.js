@@ -61,7 +61,10 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Event",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
+        "PM1.0", "PM2.5", "PM10",
+        "Particles ≧0.3 ﹤0.5", "Particles ≧0.5 ﹤1", "Particles ≧1 ﹤2.5 ",
+        "Particles ≧2.5 ﹤5", "Particles ≧5 ﹤10", "Particles ≧10",
+        "CO2", "Lux", "UV", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
         "Count",
         "NO2", "CO", "Resistance"
