@@ -350,6 +350,50 @@ void info() {
 
 }
 
+void info_device(JsonObject& root) {
+    char chipid[7];
+    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
+
+    uint8_t * bssid = WiFi.BSSID();
+    char bssid_str[20];
+    snprintf_P(bssid_str, sizeof(bssid_str),
+        PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
+        bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
+    );
+
+    root["app_name"] = APP_NAME;
+    root["app_version"] = APP_VERSION;
+    root["app_build"] = buildTime();
+    root["app_revision"] = APP_REVISION;
+    root["manufacturer"] = MANUFACTURER;
+    root["chipid"] = String(chipid);
+    root["mac"] = WiFi.macAddress();
+    root["bssid"] = String(bssid_str);
+    root["channel"] = WiFi.channel();
+    root["device"] = DEVICE;
+    root["hostname"] = getSetting("hostname");
+    root["network"] = getNetwork();
+    root["deviceip"] = getIP();
+    root["sketch_size"] = ESP.getSketchSize();
+    root["free_size"] = ESP.getFreeSketchSpace();
+    root["sdk"] = ESP.getSdkVersion();
+    root["core"] = getCoreVersion();
+}
+
+void info_status(JsonObject& root) {
+    root["heap"] = getFreeHeap();
+    root["uptime"] = getUptime();
+    root["rssi"] = WiFi.RSSI();
+    root["loadaverage"] = systemLoadAverage();
+    #if ADC_MODE_VALUE == ADC_VCC
+        root["vcc"] = ESP.getVcc();
+    #endif
+    #if NTP_SUPPORT
+        if (ntpSynced()) root["now"] = now();
+    #endif
+}
+
+
 // -----------------------------------------------------------------------------
 // SSL
 // -----------------------------------------------------------------------------
