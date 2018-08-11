@@ -2728,6 +2728,20 @@
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
 
+#elif defined(ALLTERCO_SHELLY1)
+
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY1"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 #endif
 
 // -----------------------------------------------------------------------------
