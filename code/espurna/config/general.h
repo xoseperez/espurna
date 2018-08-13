@@ -888,6 +888,14 @@
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 
+#ifndef HOMEASSISTANT_PAYLOAD_ON
+#define HOMEASSISTANT_PAYLOAD_ON    "1"         // Payload for ON and available messages
+#endif
+
+#ifndef HOMEASSISTANT_PAYLOAD_OFF
+#define HOMEASSISTANT_PAYLOAD_OFF   "0"         // Payload for OFF and unavailable messages
+#endif
+
 // -----------------------------------------------------------------------------
 // INFLUXDB
 // -----------------------------------------------------------------------------
