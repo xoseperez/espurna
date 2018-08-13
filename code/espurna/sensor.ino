@@ -533,8 +533,12 @@ void _sensorLoad() {
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
-        sensor->setRX(PMS_RX_PIN);
-        sensor->setTX(PMS_TX_PIN);
+        #if PMS_USE_SOFT
+            sensor->setRX(PMS_RX_PIN);
+            sensor->setTX(PMS_TX_PIN);
+        #else
+            sensor->setSerial(& PMS_HW_PORT);
+        #endif
         sensor->setType(PMS_TYPE);
         _sensors.push_back(sensor);
     }
