@@ -715,6 +715,7 @@
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
+#define MQTT_TOPIC_IR               "ir"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -1057,13 +1058,17 @@
 #define IR_SUPPORT                  0               // Do not build with IR support by default (10.25Kb)
 #endif
 
-#ifndef IR_PIN
-#define IR_PIN                      4               // IR LED
+#ifndef IR_RECEIVER_PIN
+#define IR_RECEIVER_PIN             4               // IR LED
 #endif
 
 // 24 Buttons Set of the IR Remote
 #ifndef IR_BUTTON_SET
 #define IR_BUTTON_SET               1               // IR button set to use (see below)
+#endif
+
+#ifndef IR_DEBOUNCE
+#define IR_DEBOUNCE                 500             // IR debounce time in milliseconds
 #endif
 
 //Remote Buttons SET 1 (for the original Remote shipped with the controller)

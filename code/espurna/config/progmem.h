@@ -58,6 +58,9 @@ PROGMEM const char espurna_modules[] =
     #if INFLUXDB_SUPPORT
         "INFLUXDB "
     #endif
+    #if IR_SUPPORT
+        "IR "
+    #endif
     #if LLMNR_SUPPORT
         "LLMNR "
     #endif

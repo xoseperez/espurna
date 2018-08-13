@@ -1068,7 +1068,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_PIN              4
+    #define IR_RECEIVER_PIN     4
     #define IR_BUTTON_SET       1
 
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
@@ -1097,7 +1097,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_PIN              4
+    #define IR_RECEIVER_PIN     4
     #define IR_BUTTON_SET       1
 
 // -----------------------------------------------------------------------------
@@ -2649,7 +2649,7 @@
 
     // IR - pin 4
     #define IR_SUPPORT          1
-    #define IR_PIN              4
+    #define IR_RECEIVER_PIN     4
     #define IR_BUTTON_SET       1
 
     // A bit of DHT - pin 5
