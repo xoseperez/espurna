@@ -142,7 +142,6 @@
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
-//#define SONAR_SUPPORT          1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define NTC_SUPPORT            1
@@ -150,6 +149,7 @@
 //#define PZEM004T_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
+//#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
 //#define GEIGER_SUPPORT         1

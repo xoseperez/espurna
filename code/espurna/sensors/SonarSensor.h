@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------
-// HC-SR04 Ultrasonic sensor
+// HC-SR04, SRF05, SRF06, DYP-ME007, JSN-SR04T & Parallax PING)))™
 // Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Enhancements by Rui Marinho
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && SONAR_SUPPORT
@@ -101,11 +102,9 @@ class SonarSensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             if (index != 0) return 0;
-
             if (getIterations() > 0) {
-              return NewPing::convert_cm(_sonar->ping_median(getIterations())) / 100.0;
+                return NewPing::convert_cm(_sonar->ping_median(getIterations())) / 100.0;
             }
-
             return _sonar->ping_cm() / 100.0;
         }
 

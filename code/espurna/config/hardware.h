@@ -132,9 +132,6 @@
     #define I2C_SDA_PIN         12  // D6
     #define I2C_SCL_PIN         14  // D5
 
-    #define SONAR_TRIGGER       12  // D6
-    #define SONAR_ECHO          13  // D7
-
 #elif defined(WEMOS_D1_TARPUNA_SHIELD)
 
     // Info
@@ -2198,7 +2195,7 @@
     #define BUTTON1_PIN             12
     #define BUTTON1_RELAY           1
     #define BUTTON1_MODE            BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
-    
+
     #define BUTTON1_PRESS           BUTTON_MODE_NONE
     #define BUTTON1_CLICK           BUTTON_MODE_TOGGLE
     #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
@@ -2431,7 +2428,7 @@
     //Red   LED: 0
     //Green LED: 12
     //Blue  LED: 2
-    
+
     // Blue
     #define LED1_PIN                    2
     #define LED1_PIN_INVERSE            0
@@ -2440,7 +2437,7 @@
     #define LED2_PIN                    12
     #define LED2_PIN_INVERSE            1
     #define LED2_MODE                   LED_MODE_RELAY
-    
+
     // Red
     #define LED3_PIN                    0
     #define LED3_PIN_INVERSE            0
@@ -2459,8 +2456,8 @@
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
-    
-    
+
+
 // -----------------------------------------------------------------------------
 // VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
 // https://www.amazon.com/Smart-Plug-Wifi-Mini-VANZAVANZU/dp/B078PHD6S5

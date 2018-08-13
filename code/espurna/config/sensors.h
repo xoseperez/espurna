@@ -343,31 +343,6 @@
 #endif
 
 //------------------------------------------------------------------------------
-// Sonar
-// Enable support by passing SONAR_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef SONAR_SUPPORT
-#define SONAR_SUPPORT                  0
-#endif
-
-#ifndef SONAR_TRIGGER
-#define SONAR_TRIGGER                  12                            // GPIO for the trigger pin (output)
-#endif
-
-#ifndef SONAR_ECHO
-#define SONAR_ECHO                     14                            // GPIO for the echo pin (input)
-#endif
-
-#ifndef SONAR_MAX_DISTANCE
-#define SONAR_MAX_DISTANCE             MAX_SENSOR_DISTANCE           // Max sensor distance in cm
-#endif
-
-#ifndef SONAR_ITERATIONS
-#define SONAR_ITERATIONS               5                             // Number of iterations to ping for
-#endif                                                               // error correction.
-
-//------------------------------------------------------------------------------
 // HLW8012 Energy monitor IC
 // Enable support by passing HLW8012_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -577,6 +552,31 @@
 #endif
 
 //------------------------------------------------------------------------------
+// Sonar
+// Enable support by passing SONAR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SONAR_SUPPORT
+#define SONAR_SUPPORT                  0
+#endif
+
+#ifndef SONAR_TRIGGER
+#define SONAR_TRIGGER                  12                            // GPIO for the trigger pin (output)
+#endif
+
+#ifndef SONAR_ECHO
+#define SONAR_ECHO                     14                            // GPIO for the echo pin (input)
+#endif
+
+#ifndef SONAR_MAX_DISTANCE
+#define SONAR_MAX_DISTANCE             MAX_SENSOR_DISTANCE           // Max sensor distance in cm
+#endif
+
+#ifndef SONAR_ITERATIONS
+#define SONAR_ITERATIONS               5                             // Number of iterations to ping for
+#endif                                                               // error correction.
+
+//------------------------------------------------------------------------------
 // TMP3X analog temperature sensor
 // Enable support by passing TMP3X_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -636,7 +636,6 @@
     EVENTS_SUPPORT || \
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
-    SONAR_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
     NTC_SUPPORT || \
@@ -645,6 +644,7 @@
     PZEM004T_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
+    SONAR_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT \
 )
@@ -756,10 +756,6 @@
     #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
-#if SONAR_SUPPORT
-    #include "../sensors/SonarSensor.h"
-#endif
-
 #if HLW8012_SUPPORT
     #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
@@ -796,6 +792,10 @@
 
 #if SHT3X_I2C_SUPPORT
     #include "../sensors/SHT3XI2CSensor.h"
+#endif
+
+#if SONAR_SUPPORT
+    #include "../sensors/SonarSensor.h"
 #endif
 
 #if TMP3X_SUPPORT
