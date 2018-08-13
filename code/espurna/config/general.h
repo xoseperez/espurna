@@ -273,6 +273,14 @@
 #define RELAY_SAVE_DELAY            1000
 #endif
 
+// Configure the MQTT payload for ON/OFF
+#ifndef RELAY_MQTT_ON
+#define RELAY_MQTT_ON               "1"
+#endif
+#ifndef RELAY_MQTT_OFF
+#define RELAY_MQTT_OFF              "0"
+#endif
+
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
