@@ -212,19 +212,19 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
         // Initialization method, must be idempotent
         void begin() {
+
             if (!_dirty) return;
 
             if (_soft) {
-              if (_serial) delete _serial;
-
-              _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
-              static_cast<SoftwareSerial*>(_serial)->enableIntTx(false);
+                if (_serial) delete _serial;
+                _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
+                static_cast<SoftwareSerial*>(_serial)->enableIntTx(false);
             }
 
             if (_soft) {
-              static_cast<SoftwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
+                static_cast<SoftwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
             } else {
-              static_cast<HardwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
+                static_cast<HardwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
             }
 
             passiveMode();
@@ -238,9 +238,9 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         String description() {
             char buffer[28];
             if (_soft) {
-              snprintf(buffer, sizeof(buffer), "%s @ SwSerial(%u,%u)", pms_specs[_type].name, _pin_rx, _pin_tx);
+                snprintf(buffer, sizeof(buffer), "%s @ SwSerial(%u,%u)", pms_specs[_type].name, _pin_rx, _pin_tx);
             } else {
-              snprintf(buffer, sizeof(buffer), "%s @ HwSerial", pms_specs[_type].name);
+                snprintf(buffer, sizeof(buffer), "%s @ HwSerial", pms_specs[_type].name);
             }
 
             return String(buffer);
@@ -250,9 +250,9 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         String slot(unsigned char index) {
             char buffer[36] = {0};
             if (_soft) {
-              snprintf(buffer, sizeof(buffer), "%d @ %s @ SwSerial(%u,%u)", int(index + 1), pms_specs[_type].name, _pin_rx, _pin_tx);
+                snprintf(buffer, sizeof(buffer), "%d @ %s @ SwSerial(%u,%u)", int(index + 1), pms_specs[_type].name, _pin_rx, _pin_tx);
             } else {
-              snprintf(buffer, sizeof(buffer), "%d @ %s @ HwSerial", int(index + 1), pms_specs[_type].name);
+                snprintf(buffer, sizeof(buffer), "%d @ %s @ HwSerial", int(index + 1), pms_specs[_type].name);
             }
             return String(buffer);
         }
