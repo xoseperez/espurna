@@ -166,8 +166,8 @@ PROGMEM const char espurna_sensors[] =
     #if GUVAS12SD_SUPPORT
         "GUVAS12SD "
     #endif
-    #if HCSR04_SUPPORT
-        "HCSR04 "
+    #if SONAR_SUPPORT
+        "SONAR "
     #endif
     #if HLW8012_SUPPORT
         "HLW8012 "

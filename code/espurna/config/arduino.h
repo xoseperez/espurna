@@ -142,7 +142,7 @@
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
-//#define HCSR04_SUPPORT         1
+//#define SONAR_SUPPORT          1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define NTC_SUPPORT            1

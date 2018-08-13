@@ -132,6 +132,9 @@
     #define I2C_SDA_PIN         12  // D6
     #define I2C_SCL_PIN         14  // D5
 
+    #define SONAR_TRIGGER       12  // D6
+    #define SONAR_ECHO          13  // D7
+
 #elif defined(WEMOS_D1_TARPUNA_SHIELD)
 
     // Info
@@ -2665,10 +2668,10 @@
     #define EVENTS_SUPPORT      1
     #define EVENTS_PIN          6
 
-    // HC-RS04
-    #define HCSR04_SUPPORT      1
-    #define HCSR04_TRIGGER      7
-    #define HCSR04_ECHO         8
+    // Sonar
+    #define SONAR_SUPPORT       1
+    #define SONAR_TRIGGER       7
+    #define SONAR_ECHO          8
 
     // MHZ19
     #define MHZ19_SUPPORT       1
