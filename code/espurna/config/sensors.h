@@ -492,14 +492,21 @@
 #define PMS_SMART_SLEEP                 0
 #endif
 
+#ifndef PMS_USE_SOFT
+#define PMS_USE_SOFT               0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
+#endif
+
 #ifndef PMS_RX_PIN
-#define PMS_RX_PIN                      13
+#define PMS_RX_PIN                 13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
 #ifndef PMS_TX_PIN
-#define PMS_TX_PIN                      15
+#define PMS_TX_PIN                 15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
+#ifndef PMS_HW_PORT
+#define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
+#endif
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag
