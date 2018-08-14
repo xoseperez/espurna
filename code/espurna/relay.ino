@@ -632,10 +632,10 @@ void relaySetupWS() {
 
 void relaySetupAPI() {
 
+    char key[20];
+
     // API entry points (protected with apikey)
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
-
-        char key[20];
 
         snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
         apiRegister(key,
@@ -679,9 +679,6 @@ void relaySetupAPI() {
                 _relays[relayID].pulse_ms = pulse;
                 _relays[relayID].pulse = relayStatus(relayID) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
                 relayToggle(relayID, true, false);
-
-                return;
-
 
             }
         );
@@ -966,10 +963,11 @@ void relaySetup() {
     // Dummy relays for AI Light, Magic Home LED Controller, H801,
     // Sonoff Dual and Sonoff RF Bridge
     #if DUMMY_RELAY_COUNT > 0
+
         unsigned int _delay_on[8] = {RELAY1_DELAY_ON, RELAY2_DELAY_ON, RELAY3_DELAY_ON, RELAY4_DELAY_ON, RELAY5_DELAY_ON, RELAY6_DELAY_ON, RELAY7_DELAY_ON, RELAY8_DELAY_ON};
         unsigned int _delay_off[8] = {RELAY1_DELAY_OFF, RELAY2_DELAY_OFF, RELAY3_DELAY_OFF, RELAY4_DELAY_OFF, RELAY5_DELAY_OFF, RELAY6_DELAY_OFF, RELAY7_DELAY_OFF, RELAY8_DELAY_OFF};
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-          _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL,0,_delay_on[i], _delay_off[i]});
+            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL,0,_delay_on[i], _delay_off[i]});
         }
 
     #else

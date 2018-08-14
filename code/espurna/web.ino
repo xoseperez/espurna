@@ -45,6 +45,8 @@ char _last_modified[50];
 std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;
 
+std::vector<web_request_callback_f> _web_request_callbacks;
+
 // -----------------------------------------------------------------------------
 // HOOKS
 // -----------------------------------------------------------------------------
@@ -326,6 +328,19 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
     }
 }
 
+void _onRequest(AsyncWebServerRequest *request){
+
+    // Send request to subscribers
+    for (unsigned char i = 0; i < _web_request_callbacks.size(); i++) {
+        bool response = (_web_request_callbacks[i])(request);
+        if (response) return;
+    }
+
+    // No subscriber handled the request, return a 404
+    request->send(404);
+
+}
+
 // -----------------------------------------------------------------------------
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
@@ -343,6 +358,10 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
 
 AsyncWebServer * webServer() {
     return _server;
+}
+
+void webRequestRegister(web_request_callback_f callback) {
+    _web_request_callbacks.push_back(callback);
 }
 
 unsigned int webPort() {
@@ -389,10 +408,8 @@ void webSetup() {
             });
     #endif
 
-    // 404
-    _server->onNotFound([](AsyncWebServerRequest *request){
-        request->send(404);
-    });
+    // Handle other requests, including 404
+    _server->onNotFound(_onRequest);
 
     // Run server
     #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED

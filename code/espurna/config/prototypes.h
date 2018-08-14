@@ -142,6 +142,8 @@ void nice_delay(unsigned long ms);
     #define AsyncWebSocket void
     #define AwsEventType void *
 #endif
+typedef std::function<bool(AsyncWebServerRequest *request)> web_request_callback_f;
+void webRequestRegister(web_request_callback_f callback);
 
 // -----------------------------------------------------------------------------
 // WebSockets
