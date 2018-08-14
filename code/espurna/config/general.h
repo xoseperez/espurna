@@ -259,6 +259,14 @@
 #define RELAY_SAVE_DELAY            1000
 #endif
 
+// Configure the MQTT payload for ON/OFF
+#ifndef RELAY_MQTT_ON
+#define RELAY_MQTT_ON               "1"
+#endif
+#ifndef RELAY_MQTT_OFF
+#define RELAY_MQTT_OFF              "0"
+#endif
+
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
@@ -693,6 +701,7 @@
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
+#define MQTT_TOPIC_IR               "ir"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -865,6 +874,14 @@
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
 
+#ifndef HOMEASSISTANT_PAYLOAD_ON
+#define HOMEASSISTANT_PAYLOAD_ON    "1"         // Payload for ON and available messages
+#endif
+
+#ifndef HOMEASSISTANT_PAYLOAD_OFF
+#define HOMEASSISTANT_PAYLOAD_OFF   "0"         // Payload for OFF and unavailable messages
+#endif
+
 // -----------------------------------------------------------------------------
 // INFLUXDB
 // -----------------------------------------------------------------------------
@@ -1020,7 +1037,6 @@
 #define RF_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid debouncing)
 #endif
 
-
 #ifndef RF_RAW_SUPPORT
 #define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
                                                 // https://github.com/rhx/RF-Bridge-EFM8BB1
@@ -1035,13 +1051,17 @@
 #define IR_SUPPORT                  0               // Do not build with IR support by default (10.25Kb)
 #endif
 
-#ifndef IR_PIN
-#define IR_PIN                      4               // IR LED
+#ifndef IR_RECEIVER_PIN
+#define IR_RECEIVER_PIN             4               // IR LED
 #endif
 
 // 24 Buttons Set of the IR Remote
 #ifndef IR_BUTTON_SET
 #define IR_BUTTON_SET               1               // IR button set to use (see below)
+#endif
+
+#ifndef IR_DEBOUNCE
+#define IR_DEBOUNCE                 500             // IR debounce time in milliseconds
 #endif
 
 //Remote Buttons SET 1 (for the original Remote shipped with the controller)
@@ -1066,7 +1086,7 @@
 
     #define IR_BUTTON_COUNT 24
 
-    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+    const uint32_t IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
 
         { 0xFF906F, IR_BUTTON_MODE_BRIGHTER, 1 },
         { 0xFFB847, IR_BUTTON_MODE_BRIGHTER, 0 },

@@ -58,6 +58,9 @@ PROGMEM const char espurna_modules[] =
     #if INFLUXDB_SUPPORT
         "INFLUXDB "
     #endif
+    #if IR_SUPPORT
+        "IR "
+    #endif
     #if LLMNR_SUPPORT
         "LLMNR "
     #endif
@@ -166,8 +169,8 @@ PROGMEM const char espurna_sensors[] =
     #if GUVAS12SD_SUPPORT
         "GUVAS12SD "
     #endif
-    #if HCSR04_SUPPORT
-        "HCSR04 "
+    #if SONAR_SUPPORT
+        "SONAR "
     #endif
     #if HLW8012_SUPPORT
         "HLW8012 "
@@ -204,12 +207,13 @@ PROGMEM const char espurna_sensors[] =
 
 PROGMEM const unsigned char magnitude_decimals[] = {
     0,
-    1, 0, 2,
-    3, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0,
-    0, 0, 0,
-    0, 0, 3, 3,
-    4, 4 // Geiger Counter decimals
+    1, 0, 2, // THP
+    3, 0, 0, 0, 0, 0, 0, 0, // Power decimals
+    0, 0, 0, // analog, digital, event
+    0, 0, 0, // PM
+    0, 0, 3, 3, 0,
+    4, 4, // Geiger Counter decimals
+    0
 };
 
 PROGMEM const char magnitude_unknown_topic[] = "unknown";
@@ -226,7 +230,7 @@ PROGMEM const char magnitude_energy_topic[] = "energy";
 PROGMEM const char magnitude_energy_delta_topic[] = "energy_delta";
 PROGMEM const char magnitude_analog_topic[] = "analog";
 PROGMEM const char magnitude_digital_topic[] = "digital";
-PROGMEM const char magnitude_events_topic[] = "events";
+PROGMEM const char magnitude_event_topic[] = "event";
 PROGMEM const char magnitude_pm1dot0_topic[] = "pm1dot0";
 PROGMEM const char magnitude_pm2dot5_topic[] = "pm2dot5";
 PROGMEM const char magnitude_pm10_topic[] = "pm10";
@@ -237,17 +241,19 @@ PROGMEM const char magnitude_distance_topic[] = "distance";
 PROGMEM const char magnitude_hcho_topic[] = "hcho";
 PROGMEM const char magnitude_geiger_cpm_topic[] = "ldr_cpm";  // local dose rate [Counts per minute]
 PROGMEM const char magnitude_geiger_sv_topic[] = "ldr_uSvh";  // local dose rate [µSievert per hour]
+PROGMEM const char magnitude_count_topic[] = "count";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
     magnitude_pressure_topic, magnitude_current_topic, magnitude_voltage_topic,
     magnitude_active_power_topic, magnitude_apparent_power_topic, magnitude_reactive_power_topic,
     magnitude_power_factor_topic, magnitude_energy_topic, magnitude_energy_delta_topic,
-    magnitude_analog_topic, magnitude_digital_topic, magnitude_events_topic,
+    magnitude_analog_topic, magnitude_digital_topic, magnitude_event_topic,
     magnitude_pm1dot0_topic, magnitude_pm2dot5_topic, magnitude_pm10_topic,
     magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic,
     magnitude_distance_topic, magnitude_hcho_topic,
-    magnitude_geiger_cpm_topic, magnitude_geiger_sv_topic   // Geiger Counter topics
+    magnitude_geiger_cpm_topic, magnitude_geiger_sv_topic,
+    magnitude_count_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -280,7 +286,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
     magnitude_ppm, magnitude_lux, magnitude_uv,
     magnitude_distance, magnitude_mgm3,
-    magnitude_geiger_cpm, magnitude_geiger_sv       // Geiger counter units
+    magnitude_geiger_cpm, magnitude_geiger_sv,       // Geiger counter units
+    magnitude_empty
 };
 
 #endif

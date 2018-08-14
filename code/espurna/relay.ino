@@ -101,7 +101,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
         if (_relays.size() == lightChannels()) {
             lightState(id, status);
             lightState(true);
-        } else if (_relays.size() == lightChannels() + 1) {
+        } else if (_relays.size() == (lightChannels() + 1u)) {
             if (id == 0) {
                 lightState(status);
             } else {
@@ -561,6 +561,8 @@ void _relayConfigure() {
             pinMode(pin, OUTPUT);
 
             unsigned char type = getSetting("rlyType", index, RELAY_TYPE_NORMAL).toInt();
+            if (RELAY_TYPE_INVERSE == type) digitalWrite(pin, HIGH);
+
             unsigned char reset = getSetting("rlyResetGPIO", index, GPIO_NONE).toInt();
             if (GPIO_NONE != reset) pinMode(reset, OUTPUT);
 
@@ -568,7 +570,7 @@ void _relayConfigure() {
             unsigned long delay_off = getSetting("rlyDelayOff", index, 0).toInt();
 
             unsigned char pulse = getSetting("rlyPulse", index, RELAY_PULSE_MODE).toInt();
-            float pulse_ms = 1000 * getSetting("rlyTime", index, RELAY_PULSE_TIME).toFloat();
+            unsigned long pulse_ms = 1000 * getSetting("rlyTime", index, RELAY_PULSE_TIME).toFloat();
 
             _relays.push_back((relay_t) { pin, type, reset, delay_on, delay_off, pulse, pulse_ms });
             ++index;
@@ -678,10 +680,10 @@ void relaySetupWS() {
 
 void relaySetupAPI() {
 
+    char key[20];
+
     // API entry points (protected with apikey)
     for (unsigned int relayID=0; relayID<relayCount(); relayID++) {
-
-        char key[20];
 
         snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
         apiRegister(key,
@@ -726,9 +728,6 @@ void relaySetupAPI() {
                 _relays[relayID].pulse = relayStatus(relayID) ? RELAY_PULSE_ON : RELAY_PULSE_OFF;
                 relayToggle(relayID, true, false);
 
-                return;
-
-
             }
         );
 
@@ -764,7 +763,7 @@ void relayMQTT(unsigned char id) {
     // Send state topic
     if (_relays[id].report) {
         _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? "1" : "0");
+        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
     }
 
     // Check group topic
@@ -774,7 +773,7 @@ void relayMQTT(unsigned char id) {
         if (t.length() > 0) {
             bool status = relayStatus(id);
             if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? "1" : "0");
+            mqttSendRaw(t.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
         }
     }
 
@@ -789,7 +788,7 @@ void relayMQTT(unsigned char id) {
 
 void relayMQTT() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? "1" : "0");
+        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
     }
 }
 

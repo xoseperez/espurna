@@ -12,7 +12,7 @@ Module key prefix: eep
 
 // -----------------------------------------------------------------------------
 
-bool eepromRotate(bool value) {
+void eepromRotate(bool value) {
     // Enable/disable EEPROM rotation only if we are using more sectors than the
     // reserved by the memory layout
     if (EEPROMr.size() > EEPROMr.reserved()) {

@@ -281,6 +281,11 @@
 #define EVENTS_SUPPORT                  0       // Do not build with counter support by default
 #endif
 
+#ifndef EVENTS_TRIGGER
+#define EVENTS_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
 #ifndef EVENTS_PIN
 #define EVENTS_PIN                      2       // GPIO to monitor
 #endif
@@ -335,23 +340,6 @@
 
 #ifndef GUVAS12SD_PIN
 #define GUVAS12SD_PIN                   14
-#endif
-
-//------------------------------------------------------------------------------
-// HC-SR04
-// Enable support by passing HCSR04_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef HCSR04_SUPPORT
-#define HCSR04_SUPPORT                  0
-#endif
-
-#ifndef HCSR04_TRIGGER
-#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
-#endif
-
-#ifndef HCSR04_ECHO
-#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
 #endif
 
 //------------------------------------------------------------------------------
@@ -504,14 +492,21 @@
 #define PMS_SMART_SLEEP                 0
 #endif
 
+#ifndef PMS_USE_SOFT
+#define PMS_USE_SOFT               0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
+#endif
+
 #ifndef PMS_RX_PIN
-#define PMS_RX_PIN                      13
+#define PMS_RX_PIN                 13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
 #ifndef PMS_TX_PIN
-#define PMS_TX_PIN                      15
+#define PMS_TX_PIN                 15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
+#ifndef PMS_HW_PORT
+#define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
+#endif
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag
@@ -562,6 +557,31 @@
 #ifndef SI7021_ADDRESS
 #define SI7021_ADDRESS                  0x00    // 0x00 means auto
 #endif
+
+//------------------------------------------------------------------------------
+// Sonar
+// Enable support by passing SONAR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SONAR_SUPPORT
+#define SONAR_SUPPORT                  0
+#endif
+
+#ifndef SONAR_TRIGGER
+#define SONAR_TRIGGER                  12                            // GPIO for the trigger pin (output)
+#endif
+
+#ifndef SONAR_ECHO
+#define SONAR_ECHO                     14                            // GPIO for the echo pin (input)
+#endif
+
+#ifndef SONAR_MAX_DISTANCE
+#define SONAR_MAX_DISTANCE             MAX_SENSOR_DISTANCE           // Max sensor distance in cm
+#endif
+
+#ifndef SONAR_ITERATIONS
+#define SONAR_ITERATIONS               5                             // Number of iterations to ping for
+#endif                                                               // error correction.
 
 //------------------------------------------------------------------------------
 // TMP3X analog temperature sensor
@@ -623,7 +643,6 @@
     EVENTS_SUPPORT || \
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
-    HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
     NTC_SUPPORT || \
@@ -632,6 +651,7 @@
     PZEM004T_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
+    SONAR_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT \
 )
@@ -743,10 +763,6 @@
     #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
-#if HCSR04_SUPPORT
-    #include "../sensors/HCSR04Sensor.h"
-#endif
-
 #if HLW8012_SUPPORT
     #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
@@ -783,6 +799,10 @@
 
 #if SHT3X_I2C_SUPPORT
     #include "../sensors/SHT3XI2CSensor.h"
+#endif
+
+#if SONAR_SUPPORT
+    #include "../sensors/SonarSensor.h"
 #endif
 
 #if TMP3X_SUPPORT

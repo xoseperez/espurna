@@ -221,7 +221,7 @@ class DHTSensor : public BaseSensor {
 
         }
 
-        unsigned long _signal(int usTimeOut, bool state) {
+        unsigned long _signal(unsigned long usTimeOut, bool state) {
         	unsigned long uSec = 1;
         	while (digitalRead(_gpio) == state) {
                 if (++uSec > usTimeOut) return 0;

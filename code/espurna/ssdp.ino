@@ -48,7 +48,7 @@ void ssdpSetup() {
 
         char response[strlen_P(_ssdp_template) + 100];
         snprintf_P(response, sizeof(response), _ssdp_template,
-            WiFi.localIP().toString().c_str(),  // ip
+            ip.toString().c_str(),              // ip
             webPort(),                          // port
             SSDP_DEVICE_TYPE,                   // device type
             getHostname().c_str(),     // friendlyName

@@ -72,52 +72,6 @@ bool _asJson(AsyncWebServerRequest *request) {
     return asJson;
 }
 
-ArRequestHandlerFunction _bindAPI(unsigned int apiID) {
-
-    return [apiID](AsyncWebServerRequest *request) {
-
-        webLog(request);
-        if (!_authAPI(request)) return;
-
-        web_api_t api = _apis[apiID];
-
-        // Check if its a PUT
-        if (api.putFn != NULL) {
-            if (request->hasParam("value", request->method() == HTTP_PUT)) {
-                AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
-                (api.putFn)((p->value()).c_str());
-            }
-        }
-
-        // Get response from callback
-        char value[API_BUFFER_SIZE] = {0};
-        (api.getFn)(value, API_BUFFER_SIZE);
-
-        // The response will be a 404 NOT FOUND if the resource is not available
-        if (0 == value[0]) {
-            DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
-            request->send(404);
-            return;
-        }
-        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), value);
-
-        // Format response according to the Accept header
-        if (_asJson(request)) {
-            char buffer[64];
-            if (isNumber(value)) {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
-            } else {
-                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key, value);
-            }
-            request->send(200, "application/json", buffer);
-        } else {
-            request->send(200, "text/plain", value);
-        }
-
-    };
-
-}
-
 void _onAPIs(AsyncWebServerRequest *request) {
 
     webLog(request);
@@ -174,35 +128,98 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 }
 
+bool _apiRequestCallback(AsyncWebServerRequest *request) {
+
+    String url = request->url();
+
+    // Main API entry point
+    if (url.equals("/api") || url.equals("/apis")) {
+        _onAPIs(request);
+        return true;
+    }
+
+    // Main RPC entry point
+    if (url.equals("/rpc")) {
+        _onRPC(request);
+        return true;
+    }
+
+    // Not API request
+    if (!url.startsWith("/api/")) return false;
+
+    for (unsigned char i=0; i < _apis.size(); i++) {
+
+        // Search API url
+        web_api_t api = _apis[i];
+        if (!url.endsWith(api.key)) continue;
+
+        // Log and check credentials
+        webLog(request);
+        if (!_authAPI(request)) return false;
+
+        // Check if its a PUT
+        if (api.putFn != NULL) {
+            if (request->hasParam("value", request->method() == HTTP_PUT)) {
+                AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
+                (api.putFn)((p->value()).c_str());
+            }
+        }
+
+        // Get response from callback
+        char value[API_BUFFER_SIZE] = {0};
+        (api.getFn)(value, API_BUFFER_SIZE);
+
+        // The response will be a 404 NOT FOUND if the resource is not available
+        if (0 == value[0]) {
+            DEBUG_MSG_P(PSTR("[API] Sending 404 response\n"));
+            request->send(404);
+            return false;
+        }
+
+        DEBUG_MSG_P(PSTR("[API] Sending response '%s'\n"), value);
+
+        // Format response according to the Accept header
+        if (_asJson(request)) {
+            char buffer[64];
+            if (isNumber(value)) {
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": %s }"), api.key, value);
+            } else {
+                snprintf_P(buffer, sizeof(buffer), PSTR("{ \"%s\": \"%s\" }"), api.key, value);
+            }
+            request->send(200, "application/json", buffer);
+        } else {
+            request->send(200, "text/plain", value);
+        }
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
 // -----------------------------------------------------------------------------
 
 void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn) {
 
     // Store it
     web_api_t api;
-    char buffer[40];
-    snprintf_P(buffer, sizeof(buffer), PSTR("/api/%s"), key);
     api.key = strdup(key);
     api.getFn = getFn;
     api.putFn = putFn;
     _apis.push_back(api);
 
-    // Bind call
-    unsigned int methods = HTTP_GET;
-    if (putFn != NULL) methods += HTTP_PUT;
-    webServer()->on(buffer, methods, _bindAPI(_apis.size() - 1));
-
-}
-
-void apiSetup() {
-    webServer()->on("/apis", HTTP_GET, _onAPIs);
-    webServer()->on("/rpc", HTTP_GET, _onRPC);
-    wsOnSendRegister(_apiWebSocketOnSend);
-    settingsRegisterKeyCheck(_apiKeyCheck);
 }
 
 bool apiRealTime() {
     return getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+}
+
+void apiSetup() {
+    settingsRegisterKeyCheck(_apiKeyCheck);
+    webRequestRegister(_apiRequestCallback);
+    wsOnSendRegister(_apiWebSocketOnSend);
 }
 
 #endif // WEB_SUPPORT

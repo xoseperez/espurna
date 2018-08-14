@@ -109,6 +109,8 @@ void _sensorWebSocketSendData(JsonObject& root) {
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
 
         sensor_magnitude_t magnitude = _magnitudes[i];
+        if (magnitude.type == MAGNITUDE_EVENT) continue;
+
         unsigned char decimals = _magnitudeDecimals(magnitude.type);
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
@@ -440,7 +442,8 @@ void _sensorLoad() {
     {
         EventSensor * sensor = new EventSensor();
         sensor->setGPIO(EVENTS_PIN);
-        sensor->setMode(EVENTS_PIN_MODE);
+        sensor->setTrigger(EVENTS_TRIGGER);
+        sensor->setPinMode(EVENTS_PIN_MODE);
         sensor->setDebounceTime(EVENTS_DEBOUNCE);
         sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
         _sensors.push_back(sensor);
@@ -467,11 +470,13 @@ void _sensorLoad() {
     }
     #endif
 
-    #if HCSR04_SUPPORT
+    #if SONAR_SUPPORT
     {
-        HCSR04Sensor * sensor = new HCSR04Sensor();
-        sensor->setTrigger(HCSR04_TRIGGER);
-        sensor->setEcho(HCSR04_ECHO);
+        SonarSensor * sensor = new SonarSensor();
+        sensor->setEcho(SONAR_ECHO);
+        sensor->setIterations(SONAR_ITERATIONS);
+        sensor->setMaxDistance(SONAR_MAX_DISTANCE);
+        sensor->setTrigger(SONAR_TRIGGER);
         _sensors.push_back(sensor);
     }
     #endif
@@ -522,8 +527,12 @@ void _sensorLoad() {
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
-        sensor->setRX(PMS_RX_PIN);
-        sensor->setTX(PMS_TX_PIN);
+        #if PMS_USE_SOFT
+            sensor->setRX(PMS_RX_PIN);
+            sensor->setTX(PMS_TX_PIN);
+        #else
+            sensor->setSerial(& PMS_HW_PORT);
+        #endif
         sensor->setType(PMS_TYPE);
         _sensors.push_back(sensor);
     }
@@ -577,8 +586,17 @@ void _sensorLoad() {
 
 }
 
-void _sensorCallback(unsigned char i, unsigned char type, const char * payload) {
-    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, payload);
+void _sensorCallback(unsigned char i, unsigned char type, double value) {
+
+    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
+
+    for (unsigned char k=0; k<_magnitudes.size(); k++) {
+        if ((_sensors[i] == _magnitudes[k].sensor) && (type == _magnitudes[k].type)) {
+            _sensorReport(k, value);
+            return;
+        }
+    }
+
 }
 
 void _sensorInit() {
@@ -615,7 +633,7 @@ void _sensorInit() {
             new_magnitude.min_change = 0;
             if (type == MAGNITUDE_DIGITAL) {
                 new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_EVENTS || type == MAGNITUDE_GEIGER_CPM|| type == MAGNITUDE_GEIGER_SIEVERT) {  // For geiger counting moving average filter is the most appropriate if needed at all.
+            } else if (type == MAGNITUDE_COUNT || type == MAGNITUDE_GEIGER_CPM|| type == MAGNITUDE_GEIGER_SIEVERT) {  // For geiger counting moving average filter is the most appropriate if needed at all.
                 new_magnitude.filter = new MovingAverageFilter();
             } else {
                 new_magnitude.filter = new MedianFilter();
@@ -630,8 +648,8 @@ void _sensorInit() {
         }
 
         // Hook callback
-        _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
-            _sensorCallback(i, type, payload);
+        _sensors[i]->onEvent([i](unsigned char type, double value) {
+            _sensorCallback(i, type, value);
         });
 
         // Custom initializations
@@ -714,7 +732,7 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpected", 0).toInt()) {
+                if ((value = getSetting("pwrExpected", 0).toInt())) {
                     sensor->expectedPower(0, value);
                     setSetting("curRatio", sensor->getCurrentRatio(0));
                 }
@@ -801,17 +819,17 @@ void _sensorConfigure() {
                 double value;
                 CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
-                if (value = getSetting("curExpected", 0).toFloat()) {
+                if ((value = getSetting("curExpected", 0).toFloat())) {
                     sensor->expectedCurrent(value);
                     setSetting("curRatio", sensor->getCurrentRatio());
                 }
 
-                if (value = getSetting("volExpected", 0).toInt()) {
+                if ((value = getSetting("volExpected", 0).toInt())) {
                     sensor->expectedVoltage(value);
                     setSetting("volRatio", sensor->getVoltageRatio());
                 }
 
-                if (value = getSetting("pwrExpected", 0).toInt()) {
+                if ((value = getSetting("pwrExpected", 0).toInt())) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatio", sensor->getPowerRatio());
                 }
@@ -887,6 +905,73 @@ void _sensorBackwards() {
     moveSetting("pwrExpectedV", "volExpected"); // 1.14.0 - 2018-06-26
     moveSetting("pwrResetCalibration", "snsResetCalibration"); // 1.14.0 - 2018-06-26
     moveSetting("pwrResetE", "eneReset"); // 1.14.0 - 2018-06-26
+
+}
+
+void _sensorReport(unsigned char index, double value) {
+
+    sensor_magnitude_t magnitude = _magnitudes[index];
+    unsigned char decimals = _magnitudeDecimals(magnitude.type);
+
+    char buffer[10];
+    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+
+    #if BROKER_SUPPORT
+        brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+    #endif
+
+    #if MQTT_SUPPORT
+
+        mqttSend(magnitudeTopicIndex(index).c_str(), buffer);
+
+        #if SENSOR_PUBLISH_ADDRESSES
+            char topic[32];
+            snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
+            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+                mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
+            } else {
+                mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
+            }
+        #endif // SENSOR_PUBLISH_ADDRESSES
+
+    #endif // MQTT_SUPPORT
+
+    #if INFLUXDB_SUPPORT
+        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+            idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+        } else {
+            idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
+        }
+    #endif // INFLUXDB_SUPPORT
+
+    #if THINGSPEAK_SUPPORT
+        tspkEnqueueMeasurement(index, buffer);
+    #endif
+
+    #if DOMOTICZ_SUPPORT
+    {
+        char key[15];
+        snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), index);
+        if (magnitude.type == MAGNITUDE_HUMIDITY) {
+            int status;
+            if (value > 70) {
+                status = HUMIDITY_WET;
+            } else if (value > 45) {
+                status = HUMIDITY_COMFORTABLE;
+            } else if (value > 30) {
+                status = HUMIDITY_NORMAL;
+            } else {
+                status = HUMIDITY_DRY;
+            }
+            char status_buf[5];
+            itoa(status, status_buf, 10);
+            domoticzSend(key, buffer, status_buf);
+        } else {
+            domoticzSend(key, 0, buffer);
+        }
+    }
+    #endif // DOMOTICZ_SUPPORT
+
 }
 
 // -----------------------------------------------------------------------------
@@ -1026,7 +1111,6 @@ void sensorLoop() {
 
         double current;
         double filtered;
-        char buffer[64];
 
         // Pre-read hook
         _sensorPre();
@@ -1062,19 +1146,18 @@ void sensorLoop() {
                 magnitude.filter->add(current);
 
                 // Special case
-                if (magnitude.type == MAGNITUDE_EVENTS) {
+                if (magnitude.type == MAGNITUDE_COUNT) {
                     current = magnitude.filter->result();
                 }
 
                 current = _magnitudeProcess(magnitude.type, current);
                 _magnitudes[i].current = current;
 
-                unsigned char decimals = _magnitudeDecimals(magnitude.type);
-
                 // Debug
                 #if SENSOR_DEBUG
                 {
-                    dtostrf(current, 1-sizeof(buffer), decimals, buffer);
+                    char buffer[64];
+                    dtostrf(current, 1-sizeof(buffer), _magnitudeDecimals(magnitude.type), buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
@@ -1096,63 +1179,8 @@ void sensorLoop() {
                     if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {
 
                         _magnitudes[i].reported = filtered;
-                        dtostrf(filtered, 1-sizeof(buffer), decimals, buffer);
 
-                        #if BROKER_SUPPORT
-                            brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
-                        #endif
-
-                        #if MQTT_SUPPORT
-
-                            mqttSend(magnitudeTopicIndex(i).c_str(), buffer);
-
-                            #if SENSOR_PUBLISH_ADDRESSES
-                                char topic[32];
-                                snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
-                                if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                    mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
-                                } else {
-                                    mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
-                                }
-                            #endif // SENSOR_PUBLISH_ADDRESSES
-
-                        #endif // MQTT_SUPPORT
-
-                        #if INFLUXDB_SUPPORT
-                            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
-                            } else {
-                                idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
-                            }
-                        #endif // INFLUXDB_SUPPORT
-
-                        #if THINGSPEAK_SUPPORT
-                            tspkEnqueueMeasurement(i, buffer);
-                        #endif
-
-                        #if DOMOTICZ_SUPPORT
-                        {
-                            char key[15];
-                            snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), i);
-                            if (magnitude.type == MAGNITUDE_HUMIDITY) {
-                                int status;
-                                if (filtered > 70) {
-                                    status = HUMIDITY_WET;
-                                } else if (filtered > 45) {
-                                    status = HUMIDITY_COMFORTABLE;
-                                } else if (filtered > 30) {
-                                    status = HUMIDITY_NORMAL;
-                                } else {
-                                    status = HUMIDITY_DRY;
-                                }
-                                char status_buf[5];
-                                itoa(status, status_buf, 10);
-                                domoticzSend(key, buffer, status_buf);
-                            } else {
-                                domoticzSend(key, 0, buffer);
-                            }
-                        }
-                        #endif // DOMOTICZ_SUPPORT
+                        _sensorReport(i, filtered);
 
                     } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
                 } // if (report_count == 0)

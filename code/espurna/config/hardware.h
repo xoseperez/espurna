@@ -65,6 +65,26 @@
 
     #include "devices/002_nodemcu_lolin.json.h"
 
+#elif defined(WEMOS_D1_MINI)
+
+    // Info
+    #define MANUFACTURER        "WEMOS"
+    #define DEVICE              "D1_MINI"
+
+    // Buttons
+    // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
+    #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
+                                    // it's the same as using a Wemos one button shield
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    #define I2C_SDA_PIN         4  // D2
+    #define I2C_SCL_PIN         5  // D1
+
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
     #include "devices/003_wemos_d1_mini_relayshield.json.h"
@@ -982,7 +1002,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_PIN              4
+    #define IR_RECEIVER_PIN     4
     #define IR_BUTTON_SET       1
 
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
@@ -1011,7 +1031,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_PIN              4
+    #define IR_RECEIVER_PIN     4
     #define IR_BUTTON_SET       1
 
 // -----------------------------------------------------------------------------
@@ -2109,7 +2129,7 @@
     #define BUTTON1_PIN             12
     #define BUTTON1_RELAY           1
     #define BUTTON1_MODE            BUTTON_SWITCH | BUTTON_DEFAULT_HIGH //Hardware Pullup
-    
+
     #define BUTTON1_PRESS           BUTTON_MODE_NONE
     #define BUTTON1_CLICK           BUTTON_MODE_TOGGLE
     #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
@@ -2318,6 +2338,60 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// ----------------------------------------------------------------------------------------
+//  Homecube 16A is similar but some pins differ and it also has RGB LEDs
+//  https://www.amazon.de/gp/product/B07D7RVF56/ref=oh_aui_detailpage_o00_s01?ie=UTF8&psc=1
+// ----------------------------------------------------------------------------------------
+#elif defined(HOMECUBE_16A)
+
+    // Info
+    #define MANUFACTURER                "HOMECUBE"
+    #define DEVICE                      "16A"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    //LED Pin 4 - ESP8266 onboard LED
+    //Red   LED: 0
+    //Green LED: 12
+    //Blue  LED: 2
+
+    // Blue
+    #define LED1_PIN                    2
+    #define LED1_PIN_INVERSE            0
+
+    // Green
+    #define LED2_PIN                    12
+    #define LED2_PIN_INVERSE            1
+    #define LED2_MODE                   LED_MODE_RELAY
+
+    // Red
+    #define LED3_PIN                    0
+    #define LED3_PIN_INVERSE            0
+    #define LED2_MODE                   LED_MODE_OFF
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             16
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+
 // -----------------------------------------------------------------------------
 // VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
 // https://www.amazon.com/Smart-Plug-Wifi-Mini-VANZAVANZU/dp/B078PHD6S5
@@ -2506,6 +2580,11 @@
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 02"
 
+    // Some buttons - pin 0
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
     // A bit of CSE7766 - pin 1
     #ifndef CSE7766_SUPPORT
     #define CSE7766_SUPPORT     1
@@ -2521,7 +2600,7 @@
 
     // IR - pin 4
     #define IR_SUPPORT          1
-    #define IR_PIN              4
+    #define IR_RECEIVER_PIN     4
     #define IR_BUTTON_SET       1
 
     // A bit of DHT - pin 5
@@ -2537,10 +2616,10 @@
     #define EVENTS_SUPPORT      1
     #define EVENTS_PIN          6
 
-    // HC-RS04
-    #define HCSR04_SUPPORT      1
-    #define HCSR04_TRIGGER      7
-    #define HCSR04_ECHO         8
+    // Sonar
+    #define SONAR_SUPPORT       1
+    #define SONAR_TRIGGER       7
+    #define SONAR_ECHO          8
 
     // MHZ19
     #define MHZ19_SUPPORT       1
@@ -2572,6 +2651,11 @@
     // Relay provider light/my92XX
     #define MANUFACTURER            "TravisCI"
     #define DEVICE                  "Virtual board 03"
+
+    // Some buttons - pin 0
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // MY9231 Light - pins 1,2
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
