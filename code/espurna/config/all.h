@@ -29,9 +29,9 @@
 #include "hardware.h"
 #include "defaults.h"
 #include "general.h"
+#include "dependencies.h"
 #include "prototypes.h"
 #include "sensors.h"
-#include "dependencies.h"
 #include "progmem.h"
 #include "debug.h"
 
