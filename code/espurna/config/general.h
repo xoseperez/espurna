@@ -1051,7 +1051,6 @@
 #define RF_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid debouncing)
 #endif
 
-
 #ifndef RF_RAW_SUPPORT
 #define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
                                                 // https://github.com/rhx/RF-Bridge-EFM8BB1
