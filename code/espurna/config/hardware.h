@@ -743,6 +743,25 @@
     #define MY92XX_MAPPING      4, 3, 5, 0, 1
     #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
+#elif defined(LOHAS_9W)
+
+    // Info
+    #define MANUFACTURER        "LOHAS"
+    #define DEVICE              "E27_9W"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
+    #define MY92XX_CHIPS        2
+    #define MY92XX_DI_PIN       13
+    #define MY92XX_DCKI_PIN     15
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3, 4
+    #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
+
 #elif defined(ITEAD_SONOFF_LED)
 
     // Info
