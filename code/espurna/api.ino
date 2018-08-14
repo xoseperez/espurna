@@ -128,8 +128,21 @@ void _onRPC(AsyncWebServerRequest *request) {
 
 bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
-    // Not API request
     String url = request->url();
+
+    // Main API entry point
+    if (url.equals("/api") || url.equals("/apis")) {
+        _onAPIs(request);
+        return true;
+    }
+
+    // Main RPC entry point
+    if (url.equals("/rpc")) {
+        _onRPC(request);
+        return true;
+    }
+
+    // Not API request
     if (!url.startsWith("/api/")) return false;
 
     for (unsigned char i=0; i < _apis.size(); i++) {
@@ -198,8 +211,6 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 }
 
 void apiSetup() {
-    webServer()->on("/apis", HTTP_GET, _onAPIs);
-    webServer()->on("/rpc", HTTP_GET, _onRPC);
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
     webRequestRegister(_apiRequestCallback);

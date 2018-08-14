@@ -93,7 +93,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->printf("{\n\"app\": \"%s\"", APP_NAME);
     response->printf(",\n\"version\": \"%s\"", APP_VERSION);
     response->printf(",\n\"backup\": \"1\"");
-    response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+    #if NTP_SUPPORT
+        response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+    #endif
 
     // Write the keys line by line (not sorted)
     unsigned long count = settingsKeyCount();
@@ -392,6 +394,8 @@ void webSetup() {
     #if WEB_EMBEDDED
         _server->on("/index.html", HTTP_GET, _onHome);
     #endif
+
+    // Other entry points
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
@@ -418,6 +422,7 @@ void webSetup() {
     #else
         _server->begin();
     #endif
+    
     DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
 
 }
