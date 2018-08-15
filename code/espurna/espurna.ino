@@ -169,6 +169,15 @@ void setup() {
         uartmqttSetup();
     #endif
 
+    // Display support
+    #if DISPLAY_SUPPORT
+        dispSetup();
+    #endif
+
+    // IR Bridge support
+    #if IRB_SUPPORT
+        irbSetup();
+    #endif
 
     // 3rd party code hook
     #if USE_EXTRA
