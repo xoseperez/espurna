@@ -19,7 +19,7 @@ Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB
 
 ### Transmitting:
  defined IRB_RAW is a MQTT topic for MQTT incoming messages (outgoing by IR).\
- Topic: <root>/IRB_RAW/set\
+ Topic: \<root\>/IRB_RAW/set\
  Payload: 1000,1000,1000,1000,1000,DELAY,COUNT,FREQ:500,500,500,500,500\
 
  codes - time in microseconds when IR LED On/Off. First value - ON, second - Off ..etc...\
@@ -39,7 +39,7 @@ Usefull for notifications from smart-home system.
 ### Usage:
 Send MQTT payload "3" to interesting LED and it start blinking. Send "0" or "1" and it stop blinking.
 
-## <dev> LCD/OLED display support
+## (dev) LCD/OLED display support
 Print sensors values, switch status, etc..
 
 
