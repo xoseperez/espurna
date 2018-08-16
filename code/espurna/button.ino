@@ -64,10 +64,10 @@ unsigned long _buttonGetActionMask(unsigned char id) {
 
     unsigned long pressAction = getSetting("btnPress", id, BUTTON_MODE_NONE).toInt();
     unsigned long clickAction = getSetting("btnClick", id, BUTTON_MODE_TOGGLE).toInt();
-    unsigned long dblClickAction = getSetting("btnDblClick", id, (id == 1) ? BUTTON_MODE_AP : BUTTON_MODE_NONE).toInt();
-    unsigned long lngClickAction = getSetting("btnLngClick", id, (id == 1) ? BUTTON_MODE_RESET : BUTTON_MODE_NONE).toInt();
-    unsigned long lnglngClickAction = getSetting("btnLngLngClick", id, (id == 1) ? BUTTON_MODE_FACTORY : BUTTON_MODE_NONE).toInt();
-    unsigned long tripleClickAction = getSetting("btnTripleClick", id, (id == 1) ? BUTTON_MODE_NONE : BUTTON_MODE_NONE).toInt();
+    unsigned long dblClickAction = getSetting("btnDblClick", id, (id == 0) ? BUTTON_MODE_AP : BUTTON_MODE_NONE).toInt();
+    unsigned long lngClickAction = getSetting("btnLngClick", id, (id == 0) ? BUTTON_MODE_RESET : BUTTON_MODE_NONE).toInt();
+    unsigned long lnglngClickAction = getSetting("btnLngLngClick", id, (id == 0) ? BUTTON_MODE_FACTORY : BUTTON_MODE_NONE).toInt();
+    unsigned long tripleClickAction = getSetting("btnTripleClick", id, (id == 0) ? BUTTON_MODE_NONE : BUTTON_MODE_NONE).toInt();
 
     unsigned long value;
     value  = pressAction;
