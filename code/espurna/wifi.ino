@@ -591,7 +591,7 @@ void wifiRegister(wifi_callback_f callback) {
 void wifiSetup() {
 
     WiFi.setSleepMode(WIFI_SLEEP_MODE);
-
+    
     _wifiInject();
     _wifiConfigure();
 

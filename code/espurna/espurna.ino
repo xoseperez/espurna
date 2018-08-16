@@ -175,7 +175,7 @@ void setup() {
     #endif
 
     // IR Bridge support
-    #if IRB_SUPPORT
+    #if (defined IRB_RX_PIN) || (defined IRB_TX_PIN)
         irbSetup();
     #endif
 

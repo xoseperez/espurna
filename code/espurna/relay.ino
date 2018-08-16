@@ -416,6 +416,7 @@ unsigned char relayParsePayload(const char * payload) {
     if (payload[0] == '0') return 0;
     if (payload[0] == '1') return 1;
     if (payload[0] == '2') return 2;
+    if (payload[0] == '3') return 3;
 
     // trim payload
     char * p = ltrim((char *)payload);

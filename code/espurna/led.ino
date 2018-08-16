@@ -96,17 +96,24 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
         }
 
         // Check if LED is managed
-        if (_ledMode(ledID) != LED_MODE_MQTT) return;
+        if (_ledMode(ledID) != LED_MODE_MQTT && _ledMode(ledID) != 10) return;
 
         // get value
         unsigned char value = relayParsePayload(payload);
-
         // Action to perform
         if (value == 2) {
+            _ledMode(ledID, LED_MODE_MQTT);
             _ledToggle(ledID);
+        } else if (value == 3) {
+          // added for indicating home alarms on switch main led
+              _ledMode(ledID, 10);
+              //_led_update = true;
+              //DEBUG_MSG_P(PSTR("[LED] Change led mode to (%d)\n"), _ledMode(ledID));
         } else {
-            _ledStatus(ledID, value == 1);
+              _ledMode(ledID, LED_MODE_MQTT);
+              _ledStatus(ledID, value == 1);
         }
+
 
     }
 
@@ -244,6 +251,11 @@ void ledLoop() {
                 _ledBlink(i, 500, 500);
             }
 
+        }
+
+        // added for indicating home alarms on switch main led
+        if (_ledMode(i) == 10) {
+            _ledBlink(i, 500, 400);
         }
 
         // Relay-based modes, update only if relays have been updated
