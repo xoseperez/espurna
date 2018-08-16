@@ -10,43 +10,44 @@ MQTT output topic: {root}/IRB_RAW/set
 
 */
 
-#if IRB_SUPPORT
 // -----------------------------------------------------------------------------
 // IR Bridge
 // IRB_RX_PIN - receiver pin
 // IRB_TX_PIN - transmitter pin
 // -----------------------------------------------------------------------------
+#if (defined IRB_RX_PIN) || (defined IRB_TX_PIN)
+  #include <IRremoteESP8266.h>
+#endif
 
-#include <IRremoteESP8266.h>
-#include <IRrecv.h>
-#include <IRsend.h>
+#if (defined IRB_RX_PIN)
+  #include <IRrecv.h>
+  uint16_t CAPTURE_BUFFER_SIZE = 1024;
+  #define IR_TIMEOUT 15U
+  IRrecv irb_recv(IRB_RX_PIN, CAPTURE_BUFFER_SIZE, IR_TIMEOUT, true);
+  decode_results irb_results;
+#endif //IRB_RX_PIN
 
-uint16_t CAPTURE_BUFFER_SIZE = 1024;
-#define IR_TIMEOUT 15U
-
-IRrecv irb_recv(IRB_RX_PIN, CAPTURE_BUFFER_SIZE, IR_TIMEOUT, true);
-
-IRsend irb_send(IRB_TX_PIN);
-
-decode_results irb_results;
+#if (defined IRB_TX_PIN)
+  #include <IRsend.h>
+  IRsend irb_send(IRB_TX_PIN);
+  #define IRB_RAW "IRB_RAW"
+#endif //IRB_TX_PIN
 
 // MQTT to IR
-#if MQTT_SUPPORT
+#if MQTT_SUPPORT && (defined IRB_TX_PIN)
 void _irbMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
-        mqttSubscribe("IRB_RAW");
+        mqttSubscribe(IRB_RAW);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
         // Match topic
         String t = mqttMagnitude((char *) topic);
-        if (t.equals("IRB_RAW")) {
-
+        if (t.equals(IRB_RAW)) {
           String strpayload = String(payload);
           unsigned int len = strpayload.length();
-          unsigned int count = 1;
+          unsigned char count = 1;
 
           for(int i = 0; i < len; i++)
           {
@@ -54,7 +55,7 @@ void _irbMqttCallback(unsigned int type, const char * topic, const char * payloa
               if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
                 count++;
               } else if (!isDigit(payload[i])) {
-                DEBUG_MSG_P(PSTR("[IR Bridge] MQTT payload format error. Use comma separated unsigned integer values.\n"));
+                DEBUG_MSG_P(PSTR("[IR Bridge] MQTT payload format error. Use comma separated unsigned integer values. Last two is repeat(<20) count and frequency.\n"));
                 return;
               }
 
@@ -77,20 +78,38 @@ void _irbMqttCallback(unsigned int type, const char * topic, const char * payloa
             }
           }
 
+          uint16_t freq=38;
+          uint8_t repeat=1;
+          // if count >2 then we have values and repeat number and frequency
+          if (count>2) {
+            if (Raw[count-2]<20) {
+              freq = Raw[count-1];
+              repeat = Raw[count-2];
+              count = count - 2;
+            }
+          }
+
           char * irstr;
           if (strpayload.length()!=0){
             irstr = const_cast<char*>(strpayload.c_str());
           }
 
-          DEBUG_MSG_P(PSTR("[IR Bridge] Raw IR output %d values: %s\n"), count, irstr);
-          irb_send.sendRaw(Raw, count, 38);
+          DEBUG_MSG_P(PSTR("[IR Bridge] Raw IR output %d values %d times on %d(k)Hz frequency: %s\n"), count, repeat, freq, irstr);
+          irb_recv.disableIRIn();
+          for (int i=0; i < repeat; i++) {
+            irb_send.sendRaw(Raw, count, freq);
+          }
+          irb_recv.enableIRIn();
 
         }
     }
 }
-#endif
+#endif // IRB_TX_PIN & MQTT
+
 
 // IR to MQTT
+#if (defined IRB_RX_PIN)
+
 void irbLoop() {
 
   if (irb_recv.decode(&irb_results)) {
@@ -127,21 +146,30 @@ void irbLoop() {
 
 }
 
+#endif //IRB_RX_PIN
+
+#if (defined IRB_RX_PIN) || (defined IRB_TX_PIN)
+
 void irbSetup() {
 
+#if (defined IRB_RX_PIN)
     DEBUG_MSG_P("[IR Bridge] receiver INIT \n");
     irb_recv.enableIRIn();
-
-    DEBUG_MSG_P("[IR Bridge] transmitter INIT \n");
-    irb_send.begin();
-
-    // Register loop
-    espurnaRegisterLoop(irbLoop);
 
     #if MQTT_SUPPORT
         DEBUG_MSG_P("[IR Bridge] MQTT INIT \n");
         mqttRegister(_irbMqttCallback);
     #endif
-}
 
 #endif
+
+#if (defined IRB_TX_PIN)
+    DEBUG_MSG_P("[IR Bridge] transmitter INIT \n");
+    irb_send.begin();
+    // Register loop
+    espurnaRegisterLoop(irbLoop);
+#endif
+
+}
+
+#endif // (defined IRB_RX_PIN) || (defined IRB_TX_PIN)
