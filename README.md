@@ -26,12 +26,21 @@ Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB
  DELAY - delay in milliseconds between sending repeats\
  COUNT - how many repeats send. Max 120.\
  FREQ - modulation frequency. Usually 38kHz. You may set 38, it means 38kHz or set 38000, it meant same.\
- After all you may set repeat-codes.\
+ After all you may write ":" and set repeat-codes. Usually IR-remotes send one data code and then until we continue pressing key, they send short repeat codes.
 
 ### Receiving:
  defined IRB_RAW_IN is a MQTT topic for IR incoming messages (outgoing to MQTT).\
  Topic: <root>/IRB_RAW_IN\
  Payload: 1000,1000,1000,1000,1000\
+
+## Blinking of LED managed by MQTT
+Usefull for notifications from smart-home system.
+
+### Usage:
+Send MQTT payload "3" to interesting LED and it start blinking. Send "0" or "1" and it stop blinking.
+
+## <dev> LCD/OLED display support
+Print sensors values, switch status, etc..
 
 
 # ESPurna Firmware
