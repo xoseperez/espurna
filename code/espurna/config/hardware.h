@@ -721,7 +721,7 @@
     // the port and remove UART noise on serial line
     #if not RFB_DIRECT
     #define SERIAL_BAUDRATE         19200
-    #define DEBUG_SERIAL_SUPPORT    0
+    //#define DEBUG_SERIAL_SUPPORT    0
     #endif
 
 #elif defined(ITEAD_SONOFF_B1)

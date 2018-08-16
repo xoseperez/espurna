@@ -6,7 +6,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if WEB_SUPPORT
+#if API_SUPPORT
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -27,6 +27,7 @@ bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
 }
 
 void _apiWebSocketOnSend(JsonObject& root) {
+    root["apiVisible"] = 1;
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
     root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
@@ -216,4 +217,4 @@ void apiSetup() {
     webRequestRegister(_apiRequestCallback);
 }
 
-#endif // WEB_SUPPORT
+#endif // API_SUPPORT

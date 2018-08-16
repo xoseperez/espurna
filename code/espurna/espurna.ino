@@ -87,10 +87,12 @@ void setup() {
     #if WEB_SUPPORT
         webSetup();
         wsSetup();
-        apiSetup();
         #if DEBUG_WEB_SUPPORT
             debugWebSetup();
         #endif
+    #endif
+    #if API_SUPPORT
+        apiSetup();
     #endif
 
     // lightSetup must be called before relaySetup

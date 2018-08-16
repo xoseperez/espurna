@@ -534,7 +534,7 @@
 
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
-// Enable support by passing SHT3X_SUPPORT=1 build flag
+// Enable support by passing SHT3X_I2C_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef SHT3X_I2C_SUPPORT
