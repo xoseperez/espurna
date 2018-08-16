@@ -48,18 +48,22 @@ Receiving:
 #endif
 
 #if (defined IRB_RX_PIN)
+
+  #define IRB_RAW_IN "IRB_RAW_IN"
+
   #include <IRrecv.h>
   uint16_t CAPTURE_BUFFER_SIZE = 1024;
   #define IR_TIMEOUT 15U
-  #define IRB_RAW_IN "IRB_RAW_IN"
   IRrecv irb_recv(IRB_RX_PIN, CAPTURE_BUFFER_SIZE, IR_TIMEOUT, true);
   decode_results irb_results;
 #endif //IRB_RX_PIN
 
 #if (defined IRB_TX_PIN)
+
+  #define IRB_RAW "IRB_RAW"
+
   #include <IRsend.h>
   IRsend irb_send(IRB_TX_PIN);
-  #define IRB_RAW "IRB_RAW"
   uint8_t irb_repeat=0;
   uint16_t irb_repeat_code[8] = {8938,2208,554,0,0,0,0,0};
   uint32_t irb_delay;
