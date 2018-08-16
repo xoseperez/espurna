@@ -217,6 +217,10 @@ void _sensorWebSocketStart(JsonObject& root) {
 
 }
 
+#endif // WEB_SUPPORT
+
+#if API_SUPPORT
+
 void _sensorAPISetup() {
 
     for (unsigned char magnitude_id=0; magnitude_id<_magnitudes.size(); magnitude_id++) {
@@ -236,7 +240,8 @@ void _sensorAPISetup() {
     }
 
 }
-#endif
+
+#endif // API_SUPPORT
 
 #if TERMINAL_SUPPORT
 
@@ -1062,18 +1067,19 @@ void sensorSetup() {
     // Configure stored values
     _sensorConfigure();
 
+    // Websockets
     #if WEB_SUPPORT
-
-        // Websockets
         wsOnSendRegister(_sensorWebSocketStart);
         wsOnSendRegister(_sensorWebSocketSendData);
         wsOnAfterParseRegister(_sensorConfigure);
-
-        // API
-        _sensorAPISetup();
-
     #endif
 
+    // API
+    #if API_SUPPORT
+        _sensorAPISetup();
+    #endif
+
+    // Terminal
     #if TERMINAL_SUPPORT
         _sensorInitCommands();
     #endif

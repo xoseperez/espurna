@@ -417,6 +417,10 @@
 // API
 // -----------------------------------------------------------------------------
 
+#ifndef API_SUPPORT
+#define API_SUPPORT                 1           // API (REST & RPC) support built in
+#endif
+
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 #ifndef API_ENABLED
 #define API_ENABLED                 0           // Do not enable API by default

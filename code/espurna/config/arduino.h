@@ -96,7 +96,9 @@
 //--------------------------------------------------------------------------------
 
 //#define ALEXA_SUPPORT          0
+//#define API_SUPPORT            0
 //#define BROKER_SUPPORT         0
+//#define BUTTON_SUPPORT         0
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
@@ -106,15 +108,18 @@
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
+//#define LED_SUPPORT            0
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
-//#define MDNS_SERVER_SUPPORT    0
 //#define MDNS_CLIENT_SUPPORT    1
+//#define MDNS_SERVER_SUPPORT    0
 //#define MQTT_SUPPORT           0
 //#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
+//#define RFM69_SUPPORT          1
 //#define RF_SUPPORT             1
 //#define SCHEDULER_SUPPORT      0
+//#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
@@ -140,6 +145,7 @@
 //#define EMON_ADS1X15_SUPPORT   1
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
+//#define GEIGER_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
@@ -151,4 +157,3 @@
 //#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
-//#define GEIGER_SUPPORT         1
