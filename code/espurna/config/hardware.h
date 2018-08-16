@@ -63,7 +63,7 @@
 
 #elif defined(NODEMCU_LOLIN)
 
-    #include "devices/002_nodemcu_lolin.json.h"
+    //#include "devices/002_nodemcu_lolin.json.h"
 
 #elif defined(WEMOS_D1_MINI)
 
@@ -87,7 +87,7 @@
 
 #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
-    #include "devices/003_wemos_d1_mini_relayshield.json.h"
+    //#include "devices/003_wemos_d1_mini_relayshield.json.h"
 
 // -----------------------------------------------------------------------------
 // ESPurna
@@ -95,7 +95,7 @@
 
 #elif defined(TINKERMAN_ESPURNA_H06)
 
-    #include "devices/023_tinkerman_espurna_h06.json.h"
+    //#include "devices/023_tinkerman_espurna_h06.json.h"
 
     // HLW8012
     #ifndef HLW8012_SUPPORT

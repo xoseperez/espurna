@@ -205,8 +205,8 @@ void _hardwareLoad() {
         setSetting("board", 9);
         setSetting("device", "ITEAD_SONOFF_DUAL");
 
-        setSetting("btnRelay", 0, GPIO_INVALID);
-        setSetting("btnRelay", 1, GPIO_INVALID);
+        setSetting("btnRelay", 0, GPIO_NONE);
+        setSetting("btnRelay", 1, GPIO_NONE);
         setSetting("btnRelay", 2, 0);
 
         setSetting("ledGPIO", 0, 13);
@@ -413,7 +413,7 @@ void _hardwareLoad() {
 
         setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
 
-        setSetting("myModel", MY92XX_MODEL_MY9291); // 4 channels per chip
+       setSetting("myModel", MY92XX_MODEL_MY9291); // 4 channels per chip
         setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
@@ -1758,7 +1758,7 @@ void _hardwareLoad() {
         setSetting("device", "STM_RELAY");
 
         setSetting("rlyDummy", 2);
-        setSetting("rlyProvider", RELAY_PROVIDER_STM)
+        setSetting("rlyProvider", RELAY_PROVIDER_STM);
 
         setSetting("dbgSerial", 0);
 
@@ -1814,7 +1814,7 @@ void _hardwareLoad() {
         setSetting("rfm69CSGPIO", 15);
         setSetting("rfm69IRQGPIO", 5);
         setSetting("rfm69ResetGPIO", 7);
-        setSetting("rfm69HW", 0)
+        setSetting("rfm69HW", 0);
 
     #elif defined(ITEAD_SONOFF_IFAN02)
 
@@ -1882,6 +1882,7 @@ void _hardwareSpecific() {
 
 }
 
+// -----------------------------------------------------------------------------
 
 void hardwareSetup() {
     _hardwareMigrate();
