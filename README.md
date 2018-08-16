@@ -30,7 +30,7 @@ Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB
 
 ### Receiving:
  defined IRB_RAW_IN is a MQTT topic for IR incoming messages (outgoing to MQTT).\
- Topic: <root>/IRB_RAW_IN\
+ Topic: \<root\>/IRB_RAW_IN\
  Payload: 1000,1000,1000,1000,1000\
 
 ## Blinking of LED managed by MQTT
