@@ -223,7 +223,8 @@ enum boards {
 #elif \
     defined(GENERIC_ESP01S_DHT11_V10) || \
     defined(GENERIC_ESP01S_DS18B20_V10) || \
-    defined(ITEAD_SONOFF_TH)
+    defined(ITEAD_SONOFF_TH) || \
+    defined(MANCAVEMADE_ESPLIVE)
 
     #define ESPURNA_IMAGE               ESPURNA_SENSOR
 
@@ -284,17 +285,6 @@ enum boards {
     #define SERIAL_BAUDRATE             19200
     #define DEBUG_SERIAL_SUPPORT        0
     #endif
-
-// -----------------------------------------------------------------------------
-
-#elif defined(MANCAVEMADE_ESPLIVE)
-
-    #define ESPURNA_IMAGE               ESPURNA_SENSOR
-
-    // DS18B20
-    #define DALLAS_PIN                 	2
-    #define DALLAS_UPDATE_INTERVAL     	5000
-    #define TEMPERATURE_MIN_CHANGE      1.0
 
 // -----------------------------------------------------------------------------
 

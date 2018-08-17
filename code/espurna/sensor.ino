@@ -24,9 +24,9 @@ typedef struct {
     unsigned char local;        // Local index in its provider
     unsigned char type;         // Type of measurement
     unsigned char global;       // Global index in its type
-    double current;             // Current (last) value, unfiltered
-    double filtered;            // Filtered (averaged) value
-    double reported;            // Last reported value
+    double current;             // Lat raw value (unfiltered)
+    double filtered;            // Last filtered value (averaged)
+    double reported;            // Last reported value (averaged)
     double min_change;          // Minimum value change to report
 } sensor_magnitude_t;
 
@@ -849,7 +849,9 @@ void _sensorConfigure() {
 
     // Update filter sizes
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
-        _magnitudes[i].filter->resize(_sensor_report_every);
+        sensor_magnitude_t magnitude = _magnitudes[i];
+        _magnitude.filter->resize(_sensor_report_every);
+        _magnitude.min_change = getSetting("tmpDelta", magnitude.type, 0).toFloat();
     }
 
     // Save settings

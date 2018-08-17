@@ -832,6 +832,8 @@ void _hardwareLoad() {
         setSetting("dsEnabled", 1);
         setSetting("dsGPIO", 0, 2);
 
+        setSetting("snsDelta", MAGNITUDE_TEMPERATURE, 1.0);   // Temperature min change to report
+
     #elif defined(INTERMITTECH_QUINLED)
 
         // QuinLED
