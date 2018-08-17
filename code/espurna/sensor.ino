@@ -507,7 +507,7 @@ void _sensorLoad() {
         sensor->setEcho(getSetting("sonEcho", SONAR_ECHO).toInt());
         sensor->setTrigger(getSetting("sonTrigger", SONAR_TRIGGER).toInt());
         sensor->setIterations(getSetting("sonIterations", SONAR_ITERATIONS).toInt());
-        sensor->setMaxDistance(getSetting("sonMaxDist", SONAR_MAX_DISTANCE0).toInt());
+        sensor->setMaxDistance(getSetting("sonMaxDist", SONAR_MAX_DISTANCE).toInt());
         _sensors.push_back(sensor);
     }
     #endif
