@@ -72,8 +72,12 @@ class HLW8012Sensor : public BaseSensor {
             _dirty = true;
         }
 
-        void setSELCurrent(bool value) {
+        void setCurrentSEL(bool value) {
             _sel_current = value;
+        }
+
+        void setInterruptMode(unsigned char mode) {
+            _interrupt_mode = mode;
         }
 
         void setCurrentRatio(double value) {
@@ -86,6 +90,18 @@ class HLW8012Sensor : public BaseSensor {
 
         void setPowerRatio(double value) {
             _hlw8012->setPowerMultiplier(value);
+        };
+
+        void setCurrentResistor(double value) {
+            _current_resistor = value;
+        };
+
+        void setUpstreamResistor(double value) {
+            _upstream_resistor = value;
+        };
+
+        void setDownstreamResistor(double value) {
+            _downstream_resistor = value;
         };
 
         // ---------------------------------------------------------------------
@@ -143,7 +159,7 @@ class HLW8012Sensor : public BaseSensor {
             // * The CURRENT_RESISTOR is the 1milliOhm copper-manganese resistor in series with the main line
             // * The VOLTAGE_RESISTOR_UPSTREAM are the 5 470kOhm resistors in the voltage divider that feeds the V2P pin in the HLW8012
             // * The VOLTAGE_RESISTOR_DOWNSTREAM is the 1kOhm resistor in the voltage divider that feeds the V2P pin in the HLW8012
-            _hlw8012->setResistors(HLW8012_CURRENT_R, HLW8012_VOLTAGE_R_UP, HLW8012_VOLTAGE_R_DOWN);
+            _hlw8012->setResistors(_current_resistor, _upstream_resistor, _downstream_resistor);
 
             // Handle interrupts
             #if HLW8012_USE_INTERRUPTS
@@ -234,13 +250,13 @@ class HLW8012Sensor : public BaseSensor {
 
                 if (_interrupt_cf != _cf) {
                     if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
-                    _attach(this, _cf, HLW8012_INTERRUPT_ON);
+                    _attach(this, _cf, _interrupt_mode);
                     _interrupt_cf = _cf;
                 }
 
                 if (_interrupt_cf1 != _cf1) {
                     if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
-                    _attach(this, _cf1, HLW8012_INTERRUPT_ON);
+                    _attach(this, _cf1, _interrupt_mode);
                     _interrupt_cf1 = _cf1;
                 }
 
@@ -260,7 +276,12 @@ class HLW8012Sensor : public BaseSensor {
         unsigned char _sel = GPIO_NONE;
         unsigned char _cf = GPIO_NONE;
         unsigned char _cf1 = GPIO_NONE;
+
         bool _sel_current = true;
+        unsigned char _interrupt_mode = HLW8012_INTERRUPT_ON;
+        double _current_resistor = HLW8012_CURRENT_R;
+        double _upstream_resistor = HLW8012_VOLTAGE_R_UP;
+        double _downstream_resistor = HLW8012_VOLTAGE_R_DOWN;
 
         HLW8012 * _hlw8012 = NULL;
 

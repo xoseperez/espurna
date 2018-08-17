@@ -12,7 +12,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 //
 // Configuration settings for each device, the most common ones are:
 //
-// board: ID of the board according to XXX
+// board: ID of the board according to boards enum in hardware.h
 // device: Name of the device ("string")
 // btnGPIO <n>: GPIO for the n-th button (0-based)
 // btnRelay <n>: Relay index linked to the n-th button
@@ -94,6 +94,7 @@ void _hardwareLoad() {
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
         setSetting("btnRelay", 0, 0);
 
+        // Jack is connected to GPIO14 (and with a small hack to GPIO4)
         setSetting("dhtEnabled", 1);
         setSetting("dhtGPIO", 0, 14);
 
@@ -1247,6 +1248,7 @@ void _hardwareLoad() {
         setSetting("hlwSELGPIO", 3);
         setSetting("hlwCF1GPIO", 14);
         setSetting("hlwCFGPIO", 5);
+        setSetting("hlwCurRes", 0.001);
         setSetting("hlwVolResUp", 2400000);
 
     #elif defined(TONBUX_XSSSA06)
@@ -1613,6 +1615,7 @@ void _hardwareLoad() {
         setSetting("rlyType", 2, RELAY_TYPE_NORMAL);
         setSetting("rlyType", 3, RELAY_TYPE_NORMAL);
 
+        // Disable UART noise since this board uses GPIO3
         setSetting("dbgSerial", 0);
 
     #elif defined(BH_ONOFRE)
@@ -1666,12 +1669,46 @@ void _hardwareLoad() {
         setSetting("hlwSELGPIO", 12);
         setSetting("hlwCF1GPIO", 14);
         setSetting("hlwCFGPIO", 5);
-        setSetting("hlwCurLevel", LOW);
-        setSetting("hlwInt", FALLING);
+        setSetting("hlwCurSel", LOW);
+        setSetting("hlwIntMode", FALLING);
         setSetting("curRatio", 25740);
         setSetting("volRatio", 313400);
         setSetting("pwrRatio", 3414290);
 
+    #elif defined(HOMECUBE_16A)
+
+        //  Homecube 16A is similar to BLITZWOLF_BWSHP2 but some pins differ and it also has RGB LEDs
+        //  https://www.amazon.de/gp/product/B07D7RVF56/ref=oh_aui_detailpage_o00_s01?ie=UTF8&psc=1
+
+        setSetting("board", BOARD_HOMECUBE_16A);
+        setSetting("device", "HOMECUBE_16A");
+
+        setSetting("btnGPIO", 0, 13);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 0);
+
+        setSetting("ledGPIO", 0, 2);
+        setSetting("ledGPIO", 1, 12);
+        setSetting("ledGPIO", 2, 0);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+        setSetting("ledLogic", 1, GPIO_LOGIC_DIRECT);
+        setSetting("ledLogic", 2, GPIO_LOGIC_DIRECT);
+        setSetting("ledMode", 0, LED_MODE_WIFI);
+        setSetting("ledMode", 1, LED_MODE_FINDME);
+        setSetting("ledMode", 2, LED_MODE_OFF);
+        setSetting("ledRelay", 1, 0);
+
+        setSetting("rlyGPIO", 0, 15);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+
+        setSetting("hlwSELGPIO", 16);
+        setSetting("hlwCF1GPIO", 14);
+        setSetting("hlwCFGPIO", 5);
+        setSetting("hlwCurSel", LOW);
+        setSetting("hlwIntMode", FALLING);
+        setSetting("curRatio", 25740);
+        setSetting("volRatio", 313400);
+        setSetting("pwrRatio", 3414290);
 
     #elif defined(TINKERMAN_ESPURNA_SWITCH)
 
@@ -1749,11 +1786,13 @@ void _hardwareLoad() {
         setSetting("hlwSELGPIO", 3);
         setSetting("hlwCF1GPIO", 14);
         setSetting("hlwCFGPIO", 5);
-        setSetting("hlwCurLevel", LOW);
-        setSetting("hlwInt", FALLING);
+        setSetting("hlwCurSel", LOW);
+        setSetting("hlwIntMode", FALLING);
         setSetting("curRatio", 25740);
         setSetting("volRatio", 313400);
         setSetting("pwrRatio", 3414290);
+
+        setSetting("dbgSerial", 0);
 
     #elif defined(GENERIC_GEIGER_COUNTER)
 
@@ -1761,6 +1800,7 @@ void _hardwareLoad() {
         setSetting("device", "GENERIC_GEIGER_COUNTER");
 
         setSetting("geiEnabled", 1);
+        setSetting("geiGPIO", 5);
 
     #elif defined(TINKERMAN_RFM69GW)
 

@@ -6,7 +6,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 Module key prefix: sns
 Magnitude-based key prefix: pwr ene cur vol tmp hum
-Sensor-based key previs: hlw bme dht ds cse v92 pze ech gei
+Sensor-based key previs: air am ana bh bmx cse dht dig ds ech emon evt gei guv hlw mhz ntc pms pzem sht son tmp3x  v92
 
 */
 
@@ -302,290 +302,334 @@ void _sensorReset() {
 void _sensorLoad() {
 
     /*
+    Only loaded (those with *_SUPPORT to 1) and enabled (*Enabled setting to 1)
+    sensors are being initialized here.
+    */
 
-    This is temporal, in the future sensors will be initialized based on
-    soft configuration (data stored in EEPROM config) so you will be able
-    to define and configure new sensors on the fly
+    unsigned char index = 0;
+    unsigned char gpio = GPIO_NONE;
 
-    At the time being, only enabled sensors (those with *_SUPPORT to 1) are being
-    loaded and initialized here. If you want to add new sensors of the same type
-    just duplicate the block and change the arguments for the set* methods.
-    Check the DHT block below for an example
-
-     */
-
-     #if AM2320_SUPPORT
-     {
+    #if AM2320_SUPPORT
+    if (getSetting("amEnabled", 0).toInt() == 1) {
          AM2320Sensor * sensor = new AM2320Sensor();
-         sensor->setAddress(AM2320_ADDRESS);
+         sensor->setAddress(getSetting("amAddress", AM2320_ADDRESS).toInt());
          _sensors.push_back(sensor);
-     }
-     #endif
+    }
+    #endif
 
     #if ANALOG_SUPPORT
-    {
+    if (getSetting("anaEnabled", 0).toInt() == 1) {
         AnalogSensor * sensor = new AnalogSensor();
-        sensor->setSamples(ANALOG_SAMPLES);
-        sensor->setDelay(ANALOG_DELAY);
+        sensor->setSamples(getSetting("anaSamples", ANALOG_SAMPLES).toInt());
+        sensor->setDelay(getSetting("anaDelay", ANALOG_DELAY).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if BH1750_SUPPORT
-    {
+    if (getSetting("bhEnabled", 0).toInt() == 1) {
         BH1750Sensor * sensor = new BH1750Sensor();
-        sensor->setAddress(BH1750_ADDRESS);
-        sensor->setMode(BH1750_MODE);
+        sensor->setAddress(getSetting("bhAddress", BH1750_ADDRESS).toInt());
+        sensor->setMode(getSetting("bhMode", BH1750_MODE).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if BMX280_SUPPORT
-    {
+    if (getSetting("bmx280Enabled", 0).toInt() == 1) {
         BMX280Sensor * sensor = new BMX280Sensor();
-        sensor->setAddress(BMX280_ADDRESS);
+        sensor->setAddress(getSetting("bmx280Address", BMX280_ADDRESS).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if CSE7766_SUPPORT
-    {
-        CSE7766Sensor * sensor = new CSE7766Sensor();
-        sensor->setRX(CSE7766_PIN);
-        _sensors.push_back(sensor);
+    if (getSetting("cseEnabled", 0).toInt() == 1) {
+        if ((gpio = getSetting("cseGPIO", GPIO_NONE).toInt()) != GPIO_NONE) {
+
+            CSE7766Sensor * sensor = new CSE7766Sensor();
+
+            sensor->setRX(gpio);
+
+            double value;
+            value = getSetting("curRatio", 0).toFloat();
+            if (value > 0) sensor->setCurrentRatio(value);
+            value = getSetting("volRatio", 0).toFloat();
+            if (value > 0) sensor->setVoltageRatio(value);
+            value = getSetting("pwrRatio", 0).toFloat();
+            if (value > 0) sensor->setPowerRatio(value);
+
+            _sensors.push_back(sensor);
+
+        }
     }
     #endif
 
     #if DALLAS_SUPPORT
-    {
-        DallasSensor * sensor = new DallasSensor();
-        sensor->setGPIO(DALLAS_PIN);
-        _sensors.push_back(sensor);
+    if (getSetting("dsEnabled", 0).toInt() == 1) {
+        index = 0;
+        while ((gpio = getSetting("dsGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
+            DallasSensor * sensor = new DallasSensor();
+            sensor->setGPIO(gpio);
+            _sensors.push_back(sensor);
+            index++;
+        }
     }
     #endif
 
     #if DHT_SUPPORT
-    {
-        DHTSensor * sensor = new DHTSensor();
-        sensor->setGPIO(DHT_PIN);
-        sensor->setType(DHT_TYPE);
-        _sensors.push_back(sensor);
+    if (getSetting("dhtEnabled", 0).toInt() == 1) {
+        index = 0;
+        while ((gpio = getSetting("dhtGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
+            DHTSensor * sensor = new DHTSensor();
+            sensor->setGPIO(gpio);
+            sensor->setType(getSetting("dhtType", index, DHT_CHIP_DHT22).toInt());
+            _sensors.push_back(sensor);
+            index++;
+        }
     }
     #endif
-
-    /*
-    // Example on how to add a second DHT sensor
-    // DHT2_PIN and DHT2_TYPE should be defined in sensors.h file
-    #if DHT_SUPPORT
-    {
-        DHTSensor * sensor = new DHTSensor();
-        sensor->setGPIO(DHT2_PIN);
-        sensor->setType(DHT2_TYPE);
-        _sensors.push_back(sensor);
-    }
-    #endif
-    */
 
     #if DIGITAL_SUPPORT
-    {
-        DigitalSensor * sensor = new DigitalSensor();
-        sensor->setGPIO(DIGITAL_PIN);
-        sensor->setMode(DIGITAL_PIN_MODE);
-        sensor->setDefault(DIGITAL_DEFAULT_STATE);
-        _sensors.push_back(sensor);
+    if (getSetting("digEnabled", 0).toInt() == 1) {
+        index = 0;
+        while ((gpio = getSetting("digGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(gpio);
+            sensor->setMode(getSetting("digMode", index, DIGITAL_PIN_MODE).toInt());
+            sensor->setDefault(getSetting("digDefault", index, DIGITAL_DEFAULT_STATE).toInt());
+            _sensors.push_back(sensor);
+            index++;
+        }
     }
     #endif
 
     #if ECH1560_SUPPORT
-    {
+    if (getSetting("echEnabled", 0).toInt() == 1) {
         ECH1560Sensor * sensor = new ECH1560Sensor();
-        sensor->setCLK(ECH1560_CLK_PIN);
-        sensor->setMISO(ECH1560_MISO_PIN);
-        sensor->setInverted(ECH1560_INVERTED);
+        sensor->setCLK(getSetting("echCLKGPIO", ECH1560_CLK_PIN).toInt());
+        sensor->setMISO(getSetting("echMISOGPIO", ECH1560_MISO_PIN).toInt());
+        sensor->setInverted(getSetting("echLogic", ECH1560_INVERTED).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
-    #if EMON_ADC121_SUPPORT
-    {
-        EmonADC121Sensor * sensor = new EmonADC121Sensor();
-        sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        _sensors.push_back(sensor);
-    }
-    #endif
+    #if EMON_ADC121_SUPPORT || EMON_ADS1X15_SUPPORT || EMON_ANALOG_SUPPORT
 
-    #if EMON_ADS1X15_SUPPORT
-    {
-        EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
-        sensor->setAddress(EMON_ADS1X15_I2C_ADDRESS);
-        sensor->setType(EMON_ADS1X15_TYPE);
-        sensor->setMask(EMON_ADS1X15_MASK);
-        sensor->setGain(EMON_ADS1X15_GAIN);
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(1, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(2, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(3, EMON_CURRENT_RATIO);
-        _sensors.push_back(sensor);
-    }
-    #endif
+    if (getSetting("emonEnabled", 0).toInt() == 1) {
 
-    #if EMON_ANALOG_SUPPORT
-    {
-        EmonAnalogSensor * sensor = new EmonAnalogSensor();
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        _sensors.push_back(sensor);
+        #if EMON_ADC121_SUPPORT
+        if (getSetting("emonProvider", 0).toInt() == EMON_PROVIDER_ADC121) {
+            EmonADC121Sensor * sensor = new EmonADC121Sensor();
+            sensor->setAddress(getSetting("emonAddress", EMON_ADC121_I2C_ADDRESS).toInt());
+            sensor->setReference(getSetting("emonReference", EMON_REFERENCE_VOLTAGE).toInt());
+            sensor->setCurrentRatio(0, getSetting("curRatio", EMON_CURRENT_RATIO).toFloat());
+            sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if EMON_ADS1X15_SUPPORT
+        if (getSetting("emonProvider", 0).toInt() == EMON_PROVIDER_ADS1X15) {
+            EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
+            sensor->setAddress(getSetting("emonAddress", EMON_ADS1X15_I2C_ADDRESS).toInt());
+            sensor->setType(getSetting("emonType", EMON_ADS1X15_TYPE).toInt());
+            sensor->setMask(getSetting("emonMask", EMON_ADS1X15_MASK).toInt());
+            sensor->setGain(getSetting("emonGain", EMON_ADS1X15_GAIN).toInt());
+            sensor->setReference(getSetting("emonReference", EMON_REFERENCE_VOLTAGE).toInt());
+            double curRatio = getSetting("curRatio", EMON_CURRENT_RATIO).toFloat();
+            sensor->setCurrentRatio(0, getSetting("curRatio", 0, curRatio).toFloat());
+            sensor->setCurrentRatio(1, getSetting("curRatio", 1, curRatio).toFloat());
+            sensor->setCurrentRatio(2, getSetting("curRatio", 2, curRatio).toFloat());
+            sensor->setCurrentRatio(3, getSetting("curRatio", 3, curRatio).toFloat());
+            sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if EMON_ANALOG_SUPPORT
+        if (getSetting("emonProvider", 0).toInt() == EMON_PROVIDER_ANALOG) {
+            EmonAnalogSensor * sensor = new EmonAnalogSensor();
+            sensor->setReference(getSetting("emonReference", EMON_REFERENCE_VOLTAGE).toInt());
+            sensor->setCurrentRatio(0, getSetting("curRatio", EMON_CURRENT_RATIO).toFloat());
+            sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
+            _sensors.push_back(sensor);
+        }
+        #endif
+
     }
+
     #endif
 
     #if EVENTS_SUPPORT
-    {
-        EventSensor * sensor = new EventSensor();
-        sensor->setGPIO(EVENTS_PIN);
-        sensor->setTrigger(EVENTS_TRIGGER);
-        sensor->setPinMode(EVENTS_PIN_MODE);
-        sensor->setDebounceTime(EVENTS_DEBOUNCE);
-        sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
-        _sensors.push_back(sensor);
+    if (getSetting("evtEnabled", 0).toInt() == 1) {
+        index = 0;
+        while ((gpio = getSetting("evtGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(gpio);
+            sensor->setTrigger(getSetting("evtTrigger", index, EVENTS_TRIGGER).toInt());
+            sensor->setPinMode(getSetting("evtMode", index, EVENTS_PIN_MODE).toInt());
+            sensor->setDebounceTime(getSetting("evtDebounce", index, EVENTS_DEBOUNCE).toInt());
+            sensor->setInterruptMode(getSetting("evtIntMode", index, EVENTS_INTERRUPT_MODE).toInt());
+            _sensors.push_back(sensor);
+            index++;
+        }
     }
     #endif
 
     #if GEIGER_SUPPORT
-    {
-        GeigerSensor * sensor = new GeigerSensor();        // Create instance of thr Geiger module.
-        sensor->setGPIO(GEIGER_PIN);                       // Interrupt pin of the attached geiger counter board.
-        sensor->setMode(GEIGER_PIN_MODE);                  // This pin is an input.
-        sensor->setDebounceTime(GEIGER_DEBOUNCE);          // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
-        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);   // Interrupt triggering: edge detection rising.
-        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);  // Conversion factor from counts per minute to µSv/h
-        _sensors.push_back(sensor);
+    if (getSetting("geiEnabled", 0).toInt() == 1) {
+        if ((gpio = getSetting("geiGPIO", GPIO_NONE).toInt()) != GPIO_NONE) {
+            GeigerSensor * sensor = new GeigerSensor();                                         // Create instance of the Geiger module.
+            sensor->setGPIO(gpio);                                                              // Interrupt pin of the attached geiger counter board.
+            sensor->setMode(getSetting("geiMode", GEIGER_PIN_MODE).toInt());                    // This pin is an input.
+            sensor->setDebounceTime(getSetting("geiDebounce", GEIGER_DEBOUNCE).toInt());        // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+            sensor->setInterruptMode(getSetting("geiIntMode", GEIGER_INTERRUPT_MODE).toInt());  // Interrupt triggering: edge detection rising.
+            sensor->setCPM2SievertFactor(getSetting("geiRatio", GEIGER_CPM2SIEVERT).toInt());   // Conversion factor from counts per minute to µSv/h
+            _sensors.push_back(sensor);
+        }
     }
     #endif
 
     #if GUVAS12SD_SUPPORT
-    {
-        GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
-        sensor->setGPIO(GUVAS12SD_PIN);
-        _sensors.push_back(sensor);
+    if (getSetting("guvEnabled", 0).toInt() == 1) {
+        if ((gpio = getSetting("guvGPIO", GPIO_NONE).toInt()) != GPIO_NONE) {
+            GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
+            sensor->setGPIO(gpio);
+            _sensors.push_back(sensor);
+        }
     }
     #endif
 
     #if SONAR_SUPPORT
-    {
+    if (getSetting("sonEnabled", 0).toInt() == 1) {
         SonarSensor * sensor = new SonarSensor();
-        sensor->setEcho(SONAR_ECHO);
-        sensor->setIterations(SONAR_ITERATIONS);
-        sensor->setMaxDistance(SONAR_MAX_DISTANCE);
-        sensor->setTrigger(SONAR_TRIGGER);
+        sensor->setEcho(getSetting("sonEcho", SONAR_ECHO).toInt());
+        sensor->setTrigger(getSetting("sonTrigger", SONAR_TRIGGER).toInt());
+        sensor->setIterations(getSetting("sonIterations", SONAR_ITERATIONS).toInt());
+        sensor->setMaxDistance(getSetting("sonMaxDist", SONAR_MAX_DISTANCE0).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if HLW8012_SUPPORT
-    {
+    if (getSetting("hlwEnabled", 0).toInt() == 1) {
+
         HLW8012Sensor * sensor = new HLW8012Sensor();
-        sensor->setSEL(HLW8012_SEL_PIN);
-        sensor->setCF(HLW8012_CF_PIN);
-        sensor->setCF1(HLW8012_CF1_PIN);
-        sensor->setSELCurrent(HLW8012_SEL_CURRENT);
+
+        sensor->setSEL(getSetting("hlwSELGPIO", HLW8012_SEL_PIN).toInt());
+        sensor->setCF(getSetting("hlwCFGPIO", HLW8012_CF_PIN).toInt());
+        sensor->setCF1(getSetting("hlwCF1GPIO", HLW8012_CF1_PIN).toInt());
+        sensor->setCurrentSEL(getSetting("hlwCurSel", HLW8012_SEL_CURRENT).toInt());
+        sensor->setInterruptMode(getSetting("hlwIntMode", HLW8012_INTERRUPT_ON).toInt());
+        sensor->setCurrentResistor(getSetting("hlwCurRes", HLW8012_CURRENT_R ).toFloat());
+        sensor->setUpstreamResistor(getSetting("hlwVolResUp", HLW8012_VOLTAGE_R_UP).toFloat());
+        sensor->setDownstreamResistor(getSetting("hlwVolResDw", HLW8012_VOLTAGE_R_DOWN).toFloat());
+
+        double value;
+        value = getSetting("curRatio", HLW8012_CURRENT_RATIO).toFloat();
+        if (value > 0) sensor->setCurrentRatio(value);
+        value = getSetting("volRatio", HLW8012_VOLTAGE_RATIO).toFloat();
+        if (value > 0) sensor->setVoltageRatio(value);
+        value = getSetting("pwrRatio", HLW8012_POWER_RATIO).toFloat();
+        if (value > 0) sensor->setPowerRatio(value);
+
         _sensors.push_back(sensor);
+
     }
     #endif
 
     #if MHZ19_SUPPORT
-    {
+    if (getSetting("mhzEnabled", 0).toInt() == 1) {
         MHZ19Sensor * sensor = new MHZ19Sensor();
-        sensor->setRX(MHZ19_RX_PIN);
-        sensor->setTX(MHZ19_TX_PIN);
+        sensor->setRX(getSetting("mhzRX", MHZ19_RX_PIN).toInt());
+        sensor->setTX(getSetting("mhzTX", MHZ19_TX_PIN).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if NTC_SUPPORT
-    {
+    if (getSetting("ntcEnabled", 0).toInt() == 1) {
         NTCSensor * sensor = new NTCSensor();
-        sensor->setSamples(NTC_SAMPLES);
-        sensor->setDelay(NTC_DELAY);
-        sensor->setUpstreamResistor(NTC_R_UP);
-        sensor->setDownstreamResistor(NTC_R_DOWN);
-        sensor->setBeta(NTC_BETA);
-        sensor->setR0(NTC_R0);
-        sensor->setT0(NTC_T0);
+        sensor->setSamples(getSetting("ntcSamples", NTC_SAMPLES).toInt());
+        sensor->setDelay(getSetting("ntcDelay", NTC_DELAY).toInt());
+        sensor->setUpstreamResistor(getSetting("ntcResUp", NTC_R_UP).toInt());
+        sensor->setDownstreamResistor(getSetting("ntcResDown", NTC_R_DOWN).toInt());
+        sensor->setBeta(getSetting("ntcBeta", NTC_BETA).toInt());
+        sensor->setR0(getSetting("ntcR0", NTC_R0).toInt());
+        sensor->setT0(getSetting("ntcT0", NTC_T0).toFloat());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if SENSEAIR_SUPPORT
-    {
+    if (getSetting("airEnabled", 0).toInt() == 1) {
         SenseAirSensor * sensor = new SenseAirSensor();
-        sensor->setRX(SENSEAIR_RX_PIN);
-        sensor->setTX(SENSEAIR_TX_PIN);
+        sensor->setRX(getSetting("airRX", SENSEAIR_RX_PIN).toInt());
+        sensor->setTX(getSetting("airTX", SENSEAIR_TX_PIN).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if PMSX003_SUPPORT
-    {
+    if (getSetting("pmsEnabled", 0).toInt() == 1) {
         PMSX003Sensor * sensor = new PMSX003Sensor();
-        #if PMS_USE_SOFT
-            sensor->setRX(PMS_RX_PIN);
-            sensor->setTX(PMS_TX_PIN);
-        #else
+        if (getSetting("pmsSoft", PMS_USE_SOFT).toInt() == 1) {
+            sensor->setRX(getSetting("pmsRX", PMS_RX_PIN).toInt());
+            sensor->setTX(getSetting("pmsTX", PMS_TX_PIN).toInt());
+        } else {
             sensor->setSerial(& PMS_HW_PORT);
-        #endif
-        sensor->setType(PMS_TYPE);
+        }
+        sensor->setType(getSetting("pmsType", PMS_TYPE).toInt());
         _sensors.push_back(sensor);
     }
     #endif
 
     #if PZEM004T_SUPPORT
-    {
+    if (getSetting("pzemEnabled", 0).toInt() == 1) {
         PZEM004TSensor * sensor = new PZEM004TSensor();
-        #if PZEM004T_USE_SOFT
-            sensor->setRX(PZEM004T_RX_PIN);
-            sensor->setTX(PZEM004T_TX_PIN);
-        #else
+        if (getSetting("pzemSoft", PZEM004T_USE_SOFT).toInt() == 1) {
+            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN).toInt());
+            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN).toInt());
+        } else {
             sensor->setSerial(& PZEM004T_HW_PORT);
-        #endif
+        }
         _sensors.push_back(sensor);
     }
     #endif
 
     #if SHT3X_I2C_SUPPORT
-    {
-        SHT3XI2CSensor * sensor = new SHT3XI2CSensor();
-        sensor->setAddress(SHT3X_I2C_ADDRESS);
-        _sensors.push_back(sensor);
+    if (getSetting("shtEnabled", 0).toInt() == 1) {
+         SHT3XI2CSensor * sensor = new SHT3XI2CSensor();
+         sensor->setAddress(getSetting("shtAddress", SHT3X_I2C_ADDRESS).toInt());
+         _sensors.push_back(sensor);
     }
     #endif
 
     #if SI7021_SUPPORT
-    {
-        SI7021Sensor * sensor = new SI7021Sensor();
-        sensor->setAddress(SI7021_ADDRESS);
-        _sensors.push_back(sensor);
+    if (getSetting("si7021Enabled", 0).toInt() == 1) {
+         SI7021Sensor * sensor = new SI7021Sensor();
+         sensor->setAddress(getSetting("si7021Address", SI7021_ADDRESS).toInt());
+         _sensors.push_back(sensor);
     }
     #endif
 
     #if TMP3X_SUPPORT
-    {
-        TMP3XSensor * sensor = new TMP3XSensor();
-        sensor->setType(TMP3X_TYPE);
-        _sensors.push_back(sensor);
+    if (getSetting("tmp3xEnabled", 0).toInt() == 1) {
+         TMP3XSensor * sensor = new TMP3XSensor();
+         sensor->setType(getSetting("tmp3xType", TMP3X_TYPE).toInt());
+         _sensors.push_back(sensor);
     }
     #endif
 
     #if V9261F_SUPPORT
-    {
-        V9261FSensor * sensor = new V9261FSensor();
-        sensor->setRX(V9261F_PIN);
-        sensor->setInverted(V9261F_PIN_INVERSE);
-        _sensors.push_back(sensor);
+    if (getSetting("v92Enabled", 0).toInt() == 1) {
+        if ((gpio = getSetting("v92GPIO", GPIO_NONE).toInt()) != GPIO_NONE) {
+            V9261FSensor * sensor = new V9261FSensor();
+            sensor->setRX(gpio);
+            sensor->setInverted(getSetting("v92Inverse", V9261F_PIN_INVERSE).toInt());
+            _sensors.push_back(sensor);
+        }
     }
     #endif
 
@@ -656,60 +700,6 @@ void _sensorInit() {
         _sensors[i]->onEvent([i](unsigned char type, double value) {
             _sensorCallback(i, type, value);
         });
-
-        // Custom initializations
-
-        #if EMON_ANALOG_SUPPORT
-
-            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-                sensor->setCurrentRatio(0, getSetting("curRatio", EMON_CURRENT_RATIO).toFloat());
-                sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
-            }
-
-        #endif // EMON_ANALOG_SUPPORT
-
-        #if HLW8012_SUPPORT
-
-            if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
-
-                HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
-
-                double value;
-
-                value = getSetting("curRatio", HLW8012_CURRENT_RATIO).toFloat();
-                if (value > 0) sensor->setCurrentRatio(value);
-
-                value = getSetting("volRatio", HLW8012_VOLTAGE_RATIO).toFloat();
-                if (value > 0) sensor->setVoltageRatio(value);
-
-                value = getSetting("pwrRatio", HLW8012_POWER_RATIO).toFloat();
-                if (value > 0) sensor->setPowerRatio(value);
-
-            }
-
-        #endif // HLW8012_SUPPORT
-
-        #if CSE7766_SUPPORT
-
-            if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
-
-                CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
-
-                double value;
-
-                value = getSetting("curRatio", 0).toFloat();
-                if (value > 0) sensor->setCurrentRatio(value);
-
-                value = getSetting("volRatio", 0).toFloat();
-                if (value > 0) sensor->setVoltageRatio(value);
-
-                value = getSetting("pwrRatio", 0).toFloat();
-                if (value > 0) sensor->setPowerRatio(value);
-
-            }
-
-        #endif // CSE7766_SUPPORT
 
     }
 
@@ -883,17 +873,32 @@ bool _sensorKeyCheck(const char * key) {
     if (strncmp(key, "tmp", 3) == 0) return true;
     if (strncmp(key, "hum", 3) == 0) return true;
 
-    if (strncmp(key, "bme", 3) == 0) return true;
-    if (strncmp(key, "dht", 3) == 0) return true;
-    if (strncmp(key, "ds" , 2) == 0) return true;
-    if (strncmp(key, "hlw", 3) == 0) return true;
+    if (strncmp(key, "air", 3) == 0) return true;
+    if (strncmp(key, "am", 2) == 0) return true;
+    if (strncmp(key, "ana", 3) == 0) return true;
+    if (strncmp(key, "bh", 2) == 0) return true;
+    if (strncmp(key, "bmx", 3) == 0) return true;
     if (strncmp(key, "cse", 3) == 0) return true;
-    if (strncmp(key, "v92", 3) == 0) return true;
+    if (strncmp(key, "dht", 3) == 0) return true;
+    if (strncmp(key, "dig", 3) == 0) return true;
+    if (strncmp(key, "ds" , 2) == 0) return true;
     if (strncmp(key, "ech", 3) == 0) return true;
+    if (strncmp(key, "emon", 4) == 0) return true;
+    if (strncmp(key, "evt", 3) == 0) return true;
     if (strncmp(key, "gei", 3) == 0) return true;
-    if (strncmp(key, "pze", 3) == 0) return true;
+    if (strncmp(key, "guv", 3) == 0) return true;
+    if (strncmp(key, "hlw", 3) == 0) return true;
+    if (strncmp(key, "mhz", 3) == 0) return true;
+    if (strncmp(key, "ntc", 3) == 0) return true;
+    if (strncmp(key, "pms", 3) == 0) return true;
+    if (strncmp(key, "pzem", 4) == 0) return true;
+    if (strncmp(key, "sht", 3) == 0) return true;
+    if (strncmp(key, "son", 3) == 0) return true;
+    if (strncmp(key, "tmp3x", 4) == 0) return true;
+    if (strncmp(key, "v92", 3) == 0) return true;
 
     return false;
+
 }
 
 void _sensorBackwards() {

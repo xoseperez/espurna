@@ -7,16 +7,30 @@
 // IMAGES
 // -----------------------------------------------------------------------------
 
+// Basics
 #define ESPURNA_CORE                0   // minimal
 #define ESPURNA_BASIC               1   // relay, button, led
-#define ESPURNA_LIGHT               2   // ESPURNA_BASIC + light drivers
-#define ESPURNA_POWER               3   // ESPURNA_BASIC + power monitoring sensors
-#define ESPURNA_SENSOR              4   // ESPURNA_BASIC + basic sensors
-#define ESPURNA_SONOFF_DUAL         10  // Device specific
-#define ESPURNA_SONOFF_RFBRIDGE     11  // Device specific
-#define ESPURNA_RFM69               12  // Device specific
-#define ESPURNA_STM                 13  // Device specific
-#define ESPURNA_GEIGER              14  // Device specific
+
+// Lights
+#define ESPURNA_DIMMER              10
+#define ESPURNA_MY92XX              11
+
+// Power monitoring
+#define ESPURNA_EMON                20
+#define ESPURNA_HLW8012             21
+#define ESPURNA_CSE77XX             22
+#define ESPURNA_V9261F              23
+#define ESPURNA_ECH1560             24
+
+// Sensors
+#define ESPURNA_SENSOR              30
+
+// Device specific
+#define ESPURNA_SONOFF_DUAL         40
+#define ESPURNA_SONOFF_RFBRIDGE     41
+#define ESPURNA_RFM69               42
+#define ESPURNA_STM                 43
+#define ESPURNA_GEIGER              44
 
 // -----------------------------------------------------------------------------
 // WIFI
