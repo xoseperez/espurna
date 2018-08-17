@@ -114,11 +114,13 @@ std::vector<String> _settingsKeys() {
 
 bool _settingsKeyCheck(const char * key) {
     if (strncmp(key, "admin", 5) == 0) return true;
-    if (strncmp(key, "hostname", 8) == 0) return true;
     if (strncmp(key, "board", 5) == 0) return true;
+    if (strncmp(key, "cfg", 3) == 0) return true;
+    if (strncmp(key, "device", 6) == 0) return true;
+    if (strncmp(key, "fw", 2) == 0) return true;
+    if (strncmp(key, "hostname", 8) == 0) return true;
     if (strncmp(key, "loopDelay", 9) == 0) return true;
     if (strncmp(key, "wtfHeap", 7) == 0) return true;
-    if (strncmp(key, "cfg", 3) == 0) return true;
     return false;
 }
 
