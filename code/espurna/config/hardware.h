@@ -195,6 +195,32 @@ enum boards {
 // -----------------------------------------------------------------------------
 
 #elif \
+    defined(ARILUX_AL_LC01) || \
+    defined(ARILUX_AL_LC02) || \
+    defined(ARILUX_AL_LC06) || \
+    defined(ARILUX_AL_LC11) || \
+    defined(AUTHOMETION_LYT8266) || \
+    defined(GENERIC_AG_L4) || \
+    defined(HUACANXING_H801) || \
+    defined(HUACANXING_H802) || \
+    defined(INTERMITTECH_QUINLED) || \
+    defined(ITEAD_BNSZ01) || \
+    defined(ITEAD_SONOFF_LED)
+
+    #define ESPURNA_IMAGE               ESPURNA_DIMMER
+
+// -----------------------------------------------------------------------------
+
+#elif \
+    defined(AITHINKER_AI_LIGHT) || \
+    defined(ARILUX_E27) || \
+    defined(ITEAD_SONOFF_B1)
+
+    #define ESPURNA_IMAGE               ESPURNA_MY92XX
+
+// -----------------------------------------------------------------------------
+
+#elif \
     defined(GENERIC_ESP01S_DHT11_V10) || \
     defined(GENERIC_ESP01S_DS18B20_V10) || \
     defined(ITEAD_SONOFF_TH)
@@ -283,68 +309,9 @@ enum boards {
 
 // -----------------------------------------------------------------------------
 
-#elif defined(ITEAD_BNSZ01)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              1
-    #define LIGHT_CH1_PIN               12
-    #define LIGHT_CH1_INVERSE           0
-
-#elif defined(ITEAD_SONOFF_B1)
-
-    #define ESPURNA_IMAGE               ESPURNA_MY92XX
-
-    // Info
-    #define LIGHT_CHANNELS              5
-    #define MY92XX_MODEL                MY92XX_MODEL_MY9231
-    #define MY92XX_CHIPS                2
-    #define MY92XX_DI_PIN               12
-    #define MY92XX_DCKI_PIN             14
-    #define MY92XX_COMMAND              MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING              4, 3, 5, 0, 1
-    #define LIGHT_WHITE_FACTOR          (0.1)                    // White LEDs are way more bright in the B1
-
-#elif defined(ITEAD_SONOFF_LED)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              2
-    #define LIGHT_CH1_PIN               12  // Cold white
-    #define LIGHT_CH2_PIN               14  // Warm white
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-
-#elif defined(AITHINKER_AI_LIGHT)
-
-    #define ESPURNA_IMAGE               ESPURNA_MY92XX
-
-    // Info
-    #define LIGHT_CHANNELS              4
-    #define MY92XX_MODEL                MY92XX_MODEL_MY9291
-    #define MY92XX_CHIPS                1
-    #define MY92XX_DI_PIN               13
-    #define MY92XX_DCKI_PIN             15
-    #define MY92XX_COMMAND              MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING              0, 1, 2, 3
-
 #elif defined(MAGICHOME_LED_CONTROLLER)
 
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define DUMMY_RELAY_COUNT           1
-    #define LIGHT_CHANNELS              4
-    #define LIGHT_CH1_PIN               14      // RED
-    #define LIGHT_CH2_PIN               5       // GREEN
-    #define LIGHT_CH3_PIN               12      // BLUE
-    #define LIGHT_CH4_PIN               13      // WHITE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
 
     // IR
     #define IR_SUPPORT                  1
@@ -355,187 +322,16 @@ enum boards {
 
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
 
-    // Info
-    #define LIGHT_CHANNELS              4
-    #define LIGHT_CH1_PIN               5       // RED
-    #define LIGHT_CH2_PIN               12      // GREEN
-    #define LIGHT_CH3_PIN               13      // BLUE
-    #define LIGHT_CH4_PIN               15      // WHITE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-
     // IR
     #define IR_SUPPORT                  1
     #define IR_RECEIVER_PIN             4
     #define IR_BUTTON_SET               1
 
-#elif defined(HUACANXING_H801)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define DEBUG_PORT                  Serial1
-    #define SERIAL_RX_ENABLED           1
-    #define LIGHT_CHANNELS              5
-    #define LIGHT_CH1_PIN               15      // RED
-    #define LIGHT_CH2_PIN               13      // GREEN
-    #define LIGHT_CH3_PIN               12      // BLUE
-    #define LIGHT_CH4_PIN               14      // WHITE1
-    #define LIGHT_CH5_PIN               4       // WHITE2
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-    #define LIGHT_CH5_INVERSE           0
-
-#elif defined(HUACANXING_H802)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define DEBUG_PORT                  Serial1
-    #define SERIAL_RX_ENABLED           1
-    #define LIGHT_CHANNELS              4
-    #define LIGHT_CH1_PIN               12      // RED
-    #define LIGHT_CH2_PIN               14      // GREEN
-    #define LIGHT_CH3_PIN               13      // BLUE
-    #define LIGHT_CH4_PIN               15      // WHITE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-
-#elif defined(INTERMITTECH_QUINLED)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              2
-    #define LIGHT_CH1_PIN               0
-    #define LIGHT_CH2_PIN               2
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-
-#elif defined(ARILUX_AL_LC01)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              3
-    #define LIGHT_CH1_PIN               5       // RED
-    #define LIGHT_CH2_PIN               12      // GREEN
-    #define LIGHT_CH3_PIN               13      // BLUE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-
-#elif defined(ARILUX_AL_LC02)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              4
-    #define LIGHT_CH1_PIN               12      // RED
-    #define LIGHT_CH2_PIN               5       // GREEN
-    #define LIGHT_CH3_PIN               13      // BLUE
-    #define LIGHT_CH4_PIN               15      // WHITE1
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-
-#elif defined(ARILUX_AL_LC06)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              5
-    #define LIGHT_CH1_PIN               14      // RED
-    #define LIGHT_CH2_PIN               12      // GREEN
-    #define LIGHT_CH3_PIN               13      // BLUE
-    #define LIGHT_CH4_PIN               15      // WHITE1
-    #define LIGHT_CH5_PIN               5       // WHITE2
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-    #define LIGHT_CH5_INVERSE           0
-
-#elif defined(ARILUX_AL_LC11)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              5
-    #define LIGHT_CH1_PIN               5       // RED
-    #define LIGHT_CH2_PIN               4       // GREEN
-    #define LIGHT_CH3_PIN               14      // BLUE
-    #define LIGHT_CH4_PIN               13      // WHITE1
-    #define LIGHT_CH5_PIN               12      // WHITE1
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-    #define LIGHT_CH5_INVERSE           0
-
-#elif defined(ARILUX_E27)
-
-    #define ESPURNA_IMAGE               ESPURNA_MY92XX
-
-    // Info
-    #define LIGHT_CHANNELS              4
-    #define MY92XX_MODEL                MY92XX_MODEL_MY9291
-    #define MY92XX_CHIPS                1
-    #define MY92XX_DI_PIN               13
-    #define MY92XX_DCKI_PIN             15
-    #define MY92XX_COMMAND              MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING              0, 1, 2, 3
-
-#elif defined(AUTHOMETION_LYT8266)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              4
-    #define LIGHT_CH1_PIN               13      // RED
-    #define LIGHT_CH2_PIN               12      // GREEN
-    #define LIGHT_CH3_PIN               14      // BLUE
-    #define LIGHT_CH4_PIN               2       // WHITE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-    #define LIGHT_CH4_INVERSE           0
-    #define LIGHT_ENABLE_PIN            15
-
 #elif defined(GIZWITS_WITTY_CLOUD)
 
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
 
-    // Info
-    #define LIGHT_CHANNELS              3
-    #define LIGHT_CH1_PIN               15       // RED
-    #define LIGHT_CH2_PIN               12       // GREEN
-    #define LIGHT_CH3_PIN               13      // BLUE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
-
     #define ANALOG_SUPPORT              1   // TODO: specific or generic?
-
-#elif defined(GENERIC_AG_L4)
-
-    #define ESPURNA_IMAGE               ESPURNA_DIMMER
-
-    // Info
-    #define LIGHT_CHANNELS              3
-    #define LIGHT_CH1_PIN               14       // RED
-    #define LIGHT_CH2_PIN               13       // GREEN
-    #define LIGHT_CH3_PIN               12      // BLUE
-    #define LIGHT_CH1_INVERSE           0
-    #define LIGHT_CH2_INVERSE           0
-    #define LIGHT_CH3_INVERSE           0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
@@ -743,6 +539,7 @@ enum boards {
 
     #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_MY92XX
+    #define MY92XX_COMMAND              MY92XX_COMMAND_DEFAULT
 
 #elif ESPURNA_IMAGE == ESPURNA_EMON
 

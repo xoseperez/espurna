@@ -14,6 +14,7 @@ Module key prefix: ir
 #include <IRremoteESP8266.h>
 #include <IRrecv.h>
 
+bool _ir_enabled = true;
 IRrecv * _ir_recv;
 decode_results _ir_results;
 unsigned long _ir_last_toggle = 0;
@@ -113,14 +114,20 @@ bool _irKeyCheck(const char * key) {
 
 void irSetup() {
 
-    _ir_recv = new IRrecv(IR_RECEIVER_PIN);
-    _ir_recv->enableIRIn();
+    _ir_enabled = (getSetting("irEnabled", 1).toInt() == 1);
+
+    if (_ir_enabled) {
+
+        _ir_recv = new IRrecv(getSetting("irGPIO", IR_RECEIVER_PIN).toInt());
+        _ir_recv->enableIRIn();
+
+        // Register loop
+        espurnaRegisterLoop(irLoop);
+
+    }
 
     // Key Check
     settingsRegisterKeyCheck(_irKeyCheck);
-
-    // Register loop
-    espurnaRegisterLoop(irLoop);
 
 }
 

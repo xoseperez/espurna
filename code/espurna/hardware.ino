@@ -375,7 +375,7 @@ void _hardwareLoad() {
 
         setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
 
-       setSetting("myModel", MY92XX_MODEL_MY9291); // 4 channels per chip
+        setSetting("myModel", 0); // 4 channels per chip
         setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
@@ -578,7 +578,7 @@ void _hardwareLoad() {
         setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright in the B1
         setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright in the B1
 
-        setSetting("myModel", MY92XX_MODEL_MY9231); // 3 channels per chip
+        setSetting("myModel", 1); // 3 channels per chip
         setSetting("myChips", 2);
         setSetting("myDIGPIO", 12);
         setSetting("myDCKIGPIO", 14);
@@ -945,7 +945,7 @@ void _hardwareLoad() {
 
         setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
 
-        setSetting("myModel", MY92XX_MODEL_MY9291); // 4 channels per chip
+        setSetting("myModel", 0); // 4 channels per chip
         setSetting("myChips", 1);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);

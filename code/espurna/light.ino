@@ -19,7 +19,7 @@ extern "C" {
 }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
+#define PWM_CHANNEL_NUM_MAX LIGHT_MAX_CHANNELS
 extern "C" {
     #include "libs/pwm.h"
 }
@@ -32,12 +32,14 @@ Ticker _light_transition_ticker;
 
 typedef struct {
     unsigned char pin;
-    bool reverse;
+    bool inverse;
     bool state;
     unsigned char inputValue;   // value that has been inputted
     unsigned char value;        // normalized value including brightness
     unsigned char shadow;       // represented value
     double current;             // transition value
+    double factor;              // correction factor
+    unsigned char mapping;      // channel mapping for MY90XX
 } channel_t;
 std::vector<channel_t> _light_channel;
 
@@ -55,7 +57,6 @@ unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 my92xx * _my92xx;
-ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
 #endif
 
 // Gamma Correction lookup table (8 bit)
@@ -131,12 +132,12 @@ void _generateBrightness() {
 
         double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
         for (unsigned char i=0; i < channelSize; i++) {
-            _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
+            _light_channel[i].value = round((double) _light_channel[i].value * factor * _light_channel[i].factor * brightness);
         }
 
         // Scale white channel to match brightness
         for (unsigned char i=3; i < channelSize; i++) {
-            _light_channel[i].value = constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS);
+            _light_channel[i].value = constrain(_light_channel[i].value * _light_channel[i].factor, 0, LIGHT_MAX_BRIGHTNESS);
         }
 
         // For the rest of channels, don't apply brightness, it is already in the inputValue
@@ -394,18 +395,18 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
+unsigned int _toPWM(unsigned long value, bool gamma, bool inverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (gamma) value = _light_gamma_table[value];
     if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
-    if (reverse) value = LIGHT_LIMIT_PWM - value;
+    if (inverse) value = LIGHT_LIMIT_PWM - value;
     return value;
 }
 
 // Returns a PWM value for the given channel ID
 unsigned int _toPWM(unsigned char id) {
     bool useGamma = _light_use_gamma && _light_has_color && (id < 3);
-    return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse);
+    return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].inverse);
 }
 
 void _shadow() {
@@ -440,7 +441,7 @@ void _lightProviderUpdate() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         for (unsigned char i=0; i<_light_channel.size(); i++) {
-            _my92xx->setChannel(_light_channel_map[i], _toPWM(i));
+            _my92xx->setChannel(_light_channel[i].mapping, _toPWM(i));
         }
         _my92xx->setState(true);
         _my92xx->update();
@@ -1007,6 +1008,11 @@ void _lightConfigure() {
     _light_use_transitions = getSetting("litTrans", LIGHT_USE_TRANSITIONS).toInt() == 1;
     _light_transition_time = getSetting("litTime", LIGHT_TRANSITION_TIME).toInt();
 
+    for (unsigned char i=0; i<_light_channel.size(); i++) {
+        channel_t channel = _light_channel[i];
+        channel.factor = getSetting("litChFactor", i, 1).toFloat();
+    }
+
 }
 
 bool _lightKeyCheck(const char * key) {
@@ -1033,41 +1039,44 @@ void lightSetup() {
 
     _lightBackwards();
 
-    #ifdef LIGHT_ENABLE_PIN
-        pinMode(LIGHT_ENABLE_PIN, OUTPUT);
-        digitalWrite(LIGHT_ENABLE_PIN, HIGH);
-    #endif
+    {
+        unsigned char gpio = getSetting("litEnableGPIO", GPIO_NONE).toInt();
+        if (GPIO_NONE != gpio) {
+            pinMode(gpio, OUTPUT);
+            digitalWrite(gpio, getSetting("litEnableLogic", GPIO_LOGIC_DIRECT).toInt() == GPIO_LOGIC_DIRECT ? HIGH : LOW);
+        }
+    }
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+    {
 
-        _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
-            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0});
+        _my92xx = new my92xx(
+            (my92xx_model_t) getSetting("myModel", MY92XX_MODEL_MY9291).toInt(),
+            getSetting("myChips", 1).toInt(),
+            getSetting("myDIGPIO", 0).toInt(),
+            getSetting("myDCKIGPIO", 0).toInt(),
+            MY92XX_COMMAND
+        );
+
+        const char * map = getSetting("myMapping", "").c_str();
+        unsigned char channels = strlen(map);
+        for (unsigned char i=0; i<channels; i++) {
+            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0, 0, 1, map[i] - '0'});
         }
 
+    }
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+    {
 
-        #ifdef LIGHT_CH1_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH1_PIN, LIGHT_CH1_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH2_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH2_PIN, LIGHT_CH2_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH3_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH3_PIN, LIGHT_CH3_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH4_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH4_PIN, LIGHT_CH4_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH5_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH5_PIN, LIGHT_CH5_INVERSE, true, 0, 0, 0});
-        #endif
+        unsigned char gpio;
+        unsigned char index = 0;
+        while ((gpio = getSetting("litChGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
+            bool inverse = getSetting("litChLogic", index, GPIO_LOGIC_DIRECT).toInt() == GPIO_LOGIC_INVERSE;
+            _light_channel.push_back((channel_t) {gpio, inverse, true, 0, 0, 0, 0, 1});
+            ++index;
+        }
 
         uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
         uint32 io_info[PWM_CHANNEL_NUM_MAX][3];
@@ -1081,7 +1090,7 @@ void lightSetup() {
         pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
         pwm_start();
 
-
+    }
     #endif
 
     DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);

@@ -775,6 +775,9 @@
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #endif
 
+#ifndef LIGHT_MAX_CHANNELS
+#define LIGHT_MAX_CHANNELS      6
+#endif
 
 #ifndef LIGHT_MAX_PWM
 
