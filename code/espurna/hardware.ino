@@ -44,6 +44,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_NODEMCU_LOLIN);
         setSetting("device", "NODEMCU_LOLIN");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -59,6 +60,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_WEMOS_D1_MINI_RELAYSHIELD);
         setSetting("device", "WEMOS_D1_MINI_RELAYSHIELD");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -74,6 +76,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_BASIC);
         setSetting("device", "ITEAD_SONOFF_BASIC");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -89,6 +92,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_TH);
         setSetting("device", "ITEAD_SONOFF_TH");
+        setSetting("fw", ESPURNA_SENSOR);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -111,6 +115,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_SV);
         setSetting("device", "ITEAD_SONOFF_SV");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -126,6 +131,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_TOUCH);
         setSetting("device", "ITEAD_SONOFF_TOUCH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -146,6 +152,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_POW);
         setSetting("device", "ITEAD_SONOFF_POW");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -166,6 +173,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_DUAL);
         setSetting("device", "ITEAD_SONOFF_DUAL");
+        setSetting("fw", ESPURNA_SONOFF_DUAL);
 
         setSetting("btnRelay", 0, GPIO_NONE);
         setSetting("btnRelay", 1, GPIO_NONE);
@@ -193,6 +201,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_1CH_INCHING);
         setSetting("device", "ITEAD_1CH_INCHING");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -208,6 +217,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_4CH);
         setSetting("device", "ITEAD_SONOFF_4CH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
@@ -238,6 +248,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SLAMPHER);
         setSetting("device", "ITEAD_SLAMPHER");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -253,6 +264,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_S20);
         setSetting("device", "ITEAD_S20");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -268,6 +280,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ELECTRODRAGON_WIFI_IOT);
         setSetting("device", "ELECTRODRAGON_WIFI_IOT");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 2);
@@ -288,6 +301,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_WORKCHOICE_ECOPLUG);
         setSetting("device", "WORKCHOICE_ECOPLUG");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -306,6 +320,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_JANGOE_WIFI_RELAY_NC);
         setSetting("device", "JANGOE_WIFI_RELAY_NC");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 12);
         setSetting("btnGPIO", 1, 13);
@@ -323,6 +338,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_JANGOE_WIFI_RELAY_NO);
         setSetting("device", "JANGOE_WIFI_RELAY_NO");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 12);
         setSetting("btnGPIO", 1, 13);
@@ -340,6 +356,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_OPENENERGYMONITOR_MQTT_RELAY);
         setSetting("device", "OPENENERGYMONITOR_MQTT_RELAY");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -359,6 +376,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_JORGEGARCIA_WIFI_RELAYS);
         setSetting("device", "JORGEGARCIA_WIFI_RELAYS");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("rlyGPIO", 0, 0);
         setSetting("rlyGPIO", 1, 2);
@@ -369,11 +387,10 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_AITHINKER_AI_LIGHT);
         setSetting("device", "AITHINKER_AI_LIGHT");
+        setSetting("fw", ESPURNA_MY92XX);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
-
-        setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
 
         setSetting("myModel", 0); // 4 channels per chip
         setSetting("myChips", 1);
@@ -385,6 +402,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_MAGICHOME_LED_CONTROLLER);
         setSetting("device", "MAGICHOME_LED_CONTROLLER");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -396,7 +414,6 @@ void _hardwareLoad() {
         setSetting("irGPIO", 4);
         setSetting("irSet", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 14);
         setSetting("litChGPIO", 1, 5);
         setSetting("litChGPIO", 2, 12);
@@ -410,6 +427,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_MOTOR);
         setSetting("device", "ITEAD_MOTOR");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -425,6 +443,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TINKERMAN_ESPURNA_H06);
         setSetting("device", "TINKERMAN_ESPURNA_H06");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -445,6 +464,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_HUACANXING_H801);
         setSetting("device", "HUACANXING_H801");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("ledGPIO", 0, 5);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -454,7 +474,6 @@ void _hardwareLoad() {
 
         setSetting("dbgPort", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 15);
         setSetting("litChGPIO", 1, 13);
         setSetting("litChGPIO", 2, 12);
@@ -470,6 +489,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_BNSZ01);
         setSetting("device", "ITEAD_BNSZ01");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("ledGPIO", 0, 13);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -477,7 +497,6 @@ void _hardwareLoad() {
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
 
@@ -485,6 +504,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_RFBRIDGE);
         setSetting("device", "ITEAD_SONOFF_RFBRIDGE");
+        setSetting("fw", ESPURNA_SONOFF_RFBRIDGE);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -509,6 +529,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_4CH_PRO);
         setSetting("device", "ITEAD_SONOFF_4CH_PRO");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
@@ -570,11 +591,11 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_B1);
         setSetting("device", "ITEAD_SONOFF_B1");
+        setSetting("fw", ESPURNA_MY92XX);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
         setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright in the B1
         setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright in the B1
 
@@ -588,6 +609,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_LED);
         setSetting("device", "ITEAD_SONOFF_LED");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("ledGPIO", 0, 13);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -595,7 +617,6 @@ void _hardwareLoad() {
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12); // Cold white
         setSetting("litChGPIO", 1, 14); // Warm white
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
@@ -605,6 +626,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_T1_1CH);
         setSetting("device", "ITEAD_SONOFF_T1_1CH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -626,6 +648,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_T1_2CH);
         setSetting("device", "ITEAD_SONOFF_T1_2CH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
@@ -657,6 +680,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_T1_3CH);
         setSetting("device", "ITEAD_SONOFF_T1_3CH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
@@ -698,6 +722,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_RF);
         setSetting("device", "ITEAD_SONOFF_RF");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -718,6 +743,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_WION_50055);
         setSetting("device", "WION_50055");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -736,6 +762,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_EXS_WIFI_RELAY_V31);
         setSetting("device", "EXS_WIFI_RELAY_V31");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -749,13 +776,13 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_HUACANXING_H802);
         setSetting("device", "HUACANXING_H802");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
         setSetting("dbgPort", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);
         setSetting("litChGPIO", 1, 14);
         setSetting("litChGPIO", 2, 13);
@@ -769,6 +796,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_V9261F);
         setSetting("device", "GENERIC_V9261F");
+        setSetting("fw", ESPURNA_V9261F);
 
         setSetting("v92Enabled", 1);
         setSetting("v92GPIO", 2);
@@ -778,6 +806,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_ECH1560);
         setSetting("device", "GENERIC_ECH1560");
+        setSetting("fw", ESPURNA_ECH1560);
 
         setSetting("echEnabled", 1);
         setSetting("echCLKGPIO", 4);
@@ -788,6 +817,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TINKERMAN_ESPURNA_H08);
         setSetting("device", "TINKERMAN_ESPURNA_H08");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -811,6 +841,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_MANCAVEMADE_ESPLIVE);
         setSetting("device", "MANCAVEMADE_ESPLIVE");
+        setSetting("fw", ESPURNA_SENSOR);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnGPIO", 1, 5);
@@ -841,6 +872,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_INTERMITTECH_QUINLED);
         setSetting("device", "INTERMITTECH_QUINLED");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("ledGPIO", 0, 5);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -848,7 +880,6 @@ void _hardwareLoad() {
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 0);
         setSetting("litChGPIO", 1, 2);
         setSetting("litChLogic", 0, GPIO_LOGIC_DIRECT);
@@ -858,6 +889,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_MAGICHOME_LED_CONTROLLER_20);
         setSetting("device", "MAGICHOME_LED_CONTROLLER_20");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -869,7 +901,6 @@ void _hardwareLoad() {
         setSetting("irGPIO", 4);
         setSetting("irSet", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 5);
         setSetting("litChGPIO", 1, 12);
         setSetting("litChGPIO", 2, 13);
@@ -883,11 +914,11 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ARILUX_AL_LC06);
         setSetting("device", "ARILUX_AL_LC06");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 14);
         setSetting("litChGPIO", 1, 12);
         setSetting("litChGPIO", 2, 13);
@@ -903,6 +934,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_XENON_SM_PW702U);
         setSetting("device", "XENON_SM_PW702U");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -921,11 +953,11 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_AUTHOMETION_LYT8266);
         setSetting("device", "AUTHOMETION_LYT8266");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 13);
         setSetting("litChGPIO", 1, 12);
         setSetting("litChGPIO", 2, 14);
@@ -941,11 +973,10 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ARILUX_E27);
         setSetting("device", "ARILUX_E27");
+        setSetting("fw", ESPURNA_MY92XX);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
-
-        setSetting("litProvider", LIGHT_PROVIDER_MY92XX);
 
         setSetting("myModel", 0); // 4 channels per chip
         setSetting("myChips", 1);
@@ -957,6 +988,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_YJZK_SWITCH_2CH);
         setSetting("device", "YJZK_SWITCH_2CH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
@@ -977,6 +1009,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_DUAL_R2);
         setSetting("device", "ITEAD_SONOFF_DUAL_R2");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1001,6 +1034,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_8CH);
         setSetting("device", "GENERIC_8CH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("rlyGPIO", 0, 0);
         setSetting("rlyGPIO", 1, 2);
@@ -1023,11 +1057,11 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ARILUX_AL_LC01);
         setSetting("device", "ARILUX_AL_LC01");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 5);
         setSetting("litChGPIO", 1, 12);
         setSetting("litChGPIO", 2, 13);
@@ -1039,11 +1073,11 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ARILUX_AL_LC11);
         setSetting("device", "ARILUX_AL_LC11");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 5);
         setSetting("litChGPIO", 1, 4);
         setSetting("litChGPIO", 2, 14);
@@ -1059,11 +1093,11 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ARILUX_AL_LC02);
         setSetting("device", "ARILUX_AL_LC02");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 12);
         setSetting("litChGPIO", 1, 5);
         setSetting("litChGPIO", 2, 13);
@@ -1080,6 +1114,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_KMC_70011);
         setSetting("device", "KMC_70011");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1101,6 +1136,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GIZWITS_WITTY_CLOUD);
         setSetting("device", "GIZWITS_WITTY_CLOUD");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1118,7 +1154,6 @@ void _hardwareLoad() {
 
         setSetting("anaEnabled", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 15);
         setSetting("litChGPIO", 1, 12);
         setSetting("litChGPIO", 2, 13);
@@ -1139,6 +1174,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_EUROMATE_WIFI_STECKER_SCHUKO);
         setSetting("device", "EUROMATE_WIFI_STECKER_SCHUKO");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 14);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
@@ -1156,6 +1192,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TONBUX_POWERSTRIP02);
         setSetting("device", "TONBUX_POWERSTRIP02");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 5);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1181,6 +1218,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_LINGAN_SWA1);
         setSetting("device", "LINGAN_SWA1");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
@@ -1196,6 +1234,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_HEYGO_HY02);
         setSetting("device", "HEYGO_HY02");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1211,6 +1250,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_MAXCIO_WUS002S);
         setSetting("device", "MAXCIO_WUS002S");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 2);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1233,6 +1273,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_YIDIAN_XSSSA05);
         setSetting("device", "YIDIAN_XSSSA05");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1257,6 +1298,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TONBUX_XSSSA06);
         setSetting("device", "TONBUX_XSSSA06");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1279,6 +1321,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GREEN_ESP8266RELAY);
         setSetting("device", "GREEN_ESP8266RELAY");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 5);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1297,6 +1340,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_IKE_ESPIKE);
         setSetting("device", "IKE_ESPIKE");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnGPIO", 1, 12);
@@ -1328,6 +1372,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ARNIEX_SWIFITCH);
         setSetting("device", "ARNIEX_SWIFITCH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
@@ -1351,6 +1396,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_ESP01S_RELAY_V40);
         setSetting("device", "GENERIC_ESP01S_RELAY_V40");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
@@ -1365,6 +1411,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_ESP01S_RGBLED_V10);
         setSetting("device", "GENERIC_ESP01S_RGBLED_V10");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("ledGPIO", 0, 2);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
@@ -1376,6 +1423,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_HELTEC_TOUCHRELAY);
         setSetting("device", "HELTEC_TOUCHRELAY");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 14);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1391,6 +1439,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_ESP01S_DHT11_V10);
         setSetting("device", "GENERIC_ESP01S_DHT11_V10");
+        setSetting("fw", ESPURNA_SENSOR);
 
         setSetting("dhtEnabled", 1);
         setSetting("dhtGPIO", 0, 2);
@@ -1403,6 +1452,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_ESP01S_DS18B20_V10);
         setSetting("device", "GENERIC_ESP01S_DS18B20_V10");
+        setSetting("fw", ESPURNA_SENSOR);
 
         setSetting("dsEnabled", 1);
         setSetting("dsGPIO", 0, 2);
@@ -1414,6 +1464,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ZHILDE_EU44_W);
         setSetting("device", "ZHILDE_EU44_W");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 3);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1441,6 +1492,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_POW_R2);
         setSetting("device", "ITEAD_SONOFF_POW_R2");
+        setSetting("fw", ESPURNA_CSE77XX);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1465,6 +1517,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_LUANI_HVIO);
         setSetting("device", "LUANI_HVIO");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("ledGPIO", 0, 15);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
@@ -1490,6 +1543,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ALLNET_4DUINO_IOT_WLAN_RELAIS);
         setSetting("device", "ALLNET_4DUINO_IOT_WLAN_RELAIS");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("ledGPIO", 0, 0);
         setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
@@ -1505,6 +1559,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TONBUX_MOSQUITO_KILLER);
         setSetting("device", "TONBUX_MOSQUITO_KILLER");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 2);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1533,6 +1588,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_NEO_COOLCAM_NAS_WR01W);
         setSetting("device", "NEO_COOLCAM_NAS_WR01W");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1551,6 +1607,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_PILOTAK_ESP_DIN_V1);
         setSetting("device", "PILOTAK_ESP_DIN_V1");
+        setSetting("fw", ESPURNA_SENSOR);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1587,6 +1644,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ESTINK_WIFI_POWER_STRIP);
         setSetting("device", "ESTINK_WIFI_POWER_STRIP");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 16);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1628,6 +1686,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_BH_ONOFRE);
         setSetting("device", "BH_ONOFRE");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 12);
         setSetting("btnGPIO", 1, 13);
@@ -1652,6 +1711,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_BLITZWOLF_BWSHP2);
         setSetting("device", "BLITZWOLF_BWSHP2");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1684,6 +1744,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_HOMECUBE_16A);
         setSetting("device", "HOMECUBE_16A");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1716,6 +1777,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TINKERMAN_ESPURNA_SWITCH);
         setSetting("device", "TINKERMAN_ESPURNA_SWITCH");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON);
@@ -1736,6 +1798,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_ITEAD_SONOFF_S31);
         setSetting("device", "ITEAD_SONOFF_S31");
+        setSetting("fw", ESPURNA_CSE77XX);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1756,6 +1819,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_STM_RELAY);
         setSetting("device", "STM_RELAY");
+        setSetting("fw", ESPURNA_STM);
 
         setSetting("rlyDummy", 2);
         setSetting("rlyProvider", RELAY_PROVIDER_STM);
@@ -1769,6 +1833,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_VANZAVANZU_SMART_WIFI_PLUG_MINI);
         setSetting("device", "VANZAVANZU_SMART_WIFI_PLUG_MINI");
+        setSetting("fw", ESPURNA_HLW8012);
 
         setSetting("btnGPIO", 0, 13);
         setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
@@ -1800,6 +1865,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_GENERIC_GEIGER_COUNTER);
         setSetting("device", "GENERIC_GEIGER_COUNTER");
+        setSetting("fw", ESPURNA_GEIGER);
 
         setSetting("geiEnabled", 1);
         setSetting("geiGPIO", 5);
@@ -1810,6 +1876,7 @@ void _hardwareLoad() {
 
         setSetting("board", BOARD_TINKERMAN_RFM69GW);
         setSetting("device", "TINKERMAN_RFM69GW");
+        setSetting("fw", ESPURNA_RFM69);
 
         setSetting("btnGPIO", 0, 0);
 
@@ -1822,6 +1889,8 @@ void _hardwareLoad() {
     #elif defined(ITEAD_SONOFF_IFAN02)
 
         setSetting("board", BOARD_ITEAD_SONOFF_IFAN02);
+        setSetting("device", "ITEAD_SONOFF_IFAN02");
+        setSetting("fw", ESPURNA_BASIC);
 
         setSetting("btnGPIO", 0, 0);
         setSetting("btnGPIO", 1, 9);
@@ -1844,6 +1913,8 @@ void _hardwareLoad() {
     #elif defined(GENERIC_AG_L4)
 
         setSetting("board", BOARD_GENERIC_AG_L4);
+        setSetting("device", "GENERIC_AG_L4");
+        setSetting("fw", ESPURNA_DIMMER);
 
         setSetting("btnGPIO", 0, 4);
         setSetting("btnGPIO", 1, 2);
@@ -1863,7 +1934,6 @@ void _hardwareLoad() {
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litProvider", LIGHT_PROVIDER_DIMMER);
         setSetting("litChGPIO", 0, 14);
         setSetting("litChGPIO", 1, 13);
         setSetting("litChGPIO", 2, 12);
@@ -1903,7 +1973,6 @@ void _hardwareMigrate() {
     moveSetting("cfGPIO", "hlwCFGPIO");
     moveSetting("cf1GPIO", "hlwCF1GPIO");
     moveSetting("relayProvider", "rlyProvider");
-    moveSetting("lightProvider", "litProvider");
     moveSetting("relays", "rlyDummy");
     moveSettings("chGPIO", "litChGPIO");
     moveSettings("chLogic", "litChLogic");
@@ -1911,6 +1980,8 @@ void _hardwareMigrate() {
     moveSetting("hlwSelC", "hlwCurLevel");
     moveSetting("hlwIntM", "hlwInt");
     delSetting("ledWifi");
+    delSetting("lightProvider");
+    delSetting("litProvider");
 
     // Get config version
     unsigned int board = getSetting("board", 0).toInt();
@@ -1941,9 +2012,19 @@ void _hardwareSpecific() {
 // -----------------------------------------------------------------------------
 
 void hardwareSetup() {
+
     _hardwareMigrate();
     if (getSetting("board", 1).toInt() != 1) {
         _hardwareLoad();
     }
     _hardwareSpecific();
+
+    // Check match firmware-configuration
+    // At the time being, this will always match.
+    // In the future, custom loaded configuration
+    // might not match loaded firmware image
+    if (getSetting("fw", ESPURNA_CORE).toInt() != ESPURNA_IMAGE) {
+        DEBUG_MSG_P(PSTR("[HW] Configuration does not match firmware image!!!"));
+    }
+
 }

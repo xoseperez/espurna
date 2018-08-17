@@ -339,7 +339,8 @@ void info() {
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[INIT] WEBUI IMAGE CODE: %u\n"), WEBUI_IMAGE);
+    DEBUG_MSG_P(PSTR("[INIT] FIRMWARE CODE: %d\n"), ESPURNA_IMAGE);
+    DEBUG_MSG_P(PSTR("[INIT] WEBUI CODE: %u\n"), WEBUI_IMAGE);
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
