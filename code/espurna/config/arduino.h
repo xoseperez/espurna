@@ -4,6 +4,26 @@
 //--------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------
+// Firmware image
+//--------------------------------------------------------------------------------
+
+//#define ESPURNA_IMAGE         ESPURNA_CORE
+//#define ESPURNA_IMAGE         ESPURNA_BASIC
+//#define ESPURNA_IMAGE         ESPURNA_DIMMER
+//#define ESPURNA_IMAGE         ESPURNA_MY92XX
+//#define ESPURNA_IMAGE         ESPURNA_EMON
+//#define ESPURNA_IMAGE         ESPURNA_HLW8012
+//#define ESPURNA_IMAGE         ESPURNA_CSE77XX
+//#define ESPURNA_IMAGE         ESPURNA_V9261F
+//#define ESPURNA_IMAGE         ESPURNA_ECH1560
+//#define ESPURNA_IMAGE         ESPURNA_SENSOR
+//#define ESPURNA_IMAGE         ESPURNA_SONOFF_DUAL
+//#define ESPURNA_IMAGE         ESPURNA_SONOFF_RFBRIDGE
+//#define ESPURNA_IMAGE         ESPURNA_RFM69
+//#define ESPURNA_IMAGE         ESPURNA_STM
+//#define ESPURNA_IMAGE         ESPURNA_GEIGER
+
+//--------------------------------------------------------------------------------
 // Hardware
 //--------------------------------------------------------------------------------
 
