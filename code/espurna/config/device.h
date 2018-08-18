@@ -154,6 +154,7 @@ enum devices {
     defined(YJZK_SWITCH_2CH) || \
     defined(ZHILDE_EU44_W)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_BASIC
 
 // -----------------------------------------------------------------------------
@@ -169,6 +170,7 @@ enum devices {
     defined(VANZAVANZU_SMART_WIFI_PLUG_MINI) || \
     defined(YIDIAN_XSSSA05)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_HLW8012
 
 
@@ -178,18 +180,21 @@ enum devices {
     defined(ITEAD_SONOFF_POW_R2) || \
     defined(ITEAD_SONOFF_S31)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_CSE77XX
 
 // -----------------------------------------------------------------------------
 
 #elif defined(GENERIC_V9261F)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_V9261F
 
 // -----------------------------------------------------------------------------
 
 #elif defined(GENERIC_ECH1560)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_ECH1560
 
 // -----------------------------------------------------------------------------
@@ -207,6 +212,7 @@ enum devices {
     defined(ITEAD_BNSZ01) || \
     defined(ITEAD_SONOFF_LED)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
 
 // -----------------------------------------------------------------------------
@@ -216,6 +222,7 @@ enum devices {
     defined(ARILUX_E27) || \
     defined(ITEAD_SONOFF_B1)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_MY92XX
 
 // -----------------------------------------------------------------------------
@@ -226,31 +233,35 @@ enum devices {
     defined(ITEAD_SONOFF_TH) || \
     defined(MANCAVEMADE_ESPLIVE)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_SENSOR
-
 
 // -----------------------------------------------------------------------------
 
 #elif defined(TINKERMAN_RFM69GW)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_RFM69
 
 // -----------------------------------------------------------------------------
 
 #elif defined(ITEAD_SONOFF_DUAL)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_SONOFF_DUAL
 
 // -----------------------------------------------------------------------------
 
 #elif defined(STM_RELAY)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_STM
 
 // -----------------------------------------------------------------------------
 
 #elif defined(GENERIC_GEIGER_COUNTER)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_GEIGER
 
 // -----------------------------------------------------------------------------
@@ -259,6 +270,7 @@ enum devices {
 
 #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_SONOFF_RFBRIDGE
 
     // Info
@@ -290,6 +302,7 @@ enum devices {
 
 #elif defined(PILOTAK_ESP_DIN_V1)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_SENSOR
 
     #ifndef RF_SUPPORT
@@ -301,6 +314,7 @@ enum devices {
 
 #elif defined(MAGICHOME_LED_CONTROLLER)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
 
     // IR
@@ -310,6 +324,7 @@ enum devices {
 
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
 
     // IR
@@ -319,6 +334,7 @@ enum devices {
 
 #elif defined(GIZWITS_WITTY_CLOUD)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_DIMMER
 
     #define ANALOG_SUPPORT              1   // TODO: specific or generic?
@@ -329,6 +345,7 @@ enum devices {
 
 #elif defined(TRAVIS01)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_BASIC
 
     // A bit of I2C - pins 3,4
@@ -386,6 +403,7 @@ enum devices {
 
 #elif defined(TRAVIS02)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_BASIC
 
     // A bit of CSE7766 - pin 1
@@ -451,6 +469,7 @@ enum devices {
 
 #elif defined(TRAVIS03)
 
+    #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_BASIC
 
     // MY9231 Light - pins 1,2
@@ -475,18 +494,17 @@ enum devices {
     #define NETBIOS_SUPPORT             1
     #define SSDP_SUPPORT                1
 
+#endif
+
 // -----------------------------------------------------------------------------
 // ESPurna Core
+// This is a special device targeted to generate a light-weight binary image
+// meant to be able to do two-step-updates:
+// https://github.com/xoseperez/espurna/wiki/TwoStepUpdates
 // -----------------------------------------------------------------------------
 
-#else
-
-    // This is a special device targeted to generate a light-weight binary image
-    // meant to be able to do two-step-updates:
-    // https://github.com/xoseperez/espurna/wiki/TwoStepUpdates
-
+#ifndef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_CORE
-
 #endif
 
 // -----------------------------------------------------------------------------
@@ -497,6 +515,7 @@ enum devices {
 
     // Disable non-core modules
     #define ALEXA_SUPPORT               0
+    #define API_SUPPORT                 0
     #define BROKER_SUPPORT              0
     #define BUTTON_SUPPORT              0
     #define DOMOTICZ_SUPPORT            0
@@ -597,9 +616,7 @@ enum devices {
 
 #elif ESPURNA_IMAGE == ESPURNA_SONOFF_DUAL
 
-    #define SERIAL_BAUDRATE             19230
     #define RELAY_PROVIDER              RELAY_PROVIDER_DUAL
-    #define DEBUG_SERIAL_SUPPORT        0
 
 #elif ESPURNA_IMAGE == ESPURNA_SONOFF_RFBRIDGE
 
@@ -620,7 +637,6 @@ enum devices {
 #elif ESPURNA_IMAGE == ESPURNA_STM
 
     #define RELAY_PROVIDER              RELAY_PROVIDER_STM
-    #define DEBUG_SERIAL_SUPPORT        0
 
 #elif ESPURNA_IMAGE == ESPURNA_GEIGER
 
