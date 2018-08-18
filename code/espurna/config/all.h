@@ -26,7 +26,7 @@
 #include "version.h"
 #include "types.h"
 #include "arduino.h"
-#include "hardware.h"
+#include "device.h"
 #include "defaults.h"
 #include "general.h"
 #include "dependencies.h"

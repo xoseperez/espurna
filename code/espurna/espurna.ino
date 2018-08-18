@@ -56,9 +56,9 @@ void setup() {
         debugSetup();
     #endif
 
-    // Load board data
+    // Load devices data
     // Requires SETTINGS
-    hardwareSetup();
+    deviceSetup();
 
     // Init Serial, SPIFFS and system check
     // Requires EEPROM and DEBUG

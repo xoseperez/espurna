@@ -1,18 +1,14 @@
 /*
 
-HARDWARE MODULE
+DEVICED MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-// -----------------------------------------------------------------------------
-// Configuration HELP
-// -----------------------------------------------------------------------------
-//
 // Configuration settings for each device, the most common ones are:
 //
-// board: ID of the board according to boards enum in hardware.h
+// board: ID of the board according to *devices* enum in hardware.h
 // device: Name of the device ("string")
 // btnGPIO <n>: GPIO for the n-th button (0-based)
 // btnRelay <n>: Relay index linked to the n-th button
@@ -34,7 +30,10 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 //
 // Besides, other hardware specific information can be added to any device
 
-void _hardwareLoad() {
+void _deviceLoad() {
+
+    // Do not load defaults if custom board
+    if (getSetting("board", DEVICE_UNKNOWN).toInt() == DEVICE_CUSTOM) return;
 
     // -------------------------------------------------------------------------
     // Board definitions
@@ -42,7 +41,7 @@ void _hardwareLoad() {
 
     #if defined(NODEMCU_LOLIN)
 
-        setSetting("board", BOARD_NODEMCU_LOLIN);
+        setSetting("board", DEVICE_NODEMCU_LOLIN);
         setSetting("device", "NODEMCU_LOLIN");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -58,7 +57,7 @@ void _hardwareLoad() {
 
     #elif defined(WEMOS_D1_MINI_RELAYSHIELD)
 
-        setSetting("board", BOARD_WEMOS_D1_MINI_RELAYSHIELD);
+        setSetting("board", DEVICE_WEMOS_D1_MINI_RELAYSHIELD);
         setSetting("device", "WEMOS_D1_MINI_RELAYSHIELD");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -74,7 +73,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_BASIC)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_BASIC);
+        setSetting("board", DEVICE_ITEAD_SONOFF_BASIC);
         setSetting("device", "ITEAD_SONOFF_BASIC");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -90,7 +89,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_TH)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_TH);
+        setSetting("board", DEVICE_ITEAD_SONOFF_TH);
         setSetting("device", "ITEAD_SONOFF_TH");
         setSetting("fw", ESPURNA_SENSOR);
 
@@ -113,7 +112,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_SV)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_SV);
+        setSetting("board", DEVICE_ITEAD_SONOFF_SV);
         setSetting("device", "ITEAD_SONOFF_SV");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -129,7 +128,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_TOUCH)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_TOUCH);
+        setSetting("board", DEVICE_ITEAD_SONOFF_TOUCH);
         setSetting("device", "ITEAD_SONOFF_TOUCH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -150,7 +149,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_POW)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_POW);
+        setSetting("board", DEVICE_ITEAD_SONOFF_POW);
         setSetting("device", "ITEAD_SONOFF_POW");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -171,7 +170,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_DUAL)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_DUAL);
+        setSetting("board", DEVICE_ITEAD_SONOFF_DUAL);
         setSetting("device", "ITEAD_SONOFF_DUAL");
         setSetting("fw", ESPURNA_SONOFF_DUAL);
 
@@ -199,7 +198,7 @@ void _hardwareLoad() {
         // You can still use the pulse options from the web interface
         // without problem.
 
-        setSetting("board", BOARD_ITEAD_1CH_INCHING);
+        setSetting("board", DEVICE_ITEAD_1CH_INCHING);
         setSetting("device", "ITEAD_1CH_INCHING");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -215,7 +214,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_4CH)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_4CH);
+        setSetting("board", DEVICE_ITEAD_SONOFF_4CH);
         setSetting("device", "ITEAD_SONOFF_4CH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -246,7 +245,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SLAMPHER)
 
-        setSetting("board", BOARD_ITEAD_SLAMPHER);
+        setSetting("board", DEVICE_ITEAD_SLAMPHER);
         setSetting("device", "ITEAD_SLAMPHER");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -262,7 +261,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_S20)
 
-        setSetting("board", BOARD_ITEAD_S20);
+        setSetting("board", DEVICE_ITEAD_S20);
         setSetting("device", "ITEAD_S20");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -278,7 +277,7 @@ void _hardwareLoad() {
 
     #elif defined(ELECTRODRAGON_WIFI_IOT)
 
-        setSetting("board", BOARD_ELECTRODRAGON_WIFI_IOT);
+        setSetting("board", DEVICE_ELECTRODRAGON_WIFI_IOT);
         setSetting("device", "ELECTRODRAGON_WIFI_IOT");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -299,7 +298,7 @@ void _hardwareLoad() {
 
     #elif defined(WORKCHOICE_ECOPLUG)
 
-        setSetting("board", BOARD_WORKCHOICE_ECOPLUG);
+        setSetting("board", DEVICE_WORKCHOICE_ECOPLUG);
         setSetting("device", "WORKCHOICE_ECOPLUG");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -318,7 +317,7 @@ void _hardwareLoad() {
         // Jan Goedeke Wifi Relay
         // https://github.com/JanGoe/esp8266-wifi-relay
 
-        setSetting("board", BOARD_JANGOE_WIFI_RELAY_NC);
+        setSetting("board", DEVICE_JANGOE_WIFI_RELAY_NC);
         setSetting("device", "JANGOE_WIFI_RELAY_NC");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -336,7 +335,7 @@ void _hardwareLoad() {
 
     #elif defined(JANGOE_WIFI_RELAY_NO)
 
-        setSetting("board", BOARD_JANGOE_WIFI_RELAY_NO);
+        setSetting("board", DEVICE_JANGOE_WIFI_RELAY_NO);
         setSetting("device", "JANGOE_WIFI_RELAY_NO");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -354,7 +353,7 @@ void _hardwareLoad() {
 
     #elif defined(OPENENERGYMONITOR_MQTT_RELAY)
 
-        setSetting("board", BOARD_OPENENERGYMONITOR_MQTT_RELAY);
+        setSetting("board", DEVICE_OPENENERGYMONITOR_MQTT_RELAY);
         setSetting("device", "OPENENERGYMONITOR_MQTT_RELAY");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -374,7 +373,7 @@ void _hardwareLoad() {
         // https://www.tindie.com/products/jorgegarciadev/wifi--relays-board-kit
         // https://github.com/jorgegarciadev/wifikit
 
-        setSetting("board", BOARD_JORGEGARCIA_WIFI_RELAYS);
+        setSetting("board", DEVICE_JORGEGARCIA_WIFI_RELAYS);
         setSetting("device", "JORGEGARCIA_WIFI_RELAYS");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -385,7 +384,7 @@ void _hardwareLoad() {
 
     #elif defined(AITHINKER_AI_LIGHT)
 
-        setSetting("board", BOARD_AITHINKER_AI_LIGHT);
+        setSetting("board", DEVICE_AITHINKER_AI_LIGHT);
         setSetting("device", "AITHINKER_AI_LIGHT");
         setSetting("fw", ESPURNA_MY92XX);
 
@@ -400,7 +399,7 @@ void _hardwareLoad() {
 
     #elif defined(MAGICHOME_LED_CONTROLLER)
 
-        setSetting("board", BOARD_MAGICHOME_LED_CONTROLLER);
+        setSetting("board", DEVICE_MAGICHOME_LED_CONTROLLER);
         setSetting("device", "MAGICHOME_LED_CONTROLLER");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -425,7 +424,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_MOTOR)
 
-        setSetting("board", BOARD_ITEAD_MOTOR);
+        setSetting("board", DEVICE_ITEAD_MOTOR);
         setSetting("device", "ITEAD_MOTOR");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -441,7 +440,7 @@ void _hardwareLoad() {
 
     #elif defined(TINKERMAN_ESPURNA_H06)
 
-        setSetting("board", BOARD_TINKERMAN_ESPURNA_H06);
+        setSetting("board", DEVICE_TINKERMAN_ESPURNA_H06);
         setSetting("device", "TINKERMAN_ESPURNA_H06");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -462,7 +461,7 @@ void _hardwareLoad() {
 
     #elif defined(HUACANXING_H801)
 
-        setSetting("board", BOARD_HUACANXING_H801);
+        setSetting("board", DEVICE_HUACANXING_H801);
         setSetting("device", "HUACANXING_H801");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -487,7 +486,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_BNSZ01)
 
-        setSetting("board", BOARD_ITEAD_BNSZ01);
+        setSetting("board", DEVICE_ITEAD_BNSZ01);
         setSetting("device", "ITEAD_BNSZ01");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -502,7 +501,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_RFBRIDGE)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_RFBRIDGE);
+        setSetting("board", DEVICE_ITEAD_SONOFF_RFBRIDGE);
         setSetting("device", "ITEAD_SONOFF_RFBRIDGE");
         setSetting("fw", ESPURNA_SONOFF_RFBRIDGE);
 
@@ -527,7 +526,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_4CH_PRO)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_4CH_PRO);
+        setSetting("board", DEVICE_ITEAD_SONOFF_4CH_PRO);
         setSetting("device", "ITEAD_SONOFF_4CH_PRO");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -589,7 +588,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_B1)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_B1);
+        setSetting("board", DEVICE_ITEAD_SONOFF_B1);
         setSetting("device", "ITEAD_SONOFF_B1");
         setSetting("fw", ESPURNA_MY92XX);
 
@@ -607,7 +606,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_LED)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_LED);
+        setSetting("board", DEVICE_ITEAD_SONOFF_LED);
         setSetting("device", "ITEAD_SONOFF_LED");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -624,7 +623,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_T1_1CH)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_T1_1CH);
+        setSetting("board", DEVICE_ITEAD_SONOFF_T1_1CH);
         setSetting("device", "ITEAD_SONOFF_T1_1CH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -646,7 +645,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_T1_2CH)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_T1_2CH);
+        setSetting("board", DEVICE_ITEAD_SONOFF_T1_2CH);
         setSetting("device", "ITEAD_SONOFF_T1_2CH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -678,7 +677,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_T1_3CH)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_T1_3CH);
+        setSetting("board", DEVICE_ITEAD_SONOFF_T1_3CH);
         setSetting("device", "ITEAD_SONOFF_T1_3CH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -720,7 +719,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_RF)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_RF);
+        setSetting("board", DEVICE_ITEAD_SONOFF_RF);
         setSetting("device", "ITEAD_SONOFF_RF");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -741,7 +740,7 @@ void _hardwareLoad() {
         // https://rover.ebay.com/rover/1/711-53200-19255-0/1?icep_id=114&ipn=icep&toolid=20004&campid=5338044841&mpre=http%3A%2F%2Fwww.ebay.com%2Fitm%2FWiOn-50055-Indoor-Wi-Fi-Wall-Tap-Monitor-Energy-Usage-Wireless-Smart-Switch-%2F263020837777
         // Does not support power monitoring yet
 
-        setSetting("board", BOARD_WION_50055);
+        setSetting("board", DEVICE_WION_50055);
         setSetting("device", "WION_50055");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -760,7 +759,7 @@ void _hardwareLoad() {
         // EX-Store Wifi Relay v3.1
         // https://ex-store.de/ESP8266-WiFi-Relay-V31
 
-        setSetting("board", BOARD_EXS_WIFI_RELAY_V31);
+        setSetting("board", DEVICE_EXS_WIFI_RELAY_V31);
         setSetting("device", "EXS_WIFI_RELAY_V31");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -774,7 +773,7 @@ void _hardwareLoad() {
 
     #elif defined(HUACANXING_H802)
 
-        setSetting("board", BOARD_HUACANXING_H802);
+        setSetting("board", DEVICE_HUACANXING_H802);
         setSetting("device", "HUACANXING_H802");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -794,7 +793,7 @@ void _hardwareLoad() {
 
     #elif defined(GENERIC_V9261F)
 
-        setSetting("board", BOARD_GENERIC_V9261F);
+        setSetting("board", DEVICE_GENERIC_V9261F);
         setSetting("device", "GENERIC_V9261F");
         setSetting("fw", ESPURNA_V9261F);
 
@@ -804,7 +803,7 @@ void _hardwareLoad() {
 
     #elif defined(GENERIC_ECH1560)
 
-        setSetting("board", BOARD_GENERIC_ECH1560);
+        setSetting("board", DEVICE_GENERIC_ECH1560);
         setSetting("device", "GENERIC_ECH1560");
         setSetting("fw", ESPURNA_ECH1560);
 
@@ -815,7 +814,7 @@ void _hardwareLoad() {
 
     #elif defined(TINKERMAN_ESPURNA_H08)
 
-        setSetting("board", BOARD_TINKERMAN_ESPURNA_H08);
+        setSetting("board", DEVICE_TINKERMAN_ESPURNA_H08);
         setSetting("device", "TINKERMAN_ESPURNA_H08");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -839,7 +838,7 @@ void _hardwareLoad() {
         // ESPLive
         // https://github.com/ManCaveMade/ESP-Live
 
-        setSetting("board", BOARD_MANCAVEMADE_ESPLIVE);
+        setSetting("board", DEVICE_MANCAVEMADE_ESPLIVE);
         setSetting("device", "MANCAVEMADE_ESPLIVE");
         setSetting("fw", ESPURNA_SENSOR);
 
@@ -870,7 +869,7 @@ void _hardwareLoad() {
         // QuinLED
         // http://blog.quindorian.org/2017/02/esp8266-led-lighting-quinled-v2-6-pcb.html
 
-        setSetting("board", BOARD_INTERMITTECH_QUINLED);
+        setSetting("board", DEVICE_INTERMITTECH_QUINLED);
         setSetting("device", "INTERMITTECH_QUINLED");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -887,7 +886,7 @@ void _hardwareLoad() {
 
     #elif defined(MAGICHOME_LED_CONTROLLER_20)
 
-        setSetting("board", BOARD_MAGICHOME_LED_CONTROLLER_20);
+        setSetting("board", DEVICE_MAGICHOME_LED_CONTROLLER_20);
         setSetting("device", "MAGICHOME_LED_CONTROLLER_20");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -912,7 +911,7 @@ void _hardwareLoad() {
 
     #elif defined(ARILUX_AL_LC06)
 
-        setSetting("board", BOARD_ARILUX_AL_LC06);
+        setSetting("board", DEVICE_ARILUX_AL_LC06);
         setSetting("device", "ARILUX_AL_LC06");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -932,7 +931,7 @@ void _hardwareLoad() {
 
     #elif defined(XENON_SM_PW702U)
 
-        setSetting("board", BOARD_XENON_SM_PW702U);
+        setSetting("board", DEVICE_XENON_SM_PW702U);
         setSetting("device", "XENON_SM_PW702U");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -951,7 +950,7 @@ void _hardwareLoad() {
         // AUTHOMETION LYT8266
         // https://authometion.com/shop/en/home/13-lyt8266.html
 
-        setSetting("board", BOARD_AUTHOMETION_LYT8266);
+        setSetting("board", DEVICE_AUTHOMETION_LYT8266);
         setSetting("device", "AUTHOMETION_LYT8266");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -971,7 +970,7 @@ void _hardwareLoad() {
 
     #elif defined(ARILUX_E27)
 
-        setSetting("board", BOARD_ARILUX_E27);
+        setSetting("board", DEVICE_ARILUX_E27);
         setSetting("device", "ARILUX_E27");
         setSetting("fw", ESPURNA_MY92XX);
 
@@ -986,7 +985,7 @@ void _hardwareLoad() {
 
     #elif defined(YJZK_SWITCH_2CH)
 
-        setSetting("board", BOARD_YJZK_SWITCH_2CH);
+        setSetting("board", DEVICE_YJZK_SWITCH_2CH);
         setSetting("device", "YJZK_SWITCH_2CH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1007,7 +1006,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_DUAL_R2)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_DUAL_R2);
+        setSetting("board", DEVICE_ITEAD_SONOFF_DUAL_R2);
         setSetting("device", "ITEAD_SONOFF_DUAL_R2");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1032,7 +1031,7 @@ void _hardwareLoad() {
 
     #elif defined(GENERIC_8CH)
 
-        setSetting("board", BOARD_GENERIC_8CH);
+        setSetting("board", DEVICE_GENERIC_8CH);
         setSetting("device", "GENERIC_8CH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1055,7 +1054,7 @@ void _hardwareLoad() {
 
     #elif defined(ARILUX_AL_LC01)
 
-        setSetting("board", BOARD_ARILUX_AL_LC01);
+        setSetting("board", DEVICE_ARILUX_AL_LC01);
         setSetting("device", "ARILUX_AL_LC01");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -1071,7 +1070,7 @@ void _hardwareLoad() {
 
     #elif defined(ARILUX_AL_LC11)
 
-        setSetting("board", BOARD_ARILUX_AL_LC11);
+        setSetting("board", DEVICE_ARILUX_AL_LC11);
         setSetting("device", "ARILUX_AL_LC11");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -1091,7 +1090,7 @@ void _hardwareLoad() {
 
     #elif defined(ARILUX_AL_LC02)
 
-        setSetting("board", BOARD_ARILUX_AL_LC02);
+        setSetting("board", DEVICE_ARILUX_AL_LC02);
         setSetting("device", "ARILUX_AL_LC02");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -1112,7 +1111,7 @@ void _hardwareLoad() {
         // KMC 70011
         // https://www.amazon.com/KMC-Monitoring-Required-Control-Compatible/dp/B07313TH7B
 
-        setSetting("board", BOARD_KMC_70011);
+        setSetting("board", DEVICE_KMC_70011);
         setSetting("device", "KMC_70011");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -1134,7 +1133,7 @@ void _hardwareLoad() {
 
     #elif defined(GIZWITS_WITTY_CLOUD)
 
-        setSetting("board", BOARD_GIZWITS_WITTY_CLOUD);
+        setSetting("board", DEVICE_GIZWITS_WITTY_CLOUD);
         setSetting("device", "GIZWITS_WITTY_CLOUD");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -1172,7 +1171,7 @@ void _hardwareLoad() {
         // So @Geitde hack is still the only possible
         // Hack: drive GPIO12 low and use GPIO5 as normal relay pin:
 
-        setSetting("board", BOARD_EUROMATE_WIFI_STECKER_SCHUKO);
+        setSetting("board", DEVICE_EUROMATE_WIFI_STECKER_SCHUKO);
         setSetting("device", "EUROMATE_WIFI_STECKER_SCHUKO");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1190,7 +1189,7 @@ void _hardwareLoad() {
 
     #elif defined(TONBUX_POWERSTRIP02)
 
-        setSetting("board", BOARD_TONBUX_POWERSTRIP02);
+        setSetting("board", DEVICE_TONBUX_POWERSTRIP02);
         setSetting("device", "TONBUX_POWERSTRIP02");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1216,7 +1215,7 @@ void _hardwareLoad() {
 
     #elif defined(LINGAN_SWA1)
 
-        setSetting("board", BOARD_LINGAN_SWA1);
+        setSetting("board", DEVICE_LINGAN_SWA1);
         setSetting("device", "LINGAN_SWA1");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1232,7 +1231,7 @@ void _hardwareLoad() {
 
     #elif defined(HEYGO_HY02)
 
-        setSetting("board", BOARD_HEYGO_HY02);
+        setSetting("board", DEVICE_HEYGO_HY02);
         setSetting("device", "HEYGO_HY02");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1248,7 +1247,7 @@ void _hardwareLoad() {
 
     #elif defined(MAXCIO_WUS002S)
 
-        setSetting("board", BOARD_MAXCIO_WUS002S);
+        setSetting("board", DEVICE_MAXCIO_WUS002S);
         setSetting("device", "MAXCIO_WUS002S");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -1271,7 +1270,7 @@ void _hardwareLoad() {
 
     #elif defined(YIDIAN_XSSSA05)
 
-        setSetting("board", BOARD_YIDIAN_XSSSA05);
+        setSetting("board", DEVICE_YIDIAN_XSSSA05);
         setSetting("device", "YIDIAN_XSSSA05");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -1296,7 +1295,7 @@ void _hardwareLoad() {
 
     #elif defined(TONBUX_XSSSA06)
 
-        setSetting("board", BOARD_TONBUX_XSSSA06);
+        setSetting("board", DEVICE_TONBUX_XSSSA06);
         setSetting("device", "TONBUX_XSSSA06");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1319,7 +1318,7 @@ void _hardwareLoad() {
         // GREEN ESP8266 RELAY MODULE
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180323113846&SearchText=Green+ESP8266
 
-        setSetting("board", BOARD_GREEN_ESP8266RELAY);
+        setSetting("board", DEVICE_GREEN_ESP8266RELAY);
         setSetting("device", "GREEN_ESP8266RELAY");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1338,7 +1337,7 @@ void _hardwareLoad() {
         // Henrique Gravina ESPIKE
         // https://github.com/Henriquegravina/Espike
 
-        setSetting("board", BOARD_IKE_ESPIKE);
+        setSetting("board", DEVICE_IKE_ESPIKE);
         setSetting("device", "IKE_ESPIKE");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1370,7 +1369,7 @@ void _hardwareLoad() {
         // SWIFITCH
         // https://github.com/ArnieX/swifitch
 
-        setSetting("board", BOARD_ARNIEX_SWIFITCH);
+        setSetting("board", DEVICE_ARNIEX_SWIFITCH);
         setSetting("device", "ARNIEX_SWIFITCH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1394,7 +1393,7 @@ void _hardwareLoad() {
         // ESP-01S RELAY v4.0
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404024035&SearchText=esp-01s+relay
 
-        setSetting("board", BOARD_GENERIC_ESP01S_RELAY_V40);
+        setSetting("board", DEVICE_GENERIC_ESP01S_RELAY_V40);
         setSetting("device", "GENERIC_ESP01S_RELAY_V40");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1409,7 +1408,7 @@ void _hardwareLoad() {
         // ESP-01S RGB LED v1.0 (some sold with ws2818)
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180404023816&SearchText=esp-01s+led+controller
 
-        setSetting("board", BOARD_GENERIC_ESP01S_RGBLED_V10);
+        setSetting("board", DEVICE_GENERIC_ESP01S_RGBLED_V10);
         setSetting("device", "GENERIC_ESP01S_RGBLED_V10");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1421,7 +1420,7 @@ void _hardwareLoad() {
         // Heltec Touch Relay
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180408043114&SearchText=esp8266+touch+relay
 
-        setSetting("board", BOARD_HELTEC_TOUCHRELAY);
+        setSetting("board", DEVICE_HELTEC_TOUCHRELAY);
         setSetting("device", "HELTEC_TOUCHRELAY");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1437,7 +1436,7 @@ void _hardwareLoad() {
         // ESP-01S DHT11 v1.0
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105907&SearchText=esp-01s+dht11
 
-        setSetting("board", BOARD_GENERIC_ESP01S_DHT11_V10);
+        setSetting("board", DEVICE_GENERIC_ESP01S_DHT11_V10);
         setSetting("device", "GENERIC_ESP01S_DHT11_V10");
         setSetting("fw", ESPURNA_SENSOR);
 
@@ -1450,7 +1449,7 @@ void _hardwareLoad() {
         // ESP-01S DS18B20 v1.0
         // https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20180410105933&SearchText=esp-01s+ds18b20
 
-        setSetting("board", BOARD_GENERIC_ESP01S_DS18B20_V10);
+        setSetting("board", DEVICE_GENERIC_ESP01S_DS18B20_V10);
         setSetting("device", "GENERIC_ESP01S_DS18B20_V10");
         setSetting("fw", ESPURNA_SENSOR);
 
@@ -1462,7 +1461,7 @@ void _hardwareLoad() {
         // Zhilde ZLD-EU44-W
         // http://www.zhilde.com/product/60705150109-805652505/EU_WiFi_Surge_Protector_Extension_Socket_4_Outlets_works_with_Amazon_Echo_Smart_Power_Strip.html
 
-        setSetting("board", BOARD_ZHILDE_EU44_W);
+        setSetting("board", DEVICE_ZHILDE_EU44_W);
         setSetting("device", "ZHILDE_EU44_W");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1490,7 +1489,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_POW_R2)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_POW_R2);
+        setSetting("board", DEVICE_ITEAD_SONOFF_POW_R2);
         setSetting("device", "ITEAD_SONOFF_POW_R2");
         setSetting("fw", ESPURNA_CSE77XX);
 
@@ -1515,7 +1514,7 @@ void _hardwareLoad() {
         // https://luani.de/projekte/esp8266-hvio/
         // https://luani.de/blog/esp8266-230v-io-modul/
 
-        setSetting("board", BOARD_LUANI_HVIO);
+        setSetting("board", DEVICE_LUANI_HVIO);
         setSetting("device", "LUANI_HVIO");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1541,7 +1540,7 @@ void _hardwareLoad() {
         // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
         // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
 
-        setSetting("board", BOARD_ALLNET_4DUINO_IOT_WLAN_RELAIS);
+        setSetting("board", DEVICE_ALLNET_4DUINO_IOT_WLAN_RELAIS);
         setSetting("device", "ALLNET_4DUINO_IOT_WLAN_RELAIS");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1557,7 +1556,7 @@ void _hardwareLoad() {
         // Tonbux 50-100M Smart Mosquito Killer USB
         // https://www.aliexpress.com/item/Original-Tonbux-50-100M-Smart-Mosquito-Killer-USB-Plug-No-Noise-Repellent-App-Smart-Module/32859330820.html
 
-        setSetting("board", BOARD_TONBUX_MOSQUITO_KILLER);
+        setSetting("board", DEVICE_TONBUX_MOSQUITO_KILLER);
         setSetting("device", "TONBUX_MOSQUITO_KILLER");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1586,7 +1585,7 @@ void _hardwareLoad() {
         // https://es.aliexpress.com/item/-/32854589733.html?spm=a219c.12010608.0.0.6d084e68xX0y5N
         // https://www.fasttech.com/product/9649426-neo-coolcam-nas-wr01w-wifi-smart-power-plug-eu
 
-        setSetting("board", BOARD_NEO_COOLCAM_NAS_WR01W);
+        setSetting("board", DEVICE_NEO_COOLCAM_NAS_WR01W);
         setSetting("device", "NEO_COOLCAM_NAS_WR01W");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1605,7 +1604,7 @@ void _hardwareLoad() {
         // ESP-DIN relay board V1
         // https://github.com/pilotak/esp_din
 
-        setSetting("board", BOARD_PILOTAK_ESP_DIN_V1);
+        setSetting("board", DEVICE_PILOTAK_ESP_DIN_V1);
         setSetting("device", "PILOTAK_ESP_DIN_V1");
         setSetting("fw", ESPURNA_SENSOR);
 
@@ -1642,7 +1641,7 @@ void _hardwareLoad() {
         // Fornorm Wi-Fi USB Extension Socket (ZLD-34EU)
         // https://www.aliexpress.com/item/Fornorm-WiFi-Extension-Socket-with-Surge-Protector-Smart-Power-Strip-3-Outlets-and-4-USB-Charging/32849743948.html
 
-        setSetting("board", BOARD_ESTINK_WIFI_POWER_STRIP);
+        setSetting("board", DEVICE_ESTINK_WIFI_POWER_STRIP);
         setSetting("device", "ESTINK_WIFI_POWER_STRIP");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1684,7 +1683,7 @@ void _hardwareLoad() {
         // https://www.bhonofre.pt/
         // https://github.com/brunohorta82/BH_OnOfre/
 
-        setSetting("board", BOARD_BH_ONOFRE);
+        setSetting("board", DEVICE_BH_ONOFRE);
         setSetting("device", "BH_ONOFRE");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1702,14 +1701,14 @@ void _hardwareLoad() {
 
     #elif defined(BLITZWOLF_BWSHP2)
 
-        // Several boards under different names uing a power chip labelled BL0937 or HJL-01
+        // Several devices under different names uing a power chip labelled BL0937 or HJL-01
         // * Blitzwolf (https://www.amazon.es/Inteligente-Temporización-Dispositivos-Cualquier-BlitzWolf/dp/B07BMQP142)
         // * HomeCube (https://www.amazon.de/Steckdose-Homecube-intelligente-Verbrauchsanzeige-funktioniert/dp/B076Q2LKHG)
         // * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
         // * Goosund (http://www.gosund.com/?m=content&c=index&a=show&catid=6&id=5)
         // * Ablue (https://www.amazon.de/Intelligente-Steckdose-Ablue-Funktioniert-Assistant/dp/B076DRFRZC)
 
-        setSetting("board", BOARD_BLITZWOLF_BWSHP2);
+        setSetting("board", DEVICE_BLITZWOLF_BWSHP2);
         setSetting("device", "BLITZWOLF_BWSHP2");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -1742,7 +1741,7 @@ void _hardwareLoad() {
         //  Homecube 16A is similar to BLITZWOLF_BWSHP2 but some pins differ and it also has RGB LEDs
         //  https://www.amazon.de/gp/product/B07D7RVF56/ref=oh_aui_detailpage_o00_s01?ie=UTF8&psc=1
 
-        setSetting("board", BOARD_HOMECUBE_16A);
+        setSetting("board", DEVICE_HOMECUBE_16A);
         setSetting("device", "HOMECUBE_16A");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -1775,7 +1774,7 @@ void _hardwareLoad() {
 
     #elif defined(TINKERMAN_ESPURNA_SWITCH)
 
-        setSetting("board", BOARD_TINKERMAN_ESPURNA_SWITCH);
+        setSetting("board", DEVICE_TINKERMAN_ESPURNA_SWITCH);
         setSetting("device", "TINKERMAN_ESPURNA_SWITCH");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1796,7 +1795,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_S31)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_S31);
+        setSetting("board", DEVICE_ITEAD_SONOFF_S31);
         setSetting("device", "ITEAD_SONOFF_S31");
         setSetting("fw", ESPURNA_CSE77XX);
 
@@ -1817,7 +1816,7 @@ void _hardwareLoad() {
 
     #elif defined(STM_RELAY)
 
-        setSetting("board", BOARD_STM_RELAY);
+        setSetting("board", DEVICE_STM_RELAY);
         setSetting("device", "STM_RELAY");
         setSetting("fw", ESPURNA_STM);
 
@@ -1831,7 +1830,7 @@ void _hardwareLoad() {
         // VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
         // https://www.amazon.com/Smart-Plug-Wifi-Mini-VANZAVANZU/dp/B078PHD6S5
 
-        setSetting("board", BOARD_VANZAVANZU_SMART_WIFI_PLUG_MINI);
+        setSetting("board", DEVICE_VANZAVANZU_SMART_WIFI_PLUG_MINI);
         setSetting("device", "VANZAVANZU_SMART_WIFI_PLUG_MINI");
         setSetting("fw", ESPURNA_HLW8012);
 
@@ -1863,7 +1862,7 @@ void _hardwareLoad() {
 
     #elif defined(GENERIC_GEIGER_COUNTER)
 
-        setSetting("board", BOARD_GENERIC_GEIGER_COUNTER);
+        setSetting("board", DEVICE_GENERIC_GEIGER_COUNTER);
         setSetting("device", "GENERIC_GEIGER_COUNTER");
         setSetting("fw", ESPURNA_GEIGER);
 
@@ -1874,7 +1873,7 @@ void _hardwareLoad() {
 
         // Check http://tinkerman.cat/rfm69-wifi-gateway/
 
-        setSetting("board", BOARD_TINKERMAN_RFM69GW);
+        setSetting("board", DEVICE_TINKERMAN_RFM69GW);
         setSetting("device", "TINKERMAN_RFM69GW");
         setSetting("fw", ESPURNA_RFM69);
 
@@ -1888,7 +1887,7 @@ void _hardwareLoad() {
 
     #elif defined(ITEAD_SONOFF_IFAN02)
 
-        setSetting("board", BOARD_ITEAD_SONOFF_IFAN02);
+        setSetting("board", DEVICE_ITEAD_SONOFF_IFAN02);
         setSetting("device", "ITEAD_SONOFF_IFAN02");
         setSetting("fw", ESPURNA_BASIC);
 
@@ -1912,7 +1911,7 @@ void _hardwareLoad() {
 
     #elif defined(GENERIC_AG_L4)
 
-        setSetting("board", BOARD_GENERIC_AG_L4);
+        setSetting("board", DEVICE_GENERIC_AG_L4);
         setSetting("device", "GENERIC_AG_L4");
         setSetting("fw", ESPURNA_DIMMER);
 
@@ -1945,7 +1944,7 @@ void _hardwareLoad() {
 
 }
 
-void _hardwareMigrateMoveIndexDown(const char * key, int offset = 0) {
+void _deviceMigrateMoveIndexDown(const char * key, int offset = 0) {
     if (hasSetting(key, 0)) return;
     for (unsigned char index = 1; index < SETTINGS_MAX_LIST_COUNT; index++) {
         if (hasSetting(key, index)) {
@@ -1963,7 +1962,7 @@ void _hardwareMigrateMoveIndexDown(const char * key, int offset = 0) {
 // 3: based on Embedis, with board definitions 0-based
 // 4: based on Embedis, added sensors and force resetting
 
-void _hardwareMigrate() {
+void _deviceMigrate() {
 
     moveSetting("boardName", "device");
     moveSettings("relayGPIO", "rlyGPIO");
@@ -1989,35 +1988,37 @@ void _hardwareMigrate() {
     setSetting("cfg", CFG_VERSION);
 
     if (config_version == 2) {
-        _hardwareMigrateMoveIndexDown("ledGPIO");
-        _hardwareMigrateMoveIndexDown("ledLogic");
-        _hardwareMigrateMoveIndexDown("btnGPIO");
-        _hardwareMigrateMoveIndexDown("btnRelay", -1);
-        _hardwareMigrateMoveIndexDown("rlyGPIO");
-        _hardwareMigrateMoveIndexDown("rlyType");
+        _deviceMigrateMoveIndexDown("ledGPIO");
+        _deviceMigrateMoveIndexDown("ledLogic");
+        _deviceMigrateMoveIndexDown("btnGPIO");
+        _deviceMigrateMoveIndexDown("btnRelay", -1);
+        _deviceMigrateMoveIndexDown("rlyGPIO");
+        _deviceMigrateMoveIndexDown("rlyType");
     }
 
 }
 
-void _hardwareSpecific() {
+void _deviceSpecific() {
 
     // These devices use the hardware UART
     // to communicate to secondary microcontrollers
-    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
-        Serial.begin(DEBUG_SERIAL_SPEED);
+    #if \
+        (ESPURNA_IMAGE == ESPURNA_SONOFF_RFBRIDGE) || \
+        (ESPURNA_IMAGE == ESPURNA_SONOFF_DUAL) || \
+        (ESPURNA_IMAGE == ESPURNA_STM)
+        unsigned long speed = getSetting("dbgSpeed", DEBUG_SERIAL_SPEED).toInt();
+        Serial.begin(speed);
     #endif
 
 }
 
 // -----------------------------------------------------------------------------
 
-void hardwareSetup() {
+void deviceSetup() {
 
-    _hardwareMigrate();
-    if (getSetting("board", 1).toInt() != 1) {
-        _hardwareLoad();
-    }
-    _hardwareSpecific();
+    _deviceMigrate();
+    _deviceLoad();
+    _deviceSpecific();
 
     // Check match firmware-configuration
     // At the time being, this will always match.
