@@ -850,8 +850,8 @@ void _sensorConfigure() {
     // Update filter sizes
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
         sensor_magnitude_t magnitude = _magnitudes[i];
-        _magnitude.filter->resize(_sensor_report_every);
-        _magnitude.min_change = getSetting("tmpDelta", magnitude.type, 0).toFloat();
+        magnitude.filter->resize(_sensor_report_every);
+        magnitude.min_change = getSetting("tmpDelta", magnitude.type, 0).toFloat();
     }
 
     // Save settings

@@ -1061,7 +1061,7 @@ void lightSetup() {
         const char * map = getSetting("myMapping", "").c_str();
         unsigned char channels = strlen(map);
         for (unsigned char i=0; i<channels; i++) {
-            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0, 0, 1, map[i] - '0'});
+            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0, 0, 1, (unsigned char) map[i] - '0'});
         }
 
     }
