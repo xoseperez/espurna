@@ -152,15 +152,10 @@ void webRequestRegister(web_request_callback_f callback);
     typedef std::function<void(JsonObject&)> ws_on_send_callback_f;
     void wsOnSendRegister(ws_on_send_callback_f callback);
     void wsSend(ws_on_send_callback_f sender);
-
     typedef std::function<void(uint32_t, const char *, JsonObject&)> ws_on_action_callback_f;
     void wsOnActionRegister(ws_on_action_callback_f callback);
-
     typedef std::function<void(void)> ws_on_after_parse_callback_f;
     void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
-
-    typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
-    void wsOnReceiveRegister(ws_on_receive_callback_f callback);
 #else
     #define ws_on_send_callback_f void *
     #define ws_on_action_callback_f void *

@@ -55,20 +55,20 @@ void _rfm69WebSocketOnSend(JsonObject& root) {
 
 }
 
-bool _rfm69WebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "rfm69", 5) == 0) return true;
-    if (strncmp(key, "node" , 4) == 0) return true;
-    if (strncmp(key, "key"  , 3) == 0) return true;
-    if (strncmp(key, "topic", 5) == 0) return true;
-    return false;
-}
-
 void _rfm69WebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
     if (strcmp(action, "clear-counts") == 0) _rfm69Clear();
 }
 
 
 #endif // WEB_SUPPORT
+
+bool _rfm69KeyCheck(const char * key) {
+    if (strncmp(key, "rfm69", 5) == 0) return true;
+    if (strncmp(key, "node" , 4) == 0) return true;
+    if (strncmp(key, "key"  , 3) == 0) return true;
+    if (strncmp(key, "topic", 5) == 0) return true;
+    return false;
+}
 
 void _rfm69CleanNodes(unsigned char num) {
 
@@ -269,12 +269,11 @@ void rfm69Setup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_rfm69WebSocketOnSend);
-        wsOnReceiveRegister(_rfm69WebSocketOnReceive);
         wsOnAfterParseRegister(_rfm69Configure);
         wsOnActionRegister(_rfm69WebSocketOnAction);
     #endif
 
-    // Register loop
+    settingsRegisterKeyCheck(_rfm69KeyCheck);
     espurnaRegisterLoop(_rfm69Loop);
 
 }
