@@ -295,7 +295,7 @@
 #endif
 
 #ifndef EVENTS_INTERRUPT_MODE
-#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 50 millis
@@ -318,7 +318,7 @@
 #endif
 
 #ifndef GEIGER_INTERRUPT_MODE
-#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
 #define GEIGER_DEBOUNCE                 25      // Do not register events within less than 25 millis.
