@@ -975,9 +975,9 @@ function initChannels(num) {
     var max = num;
     if (colors) {
         max = num % 3;
-        if ((max > 0) & useWhite) {
+        if ((max > 0) & !useWhite) {
             max--;
-            if (useCCT) {
+            if (!useCCT) {
               max--;
             }
         }
