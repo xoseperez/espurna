@@ -44,6 +44,7 @@ void _haSendMagnitudes() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
             config.printTo(output);
+            jsonBuffer.clear();
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -72,11 +73,11 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
         config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
-        config["payload_on"] = String("1");
-        config["payload_off"] = String("0");
+        config["payload_on"] = String(HOMEASSISTANT_PAYLOAD_ON);
+        config["payload_off"] = String(HOMEASSISTANT_PAYLOAD_OFF);
         config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-        config["payload_available"] = String("1");
-        config["payload_not_available"] = String("0");
+        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_ON);
+        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_OFF);
     }
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -123,6 +124,7 @@ void _haSendSwitches() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendSwitch(i, config);
             config.printTo(output);
+            jsonBuffer.clear();
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -163,6 +165,8 @@ String _haGetConfig() {
         }
         output += "\n";
 
+        jsonBuffer.clear();
+
     }
 
     #if SENSOR_SUPPORT
@@ -185,6 +189,8 @@ String _haGetConfig() {
                 output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
             }
             output += "\n";
+
+            jsonBuffer.clear();
 
         }
 
@@ -255,13 +261,17 @@ void _haInitCommands() {
     settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
     settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
-        wsSend(_haWebSocketOnSend);
+        #if WEB_SUPPORT
+            wsSend(_haWebSocketOnSend);
+        #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 }

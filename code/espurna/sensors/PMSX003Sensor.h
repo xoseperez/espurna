@@ -12,7 +12,12 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
+#if PMS_USE_SOFT
 #include <SoftwareSerial.h>
+#endif
+
+// Generic data
+#define PMS_BAUD_RATE       9600
 
 // Type of sensor
 #define PMS_TYPE_X003       0
@@ -46,7 +51,7 @@ const static struct {
 class PMSX003 {
 
     protected:
-        SoftwareSerial *_serial = NULL; // Should initialized by child class
+        Stream *_serial = NULL; // Should initialized by child class
 
     public:
 
@@ -175,7 +180,13 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
             _dirty = true;
         }
 
-        // Should call setType after constrcutor immediately to enable corresponding slot count
+        void setSerial(HardwareSerial * serial) {
+            _soft = false;
+            _serial = serial;
+            _dirty = true;
+        }
+
+        // Should call setType after constructor immediately to enable corresponding slot count
         void setType(unsigned char type) {
             _type = type;
             _count = pms_specs[_type].slot_count;
@@ -204,30 +215,45 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
             if (!_dirty) return;
 
-            if (_serial) delete _serial;
+            if (_soft) {
+                if (_serial) delete _serial;
+                _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
+                static_cast<SoftwareSerial*>(_serial)->enableIntTx(false);
+            }
 
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 64);
-            _serial->enableIntTx(false);
-            _serial->begin(9600);
+            if (_soft) {
+                static_cast<SoftwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
+            } else {
+                static_cast<HardwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
+            }
+
             passiveMode();
 
             _startTime = millis();
             _ready = true;
             _dirty = false;
-
         }
 
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "%s @ SwSerial(%u,%u)", pms_specs[_type].name, _pin_rx, _pin_tx);
+            if (_soft) {
+                snprintf(buffer, sizeof(buffer), "%s @ SwSerial(%u,%u)", pms_specs[_type].name, _pin_rx, _pin_tx);
+            } else {
+                snprintf(buffer, sizeof(buffer), "%s @ HwSerial", pms_specs[_type].name);
+            }
+
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             char buffer[36] = {0};
-            snprintf(buffer, sizeof(buffer), "%d @ %s @ SwSerial(%u,%u)", int(index + 1), pms_specs[_type].name, _pin_rx, _pin_tx);
+            if (_soft) {
+                snprintf(buffer, sizeof(buffer), "%d @ %s @ SwSerial(%u,%u)", int(index + 1), pms_specs[_type].name, _pin_rx, _pin_tx);
+            } else {
+                snprintf(buffer, sizeof(buffer), "%d @ %s @ HwSerial", int(index + 1), pms_specs[_type].name);
+            }
             return String(buffer);
         }
 
@@ -301,7 +327,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
             #endif
 
             requestRead();
-            
+
         }
 
         // Current value for slot # index
@@ -310,6 +336,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         }
 
     protected:
+        bool _soft = true;
         unsigned int _pin_rx;
         unsigned int _pin_tx;
         unsigned long _startTime;
@@ -322,4 +349,4 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
 };
 
-#endif // SENSOR_SUPPORT && PMS_SUPPORT
+#endif // SENSOR_SUPPORT && PMSX003_SUPPORT

@@ -114,6 +114,8 @@ void _sensorWebSocketSendData(JsonObject& root) {
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
 
         sensor_magnitude_t magnitude = _magnitudes[i];
+        if (magnitude.type == MAGNITUDE_EVENT) continue;
+
         unsigned char decimals = _magnitudeDecimals(magnitude.type);
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
@@ -183,6 +185,7 @@ void _sensorWebSocketStart(JsonObject& root) {
 
         #if PZEM004T_SUPPORT
             if (sensor->getID() == SENSOR_PZEM004T_ID) {
+                root["pzemVisible"] = 1;
                 root["pwrVisible"] = 1;
             }
         #endif
@@ -220,6 +223,10 @@ void _sensorWebSocketStart(JsonObject& root) {
 
 }
 
+#endif // WEB_SUPPORT
+
+#if API_SUPPORT
+
 void _sensorAPISetup() {
 
     for (unsigned char magnitude_id=0; magnitude_id<_magnitudes.size(); magnitude_id++) {
@@ -239,7 +246,8 @@ void _sensorAPISetup() {
     }
 
 }
-#endif
+
+#endif // API_SUPPORT
 
 #if TERMINAL_SUPPORT
 
@@ -323,6 +331,8 @@ void _sensorLoad() {
     #if ANALOG_SUPPORT
     {
         AnalogSensor * sensor = new AnalogSensor();
+        sensor->setSamples(ANALOG_SAMPLES);
+        sensor->setDelay(ANALOG_DELAY);
         _sensors.push_back(sensor);
     }
     #endif
@@ -443,9 +453,22 @@ void _sensorLoad() {
     {
         EventSensor * sensor = new EventSensor();
         sensor->setGPIO(EVENTS_PIN);
-        sensor->setMode(EVENTS_PIN_MODE);
+        sensor->setTrigger(EVENTS_TRIGGER);
+        sensor->setPinMode(EVENTS_PIN_MODE);
         sensor->setDebounceTime(EVENTS_DEBOUNCE);
         sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if GEIGER_SUPPORT
+    {
+        GeigerSensor * sensor = new GeigerSensor();        // Create instance of thr Geiger module.
+        sensor->setGPIO(GEIGER_PIN);                       // Interrupt pin of the attached geiger counter board.
+        sensor->setMode(GEIGER_PIN_MODE);                  // This pin is an input.
+        sensor->setDebounceTime(GEIGER_DEBOUNCE);          // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);   // Interrupt triggering: edge detection rising.
+        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);  // Conversion factor from counts per minute to µSv/h
         _sensors.push_back(sensor);
     }
     #endif
@@ -458,11 +481,13 @@ void _sensorLoad() {
     }
     #endif
 
-    #if HCSR04_SUPPORT
+    #if SONAR_SUPPORT
     {
-        HCSR04Sensor * sensor = new HCSR04Sensor();
-        sensor->setTrigger(HCSR04_TRIGGER);
-        sensor->setEcho(HCSR04_ECHO);
+        SonarSensor * sensor = new SonarSensor();
+        sensor->setEcho(SONAR_ECHO);
+        sensor->setIterations(SONAR_ITERATIONS);
+        sensor->setMaxDistance(SONAR_MAX_DISTANCE);
+        sensor->setTrigger(SONAR_TRIGGER);
         _sensors.push_back(sensor);
     }
     #endif
@@ -487,6 +512,20 @@ void _sensorLoad() {
     }
     #endif
 
+    #if NTC_SUPPORT
+    {
+        NTCSensor * sensor = new NTCSensor();
+        sensor->setSamples(NTC_SAMPLES);
+        sensor->setDelay(NTC_DELAY);
+        sensor->setUpstreamResistor(NTC_R_UP);
+        sensor->setDownstreamResistor(NTC_R_DOWN);
+        sensor->setBeta(NTC_BETA);
+        sensor->setR0(NTC_R0);
+        sensor->setT0(NTC_T0);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if SENSEAIR_SUPPORT
     {
         SenseAirSensor * sensor = new SenseAirSensor();
@@ -499,8 +538,12 @@ void _sensorLoad() {
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
-        sensor->setRX(PMS_RX_PIN);
-        sensor->setTX(PMS_TX_PIN);
+        #if PMS_USE_SOFT
+            sensor->setRX(PMS_RX_PIN);
+            sensor->setTX(PMS_TX_PIN);
+        #else
+            sensor->setSerial(& PMS_HW_PORT);
+        #endif
         sensor->setType(PMS_TYPE);
         _sensors.push_back(sensor);
     }
@@ -554,8 +597,17 @@ void _sensorLoad() {
 
 }
 
-void _sensorCallback(unsigned char i, unsigned char type, const char * payload) {
-    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, payload);
+void _sensorCallback(unsigned char i, unsigned char type, double value) {
+
+    DEBUG_MSG_P(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
+
+    for (unsigned char k=0; k<_magnitudes.size(); k++) {
+        if ((_sensors[i] == _magnitudes[k].sensor) && (type == _magnitudes[k].type)) {
+            _sensorReport(k, value);
+            return;
+        }
+    }
+
 }
 
 void _sensorInit() {
@@ -592,7 +644,7 @@ void _sensorInit() {
             new_magnitude.min_change = 0;
             if (type == MAGNITUDE_DIGITAL) {
                 new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_EVENTS) {
+            } else if (type == MAGNITUDE_COUNT || type == MAGNITUDE_GEIGER_CPM|| type == MAGNITUDE_GEIGER_SIEVERT) {  // For geiger counting moving average filter is the most appropriate if needed at all.
                 new_magnitude.filter = new MovingAverageFilter();
             } else {
                 new_magnitude.filter = new MedianFilter();
@@ -607,8 +659,8 @@ void _sensorInit() {
         }
 
         // Hook callback
-        _sensors[i]->onEvent([i](unsigned char type, const char * payload) {
-            _sensorCallback(i, type, payload);
+        _sensors[i]->onEvent([i](unsigned char type, double value) {
+            _sensorCallback(i, type, value);
         });
 
         // Custom initializations
@@ -631,13 +683,13 @@ void _sensorInit() {
 
                 double value;
 
-                value = getSetting("pwrRatioC", 0).toFloat();
+                value = getSetting("pwrRatioC", HLW8012_CURRENT_RATIO).toFloat();
                 if (value > 0) sensor->setCurrentRatio(value);
 
-                value = getSetting("pwrRatioV", 0).toFloat();
+                value = getSetting("pwrRatioV", HLW8012_VOLTAGE_RATIO).toFloat();
                 if (value > 0) sensor->setVoltageRatio(value);
 
-                value = getSetting("pwrRatioP", 0).toFloat();
+                value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
             }
@@ -691,7 +743,7 @@ void _sensorConfigure() {
                 double value;
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
                     sensor->expectedPower(0, value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio(0));
                 }
@@ -778,17 +830,17 @@ void _sensorConfigure() {
                 double value;
                 CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
-                if (value = getSetting("pwrExpectedC", 0).toFloat()) {
+                if ((value = getSetting("pwrExpectedC", 0).toFloat())) {
                     sensor->expectedCurrent(value);
                     setSetting("pwrRatioC", sensor->getCurrentRatio());
                 }
 
-                if (value = getSetting("pwrExpectedV", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedV", 0).toInt())) {
                     sensor->expectedVoltage(value);
                     setSetting("pwrRatioV", sensor->getVoltageRatio());
                 }
 
-                if (value = getSetting("pwrExpectedP", 0).toInt()) {
+                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
                     sensor->expectedPower(value);
                     setSetting("pwrRatioP", sensor->getPowerRatio());
                 }
@@ -823,6 +875,72 @@ void _sensorConfigure() {
     delSetting("pwrResetCalibration");
     delSetting("pwrResetE");
     saveSettings();
+
+}
+
+void _sensorReport(unsigned char index, double value) {
+
+    sensor_magnitude_t magnitude = _magnitudes[index];
+    unsigned char decimals = _magnitudeDecimals(magnitude.type);
+
+    char buffer[10];
+    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+
+    #if BROKER_SUPPORT
+        brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+    #endif
+
+    #if MQTT_SUPPORT
+
+        mqttSend(magnitudeTopicIndex(index).c_str(), buffer);
+
+        #if SENSOR_PUBLISH_ADDRESSES
+            char topic[32];
+            snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
+            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+                mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
+            } else {
+                mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
+            }
+        #endif // SENSOR_PUBLISH_ADDRESSES
+
+    #endif // MQTT_SUPPORT
+
+    #if INFLUXDB_SUPPORT
+        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
+            idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
+        } else {
+            idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
+        }
+    #endif // INFLUXDB_SUPPORT
+
+    #if THINGSPEAK_SUPPORT
+        tspkEnqueueMeasurement(index, buffer);
+    #endif
+
+    #if DOMOTICZ_SUPPORT
+    {
+        char key[15];
+        snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), index);
+        if (magnitude.type == MAGNITUDE_HUMIDITY) {
+            int status;
+            if (value > 70) {
+                status = HUMIDITY_WET;
+            } else if (value > 45) {
+                status = HUMIDITY_COMFORTABLE;
+            } else if (value > 30) {
+                status = HUMIDITY_NORMAL;
+            } else {
+                status = HUMIDITY_DRY;
+            }
+            char status_buf[5];
+            itoa(status, status_buf, 10);
+            domoticzSend(key, buffer, status_buf);
+        } else {
+            domoticzSend(key, 0, buffer);
+        }
+    }
+    #endif // DOMOTICZ_SUPPORT
 
 }
 
@@ -914,19 +1032,20 @@ void sensorSetup() {
     // Configure stored values
     _sensorConfigure();
 
+    // Websockets
     #if WEB_SUPPORT
-
-        // Websockets
         wsOnSendRegister(_sensorWebSocketStart);
         wsOnReceiveRegister(_sensorWebSocketOnReceive);
         wsOnSendRegister(_sensorWebSocketSendData);
         wsOnAfterParseRegister(_sensorConfigure);
-
-        // API
-        _sensorAPISetup();
-
     #endif
 
+    // API
+    #if API_SUPPORT
+        _sensorAPISetup();
+    #endif
+
+    // Terminal
     #if TERMINAL_SUPPORT
         _sensorInitCommands();
     #endif
@@ -962,7 +1081,6 @@ void sensorLoop() {
 
         double current;
         double filtered;
-        char buffer[64];
 
         // Pre-read hook
         _sensorPre();
@@ -998,19 +1116,18 @@ void sensorLoop() {
                 magnitude.filter->add(current);
 
                 // Special case
-                if (magnitude.type == MAGNITUDE_EVENTS) {
+                if (magnitude.type == MAGNITUDE_COUNT) {
                     current = magnitude.filter->result();
                 }
 
                 current = _magnitudeProcess(magnitude.type, current);
                 _magnitudes[i].current = current;
 
-                unsigned char decimals = _magnitudeDecimals(magnitude.type);
-
                 // Debug
                 #if SENSOR_DEBUG
                 {
-                    dtostrf(current, 1-sizeof(buffer), decimals, buffer);
+                    char buffer[64];
+                    dtostrf(current, 1-sizeof(buffer), _magnitudeDecimals(magnitude.type), buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
@@ -1032,63 +1149,8 @@ void sensorLoop() {
                     if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {
 
                         _magnitudes[i].reported = filtered;
-                        dtostrf(filtered, 1-sizeof(buffer), decimals, buffer);
 
-                        #if BROKER_SUPPORT
-                            brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
-                        #endif
-
-                        #if MQTT_SUPPORT
-
-                            mqttSend(magnitudeTopicIndex(i).c_str(), buffer);
-
-                            #if SENSOR_PUBLISH_ADDRESSES
-                                char topic[32];
-                                snprintf(topic, sizeof(topic), "%s/%s", SENSOR_ADDRESS_TOPIC, magnitudeTopic(magnitude.type).c_str());
-                                if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                    mqttSend(topic, magnitude.global, magnitude.sensor->address(magnitude.local).c_str());
-                                } else {
-                                    mqttSend(topic, magnitude.sensor->address(magnitude.local).c_str());
-                                }
-                            #endif // SENSOR_PUBLISH_ADDRESSES
-
-                        #endif // MQTT_SUPPORT
-
-                        #if INFLUXDB_SUPPORT
-                            if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-                                idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
-                            } else {
-                                idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
-                            }
-                        #endif // INFLUXDB_SUPPORT
-
-                        #if THINGSPEAK_SUPPORT
-                            tspkEnqueueMeasurement(i, buffer);
-                        #endif
-
-                        #if DOMOTICZ_SUPPORT
-                        {
-                            char key[15];
-                            snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), i);
-                            if (magnitude.type == MAGNITUDE_HUMIDITY) {
-                                int status;
-                                if (filtered > 70) {
-                                    status = HUMIDITY_WET;
-                                } else if (filtered > 45) {
-                                    status = HUMIDITY_COMFORTABLE;
-                                } else if (filtered > 30) {
-                                    status = HUMIDITY_NORMAL;
-                                } else {
-                                    status = HUMIDITY_DRY;
-                                }
-                                char status_buf[5];
-                                itoa(status, status_buf, 10);
-                                domoticzSend(key, buffer, status_buf);
-                            } else {
-                                domoticzSend(key, 0, buffer);
-                            }
-                        }
-                        #endif // DOMOTICZ_SUPPORT
+                        _sensorReport(i, filtered);
 
                     } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
                 } // if (report_count == 0)

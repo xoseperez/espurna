@@ -1,6 +1,7 @@
-/* Flash Split for 1M chips, no SPIFFS */
+/* Flash Split for 1M chips */
 /* sketch 999KB */
-/* eeprom 20KB */
+/* eeprom 4KB */
+/* reserved 16KB */
 
 MEMORY
 {
@@ -12,7 +13,7 @@ MEMORY
 
 PROVIDE ( _SPIFFS_start = 0x402FB000 );
 PROVIDE ( _SPIFFS_end = 0x402FB000 );
-PROVIDE ( _SPIFFS_page = 0 );
-PROVIDE ( _SPIFFS_block = 0 );
+PROVIDE ( _SPIFFS_page = 0x0 );
+PROVIDE ( _SPIFFS_block = 0x0 );
 
-INCLUDE "esp8266.flash.common.ld"
+INCLUDE "../ld/eagle.app.v6.common.ld"

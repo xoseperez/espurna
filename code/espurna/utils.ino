@@ -64,6 +64,16 @@ unsigned int getFreeHeap() {
     return ESP.getFreeHeap();
 }
 
+String getEspurnaModules() {
+    return FPSTR(espurna_modules);
+}
+
+#if SENSOR_SUPPORT
+String getEspurnaSensors() {
+    return FPSTR(espurna_sensors);
+}
+#endif
+
 String buildTime() {
 
     const char time_now[] = __TIME__;   // hh:mm:ss
@@ -211,14 +221,50 @@ void heartbeat() {
 
 #endif /// HEARTBEAT_ENABLED
 
-unsigned int sectors(size_t size) {
+// -----------------------------------------------------------------------------
+// INFO
+// -----------------------------------------------------------------------------
+
+extern "C" uint32_t _SPIFFS_start;
+extern "C" uint32_t _SPIFFS_end;
+
+unsigned int info_bytes2sectors(size_t size) {
     return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+}
+
+unsigned long info_ota_space() {
+    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+}
+
+unsigned long info_filesystem_space() {
+    return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
+}
+
+unsigned long info_eeprom_space() {
+    return EEPROMr.reserved() * SPI_FLASH_SEC_SIZE;
+}
+
+void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool reset) {
+    static unsigned long index = 0;
+    if (reset) index = 0;
+    if (0 == bytes) return;
+    unsigned int _sectors = info_bytes2sectors(bytes);
+    DEBUG_MSG_P(PSTR("[INIT] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
+    index += _sectors;
+}
+
+void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
+    _info_print_memory_layout_line(name, bytes, false);
 }
 
 void info() {
 
     DEBUG_MSG_P(PSTR("\n\n"));
-    DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+    if (strlen(APP_REVISION) > 0) {
+        DEBUG_MSG_P(PSTR("[INIT] %s %s (%s)\n"), (char *) APP_NAME, (char *) APP_VERSION, (char *) APP_REVISION);
+    } else {
+        DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+    }
     DEBUG_MSG_P(PSTR("[INIT] %s\n"), (char *) APP_AUTHOR);
     DEBUG_MSG_P(PSTR("[INIT] %s\n\n"), (char *) APP_WEBSITE);
     DEBUG_MSG_P(PSTR("[INIT] CPU chip ID: 0x%06X\n"), ESP.getChipId());
@@ -235,13 +281,18 @@ void info() {
     DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[INIT] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
-    DEBUG_MSG_P(PSTR("[INIT] Flash sector size: %8u bytes\n"), SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("[INIT] Flash size (CHIP): %8u bytes\n"), ESP.getFlashChipRealSize());
-    DEBUG_MSG_P(PSTR("[INIT] Flash size (SDK):  %8u bytes / %4d sectors\n"), ESP.getFlashChipSize(), sectors(ESP.getFlashChipSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Firmware size:     %8u bytes / %4d sectors\n"), ESP.getSketchSize(), sectors(ESP.getSketchSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Max OTA size:      %8u bytes / %4d sectors\n"), maxSketchSpace(), sectors(maxSketchSpace()));
-    DEBUG_MSG_P(PSTR("[INIT] EEPROM size:       %8u bytes / %4d sectors\n"), settingsMaxSize(), sectors(settingsMaxSize()));
-    DEBUG_MSG_P(PSTR("[INIT] Empty space:       %8u bytes /    4 sectors\n"), 4 * SPI_FLASH_SEC_SIZE);
+
+    _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
+    _info_print_memory_layout_line("Flash size (SDK)", ESP.getFlashChipSize(), true);
+    _info_print_memory_layout_line("Reserved", 1 * SPI_FLASH_SEC_SIZE, true);
+    _info_print_memory_layout_line("Firmware size", ESP.getSketchSize());
+    _info_print_memory_layout_line("Max OTA size", info_ota_space());
+    _info_print_memory_layout_line("SPIFFS size", info_filesystem_space());
+    _info_print_memory_layout_line("EEPROM size", info_eeprom_space());
+    _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
+    DEBUG_MSG_P(PSTR("\n"));
+
+    DEBUG_MSG_P(PSTR("[INIT] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -265,171 +316,12 @@ void info() {
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] SUPPORT:"));
-
-    #if ALEXA_SUPPORT
-        DEBUG_MSG_P(PSTR(" ALEXA"));
-    #endif
-    #if BROKER_SUPPORT
-        DEBUG_MSG_P(PSTR(" BROKER"));
-    #endif
-    #if DEBUG_SERIAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_SERIAL"));
-    #endif
-    #if DEBUG_TELNET_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_TELNET"));
-    #endif
-    #if DEBUG_UDP_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_UDP"));
-    #endif
-    #if DEBUG_WEB_SUPPORT
-        DEBUG_MSG_P(PSTR(" DEBUG_WEB"));
-    #endif
-    #if DOMOTICZ_SUPPORT
-        DEBUG_MSG_P(PSTR(" DOMOTICZ"));
-    #endif
-    #if HOMEASSISTANT_SUPPORT
-        DEBUG_MSG_P(PSTR(" HOMEASSISTANT"));
-    #endif
-    #if I2C_SUPPORT
-        DEBUG_MSG_P(PSTR(" I2C"));
-    #endif
-    #if INFLUXDB_SUPPORT
-        DEBUG_MSG_P(PSTR(" INFLUXDB"));
-    #endif
-    #if LLMNR_SUPPORT
-        DEBUG_MSG_P(PSTR(" LLMNR"));
-    #endif
-    #if MDNS_SERVER_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS_SERVER"));
-    #endif
-    #if MDNS_CLIENT_SUPPORT
-        DEBUG_MSG_P(PSTR(" MDNS_CLIENT"));
-    #endif
-    #if MQTT_SUPPORT
-        DEBUG_MSG_P(PSTR(" MQTT"));
-    #endif
-    #if NETBIOS_SUPPORT
-        DEBUG_MSG_P(PSTR(" NETBIOS"));
-    #endif
-    #if NOFUSS_SUPPORT
-        DEBUG_MSG_P(PSTR(" NOFUSS"));
-    #endif
-    #if NTP_SUPPORT
-        DEBUG_MSG_P(PSTR(" NTP"));
-    #endif
-    #if RF_SUPPORT
-        DEBUG_MSG_P(PSTR(" RF"));
-    #endif
-    #if SCHEDULER_SUPPORT
-        DEBUG_MSG_P(PSTR(" SCHEDULER"));
-    #endif
+    DEBUG_MSG_P(PSTR("[INIT] SUPPORT: %s\n"), getEspurnaModules().c_str());
     #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR(" SENSOR"));
-    #endif
-    #if SPIFFS_SUPPORT
-        DEBUG_MSG_P(PSTR(" SPIFFS"));
-    #endif
-    #if SSDP_SUPPORT
-        DEBUG_MSG_P(PSTR(" SSDP"));
-    #endif
-    #if TELNET_SUPPORT
-        DEBUG_MSG_P(PSTR(" TELNET"));
-    #endif
-    #if TERMINAL_SUPPORT
-        DEBUG_MSG_P(PSTR(" TERMINAL"));
-    #endif
-    #if THINGSPEAK_SUPPORT
-        DEBUG_MSG_P(PSTR(" THINGSPEAK"));
-    #endif
-    #if UART_MQTT_SUPPORT
-        DEBUG_MSG_P(PSTR(" UART_MQTT"));
-    #endif
-    #if WEB_SUPPORT
-        DEBUG_MSG_P(PSTR(" WEB"));
-    #endif
-
-    #if SENSOR_SUPPORT
-
-        DEBUG_MSG_P(PSTR("\n"));
-        DEBUG_MSG_P(PSTR("[INIT] SENSORS:"));
-
-        #if AM2320_SUPPORT
-            DEBUG_MSG_P(PSTR(" AM2320_I2C"));
-        #endif
-        #if ANALOG_SUPPORT
-            DEBUG_MSG_P(PSTR(" ANALOG"));
-        #endif
-        #if BH1750_SUPPORT
-            DEBUG_MSG_P(PSTR(" BH1750"));
-        #endif
-        #if BMX280_SUPPORT
-            DEBUG_MSG_P(PSTR(" BMX280"));
-        #endif
-        #if CSE7766_SUPPORT
-            DEBUG_MSG_P(PSTR(" CSE7766"));
-        #endif
-        #if DALLAS_SUPPORT
-            DEBUG_MSG_P(PSTR(" DALLAS"));
-        #endif
-        #if DHT_SUPPORT
-            DEBUG_MSG_P(PSTR(" DHTXX"));
-        #endif
-        #if DIGITAL_SUPPORT
-            DEBUG_MSG_P(PSTR(" DIGITAL"));
-        #endif
-        #if ECH1560_SUPPORT
-            DEBUG_MSG_P(PSTR(" ECH1560"));
-        #endif
-        #if EMON_ADC121_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ADC121"));
-        #endif
-        #if EMON_ADS1X15_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ADX1X15"));
-        #endif
-        #if EMON_ANALOG_SUPPORT
-            DEBUG_MSG_P(PSTR(" EMON_ANALOG"));
-        #endif
-        #if EVENTS_SUPPORT
-            DEBUG_MSG_P(PSTR(" EVENTS"));
-        #endif
-        #if GUVAS12SD_SUPPORT
-            DEBUG_MSG_P(PSTR(" GUVAS12SD"));
-        #endif
-        #if HCSR04_SUPPORT
-            DEBUG_MSG_P(PSTR(" HCSR04"));
-        #endif
-        #if HLW8012_SUPPORT
-            DEBUG_MSG_P(PSTR(" HLW8012"));
-        #endif
-        #if MHZ19_SUPPORT
-            DEBUG_MSG_P(PSTR(" MHZ19"));
-        #endif
-        #if PMSX003_SUPPORT
-            DEBUG_MSG_P(PSTR(" PMSX003"));
-        #endif
-        #if PZEM004T_SUPPORT
-            DEBUG_MSG_P(PSTR(" PZEM004T"));
-        #endif
-        #if SENSEAIR_SUPPORT
-            DEBUG_MSG_P(PSTR(" SENSEAIR"));
-        #endif
-        #if SHT3X_I2C_SUPPORT
-            DEBUG_MSG_P(PSTR(" SHT3X_I2C"));
-        #endif
-        #if SI7021_SUPPORT
-            DEBUG_MSG_P(PSTR(" SI7021"));
-        #endif
-        #if TMP3X_SUPPORT
-            DEBUG_MSG_P(PSTR(" TMP3X"));
-        #endif
-        #if V9261F_SUPPORT
-            DEBUG_MSG_P(PSTR(" V9261F"));
-        #endif
-
+        DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-
-    DEBUG_MSG_P(PSTR("\n\n"));
+    DEBUG_MSG_P(PSTR("[INIT] WEBUI IMAGE CODE: %u\n"), WEBUI_IMAGE);
+    DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
@@ -508,7 +400,7 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 unsigned char resetReason() {
     static unsigned char status = 255;
     if (status == 255) {
-        status = EEPROM.read(EEPROM_CUSTOM_RESET);
+        status = EEPROMr.read(EEPROM_CUSTOM_RESET);
         if (status > 0) resetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
@@ -516,8 +408,8 @@ unsigned char resetReason() {
 }
 
 void resetReason(unsigned char reason) {
-    EEPROM.write(EEPROM_CUSTOM_RESET, reason);
-    EEPROM.commit();
+    EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
+    EEPROMr.commit();
 }
 
 void reset(unsigned char reason) {
@@ -551,4 +443,20 @@ void nice_delay(unsigned long ms) {
 // This method is called by the SDK to know where to connect the ADC
 int __get_adc_mode() {
     return (int) (ADC_MODE_VALUE);
+}
+
+bool isNumber(const char * s) {
+    unsigned char len = strlen(s);
+    bool decimal = false;
+    for (unsigned char i=0; i<len; i++) {
+        if (s[i] == '-') {
+            if (i>0) return false;
+        } else if (s[i] == '.') {
+            if (decimal) return false;
+            decimal = true;
+        } else if (!isdigit(s[i])) {
+            return false;
+        }
+    }
+    return true;
 }

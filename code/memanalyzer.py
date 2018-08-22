@@ -55,7 +55,7 @@ def file_size(file):
 
 
 def analyse_memory(elf_file):
-    command = "%s -t '%s' " % (objdump_binary, elf_file)
+    command = "%s -t '%s'" % (objdump_binary, elf_file)
     response = subprocess.check_output(shlex.split(command))
     if isinstance(response, bytes):
         response = response.decode('utf-8')
@@ -102,7 +102,7 @@ def run(env_, modules_):
     flags = ""
     for item in modules_.items():
         flags += "-D%s_SUPPORT=%d " % item
-    command = "export ESPURNA_BOARD=\"WEMOS_D1_MINI_RELAYSHIELD\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s" % (flags, env_)
+    command = "ESPURNA_BOARD=\"WEMOS_D1_MINI_RELAYSHIELD\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s 2>/dev/null" % (flags, env_)
     subprocess.check_call(command, shell=True)
 
 
@@ -250,7 +250,5 @@ try:
 
 except:
     raise
-
-subprocess.check_call("export ESPURNA_BOARD=\"\"; export ESPURNA_FLAGS=\"\"", shell=True)
 
 print("\n")

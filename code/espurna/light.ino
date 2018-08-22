@@ -12,6 +12,10 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <vector>
 
+extern "C" {
+    #include "libs/fs_math.h"
+}
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define PWM_CHANNEL_NUM_MAX LIGHT_CHANNELS
 extern "C" {
@@ -275,53 +279,39 @@ void _fromHSV(const char * hsv) {
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
 // https://github.com/stelgenhof/AiLight
-void _fromKelvin(unsigned long kelvin, bool setMireds) {
+void _fromKelvin(unsigned long kelvin) {
 
     if (!_light_has_color) return;
 
-    if (setMireds) {
-      _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
-    }
+    _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
 
     if (_light_use_cct) {
       _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
       return;
     }
 
-
     // Calculate colors
+    kelvin /= 100;
     unsigned int red = (kelvin <= 66)
         ? LIGHT_MAX_VALUE
-        : 329.698727446 * pow((kelvin - 60), -0.1332047592);
+        : 329.698727446 * fs_pow((double) (kelvin - 60), -0.1332047592);
     unsigned int green = (kelvin <= 66)
-        ? 99.4708025861 * log(kelvin) - 161.1195681661
-        : 288.1221695283 * pow(kelvin, -0.0755148492);
+        ? 99.4708025861 * fs_log(kelvin) - 161.1195681661
+        : 288.1221695283 * fs_pow((double) kelvin, -0.0755148492);
     unsigned int blue = (kelvin >= 66)
         ? LIGHT_MAX_VALUE
         : ((kelvin <= 19)
             ? 0
-            : 138.5177312231 * log(kelvin - 10) - 305.0447927307);
+            : 138.5177312231 * fs_log(kelvin - 10) - 305.0447927307);
 
     _setRGBInputValue(red, green, blue);
-}
 
-void _fromKelvin(unsigned long kelvin) {
-  _fromKelvin(kelvin, true);
 }
 
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
 void _fromMireds(unsigned long mireds) {
-    if (!_light_has_color) return;
-
-    _light_mireds = mireds = constrain(mireds, LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
-
-    if (_light_use_cct) {
-      _setRGBInputValue(LIGHT_MAX_VALUE, LIGHT_MAX_VALUE, LIGHT_MAX_VALUE);
-      return;
-    }
-
-    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000) / 100;
-    _fromKelvin(kelvin, false);
+    unsigned long kelvin = constrain(1000000UL / mireds, 1000, 40000);
+    _fromKelvin(kelvin);
 }
 
 // -----------------------------------------------------------------------------
@@ -836,6 +826,10 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     }
 }
 
+#endif
+
+#if API_SUPPORT
+
 void _lightAPISetup() {
   // API entry points (protected with apikey)
   if (_light_has_color) {
@@ -906,7 +900,7 @@ void _lightAPISetup() {
   }
 }
 
-#endif // WEB_SUPPORT
+#endif // API_SUPPORT
 
 #if TERMINAL_SUPPORT
 
@@ -1079,7 +1073,6 @@ void lightSetup() {
     _lightColorRestore();
 
     #if WEB_SUPPORT
-        _lightAPISetup();
         wsOnSendRegister(_lightWebSocketOnSend);
         wsOnActionRegister(_lightWebSocketOnAction);
         wsOnReceiveRegister(_lightWebSocketOnReceive);
@@ -1089,6 +1082,10 @@ void lightSetup() {
             #endif
             _lightConfigure();
         });
+    #endif
+
+    #if API_SUPPORT
+        _lightAPISetup();
     #endif
 
     #if MQTT_SUPPORT

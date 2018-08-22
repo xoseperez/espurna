@@ -20,83 +20,86 @@ unsigned long _ir_last_toggle = 0;
 // PRIVATE
 // -----------------------------------------------------------------------------
 
-void _irProcessCode(unsigned long code) {
+void _irProcessCode(unsigned long code, unsigned char type) {
 
-    static unsigned long last_code;
-    boolean found = false;
+    // Check valid code
+    unsigned long last_code = 0;
+    unsigned long last_time = 0;
+    if (code == 0xFFFFFFFF) return;
+    if (type == 0xFF) return;
+    if ((last_code == code) && (millis() - last_time < IR_DEBOUNCE)) return;
+    last_code = code;
+    DEBUG_MSG_P(PSTR("[IR] Received 0x%08X (%d)\n"), code, type);
 
-    // Repeat last valid code
-    DEBUG_MSG_P(PSTR("[IR] Received 0x%06X\n"), code);
-    if (code == 0xFFFFFFFF) {
-        DEBUG_MSG_P(PSTR("[IR] Processing 0x%06X\n"), code);
-        code = last_code;
-    }
+    #if IR_BUTTON_SET > 0
 
-    for (unsigned char i = 0; i < IR_BUTTON_COUNT ; i++) {
+        boolean found = false;
 
-        unsigned long button_code = pgm_read_dword(&IR_BUTTON[i][0]);
-        if (code == button_code) {
+        for (unsigned char i = 0; i < IR_BUTTON_COUNT ; i++) {
 
-            unsigned long button_mode = pgm_read_dword(&IR_BUTTON[i][1]);
-            unsigned long button_value = pgm_read_dword(&IR_BUTTON[i][2]);
+            uint32_t button_code = pgm_read_dword(&IR_BUTTON[i][0]);
+            if (code == button_code) {
 
-            if (button_mode == IR_BUTTON_MODE_STATE) {
-                relayStatus(0, button_value);
-            }
+                unsigned long button_mode = pgm_read_dword(&IR_BUTTON[i][1]);
+                unsigned long button_value = pgm_read_dword(&IR_BUTTON[i][2]);
 
-            if (button_mode == IR_BUTTON_MODE_TOGGLE) {
+                if (button_mode == IR_BUTTON_MODE_STATE) {
+                    relayStatus(0, button_value);
+                }
 
-                if (millis() - _ir_last_toggle > 250){
+                if (button_mode == IR_BUTTON_MODE_TOGGLE) {
                     relayToggle(button_value);
-                    _ir_last_toggle = millis();
-                } else {
-                    DEBUG_MSG_P(PSTR("[IR] Ignoring repeated code\n"));
-                }
-            }
-
-            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-
-                if (button_mode == IR_BUTTON_MODE_BRIGHTER) {
-                    lightBrightnessStep(button_value ? 1 : -1);
-                    nice_delay(150); //debounce
                 }
 
-                if (button_mode == IR_BUTTON_MODE_RGB) {
-                    lightColor(button_value);
-                }
+                #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
-                /*
-                #if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
-                    if (button_mode == IR_BUTTON_MODE_EFFECT) {
-                        _buttonAnimMode(button_value);
+                    if (button_mode == IR_BUTTON_MODE_BRIGHTER) {
+                        lightBrightnessStep(button_value ? 1 : -1);
+                        nice_delay(150); //debounce
                     }
+
+                    if (button_mode == IR_BUTTON_MODE_RGB) {
+                        lightColor(button_value);
+                    }
+
+                    /*
+                    #if LIGHT_PROVIDER == LIGHT_PROVIDER_FASTLED
+                        if (button_mode == IR_BUTTON_MODE_EFFECT) {
+                            _buttonAnimMode(button_value);
+                        }
+                    #endif
+                    */
+
+                    /*
+                    if (button_mode == IR_BUTTON_MODE_HSV) {
+                        lightColor(button_value);
+                    }
+                    */
+
+                    lightUpdate(true, true);
+
                 #endif
-                */
 
-                /*
-                if (button_mode == IR_BUTTON_MODE_HSV) {
-                    lightColor(button_value);
-                }
-                */
+                found = true;
+                break;
 
-                lightUpdate(true, true);
+    		}
 
-            #endif
+    	}
 
-            found = true;
-            last_code = code;
-            break;
+    	if (!found) {
+    		DEBUG_MSG_P(PSTR("[IR] Ignoring code\n"));
+    	}
 
-		}
+    #endif
 
-	}
-
-	if (!found) {
-		DEBUG_MSG_P(PSTR("[IR] Ignoring code\n"));
-	}
+    #if MQTT_SUPPORT
+        char buffer[16];
+        snprintf_P(buffer, sizeof(buffer), "0x%08X", code);
+        mqttSend(MQTT_TOPIC_IR, buffer);
+    #endif
 
 }
-
 
 // -----------------------------------------------------------------------------
 // PUBLIC API
@@ -104,7 +107,7 @@ void _irProcessCode(unsigned long code) {
 
 void irSetup() {
 
-    _ir_recv = new IRrecv(IR_PIN);
+    _ir_recv = new IRrecv(IR_RECEIVER_PIN);
     _ir_recv->enableIRIn();
 
     // Register loop
@@ -114,8 +117,7 @@ void irSetup() {
 
 void irLoop() {
     if (_ir_recv->decode(&_ir_results)) {
-		unsigned long code = _ir_results.value;
-		_irProcessCode(code);
+		_irProcessCode(_ir_results.value, _ir_results.decode_type);
 		_ir_recv->resume(); // Receive the next value
 	}
 }

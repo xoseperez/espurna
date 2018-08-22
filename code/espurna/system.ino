@@ -6,7 +6,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include <EEPROM.h>
+#include <EEPROM_Rotate.h>
 
 // -----------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ unsigned short int _load_average = 100;
 bool _systemStable = true;
 
 void systemCheck(bool stable) {
-    unsigned char value = EEPROM.read(EEPROM_CRASH_COUNTER);
+    unsigned char value = EEPROMr.read(EEPROM_CRASH_COUNTER);
     if (stable) {
         value = 0;
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
@@ -41,8 +41,8 @@ void systemCheck(bool stable) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         }
     }
-    EEPROM.write(EEPROM_CRASH_COUNTER, value);
-    EEPROM.commit();
+    EEPROMr.write(EEPROM_CRASH_COUNTER, value);
+    EEPROMr.commit();
 }
 
 bool systemCheck() {
@@ -140,15 +140,13 @@ void _systemSetupSpecificHardware() {
 
     // These devices use the hardware UART
     // to communicate to secondary microcontrollers
-    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(STM_RELAY)
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
         Serial.begin(SERIAL_BAUDRATE);
     #endif
 
 }
 
 void systemSetup() {
-
-    EEPROM.begin(EEPROM_SIZE);
 
     #if SPIFFS_SUPPORT
         SPIFFS.begin();
