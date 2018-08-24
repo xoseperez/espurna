@@ -1223,10 +1223,6 @@ function processData(data) {
             initChannels(len);
             for (i in value) {
                 var ch = value[i];
-                //$("input.slider[data=v" + i + "]").val(ch.value);
-                //$("span.slider[data=v" + i + "]").html(ch.value);
-                //$("input.slider[data=c" + i + "]").val(ch.correction);
-                //$("span.slider[data=c" + i + "]").html(ch.correction);
                 $("input.slider[data=" + i + "][datatype=value]").val(ch.value);
                 $("span.slider[data=" + i + "][datatype=value]").html(ch.value);
                 $("input.slider[data=" + i + "][datatype=correction]").val(ch.correction);
