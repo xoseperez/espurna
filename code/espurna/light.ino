@@ -794,7 +794,9 @@ void _lightWebSocketOnSend(JsonObject& root) {
     }
     JsonArray& channels = root.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channel.size(); id++) {
-        channels.add(lightChannel(id));
+        JsonObject& channel = channels.createNestedObject();
+        channel["value"] = lightChannel(id);
+        channel["correction"] = _light_channel[id].correction;
     }
 }
 
@@ -825,6 +827,13 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     if (strcmp(action, "channel") == 0) {
         if (data.containsKey("id") && data.containsKey("value")) {
             lightChannel(data["id"], data["value"]);
+            lightUpdate(true, true);
+        }
+    }
+
+    if (strcmp(action, "correction") == 0) {
+        if (data.containsKey("id") && data.containsKey("value")) {
+            _light_channel[data["id"]].correction = data["value"];
             lightUpdate(true, true);
         }
     }
