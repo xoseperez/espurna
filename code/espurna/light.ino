@@ -35,6 +35,7 @@ typedef struct {
     unsigned char inputValue;   // value that has been inputted
     unsigned char value;        // normalized value including brightness
     unsigned char shadow;       // represented value
+    unsigned char correction;   // correction factor
     double current;             // transition value
 } channel_t;
 std::vector<channel_t> _light_channel;
@@ -392,18 +393,19 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
+unsigned int _toPWM(unsigned long value, bool gamma, bool reverse, unsigned char correction) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
     if (gamma) value = _light_gamma_table[value];
     if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
     if (reverse) value = LIGHT_LIMIT_PWM - value;
+    if (correction<255) value = (value * correction) / 255;
     return value;
 }
 
 // Returns a PWM value for the given channel ID
 unsigned int _toPWM(unsigned char id) {
     bool useGamma = _light_use_gamma && _light_has_color && (id < 3);
-    return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse);
+    return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse, _light_channel[id].correction);
 }
 
 void _shadow() {
@@ -463,6 +465,7 @@ void _lightProviderUpdate() {
 void _lightColorSave() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         setSetting("ch", i, _light_channel[i].inputValue);
+        setSetting("chCorrection", i, _light_channel[i].correction);
     }
     setSetting("brightness", _light_brightness);
     setSetting("mireds", _light_mireds);
@@ -472,6 +475,7 @@ void _lightColorSave() {
 void _lightColorRestore() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         _light_channel[i].inputValue = getSetting("ch", i, i==0 ? 255 : 0).toInt();
+        _light_channel[i].correction = getSetting("chCorrection", i, 255).toInt();
     }
     _light_brightness = getSetting("brightness", LIGHT_MAX_BRIGHTNESS).toInt();
     _light_mireds = getSetting("mireds", _light_mireds).toInt();
