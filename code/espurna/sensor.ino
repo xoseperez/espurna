@@ -193,7 +193,7 @@ void _sensorWebSocketStart(JsonObject& root) {
     }
 
     if (_magnitudes.size() > 0) {
-        root["sensorsVisible"] = 1;
+        root["snsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
         root["pwrUnits"] = _sensor_power_units;
         root["energyUnits"] = _sensor_energy_units;

@@ -48,3 +48,26 @@
 #ifndef WEBUI_IMAGE
     #define WEBUI_IMAGE        WEBUI_IMAGE_SMALL
 #endif
+
+#include <pgmspace.h>
+
+PROGMEM const char espurna_webui[] =
+    #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
+        "SMALL"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
+        "LIGHT"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
+        "SENSOR"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
+        "RFBRIDGE"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_RFM69
+        "RFM69"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_FULL
+        "FULL"
+    #endif
+    "";
