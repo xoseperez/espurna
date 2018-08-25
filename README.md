@@ -1,7 +1,7 @@
 # Espurna customization (dirty plugins)
 ## MQTT<-->IR Bridge
 
-Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB_TX_PIN=12\
+Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB_TX_PIN=12
 
 ### Usage:
 
@@ -20,7 +20,7 @@ Just download IR_Bridge.ino and compile Espurna with flags -DIRB_RX_PIN=14 -DIRB
 ### Transmitting:
  defined IRB_RAW is a MQTT topic for MQTT incoming messages (outgoing by IR).\
  Topic: \<root\>/IRB_RAW/set\
- Payload: 1000,1000,1000,1000,1000,DELAY,COUNT,FREQ:500,500,500,500,500\
+ Payload: 1000,1000,1000,1000,1000,DELAY,COUNT,FREQ:500,500,500,500,500
 
  codes - time in microseconds when IR LED On/Off. First value - ON, second - Off ..etc...\
  DELAY - delay in milliseconds between sending repeats\
