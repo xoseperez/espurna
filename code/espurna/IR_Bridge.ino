@@ -34,6 +34,7 @@ Transmitting:
  DELAY - delay in milliseconds between sending repeats
  COUNT - how many repeats send. Max 120.
  FREQ - modulation frequency. Usually 38kHz. You may set 38, it means 38kHz or set 38000, it meant same.
+ Repeat codes is optional. You may omit ":" and codes. In this case if repeat count > 0 we repeat main code.
 
 Receiving:
  defined IRB_RAW_IN is a MQTT topic for IR incoming messages (outgoing to MQTT).
@@ -41,6 +42,8 @@ Receiving:
  Payload: 1000,1000,1000,1000,1000
           |        IR codes      |
  -----------------------------------------------------------------------------
+
+ For support long codes (Air Conditioneer) increase MQTT packet size -DMQTT_MAX_PACKET_SIZE=1200
 */
 
 #if (defined IRB_RX_PIN) || (defined IRB_TX_PIN)
@@ -64,11 +67,11 @@ Receiving:
 
   #include <IRsend.h>
   IRsend irb_send(IRB_TX_PIN);
-  uint8_t irb_repeat=0;
-  uint16_t irb_repeat_code[8] = {8938,2208,554,0,0,0,0,0};
-  uint32_t irb_delay;
-  uint16_t irb_freq=38;
-  uint8_t irb_repeat_size=0;
+  uint8_t irb_repeat=0; // count of times repeating of repeat_code
+  uint16_t irb_delay; // delay between repeat codes
+  uint16_t irb_freq=38; // IR modulation freq. for sending codes and repeat codes
+  uint8_t irb_repeat_size=0; // size of repeat array
+  uint16_t *RawAry; // array for sending codes and repeat codes
 #endif //IRB_TX_PIN
 
 // MQTT to IR
@@ -85,113 +88,144 @@ void _irbMqttCallback(unsigned int type, const char * topic, const char * payloa
         if (t.equals(IRB_RAW)) {
           String strpayload = String(payload);
           unsigned int len = strpayload.length();
-          unsigned char count = 1;
-          int col = strpayload.indexOf(":");
-          String value = "";
-          int j = 0;
+          unsigned char count = 1; // count of code values for allocating array
+          int col = strpayload.indexOf(":"); // position of ":" which means repeat_code
+          uint16_t  repeat_Raw[1];
 
-          if (col>2) { //parsing repeat code
-            len = col; //cut repeat code from main code processing
-            //DEBUG_MSG_P(PSTR("[IR Bridge] col %d\n"),col);
+          if (col>2) { //count & validating repeat code
 
-            for (int i = col+1; i < strpayload.length(); i++) {
-              if (j>7) {
-                DEBUG_MSG_P(PSTR("[IR Bridge] MQTT payload format error. Repeat code is max 8 codes.\n"));
-                return;
-              }
-             if (payload[i] != ',') {
-               value = value + strpayload[i];
-              }
-             if ((payload[i] == ',') || (i == strpayload.length() - 1)) {
-               irb_repeat_code[j]= value.toInt();
-               value = "";
-               //DEBUG_MSG_P(PSTR("[IR Bridge] repeat code %d\n"),irb_repeat_code[j]);
-               j++;
+            irb_repeat_size = 1;
+
+            // count & validate repeat-string
+            for(int i = col+1; i < len; i++) {
+              if (i<len-1) {
+                if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
+                  irb_repeat_size++;
+                } else if (!isDigit(payload[i])) {
+                  DEBUG_MSG("[IR Bridge] MQTT payload format error. Error in repeat_code. Use comma separated unsigned\n integer values. Last three is repeat delay, repeat count(<120) and frequency.\nAfter all you may write ':' and specify repeat code followed by comma.\n");
+                  return;
+                }
               }
             }
-            irb_repeat_size = j;
-          }
+            len = col; //cut repeat code from main code processing
+          } // end of counting & validating repeat code
 
-          // count & validate string
-          for(int i = 0; i < len; i++)
-          {
+
+          // count & validate main code string
+          for(int i = 0; i < len; i++) {
             if (i<len-1) {
               if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
                 count++;
               } else if (!isDigit(payload[i])) {
-                DEBUG_MSG_P(PSTR("[IR Bridge] MQTT payload format error. Use comma separated unsigned\n integer values. Last three is repeat delay, repeat count(<120) and frequency.\nAfter all you may write ':' and specify repeat code followed by comma (max 8 codes).\n"));
+                DEBUG_MSG("[IR Bridge] MQTT payload format error. Error in main code. Use comma separated unsigned\n integer values. Last three is repeat delay, repeat count(<120) and frequency.\nAfter all you may write ':' and specify repeat code followed by comma.\n");
                 return;
               }
             }
           }
 
-          uint16_t  Raw[count];
+          RawAry = (uint16_t*)calloc(count, sizeof(uint16_t)); // allocating array for main codes
 
-          value = "";
-          j = 0;
+          String value = ""; // for populating values of array from comma separated string
+          int j = 0; // for populating values of array from comma separated string
+
+          // populating main code array from part of MQTT string
           for (int i = 0; i < len; i++) {
            if (payload[i] != ',') {
               value = value + strpayload[i];
             }
             if ((payload[i] == ',') || (i == len - 1)) {
-              Raw[j]= value.toInt();
+              RawAry[j]= value.toInt();
               value = "";
               j++;
             }
           }
 
-          // if count >2 then we have values and repeat delay, count and modulation frequency
+          // if count>3 then we have values, repeat delay, count and modulation frequency
           irb_repeat=0;
           if (count>3) {
-            if (Raw[count-2]<=120) {
-              irb_freq = Raw[count-1];
-              irb_repeat = Raw[count-2];
-              irb_delay = Raw[count-3];
+            if (RawAry[count-2]<=120) { // if repeat count > 120 it's to long and ussualy unusual. maybe we get raw code without this parameters and just use defaults for freq.
+              irb_freq = RawAry[count-1];
+              irb_repeat = RawAry[count-2];
+              irb_delay = RawAry[count-3];
               count = count - 3;
             }
           }
 
-          char * irstr;
-          if (strpayload.length()!=0){
-            irstr = const_cast<char*>(strpayload.c_str());
-          }
+          DEBUG_MSG("[IR Bridge] Raw IR output %d values, repeat %d times on %d(k)Hz freq.\n", count, irb_repeat, irb_freq);
 
-          DEBUG_MSG_P(PSTR("[IR Bridge] Raw IR output %d values, repeat %d times on %d(k)Hz freq.\n"), count, irb_repeat, irb_freq);
+          /*DEBUG_MSG("[IR Bridge] main codes: ");
+          for(int i = 0; i < count; i++) {
+            DEBUG_MSG("%d,",RawAry[i]);
+          }
+          DEBUG_MSG("\n");*/
+
           irb_recv.disableIRIn();
-          irb_send.sendRaw(Raw, count, irb_freq);
+          irb_send.sendRaw(RawAry, count, irb_freq);
 
-          if (irb_repeat==0) {
+          //tone(13,1000,1);
+          //noTone(13);
+
+          if (irb_repeat==0) { // no repeat, cleaning array, enabling receiver
+            free(RawAry);
             irb_recv.enableIRIn();
-          }
-        }
-    }
-}
+          } else if (col>2) { // repeat with repeat_code
+            free(RawAry);
+            RawAry = (uint16_t*)calloc(irb_repeat_size, sizeof(uint16_t));
 
-void irbRepeatLoop(){
+            String value = ""; // for populating values of array from comma separated string
+            int j = 0; // for populating values of array from comma separated string
+            len = strpayload.length(); //redifining length to full lenght
+
+            // populating repeat code array from part of MQTT string
+            for (int i = col+1; i < len; i++) {
+               value = value + strpayload[i];
+             if ((payload[i] == ',') || (i == len - 1)) {
+               RawAry[j]= value.toInt();
+               value = "";
+               j++;
+              }
+            }
+
+          } else { // if repeat code not specified (col<=2) repeat with current main code
+            irb_repeat_size = count;
+          }
+
+        } // end of match topic
+    } // end of MQTT message
+} //end of function
+
+void irbRepeatLoop() {
   static uint32_t repeat_millis = 0;
   static uint8_t repeat_i = 0;
 
   if (irb_repeat>0)
     if (millis()-repeat_millis > irb_delay) {
-      //irb_recv.disableIRIn();
-      irb_send.sendRaw(irb_repeat_code, irb_repeat_size, irb_freq);
-      //DEBUG_MSG_P(PSTR("[IR Bridge] Raw IR repeat %d values on %d(k)Hz freq.\n"), irb_repeat_size, irb_freq);
-      //DEBUG_MSG_P(PSTR("[IR Bridge] repeat #%d every %d millis. %d\n"),repeat_i, irb_delay, millis()-repeat_millis);
+
+      irb_send.sendRaw(RawAry, irb_repeat_size, irb_freq);
+
+      /*DEBUG_MSG("[IR Bridge] %d repeat codes: ",irb_repeat_size);
+      String str = "";
+      for(int i = 0; i < irb_repeat_size; i++) {
+        str=str+","+RawAry[i];
+      }
+      DEBUG_MSG("%s,\n",str.c_str());*/
+
       repeat_millis = millis();
+
       repeat_i++;
-      if (repeat_i>=irb_repeat) {
+      if (repeat_i>=irb_repeat) { // end of repeat. cleaning...
         irb_repeat = 0;
         repeat_i = 0;
+        free(RawAry);
         irb_recv.enableIRIn();
       }
-    }
 
+    }
 }
 #endif // IRB_TX_PIN & MQTT
 
 // IR to MQTT
 #if (defined IRB_RX_PIN)
-
 void irbLoop() {
 
   if (irb_recv.decode(&irb_results)) {
@@ -215,7 +249,8 @@ void irbLoop() {
           irstr = const_cast<char*>(value.c_str());
     }
 
-    DEBUG_MSG_P(PSTR("[IR Bridge] Raw IR input  %d values: %s\n"), irb_results.rawlen-1, irstr);
+    //DEBUG_MSG_P(PSTR("[IR Bridge] Raw IR input  %d values: %s\n"), irb_results.rawlen-1, irstr);
+    DEBUG_MSG("[IR Bridge] Raw IR input  %d values: %s\n", irb_results.rawlen-1, value.c_str());
 
     #if MQTT_SUPPORT
         mqttSend(IRB_RAW_IN, irstr);
@@ -230,7 +265,7 @@ void irbLoop() {
 void irbSetup() {
 
 #if (defined IRB_RX_PIN)
-    DEBUG_MSG_P("[IR Bridge] receiver INIT \n");
+    DEBUG_MSG("[IR Bridge] receiver INIT \n");
     irb_recv.enableIRIn();
 
     // Register RX loop
@@ -239,12 +274,12 @@ void irbSetup() {
 #endif
 
 #if (defined IRB_TX_PIN)
-    DEBUG_MSG_P("[IR Bridge] transmitter INIT \n");
+    DEBUG_MSG("[IR Bridge] transmitter INIT \n");
     irb_send.begin();
 
 
     #if MQTT_SUPPORT
-        DEBUG_MSG_P("[IR Bridge] MQTT INIT \n");
+        DEBUG_MSG("[IR Bridge] MQTT INIT \n");
         mqttRegister(_irbMqttCallback);
     #endif
 
