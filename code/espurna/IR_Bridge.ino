@@ -151,7 +151,7 @@ void _irbMqttCallback(unsigned int type, const char * topic, const char * payloa
             }
           }
 
-          DEBUG_MSG("[IR Bridge] Raw IR output %d values, repeat %d times on %d(k)Hz freq.\n", count, irb_repeat, irb_freq);
+          DEBUG_MSG("[IR Bridge] Raw IR output %d codes, repeat %d times on %d(k)Hz freq.\n", count, irb_repeat, irb_freq);
 
           /*DEBUG_MSG("[IR Bridge] main codes: ");
           for(int i = 0; i < count; i++) {
@@ -169,6 +169,9 @@ void _irbMqttCallback(unsigned int type, const char * topic, const char * payloa
             free(RawAry);
             irb_recv.enableIRIn();
           } else if (col>2) { // repeat with repeat_code
+
+            DEBUG_MSG("[IR Bridge] Repeat codes count: %d\n",irb_repeat_size);
+
             free(RawAry);
             RawAry = (uint16_t*)calloc(irb_repeat_size, sizeof(uint16_t));
 
@@ -276,7 +279,6 @@ void irbSetup() {
 #if (defined IRB_TX_PIN)
     DEBUG_MSG("[IR Bridge] transmitter INIT \n");
     irb_send.begin();
-
 
     #if MQTT_SUPPORT
         DEBUG_MSG("[IR Bridge] MQTT INIT \n");
