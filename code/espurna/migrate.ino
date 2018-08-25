@@ -1095,6 +1095,16 @@ void migrate() {
             setSetting("relayGPIO", 0, 4);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(LOHAS_9W)
+
+            setSetting("board", 84);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+            setSetting("myModel", MY92XX_MODEL_MY9231);
+            setSetting("myChips", 2);
+            setSetting("myDIGPIO", 13);
+            setSetting("myDCKIGPIO", 15);
+            setSetting("relays", 1);
 
         #else
 
