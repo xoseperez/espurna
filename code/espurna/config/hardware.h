@@ -1477,6 +1477,13 @@
     #define LIGHT_CH4_INVERSE   0
     #define LIGHT_CH5_INVERSE   0
 
+    // RF
+    #define RF_SUPPORT              1
+    #define RF_PIN                  15   // https://github.com/arendst/Sonoff-Tasmota/blob/development_display/sonoff/sonoff_template.h
+    #define RF_ENABLE_PIN           2    // https://github.com/arendst/Sonoff-Tasmota/pull/1310/commits/db4a3a4a1ee8964accd60e2b9acf182ab5514f62
+    #define RF_ENABLE_PIN_INVERSE   1
+    #define RF_BUTTON_SET           1
+
 #elif defined(ARILUX_E27)
 
     // Info
