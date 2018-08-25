@@ -36,6 +36,14 @@
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
+#ifndef SENSOR_SAVE_EVERY
+#define SENSOR_SAVE_EVERY                   0               // Save accumulating values to EEPROM (atm only energy)
+                                                            // A 0 means do not save and it's the default value
+                                                            // A number different from 0 means it should store the value in EEPROM
+                                                            // after these many reports
+                                                            // Warning: this might wear out flash fast!
+#endif
+
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
 
