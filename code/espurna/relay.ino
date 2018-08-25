@@ -628,7 +628,7 @@ void relaySetupWS() {
 // REST API
 //------------------------------------------------------------------------------
 
-#if WEB_SUPPORT
+#if API_SUPPORT
 
 void relaySetupAPI() {
 
@@ -700,7 +700,7 @@ void relaySetupAPI() {
 
 }
 
-#endif // WEB_SUPPORT
+#endif // API_SUPPORT
 
 //------------------------------------------------------------------------------
 // MQTT
@@ -1007,8 +1007,10 @@ void relaySetup() {
     espurnaRegisterLoop(_relayLoop);
 
     #if WEB_SUPPORT
-        relaySetupAPI();
         relaySetupWS();
+    #endif
+    #if API_SUPPORT
+        relaySetupAPI();
     #endif
     #if MQTT_SUPPORT
         relaySetupMQTT();

@@ -282,7 +282,7 @@ void _fromHSV(const char * hsv) {
 void _fromKelvin(unsigned long kelvin) {
 
     if (!_light_has_color) return;
-	
+
     _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
 
     if (_light_use_cct) {
@@ -826,6 +826,10 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
     }
 }
 
+#endif
+
+#if API_SUPPORT
+
 void _lightAPISetup() {
   // API entry points (protected with apikey)
   if (_light_has_color) {
@@ -896,7 +900,7 @@ void _lightAPISetup() {
   }
 }
 
-#endif // WEB_SUPPORT
+#endif // API_SUPPORT
 
 #if TERMINAL_SUPPORT
 
@@ -1069,7 +1073,6 @@ void lightSetup() {
     _lightColorRestore();
 
     #if WEB_SUPPORT
-        _lightAPISetup();
         wsOnSendRegister(_lightWebSocketOnSend);
         wsOnActionRegister(_lightWebSocketOnAction);
         wsOnReceiveRegister(_lightWebSocketOnReceive);
@@ -1079,6 +1082,10 @@ void lightSetup() {
             #endif
             _lightConfigure();
         });
+    #endif
+
+    #if API_SUPPORT
+        _lightAPISetup();
     #endif
 
     #if MQTT_SUPPORT

@@ -31,8 +31,14 @@ PROGMEM const char espurna_modules[] =
     #if ALEXA_SUPPORT
         "ALEXA "
     #endif
+    #if API_SUPPORT
+        "API "
+    #endif
     #if BROKER_SUPPORT
         "BROKER "
+    #endif
+    #if BUTTON_SUPPORT
+        "BUTTON "
     #endif
     #if DEBUG_SERIAL_SUPPORT
         "DEBUG_SERIAL "
@@ -61,14 +67,17 @@ PROGMEM const char espurna_modules[] =
     #if IR_SUPPORT
         "IR "
     #endif
+    #if LED_SUPPORT
+        "LED "
+    #endif
     #if LLMNR_SUPPORT
         "LLMNR "
     #endif
-    #if MDNS_SERVER_SUPPORT
-        "MDNS_SERVER "
-    #endif
     #if MDNS_CLIENT_SUPPORT
         "MDNS_CLIENT "
+    #endif
+    #if MDNS_SERVER_SUPPORT
+        "MDNS_SERVER "
     #endif
     #if MQTT_SUPPORT
         "MQTT "
@@ -82,11 +91,11 @@ PROGMEM const char espurna_modules[] =
     #if NTP_SUPPORT
         "NTP "
     #endif
-    #if RF_SUPPORT
-        "RF "
-    #endif
     #if RFM69_SUPPORT
         "RFM69 "
+    #endif
+    #if RF_SUPPORT
+        "RF "
     #endif
     #if SCHEDULER_SUPPORT
         "SCHEDULER "
@@ -169,9 +178,6 @@ PROGMEM const char espurna_sensors[] =
     #if GUVAS12SD_SUPPORT
         "GUVAS12SD "
     #endif
-    #if SONAR_SUPPORT
-        "SONAR "
-    #endif
     #if HLW8012_SUPPORT
         "HLW8012 "
     #endif
@@ -195,6 +201,9 @@ PROGMEM const char espurna_sensors[] =
     #endif
     #if SI7021_SUPPORT
         "SI7021 "
+    #endif
+    #if SONAR_SUPPORT
+        "SONAR "
     #endif
     #if TMP3X_SUPPORT
         "TMP3X "

@@ -74,6 +74,10 @@ String getEspurnaSensors() {
 }
 #endif
 
+String getEspurnaWebUI() {
+    return FPSTR(espurna_webui);
+}
+
 String buildTime() {
 
     const char time_now[] = __TIME__;   // hh:mm:ss
@@ -320,7 +324,7 @@ void info() {
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[INIT] WEBUI IMAGE CODE: %u\n"), WEBUI_IMAGE);
+    DEBUG_MSG_P(PSTR("[INIT] WEBUI IMAGE: %s\n"), getEspurnaWebUI().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------

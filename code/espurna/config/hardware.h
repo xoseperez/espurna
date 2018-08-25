@@ -2457,7 +2457,6 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
-
 // -----------------------------------------------------------------------------
 // VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
 // https://www.amazon.com/Smart-Plug-Wifi-Mini-VANZAVANZU/dp/B078PHD6S5
@@ -2503,6 +2502,8 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// -----------------------------------------------------------------------------
+
 #elif defined(GENERIC_AG_L4)
 
     // Info
@@ -2547,6 +2548,45 @@
     #define LIGHT_CH1_INVERSE           0
     #define LIGHT_CH2_INVERSE           0
     #define LIGHT_CH3_INVERSE           0
+
+// -----------------------------------------------------------------------------
+
+#elif defined(ALLTERCO_SHELLY1)
+
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY1"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+// -----------------------------------------------------------------------------
+
+#elif defined(LOHAS_9W)
+
+    // Info
+    #define MANUFACTURER        "LOHAS"
+    #define DEVICE              "E27_9W"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
+    #define MY92XX_CHIPS        2
+    #define MY92XX_DI_PIN       13
+    #define MY92XX_DCKI_PIN     15
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3, 4
+    #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
