@@ -1246,6 +1246,10 @@
 #define RF_PIN                      14
 #endif
 
+#ifndef RF_ENABLE_PIN_INVERSE
+#define RF_ENABLE_PIN_INVERSE       0
+#endif
+
 #define RF_DEBOUNCE                 500
 #define RF_LEARN_TIMEOUT            60000
 

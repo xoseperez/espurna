@@ -175,8 +175,19 @@ void rfLoop() {
 
 void rfSetup() {
 
+    #if RF_ENABLE_PIN
+        pinMode(RF_ENABLE_PIN, OUTPUT);
+        #if RF_ENABLE_PIN_INVERSE == 1
+            digitalWrite(RF_ENABLE_PIN,LOW);
+            DEBUG_MSG_P(PSTR("[RF] RF enable PIN on GPIO %u set to LOW\n"), RF_ENABLE_PIN);
+        #else
+            digitalWrite(RF_ENABLE_PIN,HIGH);
+            DEBUG_MSG_P(PSTR("[RF] RF enable PIN on GPIO %u set to HIGH\n"), RF_ENABLE_PIN);
+        #endif
+    #endif
+
     _rfModem = new RCSwitch();
-    _rfModem->enableReceive(RF_PIN);
+    _rfModem->enableReceive(digitalPinToInterrupt(RF_PIN));
     DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), RF_PIN);
 
     #if WEB_SUPPORT
