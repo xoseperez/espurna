@@ -31,6 +31,30 @@ void _rfProcessCode(unsigned long code) {
     // Repeat last valid code
     DEBUG_MSG_P(PSTR("[RF] Trying to match code 0x%06X with RF remote\n"), code);
 
+    #if defined(RF_BUTTON_LEARN_CODE) && defined(RF_BUTTON_LEARN_MASK)
+    // Learning of a Home Code by pressing a defined button for a while until the code was received ten times in series
+    static unsigned long _rf_last_learn = 0;
+    static unsigned char _rf_learn_count = 0;
+
+    if ( (code & RF_BUTTON_LEARN_MASK) == RF_BUTTON_LEARN_CODE) { // check if code matches the defined learn button
+        if ( (millis() - _rf_last_learn) < 1000 ) { // check if time since last press is less than a second
+            _rf_learn_count++;
+        } else {
+            _rf_learn_count = 1;
+        }
+        _rf_last_learn = millis();
+
+        if (_rf_learn_count == 10) {
+            _rf_home_code = code & (0xFFFFFF ^ RF_BUTTON_LEARN_MASK);
+            setSetting("rfHomeCode", _rf_home_code);
+            DEBUG_MSG_P(PSTR("[RF] RF remote home code learned 0x%06X\n"), _rf_home_code);
+        }
+    } else { // reset counter if other button
+        _rf_learn_count = 0;
+        _rf_last_learn = 0;
+    }
+    #endif
+
     for (unsigned char i = 0; i < RF_BUTTON_COUNT ; i++) {
 
         unsigned long button_code = pgm_read_dword(&RF_BUTTON[i][0]) | _rf_home_code;

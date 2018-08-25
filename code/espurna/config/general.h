@@ -1283,6 +1283,9 @@
 
     #define RF_BUTTON_COUNT 21
 
+    #define RF_BUTTON_LEARN_CODE 0x000013  // YELLOW
+    #define RF_BUTTON_LEARN_MASK 0x0000FF  // use first two bytes for home code
+
     const unsigned long RF_BUTTON[RF_BUTTON_COUNT][3] PROGMEM = {
 
         { 0x000001, RF_BUTTON_MODE_STATE,    1 },   // ON
