@@ -29,6 +29,7 @@
 #include "hardware.h"
 #include "defaults.h"
 #include "general.h"
+#include "validate.h"
 #include "dependencies.h"
 #include "prototypes.h"
 #include "sensors.h"
