@@ -150,13 +150,13 @@ function validateForm(form) {
 
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+    // at least eight characters (letters, numbers or special characters)
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,}$/;
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
     if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
+        alert("The password you have entered is not valid, it must have at least 8 characters, 1 lowercase and 1 uppercase or number!");
         return false;
     }
 
@@ -173,9 +173,9 @@ function validateForm(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
     var hasChanged = hostname.attr("hasChanged") || 0;

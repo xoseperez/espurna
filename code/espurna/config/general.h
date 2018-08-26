@@ -11,6 +11,7 @@
 
 #ifndef ADMIN_PASS
 #define ADMIN_PASS              "fibonacci"     // Default password (WEB, OTA, WIFI)
+                                                // MUST be 8..63 characters. (see GH issue #1151)
 #endif
 
 #ifndef USE_PASSWORD
