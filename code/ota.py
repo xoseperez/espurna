@@ -209,7 +209,7 @@ def input_board():
     # Choose board size of none before
     if board.get('size', 0) == 0:
         try:
-            board['size'] = int(input("Board memory size (1 for 1M, 4 for 4M): "))
+            board['size'] = int(input("Board memory size (1 for 1M, 2 for 2M, 4 for 4M): "))
         except ValueError:
             print("Wrong memory size")
             return None

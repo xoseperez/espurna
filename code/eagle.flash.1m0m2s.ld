@@ -1,4 +1,4 @@
-/* Flash Split for 1M chips, no SPIFFS */
+/* Flash Split for 1M chips, no SPIFFS, 2 sectors for EEPROM */
 /* sketch 995KB */
 /* eeprom 8KB */
 /* reserved 16KB */
@@ -13,7 +13,7 @@ MEMORY
 
 PROVIDE ( _SPIFFS_start = 0x402FA000 );
 PROVIDE ( _SPIFFS_end = 0x402FA000 );
-PROVIDE ( _SPIFFS_page = 0 );
-PROVIDE ( _SPIFFS_block = 0 );
+PROVIDE ( _SPIFFS_page = 0x0 );
+PROVIDE ( _SPIFFS_block = 0x0 );
 
 INCLUDE "../ld/eagle.app.v6.common.ld"

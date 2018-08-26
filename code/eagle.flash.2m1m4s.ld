@@ -1,6 +1,5 @@
-/* Flash Split for 4M chips, ~1M for SPIFFS, 4 sectors for EEPROM */
+/* Flash Split for 2M chips, ~1M SPIFFS, 4 sectors for EEPROM */
 /* sketch 1019KB */
-/* empty/ota? 2048KB */
 /* spiffs 992KB */
 /* eeprom 16KB */
 /* reserved 16KB */
@@ -13,8 +12,8 @@ MEMORY
   irom0_0_seg :                         org = 0x40201010, len = 0xfeff0
 }
 
-PROVIDE ( _SPIFFS_start = 0x40500000 );
-PROVIDE ( _SPIFFS_end = 0x405F8000 );
+PROVIDE ( _SPIFFS_start = 0x40300000 );
+PROVIDE ( _SPIFFS_end = 0x403F8000 );
 PROVIDE ( _SPIFFS_page = 0x100 );
 PROVIDE ( _SPIFFS_block = 0x2000 );
 
