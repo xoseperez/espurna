@@ -49,7 +49,7 @@ void ssdpSetup() {
             ip.toString().c_str(),              // ip
             webPort(),                          // port
             SSDP_DEVICE_TYPE,                   // device type
-            getSetting("hostname").c_str(),     // friendlyName
+            getHostname().c_str(),              // friendlyName
             chipId,                             // serialNumber
             APP_NAME,                           // modelName
             APP_VERSION,                        // modelNumber
@@ -66,7 +66,7 @@ void ssdpSetup() {
     SSDP.setSchemaURL("description.xml");
     SSDP.setHTTPPort(webPort());
     SSDP.setDeviceType(SSDP_DEVICE_TYPE); //https://github.com/esp8266/Arduino/issues/2283
-    SSDP.setName(getSetting("hostname"));
+    SSDP.setName(getHostname());
     SSDP.setSerialNumber(String(ESP.getChipId()));
     SSDP.setModelName(APP_NAME);
     SSDP.setModelNumber(APP_VERSION);

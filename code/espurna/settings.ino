@@ -327,6 +327,10 @@ template<typename T> bool setSetting(const String& key, T value) {
     return Embedis::set(key, String(value));
 }
 
+template<> bool setSetting(const String& key, const String& value) {
+    return Embedis::set(key, value);
+}
+
 template<typename T> bool setSetting(const String& key, unsigned int index, T value) {
     return setSetting(key + String(index), value);
 }

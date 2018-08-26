@@ -59,7 +59,7 @@ bool idbSend(const char * topic, const char * payload) {
     if (_idb_client.connect((const char *) host, port)) {
 
         char data[128];
-        snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
+        snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getHostname().c_str(), String(payload).c_str());
         DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
 
         char request[256];

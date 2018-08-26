@@ -66,7 +66,7 @@ void _onDiscover(AsyncWebServerRequest *request) {
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
-    root["hostname"] = getSetting("hostname");
+    root["hostname"] = getHostname();
     root["device"] = getBoardName();
     root.printTo(*response);
 
@@ -78,13 +78,13 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
     webLog(request);
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getSetting("hostname").c_str());
+        return request->requestAuthentication(getHostname().c_str());
     }
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
     char buffer[100];
-    snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getSetting("hostname").c_str());
+    snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-backup.json\""), (char *) getHostname().c_str());
     response->addHeader("Content-Disposition", buffer);
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
@@ -113,7 +113,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 void _onPostConfig(AsyncWebServerRequest *request) {
     webLog(request);
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getSetting("hostname").c_str());
+        return request->requestAuthentication(getHostname().c_str());
     }
     request->send(_webConfigSuccess ? 200 : 400);
 }
@@ -163,7 +163,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
     webLog(request);
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getSetting("hostname").c_str());
+        return request->requestAuthentication(getHostname().c_str());
     }
 
     if (request->header("If-Modified-Since").equals(_last_modified)) {
@@ -268,7 +268,7 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
     webLog(request);
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getSetting("hostname").c_str());
+        return request->requestAuthentication(getHostname().c_str());
     }
 
     char buffer[10];
@@ -347,7 +347,7 @@ void _onRequest(AsyncWebServerRequest *request){
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
-        String password = getSetting("adminPass", ADMIN_PASS);
+        String password = getAdminPass();
         char httpPassword[password.length() + 1];
         password.toCharArray(httpPassword, password.length() + 1);
         return request->authenticate(WEB_USERNAME, httpPassword);

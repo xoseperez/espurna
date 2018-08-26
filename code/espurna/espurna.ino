@@ -53,13 +53,10 @@ void setup() {
     // Init Serial, SPIFFS and system check
     systemSetup();
 
-    // Init persistance and terminal features
+    // Init persistance, config validation and terminal features
     settingsSetup();
 
-    // Hostname & board name initialization
-    if (getSetting("hostname").length() == 0) {
-        setDefaultHostname();
-    }
+    // Board name initialization
     setBoardName();
 
     // Show welcome message and system configuration

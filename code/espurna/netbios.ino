@@ -12,7 +12,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 void netbiosSetup() {
     static WiFiEventHandler _netbios_wifi_onSTA = WiFi.onStationModeGotIP([](WiFiEventStationModeGotIP ipInfo) {
-        NBNS.begin(getSetting("hostname").c_str());
+        NBNS.begin(getHostname().c_str());
         DEBUG_MSG_P(PSTR("[NETBIOS] Configured\n"));
     });
 }

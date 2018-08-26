@@ -15,13 +15,40 @@ String getIdentifier() {
     return String(buffer);
 }
 
-void setDefaultHostname() {
-    if (strlen(HOSTNAME) > 0) {
-        setSetting("hostname", HOSTNAME);
-    } else {
-        setSetting("hostname", getIdentifier());
+String getHostname() {
+    const String& key = F("hostname");
+    String hostname = getSetting(key);
+
+    if (!inRangeIncl(hostname.length(), 1u, 31u)) {
+        if (strlen(HOSTNAME) > 0) {
+            hostname = String(HOSTNAME);
+        } else {
+            hostname = getIdentifier();
+        }
+
+        DEBUG_MSG_P(PSTR("[SETTINGS] Warning: \"hostname\" must be 1..31 characters. Using default \"%s\"\n"), hostname.c_str());
+        setSetting(key, hostname);
     }
+
+    return hostname;
 }
+
+#if USE_PASSWORD
+
+String getAdminPass() {
+    const String& key = F("adminPass");
+    String adminPass = getSetting(key);
+
+    if (!inRangeIncl(adminPass.length(), 8u, 63u)) {
+        DEBUG_MSG_P(PSTR("[SETTINGS] Warning: \"adminPass\" must be 8..63 characters. Using default: \"%s\"\n"), ADMIN_PASS);
+        adminPass = String(ADMIN_PASS);
+        setSetting(key, adminPass);
+    }
+
+    return adminPass;
+}
+
+#endif // USE_PASSWORD
 
 void setBoardName() {
     #ifndef ESPURNA_CORE
@@ -463,4 +490,9 @@ bool isNumber(const char * s) {
         }
     }
     return true;
+}
+
+template<typename T>
+bool inRangeIncl(T value, T start, T stop) {
+    return (value >= start) && (value <= stop);
 }

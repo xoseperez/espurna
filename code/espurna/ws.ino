@@ -303,7 +303,7 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
 void _wsOnStart(JsonObject& root) {
 
     #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
-        String adminPass = getSetting("adminPass", ADMIN_PASS);
+        String adminPass = getAdminPass();
         bool changePassword = adminPass.equals(ADMIN_PASS);
     #else
         bool changePassword = false;
@@ -336,7 +336,7 @@ void _wsOnStart(JsonObject& root) {
         root["bssid"] = String(bssid_str);
         root["channel"] = WiFi.channel();
         root["device"] = DEVICE;
-        root["hostname"] = getSetting("hostname");
+        root["hostname"] = getHostname();
         root["network"] = getNetwork();
         root["deviceip"] = getIP();
         root["sketch_size"] = ESP.getSketchSize();

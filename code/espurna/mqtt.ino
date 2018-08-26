@@ -218,7 +218,7 @@ void _mqttConfigure() {
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
 
     // Placeholders
-    _mqtt_topic.replace("{hostname}", getSetting("hostname"));
+    _mqtt_topic.replace("{hostname}", getHostname());
     _mqtt_topic.replace("{magnitude}", "#");
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
     String mac = WiFi.macAddress();
@@ -601,7 +601,7 @@ void mqttFlush() {
         root[MQTT_TOPIC_MAC] = WiFi.macAddress();
     #endif
     #if MQTT_ENQUEUE_HOSTNAME
-        root[MQTT_TOPIC_HOSTNAME] = getSetting("hostname");
+        root[MQTT_TOPIC_HOSTNAME] = getHostname();
     #endif
     #if MQTT_ENQUEUE_IP
         root[MQTT_TOPIC_IP] = getIP();
