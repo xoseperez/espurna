@@ -32,6 +32,7 @@
 #include "dependencies.h"
 #include "prototypes.h"
 #include "sensors.h"
+#include "webui.h"
 #include "progmem.h"
 #include "debug.h"
 

@@ -110,6 +110,8 @@
 //#define BH_ONOFRE
 //#define ITEAD_SONOFF_IFAN02
 //#define GENERIC_AG_L4
+//#define ALLTERCO_SHELLY1
+//#define LOHAS_9W
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

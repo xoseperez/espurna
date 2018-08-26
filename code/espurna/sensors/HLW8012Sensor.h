@@ -48,7 +48,8 @@ class HLW8012Sensor : public BaseSensor {
             _hlw8012->resetMultipliers();
         }
 
-        void resetEnergy() {
+        void resetEnergy(double value = 0) {
+            _energy_offset = value;
             _hlw8012->resetEnergy();
         }
 
@@ -216,7 +217,7 @@ class HLW8012Sensor : public BaseSensor {
             if (index == 3) return _hlw8012->getReactivePower();
             if (index == 4) return _hlw8012->getApparentPower();
             if (index == 5) return 100 * _hlw8012->getPowerFactor();
-            if (index == 6) return _hlw8012->getEnergy();
+            if (index == 6) return (_energy_offset + _hlw8012->getEnergy());
             return 0;
         }
 
@@ -282,6 +283,7 @@ class HLW8012Sensor : public BaseSensor {
         double _current_resistor = HLW8012_CURRENT_R;
         double _upstream_resistor = HLW8012_VOLTAGE_R_UP;
         double _downstream_resistor = HLW8012_VOLTAGE_R_DOWN;
+        double _energy_offset = 0;
 
         HLW8012 * _hlw8012 = NULL;
 

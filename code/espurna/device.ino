@@ -1940,6 +1940,24 @@ void _deviceLoad() {
         setSetting("litChLogic", 1, 0);
         setSetting("litChLogic", 2, 0);
 
+    #elif defined(LOHAS_9W)
+
+        setSetting("board", DEVICE_LOHAS_9W);
+        setSetting("device", "LOHAS_9W");
+        setSetting("fw", ESPURNA_MY92XX);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("rlyDummy", 1);
+
+        setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright in the B1
+        setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright in the B1
+
+        setSetting("myModel", 1); // 3 channels per chip
+        setSetting("myChips", 2);
+        setSetting("myDIGPIO", 13);
+        setSetting("myDCKIGPIO", 15);
+        setSetting("myMapping", "01234"); // TODO
+
     #endif
 
 }

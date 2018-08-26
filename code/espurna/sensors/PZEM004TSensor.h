@@ -60,6 +60,16 @@ class PZEM004TSensor : public BaseSensor {
         }
 
         // ---------------------------------------------------------------------
+
+        void resetEnergy(double value = 0) {
+            if (_ready) {
+                _energy_offset = value - (_pzem->energy(_ip) * 3600);
+            } else {
+                _energy_offset = value;
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -117,7 +127,7 @@ class PZEM004TSensor : public BaseSensor {
             if (index == 0) response = _pzem->current(_ip);
             if (index == 1) response = _pzem->voltage(_ip);
             if (index == 2) response = _pzem->power(_ip);
-            if (index == 3) response = _pzem->energy(_ip) * 3600;
+            if (index == 3) response = _energy_offset + (_pzem->energy(_ip) * 3600);
             if (response < 0) response = 0;
             return response;
         }
@@ -133,6 +143,7 @@ class PZEM004TSensor : public BaseSensor {
         IPAddress _ip;
         HardwareSerial * _serial = NULL;
         PZEM004T * _pzem = NULL;
+        double _energy_offset = 0;
 
 };
 

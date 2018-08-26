@@ -228,6 +228,7 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
     if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
+        jw.enableAP(true);
     }
 
     if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
@@ -251,6 +252,7 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
 
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
+        jw.enableAP(true);
 
     }
 
@@ -558,12 +560,16 @@ void wifiStartAP() {
 
 #if defined(JUSTWIFI_ENABLE_WPS)
 void wifiStartWPS() {
+    jw.enableAP(false);
+    jw.disconnect();
     jw.startWPS();
 }
 #endif // defined(JUSTWIFI_ENABLE_WPS)
 
 #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 void wifiStartSmartConfig() {
+    jw.enableAP(false);
+    jw.disconnect();
     jw.startSmartConfig();
 }
 #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)

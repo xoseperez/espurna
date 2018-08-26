@@ -13,6 +13,7 @@ Sensor-based key previs: air am ana bh bmx cse dht dig ds ech emon evt gei guv h
 #if SENSOR_SUPPORT
 
 #include <vector>
+#include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
 #include "filters/MedianFilter.h"
 #include "filters/MovingAverageFilter.h"
@@ -38,6 +39,7 @@ unsigned char _counts[MAGNITUDE_MAX];
 bool _sensor_realtime = API_REAL_TIME_VALUES;
 unsigned long _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 unsigned char _sensor_report_every = SENSOR_REPORT_EVERY;
+unsigned char _sensor_save_every = SENSOR_SAVE_EVERY;
 unsigned char _sensor_power_units = SENSOR_POWER_UNITS;
 unsigned char _sensor_energy_units = SENSOR_ENERGY_UNITS;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
@@ -122,8 +124,8 @@ void _sensorWebSocketSendData(JsonObject& root) {
         element["error"] = magnitude.sensor->error();
 
         if (magnitude.type == MAGNITUDE_ENERGY) {
-            if (_sensor_energy_reset_ts.length() == 0) _sensorReset();
-            element["description"] = magnitude.sensor->slot(magnitude.local) + _sensor_energy_reset_ts;
+            if (_sensor_energy_reset_ts.length() == 0) _sensorResetTS();
+            element["description"] = magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")");
         } else {
             element["description"] = magnitude.sensor->slot(magnitude.local);
         }
@@ -196,6 +198,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         root["humOffset"] = _sensor_humidity_correction;
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
+        root["snsSave"] = _sensor_save_every;
     }
 
     /*
@@ -287,11 +290,18 @@ void _sensorPost() {
     }
 }
 
-void _sensorReset() {
+void _sensorResetTS() {
     #if NTP_SUPPORT
         if (ntpSynced()) {
-            _sensor_energy_reset_ts = String(" (since ") + ntpDateTime() + String(")");
+            if (_sensor_energy_reset_ts.length() == 0) {
+                _sensor_energy_reset_ts = ntpDateTime(now() - millis() / 1000);
+            } else {
+                _sensor_energy_reset_ts = ntpDateTime(now());
+            }
+        } else {
+            _sensor_energy_reset_ts = String();
         }
+        setSetting("snsResetTS", _sensor_energy_reset_ts);
     #endif
 }
 
@@ -308,6 +318,7 @@ void _sensorLoad() {
 
     unsigned char index = 0;
     unsigned char gpio = GPIO_NONE;
+    _sensor_save_every = getSetting("snsSave", 0).toInt();
 
     #if AM2320_SUPPORT
     if (getSetting("amEnabled", 0).toInt() == 1) {
@@ -358,6 +369,8 @@ void _sensorLoad() {
             if (value > 0) sensor->setVoltageRatio(value);
             value = getSetting("pwrRatio", 0).toFloat();
             if (value > 0) sensor->setPowerRatio(value);
+            value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+            if (value > 0) sensor->resetEnergy(value);
 
             _sensors.push_back(sensor);
 
@@ -410,6 +423,8 @@ void _sensorLoad() {
         sensor->setCLK(getSetting("echCLKGPIO", ECH1560_CLK_PIN).toInt());
         sensor->setMISO(getSetting("echMISOGPIO", ECH1560_MISO_PIN).toInt());
         sensor->setInverted(getSetting("echLogic", ECH1560_INVERTED).toInt());
+        double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+        if (value > 0) sensor->resetEnergy(value);
         _sensors.push_back(sensor);
     }
     #endif
@@ -425,6 +440,8 @@ void _sensorLoad() {
             sensor->setReference(getSetting("emonReference", EMON_REFERENCE_VOLTAGE).toInt());
             sensor->setCurrentRatio(0, getSetting("curRatio", EMON_CURRENT_RATIO).toFloat());
             sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
+            double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+            if (value > 0) sensor->resetEnergy(0, value);
             _sensors.push_back(sensor);
         }
         #endif
@@ -437,12 +454,14 @@ void _sensorLoad() {
             sensor->setMask(getSetting("emonMask", EMON_ADS1X15_MASK).toInt());
             sensor->setGain(getSetting("emonGain", EMON_ADS1X15_GAIN).toInt());
             sensor->setReference(getSetting("emonReference", EMON_REFERENCE_VOLTAGE).toInt());
-            double curRatio = getSetting("curRatio", EMON_CURRENT_RATIO).toFloat();
-            sensor->setCurrentRatio(0, getSetting("curRatio", 0, curRatio).toFloat());
-            sensor->setCurrentRatio(1, getSetting("curRatio", 1, curRatio).toFloat());
-            sensor->setCurrentRatio(2, getSetting("curRatio", 2, curRatio).toFloat());
-            sensor->setCurrentRatio(3, getSetting("curRatio", 3, curRatio).toFloat());
+            double value = getSetting("curRatio", EMON_CURRENT_RATIO).toFloat();
+            sensor->setCurrentRatio(0, getSetting("curRatio", 0, value).toFloat());
+            sensor->setCurrentRatio(1, getSetting("curRatio", 1, value).toFloat());
+            sensor->setCurrentRatio(2, getSetting("curRatio", 2, value).toFloat());
+            sensor->setCurrentRatio(3, getSetting("curRatio", 3, value).toFloat());
             sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
+            value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+            if (value > 0) sensor->resetEnergy(0, value);
             _sensors.push_back(sensor);
         }
         #endif
@@ -453,6 +472,8 @@ void _sensorLoad() {
             sensor->setReference(getSetting("emonReference", EMON_REFERENCE_VOLTAGE).toInt());
             sensor->setCurrentRatio(0, getSetting("curRatio", EMON_CURRENT_RATIO).toFloat());
             sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
+            double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+            if (value > 0) sensor->resetEnergy(0, value);
             _sensors.push_back(sensor);
         }
         #endif
@@ -533,6 +554,8 @@ void _sensorLoad() {
         if (value > 0) sensor->setVoltageRatio(value);
         value = getSetting("pwrRatio", HLW8012_POWER_RATIO).toFloat();
         if (value > 0) sensor->setPowerRatio(value);
+        value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+        if (value > 0) sensor->resetEnergy(value);
 
         _sensors.push_back(sensor);
 
@@ -594,6 +617,8 @@ void _sensorLoad() {
         } else {
             sensor->setSerial(& PZEM004T_HW_PORT);
         }
+        double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+        if (value > 0) sensor->resetEnergy(value);
         _sensors.push_back(sensor);
     }
     #endif
@@ -628,6 +653,8 @@ void _sensorLoad() {
             V9261FSensor * sensor = new V9261FSensor();
             sensor->setRX(gpio);
             sensor->setInverted(getSetting("v92Inverse", V9261F_PIN_INVERSE).toInt());
+            double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toFloat() : 0;
+            if (value > 0) sensor->resetEnergy(value);
             _sensors.push_back(sensor);
         }
     }
@@ -680,9 +707,11 @@ void _sensorInit() {
             new_magnitude.filtered = 0;
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
-            if (type == MAGNITUDE_DIGITAL) {
+            if (MAGNITUDE_ENERGY == type) {
+                new_magnitude.filter = new LastFilter();
+            } else if (MAGNITUDE_DIGITAL == type) {
                 new_magnitude.filter = new MaxFilter();
-            } else if (type == MAGNITUDE_COUNT || type == MAGNITUDE_GEIGER_CPM|| type == MAGNITUDE_GEIGER_SIEVERT) {  // For geiger counting moving average filter is the most appropriate if needed at all.
+            } else if (MAGNITUDE_COUNT == type || MAGNITUDE_GEIGER_CPM == type || MAGNITUDE_GEIGER_SIEVERT == type) {  // For geiger counting moving average filter is the most appropriate if needed at all.
                 new_magnitude.filter = new MovingAverageFilter();
             } else {
                 new_magnitude.filter = new MedianFilter();
@@ -710,12 +739,14 @@ void _sensorConfigure() {
     // General sensor settings
     _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
     _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
+    _sensor_save_every = getSetting("snsSave", SENSOR_SAVE_EVERY).toInt();
     _sensor_realtime = apiRealTime();
     _sensor_power_units = getSetting("pwrUnits", SENSOR_POWER_UNITS).toInt();
     _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS).toInt();
     _sensor_temperature_units = getSetting("tmpUnits", SENSOR_TEMPERATURE_UNITS).toInt();
     _sensor_temperature_correction = getSetting("tmpOffset", SENSOR_TEMPERATURE_CORRECTION).toFloat();
     _sensor_humidity_correction = getSetting("humOffset", SENSOR_HUMIDITY_CORRECTION).toFloat();
+    _sensor_energy_reset_ts = getSetting("snsResetTS", "");
 
     // Specific sensor settings
     for (unsigned char i=0; i<_sensors.size(); i++) {
@@ -739,7 +770,8 @@ void _sensorConfigure() {
 
                 if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    _sensorReset();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
                 }
 
                 sensor->setVoltage(getSetting("volNominal", EMON_MAINS_VOLTAGE).toInt());
@@ -753,7 +785,8 @@ void _sensorConfigure() {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
                 if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    _sensorReset();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
                 }
             }
         #endif
@@ -763,7 +796,8 @@ void _sensorConfigure() {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
                 if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    _sensorReset();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
                 }
             }
         #endif
@@ -793,7 +827,8 @@ void _sensorConfigure() {
 
                 if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    _sensorReset();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
                 }
 
                 if (getSetting("snsResetCalibrarion", 0).toInt() == 1) {
@@ -831,7 +866,8 @@ void _sensorConfigure() {
 
                 if (getSetting("eneReset", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    _sensorReset();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
                 }
 
                 if (getSetting("snsResetCalibrarion", 0).toInt() == 1) {
@@ -852,6 +888,11 @@ void _sensorConfigure() {
         sensor_magnitude_t magnitude = _magnitudes[i];
         magnitude.filter->resize(_sensor_report_every);
         magnitude.min_change = getSetting("tmpDelta", magnitude.type, 0).toFloat();
+    }
+
+    // General processing
+    if (0 == _sensor_save_every) {
+        delSetting("eneTotal");
     }
 
     // Save settings
@@ -1117,6 +1158,7 @@ void sensorLoop() {
     // Check if we should read new data
     static unsigned long last_update = 0;
     static unsigned long report_count = 0;
+    static unsigned long save_count = 0;
     if (millis() - last_update > _sensor_read_interval) {
 
         last_update = millis();
@@ -1140,6 +1182,10 @@ void sensorLoop() {
 
             if (magnitude.sensor->status()) {
 
+                // -------------------------------------------------------------
+                // Instant value
+                // -------------------------------------------------------------
+
                 current = magnitude.sensor->value(magnitude.local);
 
                 // Completely remove spurious values if relay is OFF
@@ -1156,17 +1202,26 @@ void sensorLoop() {
                     }
                 #endif
 
+                // -------------------------------------------------------------
+                // Processing (filters)
+                // -------------------------------------------------------------
+
                 magnitude.filter->add(current);
 
-                // Special case
-                if (magnitude.type == MAGNITUDE_COUNT) {
+                // Special case for MovingAvergaeFilter
+                if (MAGNITUDE_COUNT == magnitude.type ||
+                    MAGNITUDE_GEIGER_CPM ==magnitude. type ||
+                    MAGNITUDE_GEIGER_SIEVERT == magnitude.type) {
                     current = magnitude.filter->result();
                 }
 
                 current = _magnitudeProcess(magnitude.type, current);
                 _magnitudes[i].current = current;
 
+                // -------------------------------------------------------------
                 // Debug
+                // -------------------------------------------------------------
+
                 #if SENSOR_DEBUG
                 {
                     char buffer[64];
@@ -1180,8 +1235,12 @@ void sensorLoop() {
                 }
                 #endif // SENSOR_DEBUG
 
-                // Time to report (we do it every _sensor_report_every readings)
-                if (report_count == 0) {
+                // -------------------------------------------------------------
+                // Report
+                // (we do it every _sensor_report_every readings)
+                // -------------------------------------------------------------
+
+                if (0 == report_count) {
 
                     filtered = magnitude.filter->result();
                     magnitude.filter->reset();
@@ -1190,13 +1249,30 @@ void sensorLoop() {
 
                     // Check if there is a minimum change threshold to report
                     if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {
-
                         _magnitudes[i].reported = filtered;
-
                         _sensorReport(i, filtered);
-
                     } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
+
+                    // -------------------------------------------------------------
+                    // Saving to EEPROM
+                    // (we do it every _sensor_save_every readings)
+                    // -------------------------------------------------------------
+
+                    if (_sensor_save_every > 0) {
+
+                        save_count = (save_count + 1) % _sensor_save_every;
+
+                        if (0 == save_count) {
+                            if (MAGNITUDE_ENERGY == magnitude.type) {
+                                setSetting("eneTotal", current);
+                                saveSettings();
+                            }
+                        } // if (0 == save_count)
+
+                    } // if (_sensor_save_every > 0)
+
                 } // if (report_count == 0)
+
             } // if (magnitude.sensor->status())
         } // for (unsigned char i=0; i<_magnitudes.size(); i++)
 

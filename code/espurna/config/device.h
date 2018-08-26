@@ -96,6 +96,8 @@ enum devices {
     DEVICE_ITEAD_SONOFF_IFAN02,
     DEVICE_GENERIC_AG_L4,
     DEVICE_HOMECUBE_16A,
+    DEVICE_ALLTERCO_SHELLY1,
+    DEVICE_LOHAS_9W,
 
     DEVICE_LAST
 
@@ -107,6 +109,7 @@ enum devices {
 
 #if \
     defined(ALLNET_4DUINO_IOT_WLAN_RELAIS) || \
+    defined(ALLTERCO_SHELLY1) || \
     defined(ARNIEX_SWIFITCH) || \
     defined(BH_ONOFRE) || \
     defined(ELECTRODRAGON_WIFI_IOT) || \
@@ -220,7 +223,8 @@ enum devices {
 #elif \
     defined(AITHINKER_AI_LIGHT) || \
     defined(ARILUX_E27) || \
-    defined(ITEAD_SONOFF_B1)
+    defined(ITEAD_SONOFF_B1) || \
+    defined(LOHAS_9W)
 
     #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_MY92XX
@@ -513,6 +517,8 @@ enum devices {
 
 #if ESPURNA_IMAGE == ESPURNA_CORE
 
+    #define ESPURNA_IMAGE_NAME          "CORE"
+
     // Disable non-core modules
     #define ALEXA_SUPPORT               0
     #define API_SUPPORT                 0
@@ -539,18 +545,26 @@ enum devices {
 
 #elif ESPURNA_IMAGE == ESPURNA_BASIC
 
+    #define ESPURNA_IMAGE_NAME          "BASIC"
+
 #elif ESPURNA_IMAGE == ESPURNA_DIMMER
+
+    #define ESPURNA_IMAGE_NAME          "DIMMER"
 
     #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
 
 #elif ESPURNA_IMAGE == ESPURNA_MY92XX
 
+    #define ESPURNA_IMAGE_NAME          "MY92XX"
+
     #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_MY92XX
     #define MY92XX_COMMAND              MY92XX_COMMAND_DEFAULT
 
 #elif ESPURNA_IMAGE == ESPURNA_EMON
+
+    #define ESPURNA_IMAGE_NAME          "EMON"
 
     #ifndef EMON_ANALOG_SUPPORT
     #define EMON_ANALOG_SUPPORT         1
@@ -566,17 +580,23 @@ enum devices {
 
 #elif ESPURNA_IMAGE == ESPURNA_HLW8012
 
+    #define ESPURNA_IMAGE_NAME          "HLW8012"
+
     #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT             1
     #endif
 
 #elif ESPURNA_IMAGE == ESPURNA_CSE77XX
 
+    #define ESPURNA_IMAGE_NAME          "CSE77XX"
+
     #ifndef CSE7766_SUPPORT
     #define CSE7766_SUPPORT             1
     #endif
 
 #elif ESPURNA_IMAGE == ESPURNA_V9261F
+
+    #define ESPURNA_IMAGE_NAME          "V9261F"
 
     #ifndef V9261F_SUPPORT
     #define V9261F_SUPPORT              1
@@ -588,6 +608,8 @@ enum devices {
 
 #elif ESPURNA_IMAGE == ESPURNA_ECH1560
 
+    #define ESPURNA_IMAGE_NAME          "ECH1560"
+
     #ifndef ECH1560_SUPPORT
     #define ECH1560_SUPPORT             1
     #endif
@@ -597,6 +619,8 @@ enum devices {
     #endif
 
 #elif ESPURNA_IMAGE == ESPURNA_SENSOR
+
+    #define ESPURNA_IMAGE_NAME          "SENSOR"
 
     #ifndef ANALOG_SUPPORT
     #define ANALOG_SUPPORT              1
@@ -616,11 +640,17 @@ enum devices {
 
 #elif ESPURNA_IMAGE == ESPURNA_SONOFF_DUAL
 
+    #define ESPURNA_IMAGE_NAME          "SONOFF_DUAL"
+
     #define RELAY_PROVIDER              RELAY_PROVIDER_DUAL
 
 #elif ESPURNA_IMAGE == ESPURNA_SONOFF_RFBRIDGE
 
+    #define ESPURNA_IMAGE_NAME          "SONOFF_RFBRIDGE"
+
 #elif ESPURNA_IMAGE == ESPURNA_RFM69
+
+    #define ESPURNA_IMAGE_NAME          "RFM69"
 
     // RFM69GW
     #define RFM69_SUPPORT               1
@@ -636,9 +666,13 @@ enum devices {
 
 #elif ESPURNA_IMAGE == ESPURNA_STM
 
+    #define ESPURNA_IMAGE_NAME          "STM"
+
     #define RELAY_PROVIDER              RELAY_PROVIDER_STM
 
 #elif ESPURNA_IMAGE == ESPURNA_GEIGER
+
+    #define ESPURNA_IMAGE_NAME          "GEIGER"
 
     // Enable Geiger Counter
     #define GEIGER_SUPPORT              1
