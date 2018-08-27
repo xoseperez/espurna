@@ -965,7 +965,7 @@ function initColorHSV() {
 function initChannels(num) {
 
     // check if already initialized
-    var done = $("#channels > div").length > 0;
+    var done = $("#channelcorrections > div").length > 0;
     if (done) { return; }
 
     // does it have color channels?
@@ -986,24 +986,39 @@ function initChannels(num) {
 
     var onChannelSliderChange = function() {
         var id = $(this).attr("data");
+        var type = $(this).attr("datatype");
         var value = $(this).val();
         var parent = $(this).parents(".pure-g");
         $("span", parent).html(value);
-        sendAction("channel", {id: id, value: value});
+        if (type == "correction") {
+            sendAction("correction", {id: id, value: value});
+        } else {
+            sendAction("channel", {id: id, value: value});
+        }
     };
 
     // add templates
     var i = 0;
     var template = $("#channelTemplate").children();
-    for (i=0; i<max; i++) {
 
-        var channel_id = start + i;
+    for (i=0; i<num; i++) {
+
+        var channel_id = i;
         var line = $(template).clone();
-        $("span.slider", line).attr("data", channel_id);
-        $("input.slider", line).attr("data", channel_id).on("change", onChannelSliderChange);
-        $("label", line).html("Channel #" + channel_id);
 
-        line.appendTo("#channels");
+        if (channel_id >= start) {
+            var line = $(template).clone();
+            $("span.slider", line).attr("data", channel_id).attr("datatype", "value");
+            $("input.slider", line).attr("data", channel_id).attr("datatype", "value").on("change", onChannelSliderChange);
+            $("label", line).html("Channel #" + channel_id);
+            line.appendTo("#channels");
+        }
+
+        var line = $(template).clone();
+        $("span.slider", line).attr("data", channel_id).attr("datatype", "correction");
+        $("input.slider", line).attr("data", channel_id).attr("datatype", "correction").on("change", onChannelSliderChange);
+        $("label", line).html("Correction Channel #" + channel_id);
+        line.appendTo("#channelcorrections");
 
     }
 
@@ -1208,8 +1223,10 @@ function processData(data) {
             initChannels(len);
             for (i in value) {
                 var ch = value[i];
-                $("input.slider[data=" + i + "]").val(ch);
-                $("span.slider[data=" + i + "]").html(ch);
+                $("input.slider[data=" + i + "][datatype=value]").val(ch.value);
+                $("span.slider[data=" + i + "][datatype=value]").html(ch.value);
+                $("input.slider[data=" + i + "][datatype=correction]").val(ch.correction);
+                $("span.slider[data=" + i + "][datatype=correction]").html(ch.correction);
             }
             return;
         }
