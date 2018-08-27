@@ -222,7 +222,7 @@ Here is the list of supported hardware. For more information please refer to the
 |![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)|||
 |**Itead Sonoff 4CH Pro**|||
 |![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|![BlitzWolf BW-SPP2](images/devices/blitzwolf-bw-shp2.jpg)|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|
-|**Itead Sonoff S31**|**Blitzwolf BW-SHP2<br />(also by HomeCube, Coosa, Goosund)**|**Power meters based on V9261F**|
+|**Itead Sonoff S31**|**Blitzwolf BW-SHP2<br />(also by Coosa, Goosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
 |![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|
 |**Itead Sonoff POW**|**Itead Sonoff POW R2**|**Vanzavanzu Smart WiFi Plug Mini**|
 |![Itead Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![Itead Sonoff Dual/Dual R2](images/devices/itead-sonoff-dual.jpg)|![Itead Sonoff TH10/TH16](images/devices/itead-sonoff-th.jpg)|
