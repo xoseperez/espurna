@@ -39,6 +39,8 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
     Callback that adds discovered devices to "devices" list
     """
 
+    global discover_last
+
     if state_change is ServiceStateChange.Added:
         discover_last = time.time()
         info = zeroconf.get_service_info(service_type, name)
@@ -146,7 +148,6 @@ def get_board_by_mac(mac):
     """
     Returns the required data to flash a given board
     """
-    hostname = hostname.lower()
     for device in devices:
         if device.get('mac', '').lower() == mac:
             board = {}
