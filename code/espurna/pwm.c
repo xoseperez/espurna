@@ -19,27 +19,29 @@
 /* Set the following three defines to your needs */
 
 #ifndef SDK_PWM_PERIOD_COMPAT_MODE
-  #define SDK_PWM_PERIOD_COMPAT_MODE 0
+#define SDK_PWM_PERIOD_COMPAT_MODE  0
 #endif
+
 #ifndef PWM_MAX_CHANNELS
-  #define PWM_MAX_CHANNELS 8
+#define PWM_MAX_CHANNELS            8
 #endif
-#define PWM_DEBUG 0
-#define PWM_USE_NMI 1
+
+#define PWM_DEBUG                   0
+#define PWM_USE_NMI                 1
 
 /* no user servicable parts beyond this point */
 
-#define PWM_MAX_TICKS 0x7fffff
+#define PWM_MAX_TICKS               0x7fffff
 #if SDK_PWM_PERIOD_COMPAT_MODE
-#define PWM_PERIOD_TO_TICKS(x) (x * 0.2)
-#define PWM_DUTY_TO_TICKS(x) (x * 5)
-#define PWM_MAX_DUTY (PWM_MAX_TICKS * 0.2)
-#define PWM_MAX_PERIOD (PWM_MAX_TICKS * 5)
+#define PWM_PERIOD_TO_TICKS(x)      (x * 0.2)
+#define PWM_DUTY_TO_TICKS(x)        (x * 5)
+#define PWM_MAX_DUTY                (PWM_MAX_TICKS * 0.2)
+#define PWM_MAX_PERIOD              (PWM_MAX_TICKS * 5)
 #else
-#define PWM_PERIOD_TO_TICKS(x) (x)
-#define PWM_DUTY_TO_TICKS(x) (x)
-#define PWM_MAX_DUTY PWM_MAX_TICKS
-#define PWM_MAX_PERIOD PWM_MAX_TICKS
+#define PWM_PERIOD_TO_TICKS(x)      (x)
+#define PWM_DUTY_TO_TICKS(x)        (x)
+#define PWM_MAX_DUTY                PWM_MAX_TICKS
+#define PWM_MAX_PERIOD              PWM_MAX_TICKS
 #endif
 
 #include <c_types.h>
@@ -48,8 +50,8 @@
 #include "libs/pwm.h"
 
 // from SDK hw_timer.c
-#define TIMER1_DIVIDE_BY_16             0x0004
-#define TIMER1_ENABLE_TIMER             0x0080
+#define TIMER1_DIVIDE_BY_16         0x0004
+#define TIMER1_ENABLE_TIMER         0x0080
 
 struct pwm_phase {
 	uint32_t ticks;    ///< delay until next phase, in 200ns units
@@ -400,7 +402,7 @@ pwm_start(void)
 void ICACHE_FLASH_ATTR
 pwm_set_duty(uint32_t duty, uint8_t channel)
 {
-	if (channel > PWM_MAX_CHANNELS)
+	if (channel >= PWM_MAX_CHANNELS)
 		return;
 
 	if (duty > PWM_MAX_DUTY)
@@ -412,7 +414,7 @@ pwm_set_duty(uint32_t duty, uint8_t channel)
 uint32_t ICACHE_FLASH_ATTR
 pwm_get_duty(uint8_t channel)
 {
-	if (channel > PWM_MAX_CHANNELS)
+	if (channel >= PWM_MAX_CHANNELS)
 		return 0;
 	return pwm_duty[channel];
 }

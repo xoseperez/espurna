@@ -13,13 +13,13 @@ Module key prefix: alx
 #include <fauxmoESP.h>
 fauxmoESP alexa;
 
-struct AlexaDevChange {
-    AlexaDevChange(unsigned char device_id, bool state) : device_id(device_id), state(state) {};
-    unsigned char device_id = 0;
-    bool state = false;
-};
 #include <queue>
-static std::queue<AlexaDevChange> _alexa_dev_changes;
+typedef struct {
+    unsigned char device_id;
+    bool state;
+    unsigned char value;
+} alexa_queue_element_t;
+static std::queue<alexa_queue_element_t> _alexa_queue;
 
 // -----------------------------------------------------------------------------
 // ALEXA
@@ -28,12 +28,12 @@ static std::queue<AlexaDevChange> _alexa_dev_changes;
 #if WEB_SUPPORT
 void _alexaWebSocketOnSend(JsonObject& root) {
     root["alxVisible"] = 1;
-    root["alxEnabled"] = getSetting("alxEnabled", ALEXA_ENABLED).toInt() == 1;
+    root["alxEnabled"] = alexaEnabled();
 }
 #endif
 
 void _alexaConfigure() {
-    alexa.enable(getSetting("alxEnabled", ALEXA_ENABLED).toInt() == 1);
+    alexa.enable(wifiConnected() && alexaEnabled());
 }
 
 bool _alexaKeyCheck(const char * key) {
@@ -47,6 +47,10 @@ void _alexaBackwards() {
 
 // -----------------------------------------------------------------------------
 
+bool alexaEnabled() {
+    return (getSetting("alexaEnabled", ALEXA_ENABLED).toInt() == 1);
+}
+
 void alexaSetup() {
 
     // Check backwards compatibility
@@ -55,31 +59,58 @@ void alexaSetup() {
     // Load & cache settings
     _alexaConfigure();
 
+    // Uses hostname as base name for all devices
+    // TODO: use custom switch name when available
+    String hostname = getSetting("hostname");
+
+    // Lights
+    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+
+        // Global switch
+        alexa.addDevice(hostname.c_str());
+
+        // For each channel
+        for (unsigned char i = 1; i <= lightChannels(); i++) {
+            alexa.addDevice((hostname + " " + i).c_str());
+        }
+
+    // Relays
+    #else
+
+        unsigned int relays = relayCount();
+        if (relays == 1) {
+            alexa.addDevice(hostname.c_str());
+        } else {
+            for (unsigned int i=1; i<=relays; i++) {
+                alexa.addDevice((hostname + " " + i).c_str());
+            }
+        }
+
+    #endif
+
+    // Callback
+    alexa.onSetState([&](unsigned char device_id, const char * name, bool state, unsigned char value) {
+        alexa_queue_element_t element;
+        element.device_id = device_id;
+        element.state = state;
+        element.value = value;
+        _alexa_queue.push(element);
+    });
+
     // Websockets
     #if WEB_SUPPORT
         wsOnSendRegister(_alexaWebSocketOnSend);
         wsOnAfterParseRegister(_alexaConfigure);
     #endif
 
-    unsigned int relays = relayCount();
-    String hostname = getHostname();
-    if (relays == 1) {
-        alexa.addDevice(hostname.c_str());
-    } else {
-        for (unsigned int i=0; i<relays; i++) {
-            alexa.addDevice((hostname + "_" + i).c_str());
+    // Register wifi callback
+    wifiRegister([](justwifi_messages_t code, char * parameter) {
+        if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
+            _alexaConfigure();
         }
-    }
-
-    alexa.onSetState([&](unsigned char device_id, const char * name, bool state) {
-        AlexaDevChange change(device_id, state);
-        _alexa_dev_changes.push(change);
     });
 
-    alexa.onGetState([](unsigned char device_id, const char * name) {
-        return relayStatus(device_id);
-    });
-
+    // Settings
     settingsRegisterKeyCheck(_alexaKeyCheck);
 
     // Register loop
@@ -91,11 +122,24 @@ void alexaLoop() {
 
     alexa.handle();
 
-    while (!_alexa_dev_changes.empty()) {
-        AlexaDevChange& change = _alexa_dev_changes.front();
-        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s\n"), change.device_id, change.state ? "ON" : "OFF");
-        relayStatus(change.device_id, change.state);
-        _alexa_dev_changes.pop();
+    while (!_alexa_queue.empty()) {
+
+        alexa_queue_element_t element = _alexa_queue.front();
+        DEBUG_MSG_P(PSTR("[ALEXA] Device #%u state: %s value: %d\n"), element.device_id, element.state ? "ON" : "OFF", element.value);
+
+        #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+            if (0 == element.device_id) {
+                relayStatus(0, element.state);
+            } else {
+                lightState(element.device_id - 1, element.state);
+                lightChannel(element.device_id - 1, element.value);
+                lightUpdate(true, true);
+            }
+        #else
+            relayStatus(element.device_id, element.state);
+        #endif
+
+        _alexa_queue.pop();
     }
 
 }

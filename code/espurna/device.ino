@@ -983,6 +983,28 @@ void _deviceLoad() {
         setSetting("myDCKIGPIO", 15);
         setSetting("myMapping", "0123");
 
+    #elif defined(YJZK_SWITCH_1CH)
+
+        setSetting("board", DEVICE_YJZK_SWITCH_1CH);
+        setSetting("device", "YJZK_SWITCH_1CH");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("btnGPIO", 0, 0);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 0);
+
+        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
+        setSetting("rlyGPIO", 0, 12);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+
     #elif defined(YJZK_SWITCH_2CH)
 
         setSetting("board", DEVICE_YJZK_SWITCH_2CH);
@@ -996,6 +1018,17 @@ void _deviceLoad() {
         setSetting("btnRelay", 0, 0);
         setSetting("btnRelay", 1, 1);
 
+        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+        setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
+
         setSetting("ledGPIO", 0, 13);
         setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
 
@@ -1003,6 +1036,48 @@ void _deviceLoad() {
         setSetting("rlyGPIO", 1, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
         setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
+
+    #elif defined(YJZK_SWITCH_3CH)
+
+        setSetting("board", DEVICE_YJZK_SWITCH_3CH);
+        setSetting("device", "YJZK_SWITCH_3CH");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("btnGPIO", 0, 0);
+        setSetting("btnGPIO", 1, 9);
+        setSetting("btnGPIO", 2, 10);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnMode", 2, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 0);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnRelay", 2, 2);
+
+        setSetting("btnPress", 0, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_RESET);
+        setSetting("btnPress", 1, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 1, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
+        setSetting("btnPress", 2, BUTTON_MODE_TOGGLE);
+        setSetting("btnClick", 2, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 2, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 2, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 2, BUTTON_MODE_RESET);
+
+        setSetting("ledGPIO", 0, 13);
+        setSetting("ledLogic", 0, GPIO_LOGIC_DIRECT);
+
+        setSetting("rlyGPIO", 0, 12);
+        setSetting("rlyGPIO", 1, 5);
+        setSetting("rlyGPIO", 2, 4);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 2, RELAY_TYPE_NORMAL);
 
     #elif defined(ITEAD_SONOFF_DUAL_R2)
 
@@ -1949,14 +2024,27 @@ void _deviceLoad() {
         setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
         setSetting("rlyDummy", 1);
 
-        setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright in the B1
-        setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright in the B1
+        setSetting("litChFactor", 4, 0.1); // White LEDs are way more bright
+        setSetting("litChFactor", 5, 0.1); // White LEDs are way more bright
 
         setSetting("myModel", 1); // 3 channels per chip
         setSetting("myChips", 2);
         setSetting("myDIGPIO", 13);
         setSetting("myDCKIGPIO", 15);
         setSetting("myMapping", "01234"); // TODO
+
+    #elif defined(ALLTERCO_SHELLY1)
+
+        setSetting("board", DEVICE_ALLTERCO_SHELLY1);
+        setSetting("device", "ALLTERCO_SHELLY1");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("btnGPIO", 0, 5);
+        setSetting("btnMode", 0, BUTTON_SWITCH);
+        setSetting("btnRelay", 0, 0);
+
+        setSetting("rlyGPIO", 0, 4);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
     #endif
 

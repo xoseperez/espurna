@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.2c-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-2.0.0RC1-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-softcfg-orange.svg)](https://github.com/xoseperez/espurna/tree/softcfg/)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=softcfg)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/softcfg.svg)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
@@ -14,6 +14,12 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
+
+## Contributors
+
+**Without your help this project would not be possible**. I (@xoseperez) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank you each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
+
+**Thank you all very much**.
 
 ## Notice
 
@@ -68,7 +74,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Support for [direct control of the encoder/decoder bypassing the EFM8BB1](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack)
 * Support for [different **sensors**](Sensors)
     * Environment
-        * **DHT11 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
+        * **DHT11 / DHT12 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
         * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
         * **TMP35** and **TMP36** analog temperature sensors
         * **NTC** temperature sensors
@@ -82,6 +88,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * **BH1750** luminosity sensor
         * **GUVAS12SD** UV sensor
         * **GEIGER COUNTER** by RH Electronics
+        * **HC-SR04**, **SRF05**, **SRF06**, **DYP-ME007**, **JSN-SR04T** & **Parallax PING)))™** distance sensors
     * Power monitoring
         * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
         * **CSE7766** and **CSE7759B** power monitor chips
@@ -89,8 +96,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
         * Non-invasive **current sensor** using **internal ADC** or **ADC712** or **ADC121** or **ADS1115**
         * **V9261F** power monitor chip
         * **PZEM0004T**  power monitor board
-    * Raw analog and digital sensors
-    * Simple pulse counter
+    * Raw **analog** and **digital** sensors
+    * Simple **pulse counter** with **event triggering** option
     * Support for (almost) any UART based sensor via the **UART-to-MQTT module**
     * Support for different units (Fahrenheit or Celsius, Watts or Kilowatts, Joules or kWh)
 * Support for LED lights
@@ -228,16 +235,18 @@ Here is the list of supported hardware. For more information please refer to the
 |**Schuko Wifi Plug**|**KMC 70011**|**Xenon SM-PW702U**|
 |![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
-|![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)||
-|**WiOn 50055**|**LINGAN SWA1**||
+|![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
+|**WiOn 50055**|**LINGAN SWA1**|**HomeCube 16A**|
 |![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm Power Strip](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
 |**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
-|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK 2-gang switch](images/devices/yjzk-2gang-switch.jpg)|
-|**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 2-gang switch**|
+|![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK switch](images/devices/yjzk-2gang-switch.jpg)|
+|**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 1/2/3-gangs switch**|
 |![Itead Slampher](images/devices/itead-slampher.jpg)|![Arilux E27](images/devices/arilux-e27.jpg)|![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|
 |**Itead Slampher**|**Arilux E27**|**Itead Sonoff B1**|
-|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)||
-|**AI-Thinker Wifi Light / Noduino OpenLight**|**Authometion LYT8266**||
+|![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|![AG-L4](images/devices/ag-l4.jpg)|
+|**AI-Thinker Wifi Light / Noduino OpenLight**|**Authometion LYT8266**|**AG-L4**|
+|![Lohas 9W](images/devices/lohas-9w.jpg)|||
+|**Lohas 9W**|||
 |![Itead Sonoff LED](images/devices/itead-sonoff-led.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|![InterMitTech QuinLED 2.6](images/devices/intermittech-quinled-2.6.jpg)|
 |**Itead Sonoff LED**|**Itead BN-SZ01**|**InterMitTech QuinLED 2.6**|
 |![Arilux AL-LC01 (RGB)](images/devices/arilux-al-lc01.jpg)|![Arilux AL-LC02 (RGBW)](images/devices/arilux-al-lc02.jpg)|![Arilux AL-LC06 (RGBWWCW)](images/devices/arilux-al-lc06.jpg)|
@@ -248,6 +257,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
 |![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
+|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|||
+|**Alterco Shelly1**|||
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
 |![IKE ESPike](images/devices/ike-espike.jpg)|![Pilotak ESP DIN](images/devices/pilotak-esp-din.jpg)|![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|

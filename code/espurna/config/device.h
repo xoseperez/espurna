@@ -98,6 +98,8 @@ enum devices {
     DEVICE_HOMECUBE_16A,
     DEVICE_ALLTERCO_SHELLY1,
     DEVICE_LOHAS_9W,
+    DEVICE_YJZK_SWITCH_1CH,
+    DEVICE_YJZK_SWITCH_3CH,
 
     DEVICE_LAST
 
@@ -154,7 +156,9 @@ enum devices {
     defined(WION_50055) || \
     defined(WORKCHOICE_ECOPLUG) || \
     defined(XENON_SM_PW702U) || \
+    defined(YJZK_SWITCH_1CH) || \
     defined(YJZK_SWITCH_2CH) || \
+    defined(YJZK_SWITCH_3CH) || \
     defined(ZHILDE_EU44_W)
 
     #undef ESPURNA_IMAGE
