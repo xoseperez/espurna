@@ -60,6 +60,11 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
             for key, item in info.properties.items():
                 device[key.decode('UTF-8')] = item.decode('UTF-8');
 
+            # rename fields (needed for sorting by name)
+            device['app'] = device['app_name']
+            device['device'] = device['target_board']
+            device['version'] = device['app_version']
+
             devices.append(device)
 
 
