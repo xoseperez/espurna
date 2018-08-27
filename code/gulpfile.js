@@ -72,8 +72,8 @@ var toHeader = function(name, debug) {
         output += '#define ' + safename + '_len ' + source.contents.length + '\n';
         output += 'const uint8_t ' + safename + '[] PROGMEM = {';
         for (var i=0; i<source.contents.length; i++) {
-            if (i > 0) { output += ',' };
-            if (0 === (i % 20)) { output += '\n' };
+            if (i > 0) { output += ','; }
+            if (0 === (i % 20)) { output += '\n'; }
             output += '0x' + ('00' + source.contents[i].toString(16)).slice(-2);
         }
         output += '\n};';
