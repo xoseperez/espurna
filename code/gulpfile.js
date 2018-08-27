@@ -115,7 +115,7 @@ var buildWebUI = function(module) {
     if ('all' === module) {
         modules['light'] = true;
         modules['sensor'] = true;
-        modules['rfbridge'] = false;   // we will never be adding this except when building RFBRIDGE
+        modules['rfbridge'] = true;
         modules['rfm69'] = false;   // we will never be adding this except when building RFM69GW
     } else if ('small' !== module) {
         modules[module] = true;
