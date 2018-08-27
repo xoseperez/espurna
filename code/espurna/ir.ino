@@ -23,12 +23,13 @@ unsigned long _ir_last_toggle = 0;
 void _irProcessCode(unsigned long code, unsigned char type) {
 
     // Check valid code
-    unsigned long last_code = 0;
-    unsigned long last_time = 0;
+    static unsigned long last_code = 0;
+    static unsigned long last_time = 0;
     if (code == 0xFFFFFFFF) return;
     if (type == 0xFF) return;
     if ((last_code == code) && (millis() - last_time < IR_DEBOUNCE)) return;
     last_code = code;
+    last_time = millis();
     DEBUG_MSG_P(PSTR("[IR] Received 0x%08X (%d)\n"), code, type);
 
     #if IR_BUTTON_SET > 0

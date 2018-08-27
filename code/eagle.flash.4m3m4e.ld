@@ -1,4 +1,4 @@
-/* Flash Split for 4M chips */
+/* Flash Split for 4M chips, ~3M for SPIFFS, 4 sectors for EEPROM */
 /* sketch 1019KB */
 /* spiffs 3040KB */
 /* eeprom 16KB */

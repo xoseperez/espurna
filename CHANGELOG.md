@@ -3,6 +3,45 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.2] 2018-08-27
+### Fixed
+- Fix relay overflow window length
+- Fix TravisCI release condition (thanks to @mcspr, [#1042](https://github.com/xoseperez/espurna/issues/1042))
+- Fix Sonoff RFBridge build in Arduino IDE ([#1043](https://github.com/xoseperez/espurna/issues/1043))
+- Using corrent path separator in gulpfile.js (thanks to @InduPrakash, [#1045](https://github.com/xoseperez/espurna/issues/1045))
+- Fix KMC70011 LED logic (thanks to @zerog2k, [#1056](https://github.com/xoseperez/espurna/issues/1056))
+- Fix Luani HVIO to use 1MB flash size and toggle switch (thanks to @BauerPh, [#1065](https://github.com/xoseperez/espurna/issues/1065) and [#1068](https://github.com/xoseperez/espurna/issues/1068))
+- Fix switches in Microsoft Edge (thanks to @Valcob, [#1066](https://github.com/xoseperez/espurna/issues/1066))
+- Fix build.sh error handling (thanks to @mcspr, [#1075](https://github.com/xoseperez/espurna/issues/1075))
+- Correctly init Serial on RELAY_PROVIDER_STM ([#1130](https://github.com/xoseperez/espurna/issues/1130))
+- Disconnect before running WPS and SmartConfig discovery ([#1146](https://github.com/xoseperez/espurna/issues/1146))
+- Fix sort fields in OTA manager
+
+### Added
+- Support for YJZK 1Ch and 3CH switches (thanks to @CollinShorts and @q32103940, [#1047](https://github.com/xoseperez/espurna/issues/1047))
+- Support for AG-L4 color desk lamp (thanks to @zerog2k, [#1050](https://github.com/xoseperez/espurna/issues/1050))
+- Option to cofigure ON/OFF payload at build time ([#1085](https://github.com/xoseperez/espurna/issues/1085))
+- Option to change default payload for HA ([#1085](https://github.com/xoseperez/espurna/issues/1085))
+- Support for Allterco Shelly1 (thanks to @abmantis, [#1128](https://github.com/xoseperez/espurna/issues/1128))
+- Support for HomeCube 16A (thanks to @hyteoo, [#1106](https://github.com/xoseperez/espurna/issues/1106))
+- Support for multiple sonar sensors (thanks to @ruimarinho, [#1116](https://github.com/xoseperez/espurna/issues/1116))
+- Support for hardware serial on PMSX003 device (thanks to @ruimarinho, [#1122](https://github.com/xoseperez/espurna/issues/1122))
+- Support for Lohas 9W bulbs (thanks to @steveway, [#1135](https://github.com/xoseperez/espurna/issues/1135))
+- Show literal for webUI image in info ([#1142](https://github.com/xoseperez/espurna/issues/1142))
+- Add RFBRIDGE code to full webUI image ([#1157](https://github.com/xoseperez/espurna/issues/1157))
+- Handle events in EventSensor
+- Option to remove API_SUPPORT at build time
+- Option to save total energy in EEPROM after X reports, disabled by default
+- Support for DHT12 sensor (thanks to Altan Altay)
+- Support for 2MB flash boards
+
+### Changed
+- Update PlatformIO support to 3.6.X branch
+- Explicitly disable ATC on RFM69 gateway ([#938](https://github.com/xoseperez/espurna/issues/938))
+- Reduce memory footprint of API calls ([#1133](https://github.com/xoseperez/espurna/issues/1133))
+- Init relay GPIO when in inverse mode to be OFF ([#1078](https://github.com/xoseperez/espurna/issues/1078))
+
+
 ## [1.13.1] 2018-07-10
 ### Fixed
 - Build issues with Arduino IDE ([#975](https://github.com/xoseperez/espurna/issues/975))
