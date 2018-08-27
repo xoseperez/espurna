@@ -79,10 +79,6 @@ String getCoreRevision() {
     #endif
 }
 
-unsigned long maxSketchSpace() {
-    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-}
-
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...

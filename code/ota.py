@@ -39,6 +39,8 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
     Callback that adds discovered devices to "devices" list
     """
 
+    global discover_last
+
     if state_change is ServiceStateChange.Added:
         discover_last = time.time()
         info = zeroconf.get_service_info(service_type, name)
@@ -59,6 +61,11 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
 
             for key, item in info.properties.items():
                 device[key.decode('UTF-8')] = item.decode('UTF-8');
+
+            # rename fields (needed for sorting by name)
+            device['app'] = device['app_name']
+            device['device'] = device['target_board']
+            device['version'] = device['app_version']
 
             devices.append(device)
 
@@ -141,7 +148,6 @@ def get_board_by_mac(mac):
     """
     Returns the required data to flash a given board
     """
-    hostname = hostname.lower()
     for device in devices:
         if device.get('mac', '').lower() == mac:
             board = {}
@@ -209,7 +215,7 @@ def input_board():
     # Choose board size of none before
     if board.get('size', 0) == 0:
         try:
-            board['size'] = int(input("Board memory size (1 for 1M, 4 for 4M): "))
+            board['size'] = int(input("Board memory size (1 for 1M, 2 for 2M, 4 for 4M): "))
         except ValueError:
             print("Wrong memory size")
             return None

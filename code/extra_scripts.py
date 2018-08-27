@@ -4,11 +4,7 @@ from __future__ import print_function
 import os
 import sys
 from subprocess import call
-
 import click
-from platformio import util
-
-import distutils.spawn
 
 Import("env", "projenv")
 

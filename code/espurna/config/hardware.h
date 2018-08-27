@@ -934,6 +934,32 @@
 // YJZK
 // -----------------------------------------------------------------------------
 
+#elif defined(YJZK_SWITCH_1CH)
+
+    // Info
+    #define MANUFACTURER        "YJZK"
+    #define DEVICE              "SWITCH_1CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+
 #elif defined(YJZK_SWITCH_2CH)
 
     // Info
@@ -945,7 +971,18 @@
     #define BUTTON2_PIN         9
 
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -961,6 +998,57 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
 
+// YJZK 3CH switch
+// Also Lixin Touch Wifi 3M
+
+#elif defined(YJZK_SWITCH_3CH)
+
+    // Info
+    #define MANUFACTURER        "YJZK"
+    #define DEVICE              "SWITCH_3CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
+    #define BUTTON3_PIN         10
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_MODE_NONE
+    #define BUTTON3_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON3_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON3_RELAY       3
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          5
+    #define RELAY3_PIN          4
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
