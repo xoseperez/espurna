@@ -53,7 +53,7 @@ void setup() {
     // Init Serial, SPIFFS and system check
     systemSetup();
 
-    // Init persistance, config validation and terminal features
+    // Init persistance and terminal features
     settingsSetup();
 
     // Board name initialization

@@ -16,7 +16,7 @@ String getIdentifier() {
 }
 
 String getHostname() {
-    const String& key = F("hostname");
+    const String key = F("hostname");
     String hostname = getSetting(key);
 
     if (!inRangeIncl(hostname.length(), 1u, 31u)) {
@@ -36,7 +36,7 @@ String getHostname() {
 #if USE_PASSWORD
 
 String getAdminPass() {
-    const String& key = F("adminPass");
+    const String key = F("adminPass");
     String adminPass = getSetting(key);
 
     if (!inRangeIncl(adminPass.length(), 8u, 63u)) {
@@ -191,7 +191,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
             #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
-                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+                mqttSend(MQTT_TOPIC_HOSTNAME, getHostname().c_str());
             #endif
             #if (HEARTBEAT_REPORT_IP)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
