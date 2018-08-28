@@ -36,8 +36,7 @@ void _wifiConfigure() {
     jw.setHostname(hostname.c_str());
 
     #if USE_PASSWORD
-        const String password = getSetting("adminPass", ADMIN_PASS);
-        jw.setSoftAP(hostname.c_str(), password.c_str());
+        jw.setSoftAP(hostname.c_str(), getAdminPass().c_str());
     #else
         jw.setSoftAP(hostname.c_str());
     #endif
