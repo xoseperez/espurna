@@ -157,13 +157,18 @@ unsigned int domoticzIdx(unsigned char relayID) {
 }
 
 void domoticzSetup() {
+
     _domoticzConfigure();
+
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
-        wsOnAfterParseRegister(_domoticzConfigure);
         wsOnReceiveRegister(_domoticzWebSocketOnReceive);
     #endif
+
+    // Callbacks
     mqttRegister(_domoticzMqtt);
+    espurnaRegisterReload(_domoticzConfigure);
+
 }
 
 bool domoticzEnabled() {

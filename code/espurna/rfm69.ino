@@ -268,12 +268,12 @@ void rfm69Setup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_rfm69WebSocketOnSend);
         wsOnReceiveRegister(_rfm69WebSocketOnReceive);
-        wsOnAfterParseRegister(_rfm69Configure);
         wsOnActionRegister(_rfm69WebSocketOnAction);
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(_rfm69Loop);
+    espurnaRegisterReload(_rfm69Configure);
 
 }
 

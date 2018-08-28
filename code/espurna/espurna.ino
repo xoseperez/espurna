@@ -23,13 +23,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 
 std::vector<void (*)()> _loop_callbacks;
+std::vector<void (*)()> _reload_callbacks;
 
 // -----------------------------------------------------------------------------
-// REGISTER
+// GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
 
 void espurnaRegisterLoop(void (*callback)()) {
     _loop_callbacks.push_back(callback);
+}
+
+void espurnaRegisterReload(void (*callback)()) {
+    _reload_callbacks.push_back(callback);
+}
+
+void espurnaReload() {
+    for (unsigned char i = 0; i < _reload_callbacks.size(); i++) {
+        (_reload_callbacks[i])();
+    }
 }
 
 // -----------------------------------------------------------------------------

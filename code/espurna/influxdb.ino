@@ -100,12 +100,17 @@ bool idbEnabled() {
 }
 
 void idbSetup() {
+
     _idbConfigure();
+
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
-        wsOnAfterParseRegister(_idbConfigure);
         wsOnReceiveRegister(_idbWebSocketOnReceive);
     #endif
+
+    // Main callbacks
+    espurnaRegisterReload(_idbConfigure);
+
 }
 
 #endif

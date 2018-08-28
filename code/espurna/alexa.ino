@@ -82,7 +82,6 @@ void alexaSetup() {
     // Websockets
     #if WEB_SUPPORT
         wsOnSendRegister(_alexaWebSocketOnSend);
-        wsOnAfterParseRegister(_alexaConfigure);
         wsOnReceiveRegister(_alexaWebSocketOnReceive);
     #endif
 
@@ -102,8 +101,9 @@ void alexaSetup() {
         _alexa_queue.push(element);
     });
 
-    // Register loop
+    // Register main callbacks
     espurnaRegisterLoop(alexaLoop);
+    espurnaRegisterReload(_alexaConfigure);
 
 }
 

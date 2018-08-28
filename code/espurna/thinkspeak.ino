@@ -259,7 +259,6 @@ void tspkSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
-        wsOnAfterParseRegister(_tspkConfigure);
         wsOnReceiveRegister(_tspkWebSocketOnReceive);
     #endif
 
@@ -268,8 +267,9 @@ void tspkSetup() {
         THINGSPEAK_USE_SSL ? "ENABLED" : "DISABLED"
     );
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(tspkLoop);
+    espurnaRegisterReload(_tspkConfigure);
 
 }
 

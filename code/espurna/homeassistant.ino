@@ -286,9 +286,12 @@ void haSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_haWebSocketOnSend);
-        wsOnAfterParseRegister(_haConfigure);
         wsOnActionRegister(_haWebSocketOnAction);
         wsOnReceiveRegister(_haWebSocketOnReceive);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _haInitCommands();
     #endif
 
     // On MQTT connect check if we have something to send
@@ -296,10 +299,8 @@ void haSetup() {
         if (type == MQTT_CONNECT_EVENT) _haSend();
     });
 
-    #if TERMINAL_SUPPORT
-        _haInitCommands();
-    #endif
-
+    // Main callbacks
+    espurnaRegisterReload(_haConfigure);
 
 }
 

@@ -1071,7 +1071,6 @@ void sensorSetup() {
         wsOnSendRegister(_sensorWebSocketStart);
         wsOnReceiveRegister(_sensorWebSocketOnReceive);
         wsOnSendRegister(_sensorWebSocketSendData);
-        wsOnAfterParseRegister(_sensorConfigure);
     #endif
 
     // API
@@ -1084,8 +1083,9 @@ void sensorSetup() {
         _sensorInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(sensorLoop);
+    espurnaRegisterReload(_sensorConfigure);
 
 }
 

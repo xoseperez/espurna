@@ -1076,12 +1076,6 @@ void lightSetup() {
         wsOnSendRegister(_lightWebSocketOnSend);
         wsOnActionRegister(_lightWebSocketOnAction);
         wsOnReceiveRegister(_lightWebSocketOnReceive);
-        wsOnAfterParseRegister([]() {
-            #if LIGHT_SAVE_ENABLED == 0
-                lightSave();
-            #endif
-            _lightConfigure();
-        });
     #endif
 
     #if API_SUPPORT
@@ -1095,6 +1089,14 @@ void lightSetup() {
     #if TERMINAL_SUPPORT
         _lightInitCommands();
     #endif
+
+    // Main callbacks
+    espurnaRegisterReload([]() {
+        #if LIGHT_SAVE_ENABLED == 0
+            lightSave();
+        #endif
+        _lightConfigure();
+    });
 
 }
 

@@ -613,7 +613,6 @@ void wifiSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
         wsOnReceiveRegister(_wifiWebSocketOnReceive);
-        wsOnAfterParseRegister(_wifiConfigure);
         wsOnActionRegister(_wifiWebSocketOnAction);
     #endif
 
@@ -621,8 +620,9 @@ void wifiSetup() {
         _wifiInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(wifiLoop);
+    espurnaRegisterReload(_wifiConfigure);
 
 }
 

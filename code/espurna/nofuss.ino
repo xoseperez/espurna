@@ -154,7 +154,6 @@ void nofussSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_nofussWebSocketOnSend);
-        wsOnAfterParseRegister(_nofussConfigure);
         wsOnReceiveRegister(_nofussWebSocketOnReceive);
     #endif
 
@@ -162,8 +161,9 @@ void nofussSetup() {
         _nofussInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(nofussLoop);
+    espurnaRegisterReload(_nofussConfigure);
 
 }
 

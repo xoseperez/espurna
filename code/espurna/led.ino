@@ -170,14 +170,14 @@ void ledSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ledWebSocketOnSend);
-        wsOnAfterParseRegister(_ledConfigure);
         wsOnReceiveRegister(_ledWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(ledLoop);
+    espurnaRegisterReload(_ledConfigure);
 
 
 }

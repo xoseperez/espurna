@@ -20,7 +20,6 @@ Ticker _web_defer;
 
 std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
 std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
-std::vector<ws_on_after_parse_callback_f> _ws_on_after_parse_callbacks;
 std::vector<ws_on_receive_callback_f> _ws_on_receive_callbacks;
 
 // -----------------------------------------------------------------------------
@@ -256,7 +255,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (save) {
 
             // Callbacks
-            wsReload();
+            espurnaReload();
 
             // This should got to callback as well
             // but first change management has to be in place
@@ -429,10 +428,6 @@ void wsOnActionRegister(ws_on_action_callback_f callback) {
     _ws_on_action_callbacks.push_back(callback);
 }
 
-void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback) {
-    _ws_on_after_parse_callbacks.push_back(callback);
-}
-
 void wsSend(ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
         DynamicJsonBuffer jsonBuffer;
@@ -477,15 +472,6 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
     char buffer[strlen_P(payload)];
     strcpy_P(buffer, payload);
     _ws.text(client_id, buffer);
-}
-
-// This method being public makes
-// _ws_on_after_parse_callbacks strange here,
-// it should belong somewhere else.
-void wsReload() {
-    for (unsigned char i = 0; i < _ws_on_after_parse_callbacks.size(); i++) {
-        (_ws_on_after_parse_callbacks[i])();
-    }
 }
 
 void wsSetup() {
