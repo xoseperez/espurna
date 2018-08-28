@@ -95,6 +95,7 @@
 //#define LOHAS_9W
 //#define YJZK_SWITCH_1CH
 //#define YJZK_SWITCH_3CH
+//#define XIAOMI_SMART_DESK_LAMP
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -109,6 +110,7 @@
 //#define DEBUG_UDP_SUPPORT      1
 //#define DEBUG_WEB_SUPPORT      0
 //#define DOMOTICZ_SUPPORT       0
+//#define ENCODER_SUPPORT        1
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       1

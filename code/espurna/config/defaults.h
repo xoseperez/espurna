@@ -209,6 +209,138 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// Encoders
+// -----------------------------------------------------------------------------
+
+#ifndef ENCODER1_PIN1
+#define ENCODER1_PIN1               GPIO_NONE
+#endif
+#ifndef ENCODER2_PIN1
+#define ENCODER2_PIN1               GPIO_NONE
+#endif
+#ifndef ENCODER3_PIN1
+#define ENCODER3_PIN1               GPIO_NONE
+#endif
+#ifndef ENCODER4_PIN1
+#define ENCODER4_PIN1               GPIO_NONE
+#endif
+#ifndef ENCODER5_PIN1
+#define ENCODER5_PIN1               GPIO_NONE
+#endif
+
+#ifndef ENCODER1_PIN2
+#define ENCODER1_PIN2               GPIO_NONE
+#endif
+#ifndef ENCODER2_PIN2
+#define ENCODER2_PIN2               GPIO_NONE
+#endif
+#ifndef ENCODER3_PIN2
+#define ENCODER3_PIN2               GPIO_NONE
+#endif
+#ifndef ENCODER4_PIN2
+#define ENCODER4_PIN2               GPIO_NONE
+#endif
+#ifndef ENCODER5_PIN2
+#define ENCODER5_PIN2               GPIO_NONE
+#endif
+
+#ifndef ENCODER1_BUTTON_PIN
+#define ENCODER1_BUTTON_PIN         GPIO_NONE
+#endif
+#ifndef ENCODER2_BUTTON_PIN
+#define ENCODER2_BUTTON_PIN         GPIO_NONE
+#endif
+#ifndef ENCODER3_BUTTON_PIN
+#define ENCODER3_BUTTON_PIN         GPIO_NONE
+#endif
+#ifndef ENCODER4_BUTTON_PIN
+#define ENCODER4_BUTTON_PIN         GPIO_NONE
+#endif
+#ifndef ENCODER5_BUTTON_PIN
+#define ENCODER5_BUTTON_PIN         GPIO_NONE
+#endif
+
+#ifndef ENCODER1_BUTTON_LOGIC
+#define ENCODER1_BUTTON_LOGIC       HIGH
+#endif
+#ifndef ENCODER2_BUTTON_LOGIC
+#define ENCODER2_BUTTON_LOGIC       HIGH
+#endif
+#ifndef ENCODER3_BUTTON_LOGIC
+#define ENCODER3_BUTTON_LOGIC       HIGH
+#endif
+#ifndef ENCODER4_BUTTON_LOGIC
+#define ENCODER4_BUTTON_LOGIC       HIGH
+#endif
+#ifndef ENCODER5_BUTTON_LOGIC
+#define ENCODER5_BUTTON_LOGIC       HIGH
+#endif
+
+#ifndef ENCODER1_BUTTON_MODE
+#define ENCODER1_BUTTON_MODE        INPUT_PULLUP
+#endif
+#ifndef ENCODER2_BUTTON_MODE
+#define ENCODER2_BUTTON_MODE        INPUT_PULLUP
+#endif
+#ifndef ENCODER3_BUTTON_MODE
+#define ENCODER3_BUTTON_MODE        INPUT_PULLUP
+#endif
+#ifndef ENCODER4_BUTTON_MODE
+#define ENCODER4_BUTTON_MODE        INPUT_PULLUP
+#endif
+#ifndef ENCODER5_BUTTON_MODE
+#define ENCODER5_BUTTON_MODE        INPUT_PULLUP
+#endif
+
+#ifndef ENCODER1_MODE
+#define ENCODER1_MODE               1
+#endif
+#ifndef ENCODER2_MODE
+#define ENCODER2_MODE               1
+#endif
+#ifndef ENCODER3_MODE
+#define ENCODER3_MODE               1
+#endif
+#ifndef ENCODER4_MODE
+#define ENCODER4_MODE               1
+#endif
+#ifndef ENCODER5_MODE
+#define ENCODER5_MODE               1
+#endif
+
+#ifndef ENCODER1_CHANNEL1
+#define ENCODER1_CHANNEL1           0
+#endif
+#ifndef ENCODER2_CHANNEL1
+#define ENCODER2_CHANNEL1           0
+#endif
+#ifndef ENCODER3_CHANNEL1
+#define ENCODER3_CHANNEL1           0
+#endif
+#ifndef ENCODER4_CHANNEL1
+#define ENCODER4_CHANNEL1           0
+#endif
+#ifndef ENCODER5_CHANNEL1
+#define ENCODER5_CHANNEL1           0
+#endif
+
+#ifndef ENCODER1_CHANNEL2
+#define ENCODER1_CHANNEL2           1
+#endif
+#ifndef ENCODER2_CHANNEL2
+#define ENCODER2_CHANNEL2           1
+#endif
+#ifndef ENCODER3_CHANNEL2
+#define ENCODER3_CHANNEL2           1
+#endif
+#ifndef ENCODER4_CHANNEL2
+#define ENCODER4_CHANNEL2           1
+#endif
+#ifndef ENCODER5_CHANNEL2
+#define ENCODER5_CHANNEL2           1
+#endif
+
+// -----------------------------------------------------------------------------
 // Relays
 // -----------------------------------------------------------------------------
 

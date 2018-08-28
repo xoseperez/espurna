@@ -2676,6 +2676,57 @@
     #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
 // -----------------------------------------------------------------------------
+
+#elif defined(XIAOMI_SMART_DESK_LAMP)
+
+    // Info
+    #define MANUFACTURER        "XIAOMI"
+    #define DEVICE              "SMART_DESK_LAMP"
+
+    // Buttons
+    #define BUTTON1_PIN         2
+    #define BUTTON2_PIN         14
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+
+    // This button doubles as switch here and as encoder mode switch below
+    // Clicking it (for less than 500ms) will turn the light on and off
+    // Double and Long clicks will not work as these are used to modify the encoder action
+    #define BUTTON1_RELAY           1
+    #define BUTTON_LNGCLICK_DELAY   500
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_AP
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_RESET
+
+    // Light
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_CHANNELS      2
+    #define LIGHT_CH1_PIN       5   // warm white
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_PIN       4   // cold white
+    #define LIGHT_CH2_INVERSE   0
+
+    // Encoder
+    // If mode is ENCODER_MODE_RATIO, the value ratio between both channels is changed
+    // when the button is not pressed, and the overall brightness when pressed
+    // If mode is ENCODER_MODE_CHANNEL, the first channel value is changed
+    // when the button is not pressed, and the second channel when pressed
+    // If no ENCODERX_BUTTON_PIN defined it will only change the value of the first defined channel
+    #define ENCODER_SUPPORT     1
+    #define ENCODER1_PIN1       12
+    #define ENCODER1_PIN2       13
+    #define ENCODER1_BUTTON_PIN 2   // active low by default, with software pullup
+    #define ENCODER1_CHANNEL1   0   // please note this value is 0-based (LIGHT_CH1 above)
+    #define ENCODER1_CHANNEL2   1   // please note this value is 0-based (LIGHT_CH2 above)
+    #define ENCODER1_MODE       ENCODER_MODE_RATIO
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 

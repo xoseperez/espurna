@@ -110,14 +110,17 @@ void setup() {
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
-
     relaySetup();
     #if BUTTON_SUPPORT
         buttonSetup();
     #endif
+    #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+        encoderSetup();
+    #endif
     #if LED_SUPPORT
         ledSetup();
     #endif
+
     #if MQTT_SUPPORT
         mqttSetup();
     #endif

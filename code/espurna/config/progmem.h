@@ -55,6 +55,9 @@ PROGMEM const char espurna_modules[] =
     #if DOMOTICZ_SUPPORT
         "DOMOTICZ "
     #endif
+    #if ENCODER_SUPPORT
+        "ENCODER "
+    #endif
     #if HOMEASSISTANT_SUPPORT
         "HOMEASSISTANT "
     #endif

@@ -741,6 +741,10 @@ void lightChannel(unsigned char id, unsigned int value) {
     }
 }
 
+void lightChannelStep(unsigned char id, int steps) {
+    lightChannel(id, lightChannel(id) + steps * LIGHT_STEP);
+}
+
 unsigned int lightBrightness() {
     return _light_brightness;
 }
