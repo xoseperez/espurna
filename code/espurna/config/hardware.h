@@ -2529,7 +2529,7 @@
     // Red
     #define LED3_PIN                    0
     #define LED3_PIN_INVERSE            0
-    #define LED2_MODE                   LED_MODE_OFF
+    #define LED3_MODE                   LED_MODE_OFF
 
     // HJL01 / BL0937
     #ifndef HLW8012_SUPPORT
