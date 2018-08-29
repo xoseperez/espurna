@@ -1156,7 +1156,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_RECEIVER_PIN     4
+    #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
@@ -1185,7 +1185,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_RECEIVER_PIN     4
+    #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
 // -----------------------------------------------------------------------------
@@ -2770,7 +2770,7 @@
     #define SHT3X_I2C_SUPPORT     1
     #define SI7021_SUPPORT        1
     #define PMSX003_SUPPORT       1
-    #define SENSEAIR_SUPPORT      1
+    #define SENSEAIR_SUPPORT1
 
 
     // A bit of lights - pin 5
@@ -2829,7 +2829,7 @@
 
     // IR - pin 4
     #define IR_SUPPORT          1
-    #define IR_RECEIVER_PIN     4
+    #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
     // A bit of DHT - pin 5
@@ -2873,7 +2873,7 @@
     #define NOFUSS_SUPPORT      1
     #define UART_MQTT_SUPPORT   1
     #define INFLUXDB_SUPPORT    1
-    #define IR_SUPPORT          1
+    #define IR_SUPPORT    1
 
 #elif defined(TRAVIS03)
 

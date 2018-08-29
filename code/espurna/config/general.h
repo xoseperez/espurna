@@ -727,7 +727,8 @@
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
-#define MQTT_TOPIC_IR               "ir"
+#define MQTT_TOPIC_IRIN             "irin"
+#define MQTT_TOPIC_IROUT            "irout"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -1065,33 +1066,51 @@
 
 #ifndef RF_RAW_SUPPORT
 #define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
-                                                // https://github.com/rhx/RF-Bridge-EFM8BB1
+                                                    // https://github.com/rhx/RF-Bridge-EFM8BB1
 #endif
 
-
 // -----------------------------------------------------------------------------
-// IR
+// IR Bridge
 // -----------------------------------------------------------------------------
 
 #ifndef IR_SUPPORT
 #define IR_SUPPORT                  0               // Do not build with IR support by default (10.25Kb)
 #endif
 
-#ifndef IR_RECEIVER_PIN
-#define IR_RECEIVER_PIN             4               // IR LED
+//#define IR_RX_PIN                   5               // GPIO the receiver is connected to
+//#define IR_TX_PIN                   4               // GPIO the transmitter is connected to
+
+#ifndef IR_USE_RAW
+#define IR_USE_RAW                  0               // Use raw codes
 #endif
 
-// 24 Buttons Set of the IR Remote
-#ifndef IR_BUTTON_SET
-#define IR_BUTTON_SET               1               // IR button set to use (see below)
+#ifndef IR_BUFFER_SIZE
+#define IR_BUFFER_SIZE              1024
+#endif
+
+#ifndef IR_TIMEOUT
+#define IR_TIMEOUT                  15U
+#endif
+
+#ifndef IR_REPEAT
+#define IR_REPEAT                   1
+#endif
+
+#ifndef IR_DELAY
+#define IR_DELAY                    100
 #endif
 
 #ifndef IR_DEBOUNCE
 #define IR_DEBOUNCE                 500             // IR debounce time in milliseconds
 #endif
 
-//Remote Buttons SET 1 (for the original Remote shipped with the controller)
-#if IR_SUPPORT
+#ifndef IR_BUTTON_SET
+#define IR_BUTTON_SET               0               // IR button set to use (see below)
+#endif
+
+// -----------------------------------------------------------------------------
+
+// Remote Buttons SET 1 (for the original Remote shipped with the controller)
 #if IR_BUTTON_SET == 1
 
 /*
@@ -1237,7 +1256,29 @@
       //{ 0xE0E08877, IR_BUTTON_MODE_TOGGLE, 9 } //Extra Button
  };
 #endif
-#endif // IR_SUPPORT
+
+//Remote Buttons SET 4
+#if IR_BUTTON_SET == 4
+/*
+   +------+------+------+
+   | OFF  | SRC  | MUTE |
+   +------+------+------+
+   ...
+   +------+------+------+
+*/
+#define IR_BUTTON_COUNT 1
+
+ const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xFFB24D, IR_BUTTON_MODE_TOGGLE, 0 } // Toggle Relay #0
+
+ };
+
+#endif
+
+#ifndef IR_BUTTON_COUNT
+#define IR_BUTTON_COUNT 0
+#endif
 
 //--------------------------------------------------------------------------------
 // Custom RF module
