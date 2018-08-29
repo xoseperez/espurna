@@ -70,13 +70,13 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
+    #define BUTTON1_RELAY           1
 
-    // Relays
+    // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
     #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // LEDs
+    // Light
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
@@ -2706,6 +2706,7 @@
     // Light
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_STEP          8
     #define LIGHT_CHANNELS      2
     #define LIGHT_CH1_PIN       5   // warm white
     #define LIGHT_CH1_INVERSE   0

@@ -895,31 +895,29 @@ function initMagnitudes(data) {
 
 <!-- removeIf(!light)-->
 
-function initColorRGB() {
+function initColor(rgb) {
 
     // check if already initialized
     var done = $("#colors > div").length;
     if (done > 0) { return; }
 
     // add template
-    var template = $("#colorRGBTemplate").children();
+    var template = $("#colorTemplate").children();
     var line = $(template).clone();
     line.appendTo("#colors");
 
     // init color wheel
     $("input[name='color']").wheelColorPicker({
-        sliders: "wrgbp"
+        sliders: (rgb ? "wrgbp" : "whsvp")
     }).on("sliderup", function() {
-        var value = $(this).wheelColorPicker("getValue", "css");
-        sendAction("color", {rgb: value});
-    });
-
-    // init bright slider
-    $("#brightness").on("change", function() {
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("color", {brightness: value});
+        if (rgb) {
+            var value = $(this).wheelColorPicker("getValue", "css");
+            sendAction("color", {rgb: value});
+        } else {
+            var color = $(this).wheelColorPicker("getColor");
+            var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
+            sendAction("color", {hsv: value});
+        }
     });
 
 }
@@ -938,28 +936,6 @@ function initCCT() {
     $("span", parent).html(value);
     sendAction("mireds", {mireds: value});
   });
-}
-
-function initColorHSV() {
-
-    // check if already initialized
-    var done = $("#colors > div").length;
-    if (done > 0) { return; }
-
-    // add template
-    var template = $("#colorHSVTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colors");
-
-    // init color wheel
-    $("input[name='color']").wheelColorPicker({
-        sliders: "whsvp"
-    }).on("sliderup", function() {
-        var color = $(this).wheelColorPicker("getColor");
-        var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
-        sendAction("color", {hsv: value});
-    });
-
 }
 
 function initChannels(num) {
@@ -992,7 +968,7 @@ function initChannels(num) {
         sendAction("channel", {id: id, value: value});
     };
 
-    // add templates
+    // add channel templates
     var i = 0;
     var template = $("#channelTemplate").children();
     for (i=0; i<max; i++) {
@@ -1007,10 +983,24 @@ function initChannels(num) {
 
     }
 
+    // Init channel dropdowns
     for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
     }
+
+    // add brightness template
+    var template = $("#brightnessTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#channels");
+
+    // init bright slider
+    $("#brightness").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("brightness", {value: value});
+    });
 
 }
 <!-- endRemoveIf(!light)-->
@@ -1180,13 +1170,13 @@ function processData(data) {
         <!-- removeIf(!light)-->
 
         if ("rgb" === key) {
-            initColorRGB();
+            initColor(true);
             $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
         if ("hsv" === key) {
-            initColorHSV();
+            initColor(false);
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
             var chunks = value.split(",");
             var obj = {};
