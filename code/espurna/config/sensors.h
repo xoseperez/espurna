@@ -2,7 +2,7 @@
 // SENSORS - General data
 // =============================================================================
 
-#define SENSOR_DEBUG                        0               // Debug sensors
+#define SENSOR_DEBUG                        1               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
 #define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
@@ -235,6 +235,8 @@
 #ifndef ECH1560_INVERTED
 #define ECH1560_INVERTED                0       // Signal is inverted
 #endif
+
+#define ECH1560_TIMEOUT                 1000
 
 //------------------------------------------------------------------------------
 // Energy Monitor general settings

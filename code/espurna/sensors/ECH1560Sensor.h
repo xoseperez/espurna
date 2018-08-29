@@ -18,7 +18,7 @@ class ECH1560Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        ECH1560Sensor(): BaseSensor(), _data() {
+        ECH1560Sensor(): BaseSensor() {
             _count = 3;
             _sensor_id = SENSOR_ECH1560_ID;
         }
@@ -74,18 +74,28 @@ class ECH1560Sensor : public BaseSensor {
 
             if (!_dirty) return;
 
+            _enableInterrupts(true);
             pinMode(_clk, INPUT);
             pinMode(_miso, INPUT);
-            _enableInterrupts(true);
 
             _dirty = false;
             _ready = true;
 
         }
 
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        void pre() {
+            _enableInterrupts(false);
+        }
+
+        // Post-read hook (usually to reset things)
+        void post() {
+            if (_ready) _enableInterrupts(true);
+        }
+
         // Loop-like method, call it in your main loop
         void tick() {
-            if (_dosync) _sync();
+            _read();
         }
 
         // Descriptive name of the sensor
@@ -130,9 +140,9 @@ class ECH1560Sensor : public BaseSensor {
             (void) gpio;
 
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
-            if (_dosync == false) {
+            if (false == _loading) {
 
-                _clk_count = 0;
+                volatile long _clk_count = 0;
 
                 // register how long the ClkHigh is high to evaluate if we are at the part where clk goes high for 1-2 ms
                 while (digitalRead(_clk) == HIGH) {
@@ -142,15 +152,21 @@ class ECH1560Sensor : public BaseSensor {
 
                 // if the Clk was high between 1 and 2 ms than, its a start of a SPI-transmission
                 if (_clk_count >= 33 && _clk_count <= 67) {
-                    _dosync = true;
+                    _loading = true;
                 }
 
             // we are in sync and logging CLK-highs
-            } else {
+            } else if (false == _loaded) {
 
-                // increment an integer to keep track of how many bits we have read.
-                _bits_count += 1;
-                _nextbit = true;
+                unsigned char value = (digitalRead(_miso) == HIGH) ? 1 : 0;
+                _data[_byte] = (_data[_byte] << 1) + value;
+                if (8 == ++_bit) {
+                    _bit = 0;
+                    if (16 == ++_byte) {
+                        _byte = 0;
+                        _loaded = true;
+                    }
+                }
 
             }
 
@@ -186,86 +202,66 @@ class ECH1560Sensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        void _sync() {
+        void _reset() {
 
-            unsigned int byte1 = 0;
-            unsigned int byte2 = 0;
-            unsigned int byte3 = 0;
-
-            _bits_count = 0;
-            while (_bits_count < 40); // skip the uninteresting 5 first bytes
-            _bits_count = 0;
-
-            while (_bits_count < 24) { // loop through the next 3 Bytes (6-8) and save byte 6 and 7 in byte1 and byte2
-
-                if (_nextbit) {
-
-                    if (_bits_count < 9) { // first Byte/8 bits in byte1
-
-                        byte1 = byte1 << 1;
-                        if (digitalRead(_miso) == HIGH) byte1 |= 1;
-                        _nextbit = false;
-
-                    } else if (_bits_count < 17) { // bit 9-16 is byte 7, store in byte2
-
-                        byte2 = byte2 << 1;
-                        if (digitalRead(_miso) == HIGH) byte2 |= 1;
-                        _nextbit = false;
-
-                    }
-
-                }
-
+            // Clean data array
+            for (unsigned char i=0; i<16; i++) {
+                _data[i] = 0;
             }
 
-            if (byte2 != 3) { // if bit byte2 is not 3, we have reached the important part, U is allready in byte1 and byte2 and next 8 Bytes will give us the Power.
+            _loaded = false;
+            _loading = false;
+            _start = 0;
 
-                // voltage = 2 * (byte1 + byte2 / 255)
-                _voltage = 2.0 * ((float) byte1 + (float) byte2 / 255.0);
+        }
 
-                // power:
-                _bits_count = 0;
-                while (_bits_count < 40); // skip the uninteresting 5 first bytes
-                _bits_count = 0;
+        void _read() {
 
-                byte1 = 0;
-                byte2 = 0;
-                byte3 = 0;
-
-                while (_bits_count < 24) { //store byte 6, 7 and 8 in byte1 and byte2 & byte3.
-
-                    if (_nextbit) {
-
-                        if (_bits_count < 9) {
-
-                            byte1 = byte1 << 1;
-                            if (digitalRead(_miso) == HIGH) byte1 |= 1;
-                            _nextbit = false;
-
-                        } else if (_bits_count < 17) {
-
-                            byte2 = byte2 << 1;
-                            if (digitalRead(_miso) == HIGH) byte2 |= 1;
-                            _nextbit = false;
-
-                        } else {
-
-                            byte3 = byte3 << 1;
-                            if (digitalRead(_miso) == HIGH) byte3 |= 1;
-                            _nextbit = false;
-
-                        }
+            // Check if stalled
+            if (false == _loaded) {
+                if (true == _loading) {
+                    if (0 == _start) {
+                        _start = millis();
+                    } else if (millis() - _start > ECH1560_TIMEOUT) {
+                        _reset();
                     }
                 }
+                return;
+            }
 
-                if (_inverted) {
-                    byte1 = 255 - byte1;
-                    byte2 = 255 - byte2;
-                    byte3 = 255 - byte3;
+            // Structure:
+            // byte
+            // ====
+            // 0..4     ??
+            // 5        V = 2 * ([5] + [6]/255)
+            // 6        must not be 3
+            // 7        ??
+            // 8..12    ??
+            // 13       P = (255*[13] + [14] + [15]/255) / 2
+            // 14
+            // 15
+
+            // If inverted logic invert values
+            if (_inverted) {
+                for (unsigned char i=0; i<16; i++) {
+                    _data[i] = 255 - _data[i];
                 }
+            }
 
-                // power = (byte1*255+byte2+byte3/255)/2
-                _apparent = ( (float) byte1 * 255 + (float) byte2 + (float) byte3 / 255.0) / 2;
+            #if SENSOR_DEBUG
+                DEBUG_MSG("[ECH1560] Parsing data: ");
+                char buffer[4];
+                for (unsigned char i=0; i<16; i++) {
+                    snprintf(buffer, sizeof(buffer), "%02X ", _data[i]);
+                    DEBUG_MSG(buffer);
+                }
+                DEBUG_MSG("\n");
+            #endif
+
+            if (_data[6] != 3) {
+
+                _voltage = 2.0 * ((float) _data[5] + (float) _data[6] / 255.0);
+                _apparent = ( (float) _data[13] * 255 + (float) _data[14] + (float) _data[15] / 255.0) / 2;
                 _current = _apparent / _voltage;
 
                 static unsigned long last = 0;
@@ -274,18 +270,16 @@ class ECH1560Sensor : public BaseSensor {
                 }
                 last = millis();
 
-                _dosync = false;
-
+            } else if (_data[6] != 0) {
+                #if SENSOR_DEBUG
+                    DEBUG_MSG("[ECH1560] Nothing connected, or out of sync!\n");
+                #endif
             }
 
-            // If byte2 is not 3 or something else than 0, something is wrong!
-            if (byte2 == 0) {
-                _dosync = false;
-            #if SENSOR_DEBUG
-                DEBUG_MSG_P(PSTR("Nothing connected, or out of sync!\n"));
-            #endif
-            }
+            _reset();
+
         }
+
 
         // ---------------------------------------------------------------------
 
@@ -293,17 +287,17 @@ class ECH1560Sensor : public BaseSensor {
         unsigned char _miso = 0;
         bool _inverted = false;
 
-        volatile long _bits_count = 0;
-        volatile long _clk_count = 0;
-        volatile bool _dosync = false;
-        volatile bool _nextbit = true;
+        volatile unsigned char _bit = 0;
+        volatile unsigned char _byte = 0;
+        volatile unsigned char _data[16];
+        volatile bool _loading = false;
+        volatile bool _loaded = false;
+        unsigned long _start = 0;
 
         double _apparent = 0;
         double _voltage = 0;
         double _current = 0;
         double _energy = 0;
-
-        unsigned char _data[24];
 
 };
 
