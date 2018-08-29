@@ -703,7 +703,6 @@ void mqttUnsubscribe(const char * topic) {
 
 void mqttEnabled(bool status) {
     _mqtt_enabled = status;
-    setSetting("mqttEnabled", status ? 1 : 0);
 }
 
 bool mqttEnabled() {
@@ -736,7 +735,7 @@ void mqttSetBroker(IPAddress ip, unsigned int port) {
 }
 
 void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
-    if (!hasSetting("mqttServer")) mqttSetBroker(ip, port);
+    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
 }
 
 void mqttReset() {
