@@ -22,9 +22,9 @@ typedef struct {
     unsigned char type;         // Type of measurement
     unsigned char global;       // Global index in its type
     double current;             // Current (last) value, unfiltered
-    double filtered;            // Filtered (averaged) value
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
+    double max_change;          // Maximum value change to report
 } sensor_magnitude_t;
 
 std::vector<BaseSensor *> _sensors;
@@ -242,7 +242,7 @@ void _sensorAPISetup() {
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
             unsigned char decimals = _magnitudeDecimals(magnitude.type);
-            double value = _sensor_realtime ? magnitude.current : magnitude.filtered;
+            double value = _sensor_realtime ? magnitude.current : magnitude.reported;
             dtostrf(value, 1-len, decimals, buffer);
         });
 
@@ -650,9 +650,19 @@ void _sensorInit() {
             new_magnitude.type = type;
             new_magnitude.global = _counts[type];
             new_magnitude.current = 0;
-            new_magnitude.filtered = 0;
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
+            new_magnitude.max_change = 0;
+
+            // TODO: find a proper way to extend this to min/max of any magnitude
+            if (MAGNITUDE_ENERGY == type) {
+                new_magnitude.max_change = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE).toFloat();
+            } else if (MAGNITUDE_TEMPERATURE == type) {
+                new_magnitude.min_change = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE).toFloat();
+            } else if (MAGNITUDE_HUMIDITY == type) {
+                new_magnitude.min_change = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE).toFloat();
+            }
+
             if (MAGNITUDE_ENERGY == type) {
                 new_magnitude.filter = new LastFilter();
             } else if (MAGNITUDE_DIGITAL == type) {
@@ -663,6 +673,7 @@ void _sensorInit() {
                 new_magnitude.filter = new MedianFilter();
             }
             new_magnitude.filter->resize(_sensor_report_every);
+
             _magnitudes.push_back(new_magnitude);
 
             DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
@@ -1190,12 +1201,18 @@ void sensorLoop() {
                 // (we do it every _sensor_report_every readings)
                 // -------------------------------------------------------------
 
-                if (0 == report_count) {
+                bool report = (0 == report_count);
+                if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0)) {
+                    // for MAGNITUDE_ENERGY, filtered value is last value
+                    double value = _magnitudeProcess(magnitude.type, current);
+                    report = (fabs(value - magnitude.reported) >= magnitude.max_change);
+                } // if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0))
+
+                if (report) {
 
                     filtered = magnitude.filter->result();
-                    magnitude.filter->reset();
                     filtered = _magnitudeProcess(magnitude.type, filtered);
-                    _magnitudes[i].filtered = filtered;
+                    magnitude.filter->reset();
 
                     // Check if there is a minimum change threshold to report
                     if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {

@@ -36,6 +36,10 @@
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
+#ifndef ENERGY_MAX_CHANGE
+#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
+#endif
+
 #ifndef SENSOR_SAVE_EVERY
 #define SENSOR_SAVE_EVERY                   0               // Save accumulating values to EEPROM (atm only energy)
                                                             // A 0 means do not save and it's the default value
