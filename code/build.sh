@@ -104,7 +104,7 @@ build_environments() {
     for environment in $environments; do
         echo -n "* espurna-$version-$environment.bin --- "
         platformio run --silent --environment $environment || exit 1
-        if [[ $(uname -s) -eq "Darwin" ]]; then
+        if [[ $(uname -s) == "Darwin" ]]; then
             stat -f %z .pioenvs/$environment/firmware.bin
         else
             stat -c %s .pioenvs/$environment/firmware.bin
