@@ -2654,6 +2654,26 @@
     #define RELAY1_PIN          4
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+#elif defined(ALLTERCO_SHELLY2)
+
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY2"
+
+    // Buttons
+    #define BUTTON1_PIN         12
+    #define BUTTON2_PIN         14
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
 // -----------------------------------------------------------------------------
 
 #elif defined(LOHAS_9W)

@@ -1163,6 +1163,18 @@ void migrate() {
             setSetting("encBtnGPIO", 0, 2);
             setSetting("encMode", ENCODER_MODE_RATIO);
 
+        #elif defined(ALLTERCO_SHELLY2)
+
+            setSetting("board", 88);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnGPIO", 1, 14);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config

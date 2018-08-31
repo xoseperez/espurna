@@ -96,6 +96,7 @@
 //#define YJZK_SWITCH_1CH
 //#define YJZK_SWITCH_3CH
 //#define XIAOMI_SMART_DESK_LAMP
+//#define ALLTERCO_SHELLY2
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
