@@ -493,7 +493,7 @@ void wifiDebug(WiFiMode_t modes) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
         DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getHostname().c_str());
         #if USE_PASSWORD
-            DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getAdminPass().c_str());
+            DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getPassword().c_str());
         #endif
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());

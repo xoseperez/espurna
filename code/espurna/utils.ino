@@ -35,7 +35,7 @@ String getHostname() {
 
 #if USE_PASSWORD
 
-String getAdminPass() {
+String getPassword() {
     const String key = F("adminPass");
     String adminPass = getSetting(key);
 

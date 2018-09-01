@@ -303,8 +303,7 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
 void _wsOnStart(JsonObject& root) {
 
     #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
-        String adminPass = getAdminPass();
-        bool changePassword = adminPass.equals(ADMIN_PASS);
+        bool changePassword = getPassword().equals(ADMIN_PASS);
     #else
         bool changePassword = false;
     #endif

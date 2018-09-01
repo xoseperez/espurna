@@ -347,7 +347,7 @@ void _onRequest(AsyncWebServerRequest *request){
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
-        String password = getAdminPass();
+        String password = getPassword();
         char httpPassword[password.length() + 1];
         password.toCharArray(httpPassword, password.length() + 1);
         return request->authenticate(WEB_USERNAME, httpPassword);
