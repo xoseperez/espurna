@@ -10,8 +10,8 @@
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
 
 #ifndef ADMIN_PASS
-#define ADMIN_PASS              "fibonacci"     // Default password (WEB, OTA, WIFI)
-                                                // MUST be 8..63 characters. (see GH issue #1151)
+#define ADMIN_PASS              "fibonacci"     // Default password (WEB, OTA, WIFI SoftAP)
+                                                // MUST be 8..63 characters. (SoftAP requirement, see GH issues #16 and #1151)
 #endif
 
 #ifndef USE_PASSWORD
