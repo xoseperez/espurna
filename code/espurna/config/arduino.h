@@ -160,6 +160,8 @@
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
+//#define SDS011_SUPPORT         1
+//#define SENSEAIR_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1
