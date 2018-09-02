@@ -431,6 +431,23 @@
 #endif
 
 //------------------------------------------------------------------------------
+// SDS011 particulates sensor
+// Enable support by passing SDS011_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SDS011_SUPPORT
+#define SDS011_SUPPORT                   0
+#endif
+
+#ifndef SDS011_RX_PIN
+#define SDS011_RX_PIN                    14
+#endif
+
+#ifndef SDS011_TX_PIN
+#define SDS011_TX_PIN                    12
+#endif
+
+//------------------------------------------------------------------------------
 // NTC sensor
 // Enable support by passing NTC_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -657,6 +674,7 @@
     GUVAS12SD_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
+    SDS011_SUPPORT || \
     NTC_SUPPORT || \
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
@@ -783,6 +801,11 @@
 #if MHZ19_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
+#endif
+
+#if SDS011_SUPPORT
+    #include <SoftwareSerial.h>
+    #include "../sensors/SDS011Sensor.h"
 #endif
 
 #if NTC_SUPPORT
