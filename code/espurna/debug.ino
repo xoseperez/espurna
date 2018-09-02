@@ -207,7 +207,7 @@ void debugSetup() {
  * This function is called automatically if ESP8266 suffers an exception
  * It should be kept quick / consise to be able to execute before hardware wdt may kick in
  */
-extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
+/*extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
 
     // This method assumes EEPROM has already been initialized
     // which is the first thing ESPurna does
@@ -232,7 +232,8 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
 
     // write stack trace to EEPROM
-    int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
+    int16_t current_address = SAVE_CRASH_EEPROM_OFF
+ET + SAVE_CRASH_STACK_TRACE;
     for (uint32_t i = stack_start; i < stack_end; i++) {
         byte* byteValue = (byte*) i;
         EEPROMr.write(current_address++, *byteValue);
@@ -240,7 +241,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     EEPROMr.commit();
 
-}
+}*/
 
 /**
  * Clears crash info

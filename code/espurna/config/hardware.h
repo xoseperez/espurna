@@ -2927,6 +2927,24 @@
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
+    
+#elif defined(PHYX_ESP12_RGB)
+
+    // Info
+    #define MANUFACTURER        "PHYX"
+    #define DEVICE              "ESP12_RGB"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       14      // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
 
 #endif
 
