@@ -2,7 +2,7 @@
 // SENSORS - General data
 // =============================================================================
 
-#define SENSOR_DEBUG                        0               // Debug sensors
+#define SENSOR_DEBUG                        1               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
 #define SENSOR_READ_MIN_INTERVAL            1               // Minimum read interval
@@ -519,6 +519,7 @@
 #ifndef PMS_HW_PORT
 #define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
 #endif
+
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag
@@ -596,6 +597,42 @@
 #endif                                                               // error correction.
 
 //------------------------------------------------------------------------------
+// SONOFF SC
+// Enable support by passing SONOFFSC_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SONOFFSC_SUPPORT
+#define SONOFFSC_SUPPORT                0
+#endif
+
+#define SONOFFSC_BAUDRATE               19200
+#define SONOFFSC_BUFFER_SIZE            256
+
+#ifndef SONOFFSC_HAS_LIGHT_REL
+#define SONOFFSC_HAS_LIGHT_REL          1       // sensor reports light in %
+#endif
+
+#ifndef SONOFFSC_HAS_DUST_REL
+#define SONOFFSC_HAS_DUST_REL           1       // sensor reports dust in %
+#endif
+
+#ifndef SONOFFSC_HAS_MOVEMENT
+#define SONOFFSC_HAS_MOVEMENT           1       // sensor reports movement
+#endif
+
+#ifndef SONOFFSC_HAS_LUX
+#define SONOFFSC_HAS_LUX                1       // sensor reports light in LUX
+#endif
+
+#ifndef SONOFFSC_HAS_DUST
+#define SONOFFSC_HAS_DUST               1       // sensor reports abs dust value
+#endif
+
+#ifndef SONOFFSC_HAS_CLAP
+#define SONOFFSC_HAS_CLAP               0       // sensor reports claps
+#endif
+
+//------------------------------------------------------------------------------
 // TMP3X analog temperature sensor
 // Enable support by passing TMP3X_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -664,6 +701,7 @@
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
     SONAR_SUPPORT || \
+    SONOFFSC_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT \
 )
@@ -815,6 +853,10 @@
 
 #if SONAR_SUPPORT
     #include "../sensors/SonarSensor.h"
+#endif
+
+#if SONOFFSC_SUPPORT
+    #include "../sensors/SonoffSCSensor.h"
 #endif
 
 #if TMP3X_SUPPORT

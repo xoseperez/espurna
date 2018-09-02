@@ -276,6 +276,7 @@
 #define SENSOR_SENSEAIR_ID          0x24
 #define SENSOR_GEIGER_ID            0x25
 #define SENSOR_NTC_ID               0x26
+#define SENSOR_SONOFFSC_ID          0x27
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -307,5 +308,9 @@
 #define MAGNITUDE_GEIGER_CPM        23
 #define MAGNITUDE_GEIGER_SIEVERT    24
 #define MAGNITUDE_COUNT             25
+#define MAGNITUDE_LIGHT_REL         26
+#define MAGNITUDE_NOISE_REL         27
+#define MAGNITUDE_DUST_REL          28
+#define MAGNITUDE_MOVEMENT          29
 
-#define MAGNITUDE_MAX               26
+#define MAGNITUDE_MAX               30

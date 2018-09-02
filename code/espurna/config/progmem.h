@@ -208,6 +208,9 @@ PROGMEM const char espurna_sensors[] =
     #if SONAR_SUPPORT
         "SONAR "
     #endif
+    #if SONOFFSC_SUPPORT
+        "SONOFFSC "
+    #endif
     #if TMP3X_SUPPORT
         "TMP3X "
     #endif
@@ -225,7 +228,9 @@ PROGMEM const unsigned char magnitude_decimals[] = {
     0, 0, 0, // PM
     0, 0, 3, 3, 0,
     4, 4, // Geiger Counter decimals
-    0
+    0,
+    0, 0, 0, // light_rel, noise_rel and dust_rel (they are %)
+    0 // movement
 };
 
 PROGMEM const char magnitude_unknown_topic[] = "unknown";
@@ -254,6 +259,11 @@ PROGMEM const char magnitude_hcho_topic[] = "hcho";
 PROGMEM const char magnitude_geiger_cpm_topic[] = "ldr_cpm";  // local dose rate [Counts per minute]
 PROGMEM const char magnitude_geiger_sv_topic[] = "ldr_uSvh";  // local dose rate [µSievert per hour]
 PROGMEM const char magnitude_count_topic[] = "count";
+PROGMEM const char magnitude_light_rel_topic[] = "light";
+PROGMEM const char magnitude_noise_rel_topic[] = "noise";
+PROGMEM const char magnitude_dust_rel_topic[] = "dust";
+PROGMEM const char magnitude_movement_topic[] = "movement";
+
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
@@ -265,7 +275,9 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_co2_topic, magnitude_lux_topic, magnitude_uv_topic,
     magnitude_distance_topic, magnitude_hcho_topic,
     magnitude_geiger_cpm_topic, magnitude_geiger_sv_topic,
-    magnitude_count_topic
+    magnitude_count_topic,
+    magnitude_light_rel_topic, magnitude_noise_rel_topic, magnitude_dust_rel_topic,
+    magnitude_movement_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -299,7 +311,9 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_ppm, magnitude_lux, magnitude_uv,
     magnitude_distance, magnitude_mgm3,
     magnitude_geiger_cpm, magnitude_geiger_sv,       // Geiger counter units
-    magnitude_empty
+    magnitude_empty,
+    magnitude_percentage, magnitude_percentage, magnitude_percentage, // light_rel, noise_rel and dust_rel
+    magnitude_empty // movement
 };
 
 #endif

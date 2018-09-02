@@ -97,6 +97,7 @@
 //#define YJZK_SWITCH_3CH
 //#define XIAOMI_SMART_DESK_LAMP
 //#define ALLTERCO_SHELLY2
+//#define ITEAD_SONOFF_SC
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -163,5 +164,6 @@
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1
+//#define SONOFFSC_SUPPORT       1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1

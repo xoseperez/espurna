@@ -2747,6 +2747,15 @@
     #define ENCODER1_CHANNEL2   1   // please note this value is 0-based (LIGHT_CH2 above)
     #define ENCODER1_MODE       ENCODER_MODE_RATIO
 
+#elif defined(ITEAD_SONOFF_SC)
+
+    // Info
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_SC"
+
+    #define DEBUG_SERIAL_SUPPORT    0
+    #define SONOFFSC_SUPPORT        1
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------

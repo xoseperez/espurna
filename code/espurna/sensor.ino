@@ -588,6 +588,13 @@ void _sensorLoad() {
     }
     #endif
 
+    #if SONOFFSC_SUPPORT
+    {
+        SonoffSCSensor * sensor = new SonoffSCSensor();
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if TMP3X_SUPPORT
     {
         TMP3XSensor * sensor = new TMP3XSensor();
