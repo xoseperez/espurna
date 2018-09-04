@@ -33,6 +33,10 @@ String getBoardName() {
     return getSetting("boardName", DEVICE_NAME);
 }
 
+String getAdminPass() {
+    return getSetting("adminPass", ADMIN_PASS);
+}
+
 String getCoreVersion() {
     String version = ESP.getCoreVersion();
     #ifdef ARDUINO_ESP8266_RELEASE

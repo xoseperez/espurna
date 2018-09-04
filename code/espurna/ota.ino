@@ -16,7 +16,7 @@ void _otaConfigure() {
     ArduinoOTA.setPort(OTA_PORT);
     ArduinoOTA.setHostname(getSetting("hostname").c_str());
     #if USE_PASSWORD
-        ArduinoOTA.setPassword(getSetting("adminPass", ADMIN_PASS).c_str());
+        ArduinoOTA.setPassword(getAdminPass().c_str());
     #endif
 }
 
