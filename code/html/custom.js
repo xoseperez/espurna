@@ -182,8 +182,8 @@ function validateForm(form) {
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = hostname.attr("hasChanged") || 0;
-    if (0 === hasChanged) {
+    var hasChanged = ("true" === hostname.attr("hasChanged"));
+    if (!hasChanged) {
         return true;
     }
 
@@ -300,10 +300,18 @@ function sendConfig(data) {
     websock.send(JSON.stringify({config: data}));
 }
 
-function resetOriginals() {
+function setOriginalsFromValues(force) {
+    var force = (true === force);
     $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
+        var initial = (null === $(this).attr("original"));
+        if (force || initial) {
+            $(this).attr("original", $(this).val());
+        }
     });
+}
+
+function resetOriginals() {
+    setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
 }
 
@@ -1458,7 +1466,7 @@ function processData(data) {
         generateAPIKey();
     }
 
-    resetOriginals();
+    setOriginalsFromValues();
 
 }
 
@@ -1472,27 +1480,27 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
-    var hasChanged = $(this).attr("hasChanged") || 0;
+    var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 
     if (typeof originalValue === "undefined") { return; }
     if ("none" === action) { return; }
 
     if (newValue !== originalValue) {
-        if (0 === hasChanged) {
+        if (!hasChanged) {
             ++numChanged;
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", 1);
+            $(this).attr("hasChanged", true);
         }
     } else {
-        if (1 === hasChanged) {
+        if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", 0);
+            $(this).attr("hasChanged", false);
         }
     }
 
