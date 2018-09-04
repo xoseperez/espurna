@@ -40,7 +40,7 @@ void _wifiConfigure() {
     #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
-    jw.enableAPFallback(true);
+    jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
     _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK).toInt();

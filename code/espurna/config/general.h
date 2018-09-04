@@ -312,6 +312,9 @@
 #define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
 #endif
 
+#ifndef WIFI_FALLBACK_APMODE
+#define WIFI_FALLBACK_APMODE        1                   // Fallback to AP mode if no STA connection
+#endif
 
 #ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
