@@ -300,10 +300,18 @@ function sendConfig(data) {
     websock.send(JSON.stringify({config: data}));
 }
 
-function resetOriginals() {
+function setOriginalsFromValues(force) {
+    var force = (true === force);
     $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
+        var initial = (null === $(this).attr("original"));
+        if (force || initial) {
+            $(this).attr("original", $(this).val());
+        }
     });
+}
+
+function resetOriginals() {
+    setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
 }
 
@@ -1458,7 +1466,7 @@ function processData(data) {
         generateAPIKey();
     }
 
-    resetOriginals();
+    setOriginalsFromValues();
 
 }
 
