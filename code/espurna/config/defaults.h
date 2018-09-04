@@ -556,9 +556,13 @@
 // General
 // -----------------------------------------------------------------------------
 
-// Default hostname will be ESPURNA-XXXXXX, where XXXXXX is last 3 octets of chipID
+// Device name (DNS, SoftAP SSID, ALEXA etc.)
+// If empty, default will be ESPURNA-XXXXXX, where XXXXXX is last 3 octets of chipID
+// When set, must be 1..31 characters. See:
+// https://github.com/xoseperez/espurna/issues/921
+// https://github.com/xoseperez/espurna/issues/1151
 #ifndef HOSTNAME
-#define HOSTNAME ""
+#define HOSTNAME                ""
 #endif
 
 // Relay providers
