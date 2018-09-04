@@ -1175,6 +1175,20 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
+        #elif defined(XIAOMI_SMART_DESK_LAMP)
+
+            setSetting("board", 89);
+
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("relays", 1);
+            setSetting("chGPIO", 0, 4);
+            setSetting("chGPIO", 1, 14);
+            setSetting("chGPIO", 2, 12);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 3, 0);
+
         #else
 
             // Allow users to define new settings without migration config
