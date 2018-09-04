@@ -97,7 +97,7 @@
 //#define YJZK_SWITCH_3CH
 //#define XIAOMI_SMART_DESK_LAMP
 //#define ALLTERCO_SHELLY2
-#define PHYX_ESP12_RGB
+//#define PHYX_ESP12_RGB
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
