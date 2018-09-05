@@ -451,6 +451,7 @@ int __get_adc_mode() {
 
 bool isNumber(const char * s) {
     unsigned char len = strlen(s);
+    if (0 == len) return false;
     bool decimal = false;
     for (unsigned char i=0; i<len; i++) {
         if (s[i] == '-') {
