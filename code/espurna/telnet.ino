@@ -36,8 +36,8 @@ void _telnetWebSocketOnSend(JsonObject& root) {
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
-    _telnetClients[clientId] = NULL;
     delete _telnetClients[clientId];
+    _telnetClients[clientId] = NULL;
     wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
