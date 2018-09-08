@@ -242,10 +242,6 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("INFO"), [](Embedis* e) {
         info();
-        wifiDebug();
-        //StreamString s;
-        //WiFi.printDiag(s);
-        //DEBUG_MSG(s.c_str());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

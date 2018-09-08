@@ -253,7 +253,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool
     if (reset) index = 0;
     if (0 == bytes) return;
     unsigned int _sectors = info_bytes2sectors(bytes);
-    DEBUG_MSG_P(PSTR("[INIT] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
+    DEBUG_MSG_P(PSTR("[MAIN] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
     index += _sectors;
 }
 
@@ -265,25 +265,25 @@ void info() {
 
     DEBUG_MSG_P(PSTR("\n\n"));
     if (strlen(APP_REVISION) > 0) {
-        DEBUG_MSG_P(PSTR("[INIT] %s %s (%s)\n"), (char *) APP_NAME, (char *) APP_VERSION, (char *) APP_REVISION);
+        DEBUG_MSG_P(PSTR("[MAIN] %s %s (%s)\n"), (char *) APP_NAME, (char *) APP_VERSION, (char *) APP_REVISION);
     } else {
-        DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
+        DEBUG_MSG_P(PSTR("[MAIN] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
     }
-    DEBUG_MSG_P(PSTR("[INIT] %s\n"), (char *) APP_AUTHOR);
-    DEBUG_MSG_P(PSTR("[INIT] %s\n\n"), (char *) APP_WEBSITE);
-    DEBUG_MSG_P(PSTR("[INIT] CPU chip ID: 0x%06X\n"), ESP.getChipId());
-    DEBUG_MSG_P(PSTR("[INIT] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
-    DEBUG_MSG_P(PSTR("[INIT] SDK version: %s\n"), ESP.getSdkVersion());
-    DEBUG_MSG_P(PSTR("[INIT] Core version: %s\n"), getCoreVersion().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), (char *) APP_AUTHOR);
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n\n"), (char *) APP_WEBSITE);
+    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
+    DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
+    DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
     FlashMode_t mode = ESP.getFlashChipMode();
-    DEBUG_MSG_P(PSTR("[INIT] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
-    DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
-    DEBUG_MSG_P(PSTR("[INIT] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
+    DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
+    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
 
     _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
@@ -296,7 +296,8 @@ void info() {
     _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("\n"));
 
-    DEBUG_MSG_P(PSTR("[INIT] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -305,26 +306,26 @@ void info() {
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
-            DEBUG_MSG_P(PSTR("[INIT]        used size:  %8u bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("[INIT]        block size: %8u bytes\n"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("[INIT]        max files:  %8u\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("[INIT]        max length: %8u\n"), fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
+            DEBUG_MSG_P(PSTR("[MAIN]        used size:  %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("[MAIN]        block size: %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        page size:  %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        max files:  %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("[MAIN]        max length: %8u\n"), fs_info.maxPathLength);
         } else {
-            DEBUG_MSG_P(PSTR("[INIT] No SPIFFS partition\n"));
+            DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
         }
         DEBUG_MSG_P(PSTR("\n"));
     #endif
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] SUPPORT: %s\n"), getEspurnaModules().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] BOARD: %s\n"), getBoardName().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] SUPPORT: %s\n"), getEspurnaModules().c_str());
     #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] SENSORS: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[INIT] WEBUI IMAGE: %s\n"), getEspurnaWebUI().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] WEBUI IMAGE: %s\n"), getEspurnaWebUI().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -333,21 +334,21 @@ void info() {
     if (reason > 0) {
         char buffer[32];
         strcpy_P(buffer, custom_reset_string[reason-1]);
-        DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), buffer);
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), buffer);
     } else {
-        DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
     }
 
-    DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
-    DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
+    DEBUG_MSG_P(PSTR("[MAIN] Settings size: %u bytes\n"), settingsSize());
+    DEBUG_MSG_P(PSTR("[MAIN] Free heap: %u bytes\n"), getFreeHeap());
     #if ADC_MODE_VALUE == ADC_VCC
-        DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
+        DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif
 
-    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
     #if SYSTEM_CHECK_ENABLED
-        if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
+        if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[MAIN] Device is in SAFE MODE\n"));
     #endif
 
     DEBUG_MSG_P(PSTR("\n"));

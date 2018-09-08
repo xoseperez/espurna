@@ -385,6 +385,11 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
+    settingsRegisterCommand(F("WIFI"), [](Embedis* e) {
+        wifiDebug();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();

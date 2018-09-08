@@ -21,6 +21,10 @@ void eepromRotate(bool value) {
     }
 }
 
+uint32_t eepromCurrent() {
+    return EEPROMr.current();
+}
+
 String eepromSectors() {
     String response;
     for (uint32_t i = 0; i < EEPROMr.size(); i++) {
