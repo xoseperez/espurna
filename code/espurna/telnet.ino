@@ -14,8 +14,10 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
 AsyncServer * _telnetServer;
 AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
-bool _authenticated[TELNET_MAX_CLIENTS];
 bool _telnetFirst = true;
+#if TELNET_PASSWORD
+    bool _authenticated[TELNET_MAX_CLIENTS];
+#endif
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -53,10 +55,14 @@ unsigned char _telnetWrite(void *data, size_t len) {
     unsigned char count = 0;
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
 
-        // Do not send broadcast messages to unauthenticated clients
-        if (_authenticated[i]) {
+        #if TELNET_PASSWORD
+            // Do not send broadcast messages to unauthenticated clients
+            if (_authenticated[i]) {
+                if (_telnetWrite(i, data, len)) ++count;
+            }
+        #else
             if (_telnetWrite(i, data, len)) ++count;
-        }
+        #endif
 
     }
     return count;
@@ -91,17 +97,19 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     }
 
     // Password
-    if (!_authenticated[clientId]) {
-        String password = getAdminPass();
-        if (strncmp(p, password.c_str(), password.length()) == 0) {
-            DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
-            _telnetWrite(clientId, "Welcome!\n");
-            _authenticated[clientId] = true;
-        } else {
-            _telnetWrite(clientId, "Password: ");
+    #if TELNET_PASSWORD
+        if (!_authenticated[clientId]) {
+            String password = getAdminPass();
+            if (strncmp(p, password.c_str(), password.length()) == 0) {
+                DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
+                _telnetWrite(clientId, "Welcome!\n");
+                _authenticated[clientId] = true;
+            } else {
+                _telnetWrite(clientId, "Password: ");
+            }
+            return;
         }
-        return;
-    }
+    #endif // TELNET_PASSWORD
 
     // Inject command
     settingsInject(data, len);
@@ -167,10 +175,14 @@ void _telnetNewClient(AsyncClient *client) {
                 debugClearCrashInfo();
             #endif
 
+            #if TELNET_PASSWORD
+                _authenticated[i] = false;
+                _telnetWrite(i, "Password: ");
+            #endif
+
             _telnetFirst = true;
-            _authenticated[i] = false;
-            _telnetWrite(i, "Password: ");
             wifiReconnectCheck();
+
             return;
 
         }
