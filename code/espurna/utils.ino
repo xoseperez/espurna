@@ -263,14 +263,18 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
 
 void info() {
 
-    DEBUG_MSG_P(PSTR("\n\n"));
+    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
+
+    // -------------------------------------------------------------------------
+
     if (strlen(APP_REVISION) > 0) {
         DEBUG_MSG_P(PSTR("[MAIN] %s %s (%s)\n"), (char *) APP_NAME, (char *) APP_VERSION, (char *) APP_REVISION);
     } else {
         DEBUG_MSG_P(PSTR("[MAIN] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
     }
-    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), (char *) APP_AUTHOR);
-    DEBUG_MSG_P(PSTR("[MAIN] %s\n\n"), (char *) APP_WEBSITE);
+    DEBUG_MSG_P(PSTR("[MAIN] xose.perez@gmail.com\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] @xoseperez\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] http://tinkerman.cat\n\n"));
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
@@ -286,6 +290,8 @@ void info() {
     DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
 
+    // -------------------------------------------------------------------------
+
     _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
     _info_print_memory_layout_line("Flash size (SDK)", ESP.getFlashChipSize(), true);
     _info_print_memory_layout_line("Reserved", 1 * SPI_FLASH_SEC_SIZE, true);
@@ -294,10 +300,6 @@ void info() {
     _info_print_memory_layout_line("SPIFFS size", info_filesystem_space());
     _info_print_memory_layout_line("EEPROM size", info_eeprom_space());
     _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("\n"));
-
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -320,16 +322,14 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[MAIN] BOARD: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] SUPPORT: %s\n"), getEspurnaModules().c_str());
-    #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR("[MAIN] SENSORS: %s\n"), getEspurnaSensors().c_str());
-    #endif // SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[MAIN] WEBUI IMAGE: %s\n"), getEspurnaWebUI().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
+    DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
+    DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
     unsigned char reason = resetReason();
     if (reason > 0) {
         char buffer[32];
@@ -337,21 +337,42 @@ void info() {
         DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), buffer);
     } else {
         DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
     }
+    DEBUG_MSG_P(PSTR("\n"));
 
-    DEBUG_MSG_P(PSTR("[MAIN] Settings size: %u bytes\n"), settingsSize());
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
+    #if SENSOR_SUPPORT
+        DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
+    #endif // SENSOR_SUPPORT
+    DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s\n"), getEspurnaWebUI().c_str());
+    DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Settings size: %u bytes (%d%%)\n"), settingsSize(), 100 * settingsSize() / SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("[MAIN] Free heap: %u bytes\n"), getFreeHeap());
     #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif
-
     DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
+    // -------------------------------------------------------------------------
+
     #if SYSTEM_CHECK_ENABLED
-        if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[MAIN] Device is in SAFE MODE\n"));
+        if (!systemCheck()) {
+            DEBUG_MSG_P(PSTR("\n"));
+            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
+        }
     #endif
 
-    DEBUG_MSG_P(PSTR("\n"));
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
 }
 
