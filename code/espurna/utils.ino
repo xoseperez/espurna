@@ -272,9 +272,8 @@ void info() {
     } else {
         DEBUG_MSG_P(PSTR("[MAIN] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
     }
-    DEBUG_MSG_P(PSTR("[MAIN] xose.perez@gmail.com\n"));
-    DEBUG_MSG_P(PSTR("[MAIN] @xoseperez\n"));
-    DEBUG_MSG_P(PSTR("[MAIN] http://tinkerman.cat\n\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
     DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
