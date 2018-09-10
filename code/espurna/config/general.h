@@ -1031,6 +1031,33 @@
 #define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
 #endif
 
+#ifndef NTP_DST_S_MONTH
+#define NTP_DST_S_MONTH              3               // DST Start month: March for Europe
+#endif
+
+#ifndef NTP_DST_E_MONTH
+#define NTP_DST_E_MONTH              10              // DST End month: Oct for Europe
+#endif
+
+#ifndef NTP_DST_S_WEEK
+#define NTP_DST_S_WEEK              5               // DST Start week: last  for Europe
+#endif
+
+#ifndef NTP_DST_E_WEEK
+#define NTP_DST_E_WEEK              5               // DST End week: last for Europe
+#endif
+
+#ifndef NTP_DST_S_DAY
+#define NTP_DST_S_DAY              1               // DST Start day: Sunday for Europe
+#endif
+
+#ifndef NTP_DST_E_DAY
+#define NTP_DST_E_DAY              1               // DST Start day: Sunday for Europe
+#endif
+
+#ifndef NTP_DST_HOUR
+#define NTP_DST_HOUR              1 + (NTP_TIME_OFFSET/60) // DST Start hour: 1am + TimeZone for Europe, only EU does teh TimeZone offset
+#endif
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------
@@ -1256,7 +1283,6 @@
       //{ 0xE0E08877, IR_BUTTON_MODE_TOGGLE, 9 } //Extra Button
  };
 #endif
-
 //Remote Buttons SET 4
 #if IR_BUTTON_SET == 4
 /*
@@ -1276,6 +1302,63 @@
 
 #endif
 
+//Remote Buttons SET 5  HX1838 Infrared Remote Control Ir Receiver Module
+// http://www.instructables.com/id/Arduino-Infrared-Remote-tutorial/
+// https://arduino-info.wikispaces.com/IR-RemoteControl (more complete)
+#if IR_BUTTON_SET == 5
+
+/*
+   +------+------+------+
+   |  CH- | CH   | CH+  |
+   +------+------+------+
+   |  |<< |  >>| |  >|| |
+   +------+------+------+
+   |  -   |  +   |  EQ  |
+   +------+------+------+
+   |  0   | 100+ | 200+ |
+   +------+------+------+
+   |  1   |  2   |  3   |
+   +------+------+------+
+   |  4   |  5   |  6   |
+   +------+------+------+
+   |  7   |  8   |  9   |
+   +------+------+------+
+*/
+
+    #define IR_BUTTON_COUNT 21
+
+    const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+	{ 0xFFA25D, IR_BUTTON_MODE_TOGGLE, 'D'}, // Serial.println(" CH-            "); 
+	{ 0xFF629D, IR_BUTTON_MODE_TOGGLE, 'C'},  // Serial.println(" CH             "); 
+	{ 0xFFE21D, IR_BUTTON_MODE_TOGGLE, 'U'},  //    Serial.println(" CH+            "); 
+
+	{ 0xFF22DD, IR_BUTTON_MODE_TOGGLE, '<'}, // Serial.println(" PREV           "); 
+	{ 0xFF02FD, IR_BUTTON_MODE_TOGGLE, '>'}, // Serial.println(" NEXT           "); 
+	{ 0xFFC23D, IR_BUTTON_MODE_TOGGLE, 'p'},   // Serial.println(" PLAY/PAUSE     "); 
+
+	{ 0xFFE01F, IR_BUTTON_MODE_TOGGLE, '-'},  //     Serial.println(" VOL-           "); 
+	{ 0xFFA857, IR_BUTTON_MODE_TOGGLE, '+'},  //     Serial.println(" VOL+           "); 
+	{ 0xFF906F, IR_BUTTON_MODE_TOGGLE, 'e'},  //    Serial.println(" EQ             "); 
+
+	{ 0xFF6897, IR_BUTTON_MODE_TOGGLE,  0 }, // Serial.println(" 0              "); 
+	{ 0xFF9867, IR_BUTTON_MODE_TOGGLE, 100}, // Serial.println(" 100+           "); 
+	{ 0xFFB04F, IR_BUTTON_MODE_TOGGLE, 200}, // Serial.println(" 200+           "); 
+
+	{ 0xFF30CF, IR_BUTTON_MODE_TOGGLE,  1 }, // Serial.println(" 1              "); 
+	{ 0xFF18E7, IR_BUTTON_MODE_TOGGLE,  2 }, // Serial.println(" 2              "); 
+	{ 0xFF7A85, IR_BUTTON_MODE_TOGGLE,  3 }, // Serial.println(" 3              "); 
+
+	{ 0xFF10EF, IR_BUTTON_MODE_TOGGLE,  4 }, // Serial.println(" 4              "); 
+	{ 0xFF38C7, IR_BUTTON_MODE_TOGGLE,  5 }, // Serial.println(" 5              "); 
+	{ 0xFF5AA5, IR_BUTTON_MODE_TOGGLE,  6 }, // Serial.println(" 6              "); 
+
+	{ 0xFF42BD, IR_BUTTON_MODE_TOGGLE,  7 }, // Serial.println(" 7              "); 
+	{ 0xFF4AB5, IR_BUTTON_MODE_TOGGLE,  8 }, // Serial.println(" 8              "); 
+	{ 0xFF52AD, IR_BUTTON_MODE_TOGGLE,  9 } // Serial.println(" 9              "); 
+    };
+
+#endif
 #ifndef IR_BUTTON_COUNT
 #define IR_BUTTON_COUNT 0
 #endif
