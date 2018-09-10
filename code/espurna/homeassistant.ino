@@ -87,8 +87,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
         config["payload_on"] = String(HOMEASSISTANT_PAYLOAD_ON);
         config["payload_off"] = String(HOMEASSISTANT_PAYLOAD_OFF);
         config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_ON);
-        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_OFF);
+        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_AVAILABLE);
+        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE);
     }
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE

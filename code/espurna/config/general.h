@@ -919,6 +919,14 @@
 #define HOMEASSISTANT_PAYLOAD_OFF   "0"         // Payload for OFF and unavailable messages
 #endif
 
+#ifndef HOMEASSISTANT_PAYLOAD_AVAILABLE
+#define HOMEASSISTANT_PAYLOAD_AVAILABLE     "1" // Payload for available messages
+#endif
+
+#ifndef HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE
+#define HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE "0" // Payload for available messages
+#endif
+
 // -----------------------------------------------------------------------------
 // INFLUXDB
 // -----------------------------------------------------------------------------
