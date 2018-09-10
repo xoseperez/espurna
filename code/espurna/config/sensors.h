@@ -725,12 +725,6 @@
 
 #if SENSOR_SUPPORT
 
-#if SENSOR_DEBUG
-    #include "../config/debug.h"
-#endif
-
-#include "../sensors/BaseSensor.h"
-
 #if AM2320_SUPPORT
     #include "../sensors/AM2320Sensor.h"
 #endif
@@ -748,12 +742,10 @@
 #endif
 
 #if CSE7766_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/CSE7766Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
-    #include <OneWire.h>
     #include "../sensors/DallasSensor.h"
 #endif
 
@@ -786,7 +778,7 @@
 #endif
 
 #if GEIGER_SUPPORT
-    #include "../sensors/GeigerSensor.h"       // The main file for geiger counting module
+    #include "../sensors/GeigerSensor.h"
 #endif
 
 #if GUVAS12SD_SUPPORT
@@ -794,37 +786,30 @@
 #endif
 
 #if HLW8012_SUPPORT
-    #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
 #endif
 
 #if MHZ19_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
 #endif
 
 #if NTC_SUPPORT
-    #include "../sensors/AnalogSensor.h"
     #include "../sensors/NTCSensor.h"
 #endif
 
 #if SDS011_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/SDS011Sensor.h"
 #endif
 
 #if SENSEAIR_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/SenseAirSensor.h"
 #endif
 
 #if PMSX003_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/PMSX003Sensor.h"
 #endif
 
 #if PZEM004T_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/PZEM004TSensor.h"
 #endif
 
@@ -845,7 +830,6 @@
 #endif
 
 #if V9261F_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
 #endif
 

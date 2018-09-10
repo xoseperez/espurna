@@ -10,8 +10,6 @@
 #undef I2C_SUPPORT
 #define I2C_SUPPORT 1 // Explicitly request I2C support.
 
-
-
 #include "Arduino.h"
 #include "I2CSensor.h"
 

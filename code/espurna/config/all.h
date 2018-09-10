@@ -30,11 +30,11 @@
 #include "defaults.h"
 #include "general.h"
 #include "dependencies.h"
+#include "debug.h"
 #include "prototypes.h"
 #include "sensors.h"
 #include "webui.h"
 #include "progmem.h"
-#include "debug.h"
 
 #ifdef USE_CORE_VERSION_H
 #include "core_version.h"
