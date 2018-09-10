@@ -267,11 +267,11 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    if (strlen(APP_REVISION) > 0) {
-        DEBUG_MSG_P(PSTR("[MAIN] %s %s (%s)\n"), (char *) APP_NAME, (char *) APP_VERSION, (char *) APP_REVISION);
-    } else {
-        DEBUG_MSG_P(PSTR("[MAIN] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
-    }
+    #if APP_REVISION == NULL
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION "\n"));
+    #else
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION " (" APP_REVISION ")\n"));
+    #endif
     DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
     DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());

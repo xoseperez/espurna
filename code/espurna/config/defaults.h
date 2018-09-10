@@ -577,5 +577,5 @@
 
 // App revision, populated by the build script
 #ifndef APP_REVISION
-#define APP_REVISION            ""
+#define APP_REVISION            NULL
 #endif
