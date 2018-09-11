@@ -28,12 +28,19 @@ bool _ntpWebSocketOnReceive(const char * key, JsonVariant& value) {
 }
 
 void _ntpWebSocketOnSend(JsonObject& root) {
-    root["ntpVisible"] = 1;
-    root["ntpStatus"] = (timeStatus() == timeSet);
-    root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
-    root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-    root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    root["ntpVisible"]    = 1;
+    root["ntpStatus"]     = (timeStatus() == timeSet);
+    root["ntpServer"]     = getSetting("ntpServer", NTP_SERVER);
+    root["ntpOffset"]     = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+    root["ntpDST"]        = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+    root["ntpRegion"]     = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    root["ntpStartMonth"] = getSetting("ntpDstStartMonth", NTP_DST_S_MONTH).toInt();
+    root["ntpEndMonth"]   = getSetting("ntpDstEndMonth", NTP_DST_E_MONTH).toInt();
+    root["ntpStartWeek"]  = getSetting("ntpDstStartWeek", NTP_DST_S_WEEK).toInt();
+    root["ntpEndWeek"]    = getSetting("ntpDstEndWeek", NTP_DST_E_WEEK).toInt();
+    root["ntpStartDay"]   = getSetting("ntpDstStartDay", NTP_DST_S_DAY).toInt();
+    root["ntpEndDay"]     = getSetting("ntpDstEndDay", NTP_DST_E_DAY).toInt();
+    root["ntpHour"]       = getSetting("ntpDstHour", NTP_DST_HOUR).toInt();
     if (ntpSynced()) root["now"] = now();
 }
 
@@ -76,7 +83,27 @@ void _ntpConfigure() {
     }
 
     uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-    NTP.setDSTZone(dst_region);
+    if (dst_region != DST_ZONE_OTHER ) {
+       DEBUG_MSG_P(PSTR("[NTP] Set by zone\n"));
+       NTP.setDSTZone(dst_region);
+    } else {
+       DEBUG_MSG_P(PSTR("[NTP] Other: Set manually\n"));
+      uint8_t dst_s_month = getSetting("ntpDstStartMonth", NTP_DST_S_MONTH).toInt();
+      uint8_t dst_e_month = getSetting("ntpDstEndMonth", NTP_DST_E_MONTH).toInt();
+      uint8_t dst_s_week  = getSetting("ntpDstStartWeek", NTP_DST_S_WEEK).toInt();
+      uint8_t dst_e_week  = getSetting("ntpDstEndWeek", NTP_DST_E_WEEK).toInt();
+      uint8_t dst_s_day   = getSetting("ntpDstStartDay", NTP_DST_S_DAY).toInt();
+      uint8_t dst_e_day   = getSetting("ntpDstEndDay", NTP_DST_E_DAY).toInt();
+      uint8_t dst_hour    = getSetting("ntpDstHour", NTP_DST_HOUR).toInt();
+      NTP.setDSTZone( dst_s_month, dst_s_week, dst_s_day, dst_e_month, dst_e_week, dst_e_day, dst_hour);
+    }
+    DEBUG_MSG_P(PSTR("[NTP] Dst Start Time: %s\n"), (char *) ntpDateTime(NTP.getDstStart()).c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Dst End   Time: %s\n"), (char *) ntpDateTime(NTP.getDstEnd()).c_str());
+    if (NTP.isSummerTime())  {
+       DEBUG_MSG_P(PSTR("[NTP] In Summer Time\n"));
+    } else {
+       DEBUG_MSG_P(PSTR("[NTP] In Standard Time\n"));
+    }
 
 }
 
