@@ -295,6 +295,9 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     }
                 } else {
                    readCycle  = -1;
+                   if (_readCount == 1) {
+                       wakeUp();
+                   }
                 }
             #endif
 
