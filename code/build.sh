@@ -10,6 +10,8 @@ is_git() {
 }
 
 # Script settings
+
+destination=../firmware
 version=$(grep APP_VERSION espurna/config/version.h | awk '{print $3}' | sed 's/"//g')
 
 if is_git; then
@@ -104,13 +106,13 @@ build_environments() {
         platformio run --silent --environment $environment || exit 1
         stat -c %s .pioenvs/$environment/firmware.bin
         [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
-            mv .pioenvs/$environment/firmware.bin ../firmware/espurna-$version/espurna-$version-$environment.bin
+            mv .pioenvs/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
     done
     echo "--------------------------------------------------------------"
 }
 
 # Parameters
-while getopts "lp" opt; do
+while getopts "lpd:" opt; do
   case $opt in
     l)
         print_available
@@ -118,6 +120,9 @@ while getopts "lp" opt; do
         ;;
     p)
         par_build=true
+        ;;
+    d)
+        destination=$OPTARG
         ;;
     esac
 done

@@ -9,8 +9,11 @@
 
 #define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
 
+// When defined, ADMIN_PASS must be 8..63 printable ASCII characters. See:
+// https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
+// https://github.com/xoseperez/espurna/issues/1151
 #ifndef ADMIN_PASS
-#define ADMIN_PASS              "fibonacci"     // Default password (WEB, OTA, WIFI)
+#define ADMIN_PASS              "fibonacci"     // Default password (WEB, OTA, WIFI SoftAP)
 #endif
 
 #ifndef USE_PASSWORD
@@ -105,6 +108,10 @@
 
 #ifndef TELNET_STA
 #define TELNET_STA              0               // By default, disallow connections via STA interface
+#endif
+
+#ifndef TELNET_PASSWORD
+#define TELNET_PASSWORD         1               // Request password to start telnet session by default
 #endif
 
 #define TELNET_PORT             23              // Port to listen to telnet clients
@@ -222,6 +229,14 @@
 #endif
 
 //------------------------------------------------------------------------------
+// ENCODER
+//------------------------------------------------------------------------------
+
+#ifndef ENCODER_SUPPORT
+#define ENCODER_SUPPORT             0
+#endif
+
+//------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
 
@@ -301,6 +316,9 @@
 #define WIFI_AP_CAPTIVE             1                   // Captive portal enabled when in AP mode
 #endif
 
+#ifndef WIFI_FALLBACK_APMODE
+#define WIFI_FALLBACK_APMODE        1                   // Fallback to AP mode if no STA connection
+#endif
 
 #ifndef WIFI_SLEEP_MODE
 #define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP     // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
@@ -719,7 +737,8 @@
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
-#define MQTT_TOPIC_IR               "ir"
+#define MQTT_TOPIC_IRIN             "irin"
+#define MQTT_TOPIC_IROUT            "irout"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -900,6 +919,14 @@
 #define HOMEASSISTANT_PAYLOAD_OFF   "0"         // Payload for OFF and unavailable messages
 #endif
 
+#ifndef HOMEASSISTANT_PAYLOAD_AVAILABLE
+#define HOMEASSISTANT_PAYLOAD_AVAILABLE     "1" // Payload for available messages
+#endif
+
+#ifndef HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE
+#define HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE "0" // Payload for available messages
+#endif
+
 // -----------------------------------------------------------------------------
 // INFLUXDB
 // -----------------------------------------------------------------------------
@@ -1057,33 +1084,51 @@
 
 #ifndef RF_RAW_SUPPORT
 #define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
-                                                // https://github.com/rhx/RF-Bridge-EFM8BB1
+                                                    // https://github.com/rhx/RF-Bridge-EFM8BB1
 #endif
 
-
 // -----------------------------------------------------------------------------
-// IR
+// IR Bridge
 // -----------------------------------------------------------------------------
 
 #ifndef IR_SUPPORT
 #define IR_SUPPORT                  0               // Do not build with IR support by default (10.25Kb)
 #endif
 
-#ifndef IR_RECEIVER_PIN
-#define IR_RECEIVER_PIN             4               // IR LED
+//#define IR_RX_PIN                   5               // GPIO the receiver is connected to
+//#define IR_TX_PIN                   4               // GPIO the transmitter is connected to
+
+#ifndef IR_USE_RAW
+#define IR_USE_RAW                  0               // Use raw codes
 #endif
 
-// 24 Buttons Set of the IR Remote
-#ifndef IR_BUTTON_SET
-#define IR_BUTTON_SET               1               // IR button set to use (see below)
+#ifndef IR_BUFFER_SIZE
+#define IR_BUFFER_SIZE              1024
+#endif
+
+#ifndef IR_TIMEOUT
+#define IR_TIMEOUT                  15U
+#endif
+
+#ifndef IR_REPEAT
+#define IR_REPEAT                   1
+#endif
+
+#ifndef IR_DELAY
+#define IR_DELAY                    100
 #endif
 
 #ifndef IR_DEBOUNCE
 #define IR_DEBOUNCE                 500             // IR debounce time in milliseconds
 #endif
 
-//Remote Buttons SET 1 (for the original Remote shipped with the controller)
-#if IR_SUPPORT
+#ifndef IR_BUTTON_SET
+#define IR_BUTTON_SET               0               // IR button set to use (see below)
+#endif
+
+// -----------------------------------------------------------------------------
+
+// Remote Buttons SET 1 (for the original Remote shipped with the controller)
 #if IR_BUTTON_SET == 1
 
 /*
@@ -1229,7 +1274,29 @@
       //{ 0xE0E08877, IR_BUTTON_MODE_TOGGLE, 9 } //Extra Button
  };
 #endif
-#endif // IR_SUPPORT
+
+//Remote Buttons SET 4
+#if IR_BUTTON_SET == 4
+/*
+   +------+------+------+
+   | OFF  | SRC  | MUTE |
+   +------+------+------+
+   ...
+   +------+------+------+
+*/
+#define IR_BUTTON_COUNT 1
+
+ const unsigned long IR_BUTTON[IR_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0xFFB24D, IR_BUTTON_MODE_TOGGLE, 0 } // Toggle Relay #0
+
+ };
+
+#endif
+
+#ifndef IR_BUTTON_COUNT
+#define IR_BUTTON_COUNT 0
+#endif
 
 //--------------------------------------------------------------------------------
 // Custom RF module

@@ -31,6 +31,9 @@ extern "C" {
 // -----------------------------------------------------------------------------
 void debugSend(const char * format, ...);
 void debugSend_P(PGM_P format, ...);
+extern "C" {
+     void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
+}
 
 // -----------------------------------------------------------------------------
 // Domoticz
@@ -156,15 +159,11 @@ void webRequestRegister(web_request_callback_f callback);
     typedef std::function<void(uint32_t, const char *, JsonObject&)> ws_on_action_callback_f;
     void wsOnActionRegister(ws_on_action_callback_f callback);
 
-    typedef std::function<void(void)> ws_on_after_parse_callback_f;
-    void wsOnAfterParseRegister(ws_on_after_parse_callback_f callback);
-
     typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
     void wsOnReceiveRegister(ws_on_receive_callback_f callback);
 #else
     #define ws_on_send_callback_f void *
     #define ws_on_action_callback_f void *
-    #define ws_on_after_parse_callback_f void *
     #define ws_on_receive_callback_f void *
 #endif
 

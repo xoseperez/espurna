@@ -618,7 +618,6 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void relaySetupWS() {
     wsOnSendRegister(_relayWebSocketOnStart);
     wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnAfterParseRegister(_relayConfigure);
     wsOnReceiveRegister(_relayWebSocketOnReceive);
 }
 
@@ -1004,8 +1003,6 @@ void relaySetup() {
     _relayBoot();
     _relayLoop();
 
-    espurnaRegisterLoop(_relayLoop);
-
     #if WEB_SUPPORT
         relaySetupWS();
     #endif
@@ -1018,6 +1015,10 @@ void relaySetup() {
     #if TERMINAL_SUPPORT
         _relayInitCommands();
     #endif
+
+    // Main callbacks
+    espurnaRegisterLoop(_relayLoop);
+    espurnaRegisterReload(_relayConfigure);
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 

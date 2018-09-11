@@ -150,13 +150,17 @@ function validateForm(form) {
 
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+    // at least eight characters (letters, numbers or special characters)
+
+    // MUST be 8..63 printable ASCII characters. See:
+    // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
+    // https://github.com/xoseperez/espurna/issues/1151
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
     if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
+        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
         return false;
     }
 
@@ -173,13 +177,13 @@ function validateForm(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = hostname.attr("hasChanged") || 0;
-    if (0 === hasChanged) {
+    var hasChanged = ("true" === hostname.attr("hasChanged"));
+    if (!hasChanged) {
         return true;
     }
 
@@ -296,10 +300,18 @@ function sendConfig(data) {
     websock.send(JSON.stringify({config: data}));
 }
 
-function resetOriginals() {
+function setOriginalsFromValues(force) {
+    var force = (true === force);
     $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
+        var initial = (null === $(this).attr("original"));
+        if (force || initial) {
+            $(this).attr("original", $(this).val());
+        }
     });
+}
+
+function resetOriginals() {
+    setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
 }
 
@@ -895,31 +907,29 @@ function initMagnitudes(data) {
 
 <!-- removeIf(!light)-->
 
-function initColorRGB() {
+function initColor(rgb) {
 
     // check if already initialized
     var done = $("#colors > div").length;
     if (done > 0) { return; }
 
     // add template
-    var template = $("#colorRGBTemplate").children();
+    var template = $("#colorTemplate").children();
     var line = $(template).clone();
     line.appendTo("#colors");
 
     // init color wheel
     $("input[name='color']").wheelColorPicker({
-        sliders: "wrgbp"
+        sliders: (rgb ? "wrgbp" : "whsvp")
     }).on("sliderup", function() {
-        var value = $(this).wheelColorPicker("getValue", "css");
-        sendAction("color", {rgb: value});
-    });
-
-    // init bright slider
-    $("#brightness").on("change", function() {
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("color", {brightness: value});
+        if (rgb) {
+            var value = $(this).wheelColorPicker("getValue", "css");
+            sendAction("color", {rgb: value});
+        } else {
+            var color = $(this).wheelColorPicker("getColor");
+            var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
+            sendAction("color", {hsv: value});
+        }
     });
 
 }
@@ -938,28 +948,6 @@ function initCCT() {
     $("span", parent).html(value);
     sendAction("mireds", {mireds: value});
   });
-}
-
-function initColorHSV() {
-
-    // check if already initialized
-    var done = $("#colors > div").length;
-    if (done > 0) { return; }
-
-    // add template
-    var template = $("#colorHSVTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colors");
-
-    // init color wheel
-    $("input[name='color']").wheelColorPicker({
-        sliders: "whsvp"
-    }).on("sliderup", function() {
-        var color = $(this).wheelColorPicker("getColor");
-        var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
-        sendAction("color", {hsv: value});
-    });
-
 }
 
 function initChannels(num) {
@@ -992,7 +980,7 @@ function initChannels(num) {
         sendAction("channel", {id: id, value: value});
     };
 
-    // add templates
+    // add channel templates
     var i = 0;
     var template = $("#channelTemplate").children();
     for (i=0; i<max; i++) {
@@ -1007,10 +995,24 @@ function initChannels(num) {
 
     }
 
+    // Init channel dropdowns
     for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
     }
+
+    // add brightness template
+    var template = $("#brightnessTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#channels");
+
+    // init bright slider
+    $("#brightness").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("brightness", {value: value});
+    });
 
 }
 <!-- endRemoveIf(!light)-->
@@ -1180,13 +1182,13 @@ function processData(data) {
         <!-- removeIf(!light)-->
 
         if ("rgb" === key) {
-            initColorRGB();
+            initColor(true);
             $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
         if ("hsv" === key) {
-            initColorHSV();
+            initColor(false);
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
             var chunks = value.split(",");
             var obj = {};
@@ -1412,6 +1414,11 @@ function processData(data) {
         if ("ntpStatus" === key) {
             value = value ? "SYNC'D" : "NOT SYNC'D";
         }
+        if ("app_revision" === key) {
+            if (0 === value) {
+                value = "";
+            }
+        }
         if ("uptime" === key) {
             ago = 0;
             var uptime  = parseInt(value, 10);
@@ -1464,7 +1471,7 @@ function processData(data) {
         generateAPIKey();
     }
 
-    resetOriginals();
+    setOriginalsFromValues();
 
 }
 
@@ -1478,27 +1485,27 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
-    var hasChanged = $(this).attr("hasChanged") || 0;
+    var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 
     if (typeof originalValue === "undefined") { return; }
     if ("none" === action) { return; }
 
     if (newValue !== originalValue) {
-        if (0 === hasChanged) {
+        if (!hasChanged) {
             ++numChanged;
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", 1);
+            $(this).attr("hasChanged", true);
         }
     } else {
-        if (1 === hasChanged) {
+        if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", 0);
+            $(this).attr("hasChanged", false);
         }
     }
 

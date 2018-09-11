@@ -43,11 +43,11 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="1" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" maxlength="63" type="password" tabindex="1" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
-                                        It must have at least <strong>five characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
+                                        It must be <strong>8..63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
                                 </div>
 
                                 <div class="pure-g">
@@ -137,8 +137,8 @@
                         </li>
 
                         <!-- removeIf(!sensor) -->
-                        <li class="pure-menu-item module module-sensors">
-                            <a href="#" class="pure-menu-link" data="panel-sensors">SENSORS</a>
+                        <li class="pure-menu-item module module-sns">
+                            <a href="#" class="pure-menu-link" data="panel-sns">SENSORS</a>
                         </li>
                         <!-- endRemoveIf(!sensor) -->
 
@@ -173,6 +173,7 @@
                     <div class="footer">
                         &copy; 2016-2018<br />
                         Xose Pérez<br/>
+                        <a href="https://twitter.com/xoseperez" target="_blank">@xoseperez</a><br/>
                         <a href="http://tinkerman.cat" target="_blank">http://tinkerman.cat</a><br/>
                         <a href="https://github.com/xoseperez/espurna" target="_blank">ESPurna @ GitHub</a><br/>
                         GPLv3 license<br/>
@@ -323,7 +324,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Hostname</label>
-                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="32" type="text" action="reboot" tabindex="1" />
+                                    <input name="hostname" class="pure-u-1 pure-u-lg-1-4"  maxlength="31" type="text" action="reboot" tabindex="1" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
@@ -522,16 +523,16 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" action="reboot" tabindex="11" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" maxlength="63" type="password" action="reboot" tabindex="11" autocomplete="false" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
-                                        It must have at least <strong>five characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
+                                        It must be <strong>8..63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Repeat password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" action="reboot" tabindex="12" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" maxlength="63" type="password" action="reboot" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -1141,7 +1142,7 @@
                     </div>
 
                     <!-- removeIf(!sensor) -->
-                    <div class="panel" id="panel-sensors">
+                    <div class="panel" id="panel-sns">
 
                         <div class="header">
                             <h1>SENSOR CONFIGURATION</h1>
@@ -1159,27 +1160,46 @@
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Read interval</label>
                                     <select class="pure-u-1 pure-u-lg-1-4" name="snsRead">
+                                        <option value="1">1 second</option>
                                         <option value="6">6 seconds</option>
                                         <option value="10">10 seconds</option>
                                         <option value="15">15 seconds</option>
                                         <option value="30">30 seconds</option>
                                         <option value="60">1 minute</option>
                                         <option value="300">5 minutes</option>
+                                        <option value="600">10 minutes</option>
+                                        <option value="900">15 minutes</option>
+                                        <option value="1800">30 minutes</option>
+                                        <option value="3600">60 minutes</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        Select the interval between readings. These will be filtered and averaged for the report. The default and recommended value is 6 seconds.
+                                        Select the interval between readings. These will be filtered and averaged for the report.
+                                        Please mind some sensors do not have fast refresh intervals. Check the sensor datasheet to know the minimum read interval.
+                                        The default and recommended value is 6 seconds.
                                     </div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Report every</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="snsReport" class="pure-u-1" type="number" min="1" step="1" max="12" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="snsReport" class="pure-u-1" type="number" min="1" step="1" max="60" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         Select the number of readings to average and report
+                                    </div>
+                                </div>
+
+                                <div class="pure-g module module-pwr">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Save every</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input name="snsSave" class="pure-u-1" type="number" min="0" step="1" max="200" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Save aggregated data to EEPROM after these many reports. At the moment this only applies to total energy readings.
+                                        Please mind: saving data to EEPROM too often will wear out the flash memory quickly.
+                                        Set it to 0 to disable this feature (default value).
                                     </div>
                                 </div>
 
@@ -1191,9 +1211,9 @@
                                     </select>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-cse module-emon module-pzem">
+                                <div class="pure-g module module-pwr">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy units</label>
-                                    <select name="energyUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
+                                    <select name="eneUnits" tabindex="16" class="pure-u-1 pure-u-lg-1-4">
                                         <option value="0">Joules (J)</option>
                                         <option value="1">Kilowatts·hour (kWh)</option>
                                     </select>
@@ -1348,7 +1368,7 @@
                 <label class="pure-u-1 pure-u-lg-1-4 more">Static IP</label>
                 <input class="pure-u-1 pure-u-lg-3-4 more" name="ip" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
                 <div class="pure-u-0 pure-u-lg-1-4 more"></div>
-                <div class="pure-u-1 pure-u-lg-3-4 hint more">Leave empty for DNS negotiation</div>
+                <div class="pure-u-1 pure-u-lg-3-4 hint more">Leave empty for DHCP negotiation</div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Gateway IP</label>
                 <input class="pure-u-1 pure-u-lg-3-4 more" name="gw" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
@@ -1518,23 +1538,19 @@
         <!-- endRemoveIf(!sensor) -->
 
         <!-- removeIf(!light) -->
-        <div id="colorRGBTemplate" class="template">
+        <div id="colorTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Color</label>
                 <input class="pure-u-1 pure-u-lg-1-4" data-wcp-layout="block" name="color" readonly />
             </div>
 
+        </div>
+
+        <div id="brightnessTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Brightness</label>
                 <input type="range" min="0" max="255" class="slider pure-u-lg-1-4" id="brightness">
                 <span class="slider brightness pure-u-lg-1-4"></span>
-            </div>
-        </div>
-
-        <div id="colorHSVTemplate" class="template">
-            <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Color</label>
-                <input class="pure-u-1 pure-u-lg-1-4" data-wcp-layout="block" name="color" readonly />
             </div>
         </div>
 

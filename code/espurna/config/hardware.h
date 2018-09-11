@@ -70,13 +70,13 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
+    #define BUTTON1_RELAY           1
 
-    // Relays
+    // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
     #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // LEDs
+    // Light
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
@@ -721,7 +721,7 @@
     // the port and remove UART noise on serial line
     #if not RFB_DIRECT
     #define SERIAL_BAUDRATE         19200
-    //#define DEBUG_SERIAL_SUPPORT    0
+    #define DEBUG_SERIAL_SUPPORT    0
     #endif
 
 #elif defined(ITEAD_SONOFF_B1)
@@ -934,6 +934,32 @@
 // YJZK
 // -----------------------------------------------------------------------------
 
+#elif defined(YJZK_SWITCH_1CH)
+
+    // Info
+    #define MANUFACTURER        "YJZK"
+    #define DEVICE              "SWITCH_1CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+
 #elif defined(YJZK_SWITCH_2CH)
 
     // Info
@@ -945,7 +971,18 @@
     #define BUTTON2_PIN         9
 
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
     #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
 
     #define BUTTON1_RELAY       1
     #define BUTTON2_RELAY       2
@@ -961,6 +998,57 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    0
 
+// YJZK 3CH switch
+// Also Lixin Touch Wifi 3M
+
+#elif defined(YJZK_SWITCH_3CH)
+
+    // Info
+    #define MANUFACTURER        "YJZK"
+    #define DEVICE              "SWITCH_3CH"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON2_PIN         9
+    #define BUTTON3_PIN         10
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON1_CLICK       BUTTON_MODE_NONE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON2_CLICK       BUTTON_MODE_NONE
+    #define BUTTON2_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_PRESS       BUTTON_MODE_TOGGLE
+    #define BUTTON3_CLICK       BUTTON_MODE_NONE
+    #define BUTTON3_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON3_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_RESET
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON3_RELAY       3
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY2_PIN          5
+    #define RELAY3_PIN          4
+
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
@@ -1068,7 +1156,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_RECEIVER_PIN     4
+    #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
 #elif defined(MAGICHOME_LED_CONTROLLER_20)
@@ -1097,7 +1185,7 @@
 
     // IR
     #define IR_SUPPORT          1
-    #define IR_RECEIVER_PIN     4
+    #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
 // -----------------------------------------------------------------------------
@@ -2441,7 +2529,7 @@
     // Red
     #define LED3_PIN                    0
     #define LED3_PIN_INVERSE            0
-    #define LED2_MODE                   LED_MODE_OFF
+    #define LED3_MODE                   LED_MODE_OFF
 
     // HJL01 / BL0937
     #ifndef HLW8012_SUPPORT
@@ -2456,7 +2544,6 @@
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
-
 
 // -----------------------------------------------------------------------------
 // VANZAVANZU Smart Outlet Socket (based on BL0937 or HJL-01)
@@ -2503,6 +2590,8 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// -----------------------------------------------------------------------------
+
 #elif defined(GENERIC_AG_L4)
 
     // Info
@@ -2547,6 +2636,136 @@
     #define LIGHT_CH1_INVERSE           0
     #define LIGHT_CH2_INVERSE           0
     #define LIGHT_CH3_INVERSE           0
+
+// -----------------------------------------------------------------------------
+
+#elif defined(ALLTERCO_SHELLY1)
+
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY1"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+#elif defined(ALLTERCO_SHELLY2)
+
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY2"
+
+    // Buttons
+    #define BUTTON1_PIN         12
+    #define BUTTON2_PIN         14
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+// -----------------------------------------------------------------------------
+
+#elif defined(LOHAS_9W)
+
+    // Info
+    #define MANUFACTURER        "LOHAS"
+    #define DEVICE              "E27_9W"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9231
+    #define MY92XX_CHIPS        2
+    #define MY92XX_DI_PIN       13
+    #define MY92XX_DCKI_PIN     15
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3, 4
+    #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
+
+// -----------------------------------------------------------------------------
+
+#elif defined(XIAOMI_SMART_DESK_LAMP)
+
+    // Info
+    #define MANUFACTURER        "XIAOMI"
+    #define DEVICE              "SMART_DESK_LAMP"
+
+    // Buttons
+    #define BUTTON1_PIN         2
+    #define BUTTON2_PIN         14
+
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+
+    // This button doubles as switch here and as encoder mode switch below
+    // Clicking it (for less than 500ms) will turn the light on and off
+    // Double and Long clicks will not work as these are used to modify the encoder action
+    #define BUTTON1_RELAY           1
+    #define BUTTON_LNGCLICK_DELAY   500
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
+
+    // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_AP
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_RESET
+
+    // Light
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+    #define LIGHT_STEP          8
+    #define LIGHT_CHANNELS      2
+    #define LIGHT_CH1_PIN       5   // warm white
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_PIN       4   // cold white
+    #define LIGHT_CH2_INVERSE   0
+
+    // Encoder
+    // If mode is ENCODER_MODE_RATIO, the value ratio between both channels is changed
+    // when the button is not pressed, and the overall brightness when pressed
+    // If mode is ENCODER_MODE_CHANNEL, the first channel value is changed
+    // when the button is not pressed, and the second channel when pressed
+    // If no ENCODERX_BUTTON_PIN defined it will only change the value of the first defined channel
+    #define ENCODER_SUPPORT     1
+    #define ENCODER1_PIN1       12
+    #define ENCODER1_PIN2       13
+    #define ENCODER1_BUTTON_PIN 2   // active low by default, with software pullup
+    #define ENCODER1_CHANNEL1   0   // please note this value is 0-based (LIGHT_CH1 above)
+    #define ENCODER1_CHANNEL2   1   // please note this value is 0-based (LIGHT_CH2 above)
+    #define ENCODER1_MODE       ENCODER_MODE_RATIO
+
+#elif defined(PHYX_ESP12_RGB)
+
+    // Info
+    #define MANUFACTURER        "PHYX"
+    #define DEVICE              "ESP12_RGB"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       14      // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
@@ -2590,7 +2809,7 @@
     #define SHT3X_I2C_SUPPORT     1
     #define SI7021_SUPPORT        1
     #define PMSX003_SUPPORT       1
-    #define SENSEAIR_SUPPORT      1
+    #define SENSEAIR_SUPPORT1
 
 
     // A bit of lights - pin 5
@@ -2649,7 +2868,7 @@
 
     // IR - pin 4
     #define IR_SUPPORT          1
-    #define IR_RECEIVER_PIN     4
+    #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
     // A bit of DHT - pin 5
@@ -2693,7 +2912,7 @@
     #define NOFUSS_SUPPORT      1
     #define UART_MQTT_SUPPORT   1
     #define INFLUXDB_SUPPORT    1
-    #define IR_SUPPORT          1
+    #define IR_SUPPORT    1
 
 #elif defined(TRAVIS03)
 

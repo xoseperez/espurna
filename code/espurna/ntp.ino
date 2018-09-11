@@ -179,11 +179,11 @@ void ntpSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_ntpWebSocketOnSend);
         wsOnReceiveRegister(_ntpWebSocketOnReceive);
-        wsOnAfterParseRegister([]() { _ntp_configure = true; });
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(_ntpLoop);
+    espurnaRegisterReload([]() { _ntp_configure = true; });
 
 }
 
