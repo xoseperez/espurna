@@ -231,14 +231,16 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff Basic**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
 |![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)||
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
-|![Itead S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
-|**Itead S20**|**WorkChoice EcoPlug**|**Neo Coolcam NAS WR01W**|
+|![Itead S20](images/devices/itead-s20.jpg)|![Itead S20](images/devices/itead-s26.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
+|**Itead S20**|**Itead S26**|**Neo Coolcam NAS WR01W**|
 |![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![KMC 70011](images/devices/kmc-70011.jpg)|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)|
 |**Schuko Wifi Plug**|**KMC 70011**|**Xenon SM-PW702U**|
 |![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**HomeCube 16A**|
+|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|||
+|**WorkChoice EcoPlug**|||
 |![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm Power Strip](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
 |**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK switch](images/devices/yjzk-2gang-switch.jpg)|
