@@ -231,7 +231,12 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("HEAP"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Free HEAP: %d bytes\n"), getFreeHeap());
+        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("STACK"), [](Embedis* e) {
+        infoMemory("Stack", 4096, getFreeStack());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 

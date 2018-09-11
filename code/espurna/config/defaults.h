@@ -574,8 +574,3 @@
 #ifndef LIGHT_PROVIDER
 #define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif
-
-// App revision, populated by the build script
-#ifndef APP_REVISION
-#define APP_REVISION            NULL
-#endif
