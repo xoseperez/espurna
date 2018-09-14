@@ -298,6 +298,16 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    settingsRegisterCommand(F("CONFIG"), [](Embedis* e) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        settingsGetJson(root);
+        String output;
+        root.printTo(output);
+        DEBUG_MSG(output.c_str());
+        DEBUG_MSG_P(PSTR("\n+OK\n"));
+    });
+
 }
 
 // -----------------------------------------------------------------------------
