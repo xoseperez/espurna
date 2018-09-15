@@ -30,38 +30,43 @@
 
                 <form id="formPassword" class="pure-form" action="/" method="post">
 
-                    <div class="panel block">
+                    <div class="panel block" id="panel-password">
 
                         <div class="header">
                             <h1>SECURITY</h1>
-                            <h2>Before using this device you have to change the default password for the user 'admin'. This password will be used for the <strong>AP mode hotspot</strong>, the <strong>web interface</strong> (where you are now) and the <strong>over-the-air updates</strong>.</h2>
+                            <h2>Before using this device you have to change the default password for the user <strong>admin</strong>. This password will be used for the <strong>AP mode hotspot</strong>, the <strong>web interface</strong> (where you are now) and the <strong>over-the-air updates</strong>.</h2>
                         </div>
 
                         <div class="page">
 
                             <fieldset>
-
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" maxlength="63" type="password" tabindex="1" autocomplete="false" />
-                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
-                                        It must be <strong>8..63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="adminPass">New Password</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass" maxlength="63" type="password" tabindex="1" autocomplete="false" spellcheck="false" />
+                                    <span class="no-select password-reveal"></span>
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Repeat password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" type="password" tabindex="2" autocomplete="false" />
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="adminPass_confirm">Repeat password</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="adminPass_confirm" type="password" tabindex="2" autocomplete="false" spellcheck="false" />
+                                    <span class="no-select password-reveal"></span>
                                 </div>
-
-                                <div class="pure-u-0 pure-u-lg-1-4 more"></div>
-                                <button class="pure-button button-update-password" type="button">Update</button>
-
                             </fieldset>
+
+                            <div class="pure-g">
+                                <div class="pure-u-1 pure-u-lg-1 hint">
+                                    Password must be <strong>8..63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
+                            </div>
+
+
+                            <div class="pure-g">
+                                <button class="pure-u-11-24 pure-u-lg-1-4 pure-button button-generate-password" type="button" title="Generate password based on password policy">Generate</button>
+                                <div class="pure-u-2-24 pure-u-lg-1-2"></div>
+                                <button class="pure-u-11-24 pure-u-lg-1-4 pure-button button-update-password" type="button" title="Save new password">Save</button>
+                            </div>
+
                         </div>
                     </div>
-
                 </form>
 
             </div> <!-- content -->
@@ -523,16 +528,16 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" maxlength="63" type="password" action="reboot" tabindex="11" autocomplete="false" />
+                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" placeholder="New password" maxlength="63" type="password" action="reboot" tabindex="11" autocomplete="false" spellcheck="false" />
+                                    <span class="no-select password-reveal"></span>
+                                    <div class="pure-u-1 pure-u-lg-1-4"></div>
+                                    <input name="adminPass_confirm" class="pure-u-1 pure-u-lg-3-4" placeholder="Repeat password" maxlength="63" type="password" action="reboot" tabindex="12" autocomplete="false" spellcheck="false" />
+                                    <span class="no-select password-reveal"></span>
+
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         The administrator password is used to access this web interface (user 'admin'), but also to connect to the device when in AP mode or to flash a new firmware over-the-air (OTA).<br />
                                         It must be <strong>8..63 characters</strong> (numbers and letters and any of these special characters: _,.;:~!?@#$%^&amp;*&lt;&gt;\|(){}[]) and have at least <strong>one lowercase</strong> and <strong>one uppercase</strong> or <strong>one number</strong>.</div>
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Repeat password</label>
-                                    <input name="adminPass" class="pure-u-1 pure-u-lg-3-4" maxlength="63" type="password" action="reboot" tabindex="12" autocomplete="false" />
                                 </div>
 
                                 <div class="pure-g">
@@ -783,12 +788,13 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT User</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttUser" type="text" tabindex="23" placeholder="Leave blank if no user" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttUser" type="text" tabindex="23" placeholder="Leave blank if no user" autocomplete="off" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT Password</label>
-                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPassword" type="password" tabindex="24" placeholder="Leave blank if no pass" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="mqttPassword" type="password" tabindex="24" placeholder="Leave blank if no pass" autocomplete="new-password" spellcheck="false" />
+                                    <span class="no-select password-reveal"></span>
                                 </div>
 
                                 <div class="pure-g">
@@ -1096,12 +1102,13 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Username</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="off" />
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="false" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="new-password" spellcheck="false" />
+                                    <span class="no-select password-reveal"></span>
                                 </div>
 
                             </fieldset>
@@ -1363,7 +1370,8 @@
                 <div class="pure-u-1-6 pure-u-lg-1-12"><button type="button" class="pure-button button-more-network pure-u-1">...</button></div>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Password</label>
-                <input class="pure-u-1 pure-u-lg-3-4 more" name="pass" type="password" action="reconnect" value="" tabindex="0" autocomplete="false" />
+                <input class="pure-u-1 pure-u-lg-3-4 more" name="pass" type="password" action="reconnect" value="" tabindex="0" autocomplete="new-password" spellcheck="false" />
+                <span class="no-select password-reveal more"></span>
 
                 <label class="pure-u-1 pure-u-lg-1-4 more">Static IP</label>
                 <input class="pure-u-1 pure-u-lg-3-4 more" name="ip" type="text" action="reconnect" value="" maxlength="15" tabindex="0" autocomplete="false" />
@@ -1586,7 +1594,7 @@
         <!-- removeIf(!rfm69) -->
         <div id="nodeTemplate" class="template">
             <div class="pure-g">
-                <div class="pure-u-md-1-6 pure-u-1-2"><input name="node" type="text" class="pure-u-11-12" value="" size="8" tabindex="0" placeholder="Node ID"></div>
+                <div class="pure-u-md-1-6 pure-u-1-2"><input name="node" type="text" class="pure-u-11-12" value="" size="8" tabindex="0" placeholder="Node ID" autocomplete="false"></div>
                 <div class="pure-u-md-1-6 pure-u-1-2"><input name="key" type="text" class="pure-u-11-12" value="" size="8" tabindex="0" placeholder="Key"></div>
                 <div class="pure-u-md-1-2 pure-u-3-4"><input name="topic" type="text" class="pure-md-11-12 pure-u-23-24" value="" size="8" tabindex="0" placeholder="MQTT Topic"></div>
                 <div class="pure-u-md-1-6 pure-u-1-4"><button type="button" class="pure-button button-del-mapping pure-u-5-6 pure-u-md-5-6">Del</button></div>

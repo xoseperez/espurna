@@ -146,8 +146,7 @@ function loadTimeZones() {
 
 }
 
-function validateForm(form) {
-
+function validatePassword(password) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
     // at least eight characters (letters, numbers or special characters)
@@ -155,16 +154,26 @@ function validateForm(form) {
     // MUST be 8..63 printable ASCII characters. See:
     // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
     // https://github.com/xoseperez/espurna/issues/1151
+
     var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
+    return (
+        (password !== undefined)
+        && (typeof password === "string")
+        && (password.length > 0)
+        && re_password.test(password)
+    );
+}
+
+function validateForm(form) {
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
+    if (!validatePassword(adminPass1)) {
         alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
         return false;
     }
 
-    var adminPass2 = $("input[name='adminPass']", form).last().val();
+    var adminPass2 = $("input[name='adminPass_confirm']", form).last().val();
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
         return false;
@@ -225,6 +234,12 @@ function addValue(data, name, value) {
         "node", "key", "topic"
     ];
 
+
+    // join both adminPass and ..._confirm
+    if (name.startsWith("adminPass")) {
+        name = "adminPass";
+    }
+
     if (name in data) {
         if (!Array.isArray(data[name])) {
             data[name] = [data[name]];
@@ -260,23 +275,64 @@ function getData(form) {
 
 }
 
-function randomString(length, chars) {
-    var mask = "";
-    if (chars.indexOf("a") > -1) { mask += "abcdefghijklmnopqrstuvwxyz"; }
-    if (chars.indexOf("A") > -1) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
-    if (chars.indexOf("#") > -1) { mask += "0123456789"; }
-    if (chars.indexOf("@") > -1) { mask += "ABCDEF"; }
-    if (chars.indexOf("!") > -1) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
-    var result = "";
-    for (var i = length; i > 0; --i) {
-        result += mask[Math.round(Math.random() * (mask.length - 1))];
+function randomString(length, args) {
+    if (typeof args === "undefined") {
+        args = {
+            lowercase: true,
+            uppercase: true,
+            numbers: true,
+            special: true
+        }
     }
-    return result;
+
+    var mask = "";
+    if (args.lowercase) { mask += "abcdefghijklmnopqrstuvwxyz"; }
+    if (args.uppercase) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
+    if (args.numbers || args.hex) { mask += "0123456789"; }
+    if (args.hex) { mask += "ABCDEF"; }
+    if (args.special) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
+
+    var source = new Uint32Array(length);
+    var result = new Array(length);
+
+    window.crypto.getRandomValues(source).forEach(function(value, i) {
+        result[i] = mask[value % mask.length];
+    });
+
+    return result.join("");
 }
 
 function generateAPIKey() {
-    var apikey = randomString(16, "@#");
+    var apikey = randomString(16, {hex: true});
     $("input[name='apiKey']").val(apikey);
+    return false;
+}
+
+function generatePassword() {
+    var password = "";
+    do {
+        password = randomString(10);
+    } while (!validatePassword(password));
+
+    return password;
+}
+
+function toggleVisiblePassword() {
+    var elem = this.previousElementSibling;
+    if (elem.type === "password") {
+        elem.type = "text";
+    } else {
+        elem.type = "password";
+    }
+    return false;
+}
+
+function doGeneratePassword() {
+    $("input", $("#formPassword"))
+        .val(generatePassword())
+        .each(function() {
+            this.type = "text";
+        });
     return false;
 }
 
@@ -753,6 +809,7 @@ function addNetwork() {
         $(this).attr("tabindex", tabindex);
         tabindex++;
     });
+    $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
     line.appendTo("#networks");
@@ -1575,12 +1632,15 @@ $(function() {
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
+    $(".password-reveal").on("click", toggleVisiblePassword);
+
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
     $(".button-update").on("click", doUpdate);
     $(".button-update-password").on("click", doUpdatePassword);
+    $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);
