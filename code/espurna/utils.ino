@@ -6,6 +6,11 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+extern "C" {
+    #include <cont.h>
+    extern cont_t g_cont;
+}
+
 #include <Ticker.h>
 Ticker _defer_reset;
 
@@ -62,6 +67,22 @@ String getCoreRevision() {
 unsigned int getFreeHeap() {
     if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
     return ESP.getFreeHeap();
+}
+
+unsigned int getInitialFreeHeap() {
+    static unsigned int _heap = 0;
+    if (0 == _heap) {
+        _heap = getFreeHeap();
+    }
+    return _heap;
+}
+
+unsigned int getUsedHeap() {
+    return getInitialFreeHeap() - getFreeHeap();
+}
+
+unsigned int getFreeStack() {
+    return cont_get_free_stack(&g_cont);
 }
 
 String getEspurnaModules() {
@@ -140,7 +161,7 @@ void heartbeat() {
 
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
-        DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
+        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
         #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
@@ -261,16 +282,30 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
     _info_print_memory_layout_line(name, bytes, false);
 }
 
+void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
+
+    DEBUG_MSG_P(
+        PSTR("[MAIN] %-6s: %5u bytes total - %5u bytes used (%2u%%) - %5u bytes free (%2u%%)\n"),
+        name,
+        total_memory,
+        total_memory - free_memory,
+        100 * (total_memory - free_memory) / total_memory,
+        free_memory,
+        100 * free_memory / total_memory
+    );
+
+}
+
 void info() {
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
     // -------------------------------------------------------------------------
 
-    #if APP_REVISION == NULL
-        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION "\n"));
-    #else
+    #if defined(APP_REVISION)
         DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION " (" APP_REVISION ")\n"));
+    #else
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION "\n"));
     #endif
     DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
     DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
@@ -327,6 +362,13 @@ void info() {
 
     // -------------------------------------------------------------------------
 
+    infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
+    infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+    infoMemory("Stack", 4096, getFreeStack());
+    DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
+
     DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
     unsigned char reason = resetReason();
@@ -353,8 +395,6 @@ void info() {
     // -------------------------------------------------------------------------
 
     DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Settings size: %u bytes (%d%%)\n"), settingsSize(), 100 * settingsSize() / SPI_FLASH_SEC_SIZE);
-    DEBUG_MSG_P(PSTR("[MAIN] Free heap: %u bytes\n"), getFreeHeap());
     #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif

@@ -1335,11 +1335,11 @@
 #endif
 
 #ifndef RFM69_NODE_ID
-#define RFM69_NODE_ID               2
+#define RFM69_NODE_ID               1
 #endif
 
 #ifndef RFM69_GATEWAY_ID
-#define RFM69_GATEWAY_ID            2
+#define RFM69_GATEWAY_ID            1
 #endif
 
 #ifndef RFM69_NETWORK_ID
@@ -1347,7 +1347,7 @@
 #endif
 
 #ifndef RFM69_PROMISCUOUS
-#define RFM69_PROMISCUOUS           1
+#define RFM69_PROMISCUOUS           0
 #endif
 
 #ifndef RFM69_PROMISCUOUS_SENDS
