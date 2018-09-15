@@ -38,6 +38,11 @@ String eepromSectors() {
 
 void _eepromInitCommands() {
 
+    settingsRegisterCommand(F("EEPROM"), [](Embedis* e) {
+        infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
         EEPROMr.dump(settingsSerial());
         DEBUG_MSG_P(PSTR("\n+OK\n"));

@@ -53,6 +53,9 @@ void setup() {
     // Basic modules, will always run
     // -------------------------------------------------------------------------
 
+    // Cache initial free heap value
+    getInitialFreeHeap();
+
     // Serial debug
     #if DEBUG_SUPPORT
         debugSetup();

@@ -12,9 +12,7 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#if PMS_USE_SOFT
 #include <SoftwareSerial.h>
-#endif
 
 // Generic data
 #define PMS_BAUD_RATE       9600

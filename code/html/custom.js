@@ -1414,11 +1414,6 @@ function processData(data) {
         if ("ntpStatus" === key) {
             value = value ? "SYNC'D" : "NOT SYNC'D";
         }
-        if ("app_revision" === key) {
-            if (0 === value) {
-                value = "";
-            }
-        }
         if ("uptime" === key) {
             ago = 0;
             var uptime  = parseInt(value, 10);

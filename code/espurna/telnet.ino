@@ -69,7 +69,7 @@ unsigned char _telnetWrite(void *data, size_t len) {
 }
 
 bool _telnetWrite(unsigned char clientId, const char * message) {
-    _telnetWrite(clientId, (void *) message, strlen(message));
+    return _telnetWrite(clientId, (void *) message, strlen(message));
 }
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
