@@ -1189,6 +1189,21 @@ void migrate() {
             setSetting("chLogic", 1, 0);
             setSetting("chLogic", 3, 0);
 
+        #elif defined(IWOOLE_LED_TABLE_LAMP)
+
+            setSetting("board", 90);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 12);
+            setSetting("chGPIO", 1, 5);
+            setSetting("chGPIO", 2, 14);
+            setSetting("chGPIO", 3, 4);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("relays", 1);
+
         #else
 
             // Allow users to define new settings without migration config
