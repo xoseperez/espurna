@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <functional>
 #include <pgmspace.h>
+#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"
