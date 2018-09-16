@@ -532,11 +532,11 @@ function doReconnect(ask) {
 
 function doUpdate() {
 
-    var form = $("#formSave");
-    if (validateForm(form)) {
+    var forms = $(".form-settings");
+    if (validateForm(forms)) {
 
         // Get data
-        sendConfig(getData(form));
+        sendConfig(getData(forms));
 
         // Empty special fields
         $(".pwrExpected").val(0);

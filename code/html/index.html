@@ -28,7 +28,7 @@
 
             <div class="content">
 
-                <form id="formPassword" class="pure-form" action="/" method="post">
+                <form id="formPassword" class="pure-form">
 
                     <div class="panel block" id="panel-password">
 
@@ -314,8 +314,7 @@
                     </div>
                 </div>
 
-                <form id="formSave" class="pure-form" action="/" method="post" enctype="multipart/form-data">
-
+                <form id="form-general" class="pure-form form-settings">
                     <div class="panel" id="panel-general">
 
                         <div class="header">
@@ -387,7 +386,9 @@
                             </fieldset>
                         </div>
                     </div>
+                </form>
 
+                <form id="form-relay" class="pure-form form-settings">
                     <div class="panel" id="panel-relay">
 
                         <div class="header">
@@ -419,8 +420,10 @@
 
                         </div>
                     </div>
+                </form>
 
-                    <!-- removeIf(!light) -->
+                <!-- removeIf(!light) -->
+                <form id="form-color" class="pure-form form-settings">
                     <div class="panel" id="panel-color">
 
                         <div class="header">
@@ -506,8 +509,10 @@
                             </fieldset>
                         </div>
                     </div>
-                    <!-- endRemoveIf(!light) -->
+                </form>
+                <!-- endRemoveIf(!light) -->
 
+                <form id="form-admin" class="pure-form form-settings">
                     <div class="panel" id="panel-admin">
 
                         <div class="header">
@@ -620,7 +625,9 @@
                             </fieldset>
                         </div>
                     </div>
+                </form>
 
+                <form id="form-wifi" class="pure-form form-settings">
                     <div class="panel" id="panel-wifi">
 
                         <div class="header">
@@ -662,7 +669,9 @@
                             </fieldset>
                         </div>
                     </div>
+                </form>
 
+                <form id="form-schedule" class="pure-form form-settings">
                     <div class="panel" id="panel-schedule">
 
                         <div class="header">
@@ -686,8 +695,10 @@
                         </div>
 
                     </div>
+                </form>
 
-                    <!-- removeIf(!rfm69) -->
+                <!-- removeIf(!rfm69) -->
+                <form id="form-mapping" class="pure-form form-settings">
                     <div class="panel" id="panel-mapping">
 
                         <div class="header">
@@ -716,10 +727,12 @@
 
                             </fieldset>
                         </div>
+
                     </div>
+                </form>
 
+                <form id="form-messages" class="pure-form">
                     <div class="panel" id="panel-messages">
-
                         <div class="header">
                             <h1>MESSAGES</h1>
                             <h2>
@@ -758,8 +771,10 @@
 
                         </div>
                     </div>
-                    <!-- endRemoveIf(!rfm69) -->
+                </form>
+                <!-- endRemoveIf(!rfm69) -->
 
+                <form id="form-mqtt" class="pure-form form-settings">
                     <div class="panel" id="panel-mqtt">
 
                         <div class="header">
@@ -879,7 +894,9 @@
                         </div>
 
                     </div>
+                </form>
 
+                <form id="form-ntp" class="pure-form form-settings">
                     <div class="panel" id="panel-ntp">
 
                         <div class="header">
@@ -923,7 +940,9 @@
                         </div>
 
                     </div>
+                </form>
 
+                <form id="form-domoticz" class="pure-form form-settings">
                     <div class="panel" id="panel-domoticz">
 
                         <div class="header">
@@ -970,7 +989,9 @@
                         </div>
 
                     </div>
+                </form>
 
+                <form id="form-ha" class="pure-form form-settings">
                     <div class="panel" id="panel-ha">
 
                         <div class="header">
@@ -1024,7 +1045,9 @@
                         </div>
 
                     </div>
+                </form>
 
+                <form id="form-thingspeak" class="pure-form form-settings">
                     <div class="panel" id="panel-thingspeak">
 
                         <div class="header">
@@ -1066,7 +1089,9 @@
                         </div>
 
                     </div>
+                </form>
 
+                <form id="form-idb" class="pure-form form-settings">
                     <div class="panel" id="panel-idb">
 
                         <div class="header">
@@ -1115,7 +1140,9 @@
                         </div>
 
                     </div>
+                </form>
 
+                <form id="form-dbg" class="pure-form">
                     <div class="panel" id="panel-dbg">
 
                         <div class="header">
@@ -1147,8 +1174,10 @@
                         </div>
 
                     </div>
+                </form>
 
-                    <!-- removeIf(!sensor) -->
+                <!-- removeIf(!sensor) -->
+                <form id="form-sns" class="pure-form form-settings">
                     <div class="panel" id="panel-sns">
 
                         <div class="header">
@@ -1304,9 +1333,11 @@
                         </div>
 
                     </div>
-                    <!-- endRemoveIf(!sensor) -->
+                </form>
+                <!-- endRemoveIf(!sensor) -->
 
-                    <!-- removeIf(!rfbridge) -->
+                <!-- removeIf(!rfbridge) -->
+                <form id="form-rfb" class="pure-form form-settings">
                     <div class="panel" id="panel-rfb">
 
                         <div class="header">
@@ -1326,10 +1357,10 @@
                                 <div id="rfbNodes"></div>
                             </fieldset>
                         </div>
-                    </div>
-                    <!-- endRemoveIf(!rfbridge) -->
 
+                    </div>
                 </form>
+                <!-- endRemoveIf(!rfbridge) -->
 
             </div> <!-- content -->
 
