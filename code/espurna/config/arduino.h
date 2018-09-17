@@ -8,9 +8,11 @@
 //--------------------------------------------------------------------------------
 
 //#define NODEMCU_LOLIN
+//#define WEMOS_D1_MINI
 //#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
+//#define TINKERMAN_RFM69GW
 //#define ITEAD_SONOFF_BASIC
 //#define ITEAD_SONOFF_RF
 //#define ITEAD_SONOFF_TH
@@ -82,16 +84,26 @@
 //#define LUANI_HVIO
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
 //#define TONBUX_MOSQUITO_KILLER
-//#define NEO_COOLCAM_POWER_PLUG_WIFI
+//#define NEO_COOLCAM_NAS_WR01W
 //#define ESTINK_WIFI_POWER_STRIP
 //#define PILOTAK_ESP_DIN_V1
+//#define BLITZWOLF_BWSHP2
+//#define BH_ONOFRE
+//#define ITEAD_SONOFF_IFAN02
+//#define GENERIC_AG_L4
+//#define ALLTERCO_SHELLY1
+//#define LOHAS_9W
+//#define YJZK_SWITCH_1CH
+//#define YJZK_SWITCH_3CH
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
 //#define ALEXA_SUPPORT          0
+//#define API_SUPPORT            0
 //#define BROKER_SUPPORT         0
+//#define BUTTON_SUPPORT         0
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
@@ -101,15 +113,18 @@
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
+//#define LED_SUPPORT            0
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
-//#define MDNS_SERVER_SUPPORT    0
 //#define MDNS_CLIENT_SUPPORT    1
+//#define MDNS_SERVER_SUPPORT    0
 //#define MQTT_SUPPORT           0
 //#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
+//#define RFM69_SUPPORT          1
 //#define RF_SUPPORT             1
 //#define SCHEDULER_SUPPORT      0
+//#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
@@ -135,13 +150,15 @@
 //#define EMON_ADS1X15_SUPPORT   1
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
+//#define GEIGER_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
-//#define HCSR04_SUPPORT         1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
+//#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
+//#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1

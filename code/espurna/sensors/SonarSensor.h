@@ -1,16 +1,18 @@
 // -----------------------------------------------------------------------------
-// HC-SR04 Ultrasonic sensor
+// HC-SR04, SRF05, SRF06, DYP-ME007, JSN-SR04T & Parallax PING)))™
 // Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Enhancements by Rui Marinho
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT && HCSR04_SUPPORT
+#if SENSOR_SUPPORT && SONAR_SUPPORT
 
 #pragma once
 
 #include "Arduino.h"
 #include "BaseSensor.h"
+#include "NewPing.h"
 
-class HCSR04Sensor : public BaseSensor {
+class SonarSensor : public BaseSensor {
 
     public:
 
@@ -18,17 +20,30 @@ class HCSR04Sensor : public BaseSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        HCSR04Sensor(): BaseSensor() {
+        SonarSensor(): BaseSensor() {
             _count = 1;
-            _sensor_id = SENSOR_HCSR04_ID;
+            _sensor_id = SENSOR_SONAR_ID;
         }
 
         // ---------------------------------------------------------------------
 
+        // Echo pin.
         void setEcho(unsigned char echo) {
             _echo = echo;
         }
 
+        // Number of iterations to ping in order to filter out erroneous readings
+        // using a digital filter.
+        void setIterations(unsigned int iterations) {
+            _iterations = iterations;
+        }
+
+        // Max sensor distance in centimeters.
+        void setMaxDistance(unsigned int distance) {
+            _max_distance = distance;
+        }
+
+        // Trigger pin.
         void setTrigger(unsigned char trigger) {
             _trigger = trigger;
         }
@@ -43,22 +58,28 @@ class HCSR04Sensor : public BaseSensor {
             return _trigger;
         }
 
+        unsigned int getMaxDistance() {
+            return _max_distance;
+        }
+
+        unsigned int getIterations() {
+            return _iterations;
+        }
+
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
         // Initialization method, must be idempotent
         void begin() {
-            pinMode(_echo, INPUT);
-            pinMode(_trigger, OUTPUT);
-            digitalWrite(_trigger, LOW);
+            _sonar = new NewPing(getTrigger(), getEcho(), getMaxDistance());
             _ready = true;
         }
 
         // Descriptive name of the sensor
         String description() {
-            char buffer[24];
-            snprintf(buffer, sizeof(buffer), "HCSR04 @ GPIO(%u, %u)", _trigger, _echo);
+            char buffer[23];
+            snprintf(buffer, sizeof(buffer), "Sonar @ GPIO(%u, %u)", _trigger, _echo);
             return String(buffer);
         }
 
@@ -80,28 +101,11 @@ class HCSR04Sensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-
-            if (index == 0) {
-
-                // Trigger pulse
-                digitalWrite(_trigger, HIGH);
-                delayMicroseconds(10);
-                digitalWrite(_trigger, LOW);
-
-                // Wait for echo pulse low-high-low
-                while ( digitalRead(_echo) == 0 ) yield();
-                unsigned long start = micros();
-                while ( digitalRead(_echo) == 1 ) yield();
-                unsigned long travel_time = micros() - start;
-
-                // Assuming a speed of sound of 340m/s
-                // Dividing by 2 since it is a round trip
-                return 340.0 * (double) travel_time / 1000000.0 / 2;
-
+            if (index != 0) return 0;
+            if (getIterations() > 0) {
+                return NewPing::convert_cm(_sonar->ping_median(getIterations())) / 100.0;
             }
-
-            return 0;
-
+            return _sonar->ping_cm() / 100.0;
         }
 
 
@@ -113,7 +117,10 @@ class HCSR04Sensor : public BaseSensor {
 
         unsigned char _trigger;
         unsigned char _echo;
+        unsigned int _max_distance;
+        unsigned int _iterations;
+        NewPing * _sonar = NULL;
 
 };
 
-#endif // SENSOR_SUPPORT && HCSR04_SUPPORT
+#endif // SENSOR_SUPPORT && SONAR_SUPPORT

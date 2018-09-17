@@ -8,6 +8,7 @@
 # -------------------------------------------------------------------------------
 from __future__ import print_function
 
+import shutil
 import argparse
 import re
 import socket
@@ -27,7 +28,7 @@ except NameError:
 
 DISCOVER_TIMEOUT = 2
 
-description = "ESPurna OTA Manager v0.2"
+description = "ESPurna OTA Manager v0.3"
 devices = []
 discover_last = 0
 
@@ -37,6 +38,8 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
     """
     Callback that adds discovered devices to "devices" list
     """
+
+    global discover_last
 
     if state_change is ServiceStateChange.Added:
         discover_last = time.time()
@@ -58,6 +61,11 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
 
             for key, item in info.properties.items():
                 device[key.decode('UTF-8')] = item.decode('UTF-8');
+
+            # rename fields (needed for sorting by name)
+            device['app'] = device['app_name']
+            device['device'] = device['target_board']
+            device['version'] = device['app_version']
 
             devices.append(device)
 
@@ -111,6 +119,11 @@ def get_boards():
             boards.append(m.group(1))
     return sorted(boards)
 
+def get_device_size(device):
+    if device.get('mem_size', 0) == device.get('sdk_size', 0):
+        return int(device.get('mem_size', 0)) / 1024
+    return 0
+
 def get_empty_board():
     """
     Returns the empty structure of a board to flash
@@ -128,8 +141,24 @@ def get_board_by_index(index):
         board['hostname'] = device.get('hostname')
         board['board'] = device.get('target_board', '')
         board['ip'] = device.get('ip', '')
-        board['size'] = int(device.get('mem_size', 0) if device.get('mem_size', 0) == device.get('sdk_size', 0) else 0) / 1024
+        board['size'] = get_device_size(device)
     return board
+
+def get_board_by_mac(mac):
+    """
+    Returns the required data to flash a given board
+    """
+    for device in devices:
+        if device.get('mac', '').lower() == mac:
+            board = {}
+            board['hostname'] = device.get('hostname')
+            board['board'] = device.get('device')
+            board['ip'] = device.get('ip')
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
+                return None
+            return board
+    return None
 
 def get_board_by_hostname(hostname):
     """
@@ -141,13 +170,9 @@ def get_board_by_hostname(hostname):
             board = {}
             board['hostname'] = device.get('hostname')
             board['board'] = device.get('target_board')
-            if not board['board']:
-                return None
             board['ip'] = device.get('ip')
-            if not board['ip']:
-                return None
-            board['size'] = int(device.get('sdk_size', 0)) / 1024
-            if board['size'] == 0:
+            board['size'] = get_device_size(device)
+            if not board['board'] or not board['ip'] or board['size'] == 0:
                 return None
             return board
     return None
@@ -190,7 +215,7 @@ def input_board():
     # Choose board size of none before
     if board.get('size', 0) == 0:
         try:
-            board['size'] = int(input("Board memory size (1 for 1M, 4 for 4M): "))
+            board['size'] = int(input("Board memory size (1 for 1M, 2 for 2M, 4 for 4M): "))
         except ValueError:
             print("Wrong memory size")
             return None
@@ -201,13 +226,20 @@ def input_board():
 
     return board
 
+def boardname(board):
+    return board.get('hostname', board['ip'])
+
+def store(device, env):
+    source = ".pioenvs/%s/firmware.elf" % env
+    destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+    shutil.move(source, destination)
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "export ESPURNA_IP=\"%s\"; export ESPURNA_BOARD=\"%s\"; export ESPURNA_AUTH=\"%s\"; export ESPURNA_FLAGS=\"%s\"; platformio run --silent --environment %s -t upload"
+    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s -t upload"
     command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
     subprocess.check_call(command, shell=True)
-
+    store(device, env)
 
 # -------------------------------------------------------------------------------
 
@@ -287,12 +319,12 @@ if __name__ == '__main__':
 
             # Summary
             print()
-            print("HOST  = %s" % board.get('hostname', board['ip']))
-            print("IP    = %s" % board['ip'])
-            print("BOARD = %s" % board['board'])
-            print("AUTH  = %s" % board['auth'])
-            print("FLAGS = %s" % board['flags'])
-            print("ENV   = %s" % env)
+            print("HOST    = %s" % boardname(board))
+            print("IP      = %s" % board['ip'])
+            print("BOARD   = %s" % board['board'])
+            print("AUTH    = %s" % board['auth'])
+            print("FLAGS   = %s" % board['flags'])
+            print("ENV     = %s" % env)
 
             response = True
             if args.yes == 0:

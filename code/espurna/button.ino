@@ -10,6 +10,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // BUTTON
 // -----------------------------------------------------------------------------
 
+#if BUTTON_SUPPORT
+
 #include <DebounceEvent.h>
 #include <vector>
 
@@ -60,16 +62,18 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
     if (event == BUTTON_EVENT_DBLCLICK) return (actions >> 8) & 0x0F;
     if (event == BUTTON_EVENT_LNGCLICK) return (actions >> 12) & 0x0F;
     if (event == BUTTON_EVENT_LNGLNGCLICK) return (actions >> 16) & 0x0F;
+    if (event == BUTTON_EVENT_TRIPLECLICK) return (actions >> 20) & 0x0F;
     return BUTTON_MODE_NONE;
 }
 
-unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick) {
+unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
     unsigned int value;
     value  = pressed;
     value += click << 4;
     value += dblclick << 8;
     value += lngclick << 12;
     value += lnglngclick << 16;
+    value += tripleclick << 20;
     return value;
 }
 
@@ -77,12 +81,13 @@ uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
     if (event == EVENT_PRESSED) return BUTTON_EVENT_PRESSED;
     if (event == EVENT_CHANGED) return BUTTON_EVENT_CLICK;
     if (event == EVENT_RELEASED) {
-        if (count == 1) {
+        if (1 == count) {
             if (length > BUTTON_LNGLNGCLICK_DELAY) return BUTTON_EVENT_LNGLNGCLICK;
             if (length > BUTTON_LNGCLICK_DELAY) return BUTTON_EVENT_LNGCLICK;
             return BUTTON_EVENT_CLICK;
         }
-        if (count == 2) return BUTTON_EVENT_DBLCLICK;
+        if (2 == count) return BUTTON_EVENT_DBLCLICK;
+        if (3 == count) return BUTTON_EVENT_TRIPLECLICK;
     }
     return BUTTON_EVENT_NONE;
 }
@@ -113,7 +118,13 @@ void buttonEvent(unsigned int id, unsigned char event) {
             relayStatus(_buttons[id].relayID - 1, false);
         }
     }
-    if (action == BUTTON_MODE_AP) createAP();
+    if (action == BUTTON_MODE_AP) wifiStartAP();
+    #if defined(JUSTWIFI_ENABLE_WPS)
+        if (action == BUTTON_MODE_WPS) wifiStartWPS();
+    #endif // defined(JUSTWIFI_ENABLE_WPS)
+    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+        if (action == BUTTON_MODE_SMART_CONFIG) wifiStartSmartConfig();
+    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
     if (action == BUTTON_MODE_RESET) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
@@ -129,7 +140,7 @@ void buttonSetup() {
 
     #ifdef ITEAD_SONOFF_DUAL
 
-        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
+        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, BUTTON3_RELAY});
@@ -140,49 +151,49 @@ void buttonSetup() {
 
         #if BUTTON1_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK, BUTTON1_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON1_RELAY});
         }
         #endif
         #if BUTTON2_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK, BUTTON2_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON2_RELAY});
         }
         #endif
         #if BUTTON3_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON3_RELAY});
         }
         #endif
         #if BUTTON4_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON4_RELAY});
         }
         #endif
         #if BUTTON5_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON5_PIN, BUTTON5_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON5_RELAY});
         }
         #endif
         #if BUTTON6_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON6_PIN, BUTTON6_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON6_RELAY});
         }
         #endif
         #if BUTTON7_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON7_PIN, BUTTON7_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON7_RELAY});
         }
         #endif
         #if BUTTON8_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK);
+            unsigned int actions = buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK);
             _buttons.push_back({new DebounceEvent(BUTTON8_PIN, BUTTON8_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON8_RELAY});
         }
         #endif
@@ -257,3 +268,5 @@ void buttonLoop() {
     #endif
 
 }
+
+#endif // BUTTON_SUPPORT

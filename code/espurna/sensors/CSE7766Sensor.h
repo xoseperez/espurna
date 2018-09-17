@@ -102,8 +102,8 @@ class CSE7766Sensor : public BaseSensor {
             _ratioC = _ratioV = _ratioP = 1.0;
         }
 
-        void resetEnergy() {
-            _energy = 0;
+        void resetEnergy(double value = 0) {
+            _energy = value;
         }
 
         // ---------------------------------------------------------------------

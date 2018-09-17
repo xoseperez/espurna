@@ -60,6 +60,16 @@ class PZEM004TSensor : public BaseSensor {
         }
 
         // ---------------------------------------------------------------------
+
+        void resetEnergy(double value = 0) {
+            if (_ready) {
+                _energy_offset = value - (_pzem->energy(_ip) * 3600);
+            } else {
+                _energy_offset = value;
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -84,7 +94,11 @@ class PZEM004TSensor : public BaseSensor {
         // Descriptive name of the sensor
         String description() {
             char buffer[28];
-            snprintf(buffer, sizeof(buffer), "PZEM004T @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            if (_serial) {
+                snprintf(buffer, sizeof(buffer), "PZEM004T @ HwSerial");
+            } else {
+                snprintf(buffer, sizeof(buffer), "PZEM004T @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
+            }
             return String(buffer);
         }
 
@@ -109,11 +123,13 @@ class PZEM004TSensor : public BaseSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 0) return _pzem->current(_ip);
-            if (index == 1) return _pzem->voltage(_ip);
-            if (index == 2) return _pzem->power(_ip);
-            if (index == 3) return _pzem->energy(_ip);
-            return 0;
+            double response = 0;
+            if (index == 0) response = _pzem->current(_ip);
+            if (index == 1) response = _pzem->voltage(_ip);
+            if (index == 2) response = _pzem->power(_ip);
+            if (index == 3) response = _energy_offset + (_pzem->energy(_ip) * 3600);
+            if (response < 0) response = 0;
+            return response;
         }
 
     protected:
@@ -127,6 +143,7 @@ class PZEM004TSensor : public BaseSensor {
         IPAddress _ip;
         HardwareSerial * _serial = NULL;
         PZEM004T * _pzem = NULL;
+        double _energy_offset = 0;
 
 };
 

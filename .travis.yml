@@ -2,14 +2,36 @@ language: python
 python:
 - '2.7'
 sudo: false
+conditions: v1
 cache:
   directories:
+  - "~/.npm"
   - "~/.platformio"
+  - "$TRAVIS_BUILD_DIR/code/.piolibdeps"
+  - "$TRAVIS_BUILD_DIR/code/espurna/node_modules"
 install:
 - pip install -U platformio
 - cd code ; npm install --only=dev ; cd ..
+env:
+  global:
+  - BUILDER_TOTAL_THREADS=4
 script:
-- cd code && ./build.sh &&  cd ..
+- cd code && ./build.sh -p &&  cd ..
+stages:
+- name: Test
+- name: Release
+  if: tag IS present AND tag =~ ^\d+\.\d+\.\d+$
+jobs:
+  include:
+  - stage: Test
+    script: cd code && ./build.sh travis01
+  - script: cd code && ./build.sh travis02
+  - script: cd code && ./build.sh travis03
+  - stage: Release
+    env: BUILDER_THREAD=0
+  - env: BUILDER_THREAD=1
+  - env: BUILDER_THREAD=2
+  - env: BUILDER_THREAD=3
 before_deploy:
 - mv firmware/*/espurna-*.bin firmware/
 deploy:
@@ -20,8 +42,9 @@ deploy:
   file: firmware/espurna-*.bin
   skip_cleanup: true
   on:
-    all_branches: true
     tags: true
+    repo: xoseperez/espurna
+    condition: $TRAVIS_BUILD_STAGE_NAME = Release
 notifications:
   pushover:
     api_key:

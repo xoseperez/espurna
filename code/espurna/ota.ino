@@ -70,6 +70,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
             #ifdef DEBUG_PORT
                 Update.printError(DEBUG_PORT);
             #endif
+            eepromRotate(true);
         }
 
         DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
@@ -133,13 +134,15 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
             }
         #endif
 
+        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+        eepromRotate(false);
+
         DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_url);
         char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(_ota_url) + strlen(_ota_host)];
         snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_url, _ota_host);
         client->write(buffer);
 
     }, NULL);
-
 
     #if ASYNC_TCP_SSL_ENABLED
         bool connected = _ota_client->connect(host, port, 443 == port);
@@ -214,10 +217,16 @@ void otaSetup() {
     // -------------------------------------------------------------------------
 
     ArduinoOTA.onStart([]() {
+
+        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+        eepromRotate(false);
+
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
+
         #if WEB_SUPPORT
             wsSend_P(PSTR("{\"message\": 2}"));
         #endif
+
     });
 
     ArduinoOTA.onEnd([]() {
@@ -229,8 +238,14 @@ void otaSetup() {
         deferredReset(100, CUSTOM_RESET_OTA);
     });
 
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), (progress / (total / 100)));
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {        
+        static unsigned int _progOld;
+
+        unsigned int _prog = (progress / (total / 100));
+        if (_prog != _progOld) {
+            DEBUG_MSG_P(PSTR("[OTA] Progress: %u%%\r"), _prog);
+            _progOld = _prog;
+        }
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
@@ -242,6 +257,7 @@ void otaSetup() {
             else if (error == OTA_RECEIVE_ERROR) DEBUG_MSG_P(PSTR("Receive Failed\n"));
             else if (error == OTA_END_ERROR) DEBUG_MSG_P(PSTR("End Failed\n"));
         #endif
+        eepromRotate(true);
     });
 
     ArduinoOTA.begin();

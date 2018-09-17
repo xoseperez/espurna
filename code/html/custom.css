@@ -147,8 +147,8 @@ div.state {
     color: white;
     letter-spacing: 0;
     margin-bottom: 10px;
-    padding: 8px 8px;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    padding: 8px 8px;
 }
 
 .main-buttons {
@@ -158,15 +158,22 @@ div.state {
 .main-buttons button {
     width: 100px;
 }
+.button-del-schedule {
+    margin-top: 15px;
+}
 
 .button-reboot,
 .button-reconnect,
 .button-ha-del,
 .button-rfb-forget,
 .button-del-network,
+.button-del-mapping,
 .button-del-schedule,
 .button-dbg-clear,
 .button-upgrade,
+.button-clear-filters,
+.button-clear-messages,
+.button-clear-counts,
 .button-settings-factory {
     background: rgb(192, 0, 0); /* redish */
 }
@@ -174,8 +181,9 @@ div.state {
 .button-update,
 .button-update-password,
 .button-add-network,
-.button-rfb-learn,
+.button-add-mapping,
 .button-upgrade-browse,
+.button-rfb-learn,
 .button-ha-add,
 .button-ha-config,
 .button-settings-backup,
@@ -199,6 +207,9 @@ div.state {
 }
 
 .button-upgrade-browse,
+.button-clear-filters,
+.button-clear-messages,
+.button-clear-counts,
 .button-dbgcmd,
 .button-ha-add,
 .button-apikey,
@@ -219,6 +230,104 @@ span.slider {
     letter-spacing: 0;
     margin-left: 10px;
     margin-top: 7px;
+}
+
+/* -----------------------------------------------------------------------------
+    Checkboxes
+   -------------------------------------------------------------------------- */
+
+.toggleWrapper {
+    overflow: hidden;
+    width: auto;
+    height: 30px;
+    margin: 0px 0px 10px 0px;
+    padding: 0px;
+    border-radius: 4px;
+    box-shadow: inset 1px 1px #CCC;
+}
+.toggleWrapper input {
+    position: absolute;
+    left: -99em;
+}
+label[for].toggle {
+    margin: 0px;
+    padding: 0px;
+}
+.toggle {
+    letter-spacing:normal;
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    width: 130px;
+    height: 100%;
+    background: #e9e9e9;
+    color: #a9a9a9;
+    border-radius: 4px;
+    -webkit-transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
+    transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
+}
+.toggle:before,
+.toggle:after {
+    position: absolute;
+    line-height: 30px;
+    font-size: .7em;
+    z-index: 2;
+    -webkit-transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
+    transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
+}
+.toggle:before {
+    content: "NO";
+    left: 20px;
+}
+input[name="relay"] + .toggle:before {
+    content: "OFF";
+}
+.toggle:after{
+    content: "YES";
+    right: 20px;
+}
+input[name="relay"] + .toggle:after {
+    content: "ON";
+}
+.toggle__handler {
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+    background: #c00000;
+    width: 50%;
+    height: 100%;
+    border-radius: 4px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    top: 0px;
+    left: 0px;
+    -webkit-transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
+    transition: all 200ms cubic-bezier(0.445, 0.05, 0.55, 0.95);
+    -webkit-transform: translateX(0px);
+    transform: translateX(0px);
+}
+input:checked + .toggle:after {
+    color: #fff;
+}
+input:checked + .toggle:before {
+    color: #a9a9a9;
+}
+input + .toggle:before {
+    color: #fff;
+}
+input:checked + .toggle .toggle__handler {
+    width: 50%;
+    background: #00c000;
+    -webkit-transform: translateX(65px);
+    transform: translateX(65px);
+    border-color: #000;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+input[disabled] + .toggle .toggle__handler {
+    background: #ccc;
 }
 
 /* -----------------------------------------------------------------------------
@@ -309,6 +418,26 @@ span.slider {
     margin-top: 10px;
     display: none;
     padding: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+    Table
+   -------------------------------------------------------------------------- */
+
+.right {
+    text-align: right;
+}
+
+table.dataTable.display tbody td {
+    text-align: center;
+}
+
+#packets_filter {
+    display: none;
+}
+
+.filtered {
+    color: rgb(202, 60, 60);
 }
 
 /* -----------------------------------------------------------------------------

@@ -36,6 +36,14 @@
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
 #endif
 
+#ifndef SENSOR_SAVE_EVERY
+#define SENSOR_SAVE_EVERY                   0               // Save accumulating values to EEPROM (atm only energy)
+                                                            // A 0 means do not save and it's the default value
+                                                            // A number different from 0 means it should store the value in EEPROM
+                                                            // after these many reports
+                                                            // Warning: this might wear out flash fast!
+#endif
+
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
 #define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
 
@@ -77,6 +85,14 @@
 
 #ifndef ANALOG_SUPPORT
 #define ANALOG_SUPPORT                  0
+#endif
+
+#ifndef ANALOG_SAMPLES
+#define ANALOG_SAMPLES                  10      // Number of samples
+#endif
+
+#ifndef ANALOG_DELAY
+#define ANALOG_DELAY                    0       // Delay between samples in micros
 #endif
 
 //------------------------------------------------------------------------------
@@ -273,6 +289,11 @@
 #define EVENTS_SUPPORT                  0       // Do not build with counter support by default
 #endif
 
+#ifndef EVENTS_TRIGGER
+#define EVENTS_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
 #ifndef EVENTS_PIN
 #define EVENTS_PIN                      2       // GPIO to monitor
 #endif
@@ -282,10 +303,39 @@
 #endif
 
 #ifndef EVENTS_INTERRUPT_MODE
-#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
-#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 10 millis
+#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 50 millis
+
+//------------------------------------------------------------------------------
+// Geiger sensor
+// Enable support by passing GEIGER_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef GEIGER_SUPPORT
+#define GEIGER_SUPPORT                  0       // Do not build with geiger support by default
+#endif
+
+#ifndef GEIGER_PIN
+#define GEIGER_PIN                      D1       // GPIO to monitor "D1" => "GPIO5"
+#endif
+
+#ifndef GEIGER_PIN_MODE
+#define GEIGER_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef GEIGER_INTERRUPT_MODE
+#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#define GEIGER_DEBOUNCE                 25      // Do not register events within less than 25 millis.
+                                                // Value derived here: Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
+
+#define GEIGER_CPM2SIEVERT              240     // CPM to µSievert per hour conversion factor
+                                                // Typically the literature uses the invers, but I find an integer type more convienient.
+#define GEIGER_REPORT_SIEVERTS          1       // Enabler for local dose rate reports in µSv/h
+#define GEIGER_REPORT_CPM               1       // Enabler for local dose rate reports in counts per minute
 
 //------------------------------------------------------------------------------
 // GUVAS12SD UV Sensor (analog)
@@ -298,23 +348,6 @@
 
 #ifndef GUVAS12SD_PIN
 #define GUVAS12SD_PIN                   14
-#endif
-
-//------------------------------------------------------------------------------
-// HC-SR04
-// Enable support by passing HCSR04_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef HCSR04_SUPPORT
-#define HCSR04_SUPPORT                  0
-#endif
-
-#ifndef HCSR04_TRIGGER
-#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
-#endif
-
-#ifndef HCSR04_ECHO
-#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
 #endif
 
 //------------------------------------------------------------------------------
@@ -354,7 +387,27 @@
 #define HLW8012_VOLTAGE_R_DOWN          ( 1000 )        // Downstream voltage resistor
 #endif
 
+#ifndef HLW8012_CURRENT_RATIO
+#define HLW8012_CURRENT_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_VOLTAGE_RATIO
+#define HLW8012_VOLTAGE_RATIO           0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_POWER_RATIO
+#define HLW8012_POWER_RATIO             0       // Set to 0 to use factory defaults
+#endif
+
+#ifndef HLW8012_USE_INTERRUPTS
 #define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
+#endif
+
+#ifndef HLW8012_INTERRUPT_ON
+#define HLW8012_INTERRUPT_ON            CHANGE  // When to trigger the interrupt
+                                                // Use CHANGE for HLW8012
+                                                // Use FALLING for BL0937 / HJL0
+#endif
 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
@@ -371,6 +424,43 @@
 
 #ifndef MHZ19_TX_PIN
 #define MHZ19_TX_PIN                    15
+#endif
+
+//------------------------------------------------------------------------------
+// NTC sensor
+// Enable support by passing NTC_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef NTC_SUPPORT
+#define NTC_SUPPORT                     0
+#endif
+
+#ifndef NTC_SAMPLES
+#define NTC_SAMPLES                     10      // Number of samples
+#endif
+
+#ifndef NTC_DELAY
+#define NTC_DELAY                       0       // Delay between samples in micros
+#endif
+
+#ifndef NTC_R_UP
+#define NTC_R_UP                        0       // Resistor upstream, set to 0 if none
+#endif
+
+#ifndef NTC_R_DOWN
+#define NTC_R_DOWN                      10000   // Resistor downstream, set to 0 if none
+#endif
+
+#ifndef NTC_T0
+#define NTC_T0                          298.15  // 25 Celsius
+#endif
+
+#ifndef NTC_R0
+#define NTC_R0                          10000   // Resistance at T0
+#endif
+
+#ifndef NTC_BETA
+#define NTC_BETA                        3977    // Beta coeficient
 #endif
 
 //------------------------------------------------------------------------------
@@ -410,14 +500,21 @@
 #define PMS_SMART_SLEEP                 0
 #endif
 
+#ifndef PMS_USE_SOFT
+#define PMS_USE_SOFT               0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
+#endif
+
 #ifndef PMS_RX_PIN
-#define PMS_RX_PIN                      13
+#define PMS_RX_PIN                 13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
 #ifndef PMS_TX_PIN
-#define PMS_TX_PIN                      15
+#define PMS_TX_PIN                 15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
+#ifndef PMS_HW_PORT
+#define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
+#endif
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag
@@ -428,7 +525,7 @@
 #endif
 
 #ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               1       // Use software serial
+#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
 #endif
 
 #ifndef PZEM004T_RX_PIN
@@ -440,12 +537,12 @@
 #endif
 
 #ifndef PZEM004T_HW_PORT
-#define PZEM004T_HW_PORT                Serial1 // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
-// Enable support by passing SHT3X_SUPPORT=1 build flag
+// Enable support by passing SHT3X_I2C_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef SHT3X_I2C_SUPPORT
@@ -468,6 +565,31 @@
 #ifndef SI7021_ADDRESS
 #define SI7021_ADDRESS                  0x00    // 0x00 means auto
 #endif
+
+//------------------------------------------------------------------------------
+// Sonar
+// Enable support by passing SONAR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SONAR_SUPPORT
+#define SONAR_SUPPORT                  0
+#endif
+
+#ifndef SONAR_TRIGGER
+#define SONAR_TRIGGER                  12                            // GPIO for the trigger pin (output)
+#endif
+
+#ifndef SONAR_ECHO
+#define SONAR_ECHO                     14                            // GPIO for the echo pin (input)
+#endif
+
+#ifndef SONAR_MAX_DISTANCE
+#define SONAR_MAX_DISTANCE             MAX_SENSOR_DISTANCE           // Max sensor distance in cm
+#endif
+
+#ifndef SONAR_ITERATIONS
+#define SONAR_ITERATIONS               5                             // Number of iterations to ping for
+#endif                                                               // error correction.
 
 //------------------------------------------------------------------------------
 // TMP3X analog temperature sensor
@@ -527,15 +649,17 @@
     EMON_ADS1X15_SUPPORT || \
     EMON_ANALOG_SUPPORT || \
     EVENTS_SUPPORT || \
+    GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
-    HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
     MHZ19_SUPPORT || \
+    NTC_SUPPORT || \
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
+    SONAR_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT \
 )
@@ -639,12 +763,12 @@
     #include "../sensors/EventSensor.h"
 #endif
 
-#if GUVAS12SD_SUPPORT
-    #include "../sensors/GUVAS12SDSensor.h"
+#if GEIGER_SUPPORT
+    #include "../sensors/GeigerSensor.h"       // The main file for geiger counting module
 #endif
 
-#if HCSR04_SUPPORT
-    #include "../sensors/HCSR04Sensor.h"
+#if GUVAS12SD_SUPPORT
+    #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
 #if HLW8012_SUPPORT
@@ -655,6 +779,11 @@
 #if MHZ19_SUPPORT
     #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
+#endif
+
+#if NTC_SUPPORT
+    #include "../sensors/AnalogSensor.h"
+    #include "../sensors/NTCSensor.h"
 #endif
 
 #if SENSEAIR_SUPPORT
@@ -678,6 +807,10 @@
 
 #if SHT3X_I2C_SUPPORT
     #include "../sensors/SHT3XI2CSensor.h"
+#endif
+
+#if SONAR_SUPPORT
+    #include "../sensors/SonarSensor.h"
 #endif
 
 #if TMP3X_SUPPORT
