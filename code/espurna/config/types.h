@@ -277,6 +277,8 @@
 #define SENSOR_GEIGER_ID            0x25
 #define SENSOR_NTC_ID               0x26
 #define SENSOR_SDS011_ID            0x27
+#define SENSOR_MICS2710_ID          0x28
+#define SENSOR_MICS5525_ID          0x29
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -308,5 +310,8 @@
 #define MAGNITUDE_GEIGER_CPM        23
 #define MAGNITUDE_GEIGER_SIEVERT    24
 #define MAGNITUDE_COUNT             25
+#define MAGNITUDE_NO2               26
+#define MAGNITUDE_CO                27
+#define MAGNITUDE_RESISTANCE        28
 
-#define MAGNITUDE_MAX               26
+#define MAGNITUDE_MAX               29

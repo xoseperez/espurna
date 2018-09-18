@@ -46,7 +46,8 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM"
+        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
+        "NTC", "SDS011", "MICS2710", "MICS5525"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -62,7 +63,8 @@ function magnitudeType(type) {
         "Analog", "Digital", "Event",
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
-        "Count"
+        "Count",
+        "NO2", "CO", "Resistance"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -484,6 +486,7 @@ function doUpdate() {
 
         // Empty special fields
         $(".pwrExpected").val(0);
+        $("input[name='snsResetCalibration']").prop("checked", false);
         $("input[name='pwrResetCalibration']").prop("checked", false);
         $("input[name='pwrResetE']").prop("checked", false);
 

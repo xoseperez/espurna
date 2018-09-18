@@ -2842,6 +2842,10 @@
     #define ECH1560_MISO_PIN    11
     #define ECH1560_INVERTED    12
 
+    // MICS-2710 & MICS-5525 test
+    #define MICS2710_SUPPORT    1
+    #define MICS5525_SUPPORT    1
+
 #elif defined(TRAVIS02)
 
     // Relay provider dual
