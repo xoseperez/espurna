@@ -965,7 +965,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef THINGSPEAK_SUPPORT
-#define THINGSPEAK_SUPPORT          1               // Enable Thingspeak support by default (2.56Kb)
+#define THINGSPEAK_SUPPORT          0               // Enable Thingspeak support by default (2.56Kb)
 #endif
 
 #ifndef THINGSPEAK_ENABLED
@@ -996,6 +996,18 @@
 #define THINGSPEAK_URL              "/update"
 
 #define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
+
+// -----------------------------------------------------------------------------
+// BLYNK
+// -----------------------------------------------------------------------------
+
+#ifndef BLYNK_SUPPORT
+#define BLYNK_SUPPORT        1
+#define BLYNK_ENABLED        0
+#define BLYNK_AUTH_TOKEN     "insert your blynk auth key here"
+#define BLYNK_HOST  "blynk-cloud.com"
+#define BLYNK_PORT  80
+#endif
 
 // -----------------------------------------------------------------------------
 // SCHEDULER

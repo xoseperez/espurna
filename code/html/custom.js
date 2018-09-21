@@ -218,7 +218,7 @@ function addValue(data, name, value) {
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
-        "dczRelayIdx", "dczMagnitude",
+        "dczRelayIdx", "blnkRelayVpin", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
         "adminPass",
@@ -1345,6 +1345,24 @@ function processData(data) {
         <!-- removeIf(!sensor)-->
         if ("dczMagnitudes" === key) {
             createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
+            return;
+        }
+        <!-- endRemoveIf(!sensor)-->
+		
+		// ---------------------------------------------------------------------
+        // Blynk
+        // ---------------------------------------------------------------------
+
+        // Blynk - Relays
+        if ("blnkRelays" === key) {
+            createRelayList(value, "blnkRelays", "blnkRelayTemplate");
+            return;
+        }
+
+        // Blynk - Magnitudes
+        <!-- removeIf(!sensor)-->
+        if ("blnkMagnitudes" === key) {
+            createMagnitudeList(value, "blnkMagnitudes", "blnkMagnitudeTemplate");
             return;
         }
         <!-- endRemoveIf(!sensor)-->
