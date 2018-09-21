@@ -31,59 +31,36 @@ void _encoderConfigure() {
     }
     _encoders.clear();
 
-    // Load encoders
-    #if (ENCODER1_PIN1 != GPIO_NONE) && (ENCODER1_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER1_PIN1, ENCODER1_PIN2),
-            ENCODER1_BUTTON_PIN, ENCODER1_BUTTON_LOGIC, ENCODER1_BUTTON_MODE, ENCODER1_MODE,
-            ENCODER1_CHANNEL1, ENCODER1_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER2_PIN1 != GPIO_NONE) && (ENCODER2_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER2_PIN1, ENCODER2_PIN2),
-            ENCODER2_BUTTON_PIN, ENCODER2_BUTTON_LOGIC, ENCODER2_BUTTON_MODE, ENCODER2_MODE,
-            ENCODER2_CHANNEL1, ENCODER2_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER3_PIN1 != GPIO_NONE) && (ENCODER3_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER3_PIN1, ENCODER3_PIN2),
-            ENCODER3_BUTTON_PIN, ENCODER3_BUTTON_LOGIC, ENCODER3_BUTTON_MODE, ENCODER3_MODE,
-            ENCODER3_CHANNEL1, ENCODER3_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER4_PIN1 != GPIO_NONE) && (ENCODER4_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER4_PIN1, ENCODER4_PIN2),
-            ENCODER4_BUTTON_PIN, ENCODER4_BUTTON_LOGIC, ENCODER4_BUTTON_MODE, ENCODER4_MODE,
-            ENCODER4_CHANNEL1, ENCODER4_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER5_PIN1 != GPIO_NONE) && (ENCODER5_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER5_PIN1, ENCODER5_PIN2),
-            ENCODER5_BUTTON_PIN, ENCODER5_BUTTON_LOGIC, ENCODER5_BUTTON_MODE, ENCODER5_MODE,
-            ENCODER5_CHANNEL1, ENCODER5_CHANNEL2
-        });
-    }
-    #endif
+    unsigned char index = 0;
+    while (index < MAX_COMPONENTS) {
 
-    // Setup encoders
-    for (unsigned char i=0; i<_encoders.size(); i++) {
-        if (GPIO_NONE != _encoders[i].button_pin) {
-            pinMode(_encoders[i].button_pin, _encoders[i].button_mode);
+        unsigned char pin1 = getSetting("enc1stGPIO", index, GPIO_NONE).toInt();
+        unsigned char pin2 = getSetting("enc2ndGPIO", index, GPIO_NONE).toInt();
+        if (GPIO_NONE == pin1 || GPIO_NONE == pin2) break;
+
+        unsigned char button_pin = getSetting("encBtnGPIO", index, GPIO_NONE).toInt();
+        unsigned char button_logic = getSetting("encBtnLogic", index, GPIO_LOGIC_INVERSE).toInt();
+        unsigned char button_mode = getSetting("encBtnMode", index, INPUT_PULLUP).toInt();
+        unsigned char mode = getSetting("encMode", index, ENCODER_MODE_RATIO).toInt();
+        unsigned char channel1 = getSetting("enc1stCh", index, 0).toInt();
+        unsigned char channel2 = getSetting("enc2ndCh", index, 1).toInt();
+
+        _encoders.push_back({
+            new Encoder(pin1, pin2),
+            button_pin, button_logic, button_mode,
+            mode,
+            channel1, channel2
+        });
+
+        if (GPIO_NONE != button_pin) {
+            pinMode(button_pin, button_mode);
         }
+
+        ++index;
+
     }
+
+    DEBUG_MSG_P(PSTR("[ENCODER] Encoders: %u\n"), _encoders.size());
 
 }
 
@@ -148,8 +125,6 @@ void encoderSetup() {
     // Main callbacks
     espurnaRegisterLoop(_encoderLoop);
     espurnaRegisterReload(_encoderConfigure);
-
-    DEBUG_MSG_P(PSTR("[ENCODER] Number of encoders: %u\n"), _encoders.size());
 
 }
 

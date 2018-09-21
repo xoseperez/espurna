@@ -505,6 +505,11 @@ enum devices {
     #define NETBIOS_SUPPORT             1
     #define SSDP_SUPPORT                1
 
+    // Encoder support
+    #ifndef ENCODER_SUPPORT
+    #define ENCODER_SUPPORT             1
+    #endif
+
 #endif
 
 // -----------------------------------------------------------------------------
@@ -561,6 +566,10 @@ enum devices {
     #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
 
+    #ifndef ENCODER_SUPPORT
+    #define ENCODER_SUPPORT             1
+    #endif
+
 #elif ESPURNA_IMAGE == ESPURNA_MY92XX
 
     #define ESPURNA_IMAGE_NAME          "MY92XX"
@@ -568,6 +577,10 @@ enum devices {
     #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER              LIGHT_PROVIDER_MY92XX
     #define MY92XX_COMMAND              MY92XX_COMMAND_DEFAULT
+
+    #ifndef ENCODER_SUPPORT
+    #define ENCODER_SUPPORT             1
+    #endif
 
 #elif ESPURNA_IMAGE == ESPURNA_EMON
 
