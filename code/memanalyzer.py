@@ -105,6 +105,10 @@ def run(env_, modules_):
     command = "ESPURNA_BOARD=\"WEMOS_D1_MINI_RELAYSHIELD\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s 2>/dev/null" % (flags, env_)
     subprocess.check_call(command, shell=True)
 
+def calc_free(module):
+    free = 80 * 1024 - module['data'] - module['rodata'] - module['bss']
+    free = free + (16 - free % 16)
+    module['free'] = free
 
 def modules_get():
     modules_ = SortedDict()
@@ -173,27 +177,50 @@ try:
     else:
         print("Analyzing %s configuration\n" % ("CORE" if args.core > 0 else "DEFAULT"))
 
-    output_format = "{:<20}|{:<11}|{:<11}|{:<11}|{:<11}|{:<11}|{:<12}"
+    output_format = "{:<20}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}"
     print(output_format.format(
             "Module",
             "Cache IRAM",
             "Init RAM",
             "R.O. RAM",
             "Uninit RAM",
+            "Available RAM",
             "Flash ROM",
             "Binary size"
+    ))
+    print(output_format.replace("<", ">").format(
+            "",
+            ".text",
+            ".data",
+            ".rodata",
+            ".bss",
+            "heap + stack",
+            ".irom0.text",
+            ""
+    ))
+    print(output_format.format(
+            "-" * 20,
+            "-" * 15,
+            "-" * 15,
+            "-" * 15,
+            "-" * 15,
+            "-" * 15,
+            "-" * 15,
+            "-" * 15
     ))
 
     # Build the core without modules to get base memory usage
     run(env, modules)
     base = analyse_memory(".pioenvs/%s/firmware.elf" % env)
     base['size'] = file_size(".pioenvs/%s/firmware.bin" % env)
+    calc_free(base)
     print(output_format.format(
             "CORE" if args.core == 1 else "DEFAULT",
             base['text'],
             base['data'],
             base['rodata'],
             base['bss'],
+            base['free'],
             base['irom0_text'],
             base['size'],
     ))
@@ -206,6 +233,7 @@ try:
         run(env, modules)
         results[module] = analyse_memory(".pioenvs/%s/firmware.elf" % env)
         results[module]['size'] = file_size(".pioenvs/%s/firmware.bin" % env)
+        calc_free(results[module])
         modules[module] = 0
 
         print(output_format.format(
@@ -214,6 +242,7 @@ try:
                 results[module]['data'] - base['data'],
                 results[module]['rodata'] - base['rodata'],
                 results[module]['bss'] - base['bss'],
+                results[module]['free'] - base['free'],
                 results[module]['irom0_text'] - base['irom0_text'],
                 results[module]['size'] - base['size'],
         ))
@@ -226,6 +255,7 @@ try:
         run(env, modules)
         total = analyse_memory(".pioenvs/%s/firmware.elf" % env)
         total['size'] = file_size(".pioenvs/%s/firmware.bin" % env)
+        calc_free(total)
 
         if len(test_modules) > 1:
             print(output_format.format(
@@ -234,6 +264,7 @@ try:
                     total['data'] - base['data'],
                     total['rodata'] - base['rodata'],
                     total['bss'] - base['bss'],
+                    total['free'] - base['free'],
                     total['irom0_text'] - base['irom0_text'],
                     total['size'] - base['size'],
             ))

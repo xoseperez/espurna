@@ -2046,6 +2046,66 @@ void _deviceLoad() {
         setSetting("rlyGPIO", 0, 4);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
+    #elif defined(XIAOMI_SMART_DESK_LAMP)
+
+        setSetting("board", DEVICE_XIAOMI_SMART_DESK_LAMP);
+        setSetting("device", "XIAOMI_SMART_DESK_LAMP");
+        setSetting("fw", ESPURNA_DIMMER);
+
+        setSetting("btnGPIO", 0, 2);
+        setSetting("btnGPIO", 1, 14);
+        setSetting("btnRelay", 0, 0);
+        setSetting("btnLngDelay", 500);
+        setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE);
+        setSetting("btnDblClick", 1, BUTTON_MODE_AP);
+        setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+
+        setSetting("litChGPIO", 0, 5);
+        setSetting("litChGPIO", 1, 4);
+        setSetting("litChLogic", 0, 0);
+        setSetting("litChLogic", 1, 0);
+
+        setSetting("enc1stGPIO", 0, 12);
+        setSetting("enc2ndGPIO", 0, 13);
+        setSetting("encBtnGPIO", 0, 2);
+        setSetting("encMode", ENCODER_MODE_RATIO);
+
+    #elif defined(ALLTERCO_SHELLY2)
+
+        setSetting("board", DEVICE_ALLTERCO_SHELLY2);
+        setSetting("device", "ALLTERCO_SHELLY2");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("btnGPIO", 0, 12);
+        setSetting("btnGPIO", 1, 14);
+        setSetting("btnMode", 0, BUTTON_SWITCH);
+        setSetting("btnMode", 1, BUTTON_SWITCH);
+        setSetting("btnRelay", 0, 0);
+        setSetting("btnRelay", 1, 1);
+
+        setSetting("rlyGPIO", 0, 4);
+        setSetting("rlyGPIO", 1, 5);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+        setSetting("rlyType", 1, RELAY_TYPE_NORMAL);
+
+    #elif defined(PHYX_ESP12_RGB)
+
+        setSetting("board", DEVICE_PHYX_ESP12_RGB);
+        setSetting("device", "PHYX_ESP12_RGB");
+        setSetting("fw", ESPURNA_DIMMER);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("litChGPIO", 0, 4);
+        setSetting("litChGPIO", 1, 14);
+        setSetting("litChGPIO", 2, 12);
+        setSetting("litChLogic", 0, 0);
+        setSetting("litChLogic", 1, 0);
+        setSetting("litChLogic", 3, 0);
+
     #endif
 
 }

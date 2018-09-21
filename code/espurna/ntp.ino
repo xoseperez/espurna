@@ -186,12 +186,13 @@ void ntpSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ntpWebSocketOnSend);
-        wsOnAfterParseRegister([]() { _ntp_configure = true; });
     #endif
 
-    // Register
-    espurnaRegisterLoop(_ntpLoop);
     settingsRegisterKeyCheck(_ntpKeyCheck);
+
+    // Main callbacks
+    espurnaRegisterLoop(_ntpLoop);
+    espurnaRegisterReload([]() { _ntp_configure = true; });
 
 }
 

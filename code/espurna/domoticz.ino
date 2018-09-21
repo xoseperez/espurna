@@ -162,10 +162,10 @@ void domoticzSetup() {
     _domoticzConfigure();
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
-        wsOnAfterParseRegister(_domoticzConfigure);
     #endif
     settingsRegisterKeyCheck(_domoticzKeyCheck);
     mqttRegister(_domoticzMqtt);
+    espurnaRegisterReload(_domoticzConfigure);
 }
 
 bool domoticzEnabled() {

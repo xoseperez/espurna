@@ -25,13 +25,24 @@ Module key prefix: esp (shared with others)
 #include <vector>
 
 std::vector<void (*)()> _loop_callbacks;
+std::vector<void (*)()> _reload_callbacks;
 
 // -----------------------------------------------------------------------------
-// REGISTER
+// GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
 
 void espurnaRegisterLoop(void (*callback)()) {
     _loop_callbacks.push_back(callback);
+}
+
+void espurnaRegisterReload(void (*callback)()) {
+    _reload_callbacks.push_back(callback);
+}
+
+void espurnaReload() {
+    for (unsigned char i = 0; i < _reload_callbacks.size(); i++) {
+        (_reload_callbacks[i])();
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -49,6 +60,9 @@ void setup() {
 
     // Init persistance and terminal features
     settingsSetup();
+
+    // Cache initial free heap value
+    getInitialFreeHeap();
 
     // Serial debug
     // Requires SETTINGS
@@ -106,9 +120,13 @@ void setup() {
     #if BUTTON_SUPPORT
         buttonSetup();
     #endif
+    #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+        encoderSetup();
+    #endif
     #if LED_SUPPORT
         ledSetup();
     #endif
+
     #if MQTT_SUPPORT
         mqttSetup();
     #endif

@@ -255,12 +255,12 @@ void buttonSetup() {
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsOnSendRegister(_buttonWebSocketOnSend);
-        wsOnAfterParseRegister(_buttonConfigure);
     #endif
 
     settingsRegisterKeyCheck(_buttonKeyCheck);
 
     // Register loop
+    espurnaRegisterReload(_buttonConfigure);
     espurnaRegisterLoop(_buttonLoop);
 
 }

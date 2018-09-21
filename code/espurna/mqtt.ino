@@ -585,7 +585,16 @@ unsigned char _mqttBuildTree(JsonObject& root, char parent) {
             JsonObject& elements = root.createNestedObject(element.topic);
             unsigned char num = _mqttBuildTree(elements, i);
             if (0 == num) {
-                root.set(element.topic, element.message);
+                if (isNumber(element.message)) {
+                    double value = atof(element.message);
+                    if (value == int(value)) {
+                        root.set(element.topic, int(value));
+                    } else {
+                        root.set(element.topic, value);
+                    }
+                } else {
+                    root.set(element.topic, element.message);
+                }
             }
         }
     }
@@ -714,7 +723,6 @@ void mqttUnsubscribe(const char * topic) {
 
 void mqttEnabled(bool status) {
     _mqtt_enabled = status;
-    setSetting("mqttEnabled", status ? 1 : 0);
 }
 
 bool mqttEnabled() {
@@ -747,7 +755,7 @@ void mqttSetBroker(IPAddress ip, unsigned int port) {
 }
 
 void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
-    if (!hasSetting("mqttServer")) mqttSetBroker(ip, port);
+    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
 }
 
 void mqttReset() {
@@ -821,7 +829,6 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
-        wsOnAfterParseRegister(_mqttConfigure);
     #endif
 
     #if TERMINAL_SUPPORT
@@ -829,8 +836,11 @@ void mqttSetup() {
     #endif
 
     // Register
-    espurnaRegisterLoop(mqttLoop);
     settingsRegisterKeyCheck(_mqttKeyCheck);
+
+    // Main callbacks
+    espurnaRegisterLoop(mqttLoop);
+    espurnaRegisterReload(_mqttConfigure);
 
 }
 

@@ -55,6 +55,9 @@ PROGMEM const char espurna_modules[] =
     #if DOMOTICZ_SUPPORT
         "DOMOTICZ "
     #endif
+    #if ENCODER_SUPPORT
+        "ENCODER "
+    #endif
     #if HOMEASSISTANT_SUPPORT
         "HOMEASSISTANT "
     #endif
@@ -192,6 +195,9 @@ PROGMEM const char espurna_sensors[] =
     #endif
     #if PZEM004T_SUPPORT
         "PZEM004T "
+    #endif
+    #if SDS011_SUPPORT
+        "SDS011 "
     #endif
     #if SENSEAIR_SUPPORT
         "SENSEAIR "

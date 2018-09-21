@@ -69,7 +69,7 @@ void _nofussConfigure() {
 }
 
 bool _nofussKeyCheck(const char * key) {
-    return (strncmp(key, "nof", 6) == 0);
+    return (strncmp(key, "nof", 3) == 0);
 }
 
 void _nofussBackwards() {
@@ -163,16 +163,17 @@ void nofussSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_nofussWebSocketOnSend);
-        wsOnAfterParseRegister(_nofussConfigure);
     #endif
 
     #if TERMINAL_SUPPORT
         _nofussInitCommands();
     #endif
 
-    // Register
-    espurnaRegisterLoop(nofussLoop);
     settingsRegisterKeyCheck(_nofussKeyCheck);
+
+    // Main callbacks
+    espurnaRegisterLoop(nofussLoop);
+    espurnaRegisterReload(_nofussConfigure);
 
 }
 

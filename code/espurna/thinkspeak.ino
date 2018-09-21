@@ -261,7 +261,6 @@ void tspkSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
-        wsOnAfterParseRegister(_tspkConfigure);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
@@ -273,6 +272,7 @@ void tspkSetup() {
 
     // Register loop
     espurnaRegisterLoop(tspkLoop);
+    espurnaRegisterReload(_tspkConfigure);
 
 }
 

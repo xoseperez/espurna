@@ -100,7 +100,6 @@ void alexaSetup() {
     // Websockets
     #if WEB_SUPPORT
         wsOnSendRegister(_alexaWebSocketOnSend);
-        wsOnAfterParseRegister(_alexaConfigure);
     #endif
 
     // Register wifi callback
@@ -113,8 +112,9 @@ void alexaSetup() {
     // Settings
     settingsRegisterKeyCheck(_alexaKeyCheck);
 
-    // Register loop
+    // Register main callbacks
     espurnaRegisterLoop(alexaLoop);
+    espurnaRegisterReload(_alexaConfigure);
 
 }
 

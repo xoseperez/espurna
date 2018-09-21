@@ -17,6 +17,9 @@ Module key prefix: tel
 AsyncServer * _telnetServer;
 AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
 bool _telnetFirst = true;
+#if TELNET_PASSWORD
+    bool _authenticated[TELNET_MAX_CLIENTS];
+#endif
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -33,8 +36,8 @@ void _telnetWebSocketOnSend(JsonObject& root) {
 
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->free();
-    _telnetClients[clientId] = NULL;
     delete _telnetClients[clientId];
+    _telnetClients[clientId] = NULL;
     wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
@@ -49,9 +52,22 @@ bool _telnetWrite(unsigned char clientId, void *data, size_t len) {
 unsigned char _telnetWrite(void *data, size_t len) {
     unsigned char count = 0;
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
-        if (_telnetWrite(i, data, len)) ++count;
+
+        #if TELNET_PASSWORD
+            // Do not send broadcast messages to unauthenticated clients
+            if (_authenticated[i]) {
+                if (_telnetWrite(i, data, len)) ++count;
+            }
+        #else
+            if (_telnetWrite(i, data, len)) ++count;
+        #endif
+
     }
     return count;
+}
+
+bool _telnetWrite(unsigned char clientId, const char * message) {
+    return _telnetWrite(clientId, (void *) message, strlen(message));
 }
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
@@ -78,7 +94,22 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
         return;
     }
 
-    // Inject into Embedis stream
+    // Password
+    #if TELNET_PASSWORD
+        if (!_authenticated[clientId]) {
+            String password = getAdminPass();
+            if (strncmp(p, password.c_str(), password.length()) == 0) {
+                DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
+                _telnetWrite(clientId, "Welcome!\n");
+                _authenticated[clientId] = true;
+            } else {
+                _telnetWrite(clientId, "Password: ");
+            }
+            return;
+        }
+    #endif // TELNET_PASSWORD
+
+    // Inject command
     settingsInject(data, len);
 
 }
@@ -107,6 +138,7 @@ void _telnetNewClient(AsyncClient *client) {
     }
 
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
+
         if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
 
             _telnetClients[i] = client;
@@ -141,8 +173,14 @@ void _telnetNewClient(AsyncClient *client) {
                 debugClearCrashInfo();
             #endif
 
+            #if TELNET_PASSWORD
+                _authenticated[i] = false;
+                _telnetWrite(i, "Password: ");
+            #endif
+
             _telnetFirst = true;
             wifiReconnectCheck();
+
             return;
 
         }

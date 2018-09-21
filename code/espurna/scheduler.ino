@@ -217,13 +217,13 @@ void schSetup() {
     // Update websocket clients
     #if WEB_SUPPORT
         wsOnSendRegister(_schWebSocketOnSend);
-        wsOnAfterParseRegister(_schConfigure);
     #endif
 
     settingsRegisterKeyCheck(_schKeyCheck);
-    
-    // Register loop
+
+    // Main callbacks
     espurnaRegisterLoop(_schLoop);
+    espurnaRegisterReload(_schConfigure);
 
 }
 

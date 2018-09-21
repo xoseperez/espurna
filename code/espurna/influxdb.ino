@@ -63,7 +63,7 @@ bool idbSend(const char * topic, const char * payload) {
     #endif
     char * host = strdup(h.c_str());
     unsigned int port = getSetting("idbPort", INFLUXDB_PORT).toInt();
-    DEBUG_MSG("[INFLUXDB] Sending to %s:%u\n", host, port);
+    DEBUG_MSG_P(PSTR("[INFLUXDB] Sending to %s:%u\n"), host, port);
 
     bool success = false;
 
@@ -72,7 +72,7 @@ bool idbSend(const char * topic, const char * payload) {
 
         char data[128];
         snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getHostname().c_str(), String(payload).c_str());
-        DEBUG_MSG("[INFLUXDB] Data: %s\n", data);
+        DEBUG_MSG_P(PSTR("[INFLUXDB] Data: %s\n"), data);
 
         char request[256];
         snprintf(request, sizeof(request), "POST /write?db=%s&u=%s&p=%s HTTP/1.1\r\nHost: %s:%u\r\nContent-Length: %d\r\n\r\n%s",
@@ -86,14 +86,14 @@ bool idbSend(const char * topic, const char * payload) {
             if (_idb_client.connected()) _idb_client.stop();
             success = true;
         } else {
-            DEBUG_MSG("[INFLUXDB] Sent failed\n");
+            DEBUG_MSG_P(PSTR("[INFLUXDB] Sent failed\n"));
         }
 
         _idb_client.stop();
         while (_idb_client.connected()) yield();
 
     } else {
-        DEBUG_MSG("[INFLUXDB] Connection failed\n");
+        DEBUG_MSG_P(PSTR("[INFLUXDB] Connection failed\n"));
     }
 
     free(host);
@@ -118,10 +118,12 @@ void idbSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
-        wsOnAfterParseRegister(_idbConfigure);
     #endif
 
     settingsRegisterKeyCheck(_idbKeyCheck);
+
+    // Main callbacks
+    espurnaRegisterReload(_idbConfigure);
 
 }
 

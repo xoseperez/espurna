@@ -289,18 +289,16 @@ void ledSetup() {
 
     _ledConfigure();
 
+    // Callbacks
     #if MQTT_SUPPORT
         mqttRegister(_ledMQTTCallback);
     #endif
-
     #if WEB_SUPPORT
         wsOnSendRegister(_ledWebSocketOnSend);
-        wsOnAfterParseRegister(_ledConfigure);
     #endif
-
-    // Registers
-    espurnaRegisterLoop(_ledLoop);
     settingsRegisterKeyCheck(_ledKeyCheck);
+    espurnaRegisterReload(_ledConfigure);
+    espurnaRegisterLoop(_ledLoop);
 
 }
 

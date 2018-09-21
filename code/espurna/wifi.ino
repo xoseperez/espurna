@@ -42,7 +42,7 @@ void _wifiConfigure() {
     #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
-    jw.enableAPFallback(true);
+    jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
     _wifi_ap_mode = getSetting("wifiMode", WIFI_AP_FALLBACK).toInt();
@@ -387,6 +387,11 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
+    settingsRegisterCommand(F("WIFI"), [](Embedis* e) {
+        wifiDebug();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
@@ -621,7 +626,6 @@ void wifiSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
-        wsOnAfterParseRegister(_wifiConfigure);
         wsOnActionRegister(_wifiWebSocketOnAction);
     #endif
 
@@ -633,6 +637,7 @@ void wifiSetup() {
 
     // Register loop
     espurnaRegisterLoop(wifiLoop);
+    espurnaRegisterReload(_wifiConfigure);
 
 }
 

@@ -667,7 +667,6 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void relaySetupWS() {
     wsOnSendRegister(_relayWebSocketOnStart);
     wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnAfterParseRegister(_relayConfigure);
 }
 
 #endif // WEB_SUPPORT
@@ -1013,9 +1012,6 @@ void relaySetup() {
     _relayBoot();
     _relayLoop();
 
-    settingsRegisterKeyCheck(_relayKeyCheck);
-    espurnaRegisterLoop(_relayLoop);
-
     #if WEB_SUPPORT
         relaySetupWS();
     #endif
@@ -1028,5 +1024,11 @@ void relaySetup() {
     #if TERMINAL_SUPPORT
         _relayInitCommands();
     #endif
+
+    settingsRegisterKeyCheck(_relayKeyCheck);
+
+    // Main callbacks
+    espurnaRegisterLoop(_relayLoop);
+    espurnaRegisterReload(_relayConfigure);
 
 }

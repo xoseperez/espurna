@@ -115,6 +115,9 @@
 //#define LOHAS_9W
 //#define YJZK_SWITCH_1CH
 //#define YJZK_SWITCH_3CH
+//#define XIAOMI_SMART_DESK_LAMP
+//#define ALLTERCO_SHELLY2
+//#define PHYX_ESP12_RGB
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -129,6 +132,7 @@
 //#define DEBUG_UDP_SUPPORT      1
 //#define DEBUG_WEB_SUPPORT      0
 //#define DOMOTICZ_SUPPORT       0
+//#define ENCODER_SUPPORT        1
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       1
@@ -177,6 +181,8 @@
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
+//#define SDS011_SUPPORT         1
+//#define SENSEAIR_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1
