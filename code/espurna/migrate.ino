@@ -1175,7 +1175,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(XIAOMI_SMART_DESK_LAMP)
+        #elif defined(PHYX_ESP12_RGB)
 
             setSetting("board", 89);
 
