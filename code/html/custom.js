@@ -359,7 +359,7 @@ function sendConfig(data) {
 function setOriginalsFromValues(force) {
     var force = (true === force);
     $("input,select").each(function() {
-        var initial = (null === $(this).attr("original"));
+        var initial = (undefined === $(this).attr("original"));
         if (force || initial) {
             $(this).attr("original", $(this).val());
         }
