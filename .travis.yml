@@ -11,6 +11,7 @@ cache:
   - "$TRAVIS_BUILD_DIR/code/espurna/node_modules"
 install:
 - pip install -U platformio
+- npm install -g npm@latest
 - cd code ; npm install --only=dev ; cd ..
 env:
   global:
