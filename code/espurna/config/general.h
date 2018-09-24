@@ -996,6 +996,11 @@
 #define THINGSPEAK_URL              "/update"
 
 #define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
+#define THINGSPEAK_FIELDS           8               // Number of fields
+
+#ifndef THINGSPEAK_TRIES
+#define THINGSPEAK_TRIES            3               // Number of tries when sending data (minimum 1)
+#endif
 
 // -----------------------------------------------------------------------------
 // SCHEDULER
