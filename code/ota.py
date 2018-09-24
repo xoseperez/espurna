@@ -15,6 +15,7 @@ import socket
 import subprocess
 import sys
 import time
+import os
 
 from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 
@@ -232,13 +233,24 @@ def boardname(board):
 def store(device, env):
     source = ".pioenvs/%s/firmware.elf" % env
     destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+
+    dst_dir = os.path.dirname(destination)
+    if not os.path.exists(dst_dir):
+        os.mkdir(dst_dir)
+
     shutil.move(source, destination)
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s -t upload"
-    command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
-    subprocess.check_call(command, shell=True)
+    environ = os.environ.copy()
+    environ["ESPURNA_IP"] = device["ip"]
+    environ["ESPURNA_BOARD"] = device["board"]
+    environ["ESPURNA_AUTH"] = device["auth"]
+    environ["ESPURNA_FLAGS"] = device["flags"]
+
+    command = ("platformio", "run", "--silent", "--environment", env, "-t", "upload")
+    subprocess.check_call(command, env=environ)
+
     store(device, env)
 
 # -------------------------------------------------------------------------------
@@ -308,6 +320,8 @@ if __name__ == '__main__':
         if len(queue) == 0:
             sys.exit(0)
 
+        queue = sorted(queue, key=lambda device: device.get('board', ''))
+
         # Flash eash board
         for board in queue:
 
@@ -315,7 +329,7 @@ if __name__ == '__main__':
             if args.core > 0:
                 board['flags'] = "-DESPURNA_CORE " + board['flags']
 
-            env = "esp8266-%sm-ota" % board['size']
+            env = "esp8266-%dm-ota" % board['size']
 
             # Summary
             print()

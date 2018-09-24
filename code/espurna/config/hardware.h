@@ -2765,6 +2765,30 @@
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
 
+// -----------------------------------------------------------------------------
+// iWoole LED Table Lamp
+// http://iwoole.com/newst-led-smart-night-light-7w-smart-table-light-rgbw-wifi-app-remote-control-110v-220v-us-eu-plug-smart-lamp-google-home-decore-p00022p1.html
+// -----------------------------------------------------------------------------
+
+#elif defined(IWOOLE_LED_TABLE_LAMP)
+
+    // Info
+    #define MANUFACTURER        "IWOOLE"
+    #define DEVICE              "LED_TABLE_LAMP"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       12      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

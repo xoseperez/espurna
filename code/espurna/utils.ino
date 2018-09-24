@@ -6,11 +6,6 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-extern "C" {
-    #include <cont.h>
-    extern cont_t g_cont;
-}
-
 #include <Ticker.h>
 Ticker _defer_reset;
 
@@ -79,10 +74,6 @@ unsigned int getInitialFreeHeap() {
 
 unsigned int getUsedHeap() {
     return getInitialFreeHeap() - getFreeHeap();
-}
-
-unsigned int getFreeStack() {
-    return cont_get_free_stack(&g_cont);
 }
 
 String getEspurnaModules() {
