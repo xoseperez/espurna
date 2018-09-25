@@ -184,6 +184,10 @@ void _relayProcess(bool mode) {
             domoticzSendRelay(id);
         #endif
 
+        #if BLYNK_SUPPORT
+            blynkSendRelay(id,target);
+        #endif
+
         #if INFLUXDB_SUPPORT
             relayInfluxDB(id);
         #endif

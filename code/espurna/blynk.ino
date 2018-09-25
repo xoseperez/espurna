@@ -13,6 +13,14 @@ Copyright (C) 2018 by Thomas Häger <thaeger at hdsnetz dot de>
 bool _blnk_enabled = false;
 WiFiClient _wific;
 
+unsigned char _blynkRelay(unsigned int vpin) {
+    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
+        if (getSetting("blnkRelayVpin", relayID, 0).toInt() == vpin) {
+            return relayID;
+        }
+    }
+    return -1;
+}
 
 bool _blnkWebSocketOnReceive(const char * key, JsonVariant& value) {
     return (strncmp(key, "blnk", 4) == 0);
@@ -27,7 +35,7 @@ void _blnkWebSocketOnSend(JsonObject& root) {
 
     JsonArray& relays = root.createNestedArray("blnkRelays");
     for (unsigned char i=0; i<relayCount(); i++) {
-        relays.add(blynkVpin(i));
+        relays.add(getSetting("blnkRelayVpin", i, 0).toInt());
     }
 
     #if SENSOR_SUPPORT
@@ -42,11 +50,23 @@ void _blnkWebSocketOnSend(JsonObject& root) {
     #endif
 }
 
+void blynkSendMeasurement(unsigned char key, char * payload) {
+    if (!_blnk_enabled) return;
+    //int index = atoi(key);
+    unsigned int  vpin = getSetting("blnkMagnitude", key, 0).toInt();
+    Blynk.virtualWrite(vpin,payload);
+}
+
+void blynkSendRelay(unsigned char key, unsigned char status) {
+    if (!_blnk_enabled) return;
+    //int index = atoi(key);
+    unsigned int  vpin = getSetting("blnkRelayVpin", key, 0).toInt();
+    Blynk.virtualWrite(vpin,status);
+}
+
 int blynkVpin(unsigned char relayID) {
     char buffer[17];
     snprintf_P(buffer, sizeof(buffer), PSTR("blnkRelayVpin%u"), relayID);
-    DEBUG_MSG_P(PSTR("[BLYNK] Buffer: %s\n"),buffer);
-
     return getSetting(buffer).toInt();
 }
 
@@ -64,9 +84,12 @@ void _blnkConfigure() {
 }
 
 BLYNK_WRITE_DEFAULT(){
-  int pin = request.pin;
-  if (pin==1)
-    DEBUG_MSG_P(PSTR("[BLYNK] Received: %s from Pin: %u\n"),param,pin);
+  unsigned char relayID = _blynkRelay(request.pin);
+  if (relayID >= 0) {
+      int value = param[0].asInt();
+      DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for V%u\n"), value, request.pin);
+      relayStatus(relayID, value == 1);
+  }
 }
 
 void blynkSetup(){
@@ -77,7 +100,6 @@ void blynkSetup(){
       wsOnReceiveRegister(_blnkWebSocketOnReceive);
   #endif
 
-  // Main callbacks
   espurnaRegisterLoop(_blnkLoop);
   espurnaRegisterReload(_blnkConfigure);
 }
