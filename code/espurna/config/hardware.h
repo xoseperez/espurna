@@ -1386,6 +1386,36 @@
     #define RELAY1_RESET_PIN    12
 
 // -----------------------------------------------------------------------------
+// EX-Store Wifi Relay v5.0
+// -----------------------------------------------------------------------------
+
+#elif defined(EXS_WIFI_RELAY_V50)
+
+    // Info
+    #define MANUFACTURER        "EXS"
+    #define DEVICE              "WIFI_RELAY_V50"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON2_PIN         4
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY1_RESET_PIN    16
+    #define RELAY2_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY2_RESET_PIN    12
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // V9261F
 // -----------------------------------------------------------------------------
 

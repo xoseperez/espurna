@@ -1204,6 +1204,25 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(EXS_WIFI_RELAY_V50)
+
+            setSetting("board", 91);
+
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnGPIO", 1, 4);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayGPIO", 1, 13);
+            setSetting("relayResetGPIO", 0, 16);
+            setSetting("relayResetGPIO", 1, 12);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+
+            setSetting("ledGPIO", 1, 15);
+            setSetting("ledLogic", 1, 0);
+
         #else
 
             // Allow users to define new settings without migration config
