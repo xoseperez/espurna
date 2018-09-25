@@ -526,9 +526,9 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Settings</label>
-                                    <div class="pure-u-1-3 pure-u-lg-1-4"><button class="pure-button button-settings-backup pure-u-23-24">Backup</button></div>
-                                    <div class="pure-u-1-3 pure-u-lg-1-4"><button class="pure-button button-settings-restore pure-u-23-24">Restore</button></div>
-                                    <div class="pure-u-1-3 pure-u-lg-1-4"><button class="pure-button button-settings-factory pure-u-1">Factory Reset</button></div>
+                                    <div class="pure-u-1-3 pure-u-lg-1-4"><button type="button" class="pure-button button-settings-backup pure-u-23-24">Backup</button></div>
+                                    <div class="pure-u-1-3 pure-u-lg-1-4"><button type="button" class="pure-button button-settings-restore pure-u-23-24">Restore</button></div>
+                                    <div class="pure-u-1-3 pure-u-lg-1-4"><button type="button" class="pure-button button-settings-factory pure-u-1">Factory Reset</button></div>
                                 </div>
 
                                 <div class="pure-g">
@@ -580,7 +580,7 @@
                                 <div class="pure-g module module-api">
                                     <label class="pure-u-1 pure-u-lg-1-4">HTTP API Key</label>
                                     <input name="apiKey" class="pure-u-3-4 pure-u-lg-1-2" type="text" tabindex="14" />
-                                    <div class=" pure-u-1-4 pure-u-lg-1-4"><button class="pure-button button-apikey pure-u-23-24">Auto</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-1-4"><button type="button" class="pure-button button-apikey pure-u-23-24">Auto</button></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         This is the key you will have to pass with every HTTP request to the API, either to get or write values.
@@ -613,8 +613,8 @@
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
-                                    <div class=" pure-u-1-4 pure-u-lg-1-8"><button class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
-                                    <div class=" pure-u-1-4 pure-u-lg-1-8"><button class="pure-button button-upgrade pure-u-23-24">Upgrade</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade pure-u-23-24">Upgrade</button></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
@@ -764,9 +764,9 @@
                                 </tbody>
                             </table>
 
-                            <button class="pure-button button-clear-filters">Clear filters</button>
-                            <button class="pure-button button-clear-messages">Clear messages</button>
-                            <button class="pure-button button-clear-counts">Clear counts</button>
+                            <button type="button" class="pure-button button-clear-filters">Clear filters</button>
+                            <button type="button" class="pure-button button-clear-messages">Clear messages</button>
+                            <button type="button" class="pure-button button-clear-counts">Clear counts</button>
 
 
                         </div>
@@ -1028,7 +1028,7 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Configuration</label>
-                                    <div class="pure-u-1-4 pure-u-lg-3-4"><button class="pure-button button-ha-config pure-u-1-3">Show</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-3-4"><button type="button" class="pure-button button-ha-config pure-u-1-3">Show</button></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
                                         These are the settings you should copy to your Home Assistant "configuration.yaml" file.
@@ -1161,12 +1161,12 @@
                                         Write a command and click send to execute it on the device. The output will be shown in the debug text area below.
                                     </div>
                                     <input name="dbgcmd" class="pure-u-3-4" type="text" tabindex="2" />
-                                    <div class=" pure-u-1-4 pure-u-lg-1-4"><button class="pure-button button-dbgcmd pure-u-23-24">Send</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-1-4"><button type="button" class="pure-button button-dbgcmd pure-u-23-24">Send</button></div>
                                 </div>
 
                                 <div class="pure-g">
                                     <textarea class="pure-u-1 terminal" id="weblog" name="weblog" wrap="off" readonly></textarea>
-                                    <div class=" pure-u-1-4 pure-u-lg-1-4"><button class="pure-button button-dbg-clear pure-u-23-24">Clear</button></div>
+                                    <div class="pure-u-1-4 pure-u-lg-1-4"><button type="button" class="pure-button button-dbg-clear pure-u-23-24">Clear</button></div>
                                 </div>
 
                             </fieldset>
