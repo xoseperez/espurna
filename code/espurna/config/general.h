@@ -458,6 +458,11 @@
 #define API_ENABLED                 0           // Do not enable API by default
 #endif
 
+#ifndef API_RESTFUL
+#define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
+                                                // Setting this to 0 will allow using GET to change relays, for instance
+#endif
+
 #ifndef API_BUFFER_SIZE
 #define API_BUFFER_SIZE             15          // Size of the buffer for HTTP GET API responses
 #endif
