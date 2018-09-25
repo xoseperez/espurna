@@ -36,7 +36,7 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
-    config["unit_of_measurement"] = magnitudeUnits(type);
+    config["unit_of_measurement"] = "\"" + magnitudeUnits(type) + "\"";
 
 }
 

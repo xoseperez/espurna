@@ -8,10 +8,10 @@ cache:
   - "~/.npm"
   - "~/.platformio"
   - "$TRAVIS_BUILD_DIR/code/.piolibdeps"
-  - "$TRAVIS_BUILD_DIR/code/espurna/node_modules"
 install:
 - pip install -U platformio
-- cd code ; npm install --only=dev ; cd ..
+- npm install -g npm@latest
+- cd code ; npm ci ; cd ..
 env:
   global:
   - BUILDER_TOTAL_THREADS=4

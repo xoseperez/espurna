@@ -6,31 +6,6 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-// Core version 2.4.2 and higher changed the cont_t structure to a pointer:
-// https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35
-#if defined(ARDUINO_ESP8266_RELEASE_2_3_0) \
-    || defined(ARDUINO_ESP8266_RELEASE_2_4_0) \
-    || defined(ARDUINO_ESP8266_RELEASE_2_4_1)
-extern "C" {
-    #include <cont.h>
-    extern cont_t g_cont;
-
-}
-
-unsigned int getFreeStack() {
-    return cont_get_free_stack(&g_cont);
-}
-#else
-extern "C" {
-    #include <cont.h>
-    extern cont_t* g_pcont;
-}
-
-unsigned int getFreeStack() {
-    return cont_get_free_stack(g_pcont);
-}
-#endif // defined(ARDUINO_ESP8266_RELEASE_2_3_0/2_4_0/2_4_1)
-
 #include <Ticker.h>
 Ticker _defer_reset;
 
