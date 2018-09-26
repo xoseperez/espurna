@@ -133,7 +133,7 @@ unsigned long getUptime() {
 
 }
 
-#if HEARTBEAT_ENABLED
+#if HEARTBEAT_MODE != HEARTBEAT_NONE
 
 void heartbeat() {
 
@@ -235,7 +235,7 @@ void heartbeat() {
 
 }
 
-#endif /// HEARTBEAT_ENABLED
+#endif /// HEARTBEAT_MODE != HEARTBEAT_NONE
 
 // -----------------------------------------------------------------------------
 // INFO

@@ -165,8 +165,17 @@
 // HEARTBEAT
 //------------------------------------------------------------------------------
 
-#ifndef HEARTBEAT_ENABLED
-#define HEARTBEAT_ENABLED           1
+#define HEARTBEAT_NONE              0           // Never send heartbeat
+#define HEARTBEAT_ONCE              1           // Send it only once upon MQTT connection
+#define HEARTBEAT_REPEAT            2           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL
+
+// Backwards compatibility check
+#if defined(HEARTBEAT_ENABLED) && (HEARTBEAT_ENABLED == 0)
+#define HEARTBEAT_MODE              HEARTBEAT_NONE
+#endif
+
+#ifndef HEARTBEAT_MODE
+#define HEARTBEAT_MODE              HEARTBEAT_REPEAT
 #endif
 
 #ifndef HEARTBEAT_INTERVAL

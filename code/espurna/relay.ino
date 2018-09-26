@@ -766,7 +766,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_CONNECT_EVENT) {
 
         // Send status on connect
-        #if not HEARTBEAT_REPORT_RELAY
+        #if (HEARTBEAT_MODE == HEARTBEAT_NONE) or (not HEARTBEAT_REPORT_RELAY)
             relayMQTT();
         #endif
 
