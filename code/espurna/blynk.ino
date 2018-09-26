@@ -22,54 +22,6 @@ unsigned char _blynkRelay(unsigned int vpin) {
     return -1;
 }
 
-bool _blnkWebSocketOnReceive(const char * key, JsonVariant& value) {
-    return (strncmp(key, "blnk", 4) == 0);
-}
-
-void _blnkWebSocketOnSend(JsonObject& root) {
-    root["blnkVisible"] = 1;
-    root["blnkEnabled"] = getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1;
-    root["blnkAuthKey"] = getSetting("blnkAuthKey", BLYNK_AUTH_TOKEN);
-    root["blnkHost"] = getSetting("blnkHost", BLYNK_HOST);
-    root["blnkPort"] = getSetting("blnkPort", BLYNK_PORT).toInt();
-
-    JsonArray& relays = root.createNestedArray("blnkRelays");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        relays.add(getSetting("blnkRelayVpin", i, 0).toInt());
-    }
-
-    #if SENSOR_SUPPORT
-        JsonArray& list = root.createNestedArray("blnkMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
-            JsonObject& element = list.createNestedObject();
-            element["name"] = magnitudeName(i);
-            element["type"] = magnitudeType(i);
-            element["index"] = magnitudeIndex(i);
-            element["Vpin"] = getSetting("blnkMagnitude", i, 0).toInt();
-        }
-    #endif
-}
-
-void blynkSendMeasurement(unsigned char key, char * payload) {
-    if (!_blnk_enabled) return;
-    //int index = atoi(key);
-    unsigned int  vpin = getSetting("blnkMagnitude", key, 0).toInt();
-    Blynk.virtualWrite(vpin,payload);
-}
-
-void blynkSendRelay(unsigned char key, unsigned char status) {
-    if (!_blnk_enabled) return;
-    //int index = atoi(key);
-    unsigned int  vpin = getSetting("blnkRelayVpin", key, 0).toInt();
-    Blynk.virtualWrite(vpin,status);
-}
-
-int blynkVpin(unsigned char relayID) {
-    char buffer[17];
-    snprintf_P(buffer, sizeof(buffer), PSTR("blnkRelayVpin%u"), relayID);
-    return getSetting(buffer).toInt();
-}
-
 void _blnkConfigure() {
     _blnk_enabled = getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1;
     if (_blnk_enabled && (getSetting("blnkHost", BLYNK_HOST).length() == 0)) {
@@ -83,27 +35,6 @@ void _blnkConfigure() {
     }
 }
 
-BLYNK_WRITE_DEFAULT(){
-  unsigned char relayID = _blynkRelay(request.pin);
-  if (relayID >= 0) {
-      int value = param[0].asInt();
-      DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for V%u\n"), value, request.pin);
-      relayStatus(relayID, value == 1);
-  }
-}
-
-void blynkSetup(){
-  _blnkConfigure();
-
-  #if WEB_SUPPORT
-      wsOnSendRegister(_blnkWebSocketOnSend);
-      wsOnReceiveRegister(_blnkWebSocketOnReceive);
-  #endif
-
-  espurnaRegisterLoop(_blnkLoop);
-  espurnaRegisterReload(_blnkConfigure);
-}
-
 void _wifi_connect() {
 
   if (_wific.connect(&getSetting("blnkHost", BLYNK_HOST)[0], getSetting("blnkPort", BLYNK_PORT).toInt()))
@@ -112,7 +43,97 @@ void _wifi_connect() {
     DEBUG_MSG_P(PSTR("[BLYNK] WiFi could not connect to %s:%s.\n"),&getSetting("blnkHost", BLYNK_HOST)[0],&getSetting("blnkHost", BLYNK_PORT)[0]);
 }
 
-void _blnkLoop(){
+BLYNK_WRITE_DEFAULT(){
+  unsigned char relayID = _blynkRelay(request.pin);
+  if (relayID >= 0) {
+      int value = param[0].asInt();
+      DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for VPIN %u\n"), value, request.pin);
+      relayStatus(relayID, value == 1);
+  }
+}
+
+BLYNK_CONNECTED(){
+  DEBUG_MSG_P(PSTR("[BLYNK] Connected to Blynk server\n"));
+  blynkSendRelays();
+}
+
+#if WEB_SUPPORT
+
+bool _blnkWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "blnk", 4) == 0);
+}
+
+void _blnkWebSocketOnSend(JsonObject& root) {
+    root["blnkVisible"] = 1;
+    root["blnkEnabled"] = getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1;
+    root["blnkAuthKey"] = getSetting("blnkAuthKey", BLYNK_AUTH_TOKEN);
+    root["blnkHost"] = getSetting("blnkHost", BLYNK_HOST);
+    root["blnkPort"] = getSetting("blnkPort", BLYNK_PORT).toInt();
+
+    JsonArray& relays = root.createNestedArray("blnkRelays");
+    for (unsigned char i=0; i<relayCount(); i++) {
+        relays.add(getSetting("blnkRelayVpin", i, -1).toInt());
+    }
+
+    #if SENSOR_SUPPORT
+        JsonArray& list = root.createNestedArray("blnkMagnitudes");
+        for (byte i=0; i<magnitudeCount(); i++) {
+            JsonObject& element = list.createNestedObject();
+            element["name"] = magnitudeName(i);
+            element["type"] = magnitudeType(i);
+            element["index"] = magnitudeIndex(i);
+            element["idx"] = getSetting("blnkMagnitude", i, -1).toInt();
+        }
+    #endif
+}
+#endif //WEB_SUPPORT
+
+void blynkSendRelays() {
+    for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
+        blynkSendRelay(relayID, relayStatus(relayID) ? 1 : 0);
+    }
+}
+
+void blynkSendMeasurement(unsigned char key, char * payload) {
+    if (!_blnk_enabled) return;
+    int  vpin = getSetting("blnkMagnitude", key, -1).toInt();
+    if(vpin>-1) {
+      //DEBUG_MSG_P(PSTR("[BLYNK] Send sensor data to VPIN %u Data: %s\n"), vpin, payload);
+      Blynk.virtualWrite(vpin,payload);
+    }
+}
+
+void blynkSendRelay(unsigned char key, unsigned char status) {
+    if (!_blnk_enabled) return;
+    DEBUG_MSG_P(PSTR("[BLYNK] Send new status %u to Relay %u\n"),status,key);
+    unsigned int  vpin = getSetting("blnkRelayVpin", key, 0).toInt();
+    Blynk.virtualWrite(vpin,status);
+}
+
+int blynkVpin(unsigned char relayID) {
+    char buffer[17];
+    snprintf_P(buffer, sizeof(buffer), PSTR("blnkRelayVpin%u"), relayID);
+    return getSetting(buffer).toInt();
+}
+
+
+
+void blynkSetup(){
+
+  _blnkConfigure();
+
+  #if WEB_SUPPORT
+      wsOnSendRegister(_blnkWebSocketOnSend);
+      wsOnReceiveRegister(_blnkWebSocketOnReceive);
+  #endif
+
+  espurnaRegisterLoop(blnkLoop);
+  espurnaRegisterReload(_blnkConfigure);
+
+}
+
+
+void blnkLoop(){
 
   if(!_blnk_enabled) return;
 
@@ -126,7 +147,6 @@ void _blnkLoop(){
     Blynk.config(_wific, auth);
     if (!Blynk.connect(3000))
       DEBUG_MSG_P(PSTR("[BLYNK] Could not connect to Bylnk Server. Token[%s]\n"),auth);
-
   }
 
   Blynk.run();

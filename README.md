@@ -1,4 +1,4 @@
-# ESPurna Firmware
+> # ESPurna Firmware
 
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
@@ -69,6 +69,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
     * Integration via MQTT Discover or copy-pasting configuration code
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
+* [**Blynk**](https://www.blynk.cc/) integration via native Blynk API.
 * **Sonoff RF Bridge** support
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)

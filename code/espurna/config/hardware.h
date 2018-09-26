@@ -39,6 +39,7 @@
     #define BROKER_SUPPORT          0
     #define BUTTON_SUPPORT          0
     #define DOMOTICZ_SUPPORT        0
+    #define BLYNK_SUPPORT           0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
     #define MDNS_SERVER_SUPPORT     0
@@ -2970,6 +2971,38 @@
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
+
+#elif defined(TUYA_TYWE3S_ZX2820)
+
+    // Info
+    #define MANUFACTURER        "Tuya"
+    #define DEVICE              "ZX2820"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS       BUTTON_MODE_NONE
+    #define BUTTON1_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON1_DBLCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK BUTTON_MODE_RESET
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT     1
+    #endif
+    #define HLW8012_SEL_PIN     15
+    #define HLW8012_CF1_PIN     5
+    #define HLW8012_CF_PIN      4
 
 #endif
 
