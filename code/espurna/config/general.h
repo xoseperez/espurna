@@ -965,7 +965,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef THINGSPEAK_SUPPORT
-#define THINGSPEAK_SUPPORT          0               // Enable Thingspeak support by default (2.56Kb)
+#define THINGSPEAK_SUPPORT          1               // Enable Thingspeak support by default (2.56Kb)
 #endif
 
 #ifndef THINGSPEAK_ENABLED
