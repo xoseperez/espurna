@@ -205,8 +205,7 @@ function validateFormHostname(form) {
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = ("true" === hostname.attr("hasChanged"));
-    if (!hasChanged) {
+    if ("true" !== hostname.attr("hasChanged")) {
         return true;
     }
 
@@ -496,7 +495,7 @@ function doUpgrade() {
 
 function doUpdatePassword() {
     var form = $("#formPassword");
-    if (validateForm(form)) {
+    if (validateFormPasswords(form)) {
         sendConfig(getData(form));
     }
     return false;
