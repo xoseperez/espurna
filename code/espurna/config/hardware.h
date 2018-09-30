@@ -1932,7 +1932,7 @@
 
     // Buttons
     #define BUTTON1_PIN			13
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -1940,9 +1940,14 @@
     #define RELAY1_TYPE			RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			4
-    #define LED1_PIN_INVERSE	0
-
+    #define LED1_PIN			0  // red
+    #define LED1_PIN_INVERSE	1
+    #define LED1_MODE           LED_MODE_WIFI
+    
+    #define LED2_PIN			15  // blue
+    #define LED2_PIN_INVERSE	1
+    #define LED2_MODE           LED_MODE_RELAY
+    
     // HLW8012
     #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT     1
@@ -1953,6 +1958,8 @@
 
     #define HLW8012_CURRENT_R               0.001            // Current resistor
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
+    #define HLW8012_SEL_CURRENT             LOW
+    #define HLW8012_INTERRUPT_ON            FALLING
 
 // -----------------------------------------------------------------------------
 // TONBUX XS-SSA06
