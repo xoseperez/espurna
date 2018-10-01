@@ -235,9 +235,10 @@ void _rfm69Loop() {
 }
 
 void _rfm69Clear() {
-    for(unsigned int i=0; i<255; i++) {
+    for(unsigned int i=0; i<(sizeof(_rfm69_node_info) / sizeof(_node_t)); i++) {
         _rfm69_node_info[i].duplicates = 0;
         _rfm69_node_info[i].missing = 0;
+        _rfm69_node_info [i].count = 0;
     }
     _rfm69_node_count = 0;
     _rfm69_packet_count = 0;
