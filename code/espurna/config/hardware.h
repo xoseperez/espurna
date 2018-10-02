@@ -1956,10 +1956,11 @@
     #define HLW8012_CF1_PIN     14
     #define HLW8012_CF_PIN      5
 
-    #define HLW8012_CURRENT_R               0.001            // Current resistor
-    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
-    #define HLW8012_SEL_CURRENT             LOW
-    #define HLW8012_INTERRUPT_ON            FALLING
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
 
 // -----------------------------------------------------------------------------
 // TONBUX XS-SSA06
