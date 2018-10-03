@@ -13,7 +13,7 @@ Copyright (C) 2018 by Thomas Häger <thaeger at hdsnetz dot de>
 bool _blnk_enabled = false;
 WiFiClient _wific;
 
-unsigned char _blynkRelay(unsigned int vpin) {
+signed char _blynkRelay(unsigned int vpin) {
     for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
         if (getSetting("blnkRelayVpin", relayID, 0).toInt() == vpin) {
             return relayID;
@@ -44,11 +44,13 @@ void _wifi_connect() {
 }
 
 BLYNK_WRITE_DEFAULT(){
-  unsigned char relayID = _blynkRelay(request.pin);
+  signed char relayID = _blynkRelay(request.pin);
+  int value = param[0].asInt();
   if (relayID >= 0) {
-      int value = param[0].asInt();
-      DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for VPIN %u\n"), value, request.pin);
-      relayStatus(relayID, value == 1);
+    DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for VPIN %u\n"), value, request.pin);
+    relayStatus(relayID, value == 1);
+  } else {
+    DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for unassigned VPIN %u\n"), value, request.pin);
   }
 }
 
