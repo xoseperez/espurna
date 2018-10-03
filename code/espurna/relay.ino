@@ -770,7 +770,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_CONNECT_EVENT) {
 
         // Send status on connect
-        #if not HEARTBEAT_REPORT_RELAY
+        #if (HEARTBEAT_MODE == HEARTBEAT_NONE) or (not HEARTBEAT_REPORT_RELAY)
             relayMQTT();
         #endif
 
@@ -967,10 +967,10 @@ void relaySetup() {
     // Sonoff Dual and Sonoff RF Bridge
     #if DUMMY_RELAY_COUNT > 0
 
-        unsigned int _delay_on[8] = {RELAY1_DELAY_ON, RELAY2_DELAY_ON, RELAY3_DELAY_ON, RELAY4_DELAY_ON, RELAY5_DELAY_ON, RELAY6_DELAY_ON, RELAY7_DELAY_ON, RELAY8_DELAY_ON};
-        unsigned int _delay_off[8] = {RELAY1_DELAY_OFF, RELAY2_DELAY_OFF, RELAY3_DELAY_OFF, RELAY4_DELAY_OFF, RELAY5_DELAY_OFF, RELAY6_DELAY_OFF, RELAY7_DELAY_OFF, RELAY8_DELAY_OFF};
+        // No delay_on or off for these devices to easily allow having more than
+        // 8 channels. This behaviour will be recovered with v2.
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL,0,_delay_on[i], _delay_off[i]});
+            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, 0, 0});
         }
 
     #else

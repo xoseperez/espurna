@@ -4,8 +4,8 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smar
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
 [![version](https://img.shields.io/badge/version-1.13.3a-brightgreen.svg)](CHANGELOG.md)
-[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/ColinShorts/espurna.git/tree/dev/)
-[![travis](https://travis-ci.org/ColinShorts/espurna.git.svg?branch=dev)](https://travis-ci.org/ColinShorts/espurna.git)
+[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
+[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 <br />
@@ -262,8 +262,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
 |![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
-|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|||
-|**Alterco Shelly1**|||
+|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)||
+|**EXS Wifi Relay v5.0**|**Alterco Shelly1**||
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
 |![IKE ESPike](images/devices/ike-espike.jpg)|![Pilotak ESP DIN](images/devices/pilotak-esp-din.jpg)|![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
