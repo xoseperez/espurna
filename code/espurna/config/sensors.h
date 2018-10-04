@@ -458,7 +458,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef MICS5525_SUPPORT
-#define MICS5525_SUPPORT                1
+#define MICS5525_SUPPORT                0
 #endif
 
 #ifndef MICS5525_RED_PIN
