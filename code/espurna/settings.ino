@@ -443,8 +443,6 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*)) {
 
 void settingsSetup() {
 
-    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
-
     _serial.callback([](uint8_t ch) {
         #if TELNET_SUPPORT
             telnetWrite(ch);

@@ -148,7 +148,8 @@
 // EEPROM
 //------------------------------------------------------------------------------
 
-#define EEPROM_SIZE             4096            // EEPROM size in bytes
+#define EEPROM_SIZE             SPI_FLASH_SEC_SIZE  // EEPROM size in bytes (1 sector = 4096 bytes)
+
 //#define EEPROM_RORATE_SECTORS   2             // Number of sectors to use for EEPROM rotation
                                                 // If not defined the firmware will use a number based
                                                 // on the number of available sectors
