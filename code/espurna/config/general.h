@@ -236,6 +236,8 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
+                                                // 1 - to send all button events to MQTT
 #endif
 
 //------------------------------------------------------------------------------
