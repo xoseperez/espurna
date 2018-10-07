@@ -118,6 +118,8 @@
 //#define XIAOMI_SMART_DESK_LAMP
 //#define ALLTERCO_SHELLY2
 //#define PHYX_ESP12_RGB
+//#define IWOOLE_LED_TABLE_LAMP
+//#define EXS_WIFI_RELAY_V50
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

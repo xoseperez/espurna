@@ -379,6 +379,13 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
+    #if not SETTINGS_AUTOSAVE
+        settingsRegisterCommand(F("SAVE"), [](Embedis* e) {
+            _settings_save = true;
+            DEBUG_MSG_P(PSTR("\n+OK\n"));
+        });
+    #endif
+    
 }
 
 // -----------------------------------------------------------------------------

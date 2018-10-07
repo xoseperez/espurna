@@ -31,7 +31,6 @@ const runSequence = require('run-sequence');
 const through = require('through2');
 
 const htmlmin = require('gulp-htmlmin');
-const uglify = require('gulp-uglify');
 const inline = require('gulp-inline');
 const inlineImages = require('gulp-css-base64');
 const favicon = require('gulp-base64-favicon');

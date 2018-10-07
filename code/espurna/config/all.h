@@ -35,7 +35,3 @@
 #include "sensors.h"
 #include "webui.h"
 #include "progmem.h"
-
-#ifdef USE_CORE_VERSION_H
-#include "core_version.h"
-#endif

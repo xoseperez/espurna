@@ -136,7 +136,8 @@
 // EEPROM
 //------------------------------------------------------------------------------
 
-#define EEPROM_SIZE             4096            // EEPROM size in bytes
+#define EEPROM_SIZE             SPI_FLASH_SEC_SIZE  // EEPROM size in bytes (1 sector = 4096 bytes)
+
 //#define EEPROM_RORATE_SECTORS   2             // Number of sectors to use for EEPROM rotation
                                                 // If not defined the firmware will use a number based
                                                 // on the number of available sectors
@@ -153,8 +154,17 @@
 // HEARTBEAT
 //------------------------------------------------------------------------------
 
-#ifndef HEARTBEAT_ENABLED
-#define HEARTBEAT_ENABLED           1
+#define HEARTBEAT_NONE              0           // Never send heartbeat
+#define HEARTBEAT_ONCE              1           // Send it only once upon MQTT connection
+#define HEARTBEAT_REPEAT            2           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL
+
+// Backwards compatibility check
+#if defined(HEARTBEAT_ENABLED) && (HEARTBEAT_ENABLED == 0)
+#define HEARTBEAT_MODE              HEARTBEAT_NONE
+#endif
+
+#ifndef HEARTBEAT_MODE
+#define HEARTBEAT_MODE              HEARTBEAT_REPEAT
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
@@ -214,6 +224,8 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
+                                                // 1 - to send all button events to MQTT
 #endif
 
 //------------------------------------------------------------------------------
@@ -444,6 +456,11 @@
 // This will only be enabled if WEB_SUPPORT is 1 (this is the default value)
 #ifndef API_ENABLED
 #define API_ENABLED                 0           // Do not enable API by default
+#endif
+
+#ifndef API_RESTFUL
+#define API_RESTFUL                 1           // A restful API requires changes to be issued as PUT requests
+                                                // Setting this to 0 will allow using GET to change relays, for instance
 #endif
 
 #ifndef API_BUFFER_SIZE
@@ -769,7 +786,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SETTINGS_AUTOSAVE
-#define SETTINGS_AUTOSAVE       1           // Autosave settings o force manual commit
+#define SETTINGS_AUTOSAVE       1           // Autosave settings or force manual commit
 #endif
 
 #define SETTINGS_MAX_LIST_COUNT 10          // Maximum index for settings lists
@@ -987,6 +1004,11 @@
 #define THINGSPEAK_URL              "/update"
 
 #define THINGSPEAK_MIN_INTERVAL     15000           // Minimum interval between POSTs (in millis)
+#define THINGSPEAK_FIELDS           8               // Number of fields
+
+#ifndef THINGSPEAK_TRIES
+#define THINGSPEAK_TRIES            3               // Number of tries when sending data (minimum 1)
+#endif
 
 // -----------------------------------------------------------------------------
 // SCHEDULER
@@ -1319,6 +1341,10 @@
 
 #ifndef RFM69_MAX_TOPICS
 #define RFM69_MAX_TOPICS            50
+#endif
+
+#ifndef RFM69_MAX_NODES
+#define RFM69_MAX_NODES             255
 #endif
 
 #ifndef RFM69_DEFAULT_TOPIC

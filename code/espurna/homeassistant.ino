@@ -165,7 +165,7 @@ String _haGetConfig() {
         JsonObject& config = jsonBuffer.createObject();
         _haSendSwitch(i, config);
 
-        output += type + ":\n";
+        output += "\n" + type + ":\n";
         bool first = true;
         for (auto kv : config) {
             if (first) {
@@ -176,7 +176,6 @@ String _haGetConfig() {
             }
             output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
         }
-        output += "\n";
 
         jsonBuffer.clear();
 
@@ -190,7 +189,7 @@ String _haGetConfig() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
 
-            output += "sensor:\n";
+            output += "\nsensor:\n";
             bool first = true;
             for (auto kv : config) {
                 if (first) {
@@ -199,7 +198,9 @@ String _haGetConfig() {
                 } else {
                     output += "    ";
                 }
-                output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
+                String value = kv.value.as<String>();
+                value.replace("%", "'%'");
+                output += kv.key + String(": ") + value + String("\n");
             }
             output += "\n";
 
@@ -267,10 +268,12 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 #if TERMINAL_SUPPORT
 
 void _haInitCommands() {
+
     settingsRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
         DEBUG_MSG(_haGetConfig().c_str());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
     settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
@@ -279,6 +282,7 @@ void _haInitCommands() {
         #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
     settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
@@ -287,6 +291,7 @@ void _haInitCommands() {
         #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
 }
 
 #endif

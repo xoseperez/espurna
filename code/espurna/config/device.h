@@ -103,6 +103,9 @@ enum devices {
     DEVICE_XIAOMI_SMART_DESK_LAMP,
     DEVICE_ALLTERCO_SHELLY2,
     DEVICE_PHYX_ESP12_RGB,
+    DEVICE_IWOOLE_LED_TABLE_LAMP,
+    DEVICE_EXS_WIFI_RELAY_V50,
+    DEVICE_BESTEK_MRJ1011,
 
     DEVICE_LAST
 
@@ -117,10 +120,12 @@ enum devices {
     defined(ALLTERCO_SHELLY1) || \
     defined(ARNIEX_SWIFITCH) || \
     defined(BH_ONOFRE) || \
+    defined(BESTEK_MRJ1011) || \
     defined(ELECTRODRAGON_WIFI_IOT) || \
     defined(ESTINK_WIFI_POWER_STRIP) || \
     defined(EUROMATE_WIFI_STECKER_SCHUKO) || \
     defined(EXS_WIFI_RELAY_V31) || \
+    defined(EXS_WIFI_RELAY_V50) || \
     defined(GENERIC_8CH) || \
     defined(GENERIC_ESP01S_RELAY_V40) || \
     defined(GENERIC_ESP01S_RGBLED_V10) || \
@@ -220,7 +225,8 @@ enum devices {
     defined(HUACANXING_H802) || \
     defined(INTERMITTECH_QUINLED) || \
     defined(ITEAD_BNSZ01) || \
-    defined(ITEAD_SONOFF_LED)
+    defined(ITEAD_SONOFF_LED) || \
+    defined(IWOOLE_LED_TABLE_LAMP)
 
     #undef ESPURNA_IMAGE
     #define ESPURNA_IMAGE               ESPURNA_DIMMER

@@ -261,8 +261,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
 |![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
 |**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
-|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|||
-|**Alterco Shelly1**|||
+|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)||
+|**EXS Wifi Relay v5.0**|**Alterco Shelly1**||
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
 |**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
 |![IKE ESPike](images/devices/ike-espike.jpg)|![Pilotak ESP DIN](images/devices/pilotak-esp-din.jpg)|![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|

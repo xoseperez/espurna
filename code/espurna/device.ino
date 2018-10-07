@@ -2052,6 +2052,9 @@ void _deviceLoad() {
         setSetting("device", "XIAOMI_SMART_DESK_LAMP");
         setSetting("fw", ESPURNA_DIMMER);
 
+        // This button doubles as switch here and as encoder mode switch below
+        // Clicking it (for less than 500ms) will turn the light on and off
+        // Double and Long clicks will not work as these are used to modify the encoder action
         setSetting("btnGPIO", 0, 2);
         setSetting("btnGPIO", 1, 14);
         setSetting("btnRelay", 0, 0);
@@ -2059,6 +2062,8 @@ void _deviceLoad() {
         setSetting("btnDblClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngClick", 0, BUTTON_MODE_NONE);
         setSetting("btnLngLngClick", 0, BUTTON_MODE_NONE);
+
+        // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
         setSetting("btnDblClick", 1, BUTTON_MODE_AP);
         setSetting("btnLngLngClick", 1, BUTTON_MODE_RESET);
 
@@ -2069,6 +2074,12 @@ void _deviceLoad() {
         setSetting("litChLogic", 0, 0);
         setSetting("litChLogic", 1, 0);
 
+        // Encoder
+        // If mode is ENCODER_MODE_RATIO, the value ratio between both channels is changed
+        // when the button is not pressed, and the overall brightness when pressed
+        // If mode is ENCODER_MODE_CHANNEL, the first channel value is changed
+        // when the button is not pressed, and the second channel when pressed
+        // If no ENCODERX_BUTTON_PIN defined it will only change the value of the first defined channel
         setSetting("enc1stGPIO", 0, 12);
         setSetting("enc2ndGPIO", 0, 13);
         setSetting("encBtnGPIO", 0, 2);
@@ -2105,6 +2116,67 @@ void _deviceLoad() {
         setSetting("litChLogic", 0, 0);
         setSetting("litChLogic", 1, 0);
         setSetting("litChLogic", 3, 0);
+
+    #elif defined(IWOOLE_LED_TABLE_LAMP)
+
+        // iWoole LED Table Lamp
+        // http://iwoole.com/newst-led-smart-night-light-7w-smart-table-light-rgbw-wifi-app-remote-control-110v-220v-us-eu-plug-smart-lamp-google-home-decore-p00022p1.html
+
+        setSetting("board", DEVICE_IWOOLE_LED_TABLE_LAMP);
+        setSetting("device", "IWOOLE_LED_TABLE_LAMP");
+        setSetting("fw", ESPURNA_DIMMER);
+
+        setSetting("rlyProvider", RELAY_PROVIDER_LIGHT);
+        setSetting("litChGPIO", 0, 12);
+        setSetting("litChGPIO", 1, 5);
+        setSetting("litChGPIO", 2, 14);
+        setSetting("litChGPIO", 3, 4);
+        setSetting("litChLogic", 0, 0);
+        setSetting("litChLogic", 1, 0);
+        setSetting("litChLogic", 2, 0);
+        setSetting("litChLogic", 3, 0);
+
+    #elif defined(EXS_WIFI_RELAY_V50)
+
+        setSetting("board", DEVICE_EXS_WIFI_RELAY_V50);
+        setSetting("device", "EXS_WIFI_RELAY_V50");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("btnGPIO", 0, 5);
+        setSetting("btnGPIO", 1, 4);
+        setSetting("btnRelay", 0, 0);
+        setSetting("btnRelay", 1, 1);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+        setSetting("btnMode", 1, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH);
+
+        setSetting("rlyGPIO", 0, 14);
+        setSetting("rlyGPIO", 1, 13);
+        setSetting("rlyResetGPIO", 0, 16);
+        setSetting("rlyResetGPIO", 1, 12);
+        setSetting("rlyType", 0, RELAY_TYPE_LATCHED);
+        setSetting("rlyType", 0, RELAY_TYPE_LATCHED);
+
+        setSetting("ledGPIO", 1, 15);
+        setSetting("ledLogic", 1, 0);
+
+    #elif defined(BESTEK_MRJ1011)
+
+        // Bestek Smart Plug with 2 USB ports
+        // https://www.bestekcorp.com/bestek-smart-plug-works-with-amazon-alexa-google-assistant-and-ifttt-with-2-usb
+
+        setSetting("board", DEVICE_BESTEK_MRJ1011);
+        setSetting("device", "BESTEK_MRJ1011");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("btnGPIO", 0, 13);
+        setSetting("btnMode", 0, BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH);
+        setSetting("btnRelay", 0, 0);
+
+        setSetting("rlyGPIO", 0, 12);
+        setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
+
+        setSetting("ledGPIO", 1, 4);
+        setSetting("ledLogic", 1, 1);
 
     #endif
 

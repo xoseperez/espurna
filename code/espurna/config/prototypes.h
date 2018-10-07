@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <functional>
 #include <pgmspace.h>
+#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -33,6 +34,25 @@ void debugSend(const char * format, ...);
 void debugSend_P(PGM_P format, ...);
 extern "C" {
      void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
+}
+
+// Core version 2.4.2 and higher changed the cont_t structure to a pointer:
+// https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35
+// Core version 2.5.0 introduced EspClass helper method:
+// https://github.com/esp8266/Arduino/commit/0e0e34c614fe8a47544c9998201b1d9b3c24eb18
+extern "C" {
+    #include <cont.h>
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_1)
+    extern cont_t g_cont;
+    #define getFreeStack() cont_get_free_stack(&g_cont)
+#elif defined(ARDUINO_ESP8266_RELEASE_2_4_2)
+    extern cont_t* g_pcont;
+    #define getFreeStack() cont_get_free_stack(g_pcont)
+#else
+    #define getFreeStack() ESP.getFreeContStack()
+#endif
 }
 
 // -----------------------------------------------------------------------------

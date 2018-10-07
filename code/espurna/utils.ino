@@ -8,11 +8,6 @@ Module key prefix: esp (shared with others)
 
 */
 
-extern "C" {
-    #include <cont.h>
-    extern cont_t g_cont;
-}
-
 #include <Ticker.h>
 Ticker _defer_reset;
 
@@ -100,10 +95,6 @@ unsigned int getUsedHeap() {
     return getInitialFreeHeap() - getFreeHeap();
 }
 
-unsigned int getFreeStack() {
-    return cont_get_free_stack(&g_cont);
-}
-
 String getEspurnaModules() {
     return FPSTR(espurna_modules);
 }
@@ -161,7 +152,7 @@ unsigned long getUptime() {
 
 }
 
-#if HEARTBEAT_ENABLED
+#if HEARTBEAT_MODE != HEARTBEAT_NONE
 
 void heartbeat() {
 
@@ -263,7 +254,7 @@ void heartbeat() {
 
 }
 
-#endif /// HEARTBEAT_ENABLED
+#endif /// HEARTBEAT_MODE != HEARTBEAT_NONE
 
 // -----------------------------------------------------------------------------
 // INFO
@@ -304,7 +295,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
 void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
 
     DEBUG_MSG_P(
-        PSTR("[MAIN] %-6s: %5u bytes total - %5u bytes used (%2u%%) - %5u bytes free (%2u%%)\n"),
+        PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
         name,
         total_memory,
         total_memory - free_memory,
@@ -361,12 +352,12 @@ void info() {
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
-            DEBUG_MSG_P(PSTR("[MAIN]        used size:  %8u bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("[MAIN]        block size: %8u bytes\n"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        page size:  %8u bytes\n"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        max files:  %8u\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("[MAIN]        max length: %8u\n"), fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, info_bytes2sectors(fs_info.totalBytes));
+            DEBUG_MSG_P(PSTR("[MAIN]        used size    : %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("[MAIN]        block size   : %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        page size    : %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        max files    : %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("[MAIN]        max length   : %8u\n"), fs_info.maxPathLength);
         } else {
             DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
         }
@@ -497,13 +488,13 @@ void resetReason(unsigned char reason) {
     EEPROMr.commit();
 }
 
-void reset(unsigned char reason) {
-    resetReason(reason);
+void reset() {
     ESP.restart();
 }
 
 void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, reset, reason);
+    resetReason(reason);
+    _defer_reset.once_ms(delay, reset);
 }
 
 // -----------------------------------------------------------------------------
