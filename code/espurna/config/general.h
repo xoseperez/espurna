@@ -1352,6 +1352,10 @@
 #define RFM69_MAX_TOPICS            50
 #endif
 
+#ifndef RFM69_MAX_NODES
+#define RFM69_MAX_NODES             255
+#endif
+
 #ifndef RFM69_DEFAULT_TOPIC
 #define RFM69_DEFAULT_TOPIC         "/rfm69gw/{node}/{key}"
 #endif
