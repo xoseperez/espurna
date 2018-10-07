@@ -170,7 +170,7 @@ function validateFormPasswords(form) {
         adminPass2 = passwords.last().val();
 
     var formValidity = passwords.first()[0].checkValidity();
-    if (formValidity && (adminPass1.length === adminPass2.length === 0)) {
+    if (formValidity && (adminPass1.length === 0) && (adminPass2.length === 0)) {
         return true;
     }
 
