@@ -276,7 +276,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
 void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
 
     DEBUG_MSG_P(
-        PSTR("[MAIN] %-6s: %5u bytes total - %5u bytes used (%2u%%) - %5u bytes free (%2u%%)\n"),
+        PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
         name,
         total_memory,
         total_memory - free_memory,
