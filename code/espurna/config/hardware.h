@@ -70,7 +70,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY           1
+    #define BUTTON1_RELAY       1
 
     // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
     #define RELAY1_PIN          12
@@ -1943,11 +1943,11 @@
     #define LED1_PIN			0  // red
     #define LED1_PIN_INVERSE	1
     #define LED1_MODE           LED_MODE_WIFI
-    
+
     #define LED2_PIN			15  // blue
     #define LED2_PIN_INVERSE	1
     #define LED2_MODE           LED_MODE_RELAY
-    
+
     // HLW8012
     #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT     1

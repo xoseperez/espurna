@@ -468,13 +468,13 @@ void resetReason(unsigned char reason) {
     EEPROMr.commit();
 }
 
-void reset(unsigned char reason) {
-    resetReason(reason);
+void reset() {
     ESP.restart();
 }
 
 void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, reset, reason);
+    resetReason(reason);
+    _defer_reset.once_ms(delay, reset);
 }
 
 // -----------------------------------------------------------------------------
