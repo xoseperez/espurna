@@ -507,27 +507,34 @@ void _relayBoot() {
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
 
     // Walk the relays
-    bool status = false;
+    bool status;
     for (unsigned int i=0; i<_relays.size(); i++) {
+
         unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
         DEBUG_MSG_P(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
+
+        status = false;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
-                status = ((mask & bit) == bit);
+                if (i < 8) {
+                    status = ((mask & bit) == bit);
+                }
                 break;
             case RELAY_BOOT_TOGGLE:
-                status = ((mask & bit) != bit);
-                mask ^= bit;
-                trigger_save = true;
+                if (i < 8) {
+                    status = ((mask & bit) != bit);
+                    mask ^= bit;
+                    trigger_save = true;
+                }
                 break;
             case RELAY_BOOT_ON:
                 status = true;
                 break;
             case RELAY_BOOT_OFF:
             default:
-                status = false;
                 break;
         }
+
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
