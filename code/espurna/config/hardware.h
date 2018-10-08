@@ -70,7 +70,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY           1
+    #define BUTTON1_RELAY       1
 
     // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
     #define RELAY1_PIN          12
@@ -1386,6 +1386,36 @@
     #define RELAY1_RESET_PIN    12
 
 // -----------------------------------------------------------------------------
+// EX-Store Wifi Relay v5.0
+// -----------------------------------------------------------------------------
+
+#elif defined(EXS_WIFI_RELAY_V50)
+
+    // Info
+    #define MANUFACTURER        "EXS"
+    #define DEVICE              "WIFI_RELAY_V50"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON2_PIN         4
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY1_RESET_PIN    16
+    #define RELAY2_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY2_RESET_PIN    12
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // V9261F
 // -----------------------------------------------------------------------------
 
@@ -1902,7 +1932,7 @@
 
     // Buttons
     #define BUTTON1_PIN			13
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -1910,8 +1940,13 @@
     #define RELAY1_TYPE			RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			4
-    #define LED1_PIN_INVERSE	0
+    #define LED1_PIN			0  // red
+    #define LED1_PIN_INVERSE	1
+    #define LED1_MODE           LED_MODE_WIFI
+
+    #define LED2_PIN			15  // blue
+    #define LED2_PIN_INVERSE	1
+    #define LED2_MODE           LED_MODE_RELAY
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
@@ -1921,8 +1956,11 @@
     #define HLW8012_CF1_PIN     14
     #define HLW8012_CF_PIN      5
 
-    #define HLW8012_CURRENT_R               0.001            // Current resistor
-    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
 
 // -----------------------------------------------------------------------------
 // TONBUX XS-SSA06
@@ -2765,6 +2803,54 @@
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
 
+// -----------------------------------------------------------------------------
+// iWoole LED Table Lamp
+// http://iwoole.com/newst-led-smart-night-light-7w-smart-table-light-rgbw-wifi-app-remote-control-110v-220v-us-eu-plug-smart-lamp-google-home-decore-p00022p1.html
+// -----------------------------------------------------------------------------
+
+#elif defined(IWOOLE_LED_TABLE_LAMP)
+
+    // Info
+    #define MANUFACTURER        "IWOOLE"
+    #define DEVICE              "LED_TABLE_LAMP"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       12      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// Bestek Smart Plug with 2 USB ports
+// https://www.bestekcorp.com/bestek-smart-plug-works-with-amazon-alexa-google-assistant-and-ifttt-with-2-usb
+// -----------------------------------------------------------------------------
+
+#elif defined(BESTEK_MRJ1011)
+
+    // Info
+    #define MANUFACTURER        "BESTEK"
+    #define DEVICE              "MRJ1011"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relay
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LED
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

@@ -308,6 +308,13 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
+    #if not SETTINGS_AUTOSAVE
+        settingsRegisterCommand(F("SAVE"), [](Embedis* e) {
+            _settings_save = true;
+            DEBUG_MSG_P(PSTR("\n+OK\n"));
+        });
+    #endif
+    
 }
 
 // -----------------------------------------------------------------------------
@@ -442,8 +449,6 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*)) {
 // -----------------------------------------------------------------------------
 
 void settingsSetup() {
-
-    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
 
     _serial.callback([](uint8_t ch) {
         #if TELNET_SUPPORT

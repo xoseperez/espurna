@@ -148,8 +148,7 @@ function loadTimeZones() {
 
 }
 
-function validateForm(form) {
-
+function validatePassword(password) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
     // at least eight characters (letters, numbers or special characters)
@@ -157,21 +156,45 @@ function validateForm(form) {
     // MUST be 8..63 printable ASCII characters. See:
     // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
     // https://github.com/xoseperez/espurna/issues/1151
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
 
-    // password
-    var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
-        return false;
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
+    return (
+        (password !== undefined)
+        && (typeof password === "string")
+        && (password.length > 0)
+        && re_password.test(password)
+    );
+}
+
+function validateFormPasswords(form) {
+    var passwords = $("input[name='adminPass1'],input[name='adminPass2']", form);
+    var adminPass1 = passwords.first().val(),
+        adminPass2 = passwords.last().val();
+
+    var formValidity = passwords.first()[0].checkValidity();
+    if (formValidity && (adminPass1.length === 0) && (adminPass2.length === 0)) {
+        return true;
     }
 
-    var adminPass2 = $("input[name='adminPass']", form).last().val();
+    var validPass1 = validatePassword(adminPass1),
+        validPass2 = validatePassword(adminPass2);
+
+    if (formValidity && validPass1 && validPass2) {
+        return true;
+    }
+
+    if (!formValidity || (adminPass1.length > 0 && !validPass1)) {
+        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
+    }
+
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
-        return false;
     }
 
+    return false;
+}
+
+function validateFormHostname(form) {
     // RFCs mandate that a hostname's labels may contain only
     // the ASCII letters 'a' through 'z' (case-insensitive),
     // the digits '0' through '9', and the hyphen.
@@ -184,18 +207,21 @@ function validateForm(form) {
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = ("true" === hostname.attr("hasChanged"));
-    if (!hasChanged) {
+    if ("true" !== hostname.attr("hasChanged")) {
         return true;
     }
 
-    if (!re_hostname.test(hostname.val())) {
-        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
-        return false;
+    if (re_hostname.test(hostname.val())) {
+        return true;
     }
 
-    return true;
+    alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
 
+    return false;
+}
+
+function validateForm(form) {
+    return validateFormPasswords(form) && validateFormHostname(form);
 }
 
 function getValue(element) {
@@ -226,6 +252,12 @@ function addValue(data, name, value) {
         "adminPass",
         "node", "key", "topic"
     ];
+
+
+    // join both adminPass 1 and 2
+    if (name.startsWith("adminPass")) {
+        name = "adminPass";
+    }
 
     if (name in data) {
         if (!Array.isArray(data[name])) {
@@ -262,23 +294,64 @@ function getData(form) {
 
 }
 
-function randomString(length, chars) {
-    var mask = "";
-    if (chars.indexOf("a") > -1) { mask += "abcdefghijklmnopqrstuvwxyz"; }
-    if (chars.indexOf("A") > -1) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
-    if (chars.indexOf("#") > -1) { mask += "0123456789"; }
-    if (chars.indexOf("@") > -1) { mask += "ABCDEF"; }
-    if (chars.indexOf("!") > -1) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
-    var result = "";
-    for (var i = length; i > 0; --i) {
-        result += mask[Math.round(Math.random() * (mask.length - 1))];
+function randomString(length, args) {
+    if (typeof args === "undefined") {
+        args = {
+            lowercase: true,
+            uppercase: true,
+            numbers: true,
+            special: true
+        }
     }
-    return result;
+
+    var mask = "";
+    if (args.lowercase) { mask += "abcdefghijklmnopqrstuvwxyz"; }
+    if (args.uppercase) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
+    if (args.numbers || args.hex) { mask += "0123456789"; }
+    if (args.hex) { mask += "ABCDEF"; }
+    if (args.special) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
+
+    var source = new Uint32Array(length);
+    var result = new Array(length);
+
+    window.crypto.getRandomValues(source).forEach(function(value, i) {
+        result[i] = mask[value % mask.length];
+    });
+
+    return result.join("");
 }
 
 function generateAPIKey() {
-    var apikey = randomString(16, "@#");
+    var apikey = randomString(16, {hex: true});
     $("input[name='apiKey']").val(apikey);
+    return false;
+}
+
+function generatePassword() {
+    var password = "";
+    do {
+        password = randomString(10);
+    } while (!validatePassword(password));
+
+    return password;
+}
+
+function toggleVisiblePassword() {
+    var elem = this.previousElementSibling;
+    if (elem.type === "password") {
+        elem.type = "text";
+    } else {
+        elem.type = "password";
+    }
+    return false;
+}
+
+function doGeneratePassword() {
+    $("input", $("#formPassword"))
+        .val(generatePassword())
+        .each(function() {
+            this.type = "text";
+        });
     return false;
 }
 
@@ -305,7 +378,7 @@ function sendConfig(data) {
 function setOriginalsFromValues(force) {
     var force = (true === force);
     $("input,select").each(function() {
-        var initial = (null === $(this).attr("original"));
+        var initial = (undefined === $(this).attr("original"));
         if (force || initial) {
             $(this).attr("original", $(this).val());
         }
@@ -424,7 +497,7 @@ function doUpgrade() {
 
 function doUpdatePassword() {
     var form = $("#formPassword");
-    if (validateForm(form)) {
+    if (validateFormPasswords(form)) {
         sendConfig(getData(form));
     }
     return false;
@@ -478,11 +551,11 @@ function doReconnect(ask) {
 
 function doUpdate() {
 
-    var form = $("#formSave");
-    if (validateForm(form)) {
+    var forms = $(".form-settings");
+    if (validateForm(forms)) {
 
         // Get data
-        sendConfig(getData(form));
+        sendConfig(getData(forms));
 
         // Empty special fields
         $(".pwrExpected").val(0);
@@ -756,6 +829,7 @@ function addNetwork() {
         $(this).attr("tabindex", tabindex);
         tabindex++;
     });
+    $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
     line.appendTo("#networks");
@@ -1578,12 +1652,15 @@ $(function() {
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
+    $(".password-reveal").on("click", toggleVisiblePassword);
+
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
     $(".button-update").on("click", doUpdate);
     $(".button-update-password").on("click", doUpdatePassword);
+    $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);
