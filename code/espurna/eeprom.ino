@@ -39,6 +39,11 @@ String eepromSectors() {
     return response;
 }
 
+void eepromSectorsDebug() {
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+}
+
 bool _eepromCommit() {
     _eeprom_commit_count++;
     _eeprom_last_commit_result = EEPROMr.commit();
@@ -55,6 +60,7 @@ void _eepromInitCommands() {
 
     settingsRegisterCommand(F("EEPROM"), [](Embedis* e) {
         infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
+        eepromSectorsDebug();
         if (_eeprom_commit_count > 0) {
             DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
             DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");

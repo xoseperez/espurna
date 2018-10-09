@@ -347,8 +347,7 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+    eepromSectorsDebug();
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
