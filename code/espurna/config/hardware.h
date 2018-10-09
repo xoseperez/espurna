@@ -3032,6 +3032,8 @@
     #define EMON_ANALOG_SUPPORT 1
     #endif
 
+    #define PULSEMETER_SUPPORT  1
+
     // Test non-default modules
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1

@@ -507,6 +507,88 @@
 #endif
 
 //------------------------------------------------------------------------------
+// Particle Monitor based on Plantower PMS
+// Enable support by passing PMSX003_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PMSX003_SUPPORT
+#define PMSX003_SUPPORT                 0
+#endif
+
+#ifndef PMS_TYPE
+#define PMS_TYPE                        PMS_TYPE_X003
+#endif
+
+// You can enable smart sleep (read 6-times then sleep on 24-reading-cycles) to extend PMS sensor's life.
+// Otherwise the default lifetime of PMS sensor is about 8000-hours/1-years.
+// The PMS's fan will stop working on sleeping cycle, and will wake up on reading cycle.
+#ifndef PMS_SMART_SLEEP
+#define PMS_SMART_SLEEP                 0
+#endif
+
+#ifndef PMS_USE_SOFT
+#define PMS_USE_SOFT                    0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
+#endif
+
+#ifndef PMS_RX_PIN
+#define PMS_RX_PIN                      13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
+#endif
+
+#ifndef PMS_TX_PIN
+#define PMS_TX_PIN                      15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
+#endif
+
+#ifndef PMS_HW_PORT
+#define PMS_HW_PORT                     Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
+#endif
+
+//------------------------------------------------------------------------------
+// Pulse Meter Energy monitor
+// Enable support by passing PULSEMETER_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PULSEMETER_SUPPORT
+#define PULSEMETER_SUPPORT              0
+#endif
+
+#ifndef PULSEMETER_PIN
+#define PULSEMETERL_PIN                 5
+#endif
+
+#ifndef PULSEMETER_ENERGY_RATIO
+#define PULSEMETER_ENERGY_RATIO         4000        // In pulses/kWh
+#endif
+
+#ifndef PULSEMETER_INTERRUPT_ON
+#define PULSEMETER_INTERRUPT_ON         FALLING
+#endif
+
+//------------------------------------------------------------------------------
+// PZEM004T based power monitor
+// Enable support by passing PZEM004T_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PZEM004T_SUPPORT
+#define PZEM004T_SUPPORT                0
+#endif
+
+#ifndef PZEM004T_USE_SOFT
+#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
+#endif
+
+#ifndef PZEM004T_RX_PIN
+#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_TX_PIN
+#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
+#endif
+
+#ifndef PZEM004T_HW_PORT
+#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
+#endif
+
+//------------------------------------------------------------------------------
 // SDS011 particulates sensor
 // Enable support by passing SDS011_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -538,66 +620,6 @@
 
 #ifndef SENSEAIR_TX_PIN
 #define SENSEAIR_TX_PIN                 2
-#endif
-
-//------------------------------------------------------------------------------
-// Particle Monitor based on Plantower PMS
-// Enable support by passing PMSX003_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef PMSX003_SUPPORT
-#define PMSX003_SUPPORT                 0
-#endif
-
-#ifndef PMS_TYPE
-#define PMS_TYPE                        PMS_TYPE_X003
-#endif
-
-// You can enable smart sleep (read 6-times then sleep on 24-reading-cycles) to extend PMS sensor's life.
-// Otherwise the default lifetime of PMS sensor is about 8000-hours/1-years.
-// The PMS's fan will stop working on sleeping cycle, and will wake up on reading cycle.
-#ifndef PMS_SMART_SLEEP
-#define PMS_SMART_SLEEP                 0
-#endif
-
-#ifndef PMS_USE_SOFT
-#define PMS_USE_SOFT               0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
-#endif
-
-#ifndef PMS_RX_PIN
-#define PMS_RX_PIN                 13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
-#endif
-
-#ifndef PMS_TX_PIN
-#define PMS_TX_PIN                 15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
-#endif
-
-#ifndef PMS_HW_PORT
-#define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
-#endif
-//------------------------------------------------------------------------------
-// PZEM004T based power monitor
-// Enable support by passing PZEM004T_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef PZEM004T_SUPPORT
-#define PZEM004T_SUPPORT                0
-#endif
-
-#ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               0       // Software serial is not working atm, use hardware serial
-#endif
-
-#ifndef PZEM004T_RX_PIN
-#define PZEM004T_RX_PIN                 13      // Software serial RX GPIO (if PZEM004T_USE_SOFT == 1)
-#endif
-
-#ifndef PZEM004T_TX_PIN
-#define PZEM004T_TX_PIN                 15      // Software serial TX GPIO (if PZEM004T_USE_SOFT == 1)
-#endif
-
-#ifndef PZEM004T_HW_PORT
-#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
 //------------------------------------------------------------------------------
@@ -720,6 +742,7 @@
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
+    PULSEMETER_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
     SONAR_SUPPORT || \
@@ -856,6 +879,10 @@
 
 #if PMSX003_SUPPORT
     #include "../sensors/PMSX003Sensor.h"
+#endif
+
+#if PULSEMETER_SUPPORT
+    #include "../sensors/PulseMeterSensor.h"
 #endif
 
 #if PZEM004T_SUPPORT

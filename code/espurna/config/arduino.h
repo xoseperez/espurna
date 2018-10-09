@@ -164,6 +164,7 @@
 //#define MICS5525_SUPPORT       1
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
+//#define PULSEMETER_SUPPORT     1
 //#define PZEM004T_SUPPORT       1
 //#define SDS011_SUPPORT         1
 //#define SENSEAIR_SUPPORT       1
