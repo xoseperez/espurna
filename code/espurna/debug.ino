@@ -209,6 +209,11 @@ void debugSetup() {
  */
 extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
 
+    // Do not record crash data when resetting the board
+    if (checkNeedsReset()) {
+        return;
+    }
+
     // This method assumes EEPROM has already been initialized
     // which is the first thing ESPurna does
 
