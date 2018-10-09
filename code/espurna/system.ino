@@ -42,7 +42,7 @@ void systemCheck(bool stable) {
         }
     }
     EEPROMr.write(EEPROM_CRASH_COUNTER, value);
-    EEPROMr.commit();
+    eepromCommit();
 }
 
 bool systemCheck() {
