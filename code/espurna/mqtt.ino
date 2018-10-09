@@ -291,7 +291,7 @@ unsigned long _mqttNextMessageId() {
         EEPROMr.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
         EEPROMr.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
         EEPROMr.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
-        saveSettings();
+        eepromCommit();
     }
 
     id++;

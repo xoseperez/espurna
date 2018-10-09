@@ -8,6 +8,11 @@ EEPROM MODULE
 
 // -----------------------------------------------------------------------------
 
+bool _eeprom_commit = false;
+
+uint32_t _eeprom_commit_count = 0;
+bool _eeprom_last_commit_result = false;
+
 void eepromRotate(bool value) {
     // Enable/disable EEPROM rotation only if we are using more sectors than the
     // reserved by the memory layout
@@ -34,13 +39,42 @@ String eepromSectors() {
     return response;
 }
 
+void eepromSectorsDebug() {
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+}
+
+bool _eepromCommit() {
+    _eeprom_commit_count++;
+    _eeprom_last_commit_result = EEPROMr.commit();
+    return _eeprom_last_commit_result;
+}
+
+void eepromCommit() {
+    _eeprom_commit = true;
+}
+
 #if TERMINAL_SUPPORT
 
 void _eepromInitCommands() {
 
     settingsRegisterCommand(F("EEPROM"), [](Embedis* e) {
         infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
+        eepromSectorsDebug();
+        if (_eeprom_commit_count > 0) {
+            DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
+            DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
+        }
         DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("EEPROM.COMMIT"), [](Embedis* e) {
+        const bool res = _eepromCommit();
+        if (res) {
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("-ERROR\n"));
+        }
     });
 
     settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
@@ -69,6 +103,13 @@ void _eepromInitCommands() {
 
 // -----------------------------------------------------------------------------
 
+void eepromLoop() {
+    if (_eeprom_commit) {
+        _eepromCommit();
+        _eeprom_commit = false;
+    }
+}
+
 void eepromSetup() {
 
     #ifdef EEPROM_ROTATE_SECTORS
@@ -91,5 +132,7 @@ void eepromSetup() {
     #if TERMINAL_SUPPORT
         _eepromInitCommands();
     #endif
+
+    espurnaRegisterLoop(eepromLoop);
 
 }

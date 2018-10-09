@@ -418,7 +418,7 @@ void relaySave(bool do_commit) {
 
         // We are actually enqueuing the commit so it will be
         // executed on the main loop, in case this is called from a callback
-        saveSettings();
+        eepromCommit();
 
     }
 
@@ -548,7 +548,7 @@ void _relayBoot() {
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
         EEPROMr.write(EEPROM_RELAY_STATUS, mask);
-        saveSettings();
+        eepromCommit();
     }
 
     _relayRecursive = false;

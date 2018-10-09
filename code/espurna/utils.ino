@@ -9,6 +9,8 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 Ticker _defer_reset;
 
+uint8_t _reset_reason = 0;
+
 String getIdentifier() {
     char buffer[20];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
@@ -347,8 +349,7 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+    eepromSectorsDebug();
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -464,8 +465,9 @@ unsigned char resetReason() {
 }
 
 void resetReason(unsigned char reason) {
+    _reset_reason = reason;
     EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
-    EEPROMr.commit();
+    eepromCommit();
 }
 
 void reset() {
@@ -473,8 +475,11 @@ void reset() {
 }
 
 void deferredReset(unsigned long delay, unsigned char reason) {
-    resetReason(reason);
-    _defer_reset.once_ms(delay, reset);
+    _defer_reset.once_ms(delay, resetReason, reason);
+}
+
+bool checkNeedsReset() {
+    return _reset_reason > 0;
 }
 
 // -----------------------------------------------------------------------------
