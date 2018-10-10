@@ -187,6 +187,7 @@
 
 // Topics that will be reported in heartbeat
 #define HEARTBEAT_REPORT_STATUS     1
+#define HEARTBEAT_REPORT_SSID       1
 #define HEARTBEAT_REPORT_IP         1
 #define HEARTBEAT_REPORT_MAC        1
 #define HEARTBEAT_REPORT_RSSI       1
@@ -731,6 +732,7 @@
 #define MQTT_TOPIC_LED              "led"
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
+#define MQTT_TOPIC_SSID             "ssid"
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"

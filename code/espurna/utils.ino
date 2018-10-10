@@ -184,6 +184,9 @@ void heartbeat() {
             #if (HEARTBEAT_REPORT_HOSTNAME)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
             #endif
+            #if (HEARTBEAT_REPORT_SSID)
+                mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
+            #endif
             #if (HEARTBEAT_REPORT_IP)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
             #endif
