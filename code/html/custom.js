@@ -46,7 +46,8 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM"
+        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
+        "NTC", "SDS011", "MICS2710", "MICS5525"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -62,7 +63,8 @@ function magnitudeType(type) {
         "Analog", "Digital", "Event",
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
-        "Count"
+        "Count",
+        "NO2", "CO", "Resistance"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -164,21 +166,35 @@ function validatePassword(password) {
     );
 }
 
-function validateForm(form) {
+function validateFormPasswords(form) {
+    var passwords = $("input[name='adminPass1'],input[name='adminPass2']", form);
+    var adminPass1 = passwords.first().val(),
+        adminPass2 = passwords.last().val();
 
-    // password
-    var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (!validatePassword(adminPass1)) {
-        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
-        return false;
+    var formValidity = passwords.first()[0].checkValidity();
+    if (formValidity && (adminPass1.length === 0) && (adminPass2.length === 0)) {
+        return true;
     }
 
-    var adminPass2 = $("input[name='adminPass_confirm']", form).last().val();
+    var validPass1 = validatePassword(adminPass1),
+        validPass2 = validatePassword(adminPass2);
+
+    if (formValidity && validPass1 && validPass2) {
+        return true;
+    }
+
+    if (!formValidity || (adminPass1.length > 0 && !validPass1)) {
+        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
+    }
+
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
-        return false;
     }
 
+    return false;
+}
+
+function validateFormHostname(form) {
     // RFCs mandate that a hostname's labels may contain only
     // the ASCII letters 'a' through 'z' (case-insensitive),
     // the digits '0' through '9', and the hyphen.
@@ -191,18 +207,21 @@ function validateForm(form) {
     var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = ("true" === hostname.attr("hasChanged"));
-    if (!hasChanged) {
+    if ("true" !== hostname.attr("hasChanged")) {
         return true;
     }
 
-    if (!re_hostname.test(hostname.val())) {
-        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
-        return false;
+    if (re_hostname.test(hostname.val())) {
+        return true;
     }
 
-    return true;
+    alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
 
+    return false;
+}
+
+function validateForm(form) {
+    return validateFormPasswords(form) && validateFormHostname(form);
 }
 
 function getValue(element) {
@@ -235,7 +254,7 @@ function addValue(data, name, value) {
     ];
 
 
-    // join both adminPass and ..._confirm
+    // join both adminPass 1 and 2
     if (name.startsWith("adminPass")) {
         name = "adminPass";
     }
@@ -359,7 +378,7 @@ function sendConfig(data) {
 function setOriginalsFromValues(force) {
     var force = (true === force);
     $("input,select").each(function() {
-        var initial = (null === $(this).attr("original"));
+        var initial = (undefined === $(this).attr("original"));
         if (force || initial) {
             $(this).attr("original", $(this).val());
         }
@@ -478,7 +497,7 @@ function doUpgrade() {
 
 function doUpdatePassword() {
     var form = $("#formPassword");
-    if (validateForm(form)) {
+    if (validateFormPasswords(form)) {
         sendConfig(getData(form));
     }
     return false;
@@ -540,6 +559,7 @@ function doUpdate() {
 
         // Empty special fields
         $(".pwrExpected").val(0);
+        $("input[name='snsResetCalibration']").prop("checked", false);
         $("input[name='pwrResetCalibration']").prop("checked", false);
         $("input[name='pwrResetE']").prop("checked", false);
 

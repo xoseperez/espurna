@@ -160,6 +160,8 @@
 //#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
+//#define MICS2710_SUPPORT       1
+//#define MICS5525_SUPPORT       1
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1

@@ -111,6 +111,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
     char buffer[10];
     bool hasTemperature = false;
     bool hasHumidity = false;
+    bool hasMICS = false;
 
     JsonArray& list = root.createNestedArray("magnitudes");
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
@@ -137,11 +138,14 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
         if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
-
+        #if MICS2710_SUPPORT || MICS5525_SUPPORT
+        if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) hasMICS = true;
+        #endif
     }
 
     if (hasTemperature) root["temperatureVisible"] = 1;
     if (hasHumidity) root["humidityVisible"] = 1;
+    if (hasMICS) root["micsVisible"] = 1;
 
 }
 
@@ -522,11 +526,21 @@ void _sensorLoad() {
     }
     #endif
 
-    #if SDS011_SUPPORT
+    #if MICS2710_SUPPORT
     {
-        SDS011Sensor * sensor = new SDS011Sensor();
-        sensor->setRX(SDS011_RX_PIN);
-        sensor->setTX(SDS011_TX_PIN);
+        MICS2710Sensor * sensor = new MICS2710Sensor();
+        sensor->setAnalogGPIO(MICS2710_NOX_PIN);
+        sensor->setPreHeatGPIO(MICS2710_PRE_PIN);
+        sensor->setRL(MICS2710_RL);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if MICS5525_SUPPORT
+    {
+        MICS5525Sensor * sensor = new MICS5525Sensor();
+        sensor->setAnalogGPIO(MICS5525_RED_PIN);
+        sensor->setRL(MICS5525_RL);
         _sensors.push_back(sensor);
     }
     #endif
@@ -550,6 +564,15 @@ void _sensorLoad() {
         SenseAirSensor * sensor = new SenseAirSensor();
         sensor->setRX(SENSEAIR_RX_PIN);
         sensor->setTX(SENSEAIR_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SDS011_SUPPORT
+    {
+        SDS011Sensor * sensor = new SDS011Sensor();
+        sensor->setRX(SDS011_RX_PIN);
+        sensor->setTX(SDS011_TX_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -698,6 +721,20 @@ void _sensorInit() {
 
         // Custom initializations
 
+        #if MICS2710_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
+                MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
+                sensor->setR0(getSetting("snsR0", MICS2710_R0).toInt());
+            }
+        #endif // MICS2710_SUPPORT
+
+        #if MICS5525_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
+                MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
+                sensor->setR0(getSetting("snsR0", MICS5525_R0).toInt());
+            }
+        #endif // MICS5525_SUPPORT
+
         #if EMON_ANALOG_SUPPORT
 
             if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
@@ -778,6 +815,30 @@ void _sensorConfigure() {
 
     // Specific sensor settings
     for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        #if MICS2710_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
+                if (getSetting("snsResetCalibration", 0).toInt() == 1) {
+                    MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
+                    sensor->calibrate();
+                    setSetting("snsR0", sensor->getR0());
+                }
+            }
+
+        #endif // MICS2710_SUPPORT
+
+        #if MICS5525_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
+                if (getSetting("snsResetCalibration", 0).toInt() == 1) {
+                    MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
+                    sensor->calibrate();
+                    setSetting("snsR0", sensor->getR0());
+                }
+            }
+
+        #endif // MICS5525_SUPPORT
 
         #if EMON_ANALOG_SUPPORT
 
@@ -922,6 +983,7 @@ void _sensorConfigure() {
     }
 
     // Save settings
+    delSetting("snsResetCalibration");
     delSetting("pwrExpectedP");
     delSetting("pwrExpectedC");
     delSetting("pwrExpectedV");

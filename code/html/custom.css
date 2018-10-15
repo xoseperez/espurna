@@ -94,11 +94,11 @@ div.center {
     display: none;
 }
 
-.content #password {
+#password .content {
     margin: 0 auto;
 }
 
-.content #layout {
+#layout .content {
     margin: 0;
 }
 
