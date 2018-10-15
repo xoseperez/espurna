@@ -574,7 +574,16 @@ unsigned char _mqttBuildTree(JsonObject& root, char parent) {
             JsonObject& elements = root.createNestedObject(element.topic);
             unsigned char num = _mqttBuildTree(elements, i);
             if (0 == num) {
-                root.set(element.topic, element.message);
+                if (isNumber(element.message)) {
+                    double value = atof(element.message);
+                    if (value == int(value)) {
+                        root.set(element.topic, int(value));
+                    } else {
+                        root.set(element.topic, value);
+                    }
+                } else {
+                    root.set(element.topic, element.message);
+                }
             }
         }
     }

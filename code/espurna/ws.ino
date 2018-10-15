@@ -302,8 +302,7 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
 void _wsOnStart(JsonObject& root) {
 
     #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
-        String adminPass = getSetting("adminPass", ADMIN_PASS);
-        bool changePassword = adminPass.equals(ADMIN_PASS);
+        bool changePassword = getAdminPass().equals(ADMIN_PASS);
     #else
         bool changePassword = false;
     #endif
@@ -328,7 +327,9 @@ void _wsOnStart(JsonObject& root) {
         root["app_name"] = APP_NAME;
         root["app_version"] = APP_VERSION;
         root["app_build"] = buildTime();
-        root["app_revision"] = APP_REVISION;
+        #if defined(APP_REVISION)
+            root["app_revision"] = APP_REVISION;
+        #endif
         root["manufacturer"] = MANUFACTURER;
         root["chipid"] = String(chipid);
         root["mac"] = WiFi.macAddress();

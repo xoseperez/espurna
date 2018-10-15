@@ -21,6 +21,10 @@ void eepromRotate(bool value) {
     }
 }
 
+uint32_t eepromCurrent() {
+    return EEPROMr.current();
+}
+
 String eepromSectors() {
     String response;
     for (uint32_t i = 0; i < EEPROMr.size(); i++) {
@@ -33,6 +37,11 @@ String eepromSectors() {
 #if TERMINAL_SUPPORT
 
 void _eepromInitCommands() {
+
+    settingsRegisterCommand(F("EEPROM"), [](Embedis* e) {
+        infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
 
     settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
         EEPROMr.dump(settingsSerial());

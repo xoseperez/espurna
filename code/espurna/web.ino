@@ -347,7 +347,7 @@ void _onRequest(AsyncWebServerRequest *request){
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
-        String password = getSetting("adminPass", ADMIN_PASS);
+        String password = getAdminPass();
         char httpPassword[password.length() + 1];
         password.toCharArray(httpPassword, password.length() + 1);
         return request->authenticate(WEB_USERNAME, httpPassword);
@@ -422,7 +422,7 @@ void webSetup() {
     #else
         _server->begin();
     #endif
-    
+
     DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
 
 }

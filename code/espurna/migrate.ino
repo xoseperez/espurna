@@ -1163,6 +1163,47 @@ void migrate() {
             setSetting("encBtnGPIO", 0, 2);
             setSetting("encMode", ENCODER_MODE_RATIO);
 
+        #elif defined(ALLTERCO_SHELLY2)
+
+            setSetting("board", 88);
+            setSetting("btnGPIO", 0, 12);
+            setSetting("btnGPIO", 1, 14);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayGPIO", 1, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(XIAOMI_SMART_DESK_LAMP)
+
+            setSetting("board", 89);
+
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("relays", 1);
+            setSetting("chGPIO", 0, 4);
+            setSetting("chGPIO", 1, 14);
+            setSetting("chGPIO", 2, 12);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 3, 0);
+
+        #elif defined(IWOOLE_LED_TABLE_LAMP)
+
+            setSetting("board", 90);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 12);
+            setSetting("chGPIO", 1, 5);
+            setSetting("chGPIO", 2, 14);
+            setSetting("chGPIO", 3, 4);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("relays", 1);
+
         #else
 
             // Allow users to define new settings without migration config

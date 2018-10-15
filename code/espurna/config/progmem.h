@@ -196,6 +196,9 @@ PROGMEM const char espurna_sensors[] =
     #if PZEM004T_SUPPORT
         "PZEM004T "
     #endif
+    #if SDS011_SUPPORT
+        "SDS011 "
+    #endif
     #if SENSEAIR_SUPPORT
         "SENSEAIR "
     #endif

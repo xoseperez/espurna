@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <functional>
 #include <pgmspace.h>
+#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -31,6 +32,9 @@ extern "C" {
 // -----------------------------------------------------------------------------
 void debugSend(const char * format, ...);
 void debugSend_P(PGM_P format, ...);
+extern "C" {
+     void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
+}
 
 // -----------------------------------------------------------------------------
 // Domoticz

@@ -96,6 +96,9 @@
 //#define YJZK_SWITCH_1CH
 //#define YJZK_SWITCH_3CH
 //#define XIAOMI_SMART_DESK_LAMP
+//#define ALLTERCO_SHELLY2
+//#define PHYX_ESP12_RGB
+//#define IWOOLE_LED_TABLE_LAMP
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -159,6 +162,8 @@
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
+//#define SDS011_SUPPORT         1
+//#define SENSEAIR_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
 //#define SONAR_SUPPORT          1

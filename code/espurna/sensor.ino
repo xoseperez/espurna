@@ -330,13 +330,13 @@ void _sensorLoad() {
 
      */
 
-     #if AM2320_SUPPORT
-     {
-         AM2320Sensor * sensor = new AM2320Sensor();
-         sensor->setAddress(AM2320_ADDRESS);
-         _sensors.push_back(sensor);
-     }
-     #endif
+    #if AM2320_SUPPORT
+    {
+     AM2320Sensor * sensor = new AM2320Sensor();
+     sensor->setAddress(AM2320_ADDRESS);
+     _sensors.push_back(sensor);
+    }
+    #endif
 
     #if ANALOG_SUPPORT
     {
@@ -518,6 +518,15 @@ void _sensorLoad() {
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setRX(MHZ19_RX_PIN);
         sensor->setTX(MHZ19_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SDS011_SUPPORT
+    {
+        SDS011Sensor * sensor = new SDS011Sensor();
+        sensor->setRX(SDS011_RX_PIN);
+        sensor->setTX(SDS011_TX_PIN);
         _sensors.push_back(sensor);
     }
     #endif

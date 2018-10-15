@@ -150,13 +150,17 @@ function validateForm(form) {
 
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+    // at least eight characters (letters, numbers or special characters)
+
+    // MUST be 8..63 printable ASCII characters. See:
+    // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
+    // https://github.com/xoseperez/espurna/issues/1151
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
 
     // password
     var adminPass1 = $("input[name='adminPass']", form).first().val();
     if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
+        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
         return false;
     }
 
@@ -173,13 +177,13 @@ function validateForm(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = hostname.attr("hasChanged") || 0;
-    if (0 === hasChanged) {
+    var hasChanged = ("true" === hostname.attr("hasChanged"));
+    if (!hasChanged) {
         return true;
     }
 
@@ -296,10 +300,18 @@ function sendConfig(data) {
     websock.send(JSON.stringify({config: data}));
 }
 
-function resetOriginals() {
+function setOriginalsFromValues(force) {
+    var force = (true === force);
     $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
+        var initial = (null === $(this).attr("original"));
+        if (force || initial) {
+            $(this).attr("original", $(this).val());
+        }
     });
+}
+
+function resetOriginals() {
+    setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
 }
 
@@ -1454,7 +1466,7 @@ function processData(data) {
         generateAPIKey();
     }
 
-    resetOriginals();
+    setOriginalsFromValues();
 
 }
 
@@ -1468,27 +1480,27 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
-    var hasChanged = $(this).attr("hasChanged") || 0;
+    var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 
     if (typeof originalValue === "undefined") { return; }
     if ("none" === action) { return; }
 
     if (newValue !== originalValue) {
-        if (0 === hasChanged) {
+        if (!hasChanged) {
             ++numChanged;
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", 1);
+            $(this).attr("hasChanged", true);
         }
     } else {
-        if (1 === hasChanged) {
+        if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", 0);
+            $(this).attr("hasChanged", false);
         }
     }
 

@@ -4,8 +4,8 @@ ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smar
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
 [![version](https://img.shields.io/badge/version-1.13.3a-brightgreen.svg)](CHANGELOG.md)
-[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
-[![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
+[![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/ColinShorts/espurna.git/tree/dev/)
+[![travis](https://travis-ci.org/ColinShorts/espurna.git.svg?branch=dev)](https://travis-ci.org/ColinShorts/espurna.git)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 <br />
@@ -17,11 +17,13 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Contributors
 
-**Without your help this project would not be possible**. I (@xoseperez) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank you each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
+**Without your help this project would not be possible**. I (@xoseperez) simply can't spend all the time I wish on ESPurna but luckly I recieve a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
 
 **Thank you all very much**.
 
 ## Notice
+
+> Ladies and gentlemen in the embedded world, use [PlatformIO](https://platformio.org/). If I could offer you only one tip for the future, [PlatformIO](https://platformio.org/) would be it.
 
 > Please use the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna) for support and questions, you have better chances to get fast answers from me or other ESPurna users. Open an issue here only if you feel there is a bug or you want to request an enhancement. Thank you.
 
@@ -229,14 +231,16 @@ Here is the list of supported hardware. For more information please refer to the
 |**Itead Sonoff Basic**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
 |![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)||
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
-|![Itead S20](images/devices/itead-s20.jpg)|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
-|**Itead S20**|**WorkChoice EcoPlug**|**Neo Coolcam NAS WR01W**|
+|![Itead S20](images/devices/itead-s20.jpg)|![Itead S20](images/devices/itead-s26.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
+|**Itead S20**|**Itead S26**|**Neo Coolcam NAS WR01W**|
 |![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![KMC 70011](images/devices/kmc-70011.jpg)|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)|
 |**Schuko Wifi Plug**|**KMC 70011**|**Xenon SM-PW702U**|
 |![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**HomeCube 16A**|
+|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|||
+|**WorkChoice EcoPlug**|||
 |![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm Power Strip](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
 |**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK switch](images/devices/yjzk-2gang-switch.jpg)|

@@ -174,11 +174,11 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 DEBUG_MSG_P(PSTR("[IR] Raw IR output %d codes, repeat %d times on %d(k)Hz freq.\n"), count, _ir_repeat, _ir_freq);
 
                 /*
-                DEBUG_MSG("[IR] main codes: ");
+                DEBUG_MSG_P(PSTR("[IR] main codes: "));
                 for(int i = 0; i < count; i++) {
-                    DEBUG_MSG("%d,",_ir_raw[i]);
+                    DEBUG_MSG_P(PSTR("%d,"),_ir_raw[i]);
                 }
-                DEBUG_MSG("\n");
+                DEBUG_MSG_P(PSTR("\n"));
                 */
 
                 #if defined(IR_RX_PIN)

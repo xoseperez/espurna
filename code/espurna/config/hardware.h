@@ -2654,6 +2654,26 @@
     #define RELAY1_PIN          4
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+#elif defined(ALLTERCO_SHELLY2)
+
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY2"
+
+    // Buttons
+    #define BUTTON1_PIN         12
+    #define BUTTON2_PIN         14
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          5
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
 // -----------------------------------------------------------------------------
 
 #elif defined(LOHAS_9W)
@@ -2726,6 +2746,49 @@
     #define ENCODER1_CHANNEL1   0   // please note this value is 0-based (LIGHT_CH1 above)
     #define ENCODER1_CHANNEL2   1   // please note this value is 0-based (LIGHT_CH2 above)
     #define ENCODER1_MODE       ENCODER_MODE_RATIO
+
+#elif defined(PHYX_ESP12_RGB)
+
+    // Info
+    #define MANUFACTURER        "PHYX"
+    #define DEVICE              "ESP12_RGB"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      3
+    #define LIGHT_CH1_PIN       4       // RED
+    #define LIGHT_CH2_PIN       14      // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+
+// -----------------------------------------------------------------------------
+// iWoole LED Table Lamp
+// http://iwoole.com/newst-led-smart-night-light-7w-smart-table-light-rgbw-wifi-app-remote-control-110v-220v-us-eu-plug-smart-lamp-google-home-decore-p00022p1.html
+// -----------------------------------------------------------------------------
+
+#elif defined(IWOOLE_LED_TABLE_LAMP)
+
+    // Info
+    #define MANUFACTURER        "IWOOLE"
+    #define DEVICE              "LED_TABLE_LAMP"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       12      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

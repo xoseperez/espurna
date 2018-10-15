@@ -14,6 +14,17 @@ bool _haEnabled = false;
 bool _haSendFlag = false;
 
 // -----------------------------------------------------------------------------
+// UTILS
+// -----------------------------------------------------------------------------
+
+String _haFixName(String name) {
+    for (unsigned char i=0; i<name.length(); i++) {
+        if (!isalnum(name.charAt(i))) name.setCharAt(i, '_');
+    }
+    return name;
+}
+
+// -----------------------------------------------------------------------------
 // SENSORS
 // -----------------------------------------------------------------------------
 
@@ -22,7 +33,7 @@ bool _haSendFlag = false;
 void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
     unsigned char type = magnitudeType(i);
-    config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
+    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
@@ -64,10 +75,10 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
     String name = getSetting("hostname");
     if (relayCount() > 1) {
-        name += String(" #") + String(i);
+        name += String("_") + String(i);
     }
 
-    config.set("name", name);
+    config.set("name", _haFixName(name));
     config.set("platform", "mqtt");
 
     if (relayCount()) {
@@ -76,8 +87,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
         config["payload_on"] = String(HOMEASSISTANT_PAYLOAD_ON);
         config["payload_off"] = String(HOMEASSISTANT_PAYLOAD_OFF);
         config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_ON);
-        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_OFF);
+        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_AVAILABLE);
+        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE);
     }
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
