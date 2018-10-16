@@ -31,16 +31,8 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpVisible"]    = 1;
     root["ntpStatus"]     = (timeStatus() == timeSet);
     root["ntpServer"]     = getSetting("ntpServer", NTP_SERVER);
-    root["ntpOffset"]     = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    root["ntpDST"]        = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-    root["ntpRegion"]     = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-    root["ntpStartMonth"] = getSetting("ntpDstStartMonth", NTP_DST_S_MONTH).toInt();
-    root["ntpEndMonth"]   = getSetting("ntpDstEndMonth", NTP_DST_E_MONTH).toInt();
-    root["ntpStartWeek"]  = getSetting("ntpDstStartWeek", NTP_DST_S_WEEK).toInt();
-    root["ntpEndWeek"]    = getSetting("ntpDstEndWeek", NTP_DST_E_WEEK).toInt();
-    root["ntpStartDay"]   = getSetting("ntpDstStartDay", NTP_DST_S_DAY).toInt();
-    root["ntpEndDay"]     = getSetting("ntpDstEndDay", NTP_DST_E_DAY).toInt();
-    root["ntpHour"]       = getSetting("ntpDstHour", NTP_DST_HOUR).toInt();
+    root["tzRegion"]      = getSetting("tzRegion", NTP_ZONE_REGION);
+    root["ntpOffset"]        = getSetting("ntpOffset", NTP_ZONE_CITY).toInt();
     if (ntpSynced()) root["now"] = now();
 }
 
@@ -61,49 +53,27 @@ void _ntpConfigure() {
 
     _ntp_configure = false;
 
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    int sign = offset > 0 ? 1 : -1;
-    offset = abs(offset);
-    int tz_hours = sign * (offset / 60);
-    int tz_minutes = sign * (offset % 60);
-    if (NTP.getTimeZone() != tz_hours || NTP.getTimeZoneMinutes() != tz_minutes) {
-        NTP.setTimeZone(tz_hours, tz_minutes);
-        _ntp_update = true;
-    }
-
-    bool daylight = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-    if (NTP.getDayLight() != daylight) {
-        NTP.setDayLight(daylight);
-        _ntp_update = true;
-    }
-
     String server = getSetting("ntpServer", NTP_SERVER);
     if (!NTP.getNtpServerName().equals(server)) {
         NTP.setNtpServerName(server);
     }
 
-    uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-    if (dst_region != DST_ZONE_OTHER ) {
-       DEBUG_MSG_P(PSTR("[NTP] Set by zone\n"));
-       NTP.setDSTZone(dst_region);
-    } else {
-       DEBUG_MSG_P(PSTR("[NTP] Other: Set manually\n"));
-      uint8_t dst_s_month = getSetting("ntpDstStartMonth", NTP_DST_S_MONTH).toInt();
-      uint8_t dst_e_month = getSetting("ntpDstEndMonth", NTP_DST_E_MONTH).toInt();
-      uint8_t dst_s_week  = getSetting("ntpDstStartWeek", NTP_DST_S_WEEK).toInt();
-      uint8_t dst_e_week  = getSetting("ntpDstEndWeek", NTP_DST_E_WEEK).toInt();
-      uint8_t dst_s_day   = getSetting("ntpDstStartDay", NTP_DST_S_DAY).toInt();
-      uint8_t dst_e_day   = getSetting("ntpDstEndDay", NTP_DST_E_DAY).toInt();
-      uint8_t dst_hour    = getSetting("ntpDstHour", NTP_DST_HOUR).toInt();
-      NTP.setDSTZone( dst_s_month, dst_s_week, dst_s_day, dst_e_month, dst_e_week, dst_e_day, dst_hour);
-    }
-    DEBUG_MSG_P(PSTR("[NTP] Dst Start Time: %s\n"), (char *) ntpDateTime(NTP.getDstStart()).c_str());
-    DEBUG_MSG_P(PSTR("[NTP] Dst End   Time: %s\n"), (char *) ntpDateTime(NTP.getDstEnd()).c_str());
-    if (NTP.isSummerTime())  {
-       DEBUG_MSG_P(PSTR("[NTP] In Summer Time\n"));
-    } else {
-       DEBUG_MSG_P(PSTR("[NTP] In Standard Time\n"));
-    }
+    // uint8_t zone = getSetting("tzCity", NTP_ZONE_CITY).toInt();
+    uint16_t zone = getSetting("ntpOffset", NTP_ZONE_CITY).toInt();
+    DEBUG_MSG_P(PSTR("[NTP] Set by zone %d\n"), zone );
+    NTP.setTimeZone(zone);
+
+    if ( NTP.getDayLight() ) {
+       DEBUG_MSG_P(PSTR("[NTP] Dst Start Time: %s\n"), (char *) ntpDateTime(NTP.getDstStart()).c_str());
+       DEBUG_MSG_P(PSTR("[NTP] Dst End   Time: %s\n"), (char *) ntpDateTime(NTP.getDstEnd()).c_str());
+       if (NTP.isSummerTime())  {
+       	  DEBUG_MSG_P(PSTR("[NTP] In Summer Time\n"));
+    	  } else {
+       	  DEBUG_MSG_P(PSTR("[NTP] In Standard Time\n"));
+    	  }
+     } else {
+       	  DEBUG_MSG_P(PSTR("[NTP] No DST\n"));
+     }
 
 }
 
@@ -118,7 +88,7 @@ void _ntpUpdate() {
     if (ntpSynced()) {
         time_t t = now();
         DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), (char *) ntpDateTime(ntpLocal2UTC(t)).c_str());
-        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) ntpDateTime(t).c_str());
+        DEBUG_MSG_P(PSTR("[NTP] Local Time: %s\n"), (char *) NTP.getDateTimeString(t).c_str());
     }
 
 }
@@ -145,11 +115,8 @@ void _ntpBackwards() {
     moveSetting("ntpServer1", "ntpServer");
     delSetting("ntpServer2");
     delSetting("ntpServer3");
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    if (-30 < offset && offset < 30) {
-        offset *= 60;
-        setSetting("ntpOffset", offset);
-    }
+    int offset = getSetting("ntpOffset", NTP_ZONE_CITY).toInt();
+    setSetting("ntpOffset", offset);
 }
 
 // -----------------------------------------------------------------------------
@@ -168,14 +135,12 @@ String ntpDateTime(time_t t) {
 }
 
 String ntpDateTime() {
-    if (ntpSynced()) return ntpDateTime(now());
+    if (ntpSynced()) return NTP.getDateTimeString(now());
     return String();
 }
 
 time_t ntpLocal2UTC(time_t local) {
-    int offset = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    if (NTP.isSummerTime()) offset += 60;
-    return local - offset * 60;
+    return local - NTP.getOffset();
 }
 
 // -----------------------------------------------------------------------------

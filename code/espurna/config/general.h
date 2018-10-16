@@ -1025,13 +1025,14 @@
 #define NTP_TIMEOUT                 1000            // Set NTP request timeout to 2 seconds (issue #452)
 #endif
 
-#ifndef NTP_TIME_OFFSET
-#define NTP_TIME_OFFSET             60              // Default timezone offset (GMT+1)
+#ifndef NTP_ZONE_REGION
+#define NTP_ZONE_REGION             "Europe"        // GMT+1, index in TZ.h
 #endif
 
-#ifndef NTP_DAY_LIGHT
-#define NTP_DAY_LIGHT               1               // Enable daylight time saving by default
+#ifndef NTP_ZONE_CITY
+#define NTP_ZONE_CITY             342  // "Luxembourg"       // GMT+1, index in TZ.h
 #endif
+
 
 #ifndef NTP_SYNC_INTERVAL
 #define NTP_SYNC_INTERVAL           60              // NTP initial check every minute
@@ -1045,37 +1046,6 @@
 #define NTP_START_DELAY             1000            // Delay NTP start 1 second
 #endif
 
-#ifndef NTP_DST_REGION
-#define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
-#endif
-
-#ifndef NTP_DST_S_MONTH
-#define NTP_DST_S_MONTH              3               // DST Start month: March for Europe
-#endif
-
-#ifndef NTP_DST_E_MONTH
-#define NTP_DST_E_MONTH              10              // DST End month: Oct for Europe
-#endif
-
-#ifndef NTP_DST_S_WEEK
-#define NTP_DST_S_WEEK              5               // DST Start week: last  for Europe
-#endif
-
-#ifndef NTP_DST_E_WEEK
-#define NTP_DST_E_WEEK              5               // DST End week: last for Europe
-#endif
-
-#ifndef NTP_DST_S_DAY
-#define NTP_DST_S_DAY              1               // DST Start day: Sunday for Europe
-#endif
-
-#ifndef NTP_DST_E_DAY
-#define NTP_DST_E_DAY              1               // DST Start day: Sunday for Europe
-#endif
-
-#ifndef NTP_DST_HOUR
-#define NTP_DST_HOUR              1 + (NTP_TIME_OFFSET/60) // DST Start hour: 1am + TimeZone for Europe, only EU does teh TimeZone offset
-#endif
 // -----------------------------------------------------------------------------
 // ALEXA
 // -----------------------------------------------------------------------------

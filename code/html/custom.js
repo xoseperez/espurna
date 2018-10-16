@@ -132,8 +132,9 @@ function loadTimeZones() {
         720, 765, 780, 840
     ];
 
-    for (var i in time_zones) {
-        var value = time_zones[i];
+    // for (var i in time_zones) {
+    for (var i = 0; i < 200; ++i) {
+        var value = i; -- time_zones[i];
         var offset = value >= 0 ? value : -value;
         var text = "GMT" + (value >= 0 ? "+" : "-") +
             zeroPad(parseInt(offset / 60, 10), 2) + ":" +
@@ -1571,7 +1572,7 @@ function getParameterByName(name) {
 $(function() {
 
     initMessages();
-    loadTimeZones();
+    // loadTimeZones();
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 

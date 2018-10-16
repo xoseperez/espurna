@@ -4,7 +4,7 @@
 
  function loadAllTimeZones() {
      var reg = $("select[name='tzRegion']");
-     var cit = $("select[name='tzCity']");
+     var cit = $("select[name='ntpOffset']");
    $("<option />", {value: "Africa", text: "Africa"}).appendTo(reg);
    $("<option />", {value: "0", text: "Abidjan", city: "Africa"}).appendTo(cit);
    $("<option />", {value: "1", text: "Accra", city: "Africa"}).appendTo(cit);

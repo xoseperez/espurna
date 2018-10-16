@@ -80,6 +80,67 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
+#elif defined(NODEMCU_MJP_THR)
+    // Info
+    #define MANUFACTURER        "WEMOS"
+    #define DEVICE              "MJP_THR"
+    // modencu with DHT22 temperature and humidity sensor
+    #define DHT_SUPPORT                     1
+    #define DHT_PIN                         12 //D6 4 // D2
+	// and a rain sensor
+    #define DIGITAL_SUPPORT                 1
+    #define DIGITAL_PIN                 4 // D2    12 //D6
+
+
+    // Buttons
+    // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
+    #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
+                                    // it's the same as using a Wemos one button shield
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+
+    // Relays
+    // #define RELAY1_PIN          12
+    // #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+#elif defined(NODEMCU_MJP_SKY1)
+
+    // Info
+    #define MANUFACTURER        "NODEMCU"
+    #define DEVICE              "MJP_CUSTOM"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12   // INA
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          13 // INB
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+    #define RELAY3_PIN          15 // pwm  on or off for now
+    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
+
+    // current sense
+    #define ANALOG_SUPPORT             1
+    // Temperature and humidity
+    //#define DHT_SUPPORT                     1
+    #define DHT_PIN                         14 // D6
+
+    // IR - pin 4
+    #define IR_SUPPORT          1
+    #define IR_PIN              4
+    #define IR_BUTTON_SET       4
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
 #elif defined(NODEMCU_BASIC)
     // Info
     // Generic NodeMCU Board without any buttons or relays connected.

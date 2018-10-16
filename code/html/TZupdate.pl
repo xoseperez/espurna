@@ -18,7 +18,7 @@ printf $js ("// It uses the content of %s\n", $csv);
 printf $js ("// It work with TZ.h (also generated)\n\n");
 printf $js (" function loadAllTimeZones() {
      var reg = \$(\"select[name='tzRegion']\");
-     var cit = \$(\"select[name='tzCity']\");\n");
+     var cit = \$(\"select[name='ntpOffset']\");\n");
 
 #printf $html ("
 #   <select id=\"timeZone\" multiple>\n");
@@ -29,23 +29,23 @@ printf $ch ("// It work with TZ.js (also generated)\n\n");
 printf $ch (
 "typedef struct { 
     char * timeZoneName;
-    int16_t  timeZoneOffset;     // offset from GMT 0 in minutes 
-    char * timeZoneDSTName;    // NULL if disable
-    int16_t  timeZoneDSTOffset;  // offset from GMT 0 in minutes 
-    uint8_t dstStartMonth;     // start of Summer time if enabled  Month 1 - 12, 0 disabled dst
-    uint8_t dstEndMonth;       // end of Summer time if enabled  Month 1 - 12
-    uint8_t dstStartWeek;      // start of Summer time if enabled Week 1 - 5: (5 means last)
-    uint8_t dstEndWeek;        // end of Summer time if enabled Week 1 - 5: (5 means last)
-    uint8_t dstStartDay;       // start of Summer time if enabled Day 1- 7  (1- Sun)
-    uint8_t dstEndDay;         // end of Summer time if enabled Day 1-7  (1- Sun)
-    uint16_t dstStartMin;     // start of Summer time if enabled in minutes
-    uint16_t dstEndMin;       // end of Summer time if enabled in minutes
+    int16_t  timeZoneOffset;    // offset from GMT 0 in minutes 
+    char * timeZoneDSTName;     // NULL if disable
+    int16_t  timeZoneDSTOffset; // offset from GMT 0 in minutes 
+    uint8_t dstStartMonth;      // start of Summer time if enabled  Month 1 - 12, 0 disabled dst
+    uint8_t dstStartWeek;       // start of Summer time if enabled Week 1 - 5: (5 means last)
+    uint8_t dstStartDay;        // start of Summer time if enabled Day 1- 7  (1- Sun)
+    uint16_t dstStartMin;       // start of Summer time if enabled in minutes
+    uint8_t dstEndMonth;        // end of Summer time if enabled  Month 1 - 12
+    uint8_t dstEndWeek;         // end of Summer time if enabled Week 1 - 5: (5 means last)
+    uint8_t dstEndDay;          // end of Summer time if enabled Day 1-7  (1- Sun)
+    uint16_t dstEndMin;         // end of Summer time if enabled in minutes
 } TZinfo;
 
 extern TZinfo TZall[];\n    ");
 
 printf $cha (
-"TZinfo TZall[] = [\n    ");
+"TZinfo TZall[] = {\n    ");
 
 
 my $content = <$fh>;
@@ -124,19 +124,22 @@ foreach my $line (split /[\r\n]+/, $content) {
 	    printf $cha ("{\"%s\",%d, NULL, 0, 0, 0, 0, 0, 0, 0}", $tzn, $tzone_min);
 	} else {
 	    printf $cha ("{\"%s\",%d, \"%s\", %d, ", $tzn, $tzone_min, $tzs, $tzsn);
-	    $start =~ /M([0-9]+)\.([0-5])\.([0-6])(\/(.*))*/;
-	    if ( $5 == '' ) { $t = 120; } else {
-		$5 =~ /([0-9]+)(:([0-9]+))?/;
+	    $start =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
+	    my $m = $1;
+	    my $w = $2;
+	    my $d = $3;
+	    if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
 		$t = (($1 % 24) * 60) + $3;
-	    }
-	    $t = $t % 24;
-	    printf $cha ("%d, %d, %d, %s, ", $1, $2, $3, $t);
-	    $end =~ /M([0-9]+)\.([0-5])\.([0-6])(\/(.*))*/;
-	    if ( $5 == '' ) { $t = 120; } else { 
-		$5 =~ /([0-9]+)(:([0-9]+))?/;
+	    } else { $t = 120; }
+	    printf $cha ("%d, %d, %d, %d, ", $m, $w, $d, $t);
+	    $end =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
+	    $m = $1;
+	    $w = $2;
+	    $d = $3;
+	    if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
 		$t = (($1 % 24) * 60) + $3;
-	    }
-	    printf $cha ("%d, %d, %d, %s}", $1, $2, $3, $t);
+	    } else { $t = 120; }
+	    printf $cha ("%d, %d, %d, %d}", $m, $w, $d, $t);
 	}
     } else {
 	$last_zone = $last_zone . "\n    ";
@@ -146,6 +149,7 @@ foreach my $line (split /[\r\n]+/, $content) {
 #printf $html ("      </optgroup>\n   </select>\n");
 printf $cha ("%s\n    ", $last_zone);
 printf $cha ("};\n");
+printf $cha ("#define MAX_TIME_ZONE %d\n",$n-1);
 printf $js ("
 
      \$( \"#tzRegion\" ).change(function() {
