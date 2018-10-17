@@ -83,7 +83,10 @@ foreach my $line (split /[\r\n]+/, $content) {
     } else {
 	$def_need = 1;
 	$c = $n;
-	# $decode{$tzname . $start . $end} = $n;
+	#
+	# comment out the next line for all entries to be unique
+	#
+	$decode{$tzname . $start . $end} = $n;
     }
     #printf $html ("         <option value=\"%d\">%s</option>\n",$c,$tz[1]);
     printf $js ("   \$(\"<option />\", {value: \"%d\", text: \"%s\", city: \"%s\"}).appendTo(cit);\n", $c,$tz[1],$k);

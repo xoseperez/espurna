@@ -1030,7 +1030,8 @@
 #endif
 
 #ifndef NTP_ZONE_CITY
-#define NTP_ZONE_CITY             342  // "Luxembourg"       // GMT+1, index in TZ.h
+// #define NTP_ZONE_CITY             342  // "Luxembourg"       // GMT+1, index in TZ.h fully expanded list
+#define NTP_ZONE_CITY             7  // "Luxembourg"       // GMT+1, index in TZ.h
 #endif
 
 

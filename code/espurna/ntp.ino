@@ -42,7 +42,7 @@ void _ntpStart() {
 
     _ntp_start = 0;
 
-    NTP.begin(getSetting("ntpServer", NTP_SERVER));
+    NTP.begin(getSetting("ntpServer", NTP_SERVER), getSetting("ntpOffset", NTP_ZONE_CITY).toInt());
     NTP.setInterval(NTP_SYNC_INTERVAL, NTP_UPDATE_INTERVAL);
     NTP.setNTPTimeout(NTP_TIMEOUT);
     _ntpConfigure();
@@ -66,15 +66,14 @@ void _ntpConfigure() {
     if ( NTP.getDayLight() ) {
        DEBUG_MSG_P(PSTR("[NTP] Dst Start Time: %s\n"), (char *) ntpDateTime(NTP.getDstStart()).c_str());
        DEBUG_MSG_P(PSTR("[NTP] Dst End   Time: %s\n"), (char *) ntpDateTime(NTP.getDstEnd()).c_str());
-       if (NTP.isSummerTime())  {
-       	  DEBUG_MSG_P(PSTR("[NTP] In Summer Time\n"));
+       if (NTP.inSummerTime())  {
+       	  DEBUG_MSG_P(PSTR("[NTP] In Summer Time : %s\n"), (char *) ntpDateTime().c_str());
     	  } else {
-       	  DEBUG_MSG_P(PSTR("[NTP] In Standard Time\n"));
+       	  DEBUG_MSG_P(PSTR("[NTP] In Standard Time:  %s\n"), (char *) ntpDateTime().c_str());
     	  }
      } else {
-       	  DEBUG_MSG_P(PSTR("[NTP] No DST\n"));
+       	  DEBUG_MSG_P(PSTR("[NTP] No DST:  %s\n"), (char *) ntpDateTime().c_str());
      }
-
 }
 
 void _ntpUpdate() {
@@ -140,7 +139,7 @@ String ntpDateTime() {
 }
 
 time_t ntpLocal2UTC(time_t local) {
-    return local - NTP.getOffset();
+    return local - NTP.getOffset()*60;
 }
 
 // -----------------------------------------------------------------------------
