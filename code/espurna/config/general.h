@@ -1026,7 +1026,7 @@
 // -----------------------------------------------------------------------------
 
 #ifndef BLYNK_SUPPORT
-#define BLYNK_SUPPORT        1
+#define BLYNK_SUPPORT        0
 #define BLYNK_ENABLED        0
 #define BLYNK_AUTH_TOKEN     "insert your blynk auth key here"
 #define BLYNK_HOST  "blynk-cloud.com"
