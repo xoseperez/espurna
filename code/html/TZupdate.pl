@@ -10,7 +10,6 @@ local $/;  # enable localized slurp mode
 open(my $fh, "curl $csv |") or die "failed: $csv";
 # open(my $html, ">", "TZ.html") or die "failed to open TZ.html";
 open(my $ch, ">", "TZ.h") or die "failed to open TZ.h";
-open(my $cha, ">", "TZall.h") or die "failed to open TZall.h";
 open(my $js, ">", "TZ.js") or die "failed to open TZ.js";
 
 printf $js ("// This file is generate with TZupdate.pl in espurna/code/html\n");
@@ -41,10 +40,9 @@ printf $ch (
     uint8_t dstEndDay;          // end of Summer time if enabled Day 1-7  (1- Sun)
     uint16_t dstEndMin;         // end of Summer time if enabled in minutes
 } TZinfo;
+\n    ");
 
-extern TZinfo TZall[];\n    ");
-
-printf $cha (
+printf $ch (
 "TZinfo TZall[] = {\n    ");
 
 
@@ -121,12 +119,12 @@ foreach my $line (split /[\r\n]+/, $content) {
 		$tzsn = $tzone_min + 60;
 	    }
 	}
-	if( $n++ != 0 ) { printf $cha (", %s\n    ", $last_zone);};
+	if( $n++ != 0 ) { printf $ch (", %s\n    ", $last_zone);};
 	$last_zone = "";
 	if ( $#words == 1 ) { # no dst
-	    printf $cha ("{\"%s\",%d, NULL, 0, 0, 0, 0, 0, 0, 0}", $tzn, $tzone_min);
+	    printf $ch ("{\"%s\",%d, NULL, 0, 0, 0, 0, 0, 0, 0}", $tzn, $tzone_min);
 	} else {
-	    printf $cha ("{\"%s\",%d, \"%s\", %d, ", $tzn, $tzone_min, $tzs, $tzsn);
+	    printf $ch ("{\"%s\",%d, \"%s\", %d, ", $tzn, $tzone_min, $tzs, $tzsn);
 	    $start =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
 	    my $m = $1;
 	    my $w = $2;
@@ -134,7 +132,7 @@ foreach my $line (split /[\r\n]+/, $content) {
 	    if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
 		$t = (($1 % 24) * 60) + $3;
 	    } else { $t = 120; }
-	    printf $cha ("%d, %d, %d, %d, ", $m, $w, $d, $t);
+	    printf $ch ("%d, %d, %d, %d, ", $m, $w, $d, $t);
 	    $end =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
 	    $m = $1;
 	    $w = $2;
@@ -142,7 +140,7 @@ foreach my $line (split /[\r\n]+/, $content) {
 	    if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
 		$t = (($1 % 24) * 60) + $3;
 	    } else { $t = 120; }
-	    printf $cha ("%d, %d, %d, %d}", $m, $w, $d, $t);
+	    printf $ch ("%d, %d, %d, %d}", $m, $w, $d, $t);
 	}
     } else {
 	$last_zone = $last_zone . "\n    ";
@@ -150,9 +148,9 @@ foreach my $line (split /[\r\n]+/, $content) {
     $last_zone = $last_zone . "// " . $k . "/" . $tz[1] . " = " . $c;
 }
 #printf $html ("      </optgroup>\n   </select>\n");
-printf $cha ("%s\n    ", $last_zone);
-printf $cha ("};\n");
-printf $cha ("#define MAX_TIME_ZONE %d\n",$n-1);
+printf $ch ("%s\n    ", $last_zone);
+printf $ch ("};\n");
+printf $ch ("#define MAX_TIME_ZONE %d\n",$n-1);
 printf $js ("
 
      \$( \"#tzRegion\" ).change(function() {

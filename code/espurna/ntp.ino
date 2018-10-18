@@ -12,6 +12,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <NtpClientLib.h>
 #include <WiFiClient.h>
 #include <Ticker.h>
+#include "TZ.h"
 
 unsigned long _ntp_start = 0;
 bool _ntp_update = false;
@@ -44,7 +45,7 @@ void _ntpStart() {
 
     NTP.begin(getSetting("ntpServer", NTP_SERVER), getSetting("ntpOffset", NTP_ZONE_CITY).toInt());
     NTP.setInterval(NTP_SYNC_INTERVAL, NTP_UPDATE_INTERVAL);
-    NTP.setNTPTimeout(NTP_TIMEOUT);
+    // NTP.setNTPTimeout(NTP_TIMEOUT);
     _ntpConfigure();
 
 }
@@ -60,8 +61,17 @@ void _ntpConfigure() {
 
     // uint8_t zone = getSetting("tzCity", NTP_ZONE_CITY).toInt();
     uint16_t zone = getSetting("ntpOffset", NTP_ZONE_CITY).toInt();
-    DEBUG_MSG_P(PSTR("[NTP] Set by zone %d\n"), zone );
-    NTP.setTimeZone(zone);
+    TZinfo tz = TZall[zone];
+
+    int res = NTP.setTimeZone ( tz.timeZoneOffset, tz.timeZoneName, tz.timeZoneDSTName, tz.timeZoneDSTOffset,
+		      tz.dstStartMonth, tz.dstStartWeek, tz.dstStartDay, tz.dstStartMin,
+		      tz.dstEndMonth, tz.dstEndWeek, tz.dstEndDay, tz.dstEndMin);
+    DEBUG_MSG_P(PSTR("[NTP] Set by zone %d err=%d, offset %d %s %d %d %d %d, dst offset %d %s %d %d %d %d\n"), zone, res,
+		tz.timeZoneOffset,  tz.timeZoneName,
+		tz.dstStartMonth, tz.dstStartWeek, tz.dstStartDay, tz.dstStartMin,
+		tz.timeZoneDSTOffset,  tz.timeZoneDSTName
+		,tz.dstEndMonth, tz.dstEndWeek, tz.dstEndDay, tz.dstEndMin
+		);
 
     if ( NTP.getDayLight() ) {
        DEBUG_MSG_P(PSTR("[NTP] Dst Start Time: %s\n"), (char *) ntpDateTime(NTP.getDstStart()).c_str());
@@ -71,9 +81,9 @@ void _ntpConfigure() {
     	  } else {
        	  DEBUG_MSG_P(PSTR("[NTP] In Standard Time:  %s\n"), (char *) ntpDateTime().c_str());
     	  }
-     } else {
-       	  DEBUG_MSG_P(PSTR("[NTP] No DST:  %s\n"), (char *) ntpDateTime().c_str());
-     }
+    } else {
+          DEBUG_MSG_P(PSTR("[NTP] No DST:  %s\n"), (char *) ntpDateTime().c_str());
+    }
 }
 
 void _ntpUpdate() {
