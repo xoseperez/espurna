@@ -243,12 +243,27 @@
 #define EMON_MAX_SAMPLES                1000        // Max number of samples to get
 #define EMON_MAX_TIME                   250         // Max time in ms to sample
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
-#define EMON_MAINS_VOLTAGE              230         // Mains voltage
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
-#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30V/1A)
+
+#ifndef EMON_MAINS_VOLTAGE
+#define EMON_MAINS_VOLTAGE              230         // Mains voltage
+#endif
+
+#ifndef EMON_CURRENT_RATIO
+#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
+#endif
+
+#ifndef EMON_REPORT_CURRENT
 #define EMON_REPORT_CURRENT             0           // Report current
+#endif
+
+#ifndef EMON_REPORT_POWER
 #define EMON_REPORT_POWER               1           // Report power
+#endif
+
+#ifndef EMON_REPORT_ENERGY
 #define EMON_REPORT_ENERGY              1           // Report energy
+#endif
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADC121
