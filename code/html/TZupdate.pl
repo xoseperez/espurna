@@ -3,7 +3,14 @@
 use POSIX;
 use Getopt::Long;
 
+my $exp = '';
+my $all = 0;
+
+&GetOptions ('e=s' => \$exp,
+	     'a' => \$all);
 my $csv = 'https://raw.githubusercontent.com/nayarsystems/posix_tz_db/master/zones.csv';
+
+my $re = qr/.*$exp.*/;
 
 local $/;  # enable localized slurp mode
 
@@ -61,6 +68,7 @@ foreach my $line (split /[\r\n]+/, $content) {
     $line =~ s/\"//g; # strip out quotes
     my @words = split /,/,$line;
     my $tz = $words[0];
+    if ( "$tz" !~ /$re/ )  {  next;  }
     $tz =~ s/\//,/; # swap out first slash
     my @tz = split /,/,$tz;
     if (  $k ne $tz[0] ) {
@@ -84,7 +92,9 @@ foreach my $line (split /[\r\n]+/, $content) {
 	#
 	# comment out the next line for all entries to be unique
 	#
-	$decode{$tzname . $start . $end} = $n;
+	if ( !$all ) { 
+	    $decode{$tzname . $start . $end} = $n;
+	}
     }
     #printf $html ("         <option value=\"%d\">%s</option>\n",$c,$tz[1]);
     printf $js ("   \$(\"<option />\", {value: \"%d\", text: \"%s\", city: \"%s\"}).appendTo(cit);\n", $c,$tz[1],$k);
