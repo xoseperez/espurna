@@ -221,6 +221,7 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 }
 
 void apiSetup() {
+    _apiConfigure();
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
     webRequestRegister(_apiRequestCallback);
