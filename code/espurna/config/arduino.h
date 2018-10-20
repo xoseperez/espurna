@@ -9,8 +9,6 @@
 
 //#define NODEMCU_LOLIN
 //#define WEMOS_D1_MINI
-//#define NODEMCU_MJP_THR
-#define NODEMCU_MJP_SKY1
 //#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
@@ -101,6 +99,8 @@
 //#define ALLTERCO_SHELLY2
 //#define PHYX_ESP12_RGB
 //#define IWOOLE_LED_TABLE_LAMP
+//#define EXS_WIFI_RELAY_V50
+//#define LOCAL_HARDWARE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -161,6 +161,8 @@
 //#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
+//#define MICS2710_SUPPORT       1
+//#define MICS5525_SUPPORT       1
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1

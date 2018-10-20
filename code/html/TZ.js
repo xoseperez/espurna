@@ -479,10 +479,10 @@
 
 
      $( "#tzRegion" ).change(function() {
-	 var value = $(this).val();
-	 $("#tzCity").prop("disabled", false);
-	 $("#tzCity > option").hide();
-	 $("#tzCity > option[city*='" + value +"']").show();
+         var value = $(this).val();
+         $("#tzCity").prop("disabled", false);
+         $("#tzCity > option").hide();
+         $("#tzCity > option[city*='" + value +"']").show();
      });
 }
 

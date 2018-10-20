@@ -34,6 +34,8 @@ unsigned int getFreeStack() {
 #include <Ticker.h>
 Ticker _defer_reset;
 
+uint8_t _reset_reason = 0;
+
 String getIdentifier() {
     char buffer[20];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
@@ -158,7 +160,7 @@ unsigned long getUptime() {
 
 }
 
-#if HEARTBEAT_ENABLED
+#if HEARTBEAT_MODE != HEARTBEAT_NONE
 
 void heartbeat() {
 
@@ -206,6 +208,9 @@ void heartbeat() {
             #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_SSID)
+                mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
             #endif
             #if (HEARTBEAT_REPORT_IP)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
@@ -260,7 +265,7 @@ void heartbeat() {
 
 }
 
-#endif /// HEARTBEAT_ENABLED
+#endif /// HEARTBEAT_MODE != HEARTBEAT_NONE
 
 // -----------------------------------------------------------------------------
 // INFO
@@ -301,7 +306,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
 void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
 
     DEBUG_MSG_P(
-        PSTR("[MAIN] %-6s: %5u bytes total - %5u bytes used (%2u%%) - %5u bytes free (%2u%%)\n"),
+        PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
         name,
         total_memory,
         total_memory - free_memory,
@@ -358,12 +363,12 @@ void info() {
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
-            DEBUG_MSG_P(PSTR("[MAIN]        used size:  %8u bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("[MAIN]        block size: %8u bytes\n"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        page size:  %8u bytes\n"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("[MAIN]        max files:  %8u\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("[MAIN]        max length: %8u\n"), fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, info_bytes2sectors(fs_info.totalBytes));
+            DEBUG_MSG_P(PSTR("[MAIN]        used size    : %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("[MAIN]        block size   : %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        page size    : %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        max files    : %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("[MAIN]        max length   : %8u\n"), fs_info.maxPathLength);
         } else {
             DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
         }
@@ -372,8 +377,7 @@ void info() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+    eepromSectorsDebug();
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -489,17 +493,21 @@ unsigned char resetReason() {
 }
 
 void resetReason(unsigned char reason) {
+    _reset_reason = reason;
     EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
-    EEPROMr.commit();
+    eepromCommit();
 }
 
-void reset(unsigned char reason) {
-    resetReason(reason);
+void reset() {
     ESP.restart();
 }
 
 void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, reset, reason);
+    _defer_reset.once_ms(delay, resetReason, reason);
+}
+
+bool checkNeedsReset() {
+    return _reset_reason > 0;
 }
 
 // -----------------------------------------------------------------------------

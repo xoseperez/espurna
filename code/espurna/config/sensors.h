@@ -431,6 +431,45 @@
 #endif
 
 //------------------------------------------------------------------------------
+// MICS-2710 (and MICS-4514) NO2 sensor
+// Enable support by passing MICS2710_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef MICS2710_SUPPORT
+#define MICS2710_SUPPORT                0
+#endif
+
+#ifndef MICS2710_NOX_PIN
+#define MICS2710_NOX_PIN                0
+#endif
+
+#ifndef MICS2710_PRE_PIN
+#define MICS2710_PRE_PIN                4
+#endif
+
+#define MICS2710_PREHEAT_TIME           10000   // 10s preheat for NOX read
+#define MICS2710_RL                     820     // RL, load resistor
+#define MICS2710_R0                     2200    // R0 calibration value for NO2 sensor,
+                                                // Typical value as per datasheet
+
+//------------------------------------------------------------------------------
+// MICS-5525 (and MICS-4514) CO sensor
+// Enable support by passing MICS5525_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef MICS5525_SUPPORT
+#define MICS5525_SUPPORT                0
+#endif
+
+#ifndef MICS5525_RED_PIN
+#define MICS5525_RED_PIN                0
+#endif
+
+#define MICS5525_RL                     820     // RL, load resistor
+#define MICS5525_R0                     750000  // R0 calibration value for NO2 sensor,
+                                                // Typical value as per datasheet
+
+//------------------------------------------------------------------------------
 // NTC sensor
 // Enable support by passing NTC_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -673,6 +712,8 @@
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
     HLW8012_SUPPORT || \
+    MICS2710_SUPPORT || \
+    MICS5525_SUPPORT || \
     MHZ19_SUPPORT || \
     NTC_SUPPORT || \
     SDS011_SUPPORT || \
@@ -791,6 +832,14 @@
 
 #if MHZ19_SUPPORT
     #include "../sensors/MHZ19Sensor.h"
+#endif
+
+#if MICS2710_SUPPORT
+    #include "../sensors/MICS2710Sensor.h"
+#endif
+
+#if MICS5525_SUPPORT
+    #include "../sensors/MICS5525Sensor.h"
 #endif
 
 #if NTC_SUPPORT

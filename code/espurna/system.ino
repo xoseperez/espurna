@@ -42,7 +42,7 @@ void systemCheck(bool stable) {
         }
     }
     EEPROMr.write(EEPROM_CRASH_COUNTER, value);
-    EEPROMr.commit();
+    eepromCommit();
 }
 
 bool systemCheck() {
@@ -78,6 +78,14 @@ unsigned long systemLoadAverage() {
 void systemLoop() {
 
     // -------------------------------------------------------------------------
+    // User requested reset
+    // -------------------------------------------------------------------------
+
+    if (checkNeedsReset()) {
+        reset();
+    }
+
+    // -------------------------------------------------------------------------
     // Check system stability
     // -------------------------------------------------------------------------
 
@@ -89,15 +97,19 @@ void systemLoop() {
     // Heartbeat
     // -------------------------------------------------------------------------
 
-    #if HEARTBEAT_ENABLED
-        // Heartbeat
+    #if HEARTBEAT_MODE == HEARTBEAT_ONCE
+        if (_system_send_heartbeat) {
+            _system_send_heartbeat = false;
+            heartbeat();
+        }
+    #elif HEARTBEAT_MODE == HEARTBEAT_REPEAT
         static unsigned long last_hbeat = 0;
         if (_system_send_heartbeat || (last_hbeat == 0) || (millis() - last_hbeat > HEARTBEAT_INTERVAL)) {
             _system_send_heartbeat = false;
             last_hbeat = millis();
             heartbeat();
         }
-    #endif // HEARTBEAT_ENABLED
+    #endif // HEARTBEAT_MODE == HEARTBEAT_REPEAT
 
     // -------------------------------------------------------------------------
     // Load Average calculation

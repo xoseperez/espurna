@@ -3,6 +3,58 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.3] 2018-10-08
+### Fixed
+- Honour build time settings for MQTT on fresh install (#719)
+- Fix custom_crash_callback declaration for Arduino IDE 1.8.6 (#1169)
+- Fix eneUnits key in web UI (#1177)
+- Fix HA names (#1183)
+- API is now restful (issue a PUT to change a relay status). It can be disabled from web UI (#1192)
+- Remove static array to prevent out of bound in relay.ino (#1217)
+- Remove duplicate call to EEPROMr.begin (#1214)
+- Fix issue when SPIFFS_SUPPORT is enabled (#1225)
+- Fix quoting units_of_measurement in HA config output (#1227)
+- Fix "Clear counts" on rfm69 does not reset node count properly (thanks to @Trickx, #1239)
+- Fix homecube 3rd led setting (thanks to @mcspr)
+- Fix typo in static IP hint text (@thanks to @zafrirron)
+- Fix hostname/password length requirements (thanks to @mcspr and @djwmarcx)
+- Do not quote numbers in MQTT JSON payloads
+- Fix telnet client object deletion (thanks to @mcspr)
+- Call wakeUp PMS on first reading cycle to avoid not data in a long period (thanks to @Yonsm)
+- Small fixes and windows support for ESPurna OTA Manager (thanks to @mcspr)
+- Fix for YiDian XS-SSA05 configs (thanks to @ducky64)
+- Send MQTT messages only for button events with assigned actions (thanks to @Valcob)
+- Avoid EEPROM commits on callbacks (#1214)
+
+### Added
+- Option to report energy based on delta since last report (#369)
+- Support for IR-MQTT bridge, also in RAW mode (#556, #907)
+- Allow faster sensor reading intervals, down to 1 second (#848)
+- Support for Xiaomi Smart Desk Lamp (#884)
+- Retry up to 3 times on bad response to Thingspeak server (#1213)
+- Support for apparent power and power factor on CSE7/XX sensor (#1215)
+- Support for encoders
+- Support for Allterco Shelly2
+- Added SDS011 sensor support (thanks to @derlucas)
+- Added password check to telnet (option to disable it)
+- Added PHYX support (thanks to @whitebird)
+- Added config command that outputs the configuration in JSON
+- Support for MICS-2710, MICS-5525 and MICS-4514, gas sensors
+- Support for iWoole LED Table Lamp (thanks to @CollinShorts)
+- Command to output free stack
+- Password management from web UI (thanks to @mcspr)
+- Added BESTEK MRJ1011 support (thanks to @InduPrakash)
+- Support for EXS WiFi Relay 5.0 (thanks to @cheise, #1218)
+- Allowing disabling or single heartbeat on MQTT connect or repeat (default) (#1196)
+- Command to save settings when SETTINGS_AUTOSAVE is off
+
+### Changed
+- Upgraded to JustWifi 2.0.2
+- Upgraded to FauxmoESP 3.0.1
+- Upgraded to DebounceEvent 2.0.4 to properly support BUTTON_SWITCH
+- Split `info` command output into `info` and `wifi`. Refactor output.
+- Custom HA payloads (thanks to @Yonsm)
+
 ## [1.13.2] 2018-08-27
 ### Fixed
 - Fix relay overflow window length

@@ -7,7 +7,7 @@ my $exp = '';
 my $all = 0;
 
 &GetOptions ('e=s' => \$exp,
-	     'a' => \$all);
+             'a' => \$all);
 my $csv = 'https://raw.githubusercontent.com/nayarsystems/posix_tz_db/master/zones.csv';
 
 my $re = qr/.*$exp.*/;
@@ -84,76 +84,76 @@ foreach my $line (split /[\r\n]+/, $content) {
     my $def_need = 0;
 
     if ( defined($decode{$tzname . $start . $end} ) ) {
-	$c = $decode{$tzname . $start . $end};
-	$def_need = 0;
+        $c = $decode{$tzname . $start . $end};
+        $def_need = 0;
     } else {
-	$def_need = 1;
-	$c = $n;
-	#
-	# comment out the next line for all entries to be unique
-	#
-	if ( !$all ) { 
-	    $decode{$tzname . $start . $end} = $n;
-	}
+        $def_need = 1;
+        $c = $n;
+        #
+        # comment out the next line for all entries to be unique
+        #
+        if ( !$all ) { 
+            $decode{$tzname . $start . $end} = $n;
+        }
     }
     #printf $html ("         <option value=\"%d\">%s</option>\n",$c,$tz[1]);
     printf $js ("   \$(\"<option />\", {value: \"%d\", text: \"%s\", city: \"%s\"}).appendTo(cit);\n", $c,$tz[1],$k);
 
     #printf( "%s/%s %s %s %d %s %s %d %s %s\n",$k,$tz[1], $tzn, $tzone, $tzone_min, $tzs, $tzsn, $tzsn_min, $start, $end);
     if ( $def_need ) {
-	my $tzn = '';
-	my $tzone = 0;
-	my $tzone_h = 0;
-	my $tzone_m = 0;
-	my $tzone_min = 0;
-	my $tzs = '';
-	my $tzsn = '';
-	my $tzsn_min = '';
-	if ( $tzname =~ /([A-Z]+)([-+]*[0-9:]+)([A-Z]+)?(.*)/ ) {
-	    $tzn = $1; $tzone = $2; $tzs = $3; $tzsn = $4;
-	} elsif ( $tzname =~ /(<[^>]+>)([-+]*[0-9:]+)(<[^>]+>)?(.*)/ ) {
-	    $tzn = $1; $tzone = $2; $tzs = $3; $tzsn = $4;
-	}
-	$tzone =~ /([-+])([0-9]+)(:([0-9]+))?/;
-	$tzone_h = $2;
-	$tzone_m = $4;
-	$tzone_min = ($tzone_h * 60) + $tzone_m;
-	if ( $1 ne "-" ) { $tzone_min = - $tzone_min; }
-	if ( $tzsn == "" ) {
-	    $tzsn = $tzone_min + 60;
-	} else {
-	    $tzsn =~ /([-+])([0-9]+)(:([0-9]+))?/;
-	    $tzsn_min = ($2 * 60) + $4;
-	    if ( $1 ne "-" ) { $tzsn_min = - $tzsn_min; }
-	    if ( $2 > 24 ) { 
-		$tzsn = $tzone_min + 60;
-	    }
-	}
-	if( $n++ != 0 ) { printf $ch (", %s\n    ", $last_zone);};
-	$last_zone = "";
-	if ( $#words == 1 ) { # no dst
-	    printf $ch ("{\"%s\",%d, NULL, 0, 0, 0, 0, 0, 0, 0}", $tzn, $tzone_min);
-	} else {
-	    printf $ch ("{\"%s\",%d, \"%s\", %d, ", $tzn, $tzone_min, $tzs, $tzsn);
-	    $start =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
-	    my $m = $1;
-	    my $w = $2;
-	    my $d = $3;
-	    if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
-		$t = (($1 % 24) * 60) + $3;
-	    } else { $t = 120; }
-	    printf $ch ("%d, %d, %d, %d, ", $m, $w, $d, $t);
-	    $end =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
-	    $m = $1;
-	    $w = $2;
-	    $d = $3;
-	    if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
-		$t = (($1 % 24) * 60) + $3;
-	    } else { $t = 120; }
-	    printf $ch ("%d, %d, %d, %d}", $m, $w, $d, $t);
-	}
+        my $tzn = '';
+        my $tzone = 0;
+        my $tzone_h = 0;
+        my $tzone_m = 0;
+        my $tzone_min = 0;
+        my $tzs = '';
+        my $tzsn = '';
+        my $tzsn_min = '';
+        if ( $tzname =~ /([A-Z]+)([-+]*[0-9:]+)([A-Z]+)?(.*)/ ) {
+            $tzn = $1; $tzone = $2; $tzs = $3; $tzsn = $4;
+        } elsif ( $tzname =~ /(<[^>]+>)([-+]*[0-9:]+)(<[^>]+>)?(.*)/ ) {
+            $tzn = $1; $tzone = $2; $tzs = $3; $tzsn = $4;
+        }
+        $tzone =~ /([-+])([0-9]+)(:([0-9]+))?/;
+        $tzone_h = $2;
+        $tzone_m = $4;
+        $tzone_min = ($tzone_h * 60) + $tzone_m;
+        if ( $1 ne "-" ) { $tzone_min = - $tzone_min; }
+        if ( $tzsn == "" ) {
+            $tzsn = $tzone_min + 60;
+        } else {
+            $tzsn =~ /([-+])([0-9]+)(:([0-9]+))?/;
+            $tzsn_min = ($2 * 60) + $4;
+            if ( $1 ne "-" ) { $tzsn_min = - $tzsn_min; }
+            if ( $2 > 24 ) { 
+                $tzsn = $tzone_min + 60;
+            }
+        }
+        if( $n++ != 0 ) { printf $ch (", %s\n    ", $last_zone);};
+        $last_zone = "";
+        if ( $#words == 1 ) { # no dst
+            printf $ch ("{\"%s\",%d, NULL, 0, 0, 0, 0, 0, 0, 0}", $tzn, $tzone_min);
+        } else {
+            printf $ch ("{\"%s\",%d, \"%s\", %d, ", $tzn, $tzone_min, $tzs, $tzsn);
+            $start =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
+            my $m = $1;
+            my $w = $2;
+            my $d = $3;
+            if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
+                $t = (($1 % 24) * 60) + $3;
+            } else { $t = 120; }
+            printf $ch ("%d, %d, %d, %d, ", $m, $w, $d, $t);
+            $end =~ /M([0-9]+)\.([0-5])\.([0-6])\/?(.*)/;
+            $m = $1;
+            $w = $2;
+            $d = $3;
+            if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
+                $t = (($1 % 24) * 60) + $3;
+            } else { $t = 120; }
+            printf $ch ("%d, %d, %d, %d}", $m, $w, $d, $t);
+        }
     } else {
-	$last_zone = $last_zone . "\n    ";
+        $last_zone = $last_zone . "\n    ";
     }
     $last_zone = $last_zone . "// " . $k . "/" . $tz[1] . " = " . $c;
 }
@@ -164,10 +164,10 @@ printf $ch ("#define MAX_TIME_ZONE %d\n",$n-1);
 printf $js ("
 
      \$( \"#tzRegion\" ).change(function() {
-	 var value = \$(this).val();
-	 \$(\"#tzCity\").prop(\"disabled\", false);
-	 \$(\"#tzCity > option\").hide();
-	 \$(\"#tzCity > option[city*='\" + value +\"']\").show();
+         var value = \$(this).val();
+         \$(\"#tzCity\").prop(\"disabled\", false);
+         \$(\"#tzCity > option\").hide();
+         \$(\"#tzCity > option[city*='\" + value +\"']\").show();
      });\n}\n
 \$(function() {
     loadAllTimeZones();

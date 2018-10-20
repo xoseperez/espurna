@@ -70,7 +70,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY           1
+    #define BUTTON1_RELAY       1
 
     // Hidden button will enter AP mode if dblclick and reset the device when long-long-clicked
     #define RELAY1_PIN          12
@@ -80,66 +80,6 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-#elif defined(NODEMCU_MJP_THR)
-    // Info
-    #define MANUFACTURER        "WEMOS"
-    #define DEVICE              "MJP_THR"
-    // modencu with DHT22 temperature and humidity sensor
-    #define DHT_SUPPORT                     1
-    #define DHT_PIN                         12 //D6 4 // D2
-	// and a rain sensor
-    #define DIGITAL_SUPPORT                 1
-    #define DIGITAL_PIN                 4 // D2    12 //D6
-
-
-    // Buttons
-    // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
-    #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
-                                    // it's the same as using a Wemos one button shield
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-
-    // Relays
-    // #define RELAY1_PIN          12
-    // #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
-
-#elif defined(NODEMCU_MJP_SKY1)
-
-    // Info
-    #define MANUFACTURER        "NODEMCU"
-    #define DEVICE              "MJP_CUSTOM"
-
-    // Buttons
-    #define BUTTON1_PIN         0
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-    // Relays
-    #define RELAY1_PIN          12   // INA
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-    #define RELAY2_PIN          13 // INB
-    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
-    #define RELAY3_PIN          15 // pwm  on or off for now
-    #define RELAY3_TYPE         RELAY_TYPE_NORMAL
-
-    // current sense
-    #define ANALOG_SUPPORT             1
-    // Temperature and humidity
-    //#define DHT_SUPPORT                     1
-    #define DHT_PIN                         14 // D6
-
-    // IR - pin 4
-    #define IR_SUPPORT          1
-    #define IR_PIN              4
-    #define IR_BUTTON_SET       4
-    // LEDs
-    #define LED1_PIN            2
-    #define LED1_PIN_INVERSE    1
 
 #elif defined(NODEMCU_BASIC)
     // Info
@@ -1447,6 +1387,36 @@
     #define RELAY1_RESET_PIN    12
 
 // -----------------------------------------------------------------------------
+// EX-Store Wifi Relay v5.0
+// -----------------------------------------------------------------------------
+
+#elif defined(EXS_WIFI_RELAY_V50)
+
+    // Info
+    #define MANUFACTURER        "EXS"
+    #define DEVICE              "WIFI_RELAY_V50"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON2_PIN         4
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON1_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY1_RESET_PIN    16
+    #define RELAY2_PIN          13
+    #define RELAY2_TYPE         RELAY_TYPE_LATCHED
+    #define RELAY2_RESET_PIN    12
+
+    // LEDs
+    #define LED1_PIN            15
+    #define LED1_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // V9261F
 // -----------------------------------------------------------------------------
 
@@ -1963,7 +1933,7 @@
 
     // Buttons
     #define BUTTON1_PIN			13
-    #define BUTTON1_MODE		BUTTON_PUSHBUTTON
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY		1
 
     // Relays
@@ -1971,8 +1941,13 @@
     #define RELAY1_TYPE			RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			4
-    #define LED1_PIN_INVERSE	0
+    #define LED1_PIN			0  // red
+    #define LED1_PIN_INVERSE	1
+    #define LED1_MODE           LED_MODE_WIFI
+
+    #define LED2_PIN			15  // blue
+    #define LED2_PIN_INVERSE	1
+    #define LED2_MODE           LED_MODE_RELAY
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
@@ -1982,8 +1957,11 @@
     #define HLW8012_CF1_PIN     14
     #define HLW8012_CF_PIN      5
 
-    #define HLW8012_CURRENT_R               0.001            // Current resistor
-    #define HLW8012_VOLTAGE_R_UP            ( 2 * 1200000 )  // Upstream voltage resistor
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
 
 // -----------------------------------------------------------------------------
 // TONBUX XS-SSA06
@@ -2852,6 +2830,30 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// Bestek Smart Plug with 2 USB ports
+// https://www.bestekcorp.com/bestek-smart-plug-works-with-amazon-alexa-google-assistant-and-ifttt-with-2-usb
+// -----------------------------------------------------------------------------
+
+#elif defined(BESTEK_MRJ1011)
+
+    // Info
+    #define MANUFACTURER        "BESTEK"
+    #define DEVICE              "MRJ1011"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relay
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LED
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
@@ -2926,6 +2928,10 @@
     #define ECH1560_CLK_PIN     10
     #define ECH1560_MISO_PIN    11
     #define ECH1560_INVERTED    12
+
+    // MICS-2710 & MICS-5525 test
+    #define MICS2710_SUPPORT    1
+    #define MICS5525_SUPPORT    1
 
 #elif defined(TRAVIS02)
 
@@ -3031,6 +3037,10 @@
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
+
+#elif defined(LOCAL_HARDWARE)
+
+#include "local_hardware.h" // in .gitignore
 
 #endif
 
