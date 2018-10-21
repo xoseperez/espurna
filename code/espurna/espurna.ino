@@ -190,6 +190,9 @@ void setup() {
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif
+    #if SERIAL_BRIDGE_SUPPORT
+        serialBridgeSetup();
+    #endif
 
     // 3rd party code hook
     #if USE_EXTRA

@@ -576,6 +576,22 @@
 #define UART_MQTT_BUFFER_SIZE       100         // UART buffer size
 
 // -----------------------------------------------------------------------------
+// SERIAL BRIDGE (UART <-> TCP)
+// -----------------------------------------------------------------------------
+
+#ifndef SERIAL_BRIDGE_SUPPORT
+#define SERIAL_BRIDGE_SUPPORT       0           // No support by default
+#endif
+
+#ifndef SERIAL_BRIDGE_BAUDRATE
+#define SERIAL_BRIDGE_BAUDRATE      115200      // Serial speed
+#endif
+
+#ifndef SERIAL_BRIDGE_PORT
+#define SERIAL_BRIDGE_PORT          Serial      // Hardware serial port (no real choice)
+#endif
+
+// -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
 

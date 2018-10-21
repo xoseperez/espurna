@@ -160,6 +160,7 @@ enum devices {
     defined(TONBUX_MOSQUITO_KILLER) || \
     defined(TONBUX_POWERSTRIP02) || \
     defined(TONBUX_XSSSA06) || \
+    defined(WEMOS_D1_MINI) || \
     defined(WEMOS_D1_MINI_RELAYSHIELD) || \
     defined(WION_50055) || \
     defined(WORKCHOICE_ECOPLUG) || \
