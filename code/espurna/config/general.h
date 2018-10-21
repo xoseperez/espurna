@@ -1049,12 +1049,13 @@
 #define NTP_TIMEOUT                 1000            // Set NTP request timeout to 2 seconds (issue #452)
 #endif
 
-#ifndef NTP_TIME_OFFSET
-#define NTP_TIME_OFFSET             60              // Default timezone offset (GMT+1)
+#ifndef NTP_ZONE_REGION
+#define NTP_ZONE_REGION             "Europe"        // GMT+1, index in TZ.h
 #endif
 
-#ifndef NTP_DAY_LIGHT
-#define NTP_DAY_LIGHT               1               // Enable daylight time saving by default
+#ifndef NTP_ZONE_CITY
+// #define NTP_ZONE_CITY             342  // "Luxembourg"       // GMT+1, index in TZ.h fully expanded list
+#define NTP_ZONE_CITY             7  // "Luxembourg"       // GMT+1, index in TZ.h
 #endif
 
 #ifndef NTP_SYNC_INTERVAL

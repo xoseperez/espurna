@@ -931,20 +931,12 @@
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Time Zone</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" tabindex="42"></select>
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Enable DST</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="ntpDST" /></div>
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">DST Region</label>
-                                    <select class="pure-u-1 pure-u-lg-1-4" name="ntpRegion">
-                                        <option value="0">Europe</option>
-                                        <option value="1">USA</option>
-                                    </select>
+                                        <select class="pure-u-1 pure-u-lg-1-4" name="tzRegion" id="tzRegion" tabindex="42">
+                                            <option>Time Zone Region/Country</option>
+                                        </select>
+                                        <select class="pure-u-1 pure-u-lg-1-4" name="ntpOffset" id="tzCity" tabindex="43">
+                                            <option>Time Zone City</option>
+                                        </select>
                                 </div>
 
                             </fieldset>
@@ -1660,6 +1652,7 @@
     <!-- build:js script.js -->
     <script src="vendor/jquery-3.2.1.min.js"></script>
     <script src="custom.js"></script>
+    <script src="tz.js"></script>
     <!-- removeIf(!light) -->
     <script src="vendor/jquery.wheelcolorpicker-3.0.3.min.js"></script>
     <!-- endRemoveIf(!light) -->

@@ -1,0 +1,16 @@
+
+run TZupdate.pl to create files:
+ TZ.js: a jquery script included by code/html/index.html 
+ TZ.h: a file included by code/espurna/ntp.ino, manually move this file to code/espurna
+
+TZupdate.pl read the database : https://raw.githubusercontent.com/nayarsystems/posix_tz_db/master/zones.csv
+
+TZ.js build a select table with all entries names in this database return an index in a table of values in TZ.h.
+
+With option -a, all entries have a unique index (current 0 - 459), without -a, entries with the same resulting time zone get the entry (currently 0 - 100)
+(Austrlia/Sydney and Austrlia/Melbourne will have same index number)
+
+Option '-e  regex', will only create entries/indexes whose name match the regular expression.
+
+So  ./TZupdate.pl -e Sydney will create a table with a single entry for Australia/Sydney.
+./TZupdate.pl -s Europe will create a table is only Europe time zone ( 0-9 without -a, 0-59 with -a)
