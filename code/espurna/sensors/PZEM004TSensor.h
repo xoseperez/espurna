@@ -116,7 +116,7 @@ class PZEM004TSensor : public BaseSensor {
         // If called with value = -1, the offset will be the last energy reading
         // otherwise, it will be the value provided
         float resetEnergy(unsigned char dev, float value = -1) {
-            _energy_offsets[dev] = value != 0 ? value : _readings[dev].energy;
+            _energy_offsets[dev] = value != -1 ? value : _readings[dev].energy;
             return _energy_offsets[dev];
         }
 
