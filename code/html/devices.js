@@ -83,5 +83,6 @@
 {"board":82,"dbgSerial":0,"device":"STM_RELAY","rlyCount":2,"rlyProvider":4},
 {"board":83,"btnGPIO0":13,"btnMode0":2,"btnRelay0":0,"curRatio":25740,"device":"VANZAVANZU_SMART_WIFI_PLUG_MINI","hlwCF1GPIO":14,"hlwCFGPIO":5,"hlwCurLevel":0,"hlwInt":2,"hlwSELGPIO":3,"ledGPIO0":2,"ledGPIO1":0,"ledLogic0":1,"ledLogic1":1,"ledMode1":4,"ledRelay1":0,"pwrRatio":3414290,"rlyGPIO0":15,"rlyType0":0,"volRatio":313400},
 {"board":84,"device":"GENERIC_GEIGER_COUNTER","geiEnabled":1},
-{"board":85,"btnGPIO0":0,"device":"TINKERMAN_RFM69GW","rfm69CSGPIO":15,"rfm69Enabled":1,"rfm69HW":0,"rfm69IRQGPIO":5,"rfm69ResetGPIO":7}
+{"board":85,"btnGPIO0":0,"device":"TINKERMAN_RFM69GW","rfm69CSGPIO":15,"rfm69Enabled":1,"rfm69HW":0,"rfm69IRQGPIO":5,"rfm69ResetGPIO":7},
+{"board":86,"device":"WIFI_PICO_12","ledGPIO0":0,"ledLogic0":1}
 ]}

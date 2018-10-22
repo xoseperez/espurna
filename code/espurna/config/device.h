@@ -106,6 +106,7 @@ enum devices {
     DEVICE_IWOOLE_LED_TABLE_LAMP,
     DEVICE_EXS_WIFI_RELAY_V50,
     DEVICE_BESTEK_MRJ1011,
+    DEVICE_WIFI_PICO_12,
 
     DEVICE_LAST
 
@@ -162,6 +163,7 @@ enum devices {
     defined(TONBUX_XSSSA06) || \
     defined(WEMOS_D1_MINI) || \
     defined(WEMOS_D1_MINI_RELAYSHIELD) || \
+    defined(WIFI_PICO_12) || \
     defined(WION_50055) || \
     defined(WORKCHOICE_ECOPLUG) || \
     defined(XENON_SM_PW702U) || \

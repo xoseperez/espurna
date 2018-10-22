@@ -36,10 +36,10 @@
 #endif
 
 #if SERIAL_BRIDGE_SUPPORT
-#undef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT            0
-#undef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT        0
+//#undef TERMINAL_SUPPORT
+//#define TERMINAL_SUPPORT            0
+//#undef DEBUG_SERIAL_SUPPORT
+//#define DEBUG_SERIAL_SUPPORT        0
 #undef UART_MQTT_SUPPORT
 #define UART_MQTT_SUPPORT           0
 #endif
