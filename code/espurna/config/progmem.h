@@ -232,6 +232,9 @@ PROGMEM const char espurna_sensors[] =
     #if VL53L1X_SUPPORT
         "VL53L1X "
     #endif
+    #if EZOPH_SUPPORT
+        "EZOPH "
+    #endif
     "";
 
 
@@ -246,7 +249,7 @@ PROGMEM const unsigned char magnitude_decimals[] = {
     3, 0,
     4, 4, // Geiger Counter decimals
     0,
-    0, 0, 0    // NO2, CO, Ohms
+    0, 0, 0, 3    // NO2, CO, Ohms, pH
 };
 
 PROGMEM const char magnitude_unknown_topic[] = "unknown";
@@ -280,6 +283,7 @@ PROGMEM const char magnitude_count_topic[] = "count";
 PROGMEM const char magnitude_no2_topic[] = "no2";
 PROGMEM const char magnitude_co_topic[] = "co";
 PROGMEM const char magnitude_resistance_topic[] = "resistance";
+PROGMEM const char magnitude_ph_topic[] = "ph";
 
 PROGMEM const char* const magnitude_topics[] = {
     magnitude_unknown_topic, magnitude_temperature_topic, magnitude_humidity_topic,
@@ -293,7 +297,7 @@ PROGMEM const char* const magnitude_topics[] = {
     magnitude_distance_topic, magnitude_hcho_topic,
     magnitude_geiger_cpm_topic, magnitude_geiger_sv_topic,
     magnitude_count_topic,
-    magnitude_no2_topic, magnitude_co_topic, magnitude_resistance_topic
+    magnitude_no2_topic, magnitude_co_topic, magnitude_resistance_topic, magnitude_ph_topic
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -330,7 +334,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_geiger_cpm, magnitude_geiger_sv,                  // Geiger counter units
     magnitude_empty,                                            //
     magnitude_ppm, magnitude_ppm,                               // NO2 & CO2
-    magnitude_resistance
+    magnitude_resistance,
+    magnitude_empty                                             // pH
 };
 
 #endif
