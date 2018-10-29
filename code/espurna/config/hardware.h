@@ -2896,6 +2896,7 @@
     #define SI7021_SUPPORT        1
     #define PMSX003_SUPPORT       1
     #define SENSEAIR_SUPPORT1
+    #define VL53L1X_SUPPORT       1
 
 
     // A bit of lights - pin 5

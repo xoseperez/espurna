@@ -637,6 +637,15 @@ void _sensorLoad() {
     }
     #endif
 
+    #if VL53L1X_SUPPORT
+    {
+        VL53L1XSensor * sensor = new VL53L1XSensor();
+        sensor->setInterMeasurementPeriod(VL53L1X_INTER_MEASUREMENT_PERIOD);
+        sensor->setDistanceMode(VL53L1X_DISTANCE_MODE);
+        sensor->setMeasurementTimingBudget(VL53L1X_MEASUREMENT_TIMING_BUDGET);
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
