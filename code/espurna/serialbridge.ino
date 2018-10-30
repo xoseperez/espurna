@@ -12,7 +12,7 @@ Module key prefix: sbr
 
 #include "SerialBridge.h"
 
-static SerialBridge _sbr;
+SerialBridge _sbr;
 
 bool _sbrKeyCheck(const char * key) {
     return (strncmp(key, "sbr", 3) == 0);
