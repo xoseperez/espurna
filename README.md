@@ -1,6 +1,6 @@
 # ESPurna Firmware
 
-ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
+ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches,lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
 [![version](https://img.shields.io/badge/version-1.13.3-brightgreen.svg)](CHANGELOG.md)
