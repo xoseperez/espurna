@@ -264,7 +264,7 @@ void _settingsInitCommands() {
             String key = String(e->argv[i]);
             String value;
             if( key == "adminPass" ){
-                 DEBUG_MSG_P(PSTR("+GET adminPass is not allowed for security reason"));
+                 DEBUG_MSG_P(PSTR("+GET adminPass is not allowed for security reasons"));
              continue;    
             }
             if (!Embedis::get(key, value)) {
