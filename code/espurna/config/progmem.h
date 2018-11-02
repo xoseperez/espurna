@@ -106,6 +106,9 @@ PROGMEM const char espurna_modules[] =
     #if SENSOR_SUPPORT
         "SENSOR "
     #endif
+    #if SERBRIDGE_SUPPORT
+        "SERBRIDGE "
+    #endif
     #if SPIFFS_SUPPORT
         "SPIFFS "
     #endif

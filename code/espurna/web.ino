@@ -30,6 +30,8 @@ Module key prefix: web
     #include "static/index.rfbridge.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
     #include "static/index.rfm69.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_SERBRIDGE
+    #include "static/index.sbr.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.gz.h"
 #endif

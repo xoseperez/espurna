@@ -137,6 +137,12 @@
                         </li>
                         <!-- endRemoveIf(!rfbridge) -->
 
+                        <!-- removeIf(!sbr) -->
+                        <li class="pure-menu-item module module-sbr">
+                            <a href="#" class="pure-menu-link" data="panel-sbr">SERIAL BRIDGE</a>
+                        </li>
+                        <!-- endRemoveIf(!sbr) -->
+
                         <li class="pure-menu-item module module-sch">
                             <a href="#" class="pure-menu-link" data="panel-schedule">SCHEDULE</a>
                         </li>
@@ -784,6 +790,78 @@
                     </div>
                 </form>
                 <!-- endRemoveIf(!rfm69) -->
+
+                <!-- removeIf(!sbr) -->
+                <form id="form-sbr" class="pure-form form-settings">
+                    <div class="panel" id="panel-sbr">
+
+                        <div class="header">
+                            <h1>SERIAL BRIDGE</h1>
+                            <h2>
+                                Blah blah blah...
+                            </h2>
+                        </div>
+
+                        <div class="page">
+
+                            <fieldset>
+
+                                <legend>Transparent serial bridge</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Port</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="sbrPort" type="text"
+                                    tabindex="21" value="2323" />
+                                </div>
+                                <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                    Plain TCP connections to this TCP port
+                                    (e.g. using <strong>telnet</strong> or <strong>netcat</strong>)
+                                    are bridged transparently to the serial port.
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Baud rate</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="sbrBaud" type="text"
+                                    tabindex="22" value="115200" />
+                                </div>
+                                <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                    Baud rate to use for the serial bridge. When running an arduino
+                                    sketch on the attached uC this would be the baud rate used when
+                                    calling <strong>Serial.begin</strong>.
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">RX buffer size</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="sbrRxBuf" type="text"
+                                    tabindex="23" value="2048" />
+                                </div>
+                                <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                    Size of the (static) UART receive buffer to allocate. There is
+                                    no flow-control on the UART and it is easy to overrun the
+                                    receive buffer due to Wifi hiccups. On the other hand, memory is
+                                    very limited. Change with caution!
+                                </div>
+
+                                <legend>AVR flash-programming</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Baud rate</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="sbrAvrBaud" type="text"
+                                    tabindex="24" value="57600" />
+                                </div>
+                                <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                    Baud rate to use when flash-programming an attached AVR.
+                                    The required baud rate is hard-coded in the optiboot bootloader
+                                    in the AVR. The programming tries the baud rate specified, then
+                                    9600, 57600, and finally 115200.
+                                </div>
+
+                            </fieldset>
+                        </div>
+
+                    </div>
+                </form>
+                <!-- endRemoveIf(!sbr) -->
 
                 <form id="form-mqtt" class="pure-form form-settings">
                     <div class="panel" id="panel-mqtt">
