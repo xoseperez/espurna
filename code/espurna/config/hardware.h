@@ -1921,6 +1921,30 @@
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
 
 // -----------------------------------------------------------------------------
+// Maxcio W-DE004
+// -----------------------------------------------------------------------------
+
+#elif defined(MAXCIO_WDE004)
+
+    // Info
+    #define MANUFACTURER		"MAXCIO"
+    #define DEVICE				"WDE004"
+
+    // Buttons
+    #define BUTTON1_PIN			1
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			14
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			13
+    #define LED1_PIN_INVERSE	1
+
+
+// -----------------------------------------------------------------------------
 // YiDian XS-SSA05
 // -----------------------------------------------------------------------------
 
