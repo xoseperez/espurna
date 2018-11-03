@@ -583,12 +583,28 @@
 #define SERIAL_BRIDGE_SUPPORT       0           // No support by default
 #endif
 
-#ifndef SERIAL_BRIDGE_BAUDRATE
-#define SERIAL_BRIDGE_BAUDRATE      115200      // Serial speed
-#endif
-
 #ifndef SERIAL_BRIDGE_PORT
 #define SERIAL_BRIDGE_PORT          Serial      // Hardware serial port (no real choice)
+#endif
+
+#ifndef SBR_PORT
+#define SBR_PORT                    2323        // Serial bridge TCP properties
+#endif
+
+#ifndef SBR_BAUD
+#define SBR_BAUD                    115200      // Serial speed for normal bridging
+#endif
+
+#ifndef SBR_RXBUF
+#define SBR_RXBUF                   2048        // Serial port RX buffer size in bytes
+#endif
+
+#ifndef SBR_AVRBAUD
+#define SBR_AVRBAUD                 57600       // Serial speed for programming an AVR
+#endif
+
+#ifndef SBR_AVRRESET
+#define SBR_AVRRESET                12          // Pin to use to reset attached AVR
 #endif
 
 // -----------------------------------------------------------------------------

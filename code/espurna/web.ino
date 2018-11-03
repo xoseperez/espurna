@@ -336,16 +336,16 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 extern SerialBridge _sbr;
 
 void _AVRflashRespond(AsyncWebServerRequest *request) {
-    DEBUG_MSG_P(PSTR("[AVRFLASH] _AVRflashRespond\n"));
-    char buffer[32];
+    DEBUG_MSG_P(PSTR("[AVRFLASH] _AVRflashRespond req=%x cli=%x\n"), (uint32_t)request, (uint32_t)(request->client()));
+    char buffer[128];
     int code = 200;
     if (!_avrflash->hasError()) {
-        sprintf_P(buffer, PSTR("OK"));
+        sprintf_P(buffer, PSTR("Flashing successful!"));
         DEBUG_MSG_P(PSTR("[AVRFLASH] Success\n"));
         //DEBUG_MSG_P(PSTR("[AVRFLASH] Success:  %u bytes\n"), index + len);
     } else {
-        DEBUG_MSG_P(PSTR("[AVRFLASH] Error #%u\n"), _avrflash->getError());
-        sprintf_P(buffer, PSTR("ERROR %s"), _avrflash->getError());
+        DEBUG_MSG_P(PSTR("[AVRFLASH] Error: %s\n"), _avrflash->getError());
+        sprintf_P(buffer, PSTR("Flashing error: %s"), _avrflash->getError());
         code = 400;
     }
 
@@ -354,45 +354,70 @@ void _AVRflashRespond(AsyncWebServerRequest *request) {
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
+    DEBUG_MSG_P(PSTR("sending\n"));
     request->send(response);
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Response sent\n"));
 
     if (_avrflash) delete _avrflash;
+    _avrflash = 0;
     _sbr.enable();
 }
 
 // _onAVRflash is called to finish off the flashing of an attached AVR microprocessor and to return
 // an HTTP response.
 void _onAVRflash(AsyncWebServerRequest *request) {
-    DEBUG_MSG_P(PSTR("[AVRFLASH] _onAVRflash\n"));
     webLog(request);
+    DEBUG_MSG_P(PSTR("[AVRFLASH] _onAVRflash client=%x\n"), (uint32_t)(request->client()));
     if (!webAuthenticate(request)) {
+        DEBUG_MSG_P(PSTR("[AVRFLASH] requesting auth\n"));
         return request->requestAuthentication(getHostname().c_str());
     }
 
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Finishing req=%x cli=%x\n"), (uint32_t)request,
+    (uint32_t)(request->client()));
     if (_avrflash) _avrflash->finish(_AVRflashRespond, request);
-    DEBUG_MSG_P(PSTR("[AVRFLASH] Finishing\n"));
 }
 
-// nned to instatiate template member functions that we use... yuck, I hate c++
+// need to instatiate template member functions that we use... yuck, I hate c++
 template void AVRFlash::finish<AsyncWebServerRequest*>(
         void(*)(AsyncWebServerRequest*), AsyncWebServerRequest*);
 template uint32_t HexRecord::write<AsyncWebServerRequest*>(
         uint8_t *data, size_t len, void (*stop)(AsyncWebServerRequest*), void
         (*resume)(AsyncWebServerRequest*), AsyncWebServerRequest* cbArg);
 
-void _AVRflashStop(AsyncWebServerRequest *request) { request->client()->ackLater(); }
-void _AVRflashResume(AsyncWebServerRequest *request) { request->client()->ack(1000000); }
+void _AVRflashStop(AsyncWebServerRequest *request) {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Stop TCP\n"));
+    request->client()->ackLater();
+}
+
+void _AVRflashResume(AsyncWebServerRequest *request) {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Resume TCP\n"));
+    request->client()->ack(1000000);
+}
+
+void _AVRflashDisconnect() {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Disconnect\n"));
+    if (!_avrflash) return;
+    _avrflash->abort();
+    delete _avrflash;
+    _avrflash = 0;
+    _sbr.enable();
+}
 
 // _onAVRflashData is called with data to flash an attached AVR microprocessor.
 void _onAVRflashData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-    DEBUG_MSG_P(PSTR("[AVRFLASH] _onAVRflashData i=%d len=%d final=%d\n"), index, len, final);
+    //DEBUG_MSG_P(PSTR("[AVRFLASH] _onAVRflashData i=%d len=%d final=%d\n"), index, len, final);
     if (index == 0) {
         // Index is zero if this is the very first callback for a request.
         if (_avrflash) {
-            DEBUG_MSG_P(PSTR("[AVRFLASH]Ooops, multiple concurrent flashing operations...\n"));
+            DEBUG_MSG_P(PSTR("[AVRFLASH] Ooops, multiple concurrent flashing operations...\n"));
         }
-        _sbr.disable();
-        _avrflash = new AVRFlash(Serial, 12, 57600);
+        _sbr.disable();   
+        request->onDisconnect(&_AVRflashDisconnect);
+        request->client()->setRxTimeout(30);
+        _avrflash = new AVRFlash(Serial,
+            getSetting("sbrAvrReset", SBR_AVRRESET).toInt(),
+            getSetting("sbrAvrBaud", SBR_AVRBAUD).toInt());
         _avrflash->debug(debugSend_P);
         _avrflash->sync();
         DEBUG_MSG_P(PSTR("[AVRFLASH] %s @%dbaud reset on pin %d\n"), filename.c_str(), 57600,

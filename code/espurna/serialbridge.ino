@@ -14,12 +14,19 @@ Module key prefix: sbr
 
 SerialBridge _sbr;
 
+// Settings
+int _sbrPort, _sbrBaud, _sbrRxBuf;
+int _sbrAvrBaud;
+
 #if WEB_SUPPORT
 
 void _sbrWebSocketOnSend(JsonObject& root) {
     root["sbrVisible"] = 1;
-    root["sbrPort"] = 1234;
-    root["sbrBaud"] = 38400;
+    root["sbrPort"] = getSetting("sbrPort", SBR_PORT);
+    root["sbrBaud"] = getSetting("sbrBaud", SBR_BAUD);
+    root["sbrRxBuf"] = getSetting("sbrRxBuf", SBR_RXBUF);
+    root["sbrAvrBaud"] = getSetting("sbrAvrBaud", SBR_AVRBAUD);
+    root["sbrAvrReset"] = getSetting("sbrAvrReset", SBR_AVRRESET);
 }
 
 void _sbrWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -40,7 +47,10 @@ void _sbrLoop() {
 
 void serialBridgeSetup() {
     _sbr.debug(&debugSend_P);
-    _sbr.begin(2323);
+    _sbr.begin(
+        getSetting("sbrPort", SBR_PORT).toInt(),
+        getSetting("sbrBaud", SBR_BAUD).toInt(),
+        getSetting("sbrRxBuf", SBR_RXBUF).toInt());
 
     #if WEB_SUPPORT
         wsOnSendRegister(_sbrWebSocketOnSend);
