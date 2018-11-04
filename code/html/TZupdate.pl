@@ -16,14 +16,13 @@ local $/;  # enable localized slurp mode
 
 open(my $fh, "curl $csv |") or die "failed: $csv";
 # open(my $html, ">", "TZ.html") or die "failed to open TZ.html";
-open(my $ch, ">", "TZ.h") or die "failed to open TZ.h";
+open(my $ch, ">", "../espurna/TZ.h") or die "failed to open ../espurna/TZ.h";
 open(my $js, ">", "TZ.js") or die "failed to open TZ.js";
 
 printf $js ("// This file is generate with TZupdate.pl in espurna/code/html\n");
 printf $js ("// It uses the content of %s\n", $csv);
 printf $js ("// It work with TZ.h (also generated)\n\n");
 printf $js (" function loadAllTimeZones() {
-     var reg = \$(\"select[name='tzRegion']\");
      var cit = \$(\"select[name='ntpOffset']\");\n");
 
 #printf $html ("
@@ -50,7 +49,7 @@ printf $ch (
 \n    ");
 
 printf $ch (
-"TZinfo TZall[] = {\n    ");
+"const TZinfo TZall[] PROGMEM = {\n    ");
 
 
 my $content = <$fh>;
@@ -72,10 +71,10 @@ foreach my $line (split /[\r\n]+/, $content) {
     $tz =~ s/\//,/; # swap out first slash
     my @tz = split /,/,$tz;
     if (  $k ne $tz[0] ) {
-      #if( $n != 0 ) { printf $html ("      </optgroup>\n");};
+	if( $n == 0 ) { printf $js ("   var "); }
       $k = $tz[0];
       #printf $html ("      <optgroup label=\"%s\" data-gropu-exclusive>\n",$k);
-      printf $js ("   \$(\"<option />\", {value: \"%s\", text: \"%s\"}).appendTo(reg);\n", $k,$k);
+      printf $js ("   grp = \$(\"<optgroup />\", {tzid: \"%s\", class: \"tzZone\", label: \"%s\", vis: \"0\"}).appendTo(cit);\n", $k,$k);
     }
 
     my $tzname = $words[1];
@@ -97,7 +96,7 @@ foreach my $line (split /[\r\n]+/, $content) {
         }
     }
     #printf $html ("         <option value=\"%d\">%s</option>\n",$c,$tz[1]);
-    printf $js ("   \$(\"<option />\", {value: \"%d\", text: \"%s\", city: \"%s\"}).appendTo(cit);\n", $c,$tz[1],$k);
+    printf $js ("   \$(\"<option />\", {value: \"%d\", text: \"%s\", tzzone: \"%s\", class: \"tz\"}).appendTo(grp);\n", $c,$tz[1],$k);
 
     #printf( "%s/%s %s %s %d %s %s %d %s %s\n",$k,$tz[1], $tzn, $tzone, $tzone_min, $tzs, $tzsn, $tzsn_min, $start, $end);
     if ( $def_need ) {
@@ -163,13 +162,20 @@ printf $ch ("};\n");
 printf $ch ("#define MAX_TIME_ZONE %d\n",$n-1);
 printf $js ("
 
-     \$( \"#tzRegion\" ).change(function() {
-         var value = \$(this).val();
-         \$(\"#tzCity\").prop(\"disabled\", false);
-         \$(\"#tzCity > option\").hide();
-         \$(\"#tzCity > option[city*='\" + value +\"']\").show();
+     \$( \"optgroup\" ).click(function() {
+         var value = \$(this).attr(\"tzid\");
+         var vis = \$(this).attr(\"vis\");
+         \$(\".tz\").hide();
+         if ( vis == 0 ) {
+           \$(\"[tzzone=\" + value + \"]\").show();
+	   \$(this).attr(\"vis\",1);
+         } else {
+           \$(this).attr(\"vis\",0);
+         }
+         \$(\":selected\").show();
      });\n}\n
 \$(function() {
     loadAllTimeZones();
+	      \$(\".tz\").hide();
 });
 ")

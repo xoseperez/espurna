@@ -494,3 +494,8 @@ input::-ms-input-placeholder {
 input::placeholder {
     color: #ccc;
 }
+
+/* TZ slection */
+#tzCity {
+    height: auto
+}

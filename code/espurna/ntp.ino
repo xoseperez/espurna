@@ -60,7 +60,10 @@ void _ntpConfigure() {
     }
 
     uint16_t zone = getSetting("ntpOffset", NTP_ZONE_CITY).toInt();
-    TZinfo tz = TZall[zone];
+    if ( zone > MAX_TIME_ZONE ) zone = MAX_TIME_ZONE; // in case bad defaut is out of range (TZ generated with a restrited list)
+    TZinfo tz;
+    memcpy_P(&tz, TZall + zone, sizeof(TZinfo));
+    
 
     int res = NTP.setTimeZone ( tz.timeZoneOffset, tz.timeZoneName, tz.timeZoneDSTName, tz.timeZoneDSTOffset,
 		      tz.dstStartMonth, tz.dstStartWeek, tz.dstStartDay, tz.dstStartMin,
