@@ -71,7 +71,7 @@ foreach my $line (split /[\r\n]+/, $content) {
     $tz =~ s/\//,/; # swap out first slash
     my @tz = split /,/,$tz;
     if (  $k ne $tz[0] ) {
-	if( $n == 0 ) { printf $js ("   var "); }
+        if( $n == 0 ) { printf $js ("   var "); }
       $k = $tz[0];
       #printf $html ("      <optgroup label=\"%s\" data-gropu-exclusive>\n",$k);
       printf $js ("   grp = \$(\"<optgroup />\", {tzid: \"%s\", class: \"tzZone\", label: \"%s\", vis: \"0\"}).appendTo(cit);\n", $k,$k);
@@ -166,9 +166,9 @@ printf $js ("
          var value = \$(this).attr(\"tzid\");
          var vis = \$(this).attr(\"vis\");
          \$(\".tz\").hide();
-         if ( vis == 0 ) {
+         if ( vis === \"0\" ) {
            \$(\"[tzzone=\" + value + \"]\").show();
-	   \$(this).attr(\"vis\",1);
+           \$(this).attr(\"vis\",1);
          } else {
            \$(this).attr(\"vis\",0);
          }
@@ -176,6 +176,6 @@ printf $js ("
      });\n}\n
 \$(function() {
     loadAllTimeZones();
-	      \$(\".tz\").hide();
+    \$(\".tz\").hide();
 });
 ")

@@ -481,9 +481,9 @@
          var value = $(this).attr("tzid");
          var vis = $(this).attr("vis");
          $(".tz").hide();
-         if ( vis == 0 ) {
+         if ( vis === "0" ) {
            $("[tzzone=" + value + "]").show();
-	   $(this).attr("vis",1);
+           $(this).attr("vis",1);
          } else {
            $(this).attr("vis",0);
          }
@@ -493,5 +493,5 @@
 
 $(function() {
     loadAllTimeZones();
-	      $(".tz").hide();
+    $(".tz").hide();
 });
