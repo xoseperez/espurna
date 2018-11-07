@@ -32,6 +32,56 @@ void buttonMQTT(unsigned char id, uint8_t event) {
     mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
 }
 
+// You can disable/enable buttons by MQTT. Just public message "0" or "1" to topic <hostname>/button/#/set
+void _buttonMqttCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        // Subscribe to own /set topic
+        char button_topic[strlen(MQTT_TOPIC_BUTTON) + 3];
+        snprintf_P(button_topic, sizeof(button_topic), PSTR("%s/+"), MQTT_TOPIC_BUTTON);
+        mqttSubscribe(button_topic);
+        DEBUG_MSG_P(PSTR("[Button] subscribing to MQTT topic %s \n"), MQTT_TOPIC_BUTTON);
+    }
+    if (type == MQTT_MESSAGE_EVENT) {
+        String t = mqttMagnitude((char *) topic);
+        // Match topic
+        if (t.startsWith(MQTT_TOPIC_BUTTON)) {
+            // Get button ID
+            unsigned int id = t.substring(strlen(MQTT_TOPIC_BUTTON)+1).toInt();
+            char mode = payload[0]-48; // button mode. currently enabled or disablesd. ASCII "0" is a 48.
+            if (mode == 0) {
+                _buttons[id].relayID = 0; // disable button-realy mapping
+            } else {
+                switch (id) { // restoring button-relay mapping from hardcoded preprocessor constants
+                    case 0:
+                      _buttons[id].relayID = BUTTON1_RELAY;
+                      break;
+                    case 1:
+                      _buttons[id].relayID = BUTTON2_RELAY;
+                      break;
+                    case 2:
+                      _buttons[id].relayID = BUTTON3_RELAY;
+                      break;
+                    case 3:
+                      _buttons[id].relayID = BUTTON4_RELAY;
+                      break;
+                    case 4:
+                      _buttons[id].relayID = BUTTON5_RELAY;
+                      break;
+                    case 5:
+                      _buttons[id].relayID = BUTTON6_RELAY;
+                      break;
+                    case 6:
+                      _buttons[id].relayID = BUTTON7_RELAY;
+                      break;
+                    case 7:
+                      _buttons[id].relayID = BUTTON8_RELAY;
+                      break;
+                }
+            }
+            DEBUG_MSG_P(PSTR("[Button]  Button id %d, mode %d, relayID now is %u\n"), id, mode, _buttons[id].relayID);
+        }
+    }
+}
 #endif
 
 #if WEB_SUPPORT
@@ -211,6 +261,11 @@ void buttonSetup() {
 
     // Register loop
     espurnaRegisterLoop(buttonLoop);
+
+    // Register MQTT loop for set button mode by MQTT
+    #if MQTT_SUPPORT
+        mqttRegister(_buttonMqttCallback);
+    #endif
 
 }
 
