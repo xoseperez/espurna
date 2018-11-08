@@ -84,9 +84,7 @@ TEMPLATES = {
         "(https://travis-ci.org/{USER}/{REPO})\n",
     "![version]": "[![version](https://img.shields.io/badge/version-{VERSION}-brightgreen.svg)](CHANGELOG.md)\n",
     "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)]" \
-        "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n",
-    "![codacy]": "[![codacy](https://img.shields.io/codacy/grade/c9496e25cf07434cba786b462cb15f49/{BRANCH}.svg)]" \
-        "(https://www.codacy.com/app/{USER}/{REPO}/dashboard)\n"
+        "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n"
 }
 
 README = "README.md"

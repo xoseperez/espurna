@@ -173,11 +173,19 @@ void _relayProcess(bool mode) {
         #endif
 
         if (!_relayRecursive) {
+
             relayPulse(id);
-            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
+
+            // We will trigger a commit only if
+            // we care about current relay status on boot
+            unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            bool do_commit = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, do_commit);
+
             #if WEB_SUPPORT
                 wsSend(_relayWebSocketUpdate);
             #endif
+
         }
 
         #if DOMOTICZ_SUPPORT
@@ -383,16 +391,41 @@ void relaySync(unsigned char id) {
 
 }
 
-void relaySave() {
+void relaySave(bool do_commit) {
+
+    // Relay status is stored in a single byte
+    // This means that, atm,
+    // we are only storing the status of the first 8 relays.
     unsigned char bit = 1;
     unsigned char mask = 0;
-    for (unsigned int i=0; i < _relays.size(); i++) {
+    unsigned char count = _relays.size();
+    if (count > 8) count = 8;
+    for (unsigned int i=0; i < count; i++) {
         if (relayStatus(i)) mask += bit;
         bit += bit;
     }
+
     EEPROMr.write(EEPROM_RELAY_STATUS, mask);
-    DEBUG_MSG_P(PSTR("[RELAY] Saving mask: %d\n"), mask);
-    EEPROMr.commit();
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %d\n"), mask);
+
+    // The 'do_commit' flag controls wether we are commiting this change or not.
+    // It is useful to set it to 'false' if the relay change triggering the
+    // save involves a relay whose boot mode is independent from current mode,
+    // thus storing the last relay value is not absolutely necessary.
+    // Nevertheless, we store the value in the EEPROM buffer so it will be written
+    // on the next commit.
+    if (do_commit) {
+
+        // We are actually enqueuing the commit so it will be
+        // executed on the main loop, in case this is called from a callback
+        saveSettings();
+
+    }
+
+}
+
+void relaySave() {
+    relaySave(true);
 }
 
 void relayToggle(unsigned char id, bool report, bool group_report) {
@@ -474,27 +507,34 @@ void _relayBoot() {
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
 
     // Walk the relays
-    bool status = false;
+    bool status;
     for (unsigned int i=0; i<_relays.size(); i++) {
+
         unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
         DEBUG_MSG_P(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
+
+        status = false;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
-                status = ((mask & bit) == bit);
+                if (i < 8) {
+                    status = ((mask & bit) == bit);
+                }
                 break;
             case RELAY_BOOT_TOGGLE:
-                status = ((mask & bit) != bit);
-                mask ^= bit;
-                trigger_save = true;
+                if (i < 8) {
+                    status = ((mask & bit) != bit);
+                    mask ^= bit;
+                    trigger_save = true;
+                }
                 break;
             case RELAY_BOOT_ON:
                 status = true;
                 break;
             case RELAY_BOOT_OFF:
             default:
-                status = false;
                 break;
         }
+
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
@@ -508,7 +548,7 @@ void _relayBoot() {
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
         EEPROMr.write(EEPROM_RELAY_STATUS, mask);
-        EEPROMr.commit();
+        saveSettings();
     }
 
     _relayRecursive = false;
@@ -618,7 +658,6 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void relaySetupWS() {
     wsOnSendRegister(_relayWebSocketOnStart);
     wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnAfterParseRegister(_relayConfigure);
     wsOnReceiveRegister(_relayWebSocketOnReceive);
 }
 
@@ -767,7 +806,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_CONNECT_EVENT) {
 
         // Send status on connect
-        #if not HEARTBEAT_REPORT_RELAY
+        #if (HEARTBEAT_MODE == HEARTBEAT_NONE) or (not HEARTBEAT_REPORT_RELAY)
             relayMQTT();
         #endif
 
@@ -964,10 +1003,10 @@ void relaySetup() {
     // Sonoff Dual and Sonoff RF Bridge
     #if DUMMY_RELAY_COUNT > 0
 
-        unsigned int _delay_on[8] = {RELAY1_DELAY_ON, RELAY2_DELAY_ON, RELAY3_DELAY_ON, RELAY4_DELAY_ON, RELAY5_DELAY_ON, RELAY6_DELAY_ON, RELAY7_DELAY_ON, RELAY8_DELAY_ON};
-        unsigned int _delay_off[8] = {RELAY1_DELAY_OFF, RELAY2_DELAY_OFF, RELAY3_DELAY_OFF, RELAY4_DELAY_OFF, RELAY5_DELAY_OFF, RELAY6_DELAY_OFF, RELAY7_DELAY_OFF, RELAY8_DELAY_OFF};
+        // No delay_on or off for these devices to easily allow having more than
+        // 8 channels. This behaviour will be recovered with v2.
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL,0,_delay_on[i], _delay_off[i]});
+            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, 0, 0});
         }
 
     #else
@@ -1004,8 +1043,6 @@ void relaySetup() {
     _relayBoot();
     _relayLoop();
 
-    espurnaRegisterLoop(_relayLoop);
-
     #if WEB_SUPPORT
         relaySetupWS();
     #endif
@@ -1018,6 +1055,10 @@ void relaySetup() {
     #if TERMINAL_SUPPORT
         _relayInitCommands();
     #endif
+
+    // Main callbacks
+    espurnaRegisterLoop(_relayLoop);
+    espurnaRegisterReload(_relayConfigure);
 
     DEBUG_MSG_P(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
 

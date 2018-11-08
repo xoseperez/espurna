@@ -97,11 +97,13 @@ void buttonEvent(unsigned int id, unsigned char event) {
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
     if (event == 0) return;
 
-    #if MQTT_SUPPORT
-        buttonMQTT(id, event);
-    #endif
-
     unsigned char action = buttonAction(id, event);
+
+    #if MQTT_SUPPORT
+       if (action != BUTTON_MODE_NONE || BUTTON_MQTT_SEND_ALL_EVENTS) {
+           buttonMQTT(id, event);
+       }
+    #endif
 
     if (action == BUTTON_MODE_TOGGLE) {
         if (_buttons[id].relayID > 0) {

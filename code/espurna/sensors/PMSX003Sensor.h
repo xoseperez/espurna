@@ -12,9 +12,7 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#if PMS_USE_SOFT
 #include <SoftwareSerial.h>
-#endif
 
 // Generic data
 #define PMS_BAUD_RATE       9600
@@ -295,6 +293,9 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     }
                 } else {
                    readCycle  = -1;
+                   if (_readCount == 1) {
+                       wakeUp();
+                   }
                 }
             #endif
 

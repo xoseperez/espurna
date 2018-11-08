@@ -216,11 +216,11 @@ void schSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_schWebSocketOnSend);
         wsOnReceiveRegister(_schWebSocketOnReceive);
-        wsOnAfterParseRegister(_schConfigure);
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(_schLoop);
+    espurnaRegisterReload(_schConfigure);
 
 }
 

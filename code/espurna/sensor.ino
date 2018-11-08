@@ -22,9 +22,9 @@ typedef struct {
     unsigned char type;         // Type of measurement
     unsigned char global;       // Global index in its type
     double current;             // Current (last) value, unfiltered
-    double filtered;            // Filtered (averaged) value
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
+    double max_change;          // Maximum value change to report
 } sensor_magnitude_t;
 
 std::vector<BaseSensor *> _sensors;
@@ -111,6 +111,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
     char buffer[10];
     bool hasTemperature = false;
     bool hasHumidity = false;
+    bool hasMICS = false;
 
     JsonArray& list = root.createNestedArray("magnitudes");
     for (unsigned char i=0; i<_magnitudes.size(); i++) {
@@ -137,11 +138,14 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
         if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
-
+        #if MICS2710_SUPPORT || MICS5525_SUPPORT
+        if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) hasMICS = true;
+        #endif
     }
 
     if (hasTemperature) root["temperatureVisible"] = 1;
     if (hasHumidity) root["humidityVisible"] = 1;
+    if (hasMICS) root["micsVisible"] = 1;
 
 }
 
@@ -242,7 +246,7 @@ void _sensorAPISetup() {
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
             unsigned char decimals = _magnitudeDecimals(magnitude.type);
-            double value = _sensor_realtime ? magnitude.current : magnitude.filtered;
+            double value = _sensor_realtime ? magnitude.current : magnitude.reported;
             dtostrf(value, 1-len, decimals, buffer);
         });
 
@@ -330,13 +334,13 @@ void _sensorLoad() {
 
      */
 
-     #if AM2320_SUPPORT
-     {
-         AM2320Sensor * sensor = new AM2320Sensor();
-         sensor->setAddress(AM2320_ADDRESS);
-         _sensors.push_back(sensor);
-     }
-     #endif
+    #if AM2320_SUPPORT
+    {
+     AM2320Sensor * sensor = new AM2320Sensor();
+     sensor->setAddress(AM2320_ADDRESS);
+     _sensors.push_back(sensor);
+    }
+    #endif
 
     #if ANALOG_SUPPORT
     {
@@ -522,6 +526,25 @@ void _sensorLoad() {
     }
     #endif
 
+    #if MICS2710_SUPPORT
+    {
+        MICS2710Sensor * sensor = new MICS2710Sensor();
+        sensor->setAnalogGPIO(MICS2710_NOX_PIN);
+        sensor->setPreHeatGPIO(MICS2710_PRE_PIN);
+        sensor->setRL(MICS2710_RL);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if MICS5525_SUPPORT
+    {
+        MICS5525Sensor * sensor = new MICS5525Sensor();
+        sensor->setAnalogGPIO(MICS5525_RED_PIN);
+        sensor->setRL(MICS5525_RL);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if NTC_SUPPORT
     {
         NTCSensor * sensor = new NTCSensor();
@@ -541,6 +564,15 @@ void _sensorLoad() {
         SenseAirSensor * sensor = new SenseAirSensor();
         sensor->setRX(SENSEAIR_RX_PIN);
         sensor->setTX(SENSEAIR_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SDS011_SUPPORT
+    {
+        SDS011Sensor * sensor = new SDS011Sensor();
+        sensor->setRX(SDS011_RX_PIN);
+        sensor->setTX(SDS011_TX_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -650,9 +682,19 @@ void _sensorInit() {
             new_magnitude.type = type;
             new_magnitude.global = _counts[type];
             new_magnitude.current = 0;
-            new_magnitude.filtered = 0;
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
+            new_magnitude.max_change = 0;
+
+            // TODO: find a proper way to extend this to min/max of any magnitude
+            if (MAGNITUDE_ENERGY == type) {
+                new_magnitude.max_change = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE).toFloat();
+            } else if (MAGNITUDE_TEMPERATURE == type) {
+                new_magnitude.min_change = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE).toFloat();
+            } else if (MAGNITUDE_HUMIDITY == type) {
+                new_magnitude.min_change = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE).toFloat();
+            }
+
             if (MAGNITUDE_ENERGY == type) {
                 new_magnitude.filter = new LastFilter();
             } else if (MAGNITUDE_DIGITAL == type) {
@@ -663,6 +705,7 @@ void _sensorInit() {
                 new_magnitude.filter = new MedianFilter();
             }
             new_magnitude.filter->resize(_sensor_report_every);
+
             _magnitudes.push_back(new_magnitude);
 
             DEBUG_MSG_P(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeTopic(type).c_str(), _counts[type]);
@@ -677,6 +720,20 @@ void _sensorInit() {
         });
 
         // Custom initializations
+
+        #if MICS2710_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
+                MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
+                sensor->setR0(getSetting("snsR0", MICS2710_R0).toInt());
+            }
+        #endif // MICS2710_SUPPORT
+
+        #if MICS5525_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
+                MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
+                sensor->setR0(getSetting("snsR0", MICS5525_R0).toInt());
+            }
+        #endif // MICS5525_SUPPORT
 
         #if EMON_ANALOG_SUPPORT
 
@@ -758,6 +815,30 @@ void _sensorConfigure() {
 
     // Specific sensor settings
     for (unsigned char i=0; i<_sensors.size(); i++) {
+
+        #if MICS2710_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
+                if (getSetting("snsResetCalibration", 0).toInt() == 1) {
+                    MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
+                    sensor->calibrate();
+                    setSetting("snsR0", sensor->getR0());
+                }
+            }
+
+        #endif // MICS2710_SUPPORT
+
+        #if MICS5525_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
+                if (getSetting("snsResetCalibration", 0).toInt() == 1) {
+                    MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
+                    sensor->calibrate();
+                    setSetting("snsR0", sensor->getR0());
+                }
+            }
+
+        #endif // MICS5525_SUPPORT
 
         #if EMON_ANALOG_SUPPORT
 
@@ -902,6 +983,7 @@ void _sensorConfigure() {
     }
 
     // Save settings
+    delSetting("snsResetCalibration");
     delSetting("pwrExpectedP");
     delSetting("pwrExpectedC");
     delSetting("pwrExpectedV");
@@ -1071,7 +1153,6 @@ void sensorSetup() {
         wsOnSendRegister(_sensorWebSocketStart);
         wsOnReceiveRegister(_sensorWebSocketOnReceive);
         wsOnSendRegister(_sensorWebSocketSendData);
-        wsOnAfterParseRegister(_sensorConfigure);
     #endif
 
     // API
@@ -1084,8 +1165,9 @@ void sensorSetup() {
         _sensorInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(sensorLoop);
+    espurnaRegisterReload(_sensorConfigure);
 
 }
 
@@ -1190,12 +1272,18 @@ void sensorLoop() {
                 // (we do it every _sensor_report_every readings)
                 // -------------------------------------------------------------
 
-                if (0 == report_count) {
+                bool report = (0 == report_count);
+                if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0)) {
+                    // for MAGNITUDE_ENERGY, filtered value is last value
+                    double value = _magnitudeProcess(magnitude.type, current);
+                    report = (fabs(value - magnitude.reported) >= magnitude.max_change);
+                } // if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0))
+
+                if (report) {
 
                     filtered = magnitude.filter->result();
-                    magnitude.filter->reset();
                     filtered = _magnitudeProcess(magnitude.type, filtered);
-                    _magnitudes[i].filtered = filtered;
+                    magnitude.filter->reset();
 
                     // Check if there is a minimum change threshold to report
                     if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {

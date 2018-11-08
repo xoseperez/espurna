@@ -291,7 +291,7 @@ unsigned long _mqttNextMessageId() {
         EEPROMr.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
         EEPROMr.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
         EEPROMr.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
-        EEPROMr.commit();
+        saveSettings();
     }
 
     id++;
@@ -574,7 +574,16 @@ unsigned char _mqttBuildTree(JsonObject& root, char parent) {
             JsonObject& elements = root.createNestedObject(element.topic);
             unsigned char num = _mqttBuildTree(elements, i);
             if (0 == num) {
-                root.set(element.topic, element.message);
+                if (isNumber(element.message)) {
+                    double value = atof(element.message);
+                    if (value == int(value)) {
+                        root.set(element.topic, int(value));
+                    } else {
+                        root.set(element.topic, value);
+                    }
+                } else {
+                    root.set(element.topic, element.message);
+                }
             }
         }
     }
@@ -703,7 +712,6 @@ void mqttUnsubscribe(const char * topic) {
 
 void mqttEnabled(bool status) {
     _mqtt_enabled = status;
-    setSetting("mqttEnabled", status ? 1 : 0);
 }
 
 bool mqttEnabled() {
@@ -736,7 +744,7 @@ void mqttSetBroker(IPAddress ip, unsigned int port) {
 }
 
 void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
-    if (!hasSetting("mqttServer")) mqttSetBroker(ip, port);
+    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
 }
 
 void mqttReset() {
@@ -751,7 +759,7 @@ void mqttReset() {
 void mqttSetup() {
 
     _mqttBackwards();
-    
+
     DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
         MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
@@ -809,7 +817,6 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_mqttWebSocketOnSend);
-        wsOnAfterParseRegister(_mqttConfigure);
         wsOnReceiveRegister(_mqttWebSocketOnReceive);
     #endif
 
@@ -817,8 +824,9 @@ void mqttSetup() {
         _mqttInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(mqttLoop);
+    espurnaRegisterReload(_mqttConfigure);
 
 }
 

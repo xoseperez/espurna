@@ -231,7 +231,12 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("HEAP"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("Free HEAP: %d bytes\n"), getFreeHeap());
+        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
+    settingsRegisterCommand(F("STACK"), [](Embedis* e) {
+        infoMemory("Stack", 4096, getFreeStack());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -242,10 +247,6 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("INFO"), [](Embedis* e) {
         info();
-        wifiDebug();
-        //StreamString s;
-        //WiFi.printDiag(s);
-        //DEBUG_MSG(s.c_str());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
@@ -276,7 +277,7 @@ void _settingsInitCommands() {
 
     #if WEB_SUPPORT
         settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
-            wsReload();
+            espurnaReload();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
@@ -297,6 +298,23 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
+    settingsRegisterCommand(F("CONFIG"), [](Embedis* e) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+        settingsGetJson(root);
+        String output;
+        root.printTo(output);
+        DEBUG_MSG(output.c_str());
+        DEBUG_MSG_P(PSTR("\n+OK\n"));
+    });
+
+    #if not SETTINGS_AUTOSAVE
+        settingsRegisterCommand(F("SAVE"), [](Embedis* e) {
+            _settings_save = true;
+            DEBUG_MSG_P(PSTR("\n+OK\n"));
+        });
+    #endif
+    
 }
 
 // -----------------------------------------------------------------------------
@@ -431,8 +449,6 @@ void settingsRegisterCommand(const String& name, void (*call)(Embedis*)) {
 // -----------------------------------------------------------------------------
 
 void settingsSetup() {
-
-    EEPROMr.begin(SPI_FLASH_SEC_SIZE);
 
     _serial.callback([](uint8_t ch) {
         #if TELNET_SUPPORT

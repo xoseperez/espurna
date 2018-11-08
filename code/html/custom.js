@@ -46,7 +46,8 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM"
+        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
+        "NTC", "SDS011", "MICS2710", "MICS5525"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -62,7 +63,8 @@ function magnitudeType(type) {
         "Analog", "Digital", "Event",
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
-        "Count"
+        "Count",
+        "NO2", "CO", "Resistance"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -146,26 +148,53 @@ function loadTimeZones() {
 
 }
 
-function validateForm(form) {
-
+function validatePassword(password) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+    // at least eight characters (letters, numbers or special characters)
 
-    // password
-    var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
-        return false;
+    // MUST be 8..63 printable ASCII characters. See:
+    // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
+    // https://github.com/xoseperez/espurna/issues/1151
+
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
+    return (
+        (password !== undefined)
+        && (typeof password === "string")
+        && (password.length > 0)
+        && re_password.test(password)
+    );
+}
+
+function validateFormPasswords(form) {
+    var passwords = $("input[name='adminPass1'],input[name='adminPass2']", form);
+    var adminPass1 = passwords.first().val(),
+        adminPass2 = passwords.last().val();
+
+    var formValidity = passwords.first()[0].checkValidity();
+    if (formValidity && (adminPass1.length === 0) && (adminPass2.length === 0)) {
+        return true;
     }
 
-    var adminPass2 = $("input[name='adminPass']", form).last().val();
+    var validPass1 = validatePassword(adminPass1),
+        validPass2 = validatePassword(adminPass2);
+
+    if (formValidity && validPass1 && validPass2) {
+        return true;
+    }
+
+    if (!formValidity || (adminPass1.length > 0 && !validPass1)) {
+        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
+    }
+
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
-        return false;
     }
 
+    return false;
+}
+
+function validateFormHostname(form) {
     // RFCs mandate that a hostname's labels may contain only
     // the ASCII letters 'a' through 'z' (case-insensitive),
     // the digits '0' through '9', and the hyphen.
@@ -173,23 +202,26 @@ function validateForm(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
     var hostname = $("input[name='hostname']", form);
-    var hasChanged = hostname.attr("hasChanged") || 0;
-    if (0 === hasChanged) {
+    if ("true" !== hostname.attr("hasChanged")) {
         return true;
     }
 
-    if (!re_hostname.test(hostname.val())) {
-        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
-        return false;
+    if (re_hostname.test(hostname.val())) {
+        return true;
     }
 
-    return true;
+    alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
 
+    return false;
+}
+
+function validateForm(form) {
+    return validateFormPasswords(form) && validateFormHostname(form);
 }
 
 function getValue(element) {
@@ -220,6 +252,12 @@ function addValue(data, name, value) {
         "adminPass",
         "node", "key", "topic"
     ];
+
+
+    // join both adminPass 1 and 2
+    if (name.startsWith("adminPass")) {
+        name = "adminPass";
+    }
 
     if (name in data) {
         if (!Array.isArray(data[name])) {
@@ -256,23 +294,64 @@ function getData(form) {
 
 }
 
-function randomString(length, chars) {
-    var mask = "";
-    if (chars.indexOf("a") > -1) { mask += "abcdefghijklmnopqrstuvwxyz"; }
-    if (chars.indexOf("A") > -1) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
-    if (chars.indexOf("#") > -1) { mask += "0123456789"; }
-    if (chars.indexOf("@") > -1) { mask += "ABCDEF"; }
-    if (chars.indexOf("!") > -1) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
-    var result = "";
-    for (var i = length; i > 0; --i) {
-        result += mask[Math.round(Math.random() * (mask.length - 1))];
+function randomString(length, args) {
+    if (typeof args === "undefined") {
+        args = {
+            lowercase: true,
+            uppercase: true,
+            numbers: true,
+            special: true
+        }
     }
-    return result;
+
+    var mask = "";
+    if (args.lowercase) { mask += "abcdefghijklmnopqrstuvwxyz"; }
+    if (args.uppercase) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
+    if (args.numbers || args.hex) { mask += "0123456789"; }
+    if (args.hex) { mask += "ABCDEF"; }
+    if (args.special) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
+
+    var source = new Uint32Array(length);
+    var result = new Array(length);
+
+    window.crypto.getRandomValues(source).forEach(function(value, i) {
+        result[i] = mask[value % mask.length];
+    });
+
+    return result.join("");
 }
 
 function generateAPIKey() {
-    var apikey = randomString(16, "@#");
+    var apikey = randomString(16, {hex: true});
     $("input[name='apiKey']").val(apikey);
+    return false;
+}
+
+function generatePassword() {
+    var password = "";
+    do {
+        password = randomString(10);
+    } while (!validatePassword(password));
+
+    return password;
+}
+
+function toggleVisiblePassword() {
+    var elem = this.previousElementSibling;
+    if (elem.type === "password") {
+        elem.type = "text";
+    } else {
+        elem.type = "password";
+    }
+    return false;
+}
+
+function doGeneratePassword() {
+    $("input", $("#formPassword"))
+        .val(generatePassword())
+        .each(function() {
+            this.type = "text";
+        });
     return false;
 }
 
@@ -296,10 +375,18 @@ function sendConfig(data) {
     websock.send(JSON.stringify({config: data}));
 }
 
-function resetOriginals() {
+function setOriginalsFromValues(force) {
+    var force = (true === force);
     $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
+        var initial = (undefined === $(this).attr("original"));
+        if (force || initial) {
+            $(this).attr("original", $(this).val());
+        }
     });
+}
+
+function resetOriginals() {
+    setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
 }
 
@@ -410,7 +497,7 @@ function doUpgrade() {
 
 function doUpdatePassword() {
     var form = $("#formPassword");
-    if (validateForm(form)) {
+    if (validateFormPasswords(form)) {
         sendConfig(getData(form));
     }
     return false;
@@ -464,14 +551,15 @@ function doReconnect(ask) {
 
 function doUpdate() {
 
-    var form = $("#formSave");
-    if (validateForm(form)) {
+    var forms = $(".form-settings");
+    if (validateForm(forms)) {
 
         // Get data
-        sendConfig(getData(form));
+        sendConfig(getData(forms));
 
         // Empty special fields
         $(".pwrExpected").val(0);
+        $("input[name='snsResetCalibration']").prop("checked", false);
         $("input[name='pwrResetCalibration']").prop("checked", false);
         $("input[name='pwrResetE']").prop("checked", false);
 
@@ -741,6 +829,7 @@ function addNetwork() {
         $(this).attr("tabindex", tabindex);
         tabindex++;
     });
+    $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
     line.appendTo("#networks");
@@ -895,31 +984,29 @@ function initMagnitudes(data) {
 
 <!-- removeIf(!light)-->
 
-function initColorRGB() {
+function initColor(rgb) {
 
     // check if already initialized
     var done = $("#colors > div").length;
     if (done > 0) { return; }
 
     // add template
-    var template = $("#colorRGBTemplate").children();
+    var template = $("#colorTemplate").children();
     var line = $(template).clone();
     line.appendTo("#colors");
 
     // init color wheel
     $("input[name='color']").wheelColorPicker({
-        sliders: "wrgbp"
+        sliders: (rgb ? "wrgbp" : "whsvp")
     }).on("sliderup", function() {
-        var value = $(this).wheelColorPicker("getValue", "css");
-        sendAction("color", {rgb: value});
-    });
-
-    // init bright slider
-    $("#brightness").on("change", function() {
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("color", {brightness: value});
+        if (rgb) {
+            var value = $(this).wheelColorPicker("getValue", "css");
+            sendAction("color", {rgb: value});
+        } else {
+            var color = $(this).wheelColorPicker("getColor");
+            var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
+            sendAction("color", {hsv: value});
+        }
     });
 
 }
@@ -938,28 +1025,6 @@ function initCCT() {
     $("span", parent).html(value);
     sendAction("mireds", {mireds: value});
   });
-}
-
-function initColorHSV() {
-
-    // check if already initialized
-    var done = $("#colors > div").length;
-    if (done > 0) { return; }
-
-    // add template
-    var template = $("#colorHSVTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colors");
-
-    // init color wheel
-    $("input[name='color']").wheelColorPicker({
-        sliders: "whsvp"
-    }).on("sliderup", function() {
-        var color = $(this).wheelColorPicker("getColor");
-        var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
-        sendAction("color", {hsv: value});
-    });
-
 }
 
 function initChannels(num) {
@@ -992,7 +1057,7 @@ function initChannels(num) {
         sendAction("channel", {id: id, value: value});
     };
 
-    // add templates
+    // add channel templates
     var i = 0;
     var template = $("#channelTemplate").children();
     for (i=0; i<max; i++) {
@@ -1007,10 +1072,24 @@ function initChannels(num) {
 
     }
 
+    // Init channel dropdowns
     for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
     }
+
+    // add brightness template
+    var template = $("#brightnessTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#channels");
+
+    // init bright slider
+    $("#brightness").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("brightness", {value: value});
+    });
 
 }
 <!-- endRemoveIf(!light)-->
@@ -1180,13 +1259,13 @@ function processData(data) {
         <!-- removeIf(!light)-->
 
         if ("rgb" === key) {
-            initColorRGB();
+            initColor(true);
             $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
         if ("hsv" === key) {
-            initColorHSV();
+            initColor(false);
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
             var chunks = value.split(",");
             var obj = {};
@@ -1464,7 +1543,7 @@ function processData(data) {
         generateAPIKey();
     }
 
-    resetOriginals();
+    setOriginalsFromValues();
 
 }
 
@@ -1478,27 +1557,27 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
-    var hasChanged = $(this).attr("hasChanged") || 0;
+    var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 
     if (typeof originalValue === "undefined") { return; }
     if ("none" === action) { return; }
 
     if (newValue !== originalValue) {
-        if (0 === hasChanged) {
+        if (!hasChanged) {
             ++numChanged;
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", 1);
+            $(this).attr("hasChanged", true);
         }
     } else {
-        if (1 === hasChanged) {
+        if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", 0);
+            $(this).attr("hasChanged", false);
         }
     }
 
@@ -1573,12 +1652,15 @@ $(function() {
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
+    $(".password-reveal").on("click", toggleVisiblePassword);
+
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
     $(".button-update").on("click", doUpdate);
     $(".button-update-password").on("click", doUpdatePassword);
+    $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);

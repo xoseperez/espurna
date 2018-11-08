@@ -16,7 +16,7 @@ void _otaConfigure() {
     ArduinoOTA.setPort(OTA_PORT);
     ArduinoOTA.setHostname(getSetting("hostname").c_str());
     #if USE_PASSWORD
-        ArduinoOTA.setPassword(getSetting("adminPass", ADMIN_PASS).c_str());
+        ArduinoOTA.setPassword(getAdminPass().c_str());
     #endif
 }
 
@@ -203,16 +203,13 @@ void otaSetup() {
 
     _otaConfigure();
 
-    #if WEB_SUPPORT
-        wsOnAfterParseRegister(_otaConfigure);
-    #endif
-
     #if TERMINAL_SUPPORT
         _otaInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(_otaLoop);
+    espurnaRegisterReload(_otaConfigure);
 
     // -------------------------------------------------------------------------
 
@@ -238,7 +235,7 @@ void otaSetup() {
         deferredReset(100, CUSTOM_RESET_OTA);
     });
 
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {        
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         static unsigned int _progOld;
 
         unsigned int _prog = (progress / (total / 100));

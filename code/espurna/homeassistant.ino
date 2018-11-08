@@ -14,6 +14,17 @@ bool _haEnabled = false;
 bool _haSendFlag = false;
 
 // -----------------------------------------------------------------------------
+// UTILS
+// -----------------------------------------------------------------------------
+
+String _haFixName(String name) {
+    for (unsigned char i=0; i<name.length(); i++) {
+        if (!isalnum(name.charAt(i))) name.setCharAt(i, '_');
+    }
+    return name;
+}
+
+// -----------------------------------------------------------------------------
 // SENSORS
 // -----------------------------------------------------------------------------
 
@@ -22,7 +33,7 @@ bool _haSendFlag = false;
 void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
     unsigned char type = magnitudeType(i);
-    config["name"] = getSetting("hostname") + String(" ") + magnitudeTopic(type);
+    config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
@@ -64,10 +75,10 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
     String name = getSetting("hostname");
     if (relayCount() > 1) {
-        name += String(" #") + String(i);
+        name += String("_") + String(i);
     }
 
-    config.set("name", name);
+    config.set("name", _haFixName(name));
     config.set("platform", "mqtt");
 
     if (relayCount()) {
@@ -76,8 +87,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
         config["payload_on"] = String(HOMEASSISTANT_PAYLOAD_ON);
         config["payload_off"] = String(HOMEASSISTANT_PAYLOAD_OFF);
         config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_ON);
-        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_OFF);
+        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_AVAILABLE);
+        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE);
     }
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -152,7 +163,7 @@ String _haGetConfig() {
         JsonObject& config = jsonBuffer.createObject();
         _haSendSwitch(i, config);
 
-        output += type + ":\n";
+        output += "\n" + type + ":\n";
         bool first = true;
         for (auto kv : config) {
             if (first) {
@@ -163,7 +174,6 @@ String _haGetConfig() {
             }
             output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
         }
-        output += "\n";
 
         jsonBuffer.clear();
 
@@ -177,7 +187,7 @@ String _haGetConfig() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
 
-            output += "sensor:\n";
+            output += "\nsensor:\n";
             bool first = true;
             for (auto kv : config) {
                 if (first) {
@@ -186,7 +196,9 @@ String _haGetConfig() {
                 } else {
                     output += "    ";
                 }
-                output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
+                String value = kv.value.as<String>();
+                value.replace("%", "'%'");
+                output += kv.key + String(": ") + value + String("\n");
             }
             output += "\n";
 
@@ -254,10 +266,12 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 #if TERMINAL_SUPPORT
 
 void _haInitCommands() {
+
     settingsRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
         DEBUG_MSG(_haGetConfig().c_str());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
     settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
@@ -266,6 +280,7 @@ void _haInitCommands() {
         #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
     settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
@@ -274,6 +289,7 @@ void _haInitCommands() {
         #endif
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+
 }
 
 #endif
@@ -286,9 +302,12 @@ void haSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_haWebSocketOnSend);
-        wsOnAfterParseRegister(_haConfigure);
         wsOnActionRegister(_haWebSocketOnAction);
         wsOnReceiveRegister(_haWebSocketOnReceive);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _haInitCommands();
     #endif
 
     // On MQTT connect check if we have something to send
@@ -296,10 +315,8 @@ void haSetup() {
         if (type == MQTT_CONNECT_EVENT) _haSend();
     });
 
-    #if TERMINAL_SUPPORT
-        _haInitCommands();
-    #endif
-
+    // Main callbacks
+    espurnaRegisterReload(_haConfigure);
 
 }
 

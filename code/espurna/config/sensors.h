@@ -5,13 +5,13 @@
 #define SENSOR_DEBUG                        0               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
-#define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
+#define SENSOR_READ_MIN_INTERVAL            1               // Minimum read interval
 #define SENSOR_READ_MAX_INTERVAL            3600            // Maximum read interval
 #define SENSOR_INIT_INTERVAL                10000           // Try to re-init non-ready sensors every 10s
 
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
 #define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
-#define SENSOR_REPORT_MAX_EVERY             12              // Maximum
+#define SENSOR_REPORT_MAX_EVERY             60              // Maximum
 
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                             // even if just one sensor (0 for backwards compatibility)
@@ -34,6 +34,10 @@
 
 #ifndef HUMIDITY_MIN_CHANGE
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
+#endif
+
+#ifndef ENERGY_MAX_CHANGE
+#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
 #endif
 
 #ifndef SENSOR_SAVE_EVERY
@@ -427,6 +431,45 @@
 #endif
 
 //------------------------------------------------------------------------------
+// MICS-2710 (and MICS-4514) NO2 sensor
+// Enable support by passing MICS2710_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef MICS2710_SUPPORT
+#define MICS2710_SUPPORT                0
+#endif
+
+#ifndef MICS2710_NOX_PIN
+#define MICS2710_NOX_PIN                0
+#endif
+
+#ifndef MICS2710_PRE_PIN
+#define MICS2710_PRE_PIN                4
+#endif
+
+#define MICS2710_PREHEAT_TIME           10000   // 10s preheat for NOX read
+#define MICS2710_RL                     820     // RL, load resistor
+#define MICS2710_R0                     2200    // R0 calibration value for NO2 sensor,
+                                                // Typical value as per datasheet
+
+//------------------------------------------------------------------------------
+// MICS-5525 (and MICS-4514) CO sensor
+// Enable support by passing MICS5525_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef MICS5525_SUPPORT
+#define MICS5525_SUPPORT                0
+#endif
+
+#ifndef MICS5525_RED_PIN
+#define MICS5525_RED_PIN                0
+#endif
+
+#define MICS5525_RL                     820     // RL, load resistor
+#define MICS5525_R0                     750000  // R0 calibration value for NO2 sensor,
+                                                // Typical value as per datasheet
+
+//------------------------------------------------------------------------------
 // NTC sensor
 // Enable support by passing NTC_SUPPORT=1 build flag
 //--------------------------------------------------------------------------------
@@ -461,6 +504,23 @@
 
 #ifndef NTC_BETA
 #define NTC_BETA                        3977    // Beta coeficient
+#endif
+
+//------------------------------------------------------------------------------
+// SDS011 particulates sensor
+// Enable support by passing SDS011_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SDS011_SUPPORT
+#define SDS011_SUPPORT                   0
+#endif
+
+#ifndef SDS011_RX_PIN
+#define SDS011_RX_PIN                    14
+#endif
+
+#ifndef SDS011_TX_PIN
+#define SDS011_TX_PIN                    12
 #endif
 
 //------------------------------------------------------------------------------
@@ -652,8 +712,11 @@
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
     HLW8012_SUPPORT || \
+    MICS2710_SUPPORT || \
+    MICS5525_SUPPORT || \
     MHZ19_SUPPORT || \
     NTC_SUPPORT || \
+    SDS011_SUPPORT || \
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
@@ -703,12 +766,6 @@
 
 #if SENSOR_SUPPORT
 
-#if SENSOR_DEBUG
-    #include "../config/debug.h"
-#endif
-
-#include "../sensors/BaseSensor.h"
-
 #if AM2320_SUPPORT
     #include "../sensors/AM2320Sensor.h"
 #endif
@@ -726,12 +783,10 @@
 #endif
 
 #if CSE7766_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/CSE7766Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
-    #include <OneWire.h>
     #include "../sensors/DallasSensor.h"
 #endif
 
@@ -764,7 +819,7 @@
 #endif
 
 #if GEIGER_SUPPORT
-    #include "../sensors/GeigerSensor.h"       // The main file for geiger counting module
+    #include "../sensors/GeigerSensor.h"
 #endif
 
 #if GUVAS12SD_SUPPORT
@@ -772,32 +827,38 @@
 #endif
 
 #if HLW8012_SUPPORT
-    #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
 #endif
 
 #if MHZ19_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
 #endif
 
+#if MICS2710_SUPPORT
+    #include "../sensors/MICS2710Sensor.h"
+#endif
+
+#if MICS5525_SUPPORT
+    #include "../sensors/MICS5525Sensor.h"
+#endif
+
 #if NTC_SUPPORT
-    #include "../sensors/AnalogSensor.h"
     #include "../sensors/NTCSensor.h"
 #endif
 
+#if SDS011_SUPPORT
+    #include "../sensors/SDS011Sensor.h"
+#endif
+
 #if SENSEAIR_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/SenseAirSensor.h"
 #endif
 
 #if PMSX003_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/PMSX003Sensor.h"
 #endif
 
 #if PZEM004T_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/PZEM004TSensor.h"
 #endif
 
@@ -818,7 +879,6 @@
 #endif
 
 #if V9261F_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
 #endif
 
