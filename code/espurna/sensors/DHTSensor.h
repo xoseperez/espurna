@@ -204,7 +204,7 @@ class DHTSensor : public BaseSensor {
                 _humidity = dhtData[0];
             } else if (_type == DHT_CHIP_DHT12) {
                 _humidity = dhtData[0];
-				_humidity += dhtData[1] * 0.1;
+				        _humidity += dhtData[1] * 0.1;
             } else {
         	    _humidity = dhtData[0] * 256 + dhtData[1];
         	    _humidity /= 10;
@@ -213,10 +213,10 @@ class DHTSensor : public BaseSensor {
         	// Get temp from Data[2] and Data[3]
             if (_type == DHT_CHIP_DHT11) {
                 _temperature = dhtData[2];
-			} else if (_type == DHT_CHIP_DHT12) {
-				_temperature = (dhtData[2] & 0x7F);
-				_temperature += dhtData[3] * 0.1;
-				if (dhtData[2] & 0x80) _temperature *= -1;
+			      } else if (_type == DHT_CHIP_DHT12) {
+				        _temperature = (dhtData[2] & 0x7F);
+				        _temperature += dhtData[3] * 0.1;
+				        if (dhtData[2] & 0x80) _temperature *= -1;
             } else {
                 _temperature = (dhtData[2] & 0x7F) * 256 + dhtData[3];
                 _temperature /= 10;
