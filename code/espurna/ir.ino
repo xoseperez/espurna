@@ -43,8 +43,6 @@ Raw messages:
     Payload: 1000,1000,1000,1000,1000
              |        IR codes      |
 
-    * To support long codes (Air Conditioneer) increase MQTT packet size -DMQTT_MAX_PACKET_SIZE=1200
-
 --------------------------------------------------------------------------------
 */
 
@@ -91,7 +89,6 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
         String t = mqttMagnitude((char *) topic);
 
         // Match topic
@@ -172,14 +169,6 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 }
 
                 DEBUG_MSG_P(PSTR("[IR] Raw IR output %d codes, repeat %d times on %d(k)Hz freq.\n"), count, _ir_repeat, _ir_freq);
-
-                /*
-                DEBUG_MSG_P(PSTR("[IR] main codes: "));
-                for(int i = 0; i < count; i++) {
-                    DEBUG_MSG_P(PSTR("%d,"),_ir_raw[i]);
-                }
-                DEBUG_MSG_P(PSTR("\n"));
-                */
 
                 #if defined(IR_RX_PIN)
                     _ir_receiver.disableIRIn();
@@ -364,12 +353,9 @@ void _irRXLoop() {
         if (millis() - last_time < IR_DEBOUNCE) return;
         last_time = millis();
 
-        // Check code
-        if (_ir_results.value < 1) return;
-        if (_ir_results.decode_type < 1) return;
-        if (_ir_results.bits < 1) return;
-
         #if IR_USE_RAW
+            // Check code
+            if (_ir_results.rawlen < 1) return;
             char * payload;
             String value = "";
             for (int i = 1; i < _ir_results.rawlen; i++) {
@@ -378,6 +364,10 @@ void _irRXLoop() {
             }
             payload = const_cast<char*>(value.c_str());
         #else
+            // Check code
+            if (_ir_results.value < 1) return;
+            if (_ir_results.decode_type < 1) return;
+            if (_ir_results.bits < 1) return;
             char payload[32];
             snprintf_P(payload, sizeof(payload), PSTR("%u:%lu:%u"), _ir_results.decode_type, (unsigned long) _ir_results.value, _ir_results.bits);
         #endif
