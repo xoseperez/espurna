@@ -1223,6 +1223,16 @@ void migrate() {
             setSetting("ledGPIO", 1, 15);
             setSetting("ledLogic", 1, 0);
 
+        #elif defined(TONBUX_XSSSA01)
+
+            setSetting("board", 92);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
