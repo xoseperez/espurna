@@ -245,7 +245,7 @@
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE              230         // Mains voltage
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
-#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30V/1A)
+#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
 #define EMON_REPORT_CURRENT             0           // Report current
 #define EMON_REPORT_POWER               1           // Report power
 #define EMON_REPORT_ENERGY              1           // Report energy
