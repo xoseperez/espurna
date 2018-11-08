@@ -600,6 +600,18 @@
 #define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
+#ifndef PZEM004T_ADDRESSES
+#define PZEM004T_ADDRESSES              "192.168.1.1"  // Device(s) address(es), separated by space, "192.168.1.1 192.168.1.2 192.168.1.3"
+#endif
+
+#ifndef PZEM004T_READ_INTERVAL
+#define PZEM004T_READ_INTERVAL          1500    // Read interval between same device
+#endif
+
+#ifndef PZEM004T_MAX_DEVICES
+#define PZEM004T_MAX_DEVICES            3
+#endif
+
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
 // Enable support by passing SHT3X_I2C_SUPPORT=1 build flag
