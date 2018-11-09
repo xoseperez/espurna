@@ -107,7 +107,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                     _ir_repeat_size = 1;
 
                     // count & validate repeat-string
-                    for(int i = col+1; i < len; i++) {
+                    for(unsigned int i = col+1; i < len; i++) {
                         if (i < len-1) {
                             if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
                                 _ir_repeat_size++;
@@ -126,7 +126,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 } // end of counting & validating repeat code
 
                 // count & validate main code string
-                for(int i = 0; i < len; i++) {
+                for(unsigned int i = 0; i < len; i++) {
                     if (i<len-1) {
                         if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
                             count++;
@@ -146,7 +146,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 int j = 0; // for populating values of array from comma separated string
 
                 // populating main code array from part of MQTT string
-                for (int i = 0; i < len; i++) {
+                for (unsigned int i = 0; i < len; i++) {
                     if (payload[i] != ',') {
                         value = value + data[i];
                     }
@@ -192,7 +192,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                     len = data.length(); //redifining length to full lenght
 
                     // populating repeat code array from part of MQTT string
-                    for (int i = col+1; i < len; i++) {
+                    for (unsigned int i = col+1; i < len; i++) {
                         value = value + data[i];
                         if ((payload[i] == ',') || (i == len - 1)) {
                             _ir_raw[j]= value.toInt();
@@ -200,7 +200,6 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                             j++;
                         }
                     }
-
                 } else { // if repeat code not specified (col<=2) repeat with current main code
                     _ir_repeat_size = count;
                 }
@@ -212,7 +211,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 if (col > 0) {
 
                     _ir_type = data.toInt();
-                    _ir_code = data.substring(col+1).toInt();
+                    _ir_code = strtoul(data.substring(col+1).c_str(), NULL, 10);
 
                     col = data.indexOf(":", col+1);
                     if (col > 0) {
@@ -223,9 +222,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                         } else {
                             _ir_repeat = IR_REPEAT;
                         }
-
                     }
-
                 }
 
                 if (_ir_repeat > 0) {
