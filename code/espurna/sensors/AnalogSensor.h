@@ -36,12 +36,12 @@ class AnalogSensor : public BaseSensor {
         }
 
         void setFactor(double factor) {
-            //debugSend(("[ANALOG_SENSOR] Factor set to: %s \n"), String(factor,6).c_str());
+            //DEBUG_MSG(("[ANALOG_SENSOR] Factor set to: %s \n"), String(factor,6).c_str());
             _factor = factor;
         }
 
         void setOffset(double offset) {
-          //debugSend(("[ANALOG_SENSOR] Factor set to: %s \n"), String(offset,6).c_str());
+          //DEBUG_MSG(("[ANALOG_SENSOR] Factor set to: %s \n"), String(offset,6).c_str());
             _offset = offset;
         }
 
@@ -123,11 +123,11 @@ class AnalogSensor : public BaseSensor {
           unsigned int rawValue;
           double scaledValue;
           // Debugging doubles to string
-          //debugSend(("[ANALOG_SENSOR] Started standard read, factor: %s , offset: %s, decimals: %d \n"), String(_factor).c_str(), String(_offset).c_str(), ANALOG_DECIMALS);
+          //DEBUG_MSG(("[ANALOG_SENSOR] Started standard read, factor: %s , offset: %s, decimals: %d \n"), String(_factor).c_str(), String(_offset).c_str(), ANALOG_DECIMALS);
           rawValue = _rawRead();
-          //debugSend(("[ANALOG_SENSOR] Raw read received: %d \n"), rawValue);
+          //DEBUG_MSG(("[ANALOG_SENSOR] Raw read received: %d \n"), rawValue);
           scaledValue = _factor*rawValue  + _offset;
-          debugSend(("[ANALOG_SENSOR] Scaled value result: %s \n"), String(scaledValue).c_str());
+          //DEBUG_MSG(("[ANALOG_SENSOR] Scaled value result: %s \n"), String(scaledValue).c_str());
           return scaledValue;
         }
 
