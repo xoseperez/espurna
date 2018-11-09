@@ -15,7 +15,6 @@
 #define DHT_MIN_INTERVAL            2000
 
 #define DHT_CHIP_DHT11              11
-#define DHT_CHIP_DHT12              12
 #define DHT_CHIP_DHT22              22
 #define DHT_CHIP_DHT21              21
 #define DHT_CHIP_AM2301             21
@@ -146,7 +145,7 @@ class DHTSensor : public BaseSensor {
             pinMode(_gpio, OUTPUT);
             noInterrupts();
         	digitalWrite(_gpio, LOW);
-            if ((_type == DHT_CHIP_DHT11) || (_type == DHT_CHIP_DHT12)) {
+            if (_type == DHT_CHIP_DHT11) {
                 nice_delay(20);
             } else {
                 delayMicroseconds(500);
@@ -202,9 +201,6 @@ class DHTSensor : public BaseSensor {
         	// Get humidity from Data[0] and Data[1]
             if (_type == DHT_CHIP_DHT11) {
                 _humidity = dhtData[0];
-            } else if (_type == DHT_CHIP_DHT12) {
-                _humidity = dhtData[0];
-				        _humidity += dhtData[1] * 0.1;
             } else {
         	    _humidity = dhtData[0] * 256 + dhtData[1];
         	    _humidity /= 10;
@@ -213,10 +209,6 @@ class DHTSensor : public BaseSensor {
         	// Get temp from Data[2] and Data[3]
             if (_type == DHT_CHIP_DHT11) {
                 _temperature = dhtData[2];
-			      } else if (_type == DHT_CHIP_DHT12) {
-				        _temperature = (dhtData[2] & 0x7F);
-				        _temperature += dhtData[3] * 0.1;
-				        if (dhtData[2] & 0x80) _temperature *= -1;
             } else {
                 _temperature = (dhtData[2] & 0x7F) * 256 + dhtData[3];
                 _temperature /= 10;
@@ -229,7 +221,7 @@ class DHTSensor : public BaseSensor {
 
         }
 
-        unsigned long _signal(unsigned long usTimeOut, bool state) {
+        unsigned long _signal(int usTimeOut, bool state) {
         	unsigned long uSec = 1;
         	while (digitalRead(_gpio) == state) {
                 if (++uSec > usTimeOut) return 0;
@@ -246,7 +238,7 @@ class DHTSensor : public BaseSensor {
         unsigned char _errors = 0;
 
         double _temperature = 0;
-        double _humidity = 0;
+        unsigned int _humidity = 0;
 
 };
 
