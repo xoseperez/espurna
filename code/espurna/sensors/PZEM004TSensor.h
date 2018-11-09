@@ -3,6 +3,48 @@
 // Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
+// Connection Diagram:
+// -------------------
+//
+// Needed when connecting multiple PZEM004T devices on the same UART
+// *You must set the PZEM004T device address prior using this configuration*
+//
+// +---------+
+// | ESPurna |                                             +VCC
+// |   Node  |                                               ^
+// | G  T  R |                                               |
+// +-+--+--+-+                                               R (10K)
+//   |  |  |                                                 |
+//   |  |  +-----------------+---------------+---------------+
+//   |  +-----------------+--|------------+--|------------+  |
+//   +-----------------+--|--|---------+--|--|---------+  |  |
+//                     |  |  |         |  |  |         |  |  |
+//                     |  |  V         |  |  V         |  |  V
+//                     |  |  -         |  |  -         |  |  -
+//                   +-+--+--+-+     +-+--+--+-+     +-+--+--+-+
+//                   | G  R  T |     | G  R  T |     | G  R  T |
+//                   |PZEM-004T|     |PZEM-004T|     |PZEM-004T|
+//                   |  Module |     |  Module |     |  Module |
+//                   +---------+     +---------+     +---------+
+//
+// Where:
+// ------
+//     G = GND
+//     R = ESPurna UART RX
+//     T = ESPurna UART TX
+//     V = Small Signal Schottky Diode, like BAT43,
+//         Cathode to PZEM TX, Anode to Espurna RX
+//     R = Resistor to VCC, 10K
+//
+// More Info:
+// ----------
+//     See ESPurna Wiki - https://github.com/xoseperez/espurna/wiki/Sensor-PZEM004T
+//
+// Reference:
+// ----------
+//     UART/TTL-Serial network with single master and multiple slaves:
+//     http://cool-emerald.blogspot.com/2009/10/multidrop-network-for-rs232.html
+
 #if SENSOR_SUPPORT && PZEM004T_SUPPORT
 
 #pragma once
