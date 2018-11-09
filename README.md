@@ -5,9 +5,10 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 [![version](https://img.shields.io/badge/version-1.13.3-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
+[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
 [![codacy](https://api.codacy.com/project/badge/Grade/c9496e25cf07434cba786b462cb15f49)](https://www.codacy.com/app/xoseperez/espurna/dashboard)
-[![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
+[![downloads](https://img.shields.io/github/downloads/xoseperez/espurna/total.svg)](https://github.com/xoseperez/espurna/releases)
 <br />
 [![donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=xose%2eperez%40gmail%2ecom&lc=US&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
 [![gitter](https://img.shields.io/gitter/room/tinkermant-cat/espurna.svg)](https://gitter.im/tinkerman-cat/espurna)
@@ -239,8 +240,8 @@ Here is the list of supported hardware. For more information please refer to the
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**HomeCube 16A**|
-|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Bestek MRJ1011](images/devices/bestek-mrj1011.jpg)||
-|**WorkChoice EcoPlug**|**Bestek MRJ1011**||
+|![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Bestek MRJ1011](images/devices/bestek-mrj1011.jpg)|![Tonbux XS-SSA01](images/devices/tonbux-xs-ssa01.jpg)|
+|**WorkChoice EcoPlug**|**Bestek MRJ1011**|**Tonbux XS-SSA01**|
 |![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm Power Strip](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
 |**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK switch](images/devices/yjzk-2gang-switch.jpg)|

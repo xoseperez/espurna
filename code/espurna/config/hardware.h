@@ -1921,6 +1921,29 @@
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
 
 // -----------------------------------------------------------------------------
+// Maxcio W-DE004
+// -----------------------------------------------------------------------------
+
+#elif defined(MAXCIO_WDE004)
+
+    // Info
+    #define MANUFACTURER		"MAXCIO"
+    #define DEVICE				"WDE004"
+
+    // Buttons
+    #define BUTTON1_PIN			1
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    #define RELAY1_PIN			14
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			13
+    #define LED1_PIN_INVERSE	1
+
+// -----------------------------------------------------------------------------
 // YiDian XS-SSA05
 // -----------------------------------------------------------------------------
 
@@ -1961,6 +1984,29 @@
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
+
+// -----------------------------------------------------------------------------
+// TONBUX XS-SSA01
+// -----------------------------------------------------------------------------
+
+#elif defined(TONBUX_XSSSA01)
+
+    // Info
+    #define MANUFACTURER        "TONBUX"
+    #define DEVICE              "XSSSA01"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // TONBUX XS-SSA06

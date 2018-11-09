@@ -43,8 +43,6 @@ Raw messages:
     Payload: 1000,1000,1000,1000,1000
              |        IR codes      |
 
-    * To support long codes (Air Conditioneer) increase MQTT packet size -DMQTT_MAX_PACKET_SIZE=1200
-
 --------------------------------------------------------------------------------
 */
 
@@ -91,7 +89,6 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
         String t = mqttMagnitude((char *) topic);
 
         // Match topic
@@ -110,7 +107,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                     _ir_repeat_size = 1;
 
                     // count & validate repeat-string
-                    for(int i = col+1; i < len; i++) {
+                    for(unsigned int i = col+1; i < len; i++) {
                         if (i < len-1) {
                             if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
                                 _ir_repeat_size++;
@@ -129,7 +126,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 } // end of counting & validating repeat code
 
                 // count & validate main code string
-                for(int i = 0; i < len; i++) {
+                for(unsigned int i = 0; i < len; i++) {
                     if (i<len-1) {
                         if ( payload[i] == ',' && isDigit(payload[i+1]) && i>0 ) { //validate string
                             count++;
@@ -149,7 +146,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 int j = 0; // for populating values of array from comma separated string
 
                 // populating main code array from part of MQTT string
-                for (int i = 0; i < len; i++) {
+                for (unsigned int i = 0; i < len; i++) {
                     if (payload[i] != ',') {
                         value = value + data[i];
                     }
@@ -173,14 +170,6 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
 
                 DEBUG_MSG_P(PSTR("[IR] Raw IR output %d codes, repeat %d times on %d(k)Hz freq.\n"), count, _ir_repeat, _ir_freq);
 
-                /*
-                DEBUG_MSG_P(PSTR("[IR] main codes: "));
-                for(int i = 0; i < count; i++) {
-                    DEBUG_MSG_P(PSTR("%d,"),_ir_raw[i]);
-                }
-                DEBUG_MSG_P(PSTR("\n"));
-                */
-
                 #if defined(IR_RX_PIN)
                     _ir_receiver.disableIRIn();
                 #endif
@@ -203,7 +192,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                     len = data.length(); //redifining length to full lenght
 
                     // populating repeat code array from part of MQTT string
-                    for (int i = col+1; i < len; i++) {
+                    for (unsigned int i = col+1; i < len; i++) {
                         value = value + data[i];
                         if ((payload[i] == ',') || (i == len - 1)) {
                             _ir_raw[j]= value.toInt();
@@ -211,7 +200,6 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                             j++;
                         }
                     }
-
                 } else { // if repeat code not specified (col<=2) repeat with current main code
                     _ir_repeat_size = count;
                 }
@@ -223,7 +211,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                 if (col > 0) {
 
                     _ir_type = data.toInt();
-                    _ir_code = data.substring(col+1).toInt();
+                    _ir_code = strtoul(data.substring(col+1).c_str(), NULL, 10);
 
                     col = data.indexOf(":", col+1);
                     if (col > 0) {
@@ -234,9 +222,7 @@ void _irMqttCallback(unsigned int type, const char * topic, const char * payload
                         } else {
                             _ir_repeat = IR_REPEAT;
                         }
-
                     }
-
                 }
 
                 if (_ir_repeat > 0) {
@@ -364,12 +350,9 @@ void _irRXLoop() {
         if (millis() - last_time < IR_DEBOUNCE) return;
         last_time = millis();
 
-        // Check code
-        if (_ir_results.value < 1) return;
-        if (_ir_results.decode_type < 1) return;
-        if (_ir_results.bits < 1) return;
-
         #if IR_USE_RAW
+            // Check code
+            if (_ir_results.rawlen < 1) return;
             char * payload;
             String value = "";
             for (int i = 1; i < _ir_results.rawlen; i++) {
@@ -378,6 +361,10 @@ void _irRXLoop() {
             }
             payload = const_cast<char*>(value.c_str());
         #else
+            // Check code
+            if (_ir_results.value < 1) return;
+            if (_ir_results.decode_type < 1) return;
+            if (_ir_results.bits < 1) return;
             char payload[32];
             snprintf_P(payload, sizeof(payload), PSTR("%u:%lu:%u"), _ir_results.decode_type, (unsigned long) _ir_results.value, _ir_results.bits);
         #endif
