@@ -29,9 +29,9 @@ Ticker _light_save_ticker;
 Ticker _light_transition_ticker;
 
 typedef struct {
-    unsigned char pin;
-    bool reverse;
-    bool state;
+    unsigned char pin;          // GPIO pin
+    bool reverse;               // reverse bright/dark mapping
+    bool state;                 // on or off state
     unsigned char inputValue;   // value that has been inputted
     unsigned char value;        // normalized value including brightness
     unsigned char shadow;       // represented value
@@ -41,13 +41,16 @@ std::vector<channel_t> _light_channel;
 
 bool _light_state = false;
 bool _light_use_transitions = false;
+bool _light_dimming = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
+unsigned int _light_dimming_time = LIGHT_DIMMING_TIME;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
 bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
+double _light_brightness_current; // current brighntess level used during dimming
 unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -406,7 +409,24 @@ void _shadow() {
 
     // Update transition ticker
     _light_steps_left--;
-    if (_light_steps_left == 0) _light_transition_ticker.detach();
+
+    if (_light_steps_left == 0) {
+        // Update transition ticker
+        _light_transition_ticker.detach();
+    
+        // global brightness
+        _light_brightness_current = _light_brightness;
+        
+        // if diming done update state
+        if (_light_dimming) {
+            _light_dimming = false;
+            lightUpdate(true, true);
+        }
+    } else {
+        // update global brightness
+        double difference = (double) (_light_brightness - _light_brightness_current) / (_light_steps_left + 1);
+        _light_brightness_current += difference;
+    }
 
     // Transitions
     unsigned char target;
@@ -694,6 +714,39 @@ void lightState(bool state) {
 bool lightState() {
     return _light_state;
 }
+
+void lightStartDimming() {
+    _light_state = true;
+    _light_dimming = true;
+    _light_brightness = (_light_brightness < LIGHT_MAX_BRIGHTNESS/2) ? LIGHT_MAX_BRIGHTNESS : LIGHT_MIN_DIMMING_BRIGHTNESS;
+
+    _generateBrightness();
+
+    // Configure brightness transition
+    _light_steps_left = ((unsigned long)_light_dimming_time*abs(_light_brightness-_light_brightness_current)/(LIGHT_MAX_BRIGHTNESS-LIGHT_MIN_DIMMING_BRIGHTNESS)) / LIGHT_TRANSITION_STEP;
+    if (_light_steps_left == 0)
+        _light_steps_left = 1;
+
+    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
+}
+
+void lightStopDimming() {
+    _light_dimming = false;
+
+    // set final brighntess level to current level
+    _light_brightness = _light_brightness_current;
+
+    lightUpdate(true, true);
+}
+
+void lightToggleDimming() {
+    if (_light_dimming) {
+        lightStopDimming();
+    } else {
+        lightStartDimming();
+    }
+}
+
 
 void lightColor(const char * color, bool rgb) {
     DEBUG_MSG_P(PSTR("[LIGHT] %s: %s\n"), rgb ? "RGB" : "HSV", color);

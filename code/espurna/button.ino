@@ -19,6 +19,8 @@ typedef struct {
     DebounceEvent * button;
     unsigned long actions;
     unsigned int relayID;
+    unsigned long lastEvent;
+    bool longPressSent;
 } button_t;
 
 std::vector<button_t> _buttons;
@@ -63,10 +65,11 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
     if (event == BUTTON_EVENT_LNGCLICK) return (actions >> 12) & 0x0F;
     if (event == BUTTON_EVENT_LNGLNGCLICK) return (actions >> 16) & 0x0F;
     if (event == BUTTON_EVENT_TRIPLECLICK) return (actions >> 20) & 0x0F;
+    if (event == BUTTON_EVENT_LNGPRESS) return (actions >> 24) & 0x0F;
     return BUTTON_MODE_NONE;
 }
 
-unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
+unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick, unsigned long lngpress) {
     unsigned int value;
     value  = pressed;
     value += click << 4;
@@ -74,6 +77,7 @@ unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned l
     value += lngclick << 12;
     value += lnglngclick << 16;
     value += tripleclick << 20;
+    value += lngpress << 24;
     return value;
 }
 
@@ -120,6 +124,15 @@ void buttonEvent(unsigned int id, unsigned char event) {
             relayStatus(_buttons[id].relayID - 1, false);
         }
     }
+    if (action == BUTTON_MODE_DIMMER_TOGGLE) {
+        lightToggleDimming();
+    }
+    if (action == BUTTON_MODE_DIMMER_START) {
+        lightStartDimming();
+    }
+    if (action == BUTTON_MODE_DIMMER_STOP) {
+        lightStopDimming();
+    }
     if (action == BUTTON_MODE_AP) wifiStartAP();
     #if defined(JUSTWIFI_ENABLE_WPS)
         if (action == BUTTON_MODE_WPS) wifiStartWPS();
@@ -142,7 +155,7 @@ void buttonSetup() {
 
     #ifdef ITEAD_SONOFF_DUAL
 
-        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
+        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, BUTTON3_RELAY});
@@ -153,49 +166,49 @@ void buttonSetup() {
 
         #if BUTTON1_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK, BUTTON1_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK, BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK, BUTTON1_TRIPLECLICK, BUTTON1_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON1_RELAY});
         }
         #endif
         #if BUTTON2_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK, BUTTON2_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK, BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK, BUTTON2_TRIPLECLICK, BUTTON2_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON2_RELAY});
         }
         #endif
         #if BUTTON3_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK, BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK, BUTTON3_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON3_RELAY});
         }
         #endif
         #if BUTTON4_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK, BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK, BUTTON4_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON4_RELAY});
         }
         #endif
         #if BUTTON5_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK, BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK, BUTTON5_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON5_PIN, BUTTON5_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON5_RELAY});
         }
         #endif
         #if BUTTON6_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK, BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK, BUTTON6_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON6_PIN, BUTTON6_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON6_RELAY});
         }
         #endif
         #if BUTTON7_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK, BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK, BUTTON7_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON7_PIN, BUTTON7_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON7_RELAY});
         }
         #endif
         #if BUTTON8_PIN != GPIO_NONE
         {
-            unsigned int actions = buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK);
+            unsigned int actions = buttonStore(BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK, BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK, BUTTON8_LNGPRESS);
             _buttons.push_back({new DebounceEvent(BUTTON8_PIN, BUTTON8_MODE, BUTTON_DEBOUNCE_DELAY, btnDelay), actions, BUTTON8_RELAY});
         }
         #endif
@@ -259,13 +272,24 @@ void buttonLoop() {
     #else
 
         for (unsigned int i=0; i < _buttons.size(); i++) {
-            if (unsigned char event = _buttons[i].button->loop()) {
+            unsigned char event = _buttons[i].button->loop();
+            
+            if (event == EVENT_NONE) {
+                unsigned long length = millis() - _buttons[i].lastEvent;
+                bool state = _buttons[i].button->pressed();
+                if (!_buttons[i].longPressSent && state && length > BUTTON_LNGPRESS_DELAY) {
+                    _buttons[i].longPressSent = true;
+                    buttonEvent(i, BUTTON_EVENT_LNGPRESS);
+                }
+            } else {
+                _buttons[i].lastEvent = millis();
+                _buttons[i].longPressSent = false;
                 unsigned char count = _buttons[i].button->getEventCount();
                 unsigned long length = _buttons[i].button->getEventLength();
                 unsigned char mapped = mapEvent(event, count, length);
                 buttonEvent(i, mapped);
             }
-       }
+        }
 
     #endif
 

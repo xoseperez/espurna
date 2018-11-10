@@ -66,7 +66,7 @@
 //------------------------------------------------------------------------------
 
 // UDP debug log
-// To receive the message son the destination computer use nc:
+// To receive the messages on the destination computer use nc:
 // nc -ul 8113
 
 #ifndef DEBUG_UDP_SUPPORT
@@ -237,9 +237,14 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+#ifndef BUTTON_LNGPRESS_DELAY
+#define BUTTON_LNGPRESS_DELAY       1000        // Time in ms holding the button down to get a long click
+#endif
+
 #define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
                                                 // 1 - to send all button events to MQTT
-#endif
 
 //------------------------------------------------------------------------------
 // ENCODER
@@ -852,6 +857,10 @@
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
 #endif
 
+#ifndef LIGHT_MIN_DIMMING_BRIGHTNESS
+#define LIGHT_MIN_DIMMING_BRIGHTNESS    5         // Maximun brightness value during dimming
+#endif
+
 #define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
 #define LIGHT_MAX_MIREDS        500      // https://developers.meethue.com/documentation/core-concepts
 
@@ -899,11 +908,15 @@
 #endif
 
 #ifndef LIGHT_TRANSITION_STEP
-#define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
+#define LIGHT_TRANSITION_STEP   50          // Time in millis between each transtion step (setting this shorter then ~ 40 yield a WDT error under certain circumstances)
 #endif
 
 #ifndef LIGHT_TRANSITION_TIME
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
+#endif
+
+#ifndef LIGHT_DIMMING_TIME
+#define LIGHT_DIMMING_TIME   5000            // Time in millis for full scale dimming
 #endif
 
 

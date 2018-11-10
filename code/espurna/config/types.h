@@ -28,6 +28,7 @@
 #define BUTTON_EVENT_LNGCLICK       4
 #define BUTTON_EVENT_LNGLNGCLICK    5
 #define BUTTON_EVENT_TRIPLECLICK    6
+#define BUTTON_EVENT_LNGPRESS       7
 
 #define BUTTON_MODE_NONE            0
 #define BUTTON_MODE_TOGGLE          1
@@ -39,6 +40,9 @@
 #define BUTTON_MODE_FACTORY         7
 #define BUTTON_MODE_WPS             8
 #define BUTTON_MODE_SMART_CONFIG    9
+#define BUTTON_MODE_DIMMER_TOGGLE   10
+#define BUTTON_MODE_DIMMER_START    11
+#define BUTTON_MODE_DIMMER_STOP     12
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON
