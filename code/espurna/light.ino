@@ -26,7 +26,6 @@ extern "C" {
 // -----------------------------------------------------------------------------
 
 Ticker _light_save_ticker;
-Ticker _light_transition_ticker;
 
 typedef struct {
     unsigned char pin;          // GPIO pin
@@ -35,7 +34,7 @@ typedef struct {
     unsigned char inputValue;   // value that has been inputted
     unsigned char value;        // normalized value including brightness
     unsigned char shadow;       // represented value
-    double current;             // transition value
+    float current;              // transition value
 } channel_t;
 std::vector<channel_t> _light_channel;
 
@@ -46,13 +45,16 @@ bool _light_dimming_up = false;
 bool _light_dimming_delay_start = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 unsigned int _light_dimming_time = LIGHT_DIMMING_TIME;
+bool _light_use_dimming_cycle = LIGHT_DIMMING_CYCLE;
+bool _light_use_dimming_direction_toggle = LIGHT_DIMMING_DIRECTION_TOGGLE;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
 bool _light_use_gamma = false;
+float _light_gamma = 2.2;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
-double _light_brightness_current; // current brighntess level used during dimming
+float _light_brightness_current; // current brighntess level used during dimming
 unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -60,27 +62,6 @@ unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)
 my92xx * _my92xx;
 ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
 #endif
-
-// Gamma Correction lookup table (8 bit)
-// TODO: move to PROGMEM
-const unsigned char _light_gamma_table[] = {
-    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
-    3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
-    6,   7,   7,   7,   7,   8,   8,   8,   9,   9,   9,   10,  10,  11,  11,  11,
-    12,  12,  13,  13,  14,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,
-    19,  20,  20,  21,  22,  22,  23,  23,  24,  25,  25,  26,  26,  27,  28,  28,
-    29,  30,  30,  31,  32,  33,  33,  34,  35,  35,  36,  37,  38,  39,  39,  40,
-    41,  42,  43,  43,  44,  45,  46,  47,  48,  49,  50,  50,  51,  52,  53,  54,
-    55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  71,
-    72,  73,  74,  75,  76,  77,  78,  80,  81,  82,  83,  84,  86,  87,  88,  89,
-    91,  92,  93,  94,  96,  97,  98,  100, 101, 102, 104, 105, 106, 108, 109, 110,
-    112, 113, 115, 116, 118, 119, 121, 122, 123, 125, 126, 128, 130, 131, 133, 134,
-    136, 137, 139, 140, 142, 144, 145, 147, 149, 150, 152, 154, 155, 157, 159, 160,
-    162, 164, 166, 167, 169, 171, 173, 175, 176, 178, 180, 182, 184, 186, 187, 189,
-    191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
-    223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
-};
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -395,24 +376,35 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 
 unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
-    if (gamma) value = _light_gamma_table[value];
-    if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
+    
+    // handle =0 and =MAX fast
+    if (value == 0) {
+        value == 0;
+    } else if (value == LIGHT_MAX_VALUE) {
+        value = LIGHT_LIMIT_PWM;
+    } else if (gamma) {
+        value = pow(((float)value/LIGHT_MAX_VALUE),_light_gamma)*LIGHT_LIMIT_PWM;
+    } else {
+        if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
+    }
+    
     if (reverse) value = LIGHT_LIMIT_PWM - value;
+
     return value;
 }
 
 // Returns a PWM value for the given channel ID
 unsigned int _toPWM(unsigned char id) {
-    bool useGamma = _light_use_gamma && _light_has_color && (id < 3);
+    bool useGamma = _light_use_gamma && (id < 3);
     return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse);
 }
 
 void _lightScheduleDimming() {
-    #if LIGHT_DIMMING_DIRECTION_TOGGLE
+    if (_light_use_dimming_direction_toggle) {
         _light_dimming_up = !_light_dimming_up;
-    #else
+    } else {
         _light_dimming_up = _light_brightness < (LIGHT_MAX_BRIGHTNESS+LIGHT_MIN_DIMMING_BRIGHTNESS)/2;
-    #endif
+    }
     _light_brightness = _light_dimming_up ? LIGHT_MAX_BRIGHTNESS : LIGHT_MIN_DIMMING_BRIGHTNESS;
 
     _generateBrightness();
@@ -421,19 +413,13 @@ void _lightScheduleDimming() {
     _light_steps_left = ((unsigned long)_light_dimming_time*abs(_light_brightness-_light_brightness_current)/(LIGHT_MAX_BRIGHTNESS-LIGHT_MIN_DIMMING_BRIGHTNESS)) / LIGHT_TRANSITION_STEP;
     if (_light_steps_left == 0)
         _light_steps_left = 1;
-
-    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
 }
 
 void _shadow() {
 
-    // Update transition ticker
     _light_steps_left--;
 
     if (_light_steps_left == 0) {
-        // Update transition ticker
-        _light_transition_ticker.detach();
-    
         // global brightness
         _light_brightness_current = _light_brightness;
     } else {
@@ -459,9 +445,9 @@ void _shadow() {
     }
  
     if (_light_dimming && _light_steps_left == 0) {
-        #if LIGHT_DIMMING_CYCLE
+        if (_light_use_dimming_cycle) {
             _lightScheduleDimming();
-        #else
+        } else {
             if (_light_dimming_delay_start) {
                 _light_dimming_delay_start = false;
                 _lightScheduleDimming();
@@ -470,8 +456,17 @@ void _shadow() {
                 _light_dimming = false;
                 lightUpdate(true, true);
             }
-        #endif
+        }
     }
+}
+
+void _lightLoop() {
+    static unsigned long next=millis();
+    if (millis() > next && _light_steps_left > 0) {
+        next = millis() + LIGHT_TRANSITION_STEP;
+        _lightProviderUpdate();
+        yield();
+    } 
 }
 
 void _lightProviderUpdate() {
@@ -691,7 +686,6 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Configure color transition
     _light_steps_left = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
 
     // Report channels to local broker
     #if BROKER_SUPPORT
@@ -850,8 +844,12 @@ void _lightWebSocketOnSend(JsonObject& root) {
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
+    root["lightGamma"] = String(_light_gamma,1);
     root["useTransitions"] = _light_use_transitions;
     root["lightTime"] = _light_transition_time;
+    root["useDimmingCycling"] = _light_use_dimming_cycle;
+    root["useDimmingDirectionToggle"] = _light_use_dimming_direction_toggle;
+    root["lightDimmingTime"] = _light_dimming_time;
     root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
     bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
     root["useRGB"] = useRGB;
@@ -1096,9 +1094,12 @@ void _lightConfigure() {
     }
 
     _light_use_gamma = getSetting("useGamma", LIGHT_USE_GAMMA).toInt() == 1;
+    _light_gamma = getSetting("lightGamma", LIGHT_GAMMA).toFloat();
     _light_use_transitions = getSetting("useTransitions", LIGHT_USE_TRANSITIONS).toInt() == 1;
     _light_transition_time = getSetting("lightTime", LIGHT_TRANSITION_TIME).toInt();
-
+    _light_use_dimming_cycle = getSetting("useDimmingCycling", LIGHT_DIMMING_CYCLE).toInt() == 1;
+    _light_use_dimming_direction_toggle = getSetting("useDimmingDirectionToggle", LIGHT_DIMMING_DIRECTION_TOGGLE).toInt() == 1;
+    _light_dimming_time = getSetting("lightDimmingTime", LIGHT_DIMMING_TIME).toInt();
 }
 
 void lightSetup() {
@@ -1185,6 +1186,8 @@ void lightSetup() {
         #endif
         _lightConfigure();
     });
+
+    espurnaRegisterLoop(_lightLoop);
 
 }
 

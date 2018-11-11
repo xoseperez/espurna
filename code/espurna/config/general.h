@@ -840,7 +840,7 @@
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
+#define LIGHT_MAX_PWM           25000        // 25000 * 200ns => 200 Hz
 #endif
 
 #endif // LIGHT_MAX_PWM
@@ -886,7 +886,11 @@
 #define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
-#define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
+#define LIGHT_USE_GAMMA         0           // Use gamma correction (for single channel or for color channels in case of RGBxx)
+#endif
+
+#ifndef LIGHT_GAMMA
+#define LIGHT_GAMMA             2.2         // Gamma correction to be used
 #endif
 
 #ifndef LIGHT_USE_CSS
@@ -908,7 +912,7 @@
 #endif
 
 #ifndef LIGHT_TRANSITION_STEP
-#define LIGHT_TRANSITION_STEP   50          // Time in millis between each transtion step (setting this shorter then ~ 40 yield a WDT error under certain circumstances)
+#define LIGHT_TRANSITION_STEP   25          // Time in millis between each transtion step
 #endif
 
 #ifndef LIGHT_TRANSITION_TIME
