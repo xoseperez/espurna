@@ -919,6 +919,13 @@
 #define LIGHT_DIMMING_TIME   5000            // Time in millis for full scale dimming
 #endif
 
+#ifndef LIGHT_DIMMING_DIRECTION_TOGGLE
+#define LIGHT_DIMMING_DIRECTION_TOGGLE 1    // dimming direction is 1: toggled, 0: up if < 50%, down of >= 50%
+#endif
+
+#ifndef LIGHT_DIMMING_CYCLE
+#define LIGHT_DIMMING_CYCLE 1               // dimming cycles
+#endif
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ

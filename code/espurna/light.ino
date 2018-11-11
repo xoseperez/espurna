@@ -42,6 +42,8 @@ std::vector<channel_t> _light_channel;
 bool _light_state = false;
 bool _light_use_transitions = false;
 bool _light_dimming = false;
+bool _light_dimming_up = false;
+bool _light_dimming_delay_start = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 unsigned int _light_dimming_time = LIGHT_DIMMING_TIME;
 bool _light_has_color = false;
@@ -405,6 +407,24 @@ unsigned int _toPWM(unsigned char id) {
     return _toPWM(_light_channel[id].shadow, useGamma, _light_channel[id].reverse);
 }
 
+void _lightScheduleDimming() {
+    #if LIGHT_DIMMING_DIRECTION_TOGGLE
+        _light_dimming_up = !_light_dimming_up;
+    #else
+        _light_dimming_up = _light_brightness < (LIGHT_MAX_BRIGHTNESS+LIGHT_MIN_DIMMING_BRIGHTNESS)/2;
+    #endif
+    _light_brightness = _light_dimming_up ? LIGHT_MAX_BRIGHTNESS : LIGHT_MIN_DIMMING_BRIGHTNESS;
+
+    _generateBrightness();
+
+    // Configure brightness transition
+    _light_steps_left = ((unsigned long)_light_dimming_time*abs(_light_brightness-_light_brightness_current)/(LIGHT_MAX_BRIGHTNESS-LIGHT_MIN_DIMMING_BRIGHTNESS)) / LIGHT_TRANSITION_STEP;
+    if (_light_steps_left == 0)
+        _light_steps_left = 1;
+
+    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
+}
+
 void _shadow() {
 
     // Update transition ticker
@@ -416,12 +436,6 @@ void _shadow() {
     
         // global brightness
         _light_brightness_current = _light_brightness;
-        
-        // if diming done update state
-        if (_light_dimming) {
-            _light_dimming = false;
-            lightUpdate(true, true);
-        }
     } else {
         // update global brightness
         double difference = (double) (_light_brightness - _light_brightness_current) / (_light_steps_left + 1);
@@ -442,9 +456,22 @@ void _shadow() {
         }
 
         _light_channel[i].shadow = _light_channel[i].current;
-
     }
-
+ 
+    if (_light_dimming && _light_steps_left == 0) {
+        #if LIGHT_DIMMING_CYCLE
+            _lightScheduleDimming();
+        #else
+            if (_light_dimming_delay_start) {
+                _light_dimming_delay_start = false;
+                _lightScheduleDimming();
+            } else {
+                // once diming done update state
+                _light_dimming = false;
+                lightUpdate(true, true);
+            }
+        #endif
+    }
 }
 
 void _lightProviderUpdate() {
@@ -716,37 +743,34 @@ bool lightState() {
 }
 
 void lightStartDimming() {
-    _light_state = true;
-    _light_dimming = true;
-    _light_brightness = (_light_brightness < LIGHT_MAX_BRIGHTNESS/2) ? LIGHT_MAX_BRIGHTNESS : LIGHT_MIN_DIMMING_BRIGHTNESS;
+    if (!_light_dimming) {
+        _light_state = true;
+        _light_dimming = true;
 
-    _generateBrightness();
-
-    // Configure brightness transition
-    _light_steps_left = ((unsigned long)_light_dimming_time*abs(_light_brightness-_light_brightness_current)/(LIGHT_MAX_BRIGHTNESS-LIGHT_MIN_DIMMING_BRIGHTNESS)) / LIGHT_TRANSITION_STEP;
-    if (_light_steps_left == 0)
-        _light_steps_left = 1;
-
-    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
-}
-
-void lightStopDimming() {
-    _light_dimming = false;
-
-    // set final brighntess level to current level
-    _light_brightness = _light_brightness_current;
-
-    lightUpdate(true, true);
-}
-
-void lightToggleDimming() {
-    if (_light_dimming) {
-        lightStopDimming();
-    } else {
-        lightStartDimming();
+        if (_light_steps_left==0) {
+            _light_dimming_delay_start = false;
+            _lightScheduleDimming();
+        } else {
+            _light_dimming_delay_start = true;
+        }
     }
 }
 
+void lightStopDimming() {
+    if (_light_dimming) {
+        _light_dimming = false;
+        _light_dimming_delay_start = false;
+
+        // set final brighntess level to current level
+        _light_brightness = _light_brightness_current;
+
+        lightUpdate(true, true);
+    }
+}
+
+bool lightIsDimming() {
+    return _light_dimming;
+}
 
 void lightColor(const char * color, bool rgb) {
     DEBUG_MSG_P(PSTR("[LIGHT] %s: %s\n"), rgb ? "RGB" : "HSV", color);

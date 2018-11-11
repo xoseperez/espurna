@@ -125,13 +125,19 @@ void buttonEvent(unsigned int id, unsigned char event) {
         }
     }
     if (action == BUTTON_MODE_DIMMER_TOGGLE) {
-        lightToggleDimming();
+        if (_buttons[id].relayID > 0) {
+            relayToggleDimming(_buttons[id].relayID - 1);
+        }
     }
     if (action == BUTTON_MODE_DIMMER_START) {
-        lightStartDimming();
+        if (_buttons[id].relayID > 0) {
+            relayStartDimming(_buttons[id].relayID - 1);
+        }
     }
     if (action == BUTTON_MODE_DIMMER_STOP) {
-        lightStopDimming();
+        if (_buttons[id].relayID > 0) {
+            relayStopDimming(_buttons[id].relayID - 1);
+        }
     }
     if (action == BUTTON_MODE_AP) wifiStartAP();
     #if defined(JUSTWIFI_ENABLE_WPS)
