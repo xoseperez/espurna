@@ -1233,6 +1233,17 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(LOMBEX_BW09)
+
+            setSetting("board", 93);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+            setSetting("myModel", MY92XX_MODEL_MY9291);
+            setSetting("myChips", 1);
+            setSetting("myDIGPIO", 4);
+            setSetting("myDCKIGPIO", 15);
+            setSetting("relays", 1);
+
         #else
 
             // Allow users to define new settings without migration config

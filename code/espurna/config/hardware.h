@@ -2875,6 +2875,28 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// Lombex LX_BW09
+// https://www.amazon.com/Compatible-Automation-Dimmable-Equivalent-Changing/dp/B07587CNFV
+// -----------------------------------------------------------------------------
+#elif defined(LOMBEX_BW09)
+
+    // Info
+    #define MANUFACTURER        "LOMBEX"
+    #define DEVICE              "LX_BW09"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       4
+    #define MY92XX_DCKI_PIN     5
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3
+
+// -----------------------------------------------------------------------------
 // Bestek Smart Plug with 2 USB ports
 // https://www.bestekcorp.com/bestek-smart-plug-works-with-amazon-alexa-google-assistant-and-ifttt-with-2-usb
 // -----------------------------------------------------------------------------
