@@ -437,6 +437,33 @@ void relayToggle(unsigned char id) {
     relayToggle(id, true, true);
 }
 
+void relayStartDimming(unsigned char id) {
+    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+        // switch relay on and process immediatly, so dimming can start straight away
+        relayStatus(id, true);
+        _relayProcess(true);
+        lightStartDimming();
+    #endif
+}
+
+void relayStopDimming(unsigned char id) {
+    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+        lightStopDimming();
+    #endif
+}
+
+void relayToggleDimming(unsigned char id) {
+    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+        if(lightIsDimming()) {
+           relayStopDimming(id);
+        } else {
+            // switch relay on and process immediatly, so dimming can start straight away
+           relayStartDimming(id);
+        }
+    #endif
+}
+
+
 unsigned char relayCount() {
     return _relays.size();
 }

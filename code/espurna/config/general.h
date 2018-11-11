@@ -66,7 +66,7 @@
 //------------------------------------------------------------------------------
 
 // UDP debug log
-// To receive the message son the destination computer use nc:
+// To receive the messages on the destination computer use nc:
 // nc -ul 8113
 
 #ifndef DEBUG_UDP_SUPPORT
@@ -237,9 +237,14 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+#ifndef BUTTON_LNGPRESS_DELAY
+#define BUTTON_LNGPRESS_DELAY       1000        // Time in ms holding the button down to get a long click
+#endif
+
 #define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
                                                 // 1 - to send all button events to MQTT
-#endif
 
 //------------------------------------------------------------------------------
 // ENCODER
@@ -835,7 +840,7 @@
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-#define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
+#define LIGHT_MAX_PWM           25000        // 25000 * 200ns => 200 Hz
 #endif
 
 #endif // LIGHT_MAX_PWM
@@ -850,6 +855,10 @@
 
 #ifndef LIGHT_MAX_BRIGHTNESS
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#endif
+
+#ifndef LIGHT_MIN_DIMMING_BRIGHTNESS
+#define LIGHT_MIN_DIMMING_BRIGHTNESS    5         // Maximun brightness value during dimming
 #endif
 
 #define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
@@ -877,7 +886,11 @@
 #define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
-#define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
+#define LIGHT_USE_GAMMA         0           // Use gamma correction (for single channel or for color channels in case of RGBxx)
+#endif
+
+#ifndef LIGHT_GAMMA
+#define LIGHT_GAMMA             2.2         // Gamma correction to be used
 #endif
 
 #ifndef LIGHT_USE_CSS
@@ -899,13 +912,24 @@
 #endif
 
 #ifndef LIGHT_TRANSITION_STEP
-#define LIGHT_TRANSITION_STEP   10          // Time in millis between each transtion step
+#define LIGHT_TRANSITION_STEP   25          // Time in millis between each transtion step
 #endif
 
 #ifndef LIGHT_TRANSITION_TIME
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 #endif
 
+#ifndef LIGHT_DIMMING_TIME
+#define LIGHT_DIMMING_TIME   5000            // Time in millis for full scale dimming
+#endif
+
+#ifndef LIGHT_DIMMING_DIRECTION_TOGGLE
+#define LIGHT_DIMMING_DIRECTION_TOGGLE 1    // dimming direction is 1: toggled, 0: up if < 50%, down of >= 50%
+#endif
+
+#ifndef LIGHT_DIMMING_CYCLE
+#define LIGHT_DIMMING_CYCLE 1               // dimming cycles
+#endif
 
 // -----------------------------------------------------------------------------
 // DOMOTICZ
