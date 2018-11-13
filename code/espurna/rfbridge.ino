@@ -297,25 +297,13 @@ void _rfbDecode() {
         #endif
     }
 
-    unsigned char id;
-    unsigned char status;
-    bool matched = false;
-
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
+
         _rfbAck();
         _rfbToChar(&_uartbuf[1], buffer);
 
-        /* Look for the code, possibly replacing the code with the exact learned one on match
-         * we want to do this on learn too to be sure that the learned code is the same if it 
-         * is equivalent
-         */
         DEBUG_MSG_P(PSTR("[RFBRIDGE] Received message '%s'\n"), buffer);
-        matched = _rfbMatch(buffer, id, status, buffer);
-        DEBUG_MSG_P(PSTR("[RFBRIDGE] Matched  message '%s'\n"), buffer);
 
-        #if MQTT_SUPPORT
-            mqttSend(MQTT_TOPIC_RFIN, buffer);
-        #endif
     }
 
     if (action == RF_CODE_LEARN_OK) {
@@ -333,8 +321,17 @@ void _rfbDecode() {
     }
 
     if (action == RF_CODE_RFIN) {
-        DEBUG_MSG_P(PSTR("[RFBRIDGE] Forward message '%s'\n"), buffer);
+
+        /* Look for the code, possibly replacing the code with the exact learned one on match
+         * we want to do this on learn too to be sure that the learned code is the same if it
+         * is equivalent
+         */
+        unsigned char id;
+        unsigned char status;
+        bool matched = _rfbMatch(buffer, id, status, buffer);
+        
         if (matched) {
+            DEBUG_MSG_P(PSTR("[RFBRIDGE] Matched  message '%s'\n"), buffer);
             _rfbin = true;
             if (status == 2) {
                 relayToggle(id);
@@ -342,6 +339,10 @@ void _rfbDecode() {
                 relayStatus(id, status == 1);
             }
         }
+
+        #if MQTT_SUPPORT
+            mqttSend(MQTT_TOPIC_RFIN, buffer);
+        #endif
 
     }
 

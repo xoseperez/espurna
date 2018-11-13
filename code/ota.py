@@ -15,6 +15,7 @@ import socket
 import subprocess
 import sys
 import time
+import os
 
 from zeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
 
@@ -39,6 +40,8 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
     Callback that adds discovered devices to "devices" list
     """
 
+    global discover_last
+
     if state_change is ServiceStateChange.Added:
         discover_last = time.time()
         info = zeroconf.get_service_info(service_type, name)
@@ -59,6 +62,11 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
 
             for key, item in info.properties.items():
                 device[key.decode('UTF-8')] = item.decode('UTF-8');
+
+            # rename fields (needed for sorting by name)
+            device['app'] = device['app_name']
+            device['device'] = device['target_board']
+            device['version'] = device['app_version']
 
             devices.append(device)
 
@@ -141,7 +149,6 @@ def get_board_by_mac(mac):
     """
     Returns the required data to flash a given board
     """
-    hostname = hostname.lower()
     for device in devices:
         if device.get('mac', '').lower() == mac:
             board = {}
@@ -209,7 +216,7 @@ def input_board():
     # Choose board size of none before
     if board.get('size', 0) == 0:
         try:
-            board['size'] = int(input("Board memory size (1 for 1M, 4 for 4M): "))
+            board['size'] = int(input("Board memory size (1 for 1M, 2 for 2M, 4 for 4M): "))
         except ValueError:
             print("Wrong memory size")
             return None
@@ -226,13 +233,24 @@ def boardname(board):
 def store(device, env):
     source = ".pioenvs/%s/firmware.elf" % env
     destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+
+    dst_dir = os.path.dirname(destination)
+    if not os.path.exists(dst_dir):
+        os.mkdir(dst_dir)
+
     shutil.move(source, destination)
 
 def run(device, env):
     print("Building and flashing image over-the-air...")
-    command = "ESPURNA_IP=\"%s\" ESPURNA_BOARD=\"%s\" ESPURNA_AUTH=\"%s\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s -t upload"
-    command = command % (device['ip'], device['board'], device['auth'], device['flags'], env)
-    subprocess.check_call(command, shell=True)
+    environ = os.environ.copy()
+    environ["ESPURNA_IP"] = device["ip"]
+    environ["ESPURNA_BOARD"] = device["board"]
+    environ["ESPURNA_AUTH"] = device["auth"]
+    environ["ESPURNA_FLAGS"] = device["flags"]
+
+    command = ("platformio", "run", "--silent", "--environment", env, "-t", "upload")
+    subprocess.check_call(command, env=environ)
+
     store(device, env)
 
 # -------------------------------------------------------------------------------
@@ -302,6 +320,8 @@ if __name__ == '__main__':
         if len(queue) == 0:
             sys.exit(0)
 
+        queue = sorted(queue, key=lambda device: device.get('board', ''))
+
         # Flash eash board
         for board in queue:
 
@@ -309,7 +329,7 @@ if __name__ == '__main__':
             if args.core > 0:
                 board['flags'] = "-DESPURNA_CORE " + board['flags']
 
-            env = "esp8266-%sm-ota" % board['size']
+            env = "esp8266-%dm-ota" % board['size']
 
             # Summary
             print()

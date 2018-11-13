@@ -18,6 +18,11 @@ var useCCT = false;
 var now = 0;
 var ago = 0;
 
+<!-- removeIf(!rfm69)-->
+var packets;
+var filters = [];
+<!-- endRemoveIf(!rfm69)-->
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -41,7 +46,8 @@ function sensorName(id) {
         "HLW8012", "V9261F", "ECH1560", "Analog", "Digital",
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
-        "TMP3X", "HC-SR04", "SenseAir", "GeigerTicks", "GeigerCPM"
+        "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
+        "NTC", "SDS011", "MICS2710", "MICS5525"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -54,9 +60,11 @@ function magnitudeType(type) {
         "Temperature", "Humidity", "Pressure",
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
-        "Analog", "Digital", "Events",
+        "Analog", "Digital", "Event",
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
-        "Local Dose Rate", "Local Dose Rate"
+        "Local Dose Rate", "Local Dose Rate",
+        "Count",
+        "NO2", "CO", "Resistance"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -140,26 +148,53 @@ function loadTimeZones() {
 
 }
 
-function validateForm(form) {
-
+function validatePassword(password) {
     // http://www.the-art-of-web.com/javascript/validate-password/
     // at least one lowercase and one uppercase letter or number
-    // at least five characters (letters, numbers or special characters)
-    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{5,}$/;
+    // at least eight characters (letters, numbers or special characters)
 
-    // password
-    var adminPass1 = $("input[name='adminPass']", form).first().val();
-    if (adminPass1.length > 0 && !re_password.test(adminPass1)) {
-        alert("The password you have entered is not valid, it must have at least 5 characters, 1 lowercase and 1 uppercase or number!");
-        return false;
+    // MUST be 8..63 printable ASCII characters. See:
+    // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
+    // https://github.com/xoseperez/espurna/issues/1151
+
+    var re_password = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*\(\)<>,.\?;:{}\[\]\\|]{8,63}$/;
+    return (
+        (password !== undefined)
+        && (typeof password === "string")
+        && (password.length > 0)
+        && re_password.test(password)
+    );
+}
+
+function validateFormPasswords(form) {
+    var passwords = $("input[name='adminPass1'],input[name='adminPass2']", form);
+    var adminPass1 = passwords.first().val(),
+        adminPass2 = passwords.last().val();
+
+    var formValidity = passwords.first()[0].checkValidity();
+    if (formValidity && (adminPass1.length === 0) && (adminPass2.length === 0)) {
+        return true;
     }
 
-    var adminPass2 = $("input[name='adminPass']", form).last().val();
+    var validPass1 = validatePassword(adminPass1),
+        validPass2 = validatePassword(adminPass2);
+
+    if (formValidity && validPass1 && validPass2) {
+        return true;
+    }
+
+    if (!formValidity || (adminPass1.length > 0 && !validPass1)) {
+        alert("The password you have entered is not valid, it must be 8..63 characters and have at least 1 lowercase and 1 uppercase / number!");
+    }
+
     if (adminPass1 !== adminPass2) {
         alert("Passwords are different!");
-        return false;
     }
 
+    return false;
+}
+
+function validateFormHostname(form) {
     // RFCs mandate that a hostname's labels may contain only
     // the ASCII letters 'a' through 'z' (case-insensitive),
     // the digits '0' through '9', and the hyphen.
@@ -167,18 +202,26 @@ function validateForm(form) {
     // No other symbols, punctuation characters, or blank spaces are permitted.
 
     // Negative lookbehind does not work in Javascript
-    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,32}(?<!-)$');
+    // var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{1,31}(?<!-)$');
 
-    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,31}[A-Za-z0-9]$');
+    var re_hostname = new RegExp('^(?!-)[A-Za-z0-9-]{0,30}[A-Za-z0-9]$');
 
-    var hostname = $("input[name='hostname']", form).val();
-    if (!re_hostname.test(hostname)) {
-        alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
-        return false;
+    var hostname = $("input[name='hostname']", form);
+    if ("true" !== hostname.attr("hasChanged")) {
+        return true;
     }
 
-    return true;
+    if (re_hostname.test(hostname.val())) {
+        return true;
+    }
 
+    alert("Hostname cannot be empty and may only contain the ASCII letters ('A' through 'Z' and 'a' through 'z'), the digits '0' through '9', and the hyphen ('-')! They can neither start or end with an hyphen.");
+
+    return false;
+}
+
+function validateForm(form) {
+    return validateFormPasswords(form) && validateFormHostname(form);
 }
 
 function getValue(element) {
@@ -206,8 +249,15 @@ function addValue(data, name, value) {
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
-        "adminPass"
+        "adminPass",
+        "node", "key", "topic"
     ];
+
+
+    // join both adminPass 1 and 2
+    if (name.startsWith("adminPass")) {
+        name = "adminPass";
+    }
 
     if (name in data) {
         if (!Array.isArray(data[name])) {
@@ -244,23 +294,64 @@ function getData(form) {
 
 }
 
-function randomString(length, chars) {
-    var mask = "";
-    if (chars.indexOf("a") > -1) { mask += "abcdefghijklmnopqrstuvwxyz"; }
-    if (chars.indexOf("A") > -1) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
-    if (chars.indexOf("#") > -1) { mask += "0123456789"; }
-    if (chars.indexOf("@") > -1) { mask += "ABCDEF"; }
-    if (chars.indexOf("!") > -1) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
-    var result = "";
-    for (var i = length; i > 0; --i) {
-        result += mask[Math.round(Math.random() * (mask.length - 1))];
+function randomString(length, args) {
+    if (typeof args === "undefined") {
+        args = {
+            lowercase: true,
+            uppercase: true,
+            numbers: true,
+            special: true
+        }
     }
-    return result;
+
+    var mask = "";
+    if (args.lowercase) { mask += "abcdefghijklmnopqrstuvwxyz"; }
+    if (args.uppercase) { mask += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; }
+    if (args.numbers || args.hex) { mask += "0123456789"; }
+    if (args.hex) { mask += "ABCDEF"; }
+    if (args.special) { mask += "~`!@#$%^&*()_+-={}[]:\";'<>?,./|\\"; }
+
+    var source = new Uint32Array(length);
+    var result = new Array(length);
+
+    window.crypto.getRandomValues(source).forEach(function(value, i) {
+        result[i] = mask[value % mask.length];
+    });
+
+    return result.join("");
 }
 
 function generateAPIKey() {
-    var apikey = randomString(16, "@#");
+    var apikey = randomString(16, {hex: true});
     $("input[name='apiKey']").val(apikey);
+    return false;
+}
+
+function generatePassword() {
+    var password = "";
+    do {
+        password = randomString(10);
+    } while (!validatePassword(password));
+
+    return password;
+}
+
+function toggleVisiblePassword() {
+    var elem = this.previousElementSibling;
+    if (elem.type === "password") {
+        elem.type = "text";
+    } else {
+        elem.type = "password";
+    }
+    return false;
+}
+
+function doGeneratePassword() {
+    $("input", $("#formPassword"))
+        .val(generatePassword())
+        .each(function() {
+            this.type = "text";
+        });
     return false;
 }
 
@@ -284,10 +375,18 @@ function sendConfig(data) {
     websock.send(JSON.stringify({config: data}));
 }
 
-function resetOriginals() {
+function setOriginalsFromValues(force) {
+    var force = (true === force);
     $("input,select").each(function() {
-        $(this).attr("original", $(this).val());
+        var initial = (undefined === $(this).attr("original"));
+        if (force || initial) {
+            $(this).attr("original", $(this).val());
+        }
     });
+}
+
+function resetOriginals() {
+    setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
 }
 
@@ -398,7 +497,7 @@ function doUpgrade() {
 
 function doUpdatePassword() {
     var form = $("#formPassword");
-    if (validateForm(form)) {
+    if (validateFormPasswords(form)) {
         sendConfig(getData(form));
     }
     return false;
@@ -452,14 +551,15 @@ function doReconnect(ask) {
 
 function doUpdate() {
 
-    var form = $("#formSave");
-    if (validateForm(form)) {
+    var forms = $(".form-settings");
+    if (validateForm(forms)) {
 
         // Get data
-        sendConfig(getData(form));
+        sendConfig(getData(forms));
 
         // Empty special fields
         $(".pwrExpected").val(0);
+        $("input[name='snsResetCalibration']").prop("checked", false);
         $("input[name='pwrResetCalibration']").prop("checked", false);
         $("input[name='pwrResetE']").prop("checked", false);
 
@@ -538,7 +638,7 @@ function doFactoryReset() {
     if (response === false) {
         return false;
     }
-    websock.send(JSON.stringify({"action": "factory_reset"}));
+    sendAction("factory_reset", {});
     doReload(5000);
     return false;
 }
@@ -573,6 +673,56 @@ function doDebugClear() {
     $("#weblog").text("");
     return false;
 }
+
+<!-- removeIf(!rfm69)-->
+
+function doClearCounts() {
+    sendAction("clear-counts", {});
+    return false;
+}
+
+function doClearMessages() {
+    packets.clear().draw(false);
+    return false;
+}
+
+function doFilter(e) {
+    var index = packets.cell(this).index();
+    if (index == 'undefined') return;
+    var c = index.column;
+    var column = packets.column(c);
+    if (filters[c]) {
+        filters[c] = false;
+        column.search("");
+        $(column.header()).removeClass("filtered");
+    } else {
+        filters[c] = true;
+        var data = packets.row(this).data();
+        if (e.which == 1) {
+            column.search('^' + data[c] + '$', true, false );
+        } else {
+            column.search('^((?!(' + data[c] + ')).)*$', true, false );
+        }
+        $(column.header()).addClass("filtered");
+    }
+    column.draw();
+    return false;
+}
+
+function doClearFilters() {
+    for (var i = 0; i < packets.columns()[0].length; i++) {
+        if (filters[i]) {
+            filters[i] = false;
+            var column = packets.column(i);
+            column.search("");
+            $(column.header()).removeClass("filtered");
+            column.draw();
+        }
+    }
+    return false;
+}
+
+<!-- endRemoveIf(!rfm69)-->
 
 // -----------------------------------------------------------------------------
 // Visualization
@@ -629,6 +779,28 @@ function createMagnitudeList(data, container, template_name) {
 <!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
+// RFM69
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!rfm69)-->
+function addMapping() {
+    var template = $("#nodeTemplate .pure-g")[0];
+    var line = $(template).clone();
+    var tabindex = $("#mapping > div").length * 3 + 50;
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find("button").on('click', delMapping);
+    line.appendTo("#mapping");
+}
+
+function delMapping() {
+    var parent = $(this).parent().parent();
+    $(parent).remove();
+}
+<!-- endRemoveIf(!rfm69)-->
+
+// -----------------------------------------------------------------------------
 // Wifi
 // -----------------------------------------------------------------------------
 
@@ -657,6 +829,7 @@ function addNetwork() {
         $(this).attr("tabindex", tabindex);
         tabindex++;
     });
+    $(".password-reveal", line).on("click", toggleVisiblePassword);
     $(line).find(".button-del-network").on("click", delNetwork);
     $(line).find(".button-more-network").on("click", moreNetwork);
     line.appendTo("#networks");
@@ -702,10 +875,12 @@ function addSchedule(event) {
     });
     $(line).find(".button-del-schedule").on("click", delSchedule);
     $(line).find(".button-more-schedule").on("click", moreSchedule);
+    $(line).find("input[name='schUTC']").prop("id", "schUTC" + (numSchedules + 1))
+        .next().prop("for", "schUTC" + (numSchedules + 1));
+    $(line).find("input[name='schEnabled']").prop("id", "schEnabled" + (numSchedules + 1))
+        .next().prop("for", "schEnabled" + (numSchedules + 1));
     line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
-
-    initCheckboxes();
 
     return line;
 
@@ -726,7 +901,14 @@ function initRelays(data) {
         // Add relay fields
         var line = $(template).clone();
         $(".id", line).html(i);
-        $(":checkbox", line).prop('checked', data[i]).attr("data", i);
+        $(":checkbox", line).prop('checked', data[i]).attr("data", i)
+            .prop("id", "relay" + i)
+            .on("change", function (event) {
+                var id = parseInt($(event.target).attr("data"), 10);
+                var status = $(event.target).prop("checked");
+                doToggle(id, status);
+            });
+        $("label.toggle", line).prop("for", "relay" + i)
         line.appendTo("#relays");
 
         // Populate the relay SELECTs
@@ -737,55 +919,13 @@ function initRelays(data) {
 
 }
 
-function initCheckboxes() {
-
-    var setCheckbox = function(element, value) {
-        var container = $(".toggle-container", $(element));
-        if (value) {
-            container.css("clipPath", "inset(0 0 0 50%)");
-            container.css("backgroundColor", "#00c000");
-        } else {
-            container.css("clipPath", "inset(0 50% 0 0)");
-            container.css("backgroundColor", "#c00000");
-        }
-    }
-
-    $(".checkbox-container")
-
-        .each(function() {
-            var status = $(this).next().prop('checked');
-            setCheckbox(this, status);
-        })
-        .off('click')
-        .on('click', function() {
-
-            var checkbox = $(this).next();
-
-            var status = checkbox.prop('checked');
-            status = !status;
-            checkbox.prop('checked', status);
-            setCheckbox(this, status);
-
-            if ("relay" == checkbox.attr('name')) {
-                var id = parseInt(checkbox.attr('data'), 10);
-                doToggle(id, status);
-            }
-
-        });
-
-}
-
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
 
-        var text_on = $(this).attr("on") || "YES";
-        var text_off = $(this).attr("off") || "NO";
-
-        var toggles = "<div class=\"toggle\"><p>" + text_on + "</p></div><div class=\"toggle\"><p>" + text_off + "</p></div>";
-        var content = "<div class=\"checkbox-container\"><div class=\"inner-container\">" + toggles
-            + "</div><div class=\"inner-container toggle-container\">" + toggles + "</div></div>";
-        $(this).before(content).hide();
+        if($(this).prop("name"))$(this).prop("id", $(this).prop("name"));
+        $(this).parent().addClass("toggleWrapper");
+        $(this).after('<label for="' + $(this).prop("name") + '" class="toggle"><span class="toggle__handler"></span></label>')
 
     });
 
@@ -844,31 +984,29 @@ function initMagnitudes(data) {
 
 <!-- removeIf(!light)-->
 
-function initColorRGB() {
+function initColor(rgb) {
 
     // check if already initialized
     var done = $("#colors > div").length;
     if (done > 0) { return; }
 
     // add template
-    var template = $("#colorRGBTemplate").children();
+    var template = $("#colorTemplate").children();
     var line = $(template).clone();
     line.appendTo("#colors");
 
     // init color wheel
     $("input[name='color']").wheelColorPicker({
-        sliders: "wrgbp"
+        sliders: (rgb ? "wrgbp" : "whsvp")
     }).on("sliderup", function() {
-        var value = $(this).wheelColorPicker("getValue", "css");
-        sendAction("color", {rgb: value});
-    });
-
-    // init bright slider
-    $("#brightness").on("change", function() {
-        var value = $(this).val();
-        var parent = $(this).parents(".pure-g");
-        $("span", parent).html(value);
-        sendAction("color", {brightness: value});
+        if (rgb) {
+            var value = $(this).wheelColorPicker("getValue", "css");
+            sendAction("color", {rgb: value});
+        } else {
+            var color = $(this).wheelColorPicker("getColor");
+            var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
+            sendAction("color", {hsv: value});
+        }
     });
 
 }
@@ -887,28 +1025,6 @@ function initCCT() {
     $("span", parent).html(value);
     sendAction("mireds", {mireds: value});
   });
-}
-
-function initColorHSV() {
-
-    // check if already initialized
-    var done = $("#colors > div").length;
-    if (done > 0) { return; }
-
-    // add template
-    var template = $("#colorHSVTemplate").children();
-    var line = $(template).clone();
-    line.appendTo("#colors");
-
-    // init color wheel
-    $("input[name='color']").wheelColorPicker({
-        sliders: "whsvp"
-    }).on("sliderup", function() {
-        var color = $(this).wheelColorPicker("getColor");
-        var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
-        sendAction("color", {hsv: value});
-    });
-
 }
 
 function initChannels(num) {
@@ -941,7 +1057,7 @@ function initChannels(num) {
         sendAction("channel", {id: id, value: value});
     };
 
-    // add templates
+    // add channel templates
     var i = 0;
     var template = $("#channelTemplate").children();
     for (i=0; i<max; i++) {
@@ -956,10 +1072,24 @@ function initChannels(num) {
 
     }
 
+    // Init channel dropdowns
     for (i=0; i<num; i++) {
         $("select.islight").append(
             $("<option></option>").attr("value",i).text("Channel #" + i));
     }
+
+    // add brightness template
+    var template = $("#brightnessTemplate").children();
+    var line = $(template).clone();
+    line.appendTo("#channels");
+
+    // init bright slider
+    $("#brightness").on("change", function() {
+        var value = $(this).val();
+        var parent = $(this).parents(".pure-g");
+        $("span", parent).html(value);
+        sendAction("brightness", {value: value});
+    });
 
 }
 <!-- endRemoveIf(!light)-->
@@ -1079,19 +1209,63 @@ function processData(data) {
         <!-- endRemoveIf(!rfbridge)-->
 
         // ---------------------------------------------------------------------
+        // RFM69
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!rfm69)-->
+
+        if (key == "packet") {
+            var packet = data.packet;
+            var d = new Date();
+            packets.row.add([
+                d.toLocaleTimeString('en-US', { hour12: false }),
+                packet.senderID,
+                packet.packetID,
+                packet.targetID,
+                packet.key,
+                packet.value,
+                packet.rssi,
+                packet.duplicates,
+                packet.missing,
+            ]).draw(false);
+            return;
+        }
+
+        if (key == "mapping") {
+			for (var i in data.mapping) {
+
+				// add a new row
+				addMapping();
+
+				// get group
+				var line = $("#mapping .pure-g")[i];
+
+				// fill in the blanks
+				var mapping = data.mapping[i];
+				Object.keys(mapping).forEach(function(key) {
+				    var id = "input[name=" + key + "]";
+				    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+				});
+			}
+			return;
+		}
+
+        <!-- endRemoveIf(!rfm69)-->
+
+        // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
         <!-- removeIf(!light)-->
 
         if ("rgb" === key) {
-            initColorRGB();
+            initColor(true);
             $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
         if ("hsv" === key) {
-            initColorHSV();
+            initColor(false);
             // wheelColorPicker expects HSV to be between 0 and 1 all of them
             var chunks = value.split(",");
             var obj = {};
@@ -1369,8 +1543,7 @@ function processData(data) {
         generateAPIKey();
     }
 
-    resetOriginals();
-    initCheckboxes();
+    setOriginalsFromValues();
 
 }
 
@@ -1384,27 +1557,27 @@ function hasChanged() {
         newValue = $(this).val();
         originalValue = $(this).attr("original");
     }
-    var hasChanged = $(this).attr("hasChanged") || 0;
+    var hasChanged = ("true" === $(this).attr("hasChanged"));
     var action = $(this).attr("action");
 
     if (typeof originalValue === "undefined") { return; }
     if ("none" === action) { return; }
 
     if (newValue !== originalValue) {
-        if (0 === hasChanged) {
+        if (!hasChanged) {
             ++numChanged;
             if ("reconnect" === action) { ++numReconnect; }
             if ("reboot" === action) { ++numReboot; }
             if ("reload" === action) { ++numReload; }
-            $(this).attr("hasChanged", 1);
+            $(this).attr("hasChanged", true);
         }
     } else {
-        if (1 === hasChanged) {
+        if (hasChanged) {
             --numChanged;
             if ("reconnect" === action) { --numReconnect; }
             if ("reboot" === action) { --numReboot; }
             if ("reload" === action) { --numReload; }
-            $(this).attr("hasChanged", 0);
+            $(this).attr("hasChanged", false);
         }
     }
 
@@ -1479,12 +1652,15 @@ $(function() {
     createCheckboxes();
     setInterval(function() { keepTime(); }, 1000);
 
+    $(".password-reveal").on("click", toggleVisiblePassword);
+
     $("#menuLink").on("click", toggleMenu);
     $(".pure-menu-link").on("click", showPanel);
     $("progress").attr({ value: 0, max: 100 });
 
     $(".button-update").on("click", doUpdate);
     $(".button-update-password").on("click", doUpdatePassword);
+    $(".button-generate-password").on("click", doGeneratePassword);
     $(".button-reboot").on("click", doReboot);
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);
@@ -1514,6 +1690,21 @@ $(function() {
     <!-- removeIf(!light)-->
     $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
     <!-- endRemoveIf(!light)-->
+
+    <!-- removeIf(!rfm69)-->
+    $(".button-add-mapping").on('click', addMapping);
+    $(".button-del-mapping").on('click', delMapping);
+    $(".button-clear-counts").on('click', doClearCounts);
+    $(".button-clear-messages").on('click', doClearMessages);
+    $(".button-clear-filters").on('click', doClearFilters);
+    $('#packets tbody').on('mousedown', 'td', doFilter);
+    packets = $('#packets').DataTable({
+        "paging": false
+    });
+    for (var i = 0; i < packets.columns()[0].length; i++) {
+        filters[i] = false;
+    }
+    <!-- endRemoveIf(!rfm69)-->
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);

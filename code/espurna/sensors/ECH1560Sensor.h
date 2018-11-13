@@ -60,6 +60,12 @@ class ECH1560Sensor : public BaseSensor {
         }
 
         // ---------------------------------------------------------------------
+
+        void resetEnergy(double value = 0) {
+            _energy = value;
+        }
+
+        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -106,6 +112,7 @@ class ECH1560Sensor : public BaseSensor {
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_APPARENT;
+            if (index == 3) return MAGNITUDE_ENERGY;
             return MAGNITUDE_NONE;
         }
 
@@ -114,6 +121,7 @@ class ECH1560Sensor : public BaseSensor {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _apparent;
+            if (index == 3) return _energy;
             return 0;
         }
 
@@ -260,6 +268,12 @@ class ECH1560Sensor : public BaseSensor {
                 _apparent = ( (float) byte1 * 255 + (float) byte2 + (float) byte3 / 255.0) / 2;
                 _current = _apparent / _voltage;
 
+                static unsigned long last = 0;
+                if (last > 0) {
+                    _energy += (_apparent * (millis() - last) / 1000);
+                }
+                last = millis();
+
                 _dosync = false;
 
             }
@@ -287,6 +301,7 @@ class ECH1560Sensor : public BaseSensor {
         double _apparent = 0;
         double _voltage = 0;
         double _current = 0;
+        double _energy = 0;
 
         unsigned char _data[24];
 

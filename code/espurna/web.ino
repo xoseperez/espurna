@@ -17,52 +17,17 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_EMBEDDED
 
-#define WEBUI_MODULE_SMALL      0
-#define WEBUI_MODULE_LIGHT      1
-#define WEBUI_MODULE_SENSOR     2
-#define WEBUI_MODULE_RFBRIDGE   4
-#define WEBUI_MODULE_ALL        7
-
-#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    #ifdef WEBUI_MODULE
-        #undef WEBUI_MODULE
-        #define WEBUI_MODULE    WEBUI_MODULE_ALL
-    #else
-        #define WEBUI_MODULE    WEBUI_MODULE_LIGHT
-    #endif
-#endif
-
-#if SENSOR_SUPPORT == 1
-    #ifndef WEBUI_MODULE
-        #define WEBUI_MODULE    WEBUI_MODULE_SENSOR
-    #else
-        #undef WEBUI_MODULE
-        #define WEBUI_MODULE    WEBUI_MODULE_ALL
-    #endif
-#endif
-
-#if defined(ITEAD_SONOFF_RFBRIDGE)
-    #ifndef WEBUI_MODULE
-        #define WEBUI_MODULE    WEBUI_MODULE_RFBRIDGE
-    #else
-        #undef WEBUI_MODULE
-        #define WEBUI_MODULE    WEBUI_MODULE_ALL
-    #endif
-#endif
-
-#ifndef WEBUI_MODULE
-    #define WEBUI_MODULE        WEBUI_MODULE_SMALL
-#endif
-
-#if WEBUI_MODULE == WEBUI_MODULE_SMALL
+#if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
     #include "static/index.small.html.gz.h"
-#elif WEBUI_MODULE == WEBUI_MODULE_LIGHT
+#elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
     #include "static/index.light.html.gz.h"
-#elif WEBUI_MODULE == WEBUI_MODULE_SENSOR
+#elif WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
     #include "static/index.sensor.html.gz.h"
-#elif WEBUI_MODULE == WEBUI_MODULE_RFBRIDGE
+#elif WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
     #include "static/index.rfbridge.html.gz.h"
-#elif WEBUI_MODULE == WEBUI_MODULE_ALL
+#elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
+    #include "static/index.rfm69.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.gz.h"
 #endif
 
@@ -79,6 +44,8 @@ AsyncWebServer * _server;
 char _last_modified[50];
 std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;
+
+std::vector<web_request_callback_f> _web_request_callbacks;
 
 // -----------------------------------------------------------------------------
 // HOOKS
@@ -126,7 +93,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     response->printf("{\n\"app\": \"%s\"", APP_NAME);
     response->printf(",\n\"version\": \"%s\"", APP_VERSION);
     response->printf(",\n\"backup\": \"1\"");
-    response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+    #if NTP_SUPPORT
+        response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+    #endif
 
     // Write the keys line by line (not sorted)
     unsigned long count = settingsKeyCount();
@@ -361,11 +330,24 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
     }
 }
 
+void _onRequest(AsyncWebServerRequest *request){
+
+    // Send request to subscribers
+    for (unsigned char i = 0; i < _web_request_callbacks.size(); i++) {
+        bool response = (_web_request_callbacks[i])(request);
+        if (response) return;
+    }
+
+    // No subscriber handled the request, return a 404
+    request->send(404);
+
+}
+
 // -----------------------------------------------------------------------------
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
-        String password = getSetting("adminPass", ADMIN_PASS);
+        String password = getAdminPass();
         char httpPassword[password.length() + 1];
         password.toCharArray(httpPassword, password.length() + 1);
         return request->authenticate(WEB_USERNAME, httpPassword);
@@ -378,6 +360,10 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
 
 AsyncWebServer * webServer() {
     return _server;
+}
+
+void webRequestRegister(web_request_callback_f callback) {
+    _web_request_callbacks.push_back(callback);
 }
 
 unsigned int webPort() {
@@ -408,6 +394,8 @@ void webSetup() {
     #if WEB_EMBEDDED
         _server->on("/index.html", HTTP_GET, _onHome);
     #endif
+
+    // Other entry points
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
@@ -424,10 +412,8 @@ void webSetup() {
             });
     #endif
 
-    // 404
-    _server->onNotFound([](AsyncWebServerRequest *request){
-        request->send(404);
-    });
+    // Handle other requests, including 404
+    _server->onNotFound(_onRequest);
 
     // Run server
     #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
@@ -436,6 +422,7 @@ void webSetup() {
     #else
         _server->begin();
     #endif
+
     DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
 
 }

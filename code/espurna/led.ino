@@ -10,6 +10,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // LED
 // -----------------------------------------------------------------------------
 
+#if LED_SUPPORT
+
 typedef struct {
     unsigned char pin;
     bool reverse;
@@ -168,14 +170,14 @@ void ledSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_ledWebSocketOnSend);
-        wsOnAfterParseRegister(_ledConfigure);
         wsOnReceiveRegister(_ledWebSocketOnReceive);
     #endif
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(ledLoop);
+    espurnaRegisterReload(_ledConfigure);
 
 
 }
@@ -290,3 +292,5 @@ void ledLoop() {
     _led_update = false;
 
 }
+
+#endif // LED_SUPPORT

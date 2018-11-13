@@ -8,9 +8,11 @@
 //--------------------------------------------------------------------------------
 
 //#define NODEMCU_LOLIN
+//#define WEMOS_D1_MINI
 //#define WEMOS_D1_MINI_RELAYSHIELD
 //#define TINKERMAN_ESPURNA_H06
 //#define TINKERMAN_ESPURNA_H08
+//#define TINKERMAN_RFM69GW
 //#define ITEAD_SONOFF_BASIC
 //#define ITEAD_SONOFF_RF
 //#define ITEAD_SONOFF_TH
@@ -70,6 +72,7 @@
 //#define MAXCIO_WUS002S
 //#define YIDIAN_XSSSA05
 //#define TONBUX_XSSSA06
+//#define TONBUX_XSSSA01
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
 //#define ARNIEX_SWIFITCH
@@ -87,31 +90,48 @@
 //#define PILOTAK_ESP_DIN_V1
 //#define BLITZWOLF_BWSHP2
 //#define BH_ONOFRE
+//#define ITEAD_SONOFF_IFAN02
+//#define GENERIC_AG_L4
+//#define ALLTERCO_SHELLY1
+//#define LOHAS_9W
+//#define YJZK_SWITCH_1CH
+//#define YJZK_SWITCH_3CH
+//#define XIAOMI_SMART_DESK_LAMP
+//#define ALLTERCO_SHELLY2
+//#define PHYX_ESP12_RGB
+//#define IWOOLE_LED_TABLE_LAMP
+//#define EXS_WIFI_RELAY_V50
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
 //#define ALEXA_SUPPORT          0
+//#define API_SUPPORT            0
 //#define BROKER_SUPPORT         0
+//#define BUTTON_SUPPORT         0
 //#define DEBUG_SERIAL_SUPPORT   0
 //#define DEBUG_TELNET_SUPPORT   0
 //#define DEBUG_UDP_SUPPORT      1
 //#define DEBUG_WEB_SUPPORT      0
 //#define DOMOTICZ_SUPPORT       0
+//#define ENCODER_SUPPORT        1
 //#define HOMEASSISTANT_SUPPORT  0
 //#define I2C_SUPPORT            1
 //#define INFLUXDB_SUPPORT       1
 //#define IR_SUPPORT             1
+//#define LED_SUPPORT            0
 //#define LLMNR_SUPPORT          1  // Only with Arduino Core 2.4.0
-//#define MDNS_SERVER_SUPPORT    0
 //#define MDNS_CLIENT_SUPPORT    1
+//#define MDNS_SERVER_SUPPORT    0
 //#define MQTT_SUPPORT           0
 //#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
+//#define RFM69_SUPPORT          1
 //#define RF_SUPPORT             1
 //#define SCHEDULER_SUPPORT      0
+//#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
@@ -137,14 +157,19 @@
 //#define EMON_ADS1X15_SUPPORT   1
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
+//#define GEIGER_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
-//#define HCSR04_SUPPORT         1
 //#define HLW8012_SUPPORT        1
 //#define MHZ19_SUPPORT          1
+//#define MICS2710_SUPPORT       1
+//#define MICS5525_SUPPORT       1
+//#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
 //#define PZEM004T_SUPPORT       1
+//#define SDS011_SUPPORT         1
+//#define SENSEAIR_SUPPORT       1
 //#define SHT3X_I2C_SUPPORT      1
 //#define SI7021_SUPPORT         1
+//#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
-//#define GEIGER_SUPPORT         1

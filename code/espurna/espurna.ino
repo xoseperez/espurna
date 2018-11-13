@@ -23,13 +23,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 
 std::vector<void (*)()> _loop_callbacks;
+std::vector<void (*)()> _reload_callbacks;
 
 // -----------------------------------------------------------------------------
-// REGISTER
+// GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
 
 void espurnaRegisterLoop(void (*callback)()) {
     _loop_callbacks.push_back(callback);
+}
+
+void espurnaRegisterReload(void (*callback)()) {
+    _reload_callbacks.push_back(callback);
+}
+
+void espurnaReload() {
+    for (unsigned char i = 0; i < _reload_callbacks.size(); i++) {
+        (_reload_callbacks[i])();
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -42,6 +53,9 @@ void setup() {
     // Basic modules, will always run
     // -------------------------------------------------------------------------
 
+    // Cache initial free heap value
+    getInitialFreeHeap();
+
     // Serial debug
     #if DEBUG_SUPPORT
         debugSetup();
@@ -49,7 +63,7 @@ void setup() {
 
     // Init EEPROM
     eepromSetup();
-    
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 
@@ -87,20 +101,29 @@ void setup() {
     #if WEB_SUPPORT
         webSetup();
         wsSetup();
-        apiSetup();
         #if DEBUG_WEB_SUPPORT
             debugWebSetup();
         #endif
+    #endif
+    #if API_SUPPORT
+        apiSetup();
     #endif
 
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
     #endif
-
     relaySetup();
-    buttonSetup();
-    ledSetup();
+    #if BUTTON_SUPPORT
+        buttonSetup();
+    #endif
+    #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+        encoderSetup();
+    #endif
+    #if LED_SUPPORT
+        ledSetup();
+    #endif
+
     #if MQTT_SUPPORT
         mqttSetup();
     #endif
@@ -139,6 +162,9 @@ void setup() {
     #endif
     #if THINGSPEAK_SUPPORT
         tspkSetup();
+    #endif
+    #if RFM69_SUPPORT
+        rfm69Setup();
     #endif
     #if RF_SUPPORT
         rfSetup();

@@ -3,6 +3,121 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.3] 2018-10-08
+### Fixed
+- Honour build time settings for MQTT on fresh install (#719)
+- Fix custom_crash_callback declaration for Arduino IDE 1.8.6 (#1169)
+- Fix eneUnits key in web UI (#1177)
+- Fix HA names (#1183)
+- API is now restful (issue a PUT to change a relay status). It can be disabled from web UI (#1192)
+- Remove static array to prevent out of bound in relay.ino (#1217)
+- Remove duplicate call to EEPROMr.begin (#1214)
+- Fix issue when SPIFFS_SUPPORT is enabled (#1225)
+- Fix quoting units_of_measurement in HA config output (#1227)
+- Fix "Clear counts" on rfm69 does not reset node count properly (thanks to @Trickx, #1239)
+- Fix homecube 3rd led setting (thanks to @mcspr)
+- Fix typo in static IP hint text (@thanks to @zafrirron)
+- Fix hostname/password length requirements (thanks to @mcspr and @djwmarcx)
+- Do not quote numbers in MQTT JSON payloads
+- Fix telnet client object deletion (thanks to @mcspr)
+- Call wakeUp PMS on first reading cycle to avoid not data in a long period (thanks to @Yonsm)
+- Small fixes and windows support for ESPurna OTA Manager (thanks to @mcspr)
+- Fix for YiDian XS-SSA05 configs (thanks to @ducky64)
+- Send MQTT messages only for button events with assigned actions (thanks to @Valcob)
+- Avoid EEPROM commits on callbacks (#1214)
+
+### Added
+- Option to report energy based on delta since last report (#369)
+- Support for IR-MQTT bridge, also in RAW mode (#556, #907)
+- Allow faster sensor reading intervals, down to 1 second (#848)
+- Support for Xiaomi Smart Desk Lamp (#884)
+- Retry up to 3 times on bad response to Thingspeak server (#1213)
+- Support for apparent power and power factor on CSE7/XX sensor (#1215)
+- Support for encoders
+- Support for Allterco Shelly2
+- Added SDS011 sensor support (thanks to @derlucas)
+- Added password check to telnet (option to disable it)
+- Added PHYX support (thanks to @whitebird)
+- Added config command that outputs the configuration in JSON
+- Support for MICS-2710, MICS-5525 and MICS-4514, gas sensors
+- Support for iWoole LED Table Lamp (thanks to @CollinShorts)
+- Command to output free stack
+- Password management from web UI (thanks to @mcspr)
+- Added BESTEK MRJ1011 support (thanks to @InduPrakash)
+- Support for EXS WiFi Relay 5.0 (thanks to @cheise, #1218)
+- Allowing disabling or single heartbeat on MQTT connect or repeat (default) (#1196)
+- Command to save settings when SETTINGS_AUTOSAVE is off
+
+### Changed
+- Upgraded to JustWifi 2.0.2
+- Upgraded to FauxmoESP 3.0.1
+- Upgraded to DebounceEvent 2.0.4 to properly support BUTTON_SWITCH
+- Split `info` command output into `info` and `wifi`. Refactor output.
+- Custom HA payloads (thanks to @Yonsm)
+
+## [1.13.2] 2018-08-27
+### Fixed
+- Fix relay overflow window length
+- Fix TravisCI release condition (thanks to @mcspr, [#1042](https://github.com/xoseperez/espurna/issues/1042))
+- Fix Sonoff RFBridge build in Arduino IDE ([#1043](https://github.com/xoseperez/espurna/issues/1043))
+- Using corrent path separator in gulpfile.js (thanks to @InduPrakash, [#1045](https://github.com/xoseperez/espurna/issues/1045))
+- Fix KMC70011 LED logic (thanks to @zerog2k, [#1056](https://github.com/xoseperez/espurna/issues/1056))
+- Fix Luani HVIO to use 1MB flash size and toggle switch (thanks to @BauerPh, [#1065](https://github.com/xoseperez/espurna/issues/1065) and [#1068](https://github.com/xoseperez/espurna/issues/1068))
+- Fix switches in Microsoft Edge (thanks to @Valcob, [#1066](https://github.com/xoseperez/espurna/issues/1066))
+- Fix build.sh error handling (thanks to @mcspr, [#1075](https://github.com/xoseperez/espurna/issues/1075))
+- Correctly init Serial on RELAY_PROVIDER_STM ([#1130](https://github.com/xoseperez/espurna/issues/1130))
+- Disconnect before running WPS and SmartConfig discovery ([#1146](https://github.com/xoseperez/espurna/issues/1146))
+- Fix sort fields in OTA manager
+
+### Added
+- Support for YJZK 1Ch and 3CH switches (thanks to @CollinShorts and @q32103940, [#1047](https://github.com/xoseperez/espurna/issues/1047))
+- Support for AG-L4 color desk lamp (thanks to @zerog2k, [#1050](https://github.com/xoseperez/espurna/issues/1050))
+- Option to cofigure ON/OFF payload at build time ([#1085](https://github.com/xoseperez/espurna/issues/1085))
+- Option to change default payload for HA ([#1085](https://github.com/xoseperez/espurna/issues/1085))
+- Support for Allterco Shelly1 (thanks to @abmantis, [#1128](https://github.com/xoseperez/espurna/issues/1128))
+- Support for HomeCube 16A (thanks to @hyteoo, [#1106](https://github.com/xoseperez/espurna/issues/1106))
+- Support for multiple sonar sensors (thanks to @ruimarinho, [#1116](https://github.com/xoseperez/espurna/issues/1116))
+- Support for hardware serial on PMSX003 device (thanks to @ruimarinho, [#1122](https://github.com/xoseperez/espurna/issues/1122))
+- Support for Lohas 9W bulbs (thanks to @steveway, [#1135](https://github.com/xoseperez/espurna/issues/1135))
+- Show literal for webUI image in info ([#1142](https://github.com/xoseperez/espurna/issues/1142))
+- Add RFBRIDGE code to full webUI image ([#1157](https://github.com/xoseperez/espurna/issues/1157))
+- Handle events in EventSensor
+- Option to remove API_SUPPORT at build time
+- Option to save total energy in EEPROM after X reports, disabled by default
+- Support for DHT12 sensor (thanks to Altan Altay)
+- Support for 2MB flash boards
+
+### Changed
+- Update PlatformIO support to 3.6.X branch
+- Explicitly disable ATC on RFM69 gateway ([#938](https://github.com/xoseperez/espurna/issues/938))
+- Reduce memory footprint of API calls ([#1133](https://github.com/xoseperez/espurna/issues/1133))
+- Init relay GPIO when in inverse mode to be OFF ([#1078](https://github.com/xoseperez/espurna/issues/1078))
+
+
+## [1.13.1] 2018-07-10
+### Fixed
+- Build issues with Arduino IDE ([#975](https://github.com/xoseperez/espurna/issues/975))
+- Right web interface image for with RF Bridge
+- Full web interface image if light and sensor together ([#981](https://github.com/xoseperez/espurna/issues/981))
+- Some devices still not using DOUT flash mode
+- Crash on loading malformed configuration file
+- Mismatch between memory size and layout size for some boards (this might require reflashing)
+- Wrong settings report after factory reset
+- Memory leak in JustWifi library
+- New buttons not rendering right in Safari ([#1028](https://github.com/xoseperez/espurna/issues/1028))
+
+### Added
+- Support for RFM69GW board (see http://tinkerman.cat/rfm69-wifi-gateway/)
+- Support for Sonoff IFAN02
+- Support for NTC sensors ([#1001](https://github.com/xoseperez/espurna/issues/1001))
+- Support for single-pin latched relays ([#1039](https://github.com/xoseperez/espurna/issues/1039))
+- Check binary flash mode in web upgrade
+- Sampling to AnalogSensor
+- Parallel builds in Travis (thanks to @lobradov)
+
+### Changed
+- Reworked platformio.ini, build.sh files (thanks to @gn0st1c and @mcspr)
+
 ## [1.13.0] 2018-06-22
 ### Fixed
 - Fixed PZEM004T compilation issues, working when using hardware serial ([#837](https://github.com/xoseperez/espurna/issues/837))

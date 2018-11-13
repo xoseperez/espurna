@@ -34,13 +34,13 @@ void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
     #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), getSetting("adminPass", ADMIN_PASS).c_str());
+        jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
     #else
         jw.setSoftAP(getSetting("hostname").c_str());
     #endif
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
-    jw.enableAPFallback(true);
+    jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
     _wifi_ap_mode = getSetting("apmode", WIFI_AP_FALLBACK).toInt();
@@ -226,6 +226,7 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
     if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
+        jw.enableAP(true);
     }
 
     if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
@@ -249,6 +250,7 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
 
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
+        jw.enableAP(true);
 
     }
 
@@ -383,6 +385,11 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
+    settingsRegisterCommand(F("WIFI"), [](Embedis* e) {
+        wifiDebug();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
+
     settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
@@ -487,7 +494,7 @@ void wifiDebug(WiFiMode_t modes) {
     if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
         DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getSetting("adminPass", ADMIN_PASS).c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getAdminPass().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
         footer = true;
@@ -550,12 +557,16 @@ void wifiStartAP() {
 
 #if defined(JUSTWIFI_ENABLE_WPS)
 void wifiStartWPS() {
+    jw.enableAP(false);
+    jw.disconnect();
     jw.startWPS();
 }
 #endif // defined(JUSTWIFI_ENABLE_WPS)
 
 #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 void wifiStartSmartConfig() {
+    jw.enableAP(false);
+    jw.disconnect();
     jw.startSmartConfig();
 }
 #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
@@ -607,7 +618,6 @@ void wifiSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_wifiWebSocketOnSend);
         wsOnReceiveRegister(_wifiWebSocketOnReceive);
-        wsOnAfterParseRegister(_wifiConfigure);
         wsOnActionRegister(_wifiWebSocketOnAction);
     #endif
 
@@ -615,8 +625,9 @@ void wifiSetup() {
         _wifiInitCommands();
     #endif
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(wifiLoop);
+    espurnaRegisterReload(_wifiConfigure);
 
 }
 

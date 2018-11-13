@@ -9,6 +9,8 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 Ticker _defer_reset;
 
+uint8_t _reset_reason = 0;
+
 String getIdentifier() {
     char buffer[20];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s-%06X"), APP_NAME, ESP.getChipId());
@@ -33,6 +35,10 @@ String getBoardName() {
     return getSetting("boardName", DEVICE_NAME);
 }
 
+String getAdminPass() {
+    return getSetting("adminPass", ADMIN_PASS);
+}
+
 String getCoreVersion() {
     String version = ESP.getCoreVersion();
     #ifdef ARDUINO_ESP8266_RELEASE
@@ -52,16 +58,24 @@ String getCoreRevision() {
     #endif
 }
 
-unsigned long maxSketchSpace() {
-    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-}
-
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
 unsigned int getFreeHeap() {
     if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
     return ESP.getFreeHeap();
+}
+
+unsigned int getInitialFreeHeap() {
+    static unsigned int _heap = 0;
+    if (0 == _heap) {
+        _heap = getFreeHeap();
+    }
+    return _heap;
+}
+
+unsigned int getUsedHeap() {
+    return getInitialFreeHeap() - getFreeHeap();
 }
 
 String getEspurnaModules() {
@@ -73,6 +87,10 @@ String getEspurnaSensors() {
     return FPSTR(espurna_sensors);
 }
 #endif
+
+String getEspurnaWebUI() {
+    return FPSTR(espurna_webui);
+}
 
 String buildTime() {
 
@@ -117,7 +135,7 @@ unsigned long getUptime() {
 
 }
 
-#if HEARTBEAT_ENABLED
+#if HEARTBEAT_MODE != HEARTBEAT_NONE
 
 void heartbeat() {
 
@@ -136,7 +154,7 @@ void heartbeat() {
 
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
-        DEBUG_MSG_P(PSTR("[MAIN] Free heap: %lu bytes\n"), free_heap);
+        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
         #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
@@ -165,6 +183,9 @@ void heartbeat() {
             #endif
             #if (HEARTBEAT_REPORT_HOSTNAME)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
+            #endif
+            #if (HEARTBEAT_REPORT_SSID)
+                mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
             #endif
             #if (HEARTBEAT_REPORT_IP)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
@@ -219,7 +240,7 @@ void heartbeat() {
 
 }
 
-#endif /// HEARTBEAT_ENABLED
+#endif /// HEARTBEAT_MODE != HEARTBEAT_NONE
 
 // -----------------------------------------------------------------------------
 // INFO
@@ -249,7 +270,7 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes, bool
     if (reset) index = 0;
     if (0 == bytes) return;
     unsigned int _sectors = info_bytes2sectors(bytes);
-    DEBUG_MSG_P(PSTR("[INIT] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
+    DEBUG_MSG_P(PSTR("[MAIN] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
     index += _sectors;
 }
 
@@ -257,26 +278,49 @@ void _info_print_memory_layout_line(const char * name, unsigned long bytes) {
     _info_print_memory_layout_line(name, bytes, false);
 }
 
+void infoMemory(const char * name, unsigned int total_memory, unsigned int free_memory) {
+
+    DEBUG_MSG_P(
+        PSTR("[MAIN] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
+        name,
+        total_memory,
+        total_memory - free_memory,
+        100 * (total_memory - free_memory) / total_memory,
+        free_memory,
+        100 * free_memory / total_memory
+    );
+
+}
+
 void info() {
 
-    DEBUG_MSG_P(PSTR("\n\n"));
-    DEBUG_MSG_P(PSTR("[INIT] %s %s\n"), (char *) APP_NAME, (char *) APP_VERSION);
-    DEBUG_MSG_P(PSTR("[INIT] %s\n"), (char *) APP_AUTHOR);
-    DEBUG_MSG_P(PSTR("[INIT] %s\n\n"), (char *) APP_WEBSITE);
-    DEBUG_MSG_P(PSTR("[INIT] CPU chip ID: 0x%06X\n"), ESP.getChipId());
-    DEBUG_MSG_P(PSTR("[INIT] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
-    DEBUG_MSG_P(PSTR("[INIT] SDK version: %s\n"), ESP.getSdkVersion());
-    DEBUG_MSG_P(PSTR("[INIT] Core version: %s\n"), getCoreVersion().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
+
+    // -------------------------------------------------------------------------
+
+    #if defined(APP_REVISION)
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION " (" APP_REVISION ")\n"));
+    #else
+        DEBUG_MSG_P(PSTR("[MAIN] " APP_NAME " " APP_VERSION "\n"));
+    #endif
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_AUTHOR "\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] " APP_WEBSITE "\n\n"));
+    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: 0x%06X\n"), ESP.getChipId());
+    DEBUG_MSG_P(PSTR("[MAIN] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
+    DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
     FlashMode_t mode = ESP.getFlashChipMode();
-    DEBUG_MSG_P(PSTR("[INIT] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
-    DEBUG_MSG_P(PSTR("[INIT] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
-    DEBUG_MSG_P(PSTR("[INIT] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
+    DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
+    DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
 
     _info_print_memory_layout_line("Flash size (CHIP)", ESP.getFlashChipRealSize(), true);
     _info_print_memory_layout_line("Flash size (SDK)", ESP.getFlashChipSize(), true);
@@ -288,60 +332,81 @@ void info() {
     _info_print_memory_layout_line("Reserved", 4 * SPI_FLASH_SEC_SIZE);
     DEBUG_MSG_P(PSTR("\n"));
 
-    DEBUG_MSG_P(PSTR("[INIT] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG_P(PSTR("\n"));
-
     // -------------------------------------------------------------------------
 
     #if SPIFFS_SUPPORT
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG_P(PSTR("[INIT] SPIFFS total size: %8u bytes / %4d sectors\n"), fs_info.totalBytes, sectors(fs_info.totalBytes));
-            DEBUG_MSG_P(PSTR("[INIT]        used size:  %8u bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG_P(PSTR("[INIT]        block size: %8u bytes\n"), fs_info.blockSize);
-            DEBUG_MSG_P(PSTR("[INIT]        page size:  %8u bytes\n"), fs_info.pageSize);
-            DEBUG_MSG_P(PSTR("[INIT]        max files:  %8u\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG_P(PSTR("[INIT]        max length: %8u\n"), fs_info.maxPathLength);
+            DEBUG_MSG_P(PSTR("[MAIN] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, info_bytes2sectors(fs_info.totalBytes));
+            DEBUG_MSG_P(PSTR("[MAIN]        used size    : %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG_P(PSTR("[MAIN]        block size   : %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        page size    : %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG_P(PSTR("[MAIN]        max files    : %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG_P(PSTR("[MAIN]        max length   : %8u\n"), fs_info.maxPathLength);
         } else {
-            DEBUG_MSG_P(PSTR("[INIT] No SPIFFS partition\n"));
+            DEBUG_MSG_P(PSTR("[MAIN] No SPIFFS partition\n"));
         }
         DEBUG_MSG_P(PSTR("\n"));
     #endif
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG_P(PSTR("[INIT] BOARD: %s\n"), getBoardName().c_str());
-    DEBUG_MSG_P(PSTR("[INIT] SUPPORT: %s\n"), getEspurnaModules().c_str());
-    #if SENSOR_SUPPORT
-        DEBUG_MSG_P(PSTR("[INIT] SENSORS: %s\n"), getEspurnaSensors().c_str());
-    #endif // SENSOR_SUPPORT
+    eepromSectorsDebug();
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
+    infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
+    infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+    infoMemory("Stack", 4096, getFreeStack());
+    DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
+    DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
     unsigned char reason = resetReason();
     if (reason > 0) {
         char buffer[32];
         strcpy_P(buffer, custom_reset_string[reason-1]);
-        DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), buffer);
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), buffer);
     } else {
-        DEBUG_MSG_P(PSTR("[INIT] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+        DEBUG_MSG_P(PSTR("[MAIN] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
     }
+    DEBUG_MSG_P(PSTR("\n"));
 
-    DEBUG_MSG_P(PSTR("[INIT] Settings size: %u bytes\n"), settingsSize());
-    DEBUG_MSG_P(PSTR("[INIT] Free heap: %u bytes\n"), getFreeHeap());
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
+    #if SENSOR_SUPPORT
+        DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
+    #endif // SENSOR_SUPPORT
+    DEBUG_MSG_P(PSTR("[MAIN] WebUI image: %s\n"), getEspurnaWebUI().c_str());
+    DEBUG_MSG_P(PSTR("\n"));
+
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("[MAIN] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
     #if ADC_MODE_VALUE == ADC_VCC
-        DEBUG_MSG_P(PSTR("[INIT] Power: %u mV\n"), ESP.getVcc());
+        DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif
+    DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
-    DEBUG_MSG_P(PSTR("[INIT] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    // -------------------------------------------------------------------------
 
     #if SYSTEM_CHECK_ENABLED
-        if (!systemCheck()) DEBUG_MSG_P(PSTR("\n[INIT] Device is in SAFE MODE\n"));
+        if (!systemCheck()) {
+            DEBUG_MSG_P(PSTR("\n"));
+            DEBUG_MSG_P(PSTR("[MAIN] Device is in SAFE MODE\n"));
+        }
     #endif
 
-    DEBUG_MSG_P(PSTR("\n"));
+    // -------------------------------------------------------------------------
+
+    DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
 
 }
 
@@ -403,17 +468,21 @@ unsigned char resetReason() {
 }
 
 void resetReason(unsigned char reason) {
+    _reset_reason = reason;
     EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
-    EEPROMr.commit();
+    eepromCommit();
 }
 
-void reset(unsigned char reason) {
-    resetReason(reason);
+void reset() {
     ESP.restart();
 }
 
 void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, reset, reason);
+    _defer_reset.once_ms(delay, resetReason, reason);
+}
+
+bool checkNeedsReset() {
+    return _reset_reason > 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -442,6 +511,7 @@ int __get_adc_mode() {
 
 bool isNumber(const char * s) {
     unsigned char len = strlen(s);
+    if (0 == len) return false;
     bool decimal = false;
     for (unsigned char i=0; i<len; i++) {
         if (s[i] == '-') {

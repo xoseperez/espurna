@@ -5,13 +5,13 @@
 #define SENSOR_DEBUG                        0               // Debug sensors
 
 #define SENSOR_READ_INTERVAL                6               // Read data from sensors every 6 seconds
-#define SENSOR_READ_MIN_INTERVAL            6               // Minimum read interval
+#define SENSOR_READ_MIN_INTERVAL            1               // Minimum read interval
 #define SENSOR_READ_MAX_INTERVAL            3600            // Maximum read interval
 #define SENSOR_INIT_INTERVAL                10000           // Try to re-init non-ready sensors every 10s
 
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
 #define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
-#define SENSOR_REPORT_MAX_EVERY             12              // Maximum
+#define SENSOR_REPORT_MAX_EVERY             60              // Maximum
 
 #define SENSOR_USE_INDEX                    0               // Use the index in topic (i.e. temperature/0)
                                                             // even if just one sensor (0 for backwards compatibility)
@@ -34,6 +34,18 @@
 
 #ifndef HUMIDITY_MIN_CHANGE
 #define HUMIDITY_MIN_CHANGE                 0               // Minimum humidity change to report
+#endif
+
+#ifndef ENERGY_MAX_CHANGE
+#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
+#endif
+
+#ifndef SENSOR_SAVE_EVERY
+#define SENSOR_SAVE_EVERY                   0               // Save accumulating values to EEPROM (atm only energy)
+                                                            // A 0 means do not save and it's the default value
+                                                            // A number different from 0 means it should store the value in EEPROM
+                                                            // after these many reports
+                                                            // Warning: this might wear out flash fast!
 #endif
 
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
@@ -77,6 +89,14 @@
 
 #ifndef ANALOG_SUPPORT
 #define ANALOG_SUPPORT                  0
+#endif
+
+#ifndef ANALOG_SAMPLES
+#define ANALOG_SAMPLES                  10      // Number of samples
+#endif
+
+#ifndef ANALOG_DELAY
+#define ANALOG_DELAY                    0       // Delay between samples in micros
 #endif
 
 //------------------------------------------------------------------------------
@@ -225,7 +245,7 @@
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE              230         // Mains voltage
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
-#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30V/1A)
+#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
 #define EMON_REPORT_CURRENT             0           // Report current
 #define EMON_REPORT_POWER               1           // Report power
 #define EMON_REPORT_ENERGY              1           // Report energy
@@ -273,6 +293,11 @@
 #define EVENTS_SUPPORT                  0       // Do not build with counter support by default
 #endif
 
+#ifndef EVENTS_TRIGGER
+#define EVENTS_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
 #ifndef EVENTS_PIN
 #define EVENTS_PIN                      2       // GPIO to monitor
 #endif
@@ -282,7 +307,7 @@
 #endif
 
 #ifndef EVENTS_INTERRUPT_MODE
-#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
 #define EVENTS_DEBOUNCE                 50      // Do not register events within less than 50 millis
@@ -305,7 +330,7 @@
 #endif
 
 #ifndef GEIGER_INTERRUPT_MODE
-#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, BOTH
+#define GEIGER_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
 #define GEIGER_DEBOUNCE                 25      // Do not register events within less than 25 millis.
@@ -327,23 +352,6 @@
 
 #ifndef GUVAS12SD_PIN
 #define GUVAS12SD_PIN                   14
-#endif
-
-//------------------------------------------------------------------------------
-// HC-SR04
-// Enable support by passing HCSR04_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef HCSR04_SUPPORT
-#define HCSR04_SUPPORT                  0
-#endif
-
-#ifndef HCSR04_TRIGGER
-#define HCSR04_TRIGGER                  12      // GPIO for the trigger pin (output)
-#endif
-
-#ifndef HCSR04_ECHO
-#define HCSR04_ECHO                     14      // GPIO for the echo pin (input)
 #endif
 
 //------------------------------------------------------------------------------
@@ -423,6 +431,99 @@
 #endif
 
 //------------------------------------------------------------------------------
+// MICS-2710 (and MICS-4514) NO2 sensor
+// Enable support by passing MICS2710_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef MICS2710_SUPPORT
+#define MICS2710_SUPPORT                0
+#endif
+
+#ifndef MICS2710_NOX_PIN
+#define MICS2710_NOX_PIN                0
+#endif
+
+#ifndef MICS2710_PRE_PIN
+#define MICS2710_PRE_PIN                4
+#endif
+
+#define MICS2710_PREHEAT_TIME           10000   // 10s preheat for NOX read
+#define MICS2710_RL                     820     // RL, load resistor
+#define MICS2710_R0                     2200    // R0 calibration value for NO2 sensor,
+                                                // Typical value as per datasheet
+
+//------------------------------------------------------------------------------
+// MICS-5525 (and MICS-4514) CO sensor
+// Enable support by passing MICS5525_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef MICS5525_SUPPORT
+#define MICS5525_SUPPORT                0
+#endif
+
+#ifndef MICS5525_RED_PIN
+#define MICS5525_RED_PIN                0
+#endif
+
+#define MICS5525_RL                     820     // RL, load resistor
+#define MICS5525_R0                     750000  // R0 calibration value for NO2 sensor,
+                                                // Typical value as per datasheet
+
+//------------------------------------------------------------------------------
+// NTC sensor
+// Enable support by passing NTC_SUPPORT=1 build flag
+//--------------------------------------------------------------------------------
+
+#ifndef NTC_SUPPORT
+#define NTC_SUPPORT                     0
+#endif
+
+#ifndef NTC_SAMPLES
+#define NTC_SAMPLES                     10      // Number of samples
+#endif
+
+#ifndef NTC_DELAY
+#define NTC_DELAY                       0       // Delay between samples in micros
+#endif
+
+#ifndef NTC_R_UP
+#define NTC_R_UP                        0       // Resistor upstream, set to 0 if none
+#endif
+
+#ifndef NTC_R_DOWN
+#define NTC_R_DOWN                      10000   // Resistor downstream, set to 0 if none
+#endif
+
+#ifndef NTC_T0
+#define NTC_T0                          298.15  // 25 Celsius
+#endif
+
+#ifndef NTC_R0
+#define NTC_R0                          10000   // Resistance at T0
+#endif
+
+#ifndef NTC_BETA
+#define NTC_BETA                        3977    // Beta coeficient
+#endif
+
+//------------------------------------------------------------------------------
+// SDS011 particulates sensor
+// Enable support by passing SDS011_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SDS011_SUPPORT
+#define SDS011_SUPPORT                   0
+#endif
+
+#ifndef SDS011_RX_PIN
+#define SDS011_RX_PIN                    14
+#endif
+
+#ifndef SDS011_TX_PIN
+#define SDS011_TX_PIN                    12
+#endif
+
+//------------------------------------------------------------------------------
 // SenseAir CO2 sensor
 // Enable support by passing SENSEAIR_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -459,14 +560,21 @@
 #define PMS_SMART_SLEEP                 0
 #endif
 
+#ifndef PMS_USE_SOFT
+#define PMS_USE_SOFT               0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
+#endif
+
 #ifndef PMS_RX_PIN
-#define PMS_RX_PIN                      13
+#define PMS_RX_PIN                 13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
 #ifndef PMS_TX_PIN
-#define PMS_TX_PIN                      15
+#define PMS_TX_PIN                 15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
+#ifndef PMS_HW_PORT
+#define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
+#endif
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag
@@ -492,9 +600,21 @@
 #define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
+#ifndef PZEM004T_ADDRESSES
+#define PZEM004T_ADDRESSES              "192.168.1.1"  // Device(s) address(es), separated by space, "192.168.1.1 192.168.1.2 192.168.1.3"
+#endif
+
+#ifndef PZEM004T_READ_INTERVAL
+#define PZEM004T_READ_INTERVAL          1500    // Read interval between same device
+#endif
+
+#ifndef PZEM004T_MAX_DEVICES
+#define PZEM004T_MAX_DEVICES            3
+#endif
+
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
-// Enable support by passing SHT3X_SUPPORT=1 build flag
+// Enable support by passing SHT3X_I2C_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef SHT3X_I2C_SUPPORT
@@ -517,6 +637,31 @@
 #ifndef SI7021_ADDRESS
 #define SI7021_ADDRESS                  0x00    // 0x00 means auto
 #endif
+
+//------------------------------------------------------------------------------
+// Sonar
+// Enable support by passing SONAR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SONAR_SUPPORT
+#define SONAR_SUPPORT                  0
+#endif
+
+#ifndef SONAR_TRIGGER
+#define SONAR_TRIGGER                  12                            // GPIO for the trigger pin (output)
+#endif
+
+#ifndef SONAR_ECHO
+#define SONAR_ECHO                     14                            // GPIO for the echo pin (input)
+#endif
+
+#ifndef SONAR_MAX_DISTANCE
+#define SONAR_MAX_DISTANCE             MAX_SENSOR_DISTANCE           // Max sensor distance in cm
+#endif
+
+#ifndef SONAR_ITERATIONS
+#define SONAR_ITERATIONS               5                             // Number of iterations to ping for
+#endif                                                               // error correction.
 
 //------------------------------------------------------------------------------
 // TMP3X analog temperature sensor
@@ -578,14 +723,18 @@
     EVENTS_SUPPORT || \
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
-    HCSR04_SUPPORT || \
     HLW8012_SUPPORT || \
+    MICS2710_SUPPORT || \
+    MICS5525_SUPPORT || \
     MHZ19_SUPPORT || \
+    NTC_SUPPORT || \
+    SDS011_SUPPORT || \
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
+    SONAR_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT \
 )
@@ -629,12 +778,6 @@
 
 #if SENSOR_SUPPORT
 
-#if SENSOR_DEBUG
-    #include "../config/debug.h"
-#endif
-
-#include "../sensors/BaseSensor.h"
-
 #if AM2320_SUPPORT
     #include "../sensors/AM2320Sensor.h"
 #endif
@@ -652,12 +795,10 @@
 #endif
 
 #if CSE7766_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/CSE7766Sensor.h"
 #endif
 
 #if DALLAS_SUPPORT
-    #include <OneWire.h>
     #include "../sensors/DallasSensor.h"
 #endif
 
@@ -690,39 +831,46 @@
 #endif
 
 #if GEIGER_SUPPORT
-    #include "../sensors/GeigerSensor.h"       // The main file for geiger counting module
+    #include "../sensors/GeigerSensor.h"
 #endif
 
 #if GUVAS12SD_SUPPORT
     #include "../sensors/GUVAS12SDSensor.h"
 #endif
 
-#if HCSR04_SUPPORT
-    #include "../sensors/HCSR04Sensor.h"
-#endif
-
 #if HLW8012_SUPPORT
-    #include <HLW8012.h>
     #include "../sensors/HLW8012Sensor.h"
 #endif
 
 #if MHZ19_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/MHZ19Sensor.h"
 #endif
 
+#if MICS2710_SUPPORT
+    #include "../sensors/MICS2710Sensor.h"
+#endif
+
+#if MICS5525_SUPPORT
+    #include "../sensors/MICS5525Sensor.h"
+#endif
+
+#if NTC_SUPPORT
+    #include "../sensors/NTCSensor.h"
+#endif
+
+#if SDS011_SUPPORT
+    #include "../sensors/SDS011Sensor.h"
+#endif
+
 #if SENSEAIR_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/SenseAirSensor.h"
 #endif
 
 #if PMSX003_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/PMSX003Sensor.h"
 #endif
 
 #if PZEM004T_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/PZEM004TSensor.h"
 #endif
 
@@ -734,12 +882,15 @@
     #include "../sensors/SHT3XI2CSensor.h"
 #endif
 
+#if SONAR_SUPPORT
+    #include "../sensors/SonarSensor.h"
+#endif
+
 #if TMP3X_SUPPORT
     #include "../sensors/TMP3XSensor.h"
 #endif
 
 #if V9261F_SUPPORT
-    #include <SoftwareSerial.h>
     #include "../sensors/V9261FSensor.h"
 #endif
 

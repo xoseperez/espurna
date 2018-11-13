@@ -49,6 +49,13 @@
 #endif
 
 //------------------------------------------------------------------------------
+// ENCODER
+//------------------------------------------------------------------------------
+
+#define ENCODER_MODE_CHANNEL        0
+#define ENCODER_MODE_RATIO          1
+
+//------------------------------------------------------------------------------
 // RELAY
 //------------------------------------------------------------------------------
 
@@ -265,9 +272,13 @@
 #define SENSOR_GUVAS12SD_ID         0x20
 #define SENSOR_CSE7766_ID           0x21
 #define SENSOR_TMP3X_ID             0x22
-#define SENSOR_HCSR04_ID            0x23
+#define SENSOR_SONAR_ID             0x23
 #define SENSOR_SENSEAIR_ID          0x24
 #define SENSOR_GEIGER_ID            0x25
+#define SENSOR_NTC_ID               0x26
+#define SENSOR_SDS011_ID            0x27
+#define SENSOR_MICS2710_ID          0x28
+#define SENSOR_MICS5525_ID          0x29
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -287,7 +298,7 @@
 #define MAGNITUDE_ENERGY_DELTA      11
 #define MAGNITUDE_ANALOG            12
 #define MAGNITUDE_DIGITAL           13
-#define MAGNITUDE_EVENTS            14
+#define MAGNITUDE_EVENT             14
 #define MAGNITUDE_PM1dot0           15
 #define MAGNITUDE_PM2dot5           16
 #define MAGNITUDE_PM10              17
@@ -298,5 +309,9 @@
 #define MAGNITUDE_HCHO              22
 #define MAGNITUDE_GEIGER_CPM        23
 #define MAGNITUDE_GEIGER_SIEVERT    24
+#define MAGNITUDE_COUNT             25
+#define MAGNITUDE_NO2               26
+#define MAGNITUDE_CO                27
+#define MAGNITUDE_RESISTANCE        28
 
-#define MAGNITUDE_MAX               25
+#define MAGNITUDE_MAX               29

@@ -25,10 +25,11 @@ const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "%s\r\n";
 
 bool _tspk_enabled = false;
-char * _tspk_queue[8] = {NULL};
+char * _tspk_queue[THINGSPEAK_FIELDS] = {NULL};
 
 bool _tspk_flush = false;
 unsigned long _tspk_last_flush = 0;
+unsigned char _tspk_tries = 0;
 
 // -----------------------------------------------------------------------------
 
@@ -97,12 +98,23 @@ void _tspkPost(String data) {
     }, 0);
 
     _tspk_client->onData([](void * arg, AsyncClient * c, void * response, size_t len) {
+
         char * b = (char *) response;
         b[len] = 0;
         char * p = strstr((char *)response, "\r\n\r\n");
         unsigned int code = (p != NULL) ? atoi(&p[4]) : 0;
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
+
+        _tspk_last_flush = millis();
+        if ((0 == code) && (--_tspk_tries > 0)) {
+            _tspk_flush = true;
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing\n"));
+        } else {
+            _tspkClearQueue();
+        }
+
         _tspk_client->close(true);
+
     }, NULL);
 
     _tspk_client->onConnect([data](void * arg, AsyncClient * client) {
@@ -118,7 +130,7 @@ void _tspkPost(String data) {
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, data.c_str());
 
         char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
         snprintf_P(buffer, sizeof(buffer),
@@ -164,7 +176,7 @@ void _tspkPost(String data) {
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
         }
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s\n"), data.c_str());
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, data.c_str());
         char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
         snprintf_P(buffer, sizeof(buffer),
             THINGSPEAK_REQUEST_TEMPLATE,
@@ -182,6 +194,15 @@ void _tspkPost(String data) {
         unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
         _tspk_client.stop();
+
+        _tspk_last_flush = millis();
+        if ((0 == code) && (--_tspk_tries > 0)) {
+            _tspk_flush = true;
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing\n"));
+        } else {
+            _tspkClearQueue();
+        }
+
         return;
 
     }
@@ -199,25 +220,33 @@ void _tspkEnqueue(unsigned char index, char * payload) {
     _tspk_queue[index] = strdup(payload);
 }
 
+void _tspkClearQueue() {
+    for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
+        if (_tspk_queue[id] != NULL) {
+            free(_tspk_queue[id]);
+            _tspk_queue[id] = NULL;
+        }
+    }
+}
+
 void _tspkFlush() {
 
-    String data;
+    _tspk_flush = false;
 
     // Walk the fields
-    for (unsigned char id=0; id<8; id++) {
+    String data;
+    for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
         if (_tspk_queue[id] != NULL) {
             if (data.length() > 0) data = data + String("&");
             data = data + String("field") + String(id+1) + String("=") + String(_tspk_queue[id]);
-            free(_tspk_queue[id]);
-            _tspk_queue[id] = NULL;
         }
     }
 
     // POST data if any
     if (data.length() > 0) {
         data = data + String("&api_key=") + getSetting("tspkKey");
+        _tspk_tries = THINGSPEAK_TRIES;
         _tspkPost(data);
-        _tspk_last_flush = millis();
     }
 
 }
@@ -259,7 +288,6 @@ void tspkSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
-        wsOnAfterParseRegister(_tspkConfigure);
         wsOnReceiveRegister(_tspkWebSocketOnReceive);
     #endif
 
@@ -268,8 +296,9 @@ void tspkSetup() {
         THINGSPEAK_USE_SSL ? "ENABLED" : "DISABLED"
     );
 
-    // Register loop
+    // Main callbacks
     espurnaRegisterLoop(tspkLoop);
+    espurnaRegisterReload(_tspkConfigure);
 
 }
 
@@ -278,7 +307,6 @@ void tspkLoop() {
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return;
     if (_tspk_flush && (millis() - _tspk_last_flush > THINGSPEAK_MIN_INTERVAL)) {
         _tspkFlush();
-        _tspk_flush = false;
     }
 }
 

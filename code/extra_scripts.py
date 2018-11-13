@@ -4,13 +4,9 @@ from __future__ import print_function
 import os
 import sys
 from subprocess import call
-
 import click
-from platformio import util
 
-import distutils.spawn
-
-Import("env")
+Import("env", "projenv")
 
 # ------------------------------------------------------------------------------
 # Utils
@@ -85,6 +81,9 @@ def check_size(source, target, env):
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
+
+# Always show warnings for project code
+projenv.ProcessUnFlags("-w")
 
 remove_float_support()
 
