@@ -299,7 +299,7 @@ typedef struct {
     // Asia/Taipei = 61
     // Asia/Tashkent = 39
     // Asia/Tbilisi = 46
-    {"<+0330>",210, "<+0430>", 270, 0, 3, 0, 360, 30, 0, 0, 120}, // Asia/Tehran = 65
+    {"<+0330>",210, "<+0430>", 270, 80, 0, 7, 0, 200, 64, 7, 0}, // Asia/Tehran = 65
     // Asia/Thimphu = 43
     {"JST",540, NULL, 0, 0, 0, 0, 0, 0, 0}, // Asia/Tokyo = 66
     // Asia/Tomsk = 36
