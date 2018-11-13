@@ -21,6 +21,7 @@ int _sbrAvrBaud;
 #if WEB_SUPPORT
 
 void _sbrWebSocketOnSend(JsonObject& root) {
+    //DEBUG_MSG_P(PSTR("[SERIAL BRIDGE] WebSocket OnSend\n"));
     root["sbrVisible"] = 1;
     root["sbrPort"] = getSetting("sbrPort", SBR_PORT);
     root["sbrBaud"] = getSetting("sbrBaud", SBR_BAUD);
@@ -54,7 +55,7 @@ void serialBridgeSetup() {
 
     #if WEB_SUPPORT
         wsOnSendRegister(_sbrWebSocketOnSend);
-        wsOnActionRegister(_sbrWebSocketOnAction);
+        //wsOnActionRegister(_sbrWebSocketOnAction);
     #endif
 
     settingsRegisterKeyCheck(_sbrKeyCheck);
