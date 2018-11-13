@@ -7,7 +7,8 @@
 #define WEBUI_IMAGE_SENSOR     2
 #define WEBUI_IMAGE_RFBRIDGE   4
 #define WEBUI_IMAGE_RFM69      8
-#define WEBUI_IMAGE_FULL       15
+#define WEBUI_IMAGE_SERBRIDGE  16
+#define WEBUI_IMAGE_FULL       31
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     #ifdef WEBUI_IMAGE
@@ -39,6 +40,15 @@
 #if RFM69_SUPPORT == 1
     #ifndef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_RFM69
+    #else
+        #undef WEBUI_IMAGE
+        #define WEBUI_IMAGE    WEBUI_IMAGE_FULL
+    #endif
+#endif
+
+#if SERIAL_BRIDGE_SUPPORT == 1
+    #ifndef WEBUI_IMAGE
+        #define WEBUI_IMAGE    WEBUI_IMAGE_SERBRIDGE
     #else
         #undef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_FULL

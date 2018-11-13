@@ -31,6 +31,17 @@
 #define TERMINAL_SUPPORT            0
 #undef DEBUG_SERIAL_SUPPORT
 #define DEBUG_SERIAL_SUPPORT        0
+#undef SERIAL_BRIDGE_SUPPORT
+#define SERIAL_BRIDGE_SUPPORT       0
+#endif
+
+#if SERIAL_BRIDGE_SUPPORT
+//#undef TERMINAL_SUPPORT
+//#define TERMINAL_SUPPORT            0
+//#undef DEBUG_SERIAL_SUPPORT
+//#define DEBUG_SERIAL_SUPPORT        0
+#undef UART_MQTT_SUPPORT
+#define UART_MQTT_SUPPORT           0
 #endif
 
 #if DOMOTICZ_SUPPORT

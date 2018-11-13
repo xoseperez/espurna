@@ -115,11 +115,12 @@ var htmllintReporter = function(filepath, issues) {
 
 var buildWebUI = function(module) {
 
-    var modules = {'light': false, 'sensor': false, 'rfbridge': false, 'rfm69': false};
+    var modules = {'light': false, 'sensor': false, 'rfbridge': false, 'rfm69': false, 'sbr': false};
     if ('all' === module) {
         modules['light'] = true;
         modules['sensor'] = true;
         modules['rfbridge'] = true;
+        modules['sbr'] = false; // conflicts with other modules, best off unless explicitly enabled
         modules['rfm69'] = false;   // we will never be adding this except when building RFM69GW
     } else if ('small' !== module) {
         modules[module] = true;
@@ -217,6 +218,10 @@ gulp.task('webui_rfbridge', function() {
     return buildWebUI('rfbridge');
 });
 
+gulp.task('webui_sbr', function() {
+    return buildWebUI('sbr');
+});
+
 gulp.task('webui_rfm69', function() {
     return buildWebUI('rfm69');
 });
@@ -231,6 +236,7 @@ gulp.task('webui', ['devices'], function(cb) {
         'webui_sensor',
         'webui_light',
         'webui_rfbridge',
+        'webui_sbr',
         'webui_rfm69',
         'webui_all'
     ], cb);

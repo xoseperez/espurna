@@ -12,6 +12,7 @@ Module key prefix: web
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <AVRFlash.h>
 #include <Hash.h>
 #include <FS.h>
 #include <AsyncJson.h>
@@ -29,6 +30,8 @@ Module key prefix: web
     #include "static/index.rfbridge.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
     #include "static/index.rfm69.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_SERBRIDGE
+    #include "static/index.sbr.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.gz.h"
 #endif
@@ -48,6 +51,8 @@ std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;
 
 std::vector<web_request_callback_f> _web_request_callbacks;
+
+AVRFlash *_avrflash = 0;
 
 // -----------------------------------------------------------------------------
 // HOOKS
@@ -267,9 +272,11 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 #endif
 
 void _onUpgrade(AsyncWebServerRequest *request) {
+    DEBUG_MSG_P(PSTR("[UPGRADE] Auth\n"));
 
     webLog(request);
     if (!webAuthenticate(request)) {
+        DEBUG_MSG_P(PSTR("[UPGRADE] Auth failed\n"));
         return request->requestAuthentication(getHostname().c_str());
     }
 
@@ -324,6 +331,116 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
     } else {
         DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
+}
+
+extern SerialBridge _sbr;
+
+void _AVRflashRespond(AsyncWebServerRequest *request) {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] _AVRflashRespond req=%x cli=%x\n"), (uint32_t)request, (uint32_t)(request->client()));
+    char buffer[128];
+    int code = 200;
+    if (!_avrflash->hasError()) {
+        sprintf_P(buffer, PSTR("Flashing successful!"));
+        DEBUG_MSG_P(PSTR("[AVRFLASH] Success\n"));
+        //DEBUG_MSG_P(PSTR("[AVRFLASH] Success:  %u bytes\n"), index + len);
+    } else {
+        DEBUG_MSG_P(PSTR("[AVRFLASH] Error: %s\n"), _avrflash->getError());
+        sprintf_P(buffer, PSTR("Flashing error: %s"), _avrflash->getError());
+        code = 400;
+    }
+
+    AsyncWebServerResponse *response = request->beginResponse(code, "text/plain", buffer);
+    response->addHeader("Connection", "close");
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+    DEBUG_MSG_P(PSTR("sending\n"));
+    request->send(response);
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Response sent\n"));
+
+    if (_avrflash) delete _avrflash;
+    _avrflash = 0;
+    _sbr.enable();
+}
+
+// _onAVRflash is called to finish off the flashing of an attached AVR microprocessor and to return
+// an HTTP response.
+void _onAVRflash(AsyncWebServerRequest *request) {
+    webLog(request);
+    DEBUG_MSG_P(PSTR("[AVRFLASH] _onAVRflash client=%x\n"), (uint32_t)(request->client()));
+    if (!webAuthenticate(request)) {
+        DEBUG_MSG_P(PSTR("[AVRFLASH] requesting auth\n"));
+        return request->requestAuthentication(getHostname().c_str());
+    }
+
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Finishing req=%x cli=%x\n"), (uint32_t)request,
+    (uint32_t)(request->client()));
+    if (_avrflash) _avrflash->finish(_AVRflashRespond, request);
+}
+
+// need to instatiate template member functions that we use... yuck, I hate c++
+template void AVRFlash::finish<AsyncWebServerRequest*>(
+        void(*)(AsyncWebServerRequest*), AsyncWebServerRequest*);
+template uint32_t HexRecord::write<AsyncWebServerRequest*>(
+        uint8_t *data, size_t len, void (*stop)(AsyncWebServerRequest*), void
+        (*resume)(AsyncWebServerRequest*), AsyncWebServerRequest* cbArg);
+
+void _AVRflashStop(AsyncWebServerRequest *request) {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Stop TCP\n"));
+    request->client()->ackLater();
+}
+
+void _AVRflashResume(AsyncWebServerRequest *request) {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Resume TCP\n"));
+    request->client()->ack(1000000);
+}
+
+void _AVRflashDisconnect() {
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Disconnect\n"));
+    if (!_avrflash) return;
+    _avrflash->abort();
+    delete _avrflash;
+    _avrflash = 0;
+    _sbr.enable();
+}
+
+// _onAVRflashData is called with data to flash an attached AVR microprocessor.
+void _onAVRflashData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    //DEBUG_MSG_P(PSTR("[AVRFLASH] _onAVRflashData i=%d len=%d final=%d\n"), index, len, final);
+    if (index == 0) {
+        // Index is zero if this is the very first callback for a request.
+        if (_avrflash) {
+            DEBUG_MSG_P(PSTR("[AVRFLASH] Ooops, multiple concurrent flashing operations...\n"));
+        }
+        _sbr.disable();   
+        request->onDisconnect(&_AVRflashDisconnect);
+        request->client()->setRxTimeout(30);
+        _avrflash = new AVRFlash(Serial,
+            getSetting("sbrAvrReset", SBR_AVRRESET).toInt(),
+            getSetting("sbrAvrBaud", SBR_AVRBAUD).toInt());
+        _avrflash->debug(debugSend_P);
+        _avrflash->sync();
+        DEBUG_MSG_P(PSTR("[AVRFLASH] %s @%dbaud reset on pin %d\n"), filename.c_str(), 57600,
+        12);
+    }
+
+    if (_avrflash->hasError()) return;
+
+    if (_avrflash->write(data, len, _AVRflashStop, _AVRflashResume, request) != len) {
+        DEBUG_MSG_P(PSTR("[AVRFLASH] Error #%u\n"), _avrflash->getError());
+        return;
+    }
+    DEBUG_MSG_P(PSTR("[AVRFLASH] Progress: %u bytes\r"), index + len);
+
+#if 0
+    // final is true if this is the last callback for a request.
+    if (!final) return;
+    if (_avrflash->finish()){
+        DEBUG_MSG_P(PSTR("[AVRFLASH] Success:  %u bytes\n"), index + len);
+    } else {
+        DEBUG_MSG_P(PSTR("[AVRFLASH] Error #%u\n"), _avrflash->getError());
+    }
+#endif
 }
 
 void _webWebSocketOnSend(JsonObject& root) {
@@ -413,6 +530,7 @@ void webSetup() {
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
     _server->on("/discover", HTTP_GET, _onDiscover);
+    _server->on("/flashavr", HTTP_POST, _onAVRflash, _onAVRflashData);
 
     // Serve static files
     #if SPIFFS_SUPPORT

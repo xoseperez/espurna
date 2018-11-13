@@ -71,6 +71,15 @@ void _deviceLoad() {
         setSetting("rlyGPIO", 0, 5);
         setSetting("rlyType", 0, RELAY_TYPE_NORMAL);
 
+    #elif defined(WIFI_PICO_12)
+
+        setSetting("board", DEVICE_WIFI_PICO_12);
+        setSetting("device", "WIFI_PICO_12");
+        setSetting("fw", ESPURNA_BASIC);
+
+        setSetting("ledGPIO", 0, 0);
+        setSetting("ledLogic", 0, GPIO_LOGIC_INVERSE);
+
     #elif defined(ITEAD_SONOFF_BASIC)
 
         setSetting("board", DEVICE_ITEAD_SONOFF_BASIC);

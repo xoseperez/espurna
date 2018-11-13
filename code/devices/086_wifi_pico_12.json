@@ -1,0 +1,6 @@
+{
+    "board": 86,
+    "device": "WIFI_PICO_12",
+    "ledGPIO0": 0,
+    "ledLogic0": 1,
+}

@@ -202,11 +202,10 @@ void debugSetup() {
 
         if (_dbg_serial_enabled) {
 
-            unsigned char port = getSetting("dbgPort", 0).toInt();
-            if (0 == port) {
-                _dbg_port = Serial;
-            } else {
-                _dbg_port = Serial1;
+            unsigned char port = getSetting("dbgPort", 255).toInt();
+            switch (port) {
+            case 0: _dbg_port = Serial; break;
+            case 1: _dbg_port = Serial1; break;
             }
 
             unsigned long speed = getSetting("dbgSpeed", DEBUG_SERIAL_SPEED).toInt();
