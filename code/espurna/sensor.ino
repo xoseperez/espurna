@@ -282,7 +282,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             unsigned char dev_count = pzem004t_sensor->getAddressesCount();
             for(unsigned char dev = 0; dev < dev_count; dev++) {
-                DEBUG_MSG_P(PSTR("Device %d Address %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
+                DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
             }
             DEBUG_MSG_P(PSTR("+OK\n"));
         } else if(e->argc == 2) {
@@ -299,7 +299,7 @@ void _sensorInitCommands() {
         }
     });
     settingsRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
-         if(e->argc > 2) {
+        if(e->argc > 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
@@ -308,7 +308,7 @@ void _sensorInitCommands() {
             for(unsigned char dev = init; dev < limit; dev++) {
                 float offset = pzem004t_sensor->resetEnergy(dev);
                 setSetting("pzEneTotal", dev, offset);
-                DEBUG_MSG_P(PSTR("Device %d Address %s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
+                DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
             DEBUG_MSG_P(PSTR("+OK\n"));
         }
