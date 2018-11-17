@@ -383,7 +383,7 @@ unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
     } else if (value == LIGHT_MAX_VALUE) {
         value = LIGHT_LIMIT_PWM;
     } else if (gamma) {
-        value = pow(((float)value/LIGHT_MAX_VALUE),_light_gamma)*LIGHT_LIMIT_PWM;
+        value = std::max(1UL, (unsigned long)(pow(((float)value/LIGHT_MAX_VALUE),_light_gamma)*LIGHT_LIMIT_PWM);
     } else {
         if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
     }
