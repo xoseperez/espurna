@@ -1027,9 +1027,21 @@
 
 #ifndef BLYNK_SUPPORT
 #define BLYNK_SUPPORT        0
+#endif
+
+#ifndef BLYNK_ENABLED
 #define BLYNK_ENABLED        0
+#endif
+
+#ifndef BLYNK_AUTH_TOKEN
 #define BLYNK_AUTH_TOKEN     "insert your blynk auth key here"
+#endif
+
+#ifndef BLYNK_HOST
 #define BLYNK_HOST  "blynk-cloud.com"
+#endif
+
+#ifndef BLYNK_PORT
 #define BLYNK_PORT  80
 #endif
 
