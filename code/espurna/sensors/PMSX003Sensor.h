@@ -24,7 +24,7 @@
 #define PMS_TYPE_5003ST     3
 
 // Sensor type specified data
-#define PMS_SLOT_MAX        4
+#define PMS_SLOT_MAX        9
 #define PMS_DATA_MAX        17
 const static struct {
     const char *name;
@@ -32,8 +32,23 @@ const static struct {
     unsigned char slot_count;
     unsigned char slot_types[PMS_SLOT_MAX];
 } pms_specs[] = {
-    {"PMSX003", 13, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
-    {"PMSX003_9", 9, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
+    {"PMSX003", 13, 9, {
+        MAGNITUDE_PM1dot0,
+        MAGNITUDE_PM2dot5,
+        MAGNITUDE_PM10,
+        MAGNITUDE_PARTICLES_0dot3,
+        MAGNITUDE_PARTICLES_0dot5,
+        MAGNITUDE_PARTICLES_1,
+        MAGNITUDE_PARTICLES_2dot5,
+        MAGNITUDE_PARTICLES_5,
+        MAGNITUDE_PARTICLES_10
+      }
+    },
+    {"PMSX003_9", 9, 3, {
+        MAGNITUDE_PM1dot0,
+        MAGNITUDE_PM2dot5,
+        MAGNITUDE_PM10
+    }},
     {"PMS5003T", 13, 3, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY}},
     {"PMS5003ST", 17, 4, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}}
 };
@@ -314,6 +329,12 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     _slot_values[0] = data[3];
                     _slot_values[1] = data[4];
                     _slot_values[2] = data[5];
+                    _slot_values[3] = data[6] * 10; // convert particles per 0.1L of air to 1L
+                    _slot_values[4] = data[7] * 10; // convert particles per 0.1L of air to 1L
+                    _slot_values[5] = data[8] * 10; // convert particles per 0.1L of air to 1L
+                    _slot_values[6] = data[9] * 10; // convert particles per 0.1L of air to 1L
+                    _slot_values[7] = data[10] * 10; // convert particles per 0.1L of air to 1L
+                    _slot_values[8] = data[11] * 10; // convert particles per 0.1L of air to 1L
                 }
             }
 

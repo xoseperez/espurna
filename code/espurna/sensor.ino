@@ -1207,7 +1207,7 @@ String magnitudeTopicIndex(unsigned char index) {
 
 
 String magnitudeUnits(unsigned char type) {
-    char buffer[8] = {0};
+    char buffer[14] = {0};
     if (type < MAGNITUDE_MAX) {
         if ((type == MAGNITUDE_TEMPERATURE) && (_sensor_temperature_units == TMP_FAHRENHEIT)) {
             strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
