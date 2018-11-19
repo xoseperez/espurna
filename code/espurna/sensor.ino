@@ -712,6 +712,7 @@ void _sensorLoad() {
         sensor->setDynamicMode(VEML6075_DYNAMIC_MODE);
         _sensors.push_back(sensor);
     }
+    #endif
 
     #if VL53L1X_SUPPORT
     {
