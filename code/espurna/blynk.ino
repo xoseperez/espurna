@@ -24,7 +24,14 @@ class BlynkWifi
 public:
 
     BlynkWifi(BlynkArduinoClient& transp)
-        : Base(transp)
+        : Base(transp),
+          _token(nullptr),
+          _host(nullptr),
+          _port(0),
+          backoff(0),
+          backoff_step(3),
+          backoff_limit(15),
+          last_attempt(0)
     {}
 
     char* getToken() { return _token; }
@@ -62,22 +69,28 @@ public:
         );
     }
 
-    bool connectWithBackoff() {
-        static uint8_t backoff = 0;
-        static uint32_t last_attempt = millis();
+    bool reachedBackoffLimit() {
+        return (backoff >= backoff_limit);
+    }
 
-        uint32_t timeout = (BLYNK_CONNECTION_TIMEOUT * (backoff + 1));
+    bool connectWithBackoff() {
+        if (!last_attempt) last_attempt = millis();
+
+        uint32_t timeout = (0 == backoff)
+            ? BLYNK_CONNECTION_TIMEOUT
+            : (BLYNK_CONNECTION_TIMEOUT * backoff);
+
         if ((millis() - last_attempt) < timeout) {
             return false;
         }
 
         last_attempt = millis();
         if (!connect(BLYNK_CONNECTION_TIMEOUT)) {
-            if (backoff < 15) backoff += 3;
+            if (!reachedBackoffLimit()) backoff += backoff_step;
             return false;
         }
 
-        backoff = 1;
+        backoff = 0;
 
         return true;
     }
@@ -86,6 +99,13 @@ private:
     char* _token;
     char* _host;
     uint16_t _port;
+
+    uint8_t backoff;
+    uint8_t backoff_step;
+    uint8_t backoff_limit;
+
+    uint32_t last_attempt;
+
 };
 
 // TODO construct later?
@@ -239,8 +259,6 @@ void blynkLoop(){
 
     if (!Blynk.connected()) {
         if (!Blynk.connectWithBackoff()) {
-            DEBUG_MSG_P(PSTR("[BLYNK] %s:%u cannot be reached\n"),
-                Blynk.getHost(), Blynk.getPort());
             return;
         }
     }
