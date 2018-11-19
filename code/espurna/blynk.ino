@@ -73,7 +73,7 @@ BlynkWifi Blynk(_blynkTransport);
 // vpin <-> relays, sensors mapping
 bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
     for (size_t id=0; id<relayCount(); id++) {
-        String mapping = getSetting("blnkRelayVPin", id);
+        String mapping = getSetting("blnkRelayVPin", id, "");
         if (!mapping) continue;
 
         if (mapping.toInt() == vpin) {
@@ -86,7 +86,7 @@ bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
 }
 
 bool _blynkRelayVPin(uint8_t relayID, uint8_t* vpin) {
-    String mapping = getSetting("blnkRelayVPin", relayID);
+    String mapping = getSetting("blnkRelayVPin", relayID, "");
     if (mapping) {
         *vpin = mapping.toInt();
         return true;
