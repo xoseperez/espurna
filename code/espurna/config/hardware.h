@@ -3003,7 +3003,8 @@
     #define NOFUSS_SUPPORT      1
     #define UART_MQTT_SUPPORT   1
     #define INFLUXDB_SUPPORT    1
-    #define IR_SUPPORT    1
+    #define IR_SUPPORT          1
+    #define BLYNK_SUPPORT       1
 
 #elif defined(TRAVIS03)
 

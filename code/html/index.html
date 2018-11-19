@@ -1027,8 +1027,8 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Auth Key</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="blnkAuthKey" type="text" tabindex="31" />
+                                    <label class="pure-u-1 pure-u-lg-1-4">Auth Token</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="blnkToken" type="text" tabindex="31" />
                                 </div>
 
                                 <div class="pure-g">
@@ -1041,10 +1041,10 @@
                                     <input class="pure-u-1 pure-u-lg-3-4" name="blnkPort" type="number" tabindex="32" />
                                 </div>
 
-                                <legend>Sensors &amp; actuators</legend>
+                                <legend>VPin mapping</legend>
 
                                 <div class="pure-g">
-                                    <div class="pure-u-1 hint">Set value to wished Virtual PIN number. If value is -1 notifications from that componentare disabled. Valid values for VPINs are 0-127<br>Please make sure that values are not assigned twice.</div>
+                                    <div class="pure-u-1 hint">Connect VPins to the hardware. For relays - sync (both ways) the binary state. For sensors - send (one way) current value. VPins must be in 0..255 range and <strong>must be unique!</strong></div>
                                 </div>
 
                                 <div id="blnkRelays"></div>
@@ -1638,7 +1638,7 @@
         <div id="blnkRelayTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Switch</label>
-                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24 blnkRelayVpin" name="blnkRelayVpin" type="number" min="-1" max="127" tabindex="0" data="-1" value="-1" /></div>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24 blnkRelayVPin" name="blnkRelayVPin" type="number" min="0" max="255" tabindex="0" data="" value="" /></div>
             </div>
         </div>
 
@@ -1646,7 +1646,7 @@
         <div id="blnkMagnitudeTemplate" class="template">
             <div class="pure-g">
                 <label class="pure-u-1 pure-u-lg-1-4">Magnitude</label>
-                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24 center" name="blnkMagnitude" type="number" min="-1" max="127" tabindex="0" data="-1" value="-1" /></div>
+                <div class="pure-u-1 pure-u-lg-1-4"><input class="pure-u-1 pure-u-lg-23-24 center" name="blnkMagnitude" type="number" min="0" max="255" tabindex="0" data="" value="" /></div>
                 <div class="pure-u-1 pure-u-lg-1-2 hint center"></div>
             </div>
         </div>

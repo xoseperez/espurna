@@ -246,7 +246,7 @@ function addValue(data, name, value) {
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
-        "dczRelayIdx", "dczMagnitude","blnkRelayVpin","blnkMagnitude",
+        "dczRelayIdx", "dczMagnitude","blnkRelayVPin","blnkMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
         "adminPass",
