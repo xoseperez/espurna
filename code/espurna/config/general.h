@@ -1045,6 +1045,10 @@
 #define BLYNK_PORT  80
 #endif
 
+#ifndef BLYNK_CONNECTION_TIMEOUT
+#define BLYNK_CONNECTION_TIMEOUT 3000
+#endif
+
 // -----------------------------------------------------------------------------
 // SCHEDULER
 // -----------------------------------------------------------------------------

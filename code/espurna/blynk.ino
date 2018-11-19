@@ -7,56 +7,92 @@ Copyright (C) 2018 by Thomas Häger <thaeger at hdsnetz dot de>
 */
 
 #if BLYNK_SUPPORT
-#include <ESP8266WiFi.h>
-#include <BlynkSimpleStream.h>
 
-bool _blnk_enabled = false;
-WiFiClient _wific;
+bool _blynk_enabled = false;
 
-signed char _blynkRelay(unsigned int vpin) {
-    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
-        if (getSetting("blnkRelayVpin", relayID, 0).toInt() == vpin) {
-            return relayID;
+// ref: blynk-library/src/BlynkSimpleEsp8266.h
+// adapted esp8266 class, without 2.4.x requirement
+#include <BlynkApiArduino.h>
+#include <Blynk/BlynkProtocol.h>
+#include <Adapters/BlynkArduinoClient.h>
+
+
+class BlynkWifi
+    : public BlynkProtocol<BlynkArduinoClient>
+{
+    typedef BlynkProtocol<BlynkArduinoClient> Base;
+public:
+
+    BlynkWifi(BlynkArduinoClient& transp)
+        : Base(transp)
+    {}
+
+    char* getToken() { return _token; }
+    char* getHost() { return _host; }
+    uint16_t getPort() { return _port; }
+
+    void config(const char* token,
+                const char* host = BLYNK_HOST,
+                uint16_t    port   = BLYNK_PORT)
+    {
+        if (_token) free(_token);
+        _token = strdup(token);
+
+        if (_host) free(_host);
+        _host = strdup(host);
+
+        _port = port;
+
+        Base::begin(_token);
+        this->conn.begin(_host, _port);
+    }
+
+    void config(const char* token,
+                IPAddress   ip,
+                uint16_t    port = BLYNK_PORT)
+    {
+        if (_token) free(_token);
+        _token = strdup(token);
+        _port = port;
+
+        Base::begin(_token);
+        this->conn.begin(ip, _port);
+    }
+private:
+    char* _token;
+    char* _host;
+    uint16_t _port;
+};
+
+// TODO construct later?
+// TODO async client?
+WiFiClient _blynkWifiClient;
+BlynkArduinoClient _blynkTransport(_blynkWifiClient);
+BlynkWifi Blynk(_blynkTransport);
+
+// vpin <-> relays, sensors mapping
+bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
+    for (size_t id=0; id<relayCount(); id++) {
+        String mapping = getSetting("blnkRelayVPin", id);
+        if (!mapping) continue;
+
+        if (mapping.toInt() == vpin) {
+            *relayID = id;
+            return true;
         }
     }
-    return -1;
+
+    return false;
 }
 
-void _blnkConfigure() {
-    _blnk_enabled = getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1;
-    if (_blnk_enabled && (getSetting("blnkHost", BLYNK_HOST).length() == 0)) {
-        _blnk_enabled = false;
-        setSetting("blnkEnabled", 0);
+bool _blynkRelayVPin(uint8_t relayID, uint8_t* vpin) {
+    String mapping = getSetting("blnkRelayVPin", relayID);
+    if (mapping) {
+        *vpin = mapping.toInt();
+        return true;
     }
-    if(!_blnk_enabled) {
-      Blynk.disconnect();
-      _wific.stop();
-      return;
-    }
-}
 
-void _wifi_connect() {
-
-  if (_wific.connect(&getSetting("blnkHost", BLYNK_HOST)[0], getSetting("blnkPort", BLYNK_PORT).toInt()))
-    DEBUG_MSG_P(PSTR("[BLYNK] WiFi Client connected\n"));
-  else
-    DEBUG_MSG_P(PSTR("[BLYNK] WiFi could not connect to %s:%s.\n"),&getSetting("blnkHost", BLYNK_HOST)[0],&getSetting("blnkHost", BLYNK_PORT)[0]);
-}
-
-BLYNK_WRITE_DEFAULT(){
-  signed char relayID = _blynkRelay(request.pin);
-  int value = param[0].asInt();
-  if (relayID >= 0) {
-    DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for VPIN %u\n"), value, request.pin);
-    relayStatus(relayID, value == 1);
-  } else {
-    DEBUG_MSG_P(PSTR("[BLYNK] Received value %d for unassigned VPIN %u\n"), value, request.pin);
-  }
-}
-
-BLYNK_CONNECTED(){
-  DEBUG_MSG_P(PSTR("[BLYNK] Connected to Blynk server\n"));
-  blynkSendRelays();
+    return false;
 }
 
 #if WEB_SUPPORT
@@ -68,90 +104,159 @@ bool _blnkWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _blnkWebSocketOnSend(JsonObject& root) {
     root["blnkVisible"] = 1;
     root["blnkEnabled"] = getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1;
-    root["blnkAuthKey"] = getSetting("blnkAuthKey", BLYNK_AUTH_TOKEN);
+    root["blnkToken"] = getSetting("blnkToken", BLYNK_AUTH_TOKEN);
     root["blnkHost"] = getSetting("blnkHost", BLYNK_HOST);
     root["blnkPort"] = getSetting("blnkPort", BLYNK_PORT).toInt();
 
     JsonArray& relays = root.createNestedArray("blnkRelays");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        relays.add(getSetting("blnkRelayVpin", i, -1).toInt());
+    for (size_t id=0; id<relayCount(); id++) {
+        uint8_t vpin = 0;
+        bool assigned = _blynkRelayVPin(id, &vpin);
+
+        if (assigned) {
+            relays.add(vpin);
+        } else {
+            relays.add((char*)"");
+        }
     }
 
     #if SENSOR_SUPPORT
         JsonArray& list = root.createNestedArray("blnkMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
+        for (size_t i=0; i<magnitudeCount(); i++) {
             JsonObject& element = list.createNestedObject();
             element["name"] = magnitudeName(i);
             element["type"] = magnitudeType(i);
             element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("blnkMagnitude", i, -1).toInt();
+            element["idx"] = getSetting("blnkMagnitude", i);
         }
     #endif
 }
 #endif //WEB_SUPPORT
 
+void _blynkConfigure() {
+    _blynk_enabled = \
+        (getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1)
+        && (getSetting("blnkToken", BLYNK_AUTH_TOKEN).length())
+        && (getSetting("blnkHost", BLYNK_HOST).length())
+        && (getSetting("blnkPort", BLYNK_PORT).length());
+
+    if(!_blynk_enabled) {
+        Blynk.disconnect();
+        return;
+    }
+
+    Blynk.config(
+        getSetting("blnkToken", BLYNK_AUTH_TOKEN).c_str(),
+        getSetting("blnkHost", BLYNK_HOST).c_str(),
+        getSetting("blnkPort", BLYNK_PORT).toInt());
+}
+
+// Public API to send data to the Blynk
+void blynkSendMeasurement(unsigned char magnitude_index, char* payload) {
+    if (!_blynk_enabled) return;
+
+    String mapping = getSetting("blnkMagnitude", magnitude_index, "");
+    if (!mapping.length()) return;
+
+    //DEBUG_MSG_P(PSTR("[BLYNK] Update VPin #%u with Sensor #%u data: %s\n"), mapping.toInt(), magnitude_index, payload);
+    Blynk.virtualWrite(mapping.toInt(), payload);
+}
+
+void blynkSendRelay(unsigned int relayID, bool status) {
+    if (!_blynk_enabled) return;
+
+    uint8_t vpin = 0;
+    bool assigned = _blynkRelayVPin(relayID, &vpin);
+    if (!assigned) return;
+
+    //DEBUG_MSG_P(PSTR("[BLYNK] Update VPin #%u with Relay #%u status: %u\n"), relayID, status ? 1 : 0);
+    Blynk.virtualWrite(vpin, status);
+}
+
+void blynkSendRelay(unsigned int relayID) {
+    if (!_blynk_enabled) return;
+    blynkSendRelay(relayID, relayStatus(relayID));
+}
+
 void blynkSendRelays() {
-    for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
-        blynkSendRelay(relayID, relayStatus(relayID) ? 1 : 0);
+    for (size_t relayID=0; relayID<relayCount(); relayID++) {
+        blynkSendRelay(relayID);
     }
 }
 
-void blynkSendMeasurement(unsigned char key, char * payload) {
-    if (!_blnk_enabled) return;
-    int  vpin = getSetting("blnkMagnitude", key, -1).toInt();
-    if(vpin>-1) {
-      //DEBUG_MSG_P(PSTR("[BLYNK] Send sensor data to VPIN %u Data: %s\n"), vpin, payload);
-      Blynk.virtualWrite(vpin,payload);
+// ref: blynk-library/src/Blynk/BlynkHandlers.h
+// overridable blynk functions
+BLYNK_CONNECTED() {
+    DEBUG_MSG_P(PSTR("[BLYNK] Connected to %s:%d\n"),
+        Blynk.getHost(), Blynk.getPort());
+    blynkSendRelays();
+}
+
+BLYNK_DISCONNECTED() {
+    DEBUG_MSG_P(PSTR("[BLYNK] Disconnected\n"));
+}
+
+
+BLYNK_WRITE_DEFAULT() {
+    //DEBUG_MSG_P(PSTR("[BLYNK] Received VPin #%u param \"%s\"\n"), request.pin, param.asStr());
+
+    // TODO receive events not only for relay?
+    // do not process values longer that 1 char
+    if (param.getLength() != 1) return;
+
+    const bool value = param.asInt() == 1;
+
+    uint8_t relayID = 0;
+    bool assigned = _blynkVPinRelay(request.pin, &relayID);
+
+    if (assigned) {
+        relayStatus(relayID, value);
     }
 }
 
-void blynkSendRelay(unsigned char key, unsigned char status) {
-    if (!_blnk_enabled) return;
-    DEBUG_MSG_P(PSTR("[BLYNK] Send new status %u to Relay %u\n"),status,key);
-    unsigned int  vpin = getSetting("blnkRelayVpin", key, 0).toInt();
-    Blynk.virtualWrite(vpin,status);
+void blynkLoop(){
+
+    if (!_blynk_enabled) return;
+    if (!wifiConnected()) return;
+
+    if (!Blynk.connected()) {
+        static uint8_t backoff = 1;
+        static uint32_t last_attempt = millis();
+
+        uint32_t timeout = (BLYNK_CONNECTION_TIMEOUT * backoff);
+        if ((millis() - last_attempt) < timeout) {
+            return;
+        }
+
+        last_attempt = millis();
+        if (!Blynk.connect(BLYNK_CONNECTION_TIMEOUT)) {
+            if (backoff < 9) backoff += 2;
+            if (backoff > 9) {
+                DEBUG_MSG_P(PSTR("[BLYNK] %s:%u cannot be reached\n"), Blynk.getHost(), Blynk.getPort());
+            } else {
+                DEBUG_MSG_P(PSTR("[BLYNK] Could not connect\n"));
+            }
+            return;
+        }
+
+        backoff = 1;
+    }
+
+    Blynk.run();
+
 }
-
-int blynkVpin(unsigned char relayID) {
-    char buffer[17];
-    snprintf_P(buffer, sizeof(buffer), PSTR("blnkRelayVpin%u"), relayID);
-    return getSetting(buffer).toInt();
-}
-
-
 
 void blynkSetup(){
 
-  _blnkConfigure();
+  _blynkConfigure();
 
   #if WEB_SUPPORT
       wsOnSendRegister(_blnkWebSocketOnSend);
       wsOnReceiveRegister(_blnkWebSocketOnReceive);
   #endif
 
-  espurnaRegisterLoop(blnkLoop);
-  espurnaRegisterReload(_blnkConfigure);
-
-}
-
-
-void blnkLoop(){
-
-  if(!_blnk_enabled) return;
-
-  if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return;
-
-  if(!_wific.connected()) _wifi_connect();
-
-  if (!Blynk.connected()) {
-    char auth[50];
-    getSetting("blnkAuthKey", BLYNK_AUTH_TOKEN).toCharArray(auth,50);
-    Blynk.config(_wific, auth);
-    if (!Blynk.connect(3000))
-      DEBUG_MSG_P(PSTR("[BLYNK] Could not connect to Bylnk Server. Token[%s]\n"),auth);
-  }
-
-  Blynk.run();
+  espurnaRegisterLoop(blynkLoop);
+  espurnaRegisterReload(_blynkConfigure);
 
 }
 
