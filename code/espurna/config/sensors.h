@@ -116,6 +116,39 @@
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
 
 //------------------------------------------------------------------------------
+// VL53L1X
+// Enable support by passing VL53L1X_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef VL53L1X_SUPPORT
+#define VL53L1X_SUPPORT                              0
+#endif
+
+#ifndef VL53L1X_I2C_ADDRESS
+#define VL53L1X_I2C_ADDRESS                          0x00          // 0x00 means auto
+#endif
+
+#ifndef VL53L1X_DISTANCE_MODE
+#define VL53L1X_DISTANCE_MODE                        VL53L1X::Long // The distance mode of the sensor. Can be one of
+#endif                                                             // `VL53L1X::Short`, `VL53L1X::Medium`, or `VL53L1X::Long.
+                                                                   // Shorter distance modes are less affected by ambient light
+                                                                   // but have lower maximum ranges, especially in the dark.
+
+
+#ifndef VL53L1X_MEASUREMENT_TIMING_BUDGET
+#define VL53L1X_MEASUREMENT_TIMING_BUDGET            140000        // The time, in microseconds, allocated for a single
+                                                                   // measurement. A longer timing budget allows for more
+                                                                   // accurate at the cost of power. The minimum budget is
+                                                                   // 20 ms (20000 us) in short distance mode and 33 ms for
+                                                                   // medium and long distance modes.
+#endif
+
+#ifndef VL53L1X_INTER_MEASUREMENT_PERIOD
+#define VL53L1X_INTER_MEASUREMENT_PERIOD             50            // Period, in milliseconds, determining how
+#endif                                                             // often the sensor takes a measurement.
+
+
+//------------------------------------------------------------------------------
 // BME280/BMP280
 // Enable support by passing BMX280_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -245,7 +278,7 @@
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
 #define EMON_MAINS_VOLTAGE              230         // Mains voltage
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
-#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30V/1A)
+#define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
 #define EMON_REPORT_CURRENT             0           // Report current
 #define EMON_REPORT_POWER               1           // Report power
 #define EMON_REPORT_ENERGY              1           // Report energy
@@ -600,6 +633,18 @@
 #define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
 #endif
 
+#ifndef PZEM004T_ADDRESSES
+#define PZEM004T_ADDRESSES              "192.168.1.1"  // Device(s) address(es), separated by space, "192.168.1.1 192.168.1.2 192.168.1.3"
+#endif
+
+#ifndef PZEM004T_READ_INTERVAL
+#define PZEM004T_READ_INTERVAL          1500    // Read interval between same device
+#endif
+
+#ifndef PZEM004T_MAX_DEVICES
+#define PZEM004T_MAX_DEVICES            3
+#endif
+
 //------------------------------------------------------------------------------
 // SHT3X I2C (Wemos) temperature & humidity sensor
 // Enable support by passing SHT3X_I2C_SUPPORT=1 build flag
@@ -744,7 +789,8 @@
     SONAR_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT || \
-    VEML6075_SUPPORT \
+    VEML6075_SUPPORT || \
+    VL53L1X_SUPPORT \
 )
 #endif
 
@@ -904,6 +950,10 @@
 
 #if VEML6075_SUPPORT
     #include "../sensors/VEML6075Sensor.h"
+#endif
+
+#if VL53L1X_SUPPORT
+    #include "../sensors/VL53L1XSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT

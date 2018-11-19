@@ -226,6 +226,9 @@ PROGMEM const char espurna_sensors[] =
     #if VEML6075_SUPPORT
         "VEML6075 "
     #endif
+    #if VL53L1X_SUPPORT
+        "VL53L1X "
+    #endif
     "";
 
 

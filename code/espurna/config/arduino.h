@@ -72,6 +72,7 @@
 //#define MAXCIO_WUS002S
 //#define YIDIAN_XSSSA05
 //#define TONBUX_XSSSA06
+//#define TONBUX_XSSSA01
 //#define GREEN_ESP8266RELAY
 //#define IKE_ESPIKE
 //#define ARNIEX_SWIFITCH
@@ -172,3 +173,4 @@
 //#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
+//#define VL53L1X_SUPPORT        1

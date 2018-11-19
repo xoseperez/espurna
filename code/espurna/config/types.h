@@ -280,6 +280,7 @@
 #define SENSOR_MICS2710_ID          0x28
 #define SENSOR_MICS5525_ID          0x29
 #define SENSOR_VEML6075_ID          0x30
+#define SENSOR_VL53L1X_ID           0x31
 
 //--------------------------------------------------------------------------------
 // Magnitudes
