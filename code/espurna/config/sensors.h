@@ -735,6 +735,25 @@
 #define V9261F_POWER_FACTOR             153699.0
 #define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
 
+//------------------------------------------------------------------------------
+// VEML6075 based power sensor
+// Enable support by passing VEML6075_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef VEML6075_SUPPORT
+#define VEML6075_SUPPORT                  0
+#endif
+
+#ifndef VEML6075_INTEGRATION_TIME
+#define VEML6075_INTEGRATION_TIME         VEML6075::IT_100MS        // The time, in milliseconds, allocated for a single
+#endif                                                              // measurement. A longer timing budget allows for more
+                                                                    // accurate results at the cost of power.
+
+#ifndef VEML6075_DYNAMIC_MODE
+#define VEML6075_DYNAMIC_MODE             VEML6075::DYNAMIC_NORMAL  // The dynamic mode can either be normal or high. In high
+#endif                                                              // dynamic mode, the resolution increases by about two
+                                                                    // times.
+
 // =============================================================================
 // Sensor helpers configuration - can't move to dependencies.h
 // =============================================================================
@@ -770,6 +789,7 @@
     SONAR_SUPPORT || \
     TMP3X_SUPPORT || \
     V9261F_SUPPORT || \
+    VEML6075_SUPPORT || \
     VL53L1X_SUPPORT \
 )
 #endif
@@ -926,6 +946,10 @@
 
 #if V9261F_SUPPORT
     #include "../sensors/V9261FSensor.h"
+#endif
+
+#if VEML6075_SUPPORT
+    #include "../sensors/VEML6075Sensor.h"
 #endif
 
 #if VL53L1X_SUPPORT

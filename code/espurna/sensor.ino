@@ -705,6 +705,15 @@ void _sensorLoad() {
     }
     #endif
 
+    #if VEML6075_SUPPORT
+    {
+        VEML6075Sensor * sensor = new VEML6075Sensor();
+        sensor->setIntegrationTime(VEML6075_INTEGRATION_TIME);
+        sensor->setDynamicMode(VEML6075_DYNAMIC_MODE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if VL53L1X_SUPPORT
     {
         VL53L1XSensor * sensor = new VL53L1XSensor();
