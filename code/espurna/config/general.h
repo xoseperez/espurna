@@ -237,6 +237,9 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
 #define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
                                                 // 1 - to send all button events to MQTT
 #endif
@@ -435,7 +438,9 @@
 // or in the Internet. Since the WebUI is just one compressed file with HTML, CSS and JS
 // there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
 // The only requirement is that the resource must be available under this domain.
+#ifndef WEB_REMOTE_DOMAIN
 #define WEB_REMOTE_DOMAIN           "http://tinkerman.cat"
+#endif
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -927,8 +932,13 @@
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
 #endif
 
+#ifndef HOMEASSISTANT_ENABLED
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
+#endif
+
+#ifndef HOMEASSISTANT_PREFIX
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
+#endif
 
 #ifndef HOMEASSISTANT_PAYLOAD_ON
 #define HOMEASSISTANT_PAYLOAD_ON    "1"         // Payload for ON and available messages
