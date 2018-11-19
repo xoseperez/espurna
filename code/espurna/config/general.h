@@ -1046,7 +1046,7 @@
 #endif
 
 #ifndef BLYNK_CONNECTION_TIMEOUT
-#define BLYNK_CONNECTION_TIMEOUT 3000
+#define BLYNK_CONNECTION_TIMEOUT 2000
 #endif
 
 // -----------------------------------------------------------------------------
