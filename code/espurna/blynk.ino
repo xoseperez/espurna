@@ -99,7 +99,7 @@ BlynkWifi Blynk(_blynkTransport);
 bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
     for (size_t id=0; id<relayCount(); id++) {
         String mapping = getSetting("blnkRelayVPin", id, "");
-        if (!mapping) continue;
+        if (!mapping.length()) continue;
 
         if (mapping.toInt() == vpin) {
             *relayID = id;
@@ -112,7 +112,7 @@ bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
 
 bool _blynkRelayVPin(uint8_t relayID, uint8_t* vpin) {
     String mapping = getSetting("blnkRelayVPin", relayID, "");
-    if (mapping) {
+    if (mapping.length()) {
         *vpin = mapping.toInt();
         return true;
     }
@@ -141,7 +141,7 @@ void _blnkWebSocketOnSend(JsonObject& root) {
         if (assigned) {
             relays.add(vpin);
         } else {
-            relays.add((char*)"");
+            relays.add("");
         }
     }
 
