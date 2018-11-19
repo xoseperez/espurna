@@ -127,7 +127,7 @@ void _blnkWebSocketOnSend(JsonObject& root) {
             element["name"] = magnitudeName(i);
             element["type"] = magnitudeType(i);
             element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("blnkMagnitude", i);
+            element["idx"] = getSetting("blnkMagnitude", i, "");
         }
     #endif
 }
