@@ -442,8 +442,8 @@
    grp = $("<optgroup />", {tzid: "Etc", class: "tzZone", label: "Etc", vis: "0"}).appendTo(cit);
    $("<option />", {value: "0", text: "GMT", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "0", text: "GMT-0", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "96", text: "GMT-1", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "97", text: "GMT-2", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "6", text: "GMT-1", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "96", text: "GMT-2", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "41", text: "GMT-3", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "46", text: "GMT-4", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "39", text: "GMT-5", tzzone: "Etc", class: "tz"}).appendTo(grp);
@@ -464,17 +464,17 @@
    $("<option />", {value: "17", text: "GMT+4", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "18", text: "GMT+5", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "86", text: "GMT+6", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "98", text: "GMT+7", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "97", text: "GMT+7", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "94", text: "GMT+8", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "87", text: "GMT+9", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "95", text: "GMT+10", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "93", text: "GMT+11", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "99", text: "GMT+12", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "100", text: "UCT", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "101", text: "UTC", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "98", text: "GMT+12", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "99", text: "UCT", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "100", text: "UTC", tzzone: "Etc", class: "tz"}).appendTo(grp);
    $("<option />", {value: "0", text: "Greenwich", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "101", text: "Universal", tzzone: "Etc", class: "tz"}).appendTo(grp);
-   $("<option />", {value: "101", text: "Zulu", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "100", text: "Universal", tzzone: "Etc", class: "tz"}).appendTo(grp);
+   $("<option />", {value: "100", text: "Zulu", tzzone: "Etc", class: "tz"}).appendTo(grp);
 
 
      $( "optgroup" ).click(function() {

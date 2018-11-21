@@ -40,11 +40,11 @@ printf $ch (
     uint8_t dstStartMonth;      // start of Summer time if enabled  Month 1 - 12, 0 disabled dst
     uint8_t dstStartWeek;       // start of Summer time if enabled Week 1 - 5: (5 means last)
     uint8_t dstStartDay;        // start of Summer time if enabled Day 1- 7  (1- Sun)
-    uint16_t dstStartMin;       // start of Summer time if enabled in minutes
+    int16_t dstStartMin;       // start of Summer time if enabled in minutes
     uint8_t dstEndMonth;        // end of Summer time if enabled  Month 1 - 12
     uint8_t dstEndWeek;         // end of Summer time if enabled Week 1 - 5: (5 means last)
     uint8_t dstEndDay;          // end of Summer time if enabled Day 1-7  (1- Sun)
-    uint16_t dstEndMin;         // end of Summer time if enabled in minutes
+    int16_t dstEndMin;         // end of Summer time if enabled in minutes
 } TZinfo;
 \n    ");
 
@@ -144,15 +144,19 @@ foreach my $line (split /[\r\n]+/, $content) {
 		if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
 		    $t = (($1 % 24) * 60) + $3;
 		} else { $t = 120; }
-	    } elsif ( $start =~ /J([0-9]+)\/?(.*)/ ) {
-		$m = $1;
-		$d = 7;
+	    } elsif ( $start =~ /(J)?([0-9]+)\/?(.*)/ ) {
+		$m = $2;
+		if ( $1 eq "J" ) {
+		  $d = 7;
+		} else {
+		  $d = 8;
+		}
 		$w = 0;
 		if ( $m > 200 ) {
 		    $w = $m - 200;
 		    $m = 200;
 		}
-		if ($2 =~ /([0-9]+)(:([0-9]+))?/ ) {
+		if ($3 =~ /([0-9]+)(:([0-9]+))?/ ) {
 		    $t = (($1 % 24) * 60) + $3;
 		} else { $t = 120; }
 	    }
@@ -161,19 +165,23 @@ foreach my $line (split /[\r\n]+/, $content) {
 		$m = $1;
 		$w = $2;
 		$d = $3;
-		if ($4 =~ /([0-9]+)(:([0-9]+))?/ ) {
-		    $t = (($1 % 24) * 60) + $3;
+		if ($4 =~ /(-?[0-9]+)(:([0-9]+))?/ ) {
+		    $t = (($1) * 60) + $3;
 		} else { $t = 120; }
-	    } elsif ( $end =~ /J([0-9]+)\/?(.*)/ ) {
-		$m = $1;
-		$d = 7;
+	    } elsif ( $end =~ /(J)?([0-9]+)\/?(.*)/ ) {
+		$m = $2;
+		if ( $1 eq "J" ) {
+		  $d = 7;
+		} else {
+		  $d = 8;
+		}
 		$w = 0;
 		if ( $m > 200 ) {
 		    $w = $m - 200;
 		    $m = 200;
 		}
-		if ($2 =~ /([0-9]+)(:([0-9]+))?/ ) {
-		    $t = (($1 % 24) * 60) + $3;
+		if ($3 =~ /(-?[0-9]+)(:([0-9]+))?/ ) {
+		    $t = (($1) * 60) + $3;
 		} else { $t = 120; }
 	    }
 	    printf $ch ("%d, %d, %d, %d}", $m, $w, $d, $t);

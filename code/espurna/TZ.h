@@ -10,11 +10,11 @@ typedef struct {
     uint8_t dstStartMonth;      // start of Summer time if enabled  Month 1 - 12, 0 disabled dst
     uint8_t dstStartWeek;       // start of Summer time if enabled Week 1 - 5: (5 means last)
     uint8_t dstStartDay;        // start of Summer time if enabled Day 1- 7  (1- Sun)
-    uint16_t dstStartMin;       // start of Summer time if enabled in minutes
+    int16_t dstStartMin;       // start of Summer time if enabled in minutes
     uint8_t dstEndMonth;        // end of Summer time if enabled  Month 1 - 12
     uint8_t dstEndWeek;         // end of Summer time if enabled Week 1 - 5: (5 means last)
     uint8_t dstEndDay;          // end of Summer time if enabled Day 1-7  (1- Sun)
-    uint16_t dstEndMin;         // end of Summer time if enabled in minutes
+    int16_t dstEndMin;         // end of Summer time if enabled in minutes
 } TZinfo;
 
     const TZinfo TZall[] PROGMEM = {
@@ -31,7 +31,7 @@ typedef struct {
     // Africa/Brazzaville = 3
     // Africa/Bujumbura = 4
     {"EET",120, NULL, 0, 0, 0, 0, 0, 0, 0}, // Africa/Cairo = 5
-    {"WET",0, "WEST", 60, 3, 5, 0, 120, 10, 5, 0, 180}, // Africa/Casablanca = 6
+    {"<+01>",60, NULL, 0, 0, 0, 0, 0, 0, 0}, // Africa/Casablanca = 6
     {"CET",60, "CEST", 120, 3, 5, 0, 120, 10, 5, 0, 180}, // Africa/Ceuta = 7
     // Africa/Conakry = 0
     // Africa/Dakar = 0
@@ -123,7 +123,7 @@ typedef struct {
     // America/Fortaleza = 12
     // America/Fort_Nelson = 23
     {"AST",-240, "ADT", -180, 3, 2, 0, 120, 11, 1, 0, 120}, // America/Glace_Bay = 26
-    {"<-03>",-180, "<-02>", -120, 3, 5, 0, 120, 10, 5, 0, 60}, // America/Godthab = 27
+    {"<-03>",-180, "<-02>", -120, 3, 5, 0, 120, 10, 5, 0, -60}, // America/Godthab = 27
     // America/Goose_Bay = 26
     // America/Grand_Turk = 25
     // America/Grenada = 11
@@ -195,7 +195,7 @@ typedef struct {
     // America/Resolute = 21
     // America/Rio_Branco = 18
     // America/Santarem = 12
-    {"<-04>",-240, "<-03>", -180, 9, 1, 6, 0, 4, 1, 6, 0}, // America/Santiago = 31
+    {"<-04>",-240, "<-03>", -180, 9, 1, 6, 0, 4, 1, 6, 1440}, // America/Santiago = 31
     // America/Santo_Domingo = 11
     {"<-03>",-180, "<-02>", -120, 11, 1, 0, 0, 2, 3, 0, 0}, // America/Sao_Paulo = 32
     {"<-01>",-60, "<+00>", 0, 3, 5, 0, 0, 10, 5, 0, 60}, // America/Scoresbysund = 33
@@ -414,7 +414,7 @@ typedef struct {
     // Pacific/Efate = 38
     {"<+13>",780, NULL, 0, 0, 0, 0, 0, 0, 0}, // Pacific/Enderbury = 84
     // Pacific/Fakaofo = 84
-    {"<+12>",720, "<+13>", 780, 11, 1, 0, 120, 1, 2, 2, 180}, // Pacific/Fiji = 85
+    {"<+12>",720, "<+13>", 780, 11, 1, 0, 120, 1, 2, 2, 7380}, // Pacific/Fiji = 85
     // Pacific/Funafuti = 45
     {"<-06>",-360, NULL, 0, 0, 0, 0, 0, 0, 0}, // Pacific/Galapagos = 86
     {"<-09>",-540, NULL, 0, 0, 0, 0, 0, 0, 0}, // Pacific/Gambier = 87
@@ -445,8 +445,8 @@ typedef struct {
     // Pacific/Wallis = 45
     // Etc/GMT = 0
     // Etc/GMT-0 = 0
-    {"<+01>",60, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT-1 = 96
-    {"<+02>",120, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT-2 = 97
+    // Etc/GMT-1 = 6
+    {"<+02>",120, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT-2 = 96
     // Etc/GMT-3 = 41
     // Etc/GMT-4 = 46
     // Etc/GMT-5 = 39
@@ -467,16 +467,16 @@ typedef struct {
     // Etc/GMT+4 = 17
     // Etc/GMT+5 = 18
     // Etc/GMT+6 = 86
-    {"<-07>",-420, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT+7 = 98
+    {"<-07>",-420, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT+7 = 97
     // Etc/GMT+8 = 94
     // Etc/GMT+9 = 87
     // Etc/GMT+10 = 95
     // Etc/GMT+11 = 93
-    {"<-12>",-720, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT+12 = 99
-    {"UCT",0, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/UCT = 100
-    {"UTC",0, NULL, 0, 0, 0, 0, 0, 0, 0}// Etc/UTC = 101
+    {"<-12>",-720, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/GMT+12 = 98
+    {"UCT",0, NULL, 0, 0, 0, 0, 0, 0, 0}, // Etc/UCT = 99
+    {"UTC",0, NULL, 0, 0, 0, 0, 0, 0, 0}// Etc/UTC = 100
     // Etc/Greenwich = 0
-    // Etc/Universal = 101
-    // Etc/Zulu = 101
+    // Etc/Universal = 100
+    // Etc/Zulu = 100
     };
-#define MAX_TIME_ZONE 101
+#define MAX_TIME_ZONE 100
