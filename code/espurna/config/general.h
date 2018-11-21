@@ -403,11 +403,11 @@
 // -----------------------------------------------------------------------------
 
 #ifndef WEB_SUPPORT
-#define WEB_SUPPORT                 0           // Enable web support (http, api, 121.65Kb)
+#define WEB_SUPPORT                 1           // Enable web support (http, api, 121.65Kb)
 #endif
 
 #ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED                0           // Build the firmware with the web interface embedded in
+#define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
 #endif
 
 // This is not working at the moment!!
