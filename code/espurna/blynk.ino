@@ -116,13 +116,13 @@ BlynkWifi Blynk(_blynkTransport);
 
 
 // vpin <-> relays, sensors mapping
-bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
-    for (size_t id=0; id<relayCount(); id++) {
-        String mapping = getSetting("blnkRelayVPin", id, "");
+bool _blynkIndexFromVPin(std::function<uint8_t()> range_func, const char* key, uint8_t vpin, uint8_t* res) {
+    for (size_t id=0; id < range_func(); id++) {
+        String mapping = getSetting(key, id, "");
         if (!mapping.length()) continue;
 
-        if (mapping.toInt() == vpin) {
-            *relayID = id;
+        if (strtoul(mapping.c_str(), nullptr, 10) == vpin) {
+            *res = id;
             return true;
         }
     }
@@ -130,14 +130,31 @@ bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
     return false;
 }
 
-bool _blynkRelayVPin(uint8_t relayID, uint8_t* vpin) {
-    String mapping = getSetting("blnkRelayVPin", relayID, "");
+bool _blynkVPinFromIndex(const char* key, uint8_t index, uint8_t* vpin) {
+    String mapping = getSetting(key, index, "");
     if (mapping.length()) {
-        *vpin = mapping.toInt();
+        *vpin = strtoul(mapping.c_str(), nullptr, 10);
         return true;
     }
 
     return false;
+}
+
+
+bool _blynkVPinRelay(uint8_t vpin, uint8_t* relayID) {
+    return _blynkIndexFromVPin(relayCount, "blnkRelay", vpin, relayID);
+}
+
+bool _blynkRelayVPin(uint8_t relayID, uint8_t* vpin) {
+    return _blynkVPinFromIndex("blnkRelay", relayID, vpin);
+}
+
+bool _blynkVPinMagnitude(uint8_t vpin, uint8_t* magnitudeIndex) {
+    return _blynkIndexFromVPin(magnitudeCount, "blnkMagnitude", vpin, magnitudeIndex);
+}
+
+bool _blynkMagnitudeVPin(uint8_t magnitudeIndex, uint8_t* vpin) {
+    return _blynkVPinFromIndex("blnkMagnitude", magnitudeIndex, vpin);
 }
 
 #if WEB_SUPPORT
@@ -172,7 +189,15 @@ void _blnkWebSocketOnSend(JsonObject& root) {
             element["name"] = magnitudeName(i);
             element["type"] = magnitudeType(i);
             element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("blnkMagnitude", i, "");
+
+            uint8_t vpin = 0;
+            bool assigned = _blynkMagnitudeVPin(i, &vpin);
+
+            if (assigned) {
+                element["idx"] = vpin;
+            } else {
+                element["idx"] = "";
+            }
         }
     #endif
 }
