@@ -403,11 +403,11 @@
 // -----------------------------------------------------------------------------
 
 #ifndef WEB_SUPPORT
-#define WEB_SUPPORT                 1           // Enable web support (http, api, 121.65Kb)
+#define WEB_SUPPORT                 0           // Enable web support (http, api, 121.65Kb)
 #endif
 
 #ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED                1           // Build the firmware with the web interface embedded in
+#define WEB_EMBEDDED                0           // Build the firmware with the web interface embedded in
 #endif
 
 // This is not working at the moment!!
@@ -1045,8 +1045,19 @@
 #define BLYNK_PORT                  80
 #endif
 
-#ifndef BLYNK_CONNECTION_TIMEOUT
-#define BLYNK_CONNECTION_TIMEOUT    2000
+// Use BearSSL::WiFiSecureClient instead of default one. Requires **significant** amount of Flash and RAM, so it is advisable to disable all modules involving network:
+// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0 and WEB_SUPPORT=0
+// NTP_SUPPORT=1 is required for proper certificate validation
+#ifndef BLYNK_SECURE_CLIENT
+#define BLYNK_SECURE_CLIENT         0
+#endif
+
+// For custom certificate, use following format in user_blynk_certificate.h:
+// const char _blynk_cert[] PROGMEM = R"CERT(
+// ...
+// )CERT";
+#ifndef BLYNK_USE_CUSTOM_CERT
+#define BLYNK_USE_CUSTOM_CERT       0
 #endif
 
 // -----------------------------------------------------------------------------

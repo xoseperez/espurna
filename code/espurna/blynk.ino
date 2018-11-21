@@ -8,29 +8,71 @@ Copyright (C) 2018 by Thomas Häger <thaeger at hdsnetz dot de>
 
 #if BLYNK_SUPPORT
 
-bool _blynk_enabled = false;
+//
+// Blynk wrapper
+//
 
 // ref: blynk-library/src/BlynkSimpleEsp8266.h
 // adapted esp8266 class, without 2.4.x requirement
+#include <Blynk/BlynkConfig.h>
 #include <BlynkApiArduino.h>
 #include <Blynk/BlynkProtocol.h>
 #include <Adapters/BlynkArduinoClient.h>
 
+#if BLYNK_SECURE_CLIENT
 
-class BlynkWifi
-    : public BlynkProtocol<BlynkArduinoClient>
+#include <TimeLib.h>
+#include <WiFiClientSecure.h>
+
+#if BLYNK_USE_CUSTOM_CERT
+#include "config/user_blynk_certificate.h"
+#else
+#include "config/blynk_certificate.h"
+#endif
+
+template <typename Client>
+class BlynkArduinoClientSecure
+    : public BlynkArduinoClientGen<Client>
 {
-    typedef BlynkProtocol<BlynkArduinoClient> Base;
+public:
+    BlynkArduinoClientSecure(Client& client)
+        : BlynkArduinoClientGen<Client>(client)
+    {
+        this->client->allowSelfSignedCerts();
+    }
+
+    void setX509Time(time_t ts) {
+        this->client->setX509Time(ts);
+    }
+
+    bool connect() {
+        setX509Time(now());
+        BearSSL::X509List cert(_blynk_cert);
+        this->client->setTrustAnchors(&cert);
+
+        if (BlynkArduinoClientGen<Client>::connect()) {
+            return this->client->connected();
+        }
+        return false;
+    }
+};
+
+#endif
+
+
+template <typename Transport>
+class BlynkWifi
+    : public BlynkProtocol<Transport>
+{
+    typedef BlynkProtocol<Transport> Base;
 public:
 
-    BlynkWifi(BlynkArduinoClient& transp)
+    BlynkWifi(Transport& transp)
         : Base(transp),
-          _token(nullptr),
-          _host(nullptr),
-          _port(0),
           backoff(0),
           backoff_step(3),
           backoff_limit(15),
+          timeout(BLYNK_TIMEOUT_MS),
           last_attempt(0)
     {}
 
@@ -38,59 +80,58 @@ public:
     char* getHost() { return _host; }
     uint16_t getPort() { return _port; }
 
-    bool isEnabled() {
-        return (getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1)
-            && (getSetting("blnkToken", BLYNK_AUTH_TOKEN).length())
-            && (getSetting("blnkHost", BLYNK_HOST).length())
-            && (getSetting("blnkPort", BLYNK_PORT).length());
-    }
-
-    void config(const char* token,
-                const char* host = BLYNK_HOST,
-                uint16_t    port = BLYNK_PORT)
-    {
-        if (_token) free(_token);
-        _token = strdup(token);
-
-        if (_host) free(_host);
-        _host = strdup(host);
-
-        _port = port;
-
+    void config(const char* token, const char* host = BLYNK_HOST, uint16_t port = BLYNK_PORT) {
         Base::begin(_token);
         this->conn.begin(_host, _port);
     }
 
-    void configFromSettings() {
-        config(
-            getSetting("blnkToken", BLYNK_AUTH_TOKEN).c_str(),
-            getSetting("blnkHost", BLYNK_HOST).c_str(),
-            getSetting("blnkPort", BLYNK_PORT).toInt()
-        );
+    void resetConfig() {
+        free(_token);
+        free(_host);
+        _port = 0;
+    }
+
+    void storeConfig(const String& token, const String& host, const uint16_t port) {
+        resetConfig();
+
+        _token = strdup(token.c_str());
+        _host = strdup(host.c_str());
+        _port = port;
+
+        config(_token, _host, _port);
+    }
+
+    void setTimeout(uint32_t time) {
+        timeout = time;
     }
 
     bool reachedBackoffLimit() {
         return (backoff >= backoff_limit);
     }
 
+    void resetBackoff() {
+        backoff = 0;
+        last_attempt = 0;
+    }
+
     bool connectWithBackoff() {
         if (!last_attempt) last_attempt = millis();
 
-        uint32_t timeout = (0 == backoff)
-            ? BLYNK_CONNECTION_TIMEOUT
-            : (BLYNK_CONNECTION_TIMEOUT * backoff);
+        uint32_t current_timeout = (0 == backoff)
+            ? this->timeout
+            : (this->timeout * backoff);
 
         if ((millis() - last_attempt) < timeout) {
             return false;
         }
 
         last_attempt = millis();
-        if (!connect(BLYNK_CONNECTION_TIMEOUT)) {
+        if (!Base::connect(current_timeout)) {
             if (!reachedBackoffLimit()) backoff += backoff_step;
             return false;
         }
 
-        backoff = 0;
+        resetBackoff();
 
         return true;
     }
@@ -104,16 +145,30 @@ private:
     uint8_t backoff_step;
     uint8_t backoff_limit;
 
+    uint32_t timeout;
     uint32_t last_attempt;
 
 };
 
-// TODO construct later?
-// TODO async client?
+
+// TODO construct only when enabled?
+#if BLYNK_SECURE_CLIENT
+BearSSL::WiFiClientSecure _blynkWifiClient;
+BlynkArduinoClientSecure<BearSSL::WiFiClientSecure> _blynkTransport(_blynkWifiClient);
+BlynkWifi<BlynkArduinoClientSecure<BearSSL::WiFiClientSecure>> Blynk(_blynkTransport);
+#else
 WiFiClient _blynkWifiClient;
 BlynkArduinoClient _blynkTransport(_blynkWifiClient);
 BlynkWifi Blynk(_blynkTransport);
+#endif
 
+
+//
+// Module state & methods
+//
+
+
+bool _blynk_enabled = false;
 
 // vpin <-> relays, sensors mapping
 bool _blynkIndexFromVPin(std::function<uint8_t()> range_func, const char* key, uint8_t vpin, uint8_t* res) {
@@ -205,14 +260,33 @@ void _blnkWebSocketOnSend(JsonObject& root) {
 #endif //WEB_SUPPORT
 
 void _blynkConfigure() {
-    _blynk_enabled = Blynk.isEnabled();
+    _blynk_enabled = getSetting("blnkEnabled", BLYNK_ENABLED).toInt() == 1;
 
-    if(!_blynk_enabled) {
+    if (!_blynk_enabled) {
         Blynk.disconnect();
         return;
     }
 
-    Blynk.configFromSettings();
+    const String token = getSetting("blnkToken", BLYNK_AUTH_TOKEN);
+    const String host = getSetting("blnkHost", BLYNK_HOST);
+    uint16_t port = strtoul(getSetting("blnkPort", BLYNK_PORT).c_str(), nullptr, 10);
+
+    if (!token.length() || !host.length() || !port) {
+        return;
+    }
+
+    // ref: blynk-library/src/Blynk/BlynkConfig.h
+    // use default settings from Blynk itself to set proper port
+    if (host.equals(F(BLYNK_DEFAULT_DOMAIN))) {
+        if (BLYNK_SECURE_CLIENT) {
+            port = BLYNK_DEFAULT_PORT_SSL;
+        } else {
+            port = BLYNK_DEFAULT_PORT;
+        }
+    }
+
+    Blynk.storeConfig(token, host, port);
+    Blynk.resetBackoff();
 }
 
 // Public API to send data to the Blynk
@@ -260,11 +334,14 @@ BLYNK_DISCONNECTED() {
     DEBUG_MSG_P(PSTR("[BLYNK] Disconnected\n"));
 }
 
+// TODO support Blynk.setProperty, like .(pin, "label", text)
+// TODO support input widgets (terminal, numeric, text, time)
+
+// Generic writer function called when Blynk app writes to vpin
 BLYNK_WRITE_DEFAULT() {
     //DEBUG_MSG_P(PSTR("[BLYNK] Received VPin #%u param \"%s\"\n"), request.pin, param.asStr());
 
-    // TODO receive events not only for relay?
-    // do not process values longer that 1 char
+    // For now, only handling relay state through 0 or 1
     if (param.getLength() != 1) return;
 
     const bool value = param.asInt() == 1;
@@ -277,22 +354,29 @@ BLYNK_WRITE_DEFAULT() {
     }
 }
 
-void blynkLoop(){
 
+//
+// Module Setup
+//
+
+void blynkLoop(){
     if (!_blynk_enabled) return;
     if (!wifiConnected()) return;
 
     if (!Blynk.connected()) {
-        if (!Blynk.connectWithBackoff()) {
-            return;
-        }
+        Blynk.connectWithBackoff();
+    } else {
+        Blynk.run();
     }
-
-    Blynk.run();
-
 }
 
 void blynkSetup(){
+
+  #if BLYNK_SECURE_CLIENT
+      DEBUG_MSG_P(PSTR("[BLYNK] Secure WiFiClient\n"));
+  #else
+      DEBUG_MSG_P(PSTR("[BLYNK] Basic WiFiClient\n"));
+  #endif
 
   _blynkConfigure();
 
