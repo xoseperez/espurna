@@ -373,21 +373,21 @@ void blynkLoop(){
 
 void blynkSetup(){
 
-  #if BLYNK_SECURE_CLIENT
-      DEBUG_MSG_P(PSTR("[BLYNK] Secure WiFiClient\n"));
-  #else
-      DEBUG_MSG_P(PSTR("[BLYNK] Basic WiFiClient\n"));
-  #endif
+    #if BLYNK_SECURE_CLIENT
+        DEBUG_MSG_P(PSTR("[BLYNK] Secure WiFiClient\n"));
+    #else
+        DEBUG_MSG_P(PSTR("[BLYNK] Basic WiFiClient\n"));
+    #endif
 
-  _blynkConfigure();
+    _blynkConfigure();
 
-  #if WEB_SUPPORT
-      wsOnSendRegister(_blnkWebSocketOnSend);
-      wsOnReceiveRegister(_blnkWebSocketOnReceive);
-  #endif
+    #if WEB_SUPPORT
+        wsOnSendRegister(_blnkWebSocketOnSend);
+        wsOnReceiveRegister(_blnkWebSocketOnReceive);
+    #endif
 
-  espurnaRegisterLoop(blynkLoop);
-  espurnaRegisterReload(_blynkConfigure);
+    espurnaRegisterLoop(blynkLoop);
+    espurnaRegisterReload(_blynkConfigure);
 
 }
 
