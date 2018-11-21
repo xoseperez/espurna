@@ -3,6 +3,7 @@
 BLYNK MODULE
 
 Copyright (C) 2018 by Thomas Häger <thaeger at hdsnetz dot de>
+Adapted by Maxim Prokhorov <prokhorov max at outlook dot com>
 
 */
 
