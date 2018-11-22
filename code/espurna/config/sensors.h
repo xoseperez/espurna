@@ -590,7 +590,7 @@
 #endif
 
 #ifndef PULSEMETER_PIN
-#define PULSEMETERL_PIN                 5
+#define PULSEMETER_PIN                  5
 #endif
 
 #ifndef PULSEMETER_ENERGY_RATIO

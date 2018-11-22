@@ -285,6 +285,7 @@
 
 //--------------------------------------------------------------------------------
 // Magnitudes
+// These should remain over time, do not modify their values, only add new ones at the end
 //--------------------------------------------------------------------------------
 
 #define MAGNITUDE_NONE              0

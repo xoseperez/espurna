@@ -80,7 +80,7 @@ class PulseMeterSensor : public BaseSensor {
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {
-            return String(gpio);
+            return String(_gpio);
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
@@ -169,7 +169,7 @@ class PulseMeterSensor : public BaseSensor {
 
 PulseMeterSensor * _pulsemeter_sensor_instance[10] = {NULL};
 
-void ICACHE_RAM_ATTR _pulseMeter_sensor_isr(unsigned char gpio) {
+void ICACHE_RAM_ATTR _pulsemeter_sensor_isr(unsigned char gpio) {
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_pulsemeter_sensor_instance[index]) {
         _pulsemeter_sensor_instance[index]->handleInterrupt(gpio);
