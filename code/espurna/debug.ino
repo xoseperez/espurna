@@ -209,6 +209,11 @@ void debugSetup() {
  */
 extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
 
+    // Do not record crash data when resetting the board
+    if (checkNeedsReset()) {
+        return;
+    }
+
     // This method assumes EEPROM has already been initialized
     // which is the first thing ESPurna does
 
@@ -231,9 +236,13 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
     EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
 
-    // write stack trace to EEPROM
+    // starting address of Embedis data plus reserve
+    const uint16_t settings_start = SPI_FLASH_SEC_SIZE - settingsSize() - 0x10;
+
+    // write stack trace to EEPROM and avoid overwriting settings
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     for (uint32_t i = stack_start; i < stack_end; i++) {
+        if (current_address >= settings_start) break;
         byte* byteValue = (byte*) i;
         EEPROMr.write(current_address++, *byteValue);
     }
@@ -273,16 +282,23 @@ void debugDumpCrashInfo() {
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
+
     DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
     DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
 
     uint32_t stack_start, stack_end;
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
-    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
+
+    DEBUG_MSG_P(PSTR("[DEBUG] sp=0x%08x end=0x%08x\n"), stack_start, stack_end);
+
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
     int16_t stack_len = stack_end - stack_start;
+
     uint32_t stack_trace;
+
+    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
+
     for (int16_t i = 0; i < stack_len; i += 0x10) {
         DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
         for (byte j = 0; j < 4; j++) {

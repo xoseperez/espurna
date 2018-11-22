@@ -19,6 +19,8 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 // DEFINITIONS
 // -----------------------------------------------------------------------------
 
+// EFM8 Protocol
+
 #define RF_MESSAGE_SIZE         9
 #define RF_MAX_MESSAGE_SIZE     (112+4)
 #define RF_CODE_START           0xAA
@@ -36,6 +38,10 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #define RF_CODE_LEARN_OK_NEW    0xAB
 #define RF_CODE_RFOUT_BUCKET    0xB0
 #define RF_CODE_STOP            0x55
+
+// Settings
+
+#define RF_MAX_KEY_LENGTH       (9)
 
 // -----------------------------------------------------------------------------
 // GLOBALS TO THE MODULE
@@ -523,13 +529,13 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
 void rfbStore(unsigned char id, bool status, const char * code) {
     DEBUG_MSG_P(PSTR("[RFBRIDGE] Storing %d-%s => '%s'\n"), id, status ? "ON" : "OFF", code);
-    char key[8] = {0};
+    char key[RF_MAX_KEY_LENGTH] = {0};
     snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
     setSetting(key, code);
 }
 
 String rfbRetrieve(unsigned char id, bool status) {
-    char key[8] = {0};
+    char key[RF_MAX_KEY_LENGTH] = {0};
     snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
     return getSetting(key);
 }
@@ -586,7 +592,7 @@ void rfbLearn(unsigned char id, bool status) {
 
 void rfbForget(unsigned char id, bool status) {
 
-    char key[8] = {0};
+    char key[RF_MAX_KEY_LENGTH] = {0};
     snprintf_P(key, sizeof(key), PSTR("rfb%s%d"), status ? "ON" : "OFF", id);
     delSetting(key);
 

@@ -250,6 +250,7 @@
 // These should remain over time, do not modify them, only add new ones at the end
 //--------------------------------------------------------------------------------
 
+<<<<<<< HEAD
 #define SENSOR_DHTXX_ID             01
 #define SENSOR_DALLAS_ID            02
 #define SENSOR_EMON_ANALOG_ID       03
@@ -280,6 +281,8 @@
 #define SENSOR_MICS2710_ID          28
 #define SENSOR_MICS5525_ID          29
 #define SENSOR_PULSEMETER_ID        30
+#define SENSOR_VEML6075_ID          31
+#define SENSOR_VL53L1X_ID           32
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -305,14 +308,16 @@
 #define MAGNITUDE_PM10              17
 #define MAGNITUDE_CO2               18
 #define MAGNITUDE_LUX               19
-#define MAGNITUDE_UV                20
-#define MAGNITUDE_DISTANCE          21
-#define MAGNITUDE_HCHO              22
-#define MAGNITUDE_GEIGER_CPM        23
-#define MAGNITUDE_GEIGER_SIEVERT    24
-#define MAGNITUDE_COUNT             25
-#define MAGNITUDE_NO2               26
-#define MAGNITUDE_CO                27
-#define MAGNITUDE_RESISTANCE        28
+#define MAGNITUDE_UVA               20
+#define MAGNITUDE_UVB               21
+#define MAGNITUDE_UVI               22
+#define MAGNITUDE_DISTANCE          23
+#define MAGNITUDE_HCHO              24
+#define MAGNITUDE_GEIGER_CPM        25
+#define MAGNITUDE_GEIGER_SIEVERT    26
+#define MAGNITUDE_COUNT             27
+#define MAGNITUDE_NO2               28
+#define MAGNITUDE_CO                29
+#define MAGNITUDE_RESISTANCE        30
 
-#define MAGNITUDE_MAX               29
+#define MAGNITUDE_MAX               31
