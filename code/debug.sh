@@ -49,9 +49,7 @@ done
 
 # check environment folder
 if [ ! -f $ELF ]; then
-if [ $ENVIRONMENT == "" ]; then
     ELF=.pioenvs/$ENVIRONMENT/firmware.elf
-fi
 fi
 if [ ! -f $ELF ]; then
     echo "Could not find ELF file for the selected environment: $ELF"
