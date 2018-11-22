@@ -44,16 +44,14 @@ class BlynkArduinoClientSecure
 public:
     BlynkArduinoClientSecure(Client& client)
         : BlynkArduinoClientGen<Client>(client)
-    {
-        this->client->allowSelfSignedCerts();
-    }
+    {}
 
     void setX509Time(time_t ts) {
         this->client->setX509Time(ts);
     }
 
     bool connect() {
-        setX509Time(now());
+        setX509Time(ntpLocal2UTC(now()));
         BEARSSL_X509LIST cert(_blynk_cert);
         this->client->setTrustAnchors(&cert);
 

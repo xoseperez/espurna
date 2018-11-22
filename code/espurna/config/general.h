@@ -1046,7 +1046,7 @@
 #endif
 
 // Use BearSSL::WiFiSecureClient instead of default one. Requires **significant** amount of Flash and RAM, so it is advisable to disable all modules involving network:
-// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0 and WEB_SUPPORT=0
+// WEB_SUPPORT=0, ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0 and DOMOTICZ_SUPPORT=0
 // NTP_SUPPORT=1 is required for proper certificate validation
 #ifndef BLYNK_SECURE_CLIENT
 #define BLYNK_SECURE_CLIENT         0

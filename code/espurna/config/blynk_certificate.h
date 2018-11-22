@@ -1,3 +1,10 @@
+// Certificate taken from blynk-cloud:8441
+//
+// subject=/C=UA/ST=Kyiv/L=Kyiv/O=IT/OU=Blynk Inc./CN=blynk-cloud.com/emailAddress=dmitriy@blynk.cc
+// issuer=/C=UA/ST=Kyiv/L=Kyiv/O=IT/OU=Blynk Inc./CN=blynk-cloud.com/emailAddress=dmitriy@blynk.cc
+// notBefore=Mar 17 11:58:07 2016 GMT
+// notAfter=Mar 16 11:58:07 2021 GMT
+
 const char _blynk_cert[] PROGMEM = R"CERT(
 -----BEGIN CERTIFICATE-----
 MIID5TCCAs2gAwIBAgIJAIHSnb+cv4ECMA0GCSqGSIb3DQEBCwUAMIGIMQswCQYD
