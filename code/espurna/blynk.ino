@@ -179,8 +179,9 @@ BlynkWifi<BlynkArduinoClient> Blynk(_blynkTransport);
 bool _blynk_enabled = false;
 
 // vpin <-> relays, sensors mapping
-bool _blynkIndexFromVPin(std::function<uint8_t()> range_func, const char* key, uint8_t vpin, uint8_t* res) {
-    for (size_t id=0; id < range_func(); id++) {
+template<typename RangeFunc>
+bool _blynkIndexFromVPin(RangeFunc range_func, const char* key, uint8_t vpin, uint8_t* res) {
+    for (uint8_t id=0; id < range_func(); id++) {
         String mapping = getSetting(key, id, "");
         if (!mapping.length()) continue;
 
@@ -234,7 +235,7 @@ void _blnkWebSocketOnSend(JsonObject& root) {
     root["blnkPort"] = getSetting("blnkPort", BLYNK_PORT).toInt();
 
     JsonArray& relays = root.createNestedArray("blnkRelays");
-    for (size_t id=0; id<relayCount(); id++) {
+    for (uint8_t id=0; id<relayCount(); id++) {
         uint8_t vpin = 0;
         bool assigned = _blynkRelayVPin(id, &vpin);
 
@@ -247,7 +248,7 @@ void _blnkWebSocketOnSend(JsonObject& root) {
 
     #if SENSOR_SUPPORT
         JsonArray& list = root.createNestedArray("blnkMagnitudes");
-        for (size_t i=0; i<magnitudeCount(); i++) {
+        for (uint8_t i=0; i<magnitudeCount(); i++) {
             JsonObject& element = list.createNestedObject();
             element["name"] = magnitudeName(i);
             element["type"] = magnitudeType(i);
@@ -298,17 +299,18 @@ void _blynkConfigure() {
 }
 
 // Public API to send data to the Blynk
-void blynkSendMeasurement(unsigned char magnitude_index, char* payload) {
+void blynkSendMeasurement(uint8_t magnitudeIndex, char* payload) {
     if (!_blynk_enabled) return;
 
-    String mapping = getSetting("blnkMagnitude", magnitude_index, "");
-    if (!mapping.length()) return;
+    uint8_t vpin = 0;
+    bool assigned = _blynkMagnitudeVPin(magnitudeIndex, &vpin);
+    if (!assigned) return;
 
-    //DEBUG_MSG_P(PSTR("[BLYNK] Update VPin #%u with Sensor #%u data: %s\n"), mapping.toInt(), magnitude_index, payload);
-    Blynk.virtualWrite(mapping.toInt(), payload);
+    //DEBUG_MSG_P(PSTR("[BLYNK] Update VPin #%u with Sensor #%u data: %s\n"), mapping.toInt(), magnitudeIndex, payload);
+    Blynk.virtualWrite(vpin, payload);
 }
 
-void blynkSendRelay(unsigned int relayID, bool status) {
+void blynkSendRelay(uint8_t relayID, bool status) {
     if (!_blynk_enabled) return;
 
     uint8_t vpin = 0;
@@ -319,13 +321,13 @@ void blynkSendRelay(unsigned int relayID, bool status) {
     Blynk.virtualWrite(vpin, status);
 }
 
-void blynkSendRelay(unsigned int relayID) {
+void blynkSendRelay(uint8_t relayID) {
     if (!_blynk_enabled) return;
     blynkSendRelay(relayID, relayStatus(relayID));
 }
 
 void blynkSendRelays() {
-    for (size_t relayID=0; relayID<relayCount(); relayID++) {
+    for (uint8_t relayID=0; relayID<relayCount(); relayID++) {
         blynkSendRelay(relayID);
     }
 }
