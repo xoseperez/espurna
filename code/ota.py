@@ -55,9 +55,9 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
                 'app_name': '',
                 'app_version': '',
                 'target_board': '',
-                'mem_size': '',
-                'sdk_size': '',
-                'free_space': '',
+                'mem_size': 0,
+                'sdk_size': 0,
+                'free_space': 0,
             }
 
             for key, item in info.properties.items():
@@ -101,9 +101,9 @@ def list_devices():
             device.get('app_name', ''),
             device.get('app_version', ''),
             device.get('target_board', ''),
-            device.get('mem_size', ''),
-            device.get('sdk_size', ''),
-            device.get('free_space', ''),
+            device.get('mem_size', 0),
+            device.get('sdk_size', 0),
+            device.get('free_space', 0),
         ))
 
     print()

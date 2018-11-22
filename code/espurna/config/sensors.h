@@ -440,6 +440,11 @@
 #define HLW8012_USE_INTERRUPTS          1       // Use interrupts to trap HLW8012 signals
 #endif
 
+#ifndef HLW8012_WAIT_FOR_WIFI
+#define HLW8012_WAIT_FOR_WIFI           1       // Enable interrupts only after wifi connection
+                                                // has been established
+#endif
+
 #ifndef HLW8012_INTERRUPT_ON
 #define HLW8012_INTERRUPT_ON            CHANGE  // When to trigger the interrupt
                                                 // Use CHANGE for HLW8012

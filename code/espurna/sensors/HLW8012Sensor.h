@@ -148,14 +148,10 @@ class HLW8012Sensor : public BaseSensor {
 
             // Handle interrupts
             #if HLW8012_USE_INTERRUPTS
-                _enableInterrupts(true);
-            #else
-                _onconnect_handler = WiFi.onStationModeGotIP([this](WiFiEventStationModeGotIP ipInfo) {
-                    _enableInterrupts(true);
-                });
-                _ondisconnect_handler = WiFi.onStationModeDisconnected([this](WiFiEventStationModeDisconnected ipInfo) {
+                #if HLW8012_WAIT_FOR_WIFI == 0
                     _enableInterrupts(false);
-                });
+                    _enableInterrupts(true);
+                #endif
             #endif
 
             _ready = true;
@@ -205,6 +201,15 @@ class HLW8012Sensor : public BaseSensor {
             return 0;
         }
 
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        #if HLW8012_USE_INTERRUPTS
+        #if HLW8012_WAIT_FOR_WIFI
+        void pre() {
+            _enableInterrupts(wifiConnected());
+        }
+        #endif
+        #endif
+
         // Toggle between current and voltage monitoring
         #if HLW8012_USE_INTERRUPTS == 0
         // Post-read hook (usually to reset things)
@@ -228,22 +233,22 @@ class HLW8012Sensor : public BaseSensor {
 
         void _enableInterrupts(bool value) {
 
+            static bool state = false;
             static unsigned char _interrupt_cf = GPIO_NONE;
             static unsigned char _interrupt_cf1 = GPIO_NONE;
 
+            if (value == state) return;
+            state = value;
+
             if (value) {
 
-                if (_interrupt_cf != _cf) {
-                    if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
-                    _attach(this, _cf, HLW8012_INTERRUPT_ON);
-                    _interrupt_cf = _cf;
-                }
+                if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
+                _attach(this, _cf, HLW8012_INTERRUPT_ON);
+                _interrupt_cf = _cf;
 
-                if (_interrupt_cf1 != _cf1) {
-                    if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
-                    _attach(this, _cf1, HLW8012_INTERRUPT_ON);
-                    _interrupt_cf1 = _cf1;
-                }
+                if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
+                _attach(this, _cf1, HLW8012_INTERRUPT_ON);
+                _interrupt_cf1 = _cf1;
 
             } else {
 
@@ -265,11 +270,6 @@ class HLW8012Sensor : public BaseSensor {
         double _energy_offset = 0;
 
         HLW8012 * _hlw8012 = NULL;
-
-        #if HLW8012_USE_INTERRUPTS == 0
-            WiFiEventHandler _onconnect_handler;
-            WiFiEventHandler _ondisconnect_handler;
-        #endif
 
 };
 
