@@ -31,6 +31,12 @@ Adapted by Maxim Prokhorov <prokhorov max at outlook dot com>
 #include "config/blynk_certificate.h"
 #endif
 
+#if defined(ARDUINO_ESP8266_RELEASE_2_4_2)
+    #define BEARSSL_X509LIST BearSSLX509List
+#else
+    #define BEARSSL_X509LIST BearSSL::X509List
+#endif
+
 template <typename Client>
 class BlynkArduinoClientSecure
     : public BlynkArduinoClientGen<Client>
@@ -48,7 +54,7 @@ public:
 
     bool connect() {
         setX509Time(now());
-        BearSSL::X509List cert(_blynk_cert);
+        BEARSSL_X509LIST cert(_blynk_cert);
         this->client->setTrustAnchors(&cert);
 
         if (BlynkArduinoClientGen<Client>::connect()) {
@@ -129,6 +135,7 @@ public:
         last_attempt = millis();
         if (!Base::connect(current_timeout)) {
             if (!reachedBackoffLimit()) backoff += backoff_step;
+            last_attempt = millis();
             return false;
         }
 
