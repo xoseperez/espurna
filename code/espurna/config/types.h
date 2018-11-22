@@ -250,16 +250,15 @@
 // These should remain over time, do not modify them, only add new ones at the end
 //--------------------------------------------------------------------------------
 
-<<<<<<< HEAD
-#define SENSOR_DHTXX_ID             01
-#define SENSOR_DALLAS_ID            02
-#define SENSOR_EMON_ANALOG_ID       03
-#define SENSOR_EMON_ADC121_ID       04
-#define SENSOR_EMON_ADS1X15_ID      05
-#define SENSOR_HLW8012_ID           06
-#define SENSOR_V9261F_ID            07
-#define SENSOR_ECH1560_ID           08
-#define SENSOR_ANALOG_ID            09
+#define SENSOR_DHTXX_ID             1
+#define SENSOR_DALLAS_ID            2
+#define SENSOR_EMON_ANALOG_ID       3
+#define SENSOR_EMON_ADC121_ID       4
+#define SENSOR_EMON_ADS1X15_ID      5
+#define SENSOR_HLW8012_ID           6
+#define SENSOR_V9261F_ID            7
+#define SENSOR_ECH1560_ID           8
+#define SENSOR_ANALOG_ID            9
 #define SENSOR_DIGITAL_ID           10
 #define SENSOR_EVENTS_ID            11
 #define SENSOR_PMSX003_ID           12
