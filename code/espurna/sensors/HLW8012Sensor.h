@@ -9,8 +9,6 @@
 
 #include "Arduino.h"
 #include "BaseSensor.h"
-
-#include <ESP8266WiFi.h>
 #include <HLW8012.h>
 
 class HLW8012Sensor : public BaseSensor {
@@ -233,29 +231,34 @@ class HLW8012Sensor : public BaseSensor {
 
         void _enableInterrupts(bool value) {
 
-            static bool state = false;
             static unsigned char _interrupt_cf = GPIO_NONE;
             static unsigned char _interrupt_cf1 = GPIO_NONE;
 
-            if (value == state) return;
-            state = value;
-
             if (value) {
 
-                if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
-                _attach(this, _cf, HLW8012_INTERRUPT_ON);
-                _interrupt_cf = _cf;
+                if (_interrupt_cf != _cf) {
+                    if (_interrupt_cf != GPIO_NONE) _detach(_interrupt_cf);
+                    _attach(this, _cf, HLW8012_INTERRUPT_ON);
+                    _interrupt_cf = _cf;
+                }
 
-                if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
-                _attach(this, _cf1, HLW8012_INTERRUPT_ON);
-                _interrupt_cf1 = _cf1;
+                if (_interrupt_cf1 != _cf1) {
+                    if (_interrupt_cf1 != GPIO_NONE) _detach(_interrupt_cf1);
+                    _attach(this, _cf1, HLW8012_INTERRUPT_ON);
+                    _interrupt_cf1 = _cf1;
+                }
 
             } else {
 
-                _detach(_cf);
-                _detach(_cf1);
-                _interrupt_cf = GPIO_NONE;
-                _interrupt_cf1 = GPIO_NONE;
+                if (GPIO_NONE != _interrupt_cf) {
+                    _detach(_interrupt_cf);
+                    _interrupt_cf = GPIO_NONE;
+                }
+
+                if (GPIO_NONE != _interrupt_cf1) {
+                    _detach(_interrupt_cf1);
+                    _interrupt_cf1 = GPIO_NONE;
+                }
 
             }
 

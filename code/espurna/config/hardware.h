@@ -2658,10 +2658,11 @@
     #define HLW8012_POWER_RATIO         2533110
     #define HLW8012_INTERRUPT_ON        FALLING
 
-    #define ALEXA_SUPPORT               0
-    #define DOMOTICZ_SUPPORT            0
-    #define HOMEASSISTANT_SUPPORT       0
-    #define THINGSPEAK_SUPPORT          0
+    //#define HLW8012_WAIT_FOR_WIFI       1
+    //#define ALEXA_SUPPORT               0
+    //#define DOMOTICZ_SUPPORT            0
+    //#define HOMEASSISTANT_SUPPORT       0
+    //#define THINGSPEAK_SUPPORT          0
 
 // ----------------------------------------------------------------------------------------
 //  Homecube 16A is similar but some pins differ and it also has RGB LEDs

@@ -441,8 +441,8 @@
 #endif
 
 #ifndef HLW8012_WAIT_FOR_WIFI
-#define HLW8012_WAIT_FOR_WIFI           1       // Enable interrupts only after wifi connection
-                                                // has been established
+#define HLW8012_WAIT_FOR_WIFI           0       // Weather to enable interrupts only after
+                                                // wifi connection has been stablished
 #endif
 
 #ifndef HLW8012_INTERRUPT_ON
