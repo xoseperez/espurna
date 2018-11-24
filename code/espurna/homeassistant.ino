@@ -10,8 +10,22 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ArduinoJson.h>
 
+enum class ha_discovery_t {
+    IDLE,
+    RUN,
+    PREPARE,
+    INPROGRESS,
+    DONE
+};
+
+enum class ha_entity_t {
+    SWITCH,
+    SENSOR
+};
+
 bool _haEnabled = false;
-bool _haSendFlag = false;
+auto _haDiscovery = ha_discovery_t::IDLE;
+
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -23,6 +37,83 @@ String _haFixName(String name) {
     }
     return name;
 }
+
+String _haEntity(ha_entity_t entity) {
+    switch (entity) {
+        case ha_entity_t::SWITCH:
+            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
+                return String(F("light"));
+            #else
+                return String(F("switch"));
+            #endif
+        case ha_entity_t::SENSOR:
+            return String(F("sensor"));
+    }
+
+    return String("");
+}
+
+// -----------------------------------------------------------------------------
+// MQTT DISCOVERY HELPER CLASS
+// -----------------------------------------------------------------------------
+
+class HaDiscovery {
+
+public:
+    HaDiscovery(const ha_entity_t entity_type, uint8_t entities_limit, ha_send_f send_func) :
+        entity(_haEntity(entity_type)),
+        limit(entities_limit),
+        sender(send_func),
+        value(0),
+        prefix(getSetting("haPrefix", HOMEASSISTANT_PREFIX)),
+        hostname(getSetting("hostname")),
+        delim(F("/")),
+        topic_length(6 + 4 + 3 + hostname.length() + prefix.length() + entity.length())
+    {}
+
+    bool send() {
+        // config + 4 delimiters + 3 digits of index + length() of hostname, prefix and entity
+        String topic;
+        topic.reserve(topic_length);
+
+        String output;
+
+        for (; value<limit; ++value) {
+            topic = prefix + delim + entity + delim + hostname + F("_") + String(value) + F("/config");
+
+            if (_haEnabled) {
+                DynamicJsonBuffer jsonBuffer;
+                JsonObject& config = jsonBuffer.createObject();
+                output = String("");
+
+                sender(value, config);
+                config.printTo(output);
+            }
+
+            if (!mqttSendRaw(topic.c_str(), output.c_str())) {
+                break;
+            }
+        }
+
+        return (value >= limit);
+    }
+
+private:
+    String entity;
+    uint8_t limit;
+    ha_send_f sender;
+
+    uint8_t value;
+
+    String prefix;
+    String hostname;
+    String delim;
+
+    size_t topic_length;
+
+};
+
+HaDiscovery *_haSwitchDiscovery = nullptr;
 
 // -----------------------------------------------------------------------------
 // SENSORS
@@ -40,30 +131,7 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendMagnitudes() {
-
-    for (unsigned char i=0; i<magnitudeCount(); i++) {
-
-        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
-            "/sensor/" +
-            getSetting("hostname") + "_" + String(i) +
-            "/config";
-
-        String output;
-        if (_haEnabled) {
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& config = jsonBuffer.createObject();
-            _haSendMagnitude(i, config);
-            config.printTo(output);
-            jsonBuffer.clear();
-        }
-
-        mqttSendRaw(topic.c_str(), output.c_str());
-        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-
-    }
-
-}
+HaDiscovery *_haSensorDiscovery = nullptr;
 
 #endif // SENSOR_SUPPORT
 
@@ -114,48 +182,13 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendSwitches() {
-
-    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
-        String type = String("light");
-    #else
-        String type = String("switch");
-    #endif
-
-    for (unsigned char i=0; i<relayCount(); i++) {
-
-        String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
-            "/" + type +
-            "/" + getSetting("hostname") + "_" + String(i) +
-            "/config";
-
-        String output;
-        if (_haEnabled) {
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& config = jsonBuffer.createObject();
-            _haSendSwitch(i, config);
-            config.printTo(output);
-            jsonBuffer.clear();
-        }
-
-        mqttSendRaw(topic.c_str(), output.c_str());
-        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-
-    }
-
-}
-
 // -----------------------------------------------------------------------------
 
 String _haGetConfig() {
 
     String output;
 
-    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
-        String type = String("light");
-    #else
-        String type = String("switch");
-    #endif
+    String type = _haEntity(ha_entity_t::SWITCH);
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
@@ -214,29 +247,62 @@ String _haGetConfig() {
 
 void _haSend() {
 
-    // Pending message to send?
-    if (!_haSendFlag) return;
+    static uint8_t attempts = 1;
+    static uint32_t ts = 0;
 
-    // Are we connected?
+    // Do not send anything until connected.
     if (!mqttConnected()) return;
 
-    DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
+    const auto state = _haDiscovery;
+    switch (state) {
+        case ha_discovery_t::IDLE:
+        case ha_discovery_t::DONE:
+            return;
+        case ha_discovery_t::RUN:
+        case ha_discovery_t::PREPARE:
+            DEBUG_MSG_P(PSTR("[HA] Sending MQTT Discovery messages\n"));
+            _haDiscovery = ha_discovery_t::INPROGRESS;
+            _haSwitchDiscovery = new HaDiscovery(ha_entity_t::SWITCH, relayCount(), _haSendSwitch);
+            #if SENSOR_SUPPORT
+                _haSensorDiscovery = new HaDiscovery(ha_entity_t::SENSOR, magnitudeCount(), _haSendMagnitude);
+            #endif
+            attempts = 1;
+            ts = millis();
+            if (state == ha_discovery_t::PREPARE) return;
+            break;
+        case ha_discovery_t::INPROGRESS:
+            if (millis() - ts > 500) {
+                ++attempts;
+                break;
+            } else {
+                return;
+            }
+    }
 
     // Send messages
-    _haSendSwitches();
+    bool res = _haSwitchDiscovery->send();
     #if SENSOR_SUPPORT
-        _haSendMagnitudes();
+        res = res && _haSensorDiscovery->send();
+    #endif
+    ts = millis();
+
+    if (!res) return;
+
+    _haDiscovery = ha_discovery_t::DONE;
+    delete _haSwitchDiscovery;
+
+    #if SENSOR_SUPPORT
+        delete _haSensorDiscovery;
     #endif
 
-    _haSendFlag = false;
+    DEBUG_MSG_P(PSTR("[HA] Finished sending MQTT Discovery (a:%u)\n"), attempts);
 
 }
 
 void _haConfigure() {
     bool enabled = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
-    _haSendFlag = (enabled != _haEnabled);
+    _haDiscovery = (enabled != _haEnabled) ? ha_discovery_t::PREPARE : ha_discovery_t::DONE;
     _haEnabled = enabled;
-    _haSend();
 }
 
 #if WEB_SUPPORT
@@ -294,6 +360,22 @@ void _haInitCommands() {
 
 #endif
 
+void _haLoop() {
+    switch (_haDiscovery) {
+        case ha_discovery_t::IDLE:
+            return;
+        case ha_discovery_t::RUN:
+        case ha_discovery_t::PREPARE:
+        case ha_discovery_t::INPROGRESS:
+            _haSend();
+            return;
+        case ha_discovery_t::DONE:
+            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            _haDiscovery = ha_discovery_t::IDLE;
+            return;
+    }
+}
+
 // -----------------------------------------------------------------------------
 
 void haSetup() {
@@ -312,11 +394,15 @@ void haSetup() {
 
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
-        if (type == MQTT_CONNECT_EVENT) _haSend();
+        if (_haEnabled && (type == MQTT_CONNECT_EVENT)) {
+            _haDiscovery = ha_discovery_t::RUN;
+            _haSend();
+        }
     });
 
     // Main callbacks
     espurnaRegisterReload(_haConfigure);
+    espurnaRegisterLoop(_haLoop);
 
 }
 

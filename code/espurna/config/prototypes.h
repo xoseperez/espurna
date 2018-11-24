@@ -72,6 +72,17 @@ extern "C" {
 #endif
 
 // -----------------------------------------------------------------------------
+// Home Assistant
+// -----------------------------------------------------------------------------
+#if HOMEASSISTANT_SUPPORT
+    enum class ha_discovery_t;
+    enum class ha_entity_t;
+
+    typedef void (*ha_send_f)(unsigned char, JsonObject&);
+    typedef uint8_t (*ha_count_f)();
+#endif
+
+// -----------------------------------------------------------------------------
 // EEPROM_ROTATE
 // -----------------------------------------------------------------------------
 #include <EEPROM_Rotate.h>

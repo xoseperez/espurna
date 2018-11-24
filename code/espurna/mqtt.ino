@@ -496,25 +496,29 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
 
 // -----------------------------------------------------------------------------
 
-void mqttSendRaw(const char * topic, const char * message, bool retain) {
+bool mqttSendRaw(const char * topic, const char * message, bool retain) {
+    bool res = false;
 
     if (_mqtt.connected()) {
         #if MQTT_USE_ASYNC
             unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, retain, message);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
+            res = (packetId > 0);
         #else
-            _mqtt.publish(topic, message, retain);
+            res = _mqtt.publish(topic, message, retain);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
     }
+
+    return res;
 }
 
 
-void mqttSendRaw(const char * topic, const char * message) {
-    mqttSendRaw (topic, message, _mqtt_retain);
+bool mqttSendRaw(const char * topic, const char * message) {
+    return mqttSendRaw (topic, message, _mqtt_retain);
 }
 
-void mqttSend(const char * topic, const char * message, bool force, bool retain) {
+bool mqttSend(const char * topic, const char * message, bool force, bool retain) {
 
     bool useJson = force ? false : _mqtt_use_json;
 
@@ -532,32 +536,34 @@ void mqttSend(const char * topic, const char * message, bool force, bool retain)
 
     // Send it right away
     } else {
-        mqttSendRaw(mqttTopic(topic, false).c_str(), message, retain);
+        return mqttSendRaw(mqttTopic(topic, false).c_str(), message, retain);
 
     }
 
+    return false;
+
 }
 
-void mqttSend(const char * topic, const char * message, bool force) {
-    mqttSend(topic, message, force, _mqtt_retain);
+bool mqttSend(const char * topic, const char * message, bool force) {
+    return mqttSend(topic, message, force, _mqtt_retain);
 }
 
-void mqttSend(const char * topic, const char * message) {
-    mqttSend(topic, message, false);
+bool mqttSend(const char * topic, const char * message) {
+    return mqttSend(topic, message, false);
 }
 
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
+bool mqttSend(const char * topic, unsigned int index, const char * message, bool force, bool retain) {
     char buffer[strlen(topic)+5];
     snprintf_P(buffer, sizeof(buffer), PSTR("%s/%d"), topic, index);
-    mqttSend(buffer, message, force, retain);
+    return mqttSend(buffer, message, force, retain);
 }
 
-void mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
-    mqttSend(topic, index, message, force, _mqtt_retain);
+bool mqttSend(const char * topic, unsigned int index, const char * message, bool force) {
+    return mqttSend(topic, index, message, force, _mqtt_retain);
 }
 
-void mqttSend(const char * topic, unsigned int index, const char * message) {
-    mqttSend(topic, index, message, false);
+bool mqttSend(const char * topic, unsigned int index, const char * message) {
+    return mqttSend(topic, index, message, false);
 }
 
 // -----------------------------------------------------------------------------
