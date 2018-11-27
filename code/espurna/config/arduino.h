@@ -101,6 +101,7 @@
 //#define PHYX_ESP12_RGB
 //#define IWOOLE_LED_TABLE_LAMP
 //#define EXS_WIFI_RELAY_V50
+//#define TECKIN_SP22_V14
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -173,3 +174,4 @@
 //#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
+//#define VL53L1X_SUPPORT        1

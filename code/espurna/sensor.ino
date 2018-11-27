@@ -282,7 +282,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             unsigned char dev_count = pzem004t_sensor->getAddressesCount();
             for(unsigned char dev = 0; dev < dev_count; dev++) {
-                DEBUG_MSG_P(PSTR("Device %d Address %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
+                DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
             }
             DEBUG_MSG_P(PSTR("+OK\n"));
         } else if(e->argc == 2) {
@@ -299,7 +299,7 @@ void _sensorInitCommands() {
         }
     });
     settingsRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
-         if(e->argc > 2) {
+        if(e->argc > 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
@@ -308,7 +308,7 @@ void _sensorInitCommands() {
             for(unsigned char dev = init; dev < limit; dev++) {
                 float offset = pzem004t_sensor->resetEnergy(dev);
                 setSetting("pzEneTotal", dev, offset);
-                DEBUG_MSG_P(PSTR("Device %d Address %s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
+                DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
             DEBUG_MSG_P(PSTR("+OK\n"));
         }
@@ -713,10 +713,25 @@ void _sensorLoad() {
         sensor->setSCK(MAX6675_SCK_PIN);
         _sensors.push_back(sensor);
     }
+
+    #if VEML6075_SUPPORT
+    {
+        VEML6075Sensor * sensor = new VEML6075Sensor();
+        sensor->setIntegrationTime(VEML6075_INTEGRATION_TIME);
+        sensor->setDynamicMode(VEML6075_DYNAMIC_MODE);
+        _sensors.push_back(sensor);
+    }
     #endif
 
-
-
+    #if VL53L1X_SUPPORT
+    {
+        VL53L1XSensor * sensor = new VL53L1XSensor();
+        sensor->setInterMeasurementPeriod(VL53L1X_INTER_MEASUREMENT_PERIOD);
+        sensor->setDistanceMode(VL53L1X_DISTANCE_MODE);
+        sensor->setMeasurementTimingBudget(VL53L1X_MEASUREMENT_TIMING_BUDGET);
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
