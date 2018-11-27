@@ -8,7 +8,7 @@ extern "C" {
     #include "user_interface.h"
 }
 
-// ref: esp8266/Arduino/cores/esp8266/pgmspace.h @ 2.5.0
+// ref: esp8266/Arduino/core/esp8266/pgmspace.h @ 2.5.0
 // __STRINGIZE && __STRINGIZE_NX && PROGMEM definitions port
 #define __TO_STR_(A) #A
 #define __TO_STR(A) __TO_STR_(A)
