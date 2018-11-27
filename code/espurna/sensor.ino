@@ -705,6 +705,18 @@ void _sensorLoad() {
     }
     #endif
 
+    #if MAX6675_SUPPORT
+    {
+        MAX6675Sensor * sensor = new MAX6675Sensor();
+        sensor->setCS(MAX6675_CS_PIN);
+        sensor->setSO(MAX6675_SO_PIN);
+        sensor->setSCK(MAX6675_SCK_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+
+
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {

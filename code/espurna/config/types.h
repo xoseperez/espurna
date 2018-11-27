@@ -279,6 +279,7 @@
 #define SENSOR_SDS011_ID            0x27
 #define SENSOR_MICS2710_ID          0x28
 #define SENSOR_MICS5525_ID          0x29
+#define SENSOR_MAX6675_ID           0x30
 
 //--------------------------------------------------------------------------------
 // Magnitudes
