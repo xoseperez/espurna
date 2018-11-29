@@ -40,7 +40,7 @@ class PulseMeterSensor : public BaseSensor {
         }
 
         void setEnergyRatio(unsigned long ratio) {
-            _ratio = ratio;
+            if (ratio > 0) _ratio = ratio;
         }
 
         // ---------------------------------------------------------------------
@@ -68,7 +68,7 @@ class PulseMeterSensor : public BaseSensor {
 
         // Descriptive name of the sensor
         String description() {
-            char buffer[20];
+            char buffer[24];
             snprintf(buffer, sizeof(buffer), "PulseMeter @ GPIO(%u)", _gpio);
             return String(buffer);
         }
@@ -86,9 +86,6 @@ class PulseMeterSensor : public BaseSensor {
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
 
-            static unsigned long _previous_pulses = 0;
-            static unsigned long _previous_time = millis();
-
             unsigned long lapse = millis() - _previous_time;
             _previous_time = millis();
             unsigned long pulses = _pulses - _previous_pulses;
@@ -96,7 +93,7 @@ class PulseMeterSensor : public BaseSensor {
 
             unsigned long _energy_delta = 1000 * 3600 * pulses / _ratio;
             _energy += _energy_delta;
-            _active = 1000 * _energy_delta / lapse;
+            if (lapse > 0) _active = 1000 * _energy_delta / lapse;
 
         }
 
@@ -132,8 +129,6 @@ class PulseMeterSensor : public BaseSensor {
 
         void _enableInterrupts(bool value) {
 
-            static unsigned char _previous = GPIO_NONE;
-
             if (value) {
 
                 if (_gpio != _previous) {
@@ -153,13 +148,17 @@ class PulseMeterSensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
+        unsigned char _previous = GPIO_NONE;
         unsigned char _gpio = GPIO_NONE;
-        unsigned long _ratio = 4000;
+        unsigned long _ratio = PULSEMETER_ENERGY_RATIO;
 
         double _active = 0;
         double _energy = 0;
 
         volatile unsigned long _pulses = 0;
+        unsigned long _previous_pulses = 0;
+        unsigned long _previous_time = 0;
+
 
 };
 
