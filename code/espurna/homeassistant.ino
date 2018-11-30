@@ -50,7 +50,7 @@ String _haEntity(ha_entity_t entity) {
             return String(F("sensor"));
     }
 
-    return String("");
+    return String();
 }
 
 // -----------------------------------------------------------------------------
@@ -60,33 +60,33 @@ String _haEntity(ha_entity_t entity) {
 class HaDiscovery {
 
 public:
-    HaDiscovery(const ha_entity_t entity_type, uint8_t entities_limit, ha_send_f send_func) :
-        entity(_haEntity(entity_type)),
-        limit(entities_limit),
-        sender(send_func),
-        value(0),
-        prefix(getSetting("haPrefix", HOMEASSISTANT_PREFIX)),
-        hostname(getSetting("hostname")),
-        delim(F("/")),
-        topic_length(6 + 4 + 3 + hostname.length() + prefix.length() + entity.length())
+    HaDiscovery(const String& prefix, const String& name) :
+        prefix(prefix),
+        name(name),
+        index{0},
+        topic_length(10 + 6 + 4 + 3 + name.length() + prefix.length())
     {}
 
-    bool send() {
+    bool send(const ha_entity_t entity_type, uint8_t entities_limit, ha_send_f send_func) {
         // config + 4 delimiters + 3 digits of index + length() of hostname, prefix and entity
-        String topic;
+
         topic.reserve(topic_length);
 
         String output;
 
-        for (; value<limit; ++value) {
-            topic = prefix + delim + entity + delim + hostname + F("_") + String(value) + F("/config");
+        String entity = _haEntity(entity_type);
+        uint8_t idx = static_cast<uint8_t>(entity_type);
+        if ((idx + 1) > index.size()) index.resize((idx + 1));
+
+        for (; index[idx]<entities_limit; index[idx] += 1) {
+            topic = prefix + "/" + entity + "/" + name + "_" + String(index[idx]) + F("/config");
 
             if (_haEnabled) {
                 DynamicJsonBuffer jsonBuffer;
                 JsonObject& config = jsonBuffer.createObject();
-                output = String("");
+                output = String();
 
-                sender(value, config);
+                send_func(index[idx], config);
                 config.printTo(output);
             }
 
@@ -95,25 +95,19 @@ public:
             }
         }
 
-        return (value >= limit);
+        return (index[idx] >= entities_limit);
     }
 
 private:
-    String entity;
-    uint8_t limit;
-    ha_send_f sender;
-
-    uint8_t value;
+    std::vector<uint8_t> index;
 
     String prefix;
-    String hostname;
-    String delim;
+    String name;
 
+    String topic;
     size_t topic_length;
 
 };
-
-HaDiscovery *_haSwitchDiscovery = nullptr;
 
 // -----------------------------------------------------------------------------
 // SENSORS
@@ -130,8 +124,6 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config["unit_of_measurement"] = magnitudeUnits(type);
 
 }
-
-HaDiscovery *_haSensorDiscovery = nullptr;
 
 #endif // SENSOR_SUPPORT
 
@@ -249,9 +241,17 @@ void _haSend() {
 
     static uint8_t attempts = 1;
     static uint32_t ts = 0;
+    static HaDiscovery* discovery = nullptr;
 
     // Do not send anything until connected.
     if (!mqttConnected()) return;
+
+    const String hostname = getSetting("hostname");
+    if (!hostname.length()) {
+        _haDiscovery = ha_discovery_t::IDLE;
+        return;
+    }
+    const String prefix = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
 
     const auto state = _haDiscovery;
     switch (state) {
@@ -262,10 +262,7 @@ void _haSend() {
         case ha_discovery_t::PREPARE:
             DEBUG_MSG_P(PSTR("[HA] Sending MQTT Discovery messages\n"));
             _haDiscovery = ha_discovery_t::INPROGRESS;
-            _haSwitchDiscovery = new HaDiscovery(ha_entity_t::SWITCH, relayCount(), _haSendSwitch);
-            #if SENSOR_SUPPORT
-                _haSensorDiscovery = new HaDiscovery(ha_entity_t::SENSOR, magnitudeCount(), _haSendMagnitude);
-            #endif
+            discovery = new HaDiscovery(prefix, hostname);
             attempts = 1;
             ts = millis();
             if (state == ha_discovery_t::PREPARE) return;
@@ -280,20 +277,16 @@ void _haSend() {
     }
 
     // Send messages
-    bool res = _haSwitchDiscovery->send();
+    bool res = discovery->send(ha_entity_t::SWITCH, relayCount(), _haSendSwitch);
     #if SENSOR_SUPPORT
-        res = res && _haSensorDiscovery->send();
+        res = res && discovery->send(ha_entity_t::SENSOR, magnitudeCount(), _haSendMagnitude);
     #endif
     ts = millis();
 
     if (!res) return;
 
     _haDiscovery = ha_discovery_t::DONE;
-    delete _haSwitchDiscovery;
-
-    #if SENSOR_SUPPORT
-        delete _haSensorDiscovery;
-    #endif
+    delete discovery;
 
     DEBUG_MSG_P(PSTR("[HA] Finished sending MQTT Discovery (a:%u)\n"), attempts);
 
