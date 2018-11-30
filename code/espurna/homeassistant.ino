@@ -61,9 +61,9 @@ class HaDiscovery {
 
 public:
     HaDiscovery(const String& prefix, const String& name) :
+        index{0},
         prefix(prefix),
         name(name),
-        index{0},
         topic_length(10 + 6 + 4 + 3 + name.length() + prefix.length())
     {}
 
@@ -76,7 +76,7 @@ public:
 
         String entity = _haEntity(entity_type);
         uint8_t idx = static_cast<uint8_t>(entity_type);
-        if ((idx + 1) > index.size()) index.resize((idx + 1));
+        if ((idx + 1u) > index.size()) index.resize((idx + 1));
 
         for (; index[idx]<entities_limit; index[idx] += 1) {
             topic = prefix + "/" + entity + "/" + name + "_" + String(index[idx]) + F("/config");
