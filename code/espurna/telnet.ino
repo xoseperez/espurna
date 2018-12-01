@@ -16,7 +16,7 @@ AsyncServer * _telnetServer;
 AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
 bool _telnetFirst = true;
 
-bool _telnetAuth = TELNET_PASSWORD;
+bool _telnetAuth = TELNET_AUTHENTICATION;
 bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
 
 // -----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _telnetWebSocketOnSend(JsonObject& root) {
     root["telnetVisible"] = 1;
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
-    root["telnetAuth"] = getSetting("telnetAuth", TELNET_PASSWORD).toInt() == 1;
+    root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
 
 #endif
@@ -214,7 +214,7 @@ unsigned char telnetWrite(unsigned char ch) {
 }
 
 void _telnetConfigure() {
-    _telnetAuth = getSetting("telnetAuth", TELNET_PASSWORD).toInt() == 1;
+    _telnetAuth = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
 
 void telnetSetup() {
