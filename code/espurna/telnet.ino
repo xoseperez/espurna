@@ -176,8 +176,12 @@ void _telnetNewClient(AsyncClient *client) {
                 debugClearCrashInfo();
             #endif
 
-            _telnetClientsAuth[i] = !_telnetAuth;
-            if (_telnetAuth) _telnetWrite(i, "Password: ");
+            #ifdef ESPURNA_CORE
+                _telnetClientsAuth[i] = true;
+            #else
+                _telnetClientsAuth[i] = !_telnetAuth;
+                if (_telnetAuth) _telnetWrite(i, "Password: ");
+            #endif
 
             _telnetFirst = true;
             wifiReconnectCheck();
