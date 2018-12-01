@@ -110,8 +110,8 @@
 #define TELNET_STA              0               // By default, disallow connections via STA interface
 #endif
 
-#ifndef TELNET_PASSWORD
-#define TELNET_PASSWORD         1               // Request password to start telnet session by default
+#ifndef TELNET_AUTHENTICATION
+#define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
 #define TELNET_PORT             23              // Port to listen to telnet clients
