@@ -274,12 +274,10 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    #if WEB_SUPPORT
-        settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
-            espurnaReload();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-    #endif
+    settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
+        espurnaReload();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
 
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
