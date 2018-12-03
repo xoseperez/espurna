@@ -61,15 +61,17 @@ class HaDiscovery {
 
 public:
     HaDiscovery(const String& prefix, const String& name) :
-        index{0},
         prefix(prefix),
         name(name),
         topic_length(10 + 6 + 4 + 3 + name.length() + prefix.length())
     {}
 
+    void reset() {
+        index.clear();
+    }
+
     bool send(const ha_entity_t entity_type, uint8_t entities_limit, ha_send_f send_func) {
         // config + 4 delimiters + 3 digits of index + length() of hostname, prefix and entity
-
         topic.reserve(topic_length);
 
         String output;
@@ -246,13 +248,6 @@ void _haSend() {
     // Do not send anything until connected.
     if (!mqttConnected()) return;
 
-    const String hostname = getSetting("hostname");
-    if (!hostname.length()) {
-        _haDiscovery = ha_discovery_t::IDLE;
-        return;
-    }
-    const String prefix = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
-
     const auto state = _haDiscovery;
     switch (state) {
         case ha_discovery_t::IDLE:
@@ -260,11 +255,19 @@ void _haSend() {
             return;
         case ha_discovery_t::RUN:
         case ha_discovery_t::PREPARE:
+            if (!discovery) {
+                discovery = new HaDiscovery(
+                    getSetting("haPrefix", HOMEASSISTANT_PREFIX),
+                    getSetting("hostname", getIdentifier()));
+            }
+            discovery->reset();
+
             DEBUG_MSG_P(PSTR("[HA] Sending MQTT Discovery messages\n"));
+
             _haDiscovery = ha_discovery_t::INPROGRESS;
-            discovery = new HaDiscovery(prefix, hostname);
             attempts = 1;
             ts = millis();
+
             if (state == ha_discovery_t::PREPARE) return;
             break;
         case ha_discovery_t::INPROGRESS:
@@ -287,6 +290,7 @@ void _haSend() {
 
     _haDiscovery = ha_discovery_t::DONE;
     delete discovery;
+    discovery = nullptr;
 
     DEBUG_MSG_P(PSTR("[HA] Finished sending MQTT Discovery (a:%u)\n"), attempts);
 
