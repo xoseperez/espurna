@@ -139,7 +139,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     // Check actions -----------------------------------------------------------
 
-    const char* action = root["action"];
+    const char* action = root["data"]["command"];
     if (action) {
 
         DEBUG_MSG_P(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
