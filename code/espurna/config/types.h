@@ -190,6 +190,21 @@
 #define LIGHT_EFFECT_FADE           3
 #define LIGHT_EFFECT_SMOOTH         4
 
+// -----------------------------------------------------------------------------
+// RF
+// -----------------------------------------------------------------------------
+
+// RF Button modes
+#define RF_BUTTON_MODE_NONE         0
+#define RF_BUTTON_MODE_RGB          1
+#define RF_BUTTON_MODE_HSV          2
+#define RF_BUTTON_MODE_BRIGHTER     3
+#define RF_BUTTON_MODE_STATE        4
+#define RF_BUTTON_MODE_EFFECT       5
+#define RF_BUTTON_MODE_TOGGLE       6
+#define RF_BUTTON_MODE_MODE         7
+#define RF_BUTTON_MODE_SPEED        8
+
 //------------------------------------------------------------------------------
 // RESET
 //------------------------------------------------------------------------------

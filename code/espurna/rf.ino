@@ -21,6 +21,111 @@ bool _rf_learn_active = false;
 // RF
 // -----------------------------------------------------------------------------
 
+#if RF_BUTTON_SET > 0
+unsigned long _rf_home_code;
+void _rfProcessCode(unsigned long code) {
+
+    static unsigned long _rf_last_toggle = 0;
+    boolean found = false;
+
+    // Repeat last valid code
+    DEBUG_MSG_P(PSTR("[RF] Trying to match code 0x%06X with RF remote\n"), code);
+
+    #if defined(RF_BUTTON_LEARN_CODE) && defined(RF_BUTTON_LEARN_MASK)
+    // Learning of a Home Code by pressing a defined button for a while until the code was received ten times in series
+    static unsigned long _rf_last_learn = 0;
+    static unsigned char _rf_learn_count = 0;
+
+    if ( (code & RF_BUTTON_LEARN_MASK) == RF_BUTTON_LEARN_CODE) { // check if code matches the defined learn button
+        if ( (millis() - _rf_last_learn) < 1000 ) { // check if time since last press is less than a second
+            _rf_learn_count++;
+        } else {
+            _rf_learn_count = 1;
+        }
+        _rf_last_learn = millis();
+
+        if (_rf_learn_count == 10) {
+            _rf_home_code = code & (0xFFFFFF ^ RF_BUTTON_LEARN_MASK);
+            setSetting("rfHomeCode", _rf_home_code);
+            DEBUG_MSG_P(PSTR("[RF] RF remote home code learned 0x%06X\n"), _rf_home_code);
+        }
+    } else { // reset counter if other button
+        _rf_learn_count = 0;
+        _rf_last_learn = 0;
+    }
+    #endif
+
+    for (unsigned char i = 0; i < RF_BUTTON_COUNT ; i++) {
+
+        unsigned long button_code = pgm_read_dword(&RF_BUTTON[i][0]) | _rf_home_code;
+        if (code == button_code) {
+
+            unsigned long button_mode = pgm_read_dword(&RF_BUTTON[i][1]);
+            unsigned long button_value = pgm_read_dword(&RF_BUTTON[i][2]);
+
+            if (button_mode == RF_BUTTON_MODE_STATE) {
+                relayStatus(0, button_value);
+            }
+
+            if (button_mode == RF_BUTTON_MODE_TOGGLE) {
+
+                if (millis() - _rf_last_toggle > 250){
+                    relayToggle(button_value);
+                    _rf_last_toggle = millis();
+                } else {
+                    DEBUG_MSG_P(PSTR("[RF] Ignoring repeated code\n"));
+                }
+            }
+
+            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
+                if (button_mode == RF_BUTTON_MODE_BRIGHTER) {
+                    lightBrightnessStep(button_value ? 1 : -1);
+                    nice_delay(150); //debounce
+                }
+
+                if (button_mode == RF_BUTTON_MODE_RGB) {
+                    lightColor(button_value);
+                }
+
+                // Mode Buttons used for color temperature
+                if (button_mode == RF_BUTTON_MODE_MODE) {
+                    _fromMireds(_light_mireds + (button_value ? 50 : -50));
+                    nice_delay(150); //debounce
+                }
+
+                // Speed Buttons used for color Saturation
+                if (button_mode == RF_BUTTON_MODE_SPEED) {
+                    String hsv = lightColor(false);                           // 240,100,90
+                    String h = hsv.substring(0,hsv.indexOf(",")+1);            // 240,
+                    String s = hsv.substring(h.length(),hsv.lastIndexOf(",")); // 100
+                    String v = hsv.substring(hsv.lastIndexOf(","));            // ,90
+                    int saturation = s.toInt();
+                    saturation = constrain( (saturation + (button_value ? 10 : -10)) , 0, 100);
+                    hsv = h;
+                    hsv.concat(saturation);
+                    hsv.concat(v);
+                    lightColor(hsv.c_str(), false);
+                }
+
+                lightUpdate(true, true);
+
+            #endif
+
+            found = true;
+            break;
+
+        }
+
+    }
+
+    if (!found) {
+        DEBUG_MSG_P(PSTR("[RF] Ignoring code\n"));
+    }
+
+}
+#endif
+
 unsigned long _rfRetrieve(unsigned char id, bool status) {
     String code = getSetting(status ? "rfbON" : "rfbOFF", id, "0");
     return strtoul(code.c_str(), 0, 16);
@@ -155,6 +260,10 @@ void rfLoop() {
                         } else {
                             relayStatus(id, 1 == value);
                         }
+                    } else {
+                        #if RF_BUTTON_SET > 0
+                            _rfProcessCode(rf_code);
+                        #endif 
                     }
 
                 }
@@ -175,13 +284,29 @@ void rfLoop() {
 
 void rfSetup() {
 
+    #if RF_ENABLE_PIN
+        pinMode(RF_ENABLE_PIN, OUTPUT);
+        #if RF_ENABLE_PIN_INVERSE == 1
+            digitalWrite(RF_ENABLE_PIN,LOW);
+            DEBUG_MSG_P(PSTR("[RF] RF enable PIN on GPIO %u set to LOW\n"), RF_ENABLE_PIN);
+        #else
+            digitalWrite(RF_ENABLE_PIN,HIGH);
+            DEBUG_MSG_P(PSTR("[RF] RF enable PIN on GPIO %u set to HIGH\n"), RF_ENABLE_PIN);
+        #endif
+    #endif
+
     _rfModem = new RCSwitch();
-    _rfModem->enableReceive(RF_PIN);
+    _rfModem->enableReceive(digitalPinToInterrupt(RF_PIN));
     DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), RF_PIN);
 
     #if WEB_SUPPORT
         wsOnSendRegister(_rfWebSocketOnSend);
         wsOnActionRegister(_rfWebSocketOnAction);
+    #endif
+
+    #if RF_BUTTON_SET > 0
+        _rf_home_code = getSetting("rfHomeCode", 0x000000).toInt();
+        DEBUG_MSG_P(PSTR("[RF] RF home code 0x%06X\n"), _rf_home_code);
     #endif
 
     // Register loop

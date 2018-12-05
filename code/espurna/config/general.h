@@ -1347,8 +1347,79 @@
 #define RF_PIN                      14
 #endif
 
+#ifndef RF_ENABLE_PIN_INVERSE
+#define RF_ENABLE_PIN_INVERSE       0
+#endif
+
 #define RF_DEBOUNCE                 500
 #define RF_LEARN_TIMEOUT            60000
+
+#ifndef RF_BUTTON_SET
+#define RF_BUTTON_SET               0
+#endif
+
+#if RF_SUPPORT
+//RF Remote Buttons SET 1 (for the original Remote shipped with the Arilux LC11 controller)
+#if RF_BUTTON_SET == 1
+/*
+   RF Remote
+   Encoding: Chinese Protocol 1
+   Codes provided by KmanOz (https://github.com/KmanOz)
+   +--------+--------+--------+
+   |   ON   | Toggle |   OFF  |
+   +--------+--------+--------+
+   | Speed+ | Mode+  | Bright+|
+   +--------+--------+--------+
+   | Speed- | Mode-  | Bright-|
+   +--------+--------+--------+
+   |  RED   | GREEN  |  BLUE  |
+   +--------+--------+--------+
+   | ORANGE | LT GRN | LT BLUE|
+   +--------+--------+--------+
+   | AMBER  |  CYAN  | PURPLE |
+   +--------+--------+--------+
+   | YELLOW |  PINK  | WHITE  |
+   +--------+--------+--------+
+*/
+
+    #define RF_BUTTON_COUNT 21
+
+    #define RF_BUTTON_LEARN_CODE 0x000013  // YELLOW
+    #define RF_BUTTON_LEARN_MASK 0x0000FF  // use first two bytes for home code
+
+    const unsigned long RF_BUTTON[RF_BUTTON_COUNT][3] PROGMEM = {
+
+        { 0x000001, RF_BUTTON_MODE_STATE,    1 },   // ON
+        { 0x000002, RF_BUTTON_MODE_TOGGLE,   0 },   // Toggle
+        { 0x000003, RF_BUTTON_MODE_STATE,    0 },   // OFF
+
+        { 0x000004, RF_BUTTON_MODE_SPEED,    1 },   // Speed+
+        { 0x000005, RF_BUTTON_MODE_MODE,     1 },   // Mode+
+        { 0x000006, RF_BUTTON_MODE_BRIGHTER, 1 },   // Bright+
+
+        { 0x000007, RF_BUTTON_MODE_SPEED,    0 },   // Speed-
+        { 0x000008, RF_BUTTON_MODE_MODE,     0 },   // Mode-
+        { 0x000009, RF_BUTTON_MODE_BRIGHTER, 0 },   // Bright-
+
+        { 0x00000A, RF_BUTTON_MODE_RGB, 0xFF0000 }, // RED
+        { 0x00000B, RF_BUTTON_MODE_RGB, 0x00FF00 }, // GREEN
+        { 0x00000C, RF_BUTTON_MODE_RGB, 0x0000FF }, // BLUE
+
+        { 0x00000D, RF_BUTTON_MODE_RGB, 0xFFA500 }, // ORANGE
+        { 0x00000E, RF_BUTTON_MODE_RGB, 0x90EE90 }, // LT GRN
+        { 0x00000F, RF_BUTTON_MODE_RGB, 0xADD8E6 }, // LT BLUE
+
+        { 0x000010, RF_BUTTON_MODE_RGB, 0xFFC200 }, // AMBER
+        { 0x000011, RF_BUTTON_MODE_RGB, 0x00FFFF }, // CYAN
+        { 0x000012, RF_BUTTON_MODE_RGB, 0x800080 }, // PURPLE
+
+        { 0x000013, RF_BUTTON_MODE_RGB, 0xFFFF00 }, // YELLOW
+        { 0x000014, RF_BUTTON_MODE_RGB, 0xFFC0CB }, // PINK
+        { 0x000015, RF_BUTTON_MODE_RGB, 0xFFFFFF }, // WHITE
+
+    };
+#endif
+#endif // RF_SUPPORT
 
 //--------------------------------------------------------------------------------
 // Custom RFM69 to MQTT bridge
