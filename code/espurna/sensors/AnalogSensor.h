@@ -55,11 +55,11 @@ class AnalogSensor : public BaseSensor {
             return _micros;
         }
 
-        signed long getFactor() {
+        double getFactor() {
             return _factor;
         }
 
-        signed long getOffset() {
+        double getOffset() {
             return _offset;
         }
 
