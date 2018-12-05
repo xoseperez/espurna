@@ -99,6 +99,25 @@
 #define ANALOG_DELAY                    0       // Delay between samples in micros
 #endif
 
+//Use the following to perform scaling of raw analog values
+//   scaledRead = ( factor * rawRead ) + offset
+//
+//Please take note that the offset is not affected by the scaling factor
+
+#ifndef ANALOG_FACTOR
+#define ANALOG_FACTOR                    1.0       // Multiply raw reading by this factor
+#endif
+
+#ifndef ANALOG_OFFSET
+#define ANALOG_OFFSET                    0.0       // Add this offset to *scaled* value
+#endif
+
+// Round to this number of decimals
+#ifndef ANALOG_DECIMALS
+#define ANALOG_DECIMALS                  2
+#endif
+
+
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag

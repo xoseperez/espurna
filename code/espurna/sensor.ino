@@ -52,6 +52,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
 
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
 
+    if (type == MAGNITUDE_ANALOG) return ANALOG_DECIMALS;
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
         if (_sensor_energy_units == ENERGY_KWH) return 3;
@@ -347,6 +348,9 @@ void _sensorLoad() {
         AnalogSensor * sensor = new AnalogSensor();
         sensor->setSamples(ANALOG_SAMPLES);
         sensor->setDelay(ANALOG_DELAY);
+        //CICM For analog scaling
+        sensor->setFactor(ANALOG_FACTOR);
+        sensor->setOffset(ANALOG_OFFSET);
         _sensors.push_back(sensor);
     }
     #endif

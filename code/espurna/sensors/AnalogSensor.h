@@ -35,6 +35,16 @@ class AnalogSensor : public BaseSensor {
             _micros = micros;
         }
 
+        void setFactor(double factor) {
+            //DEBUG_MSG(("[ANALOG_SENSOR] Factor set to: %s \n"), String(factor,6).c_str());
+            _factor = factor;
+        }
+
+        void setOffset(double offset) {
+          //DEBUG_MSG(("[ANALOG_SENSOR] Factor set to: %s \n"), String(offset,6).c_str());
+            _offset = offset;
+        }
+
         // ---------------------------------------------------------------------
 
         unsigned int getSamples() {
@@ -43,6 +53,14 @@ class AnalogSensor : public BaseSensor {
 
         unsigned long getDelay() {
             return _micros;
+        }
+
+        double getFactor() {
+            return _factor;
+        }
+
+        double getOffset() {
+            return _offset;
         }
 
         // ---------------------------------------------------------------------
@@ -77,6 +95,7 @@ class AnalogSensor : public BaseSensor {
         }
 
         // Current value for slot # index
+        // Changed return type as moving to scaled value
         double value(unsigned char index) {
             if (index == 0) return _read();
             return 0;
@@ -84,7 +103,9 @@ class AnalogSensor : public BaseSensor {
 
     protected:
 
-        unsigned int _read() {
+        //CICM: this should be for raw values
+        // renaming protected function "_read" to "_rawRead"
+        unsigned int _rawRead() {
             if (1 == _samples) return analogRead(0);
             unsigned long sum = 0;
             for (unsigned int i=0; i<_samples; i++) {
@@ -94,8 +115,28 @@ class AnalogSensor : public BaseSensor {
             return sum / _samples;
         }
 
+        //CICM: and proper read should be scalable and thus needs sign
+        //and decimal part
+        double _read() {
+          //Raw measure could also be a class variable with getter so that can
+          //be reported through MQTT, ...
+          unsigned int rawValue;
+          double scaledValue;
+          // Debugging doubles to string
+          //DEBUG_MSG(("[ANALOG_SENSOR] Started standard read, factor: %s , offset: %s, decimals: %d \n"), String(_factor).c_str(), String(_offset).c_str(), ANALOG_DECIMALS);
+          rawValue = _rawRead();
+          //DEBUG_MSG(("[ANALOG_SENSOR] Raw read received: %d \n"), rawValue);
+          scaledValue = _factor*rawValue  + _offset;
+          //DEBUG_MSG(("[ANALOG_SENSOR] Scaled value result: %s \n"), String(scaledValue).c_str());
+          return scaledValue;
+        }
+
+
         unsigned int _samples = 1;
         unsigned long _micros = 0;
+        //CICM: for scaling and offset, also with getters and setters
+        double _factor = 1.0;
+        double _offset = 0.0;
 
 };
 
