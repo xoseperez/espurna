@@ -203,6 +203,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if PULSEMETER_SUPPORT
             if (sensor->getID() == SENSOR_PULSEMETER_ID) {
                 root["pmVisible"] = 1;
+                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
             }
         #endif
 
@@ -1086,6 +1087,8 @@ void _sensorConfigure() {
                     delSetting("eneTotal");
                     _sensorResetTS();
                 }
+
+                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
             }
         #endif // PULSEMETER_SUPPORT
 
