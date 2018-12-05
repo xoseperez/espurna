@@ -3024,9 +3024,8 @@
     #define SHT3X_I2C_SUPPORT     1
     #define SI7021_SUPPORT        1
     #define PMSX003_SUPPORT       1
-    #define SENSEAIR_SUPPORT1
+    #define SENSEAIR_SUPPORT      1
     #define VL53L1X_SUPPORT       1
-
 
     // A bit of lights - pin 5
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
