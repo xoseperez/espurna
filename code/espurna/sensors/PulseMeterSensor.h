@@ -53,7 +53,7 @@ class PulseMeterSensor : public BaseSensor {
             return _gpio;
         }
 
-        unsigned char getEnergyRatio() {
+        unsigned long getEnergyRatio() {
             return _ratio;
         }
 
