@@ -636,6 +636,8 @@
 #define PULSEMETER_INTERRUPT_ON         FALLING
 #endif
 
+#define PULSEMETER_DEBOUNCE             50         // Do not register pulses within less than 50 millis
+
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag

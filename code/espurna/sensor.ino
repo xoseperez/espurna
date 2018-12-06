@@ -649,6 +649,7 @@ void _sensorLoad() {
         PulseMeterSensor * sensor = new PulseMeterSensor();
         sensor->setGPIO(PULSEMETER_PIN);
         sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
         _sensors.push_back(sensor);
     }
     #endif

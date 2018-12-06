@@ -43,6 +43,10 @@ class PulseMeterSensor : public BaseSensor {
             if (ratio > 0) _ratio = ratio;
         }
 
+        void setDebounceTime(unsigned long debounce) {
+            _debounce = debounce;
+        }
+
         // ---------------------------------------------------------------------
 
         unsigned char getGPIO() {
@@ -51,6 +55,10 @@ class PulseMeterSensor : public BaseSensor {
 
         unsigned char getEnergyRatio() {
             return _ratio;
+        }
+
+        unsigned long getDebounceTime() {
+            return _debounce;
         }
 
         // ---------------------------------------------------------------------
@@ -113,7 +121,10 @@ class PulseMeterSensor : public BaseSensor {
 
         // Handle interrupt calls
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-            if (gpio == _gpio) {
+            static unsigned long last = 0;
+
+            if (millis() - last > _debounce) {
+                last = millis();
                 _pulses++;
             }
         }
@@ -151,6 +162,7 @@ class PulseMeterSensor : public BaseSensor {
         unsigned char _previous = GPIO_NONE;
         unsigned char _gpio = GPIO_NONE;
         unsigned long _ratio = PULSEMETER_ENERGY_RATIO;
+        unsigned long _debounce = PULSEMETER_DEBOUNCE;
 
         double _active = 0;
         double _energy = 0;
