@@ -2958,6 +2958,29 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// Lombex Lux Nova 2 Tunable White
+// https://www.amazon.com/Lombex-Compatible-Equivalent-Dimmable-2700K-6500K/dp/B07B8K72PR
+// -----------------------------------------------------------------------------
+#elif defined(LOMBEX_LUX_NOVA2_TUNABLE_WHITE)
+
+    // Info
+    #define MANUFACTURER        "LOMBEX"
+    #define DEVICE              "LUX_NOVA2_TUNABLE_WHITE"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       4
+    #define MY92XX_DCKI_PIN     5
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    // No RGB on this bulb. Warm white on channel 0, cool white on channel 3
+    #define MY92XX_MAPPING      255, 255, 255, 3, 0
+
+// -----------------------------------------------------------------------------
 // Bestek Smart Plug with 2 USB ports
 // https://www.bestekcorp.com/bestek-smart-plug-works-with-amazon-alexa-google-assistant-and-ifttt-with-2-usb
 // -----------------------------------------------------------------------------
