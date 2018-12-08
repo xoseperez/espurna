@@ -2658,16 +2658,11 @@
     #define HLW8012_POWER_RATIO         2533110
     #define HLW8012_INTERRUPT_ON        FALLING
 
-    //#define HLW8012_WAIT_FOR_WIFI       1
-    //#define ALEXA_SUPPORT               0
-    //#define DOMOTICZ_SUPPORT            0
-    //#define HOMEASSISTANT_SUPPORT       0
-    //#define THINGSPEAK_SUPPORT          0
-
 // ----------------------------------------------------------------------------------------
 //  Homecube 16A is similar but some pins differ and it also has RGB LEDs
 //  https://www.amazon.de/gp/product/B07D7RVF56/ref=oh_aui_detailpage_o00_s01?ie=UTF8&psc=1
 // ----------------------------------------------------------------------------------------
+
 #elif defined(HOMECUBE_16A)
 
     // Info
@@ -2963,6 +2958,29 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// Lombex Lux Nova 2 Tunable White
+// https://www.amazon.com/Lombex-Compatible-Equivalent-Dimmable-2700K-6500K/dp/B07B8K72PR
+// -----------------------------------------------------------------------------
+#elif defined(LOMBEX_LUX_NOVA2_TUNABLE_WHITE)
+
+    // Info
+    #define MANUFACTURER        "LOMBEX"
+    #define DEVICE              "LUX_NOVA2_TUNABLE_WHITE"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       4
+    #define MY92XX_DCKI_PIN     5
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    // No RGB on this bulb. Warm white on channel 0, cool white on channel 3
+    #define MY92XX_MAPPING      255, 255, 255, 3, 0
+
+// -----------------------------------------------------------------------------
 // Bestek Smart Plug with 2 USB ports
 // https://www.bestekcorp.com/bestek-smart-plug-works-with-amazon-alexa-google-assistant-and-ifttt-with-2-usb
 // -----------------------------------------------------------------------------
@@ -3029,9 +3047,8 @@
     #define SHT3X_I2C_SUPPORT     1
     #define SI7021_SUPPORT        1
     #define PMSX003_SUPPORT       1
-    #define SENSEAIR_SUPPORT1
+    #define SENSEAIR_SUPPORT      1
     #define VL53L1X_SUPPORT       1
-
 
     // A bit of lights - pin 5
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
@@ -3166,6 +3183,8 @@
     #ifndef EMON_ANALOG_SUPPORT
     #define EMON_ANALOG_SUPPORT 1
     #endif
+
+    #define PULSEMETER_SUPPORT  1
 
     // Test non-default modules
     #define LLMNR_SUPPORT       1

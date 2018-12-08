@@ -102,6 +102,7 @@
 //#define IWOOLE_LED_TABLE_LAMP
 //#define EXS_WIFI_RELAY_V50
 //#define TECKIN_SP22_V14
+//#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -166,6 +167,7 @@
 //#define MICS5525_SUPPORT       1
 //#define NTC_SUPPORT            1
 //#define PMSX003_SUPPORT        1
+//#define PULSEMETER_SUPPORT     1
 //#define PZEM004T_SUPPORT       1
 //#define SDS011_SUPPORT         1
 //#define SENSEAIR_SUPPORT       1

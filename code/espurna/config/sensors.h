@@ -99,6 +99,25 @@
 #define ANALOG_DELAY                    0       // Delay between samples in micros
 #endif
 
+//Use the following to perform scaling of raw analog values
+//   scaledRead = ( factor * rawRead ) + offset
+//
+//Please take note that the offset is not affected by the scaling factor
+
+#ifndef ANALOG_FACTOR
+#define ANALOG_FACTOR                    1.0       // Multiply raw reading by this factor
+#endif
+
+#ifndef ANALOG_OFFSET
+#define ANALOG_OFFSET                    0.0       // Add this offset to *scaled* value
+#endif
+
+// Round to this number of decimals
+#ifndef ANALOG_DECIMALS
+#define ANALOG_DECIMALS                  2
+#endif
+
+
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag
@@ -276,12 +295,28 @@
 #define EMON_MAX_SAMPLES                1000        // Max number of samples to get
 #define EMON_MAX_TIME                   250         // Max time in ms to sample
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
-#define EMON_MAINS_VOLTAGE              230         // Mains voltage
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
+
+#ifndef EMON_MAINS_VOLTAGE
+#define EMON_MAINS_VOLTAGE              230         // Mains voltage
+#endif
+
+#ifndef EMON_CURRENT_RATIO
 #define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
+#endif
+
+#ifndef EMON_REPORT_CURRENT
+
 #define EMON_REPORT_CURRENT             0           // Report current
+#endif
+
+#ifndef EMON_REPORT_POWER
 #define EMON_REPORT_POWER               1           // Report power
+#endif
+
+#ifndef EMON_REPORT_ENERGY
 #define EMON_REPORT_ENERGY              1           // Report energy
+#endif
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADC121
@@ -545,40 +580,6 @@
 #endif
 
 //------------------------------------------------------------------------------
-// SDS011 particulates sensor
-// Enable support by passing SDS011_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef SDS011_SUPPORT
-#define SDS011_SUPPORT                   0
-#endif
-
-#ifndef SDS011_RX_PIN
-#define SDS011_RX_PIN                    14
-#endif
-
-#ifndef SDS011_TX_PIN
-#define SDS011_TX_PIN                    12
-#endif
-
-//------------------------------------------------------------------------------
-// SenseAir CO2 sensor
-// Enable support by passing SENSEAIR_SUPPORT=1 build flag
-//------------------------------------------------------------------------------
-
-#ifndef SENSEAIR_SUPPORT
-#define SENSEAIR_SUPPORT                0
-#endif
-
-#ifndef SENSEAIR_RX_PIN
-#define SENSEAIR_RX_PIN                 0
-#endif
-
-#ifndef SENSEAIR_TX_PIN
-#define SENSEAIR_TX_PIN                 2
-#endif
-
-//------------------------------------------------------------------------------
 // Particle Monitor based on Plantower PMS
 // Enable support by passing PMSX003_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -599,20 +600,44 @@
 #endif
 
 #ifndef PMS_USE_SOFT
-#define PMS_USE_SOFT               0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
+#define PMS_USE_SOFT                    0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
 #endif
 
 #ifndef PMS_RX_PIN
-#define PMS_RX_PIN                 13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
+#define PMS_RX_PIN                      13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
 #ifndef PMS_TX_PIN
-#define PMS_TX_PIN                 15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
+#define PMS_TX_PIN                      15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
 #endif
 
 #ifndef PMS_HW_PORT
-#define PMS_HW_PORT                Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
+#define PMS_HW_PORT                     Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
 #endif
+
+//------------------------------------------------------------------------------
+// Pulse Meter Energy monitor
+// Enable support by passing PULSEMETER_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef PULSEMETER_SUPPORT
+#define PULSEMETER_SUPPORT              0
+#endif
+
+#ifndef PULSEMETER_PIN
+#define PULSEMETER_PIN                  5
+#endif
+
+#ifndef PULSEMETER_ENERGY_RATIO
+#define PULSEMETER_ENERGY_RATIO         4000        // In pulses/kWh
+#endif
+
+#ifndef PULSEMETER_INTERRUPT_ON
+#define PULSEMETER_INTERRUPT_ON         FALLING
+#endif
+
+#define PULSEMETER_DEBOUNCE             50         // Do not register pulses within less than 50 millis
+
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
 // Enable support by passing PZEM004T_SUPPORT=1 build flag
@@ -648,6 +673,40 @@
 
 #ifndef PZEM004T_MAX_DEVICES
 #define PZEM004T_MAX_DEVICES            3
+#endif
+
+//------------------------------------------------------------------------------
+// SDS011 particulates sensor
+// Enable support by passing SDS011_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SDS011_SUPPORT
+#define SDS011_SUPPORT                   0
+#endif
+
+#ifndef SDS011_RX_PIN
+#define SDS011_RX_PIN                    14
+#endif
+
+#ifndef SDS011_TX_PIN
+#define SDS011_TX_PIN                    12
+#endif
+
+//------------------------------------------------------------------------------
+// SenseAir CO2 sensor
+// Enable support by passing SENSEAIR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef SENSEAIR_SUPPORT
+#define SENSEAIR_SUPPORT                0
+#endif
+
+#ifndef SENSEAIR_RX_PIN
+#define SENSEAIR_RX_PIN                 0
+#endif
+
+#ifndef SENSEAIR_TX_PIN
+#define SENSEAIR_TX_PIN                 2
 #endif
 
 //------------------------------------------------------------------------------
@@ -789,6 +848,7 @@
     SENSEAIR_SUPPORT || \
     PMSX003_SUPPORT || \
     PZEM004T_SUPPORT || \
+    PULSEMETER_SUPPORT || \
     SHT3X_I2C_SUPPORT || \
     SI7021_SUPPORT || \
     SONAR_SUPPORT || \
@@ -927,6 +987,10 @@
 
 #if PMSX003_SUPPORT
     #include "../sensors/PMSX003Sensor.h"
+#endif
+
+#if PULSEMETER_SUPPORT
+    #include "../sensors/PulseMeterSensor.h"
 #endif
 
 #if PZEM004T_SUPPORT

@@ -56,6 +56,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
 
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
 
+    if (type == MAGNITUDE_ANALOG) return ANALOG_DECIMALS;
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
         if (_sensor_energy_units == ENERGY_KWH) return 3;
@@ -197,6 +198,13 @@ void _sensorWebSocketStart(JsonObject& root) {
             if (sensor->getID() == SENSOR_PZEM004T_ID) {
                 root["pzemVisible"] = 1;
                 root["pwrVisible"] = 1;
+            }
+        #endif
+
+        #if PULSEMETER_SUPPORT
+            if (sensor->getID() == SENSOR_PULSEMETER_ID) {
+                root["pmVisible"] = 1;
+                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
             }
         #endif
 
@@ -408,6 +416,9 @@ void _sensorLoad() {
         AnalogSensor * sensor = new AnalogSensor();
         sensor->setSamples(ANALOG_SAMPLES);
         sensor->setDelay(ANALOG_DELAY);
+        //CICM For analog scaling
+        sensor->setFactor(ANALOG_FACTOR);
+        sensor->setOffset(ANALOG_OFFSET);
         _sensors.push_back(sensor);
     }
     #endif
@@ -620,24 +631,6 @@ void _sensorLoad() {
     }
     #endif
 
-    #if SENSEAIR_SUPPORT
-    {
-        SenseAirSensor * sensor = new SenseAirSensor();
-        sensor->setRX(SENSEAIR_RX_PIN);
-        sensor->setTX(SENSEAIR_TX_PIN);
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SDS011_SUPPORT
-    {
-        SDS011Sensor * sensor = new SDS011Sensor();
-        sensor->setRX(SDS011_RX_PIN);
-        sensor->setTX(SDS011_TX_PIN);
-        _sensors.push_back(sensor);
-    }
-    #endif
-
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
@@ -648,6 +641,16 @@ void _sensorLoad() {
             sensor->setSerial(& PMS_HW_PORT);
         #endif
         sensor->setType(PMS_TYPE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if PULSEMETER_SUPPORT
+    {
+        PulseMeterSensor * sensor = new PulseMeterSensor();
+        sensor->setGPIO(PULSEMETER_PIN);
+        sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
         _sensors.push_back(sensor);
     }
     #endif
@@ -668,6 +671,24 @@ void _sensorLoad() {
             float value = getSetting("pzEneTotal", dev, 0).toFloat();
             if (value > 0) sensor->resetEnergy(dev, value);
         }
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SENSEAIR_SUPPORT
+    {
+        SenseAirSensor * sensor = new SenseAirSensor();
+        sensor->setRX(SENSEAIR_RX_PIN);
+        sensor->setTX(SENSEAIR_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SDS011_SUPPORT
+    {
+        SDS011Sensor * sensor = new SDS011Sensor();
+        sensor->setRX(SDS011_RX_PIN);
+        sensor->setTX(SDS011_TX_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -890,6 +911,13 @@ void _sensorInit() {
 
         #endif // CSE7766_SUPPORT
 
+        #if PULSEMETER_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
+                PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
+                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+            }
+        #endif // PULSEMETER_SUPPORT
+
     }
 
 }
@@ -1064,6 +1092,19 @@ void _sensorConfigure() {
             }
 
         #endif // CSE7766_SUPPORT
+
+        #if PULSEMETER_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
+                PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
+                }
+
+                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+            }
+        #endif // PULSEMETER_SUPPORT
 
         #if PZEM004T_SUPPORT
 

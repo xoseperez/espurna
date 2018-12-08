@@ -199,6 +199,9 @@ PROGMEM const char espurna_sensors[] =
     #if PMSX003_SUPPORT
         "PMSX003 "
     #endif
+    #if PULSEMETER_SUPPORT
+        "PULSEMETER "
+    #endif
     #if PZEM004T_SUPPORT
         "PZEM004T "
     #endif
