@@ -734,6 +734,7 @@ void _sensorLoad() {
         sensor->setSCK(MAX6675_SCK_PIN);
         _sensors.push_back(sensor);
     }
+    #endif
 
     #if VEML6075_SUPPORT
     {
