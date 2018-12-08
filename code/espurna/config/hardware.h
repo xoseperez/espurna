@@ -2994,16 +2994,15 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Light
-    #define LIGHT_CHANNELS      5
+    #define LIGHT_CHANNELS      4
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       4
     #define MY92XX_DCKI_PIN     5
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    // RGB on channels 0/1/2, warm white on channel 3
-    // The presence of warm leds on these bulbs may just be a common defect.
-    // If your bulb has cool leds, use 0, 1, 2, 3. Can also reduce LIGHT_CHANNELS.
-    #define MY92XX_MAPPING      0, 1, 2, 255, 3
+    // RGB on channels 0/1/2, either cool or warm white on channel 3
+    // The bulb *should* have cool leds, but could also have warm leds as a common defect
+    #define MY92XX_MAPPING      0, 1, 2, 3
 
 // -----------------------------------------------------------------------------
 // Bestek Smart Plug with 2 USB ports
