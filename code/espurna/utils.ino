@@ -236,6 +236,9 @@ void heartbeat() {
         #if (HEARTBEAT_REPORT_FREEHEAP)
             idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
         #endif
+        #if (HEARTBEAT_REPORT_RSSI)
+            idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+        #endif
     #endif
 
 }
