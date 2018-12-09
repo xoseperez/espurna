@@ -110,8 +110,8 @@
 #define TELNET_STA              0               // By default, disallow connections via STA interface
 #endif
 
-#ifndef TELNET_PASSWORD
-#define TELNET_PASSWORD         1               // Request password to start telnet session by default
+#ifndef TELNET_AUTHENTICATION
+#define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
 #define TELNET_PORT             23              // Port to listen to telnet clients
@@ -1003,6 +1003,11 @@
 
 #ifndef THINGSPEAK_APIKEY
 #define THINGSPEAK_APIKEY           ""              // Default API KEY
+#endif
+
+#ifndef THINGSPEAK_CLEAR_CACHE
+#define THINGSPEAK_CLEAR_CACHE      1               // Clear cache after sending values
+                                                    // Not clearing it will result in latest values for each field being sent every time
 #endif
 
 #define THINGSPEAK_USE_ASYNC        1               // Use AsyncClient instead of WiFiClientSecure

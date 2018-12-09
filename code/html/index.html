@@ -127,6 +127,10 @@
                             <a href="#" class="pure-menu-link" data="panel-mqtt">MQTT</a>
                         </li>
 
+                        <li class="pure-menu-item module module-nofuss">
+                            <a href="#" class="pure-menu-link" data="panel-nofuss">NOFUSS</a>
+                        </li>
+
                         <li class="pure-menu-item module module-ntp">
                             <a href="#" class="pure-menu-link" data="panel-ntp">NTP</a>
                         </li>
@@ -608,17 +612,12 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Turn ON to be able to telnet to your device while connected to your home router.<br />TELNET is always enabled in AP mode.</div>
                                 </div>
 
-
-                                <div class="pure-g module module-nofuss">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Automatic remote updates (NoFUSS)</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofussEnabled" /></div>
-                                </div>
-
-                                <div class="pure-g module module-nofuss">
-                                    <label class="pure-u-1 pure-u-lg-1-4">NoFUSS server</label>
-                                    <input name="nofussServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15" />
+                                <div class="pure-g module module-telnet">
+                                    <label class="pure-u-1 pure-u-lg-1-4">TELNET Password</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="telnetAuth" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">This name address of the NoFUSS server for automatic remote updates (see https://bitbucket.org/xoseperez/nofuss).</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Request password when starting telnet session</div>
                                 </div>
 
                                 <div class="pure-g">
@@ -907,6 +906,33 @@
                     </div>
                 </form>
 
+                <form id="form-nofuss" class="pure-form form-settings">
+                    <div class="panel" id="panel-nofuss">
+
+                        <div class="header">
+                            <h1>NoFUSS</h1>
+                            <h2>Automatically upgrade the firmware (see <a href="https://bitbucket.org/xoseperez/nofuss">xoseperez/nofuss</a> for details)</h2>
+                        </div>
+
+                        <div class="page">
+                            <fieldset>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofussEnabled" /></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Server</label>
+                                    <input name="nofussServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15" />
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Address of the NoFUSS server</div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                    </div>
+                </form>
+
                 <form id="form-ntp" class="pure-form form-settings">
                     <div class="panel" id="panel-ntp">
 
@@ -1080,8 +1106,20 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Clear cache</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="tspkClear" tabindex="31" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        With every POST to thinkspeak.com only enqueued fields are sent. 
+                                        If you select to clear the cache after every sending this will result in only those fields that have changed will be posted.
+                                        If you want all fields to be sent with every POST do not clear the cache.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="31" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32" />
                                 </div>
 
                                 <legend>Sensors &amp; actuators</legend>
@@ -1334,8 +1372,7 @@
 
                                 <div class="pure-g module module-pm">
                                     <label class="pure-u-1 pure-u-lg-1-4">Energy Ratio</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrRatioE" tabindex="55" /></div>
-                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="pwrRatioE" type="text" tabindex="55" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Energy ratio in pulses/kWh.</div>
                                 </div>

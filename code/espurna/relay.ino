@@ -557,6 +557,8 @@ void _relayBoot() {
 
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
+        if (GPIO_NONE == _relays[i].pin) continue;
+
         pinMode(_relays[i].pin, OUTPUT);
         if (GPIO_NONE != _relays[i].reset_pin) {
             pinMode(_relays[i].reset_pin, OUTPUT);
@@ -1006,7 +1008,7 @@ void relaySetup() {
         // No delay_on or off for these devices to easily allow having more than
         // 8 channels. This behaviour will be recovered with v2.
         for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, 0, 0});
+            _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
         }
 
     #else

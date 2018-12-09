@@ -36,6 +36,7 @@
 //#define ITEAD_SONOFF_T1_2CH
 //#define ITEAD_SONOFF_T1_3CH
 //#define ITEAD_SONOFF_S31
+//#define ORVIBO_B25
 //#define YJZK_SWITCH_2CH
 //#define ELECTRODRAGON_WIFI_IOT
 //#define WORKCHOICE_ECOPLUG
@@ -102,6 +103,8 @@
 //#define IWOOLE_LED_TABLE_LAMP
 //#define EXS_WIFI_RELAY_V50
 //#define TECKIN_SP22_V14
+//#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
+//#define LOMBEX_LUX_NOVA2_WHITE_COLOR
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

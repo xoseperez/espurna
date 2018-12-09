@@ -56,6 +56,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
 
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
 
+    if (type == MAGNITUDE_ANALOG) return ANALOG_DECIMALS;
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
         if (_sensor_energy_units == ENERGY_KWH) return 3;
@@ -203,6 +204,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         #if PULSEMETER_SUPPORT
             if (sensor->getID() == SENSOR_PULSEMETER_ID) {
                 root["pmVisible"] = 1;
+                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
             }
         #endif
 
@@ -414,6 +416,9 @@ void _sensorLoad() {
         AnalogSensor * sensor = new AnalogSensor();
         sensor->setSamples(ANALOG_SAMPLES);
         sensor->setDelay(ANALOG_DELAY);
+        //CICM For analog scaling
+        sensor->setFactor(ANALOG_FACTOR);
+        sensor->setOffset(ANALOG_OFFSET);
         _sensors.push_back(sensor);
     }
     #endif
@@ -645,6 +650,7 @@ void _sensorLoad() {
         PulseMeterSensor * sensor = new PulseMeterSensor();
         sensor->setGPIO(PULSEMETER_PIN);
         sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
         _sensors.push_back(sensor);
     }
     #endif
@@ -716,6 +722,16 @@ void _sensorLoad() {
         V9261FSensor * sensor = new V9261FSensor();
         sensor->setRX(V9261F_PIN);
         sensor->setInverted(V9261F_PIN_INVERSE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if MAX6675_SUPPORT
+    {
+        MAX6675Sensor * sensor = new MAX6675Sensor();
+        sensor->setCS(MAX6675_CS_PIN);
+        sensor->setSO(MAX6675_SO_PIN);
+        sensor->setSCK(MAX6675_SCK_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -1095,6 +1111,8 @@ void _sensorConfigure() {
                     delSetting("eneTotal");
                     _sensorResetTS();
                 }
+
+                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
             }
         #endif // PULSEMETER_SUPPORT
 

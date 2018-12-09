@@ -99,6 +99,25 @@
 #define ANALOG_DELAY                    0       // Delay between samples in micros
 #endif
 
+//Use the following to perform scaling of raw analog values
+//   scaledRead = ( factor * rawRead ) + offset
+//
+//Please take note that the offset is not affected by the scaling factor
+
+#ifndef ANALOG_FACTOR
+#define ANALOG_FACTOR                    1.0       // Multiply raw reading by this factor
+#endif
+
+#ifndef ANALOG_OFFSET
+#define ANALOG_OFFSET                    0.0       // Add this offset to *scaled* value
+#endif
+
+// Round to this number of decimals
+#ifndef ANALOG_DECIMALS
+#define ANALOG_DECIMALS                  2
+#endif
+
+
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag
@@ -276,12 +295,28 @@
 #define EMON_MAX_SAMPLES                1000        // Max number of samples to get
 #define EMON_MAX_TIME                   250         // Max time in ms to sample
 #define EMON_FILTER_SPEED               512         // Mobile average filter speed
-#define EMON_MAINS_VOLTAGE              230         // Mains voltage
 #define EMON_REFERENCE_VOLTAGE          3.3         // Reference voltage of the ADC
+
+#ifndef EMON_MAINS_VOLTAGE
+#define EMON_MAINS_VOLTAGE              230         // Mains voltage
+#endif
+
+#ifndef EMON_CURRENT_RATIO
 #define EMON_CURRENT_RATIO              30          // Current ratio in the clamp (30A/1V)
+#endif
+
+#ifndef EMON_REPORT_CURRENT
+
 #define EMON_REPORT_CURRENT             0           // Report current
+#endif
+
+#ifndef EMON_REPORT_POWER
 #define EMON_REPORT_POWER               1           // Report power
+#endif
+
+#ifndef EMON_REPORT_ENERGY
 #define EMON_REPORT_ENERGY              1           // Report energy
+#endif
 
 //------------------------------------------------------------------------------
 // Energy Monitor based on ADC121
@@ -600,6 +635,8 @@
 #ifndef PULSEMETER_INTERRUPT_ON
 #define PULSEMETER_INTERRUPT_ON         FALLING
 #endif
+
+#define PULSEMETER_DEBOUNCE             50         // Do not register pulses within less than 50 millis
 
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
@@ -932,6 +969,10 @@
     #include "../sensors/EventSensor.h"
 #endif
 
+#if EZOPH_SUPPORT
+    #include "../sensors/EZOPHSensor.h"
+#endif
+
 #if GEIGER_SUPPORT
     #include "../sensors/GeigerSensor.h"
 #endif
@@ -943,6 +984,10 @@
 #if HLW8012_SUPPORT
     #include "../sensors/HLW8012Sensor.h"
 #endif
+
+#if MAX6675_SUPPORT
+    #include "../sensors/MAX6675.h"
+#endif 
 
 #if MHZ19_SUPPORT
     #include "../sensors/MHZ19Sensor.h"
@@ -1006,10 +1051,6 @@
 
 #if VL53L1X_SUPPORT
     #include "../sensors/VL53L1XSensor.h"
-#endif
-
-#if EZOPH_SUPPORT
-    #include "../sensors/EZOPHSensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT
