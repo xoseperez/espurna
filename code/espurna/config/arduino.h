@@ -105,6 +105,8 @@
 //#define TECKIN_SP22_V14
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
+//#define MAGICHOME_ZJ_WFMN_A_11
+//#define MAGICHOME_ZJ_WFMN_B_11
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
