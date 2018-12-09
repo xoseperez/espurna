@@ -3242,6 +3242,7 @@
 
 // -----------------------------------------------------------------------------
 // This configuration is for the second generation of devices sold by OBI.
+// https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko-weiss/p/4077806
 // -----------------------------------------------------------------------------
 #elif defined(OBI_OBI_V2)
 
