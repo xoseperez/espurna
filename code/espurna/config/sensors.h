@@ -817,6 +817,25 @@
 #define VEML6075_DYNAMIC_MODE             VEML6075::DYNAMIC_NORMAL  // The dynamic mode can either be normal or high. In high
 #endif                                                              // dynamic mode, the resolution increases by about two
                                                                     // times.
+// EZOPH pH meter
+// Enable support by passing EZOPH_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef EZOPH_SUPPORT
+#define EZOPH_SUPPORT                0
+#endif
+
+#ifndef EZOPH_RX_PIN
+#define EZOPH_RX_PIN                 13      // Software serial RX GPIO
+#endif
+
+#ifndef EZOPH_TX_PIN
+#define EZOPH_TX_PIN                 15      // Software serial TX GPIO
+#endif
+
+#ifndef EZOPH_SYNC_INTERVAL
+#define EZOPH_SYNC_INTERVAL          1000    // Amount of time (in ms) sync new readings.
+#endif
 
 // =============================================================================
 // Sensor helpers configuration - can't move to dependencies.h
@@ -855,7 +874,8 @@
     TMP3X_SUPPORT || \
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
-    VL53L1X_SUPPORT \
+    VL53L1X_SUPPORT || \
+    EZOPH_SUPPORT \
 )
 #endif
 
@@ -949,6 +969,10 @@
     #include "../sensors/EventSensor.h"
 #endif
 
+#if EZOPH_SUPPORT
+    #include "../sensors/EZOPHSensor.h"
+#endif
+
 #if GEIGER_SUPPORT
     #include "../sensors/GeigerSensor.h"
 #endif
@@ -960,6 +984,10 @@
 #if HLW8012_SUPPORT
     #include "../sensors/HLW8012Sensor.h"
 #endif
+
+#if MAX6675_SUPPORT
+    #include "../sensors/MAX6675.h"
+#endif 
 
 #if MHZ19_SUPPORT
     #include "../sensors/MHZ19Sensor.h"
@@ -1024,9 +1052,5 @@
 #if VL53L1X_SUPPORT
     #include "../sensors/VL53L1XSensor.h"
 #endif
-
-#if MAX6675_SUPPORT
-    #include "../sensors/MAX6675.h"
-#endif 
 
 #endif // SENSOR_SUPPORT
