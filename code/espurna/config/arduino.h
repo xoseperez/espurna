@@ -105,6 +105,7 @@
 //#define TECKIN_SP22_V14
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
+//#define OBI_OBI_V2
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
