@@ -47,7 +47,8 @@ function sensorName(id) {
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
         "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
-        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075"
+        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075",
+        "EZOPH"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -64,7 +65,7 @@ function magnitudeType(type) {
         "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
         "Count",
-        "NO2", "CO", "Resistance"
+        "NO2", "CO", "Resistance", "pH"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];

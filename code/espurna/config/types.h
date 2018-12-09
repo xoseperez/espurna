@@ -282,6 +282,7 @@
 #define SENSOR_PULSEMETER_ID        30
 #define SENSOR_VEML6075_ID          31
 #define SENSOR_VL53L1X_ID           32
+#define SENSOR_EZOPH_ID             33
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -319,5 +320,6 @@
 #define MAGNITUDE_NO2               28
 #define MAGNITUDE_CO                29
 #define MAGNITUDE_RESISTANCE        30
+#define MAGNITUDE_PH                31
 
-#define MAGNITUDE_MAX               31
+#define MAGNITUDE_MAX               32

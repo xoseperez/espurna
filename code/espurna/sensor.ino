@@ -754,6 +754,15 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+
+    #if EZOPH_SUPPORT
+    {
+        EZOPHSensor * sensor = new EZOPHSensor();
+        sensor->setRX(EZOPH_RX_PIN);
+        sensor->setTX(EZOPH_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
