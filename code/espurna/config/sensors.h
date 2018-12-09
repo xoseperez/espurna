@@ -1025,4 +1025,8 @@
     #include "../sensors/VL53L1XSensor.h"
 #endif
 
+#if MAX6675_SUPPORT
+    #include "../sensors/MAX6675.h"
+#endif 
+
 #endif // SENSOR_SUPPORT
