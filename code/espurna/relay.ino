@@ -609,8 +609,33 @@ void _relayWebSocketOnStart(JsonObject& root) {
     // Configuration
     JsonArray& config = root.createNestedArray("relayConfig");
     for (unsigned char i=0; i<relayCount(); i++) {
+        
         JsonObject& line = config.createNestedObject();
-        line["gpio"] = _relays[i].pin;
+        
+        if (GPIO_NONE == _relays[i].pin) {
+            #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+            if (DUMMY_RELAY_COUNT > i) {
+                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                    line["gpio"] = String("CH") + String(i);
+                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                    if (0 == i) {
+                        line["gpio"] = String("Light");
+                    } else {
+                        line["gpio"] = String("CH") + String(i-1);
+                    }
+                } else {
+                    line["gpio"] = String("Light");
+                }
+            } else {
+                line["gpio"] = String("?");
+            }
+            #else
+            line["gpio"] = String("SW") + String(i);
+            #endif
+        } else {
+            line["gpio"] = String("GPIO") + String(_relays[i].pin);
+        }
+        
         line["type"] = _relays[i].type;
         line["reset"] = _relays[i].reset_pin;
         line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
