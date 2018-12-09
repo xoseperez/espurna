@@ -137,6 +137,59 @@ unsigned long getUptime() {
 
 #if HEARTBEAT_MODE != HEARTBEAT_NONE
 
+// -----------------------------------------------------------------------------
+// Heartbeat helper
+// -----------------------------------------------------------------------------
+namespace Heartbeat {
+    enum Report : uint32_t { 
+        Status = 1 << 1,
+        Ssid = 1 << 2,
+        Ip = 1 << 3,
+        Mac = 1 << 4,
+        Rssi = 1 << 5,
+        Uptime = 1 << 6,
+        Datetime = 1 << 7,
+        Freeheap = 1 << 8,
+        Vcc = 1 << 9,
+        Relay = 1 << 10,
+        Light = 1 << 11,
+        Hostname = 1 << 12,
+        App = 1 << 13,
+        Version = 1 << 14,
+        Board = 1 << 15,
+        Loadavg = 1 << 16,
+        Interval = 1 << 17
+    };
+
+    constexpr uint32_t defaultValue() {
+        return (Status * (HEARTBEAT_REPORT_STATUS)) | \
+            (Ssid * (HEARTBEAT_REPORT_SSID)) | \
+            (Ip * (HEARTBEAT_REPORT_IP)) | \
+            (Mac * (HEARTBEAT_REPORT_MAC)) | \
+            (Rssi * (HEARTBEAT_REPORT_RSSI)) | \
+            (Uptime * (HEARTBEAT_REPORT_UPTIME)) | \
+            (Datetime * (HEARTBEAT_REPORT_DATETIME)) | \
+            (Freeheap * (HEARTBEAT_REPORT_FREEHEAP)) | \
+            (Vcc * (HEARTBEAT_REPORT_VCC)) | \
+            (Relay * (HEARTBEAT_REPORT_RELAY)) | \
+            (Light * (HEARTBEAT_REPORT_LIGHT)) | \
+            (Hostname * (HEARTBEAT_REPORT_HOSTNAME)) | \
+            (App * (HEARTBEAT_REPORT_APP)) | \
+            (Version * (HEARTBEAT_REPORT_VERSION)) | \
+            (Board * (HEARTBEAT_REPORT_BOARD)) | \
+            (Loadavg * (HEARTBEAT_REPORT_LOADAVG)) | \
+            (Interval * (HEARTBEAT_REPORT_INTERVAL));
+    }
+
+    uint32_t currentValue() {
+        const String cfg = getSetting("hbReport");
+        if (!cfg.length()) return defaultValue();
+
+        return strtoul(cfg.c_str(), NULL, 10);
+    }
+
+}
+
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
@@ -163,65 +216,68 @@ void heartbeat() {
         #endif
     }
 
+    const uint32_t hb_cfg = Heartbeat::currentValue();
+    if (!hb_cfg) return;
+
     // -------------------------------------------------------------------------
     // MQTT
     // -------------------------------------------------------------------------
 
     #if MQTT_SUPPORT
         if (!serial) {
-            #if (HEARTBEAT_REPORT_INTERVAL)
-                mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
-            #endif
-            #if (HEARTBEAT_REPORT_APP)
+            if (hb_cfg & Heartbeat::Interval)
+                mqttSend(MQTT_TOPIC_INTERVAL, String(HEARTBEAT_INTERVAL / 1000).c_str());
+
+            if (hb_cfg & Heartbeat::App)
                 mqttSend(MQTT_TOPIC_APP, APP_NAME);
-            #endif
-            #if (HEARTBEAT_REPORT_VERSION)
+
+            if (hb_cfg & Heartbeat::Version)
                 mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
-            #endif
-            #if (HEARTBEAT_REPORT_BOARD)
+
+            if (hb_cfg & Heartbeat::Board)
                 mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_HOSTNAME)
-                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_SSID)
+
+            if (hb_cfg & Heartbeat::Hostname)
+                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname", getIdentifier()).c_str());
+
+            if (hb_cfg & Heartbeat::Ssid)
                 mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_IP)
+
+            if (hb_cfg & Heartbeat::Ip)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_MAC)
+
+            if (hb_cfg & Heartbeat::Mac)
                 mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_RSSI)
+
+            if (hb_cfg & Heartbeat::Rssi)
                 mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_UPTIME)
+
+            if (hb_cfg & Heartbeat::Uptime)
                 mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_DATETIME) && (NTP_SUPPORT)
-                if (ntpSynced())  mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_FREEHEAP)
+
+            if ((hb_cfg & Heartbeat::Datetime) && (NTP_SUPPORT) && (ntpSynced()))
+                mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+
+            if (hb_cfg & Heartbeat::Freeheap)
                 mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_RELAY)
+
+            if (hb_cfg & Heartbeat::Relay)
                 relayMQTT();
+
+            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+                if (hb_cfg & Heartbeat::Light)
+                    lightMQTT();
             #endif
-            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
-                lightMQTT();
-            #endif
-            #if (HEARTBEAT_REPORT_VCC)
-            #if ADC_MODE_VALUE == ADC_VCC
+
+            if ((hb_cfg & Heartbeat::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-            #endif
-            #endif
-            #if (HEARTBEAT_REPORT_STATUS)
+
+            if (hb_cfg & Heartbeat::Status)
                 mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-            #endif
-            #if (LOADAVG_REPORT)
+
+            if (hb_cfg & Heartbeat::Loadavg)
                 mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
-            #endif
+
         }
     #endif
 
@@ -230,15 +286,14 @@ void heartbeat() {
     // -------------------------------------------------------------------------
 
     #if INFLUXDB_SUPPORT
-        #if (HEARTBEAT_REPORT_UPTIME)
+        if (hb_cfg & Heartbeat::Uptime)
             idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_FREEHEAP)
+
+        if (hb_cfg & Heartbeat::Freeheap)
             idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_RSSI)
+
+        if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
-        #endif
     #endif
 
 }
