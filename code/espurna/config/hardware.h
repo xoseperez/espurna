@@ -931,6 +931,31 @@
     #define LED1_PIN_INVERSE        1
 
 // -----------------------------------------------------------------------------
+// ORVIBO
+// -----------------------------------------------------------------------------
+
+#elif defined(ORVIBO_B25)
+
+    // Info
+    #define MANUFACTURER        "ORVIBO"
+    #define DEVICE              "B25"
+
+    // Buttons
+    #define BUTTON1_PIN         14
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            12   // 4 blue led
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            4  // 12 red led
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // YJZK
 // -----------------------------------------------------------------------------
 
