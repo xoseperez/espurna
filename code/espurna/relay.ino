@@ -88,32 +88,41 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
-        // If the number of relays matches the number of light channels
-        // assume each relay controls one channel.
-        // If the number of relays is the number of channels plus 1
-        // assume the first one controls all the channels and
-        // the rest one channel each.
-        // Otherwise every relay controls all channels.
-        // TODO: this won't work with a mixed of dummy and real relays
-        // but this option is not allowed atm (YANGNI)
-        if (_relays.size() == lightChannels()) {
-            lightState(id, status);
-            lightState(true);
-        } else if (_relays.size() == (lightChannels() + 1u)) {
-            if (id == 0) {
-                lightState(status);
-            } else {
-                lightState(id-1, status);
-            }
-        } else {
-            lightState(status);
-        }
+        // Support for a mixed of dummy and real relays
+        // Reference: https://github.com/xoseperez/espurna/issues/1305
+        if (DUMMY_RELAY_COUNT > id) {
 
-        lightUpdate(true, true);
+            // If the number of dummy relays matches the number of light channels
+            // assume each relay controls one channel.
+            // If the number of dummy relays is the number of channels plus 1
+            // assume the first one controls all the channels and
+            // the rest one channel each.
+            // Otherwise every dummy relay controls all channels.
+            if (DUMMY_RELAY_COUNT == lightChannels()) {
+                lightState(id, status);
+                lightState(true);
+            } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                if (id == 0) {
+                    lightState(status);
+                } else {
+                    lightState(id-1, status);
+                }
+            } else {
+                lightState(status);
+            }
+
+            lightUpdate(true, true);
+            return;
+        
+        }
 
     #endif
 
-    #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+
+        // If this is a light, all dummy relays have already been processed above
+        // we reach here if the user has toggled a physical relay
+
         if (_relays[id].type == RELAY_TYPE_NORMAL) {
             digitalWrite(_relays[id].pin, status);
         } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
@@ -131,6 +140,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
             digitalWrite(_relays[id].pin, !pulse);
             if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
         }
+
     #endif
 
 }
@@ -599,8 +609,33 @@ void _relayWebSocketOnStart(JsonObject& root) {
     // Configuration
     JsonArray& config = root.createNestedArray("relayConfig");
     for (unsigned char i=0; i<relayCount(); i++) {
+        
         JsonObject& line = config.createNestedObject();
-        line["gpio"] = _relays[i].pin;
+        
+        if (GPIO_NONE == _relays[i].pin) {
+            #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+            if (DUMMY_RELAY_COUNT > i) {
+                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                    line["gpio"] = String("CH") + String(i);
+                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                    if (0 == i) {
+                        line["gpio"] = String("Light");
+                    } else {
+                        line["gpio"] = String("CH") + String(i-1);
+                    }
+                } else {
+                    line["gpio"] = String("Light");
+                }
+            } else {
+                line["gpio"] = String("?");
+            }
+            #else
+            line["gpio"] = String("SW") + String(i);
+            #endif
+        } else {
+            line["gpio"] = String("GPIO") + String(_relays[i].pin);
+        }
+        
         line["type"] = _relays[i].type;
         line["reset"] = _relays[i].reset_pin;
         line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
@@ -1001,43 +1036,37 @@ void _relayLoop() {
 
 void relaySetup() {
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801,
-    // Sonoff Dual and Sonoff RF Bridge
-    #if DUMMY_RELAY_COUNT > 0
+    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
+    // No delay_on or off for these devices to easily allow having more than
+    // 8 channels. This behaviour will be recovered with v2.
+    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
+        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+    }
 
-        // No delay_on or off for these devices to easily allow having more than
-        // 8 channels. This behaviour will be recovered with v2.
-        for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-            _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
-        }
-
-    #else
-
-        #if RELAY1_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
-        #endif
-        #if RELAY2_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
-        #endif
-        #if RELAY3_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
-        #endif
-        #if RELAY4_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
-        #endif
-        #if RELAY5_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
-        #endif
-        #if RELAY6_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
-        #endif
-        #if RELAY7_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
-        #endif
-        #if RELAY8_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
-        #endif
-
+    // Ad-hoc relays
+    #if RELAY1_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+    #endif
+    #if RELAY2_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+    #endif
+    #if RELAY3_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+    #endif
+    #if RELAY4_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+    #endif
+    #if RELAY5_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+    #endif
+    #if RELAY6_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+    #endif
+    #if RELAY7_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+    #endif
+    #if RELAY8_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
     #endif
 
     _relayBackwards();

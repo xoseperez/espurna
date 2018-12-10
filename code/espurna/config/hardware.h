@@ -1213,6 +1213,67 @@
     #define IR_RX_PIN           4
     #define IR_BUTTON_SET       1
 
+#elif defined(MAGICHOME_ZJ_WFMN_A_11)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_WFMN_A_11"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            15
+    #define LED2_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       12      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       14      // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+    // IR
+    #define IR_SUPPORT          1
+    #define IR_RX_PIN           4
+    #define IR_BUTTON_SET       1
+
+#elif defined(MAGICHOME_ZJ_WFMN_B_11)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_WFMN_B_11"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+    #define LED2_PIN            15
+    #define LED2_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       5       // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH4_PIN       13      // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+    // RF
+    #define RF_SUPPORT          1
+    #define RF_PIN              4
+
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
@@ -3053,6 +3114,40 @@
     #define LED1_PIN            4
     #define LED1_PIN_INVERSE    1
 
+// -----------------------------------------------------------------------------
+// GBLIFE RGBW SOCKET
+// -----------------------------------------------------------------------------
+
+#elif defined(GBLIFE_RGBW_SOCKET)
+
+    // Info
+    #define MANUFACTURER        "GBLIFE"
+    #define DEVICE              "RGBW_SOCKET"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       2
+
+    // Relays
+    #define RELAY2_PIN          15
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL 
+ 
+    // Light RGBW 
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       5       // RED
+    #define LIGHT_CH2_PIN       14      // GREEN
+    #define LIGHT_CH3_PIN       12      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0	
+    
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------

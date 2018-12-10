@@ -106,6 +106,9 @@
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
 //#define OBI_OBI_V2
+//#define MAGICHOME_ZJ_WFMN_A_11
+//#define MAGICHOME_ZJ_WFMN_B_11
+//#define GBLIFE_RGBW_SOCKET
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
