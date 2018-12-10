@@ -110,7 +110,7 @@ void _rfWebSocketOnSend(JsonObject& root) {
 void _rfWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
     if (strcmp(action, "rfblearn") == 0) _rfLearn(data["id"], data["status"]);
     if (strcmp(action, "rfbforget") == 0) _rfForget(data["id"], data["status"]);
-    if (strcmp(action, "rfbsend") == 0) _rfStore(data["id"], data["status"], data["data"].as<long>());
+    if (strcmp(action, "rfbsend") == 0) _rfStore(data["id"], data["status"], strtoul(data["data"], NULL, 16));
 }
 
 // -----------------------------------------------------------------------------
