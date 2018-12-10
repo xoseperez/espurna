@@ -1848,6 +1848,36 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
+// Euromate (?) Wifi Stecker Shuko Version 2
+// This configuration is for the second generation of devices sold by OBI.
+// https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko-weiss/p/4077806
+// -----------------------------------------------------------------------------
+#elif defined(EUROMATE_WIFI_STECKER_SCHUKO_V2)
+
+    // Info
+    #define MANUFACTURER        "EUROMATE"
+    #define DEVICE              "WIFI_STECKER_SCHUKO_V2"
+
+    // Buttons
+    #define BUTTON1_PIN         5
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Green
+    #define LED1_PIN            12
+    #define LED1_MODE           LED_MODE_WIFI
+    #define LED1_PIN_INVERSE    0
+
+    // Red
+    #define LED2_PIN            13
+    #define LED2_MODE           LED_MODE_RELAY
+    #define LED2_PIN_INVERSE    0
+
+// -----------------------------------------------------------------------------
 // Generic 8CH
 // -----------------------------------------------------------------------------
 
@@ -3334,35 +3364,6 @@
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
-
-// -----------------------------------------------------------------------------
-// This configuration is for the second generation of devices sold by OBI.
-// https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko-weiss/p/4077806
-// -----------------------------------------------------------------------------
-#elif defined(OBI_OBI_V2)
-
-    // Info
-    #define MANUFACTURER        "OBI"
-    #define DEVICE              "OBI V2"
-
-    // Buttons
-    #define BUTTON1_PIN         5
-    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       1
-
-    // Relays
-    #define RELAY1_PIN          4
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-
-    // Green
-    #define LED1_PIN            12
-    #define LED1_MODE           LED_MODE_WIFI
-    #define LED1_PIN_INVERSE    0
-
-    // Red
-    #define LED2_PIN            13
-    #define LED2_MODE           LED_MODE_RELAY
-    #define LED2_PIN_INVERSE    0
 
 #endif
 

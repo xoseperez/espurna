@@ -1233,7 +1233,7 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
-        #elif defined(OBI_OBI_V2)
+        #elif defined(EUROMATE_WIFI_STECKER_SCHUKO_V2)
 
             setSetting("board", 93);
             setSetting("ledGPIO", 0, 13);      // Red LED
