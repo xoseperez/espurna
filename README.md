@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.4-DEV-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.13.4-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
@@ -15,6 +15,10 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![twitter](https://img.shields.io/twitter/follow/xoseperez.svg?style=social)](https://twitter.com/intent/follow?screen_name=xoseperez)
 
 ---
+
+## Collaborators
+
+Since last November, Max Prokhorov (@mcspr) is also working actively with ESPurna as a collaborator of the project. 
 
 ## Contributors
 
