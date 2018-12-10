@@ -123,7 +123,7 @@
     #define RELAY1_PIN          5
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // LEDs
+    // Light RGBW 
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
@@ -3127,11 +3127,11 @@
     // Buttons
     #define BUTTON1_PIN         13
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       2
+    #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY2_PIN          15
-    #define RELAY2_TYPE         RELAY_TYPE_NORMAL 
+    #define RELAY1_PIN          15
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL 
  
     // Light RGBW 
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT

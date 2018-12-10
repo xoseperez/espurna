@@ -88,9 +88,12 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
+        // Real relays
+        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+
         // Support for a mixed of dummy and real relays
         // Reference: https://github.com/xoseperez/espurna/issues/1305
-        if (DUMMY_RELAY_COUNT > id) {
+        if (id >= physical) {
 
             // If the number of dummy relays matches the number of light channels
             // assume each relay controls one channel.
@@ -99,13 +102,13 @@ void _relayProviderStatus(unsigned char id, bool status) {
             // the rest one channel each.
             // Otherwise every dummy relay controls all channels.
             if (DUMMY_RELAY_COUNT == lightChannels()) {
-                lightState(id, status);
+                lightState(id-physical, status);
                 lightState(true);
             } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
-                if (id == 0) {
+                if (id == physical) {
                     lightState(status);
                 } else {
-                    lightState(id-1, status);
+                    lightState(id-1-physical, status);
                 }
             } else {
                 lightState(status);
@@ -606,6 +609,11 @@ void _relayWebSocketOnStart(JsonObject& root) {
     // Statuses
     _relayWebSocketUpdate(root);
 
+    // Number of physical relays
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+    #endif
+
     // Configuration
     JsonArray& config = root.createNestedArray("relayConfig");
     for (unsigned char i=0; i<relayCount(); i++) {
@@ -614,23 +622,23 @@ void _relayWebSocketOnStart(JsonObject& root) {
         
         if (GPIO_NONE == _relays[i].pin) {
             #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-            if (DUMMY_RELAY_COUNT > i) {
-                if (DUMMY_RELAY_COUNT == lightChannels()) {
-                    line["gpio"] = String("CH") + String(i);
-                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
-                    if (0 == i) {
-                        line["gpio"] = String("Light");
+                if (i >= physical) {
+                    if (DUMMY_RELAY_COUNT == lightChannels()) {
+                        line["gpio"] = String("CH") + String(i-physical);
+                    } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                        if (physical == i) {
+                            line["gpio"] = String("Light");
+                        } else {
+                            line["gpio"] = String("CH") + String(i-1-physical);
+                        }
                     } else {
-                        line["gpio"] = String("CH") + String(i-1);
+                        line["gpio"] = String("Light");
                     }
                 } else {
-                    line["gpio"] = String("Light");
+                    line["gpio"] = String("?");
                 }
-            } else {
-                line["gpio"] = String("?");
-            }
             #else
-            line["gpio"] = String("SW") + String(i);
+                line["gpio"] = String("SW") + String(i);
             #endif
         } else {
             line["gpio"] = String("GPIO") + String(_relays[i].pin);
@@ -1036,13 +1044,6 @@ void _relayLoop() {
 
 void relaySetup() {
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
-    // No delay_on or off for these devices to easily allow having more than
-    // 8 channels. This behaviour will be recovered with v2.
-    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
-    }
-
     // Ad-hoc relays
     #if RELAY1_PIN != GPIO_NONE
         _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
@@ -1068,6 +1069,13 @@ void relaySetup() {
     #if RELAY8_PIN != GPIO_NONE
         _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
     #endif
+
+    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
+    // No delay_on or off for these devices to easily allow having more than
+    // 8 channels. This behaviour will be recovered with v2.
+    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
+        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+    }
 
     _relayBackwards();
     _relayConfigure();
