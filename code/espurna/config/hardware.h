@@ -1817,7 +1817,7 @@
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
 
 // -----------------------------------------------------------------------------
-// Euromate (?) Wifi Stecker Shuko
+// Euromate (?) Wifi Stecker Schuko
 // https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko/p/2291706
 // Thanks to @Geitde
 // -----------------------------------------------------------------------------
@@ -1848,7 +1848,7 @@
     #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
-// Euromate (?) Wifi Stecker Shuko Version 2
+// Euromate (?) Wifi Stecker Schuko Version 2
 // This configuration is for the second generation of devices sold by OBI.
 // https://www.obi.de/hausfunksteuerung/wifi-stecker-schuko-weiss/p/4077806
 // -----------------------------------------------------------------------------
