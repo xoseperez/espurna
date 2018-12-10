@@ -504,6 +504,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
             mqttSubscribe(MQTT_TOPIC_KELVIN);
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
+            mqttSubscribe(MQTT_TOPIC_TRANSITION);
         }
 
         // Group color
@@ -558,6 +559,12 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
         if (t.equals(MQTT_TOPIC_BRIGHTNESS)) {
             _light_brightness = constrain(atoi(payload), 0, LIGHT_MAX_BRIGHTNESS);
             lightUpdate(true, mqttForward());
+            return;
+        }
+
+        // Transitions
+        if (t.equals(MQTT_TOPIC_TRANSITION)) {
+            lightTransitionTime(atol(payload));
             return;
         }
 
@@ -658,7 +665,7 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     // Update channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         _light_channel[i].target = _light_state && _light_channel[i].state ? _light_channel[i].value : 0;
-        DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channel[i].target);
+        //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channel[i].target);
     }
 
     // Configure color transition
@@ -772,6 +779,26 @@ void lightBrightness(int b) {
 
 void lightBrightnessStep(int steps) {
     lightBrightness(_light_brightness + steps * LIGHT_STEP);
+}
+
+unsigned long lightTransitionTime() {
+    if (_light_use_transitions) {
+        return _light_transition_time;
+    } else {
+        return 0;
+    }
+}
+
+void lightTransitionTime(unsigned long m) {
+    if (0 == m) {
+        _light_use_transitions = false;
+    } else {
+        _light_use_transitions = true;
+        _light_transition_time = m;
+    }
+    setSetting("useTransitions", _light_use_transitions);
+    setSetting("lightTime", _light_transition_time);
+    saveSettings();
 }
 
 // -----------------------------------------------------------------------------
@@ -917,6 +944,15 @@ void _lightAPISetup() {
         );
 
     }
+
+    apiRegister(MQTT_TOPIC_TRANSITION,
+        [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("%d"), lightTransitionTime());
+        },
+        [](const char * payload) {
+            lightTransitionTime(atol(payload));
+        }
+    );
 
     apiRegister(MQTT_TOPIC_BRIGHTNESS,
         [](char * buffer, size_t len) {

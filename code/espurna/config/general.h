@@ -773,6 +773,7 @@
 #define MQTT_TOPIC_BRIGHTNESS       "brightness"
 #define MQTT_TOPIC_MIRED            "mired"
 #define MQTT_TOPIC_KELVIN           "kelvin"
+#define MQTT_TOPIC_TRANSITION       "transition"
 
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)
