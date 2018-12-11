@@ -523,6 +523,56 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 }
 #endif
 
+#if TERMINAL_SUPPORT
+
+void _rfbInitCommands() {
+
+    settingsRegisterCommand(F("LEARN"), [](Embedis* e) {
+
+        if (e->argc < 3) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+        
+        int id = String(e->argv[1]).toInt();
+        if (id >= relayCount()) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            return;
+        }
+
+        int status = String(e->argv[2]).toInt();
+
+        rfbLearn(id, status == 1);
+
+        DEBUG_MSG_P(PSTR("+OK\n"));
+
+    });
+
+    settingsRegisterCommand(F("FORGET"), [](Embedis* e) {
+
+        if (e->argc < 3) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+        
+        int id = String(e->argv[1]).toInt();
+        if (id >= relayCount()) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            return;
+        }
+
+        int status = String(e->argv[2]).toInt();
+
+        rfbForget(id, status == 1);
+
+        DEBUG_MSG_P(PSTR("+OK\n"));
+
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+
 // -----------------------------------------------------------------------------
 // PUBLIC
 // -----------------------------------------------------------------------------
@@ -618,6 +668,10 @@ void rfbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_rfbWebSocketOnSend);
         wsOnActionRegister(_rfbWebSocketOnAction);
+    #endif
+
+    #if TERMINAL_SUPPORT
+        _rfbInitCommands();
     #endif
 
     #if RFB_DIRECT

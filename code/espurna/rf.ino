@@ -87,6 +87,56 @@ bool _rfMatch(unsigned long code, unsigned char& relayID, unsigned char& value) 
 
 }
 
+#if TERMINAL_SUPPORT
+
+void _rfInitCommands() {
+
+    settingsRegisterCommand(F("LEARN"), [](Embedis* e) {
+
+        if (e->argc < 3) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+        
+        int id = String(e->argv[1]).toInt();
+        if (id >= relayCount()) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            return;
+        }
+
+        int status = String(e->argv[2]).toInt();
+
+        _rfLearn(id, status == 1);
+
+        DEBUG_MSG_P(PSTR("+OK\n"));
+
+    });
+
+    settingsRegisterCommand(F("FORGET"), [](Embedis* e) {
+
+        if (e->argc < 3) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            return;
+        }
+        
+        int id = String(e->argv[1]).toInt();
+        if (id >= relayCount()) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
+            return;
+        }
+
+        int status = String(e->argv[2]).toInt();
+
+        _rfForget(id, status == 1);
+
+        DEBUG_MSG_P(PSTR("+OK\n"));
+
+    });
+
+}
+
+#endif // TERMINAL_SUPPORT
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
@@ -184,7 +234,11 @@ void rfSetup() {
         wsOnActionRegister(_rfWebSocketOnAction);
     #endif
 
-    // Register loop
+     #if TERMINAL_SUPPORT
+        _rfInitCommands();
+    #endif
+
+   // Register loop
     espurnaRegisterLoop(rfLoop);
 
 }
