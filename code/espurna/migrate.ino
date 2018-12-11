@@ -1233,6 +1233,18 @@ void migrate() {
             setSetting("relayGPIO", 0, 5);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(EUROMATE_WIFI_STECKER_SCHUKO_V2)
+
+            setSetting("board", 93);
+            setSetting("ledGPIO", 0, 13);      // Red LED
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 12);      // Green LED
+            setSetting("ledLogic", 1, 1);
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
