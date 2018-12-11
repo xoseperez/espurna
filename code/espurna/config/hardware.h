@@ -3178,6 +3178,57 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0	
     
+// ----------------------------------------------------------------------------------------
+//  Smart life Mini Smart Socket is similar Homecube 16A but some GPIOs differ
+//  https://www.ebay.de/itm/Smart-Steckdose-WIFI-WLAN-Amazon-Alexa-Fernbedienung-Home-Socket-Zeitschaltuh-DE/123352026749?hash=item1cb85a8e7d:g:IasAAOSwk6dbj390
+// ----------------------------------------------------------------------------------------
+
+#elif defined(SMARTLIFE_MINI_SMART_SOCKET)
+
+    // Info
+    #define MANUFACTURER                "SMARTLIFE"
+    #define DEVICE                      "MINI_SMART_SOCKET"
+
+    // Buttons
+    #define BUTTON1_PIN                 13
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    //Red   LED: 0
+    //Green LED: 4
+    //Blue  LED: 2
+
+    // Light
+    #define RELAY_PROVIDER              RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER              LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT           1
+    #define LIGHT_CHANNELS              3
+    #define LIGHT_CH1_PIN               0       // RED
+    #define LIGHT_CH2_PIN               4       // GREEN
+    #define LIGHT_CH3_PIN               2       // BLUE
+    #define LIGHT_CH1_INVERSE           0
+    #define LIGHT_CH2_INVERSE           0
+    #define LIGHT_CH3_INVERSE           0
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             14
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------

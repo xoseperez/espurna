@@ -109,6 +109,7 @@
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
 //#define GBLIFE_RGBW_SOCKET
+//#define SMARTLIFE_MINI_SMART_SOCKET
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
