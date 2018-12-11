@@ -66,6 +66,10 @@ bool _rfb_ticker_active = false;
     bool _learning = false;
 #endif
 
+#if WEB_SUPPORT
+    Ticker _rfb_sendcodes;
+#endif
+
 // -----------------------------------------------------------------------------
 // PRIVATES
 // -----------------------------------------------------------------------------
@@ -95,6 +99,20 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
     return true;
 }
 
+#if WEB_SUPPORT
+
+void _rfbWebSocketSendCode(unsigned char id, bool status, const char * code) {
+    char wsb[100];
+    snprintf_P(wsb, sizeof(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), id, status ? 1 : 0, code);
+    wsSend(wsb);
+}
+
+void _rfbWebSocketSendCodes() {
+    for (unsigned char id=0; id<relayCount(); id++) {
+        _rfbWebSocketSendCode(id, true, rfbRetrieve(id, true).c_str());
+        _rfbWebSocketSendCode(id, false, rfbRetrieve(id, false).c_str());
+    }
+}
 
 void _rfbWebSocketOnSend(JsonObject& root) {
     root["rfbVisible"] = 1;
@@ -102,15 +120,7 @@ void _rfbWebSocketOnSend(JsonObject& root) {
     #if RF_RAW_SUPPORT
         root["rfbrawVisible"] = 1;
     #endif
-    JsonArray& rfb = root.createNestedArray("rfb");
-    for (byte id=0; id<relayCount(); id++) {
-        for (byte status=0; status<2; status++) {
-            JsonObject& node = rfb.createNestedObject();
-            node["id"] = id;
-            node["status"] = status;
-            node["data"] = rfbRetrieve(id, status == 1);
-        }
-    }
+    _rfb_sendcodes.once_ms(1000, _rfbWebSocketSendCodes);
 }
 
 void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -118,6 +128,8 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& 
     if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
 }
+
+#endif // WEB_SUPPORT
 
 void _rfbAck() {
     #if not RFB_DIRECT
@@ -319,9 +331,7 @@ void _rfbDecode() {
 
         // Websocket update
         #if WEB_SUPPORT
-            char wsb[100];
-            snprintf_P(wsb, sizeof(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), _learnId, _learnStatus ? 1 : 0, buffer);
-            wsSend(wsb);
+            _rfbWebSocketSendCode(_learnId, _learnStatus, buffer);
         #endif
 
     }

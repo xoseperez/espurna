@@ -17,6 +17,11 @@ unsigned char _rf_learn_id = 0;
 bool _rf_learn_status = true;
 bool _rf_learn_active = false;
 
+#if WEB_SUPPORT
+#include <Ticker.h>
+Ticker _rfb_sendcodes;
+#endif
+
 // -----------------------------------------------------------------------------
 // RF
 // -----------------------------------------------------------------------------
@@ -52,7 +57,6 @@ void _rfForget(unsigned char id, bool status) {
     #endif
 
 }
-
 
 bool _rfMatch(unsigned long code, unsigned char& relayID, unsigned char& value) {
 
@@ -141,20 +145,26 @@ void _rfInitCommands() {
 // WEB
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+
+void _rfWebSocketSendCode(unsigned char id, bool status, unsigned long code) {
+    char wsb[100];
+    snprintf_P(wsb, sizeof(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%X\"}]}"), id, status ? 1 : 0, code);
+    wsSend(wsb);
+}
+
+void _rfWebSocketSendCodes() {
+    for (unsigned char id=0; id<relayCount(); id++) {
+        _rfWebSocketSendCode(id, true, _rfRetrieve(id, true));
+        _rfWebSocketSendCode(id, false, _rfRetrieve(id, false));
+    }
+}
+
 void _rfWebSocketOnSend(JsonObject& root) {
     char buffer[20];
     root["rfbVisible"] = 1;
     root["rfbCount"] = relayCount();
-    JsonArray& rfb = root.createNestedArray("rfb");
-    for (byte id=0; id<relayCount(); id++) {
-        for (byte status=0; status<2; status++) {
-            JsonObject& node = rfb.createNestedObject();
-            snprintf_P(buffer, sizeof(buffer), PSTR("%X"), _rfRetrieve(id, status == 1));
-            node["id"] = id;
-            node["status"] = status;
-            node["data"] = String(buffer);
-        }
-    }
+    _rf_sendcodes.once_ms(1000, _rfWebSocketSendCodes);
 }
 
 void _rfWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -162,6 +172,8 @@ void _rfWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
     if (strcmp(action, "rfbforget") == 0) _rfForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) _rfStore(data["id"], data["status"], strtoul(data["data"], NULL, 16));
 }
+
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -187,12 +199,7 @@ void rfLoop() {
 
                     // Websocket update
                     #if WEB_SUPPORT
-                        char wsb[100];
-                        snprintf_P(
-                            wsb, sizeof(wsb),
-                            PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%X\"}]}"),
-                            _rf_learn_id, _rf_learn_status ? 1 : 0, rf_code);
-                        wsSend(wsb);
+                        _rfWebSocketSendCode(_rf_learn_id, _rf_learn_status, rf_code);
                     #endif
 
                 } else {

@@ -602,60 +602,74 @@ void _relayWebSocketUpdate(JsonObject& root) {
     }
 }
 
+void _relayWebSocketSendRelay(unsigned char i) {
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    JsonArray& config = root.createNestedArray("relayConfig");
+    JsonObject& line = config.createNestedObject();
+
+    line["id"] = i;
+    if (GPIO_NONE == _relays[i].pin) {
+        #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+            uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+            if (i >= physical) {
+                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                    line["gpio"] = String("CH") + String(i-physical);
+                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                    if (physical == i) {
+                        line["gpio"] = String("Light");
+                    } else {
+                        line["gpio"] = String("CH") + String(i-1-physical);
+                    }
+                } else {
+                    line["gpio"] = String("Light");
+                }
+            } else {
+                line["gpio"] = String("?");
+            }
+        #else
+            line["gpio"] = String("SW") + String(i);
+        #endif
+    } else {
+        line["gpio"] = String("GPIO") + String(_relays[i].pin);
+    }
+    
+    line["type"] = _relays[i].type;
+    line["reset"] = _relays[i].reset_pin;
+    line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+    line["pulse"] = _relays[i].pulse;
+    line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
+    #if MQTT_SUPPORT
+        line["group"] = getSetting("mqttGroup", i, "");
+        line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
+        line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
+    #endif
+
+    String output;
+    root.printTo(output);
+    jsonBuffer.clear();
+    wsSend((char *) output.c_str());
+
+}
+
+void _relayWebSocketSendRelays() {
+    for (unsigned char i=0; i<relayCount(); i++) {
+        _relayWebSocketSendRelay(i);
+    }
+}
+
 void _relayWebSocketOnStart(JsonObject& root) {
 
     if (relayCount() == 0) return;
 
+    // Per-relay configuration
+    _relayWebSocketSendRelays();
+
     // Statuses
     _relayWebSocketUpdate(root);
 
-    // Number of physical relays
-    #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
-    #endif
-
-    // Configuration
-    JsonArray& config = root.createNestedArray("relayConfig");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        
-        JsonObject& line = config.createNestedObject();
-        
-        if (GPIO_NONE == _relays[i].pin) {
-            #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-                if (i >= physical) {
-                    if (DUMMY_RELAY_COUNT == lightChannels()) {
-                        line["gpio"] = String("CH") + String(i-physical);
-                    } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
-                        if (physical == i) {
-                            line["gpio"] = String("Light");
-                        } else {
-                            line["gpio"] = String("CH") + String(i-1-physical);
-                        }
-                    } else {
-                        line["gpio"] = String("Light");
-                    }
-                } else {
-                    line["gpio"] = String("?");
-                }
-            #else
-                line["gpio"] = String("SW") + String(i);
-            #endif
-        } else {
-            line["gpio"] = String("GPIO") + String(_relays[i].pin);
-        }
-        
-        line["type"] = _relays[i].type;
-        line["reset"] = _relays[i].reset_pin;
-        line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-        line["pulse"] = _relays[i].pulse;
-        line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
-        #if MQTT_SUPPORT
-            line["group"] = getSetting("mqttGroup", i, "");
-            line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
-            line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
-        #endif
-    }
-
+    // Options
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);

@@ -934,15 +934,16 @@ function createCheckboxes() {
 
 function initRelayConfig(data) {
 
-    var current = $("#relayConfig > div").length;
-    if (current > 0) { return; }
-
+    var current = $("#relayConfig > div").length / 6; // there are 6 divs per each relay
     var template = $("#relayConfigTemplate").children();
     for (var i in data) {
+        
         var relay = data[i];
+        if (current > relay.id) continue;
+
         var line = $(template).clone();
         $("span.gpio", line).html(relay.gpio);
-        $("span.id", line).html(i);
+        $("span.id", line).html(relay.id);
         $("select[name='relayBoot']", line).val(relay.boot);
         $("select[name='relayPulse']", line).val(relay.pulse);
         $("input[name='relayTime']", line).val(relay.pulse_ms);
@@ -950,6 +951,7 @@ function initRelayConfig(data) {
         $("select[name='mqttGroupInv']", line).val(relay.group_inv);
         $("select[name='relayOnDisc']", line).val(relay.on_disc);
         line.appendTo("#relayConfig");
+
     }
 
 }
