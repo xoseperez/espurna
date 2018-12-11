@@ -285,7 +285,7 @@ void _settingsInitCommands() {
     });
 
     settingsRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
-        EEPROMr.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
+        _rtcmemStabilityCounter(SYSTEM_CHECK_MAX);
         DEBUG_MSG_P(PSTR("+OK\n"));
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });

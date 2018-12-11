@@ -133,6 +133,11 @@ typedef struct {
 } packet_t;
 
 // -----------------------------------------------------------------------------
+// Relay
+// -----------------------------------------------------------------------------
+#include <bitset>
+
+// -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
 #include <Embedis.h>
@@ -196,3 +201,8 @@ void webRequestRegister(web_request_callback_f callback);
 typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
+
+// -----------------------------------------------------------------------------
+// RTC MEMORY
+// -----------------------------------------------------------------------------
+#include "rtcmem.h"

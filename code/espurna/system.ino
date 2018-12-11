@@ -6,6 +6,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include <Ticker.h>
 #include <EEPROM_Rotate.h>
 
 // -----------------------------------------------------------------------------
@@ -17,6 +18,43 @@ bool _system_send_heartbeat = false;
 unsigned short int _load_average = 100;
 
 // -----------------------------------------------------------------------------
+
+union sys_rtcmem_data_t {
+    struct {
+        uint8_t stability_counter;
+        uint8_t reset_reason;
+        uint16_t _reserved_;
+    } parts;
+    uint32_t value;
+};
+
+uint8_t _rtcmemStabilityCounter() {
+    sys_rtcmem_data_t data;
+    data.value = Rtcmem->sys;
+    return data.parts.stability_counter;
+}
+
+void _rtcmemStabilityCounter(uint8_t counter) {
+    sys_rtcmem_data_t data;
+    data.value = Rtcmem->sys;
+    data.parts.stability_counter = counter;
+    Rtcmem->sys = data.value;
+    rtcmemCommit();
+}
+
+uint8_t _rtcmemResetReason() {
+    sys_rtcmem_data_t data;
+    data.value = Rtcmem->sys;
+    return data.parts.reset_reason;
+}
+
+void _rtcmemResetReason(uint8_t reason) {
+    sys_rtcmem_data_t data;
+    data.value = Rtcmem->sys;
+    data.parts.reset_reason = reason;
+    Rtcmem->sys = data.value;
+    rtcmemCommit();
+}
 
 #if SYSTEM_CHECK_ENABLED
 
@@ -30,19 +68,27 @@ unsigned short int _load_average = 100;
 bool _systemStable = true;
 
 void systemCheck(bool stable) {
-    unsigned char value = EEPROMr.read(EEPROM_CRASH_COUNTER);
+    uint8_t value = 0;
+
     if (stable) {
         value = 0;
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
     } else {
+        if (!rtcmemStatus()) {
+            _rtcmemStabilityCounter(1);
+            return;
+        }
+
+        value = _rtcmemStabilityCounter();
+
         if (++value > SYSTEM_CHECK_MAX) {
             _systemStable = false;
             value = 0;
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         }
     }
-    EEPROMr.write(EEPROM_CRASH_COUNTER, value);
-    eepromCommit();
+
+    _rtcmemStabilityCounter(value);
 }
 
 bool systemCheck() {
@@ -52,13 +98,46 @@ bool systemCheck() {
 void systemCheckLoop() {
     static bool checked = false;
     if (!checked && (millis() > SYSTEM_CHECK_TIME)) {
-        // Check system as stable
+        // Flag system as stable
         systemCheck(true);
         checked = true;
     }
 }
 
 #endif
+
+// -----------------------------------------------------------------------------
+// Reset
+// -----------------------------------------------------------------------------
+Ticker _defer_reset;
+uint8_t _reset_reason = 0;
+
+void resetReason(unsigned char reason) {
+    _reset_reason = reason;
+    _rtcmemResetReason(reason);
+}
+
+unsigned char resetReason() {
+    static unsigned char status = 255;
+    if (status == 255) {
+        if (rtcmemStatus()) status = _rtcmemResetReason();
+        if (status > 0) resetReason(0);
+        if (status > CUSTOM_RESET_MAX) status = 0;
+    }
+    return status;
+}
+
+void reset() {
+    ESP.restart();
+}
+
+void deferredReset(unsigned long delay, unsigned char reason) {
+    _defer_reset.once_ms(delay, resetReason, reason);
+}
+
+bool checkNeedsReset() {
+    return _reset_reason > 0;
+}
 
 // -----------------------------------------------------------------------------
 

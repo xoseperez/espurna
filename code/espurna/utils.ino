@@ -7,9 +7,6 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <Ticker.h>
-Ticker _defer_reset;
-
-uint8_t _reset_reason = 0;
 
 String getIdentifier() {
     char buffer[20];
@@ -455,38 +452,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 }
 
 #endif
-
-// -----------------------------------------------------------------------------
-// Reset
-// -----------------------------------------------------------------------------
-
-unsigned char resetReason() {
-    static unsigned char status = 255;
-    if (status == 255) {
-        status = EEPROMr.read(EEPROM_CUSTOM_RESET);
-        if (status > 0) resetReason(0);
-        if (status > CUSTOM_RESET_MAX) status = 0;
-    }
-    return status;
-}
-
-void resetReason(unsigned char reason) {
-    _reset_reason = reason;
-    EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
-    eepromCommit();
-}
-
-void reset() {
-    ESP.restart();
-}
-
-void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, resetReason, reason);
-}
-
-bool checkNeedsReset() {
-    return _reset_reason > 0;
-}
 
 // -----------------------------------------------------------------------------
 
