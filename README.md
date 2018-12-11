@@ -238,8 +238,10 @@ Here is the list of supported hardware. For more information please refer to the
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
 |![Itead S20](images/devices/itead-s20.jpg)|![Itead S20](images/devices/itead-s26.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
 |**Itead S20**|**Itead S26**|**Neo Coolcam NAS WR01W**|
-|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![KMC 70011](images/devices/kmc-70011.jpg)|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)|
-|**Schuko Wifi Plug**|**KMC 70011**|**Xenon SM-PW702U**|
+|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![Schuko Wifi Plug V2](images/devices/schuko-wifi-plug-v2.jpg)|
+|**Schuko Wifi Plug**|**Schuko Wifi Plug V2**|
+|![KMC 70011](images/devices/kmc-70011.jpg)|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)||
+**KMC 70011**|**Xenon SM-PW702U**||
 |![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
