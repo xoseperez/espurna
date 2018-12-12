@@ -432,6 +432,14 @@ void _sensorLoad() {
     }
     #endif
 
+    #if BMP180_SUPPORT
+    {
+        BMP180Sensor * sensor = new BMP180Sensor();
+        sensor->setAddress(BMP180_ADDRESS);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if BMX280_SUPPORT
     {
         BMX280Sensor * sensor = new BMX280Sensor();

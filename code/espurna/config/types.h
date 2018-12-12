@@ -283,6 +283,7 @@
 #define SENSOR_VEML6075_ID          31
 #define SENSOR_VL53L1X_ID           32
 #define SENSOR_EZOPH_ID             33
+#define SENSOR_BMP180_ID            34
 
 //--------------------------------------------------------------------------------
 // Magnitudes

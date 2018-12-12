@@ -3265,6 +3265,7 @@
     // If we don’t got it, you don't want it!
     #define AM2320_SUPPORT        1
     #define BH1750_SUPPORT        1
+    #define BMP180_SUPPORT        1
     #define BMX280_SUPPORT        1
     #define SHT3X_I2C_SUPPORT     1
     #define EMON_ADC121_SUPPORT   1
