@@ -98,10 +98,14 @@ void _mqttConnect() {
     if (_mqtt_will) free(_mqtt_will);
     if (_mqtt_clientid) free(_mqtt_clientid);
 
-    _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
+    String user = getSetting("mqttUser", MQTT_USER);
+    _mqttPlaceholders(&user);
+    _mqtt_user = strdup(user.c_str());
     _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
     _mqtt_will = strdup(mqttTopic(MQTT_TOPIC_STATUS, false).c_str());
-    _mqtt_clientid = strdup(getSetting("mqttClientID", getIdentifier()).c_str());
+    String clientid = getSetting("mqttClientID", getIdentifier());
+    _mqttPlaceholders(&clientid);
+    _mqtt_clientid = strdup(clientid.c_str());
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
 
@@ -211,6 +215,17 @@ void _mqttConnect() {
 
 }
 
+void _mqttPlaceholders(String *text) {
+    
+    text->replace("{hostname}", getSetting("hostname"));
+    text->replace("{magnitude}", "#");
+    
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    text->replace("{mac}", mac);
+
+}
+
 void _mqttConfigure() {
 
     // Get base topic
@@ -218,12 +233,8 @@ void _mqttConfigure() {
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
 
     // Placeholders
-    _mqtt_topic.replace("{hostname}", getSetting("hostname"));
-    _mqtt_topic.replace("{magnitude}", "#");
+    _mqttPlaceholders(&_mqtt_topic);
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-    _mqtt_topic.replace("{mac}", mac);
 
     // Getters and setters
     _mqtt_setter = getSetting("mqttSetter", MQTT_SETTER);
