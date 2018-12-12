@@ -172,8 +172,8 @@ void _telnetNewClient(AsyncClient *client) {
             #if TERMINAL_SUPPORT == 0
                 info();
                 wifiDebug();
-                debugDumpCrashInfo();
-                debugClearCrashInfo();
+                crashDump();
+                crashClear();
             #endif
 
             #ifdef ESPURNA_CORE

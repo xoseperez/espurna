@@ -173,8 +173,8 @@ void _settingsInitCommands() {
 
     #if DEBUG_SUPPORT
         settingsRegisterCommand(F("CRASH"), [](Embedis* e) {
-            debugDumpCrashInfo();
-            debugClearCrashInfo();
+            crashDump();
+            crashClear();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
