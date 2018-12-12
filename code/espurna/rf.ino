@@ -164,7 +164,7 @@ void _rfWebSocketOnSend(JsonObject& root) {
     char buffer[20];
     root["rfbVisible"] = 1;
     root["rfbCount"] = relayCount();
-    _rf_sendcodes.once_ms(1000, _rfWebSocketSendCodes);
+    _rfb_sendcodes.once_ms(1000, _rfWebSocketSendCodes);
 }
 
 void _rfWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
