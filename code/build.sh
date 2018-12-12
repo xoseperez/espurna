@@ -33,9 +33,10 @@ else
     git_tag=
 fi
 
-if [ ! -z $git_tag ]; then
-    version=${version/-dev}
-    sed -i -e "s@$version-dev@$version@" $version_file
+if [[ -n $git_tag ]]; then
+    new_version=${version/-*}
+    sed -i -e "s@$version@$new_version@" $version_file
+    version=$new_version
     trap "git checkout -- $version_file" EXIT
 fi
 
