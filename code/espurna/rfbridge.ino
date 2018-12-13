@@ -102,7 +102,7 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 #if WEB_SUPPORT
 
 void _rfbWebSocketSendCode(unsigned char id, bool status, const char * code) {
-    char wsb[100];
+    char wsb[192]; // (32 * 5): 46 bytes for json , 116 bytes raw code, reserve
     snprintf_P(wsb, sizeof(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), id, status ? 1 : 0, code);
     wsSend(wsb);
 }
