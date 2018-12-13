@@ -158,6 +158,10 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
 }
 
 void _otaFrom(String url) {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
+        return;
+    }
 
     // Port from protocol
     unsigned int port = 80;
@@ -197,6 +201,25 @@ void _otaInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+#if OTA_MQTT_SUPPORT
+
+void _otaMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_OTA);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        // Match topic
+        String t = mqttMagnitude((char *) topic);
+        if (t.equals(MQTT_TOPIC_OTA)) {
+            DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
+            _otaFrom(payload);
+        }
+    }
+}
+
+#endif // OTA_MQTT_SUPPORT
+
 // -----------------------------------------------------------------------------
 
 void otaSetup() {
@@ -205,6 +228,10 @@ void otaSetup() {
 
     #if TERMINAL_SUPPORT
         _otaInitCommands();
+    #endif
+
+    #if OTA_MQTT_SUPPORT
+        mqttRegister(_otaMQTTCallback);
     #endif
 
     // Main callbacks

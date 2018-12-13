@@ -537,6 +537,10 @@
 #define OTA_PORT                    8266        // OTA port
 #endif
 
+#ifndef OTA_MQTT_SUPPORT
+#define OTA_MQTT_SUPPORT           0            // No support by default
+#endif
+
 #define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
 
 // -----------------------------------------------------------------------------
@@ -763,6 +767,7 @@
 #define MQTT_TOPIC_SPEED            "speed"
 #define MQTT_TOPIC_IRIN             "irin"
 #define MQTT_TOPIC_IROUT            "irout"
+#define MQTT_TOPIC_OTA              "ota"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
