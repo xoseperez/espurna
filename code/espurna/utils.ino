@@ -255,8 +255,10 @@ void heartbeat() {
             if (hb_cfg & Heartbeat::Uptime)
                 mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
 
-            if ((hb_cfg & Heartbeat::Datetime) && (NTP_SUPPORT) && (ntpSynced()))
-                mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            #if NTP_SUPPORT
+                if ((hb_cfg & Heartbeat::Datetime) && (ntpSynced()))
+                    mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            #endif
 
             if (hb_cfg & Heartbeat::Freeheap)
                 mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
