@@ -1,8 +1,8 @@
 bool _rtcmem_status = false;
 
 void _rtcmemInit() {
-      memset((uint32_t*)(RTCMEM_ADDR + 4), 0, sizeof(uint32_t) * RTCMEM_BLOCKS);
-      Rtcmem->magic = RTCMEM_MAGIC;
+    memset((uint32_t*)RTCMEM_ADDR, 0, sizeof(uint32_t) * RTCMEM_BLOCKS);
+    Rtcmem->magic = RTCMEM_MAGIC;
 }
 
 // Treat memory as dirty on cold boot, hardware wdt reset and rst pin
