@@ -257,48 +257,6 @@ void _mqttBackwards() {
     }
 }
 
-unsigned long _mqttNextMessageId() {
-
-    static unsigned long id = 0;
-
-    // just reboot, get last count from EEPROM
-    if (id == 0) {
-
-        // read id from EEPROM and shift it
-        id = EEPROMr.read(EEPROM_MESSAGE_ID);
-        if (id == 0xFF) {
-
-            // There was nothing in EEPROM,
-            // next message is first message
-            id = 0;
-
-        } else {
-
-            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 1);
-            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 2);
-            id = (id << 8) + EEPROMr.read(EEPROM_MESSAGE_ID + 3);
-
-            // Calculate next block and start from there
-            id = MQTT_MESSAGE_ID_SHIFT * (1 + (id / MQTT_MESSAGE_ID_SHIFT));
-
-        }
-
-    }
-
-    // Save to EEPROM every MQTT_MESSAGE_ID_SHIFT
-    if (id % MQTT_MESSAGE_ID_SHIFT == 0) {
-        EEPROMr.write(EEPROM_MESSAGE_ID + 0, (id >> 24) & 0xFF);
-        EEPROMr.write(EEPROM_MESSAGE_ID + 1, (id >> 16) & 0xFF);
-        EEPROMr.write(EEPROM_MESSAGE_ID + 2, (id >>  8) & 0xFF);
-        EEPROMr.write(EEPROM_MESSAGE_ID + 3, (id >>  0) & 0xFF);
-        eepromCommit();
-    }
-
-    id++;
-    return id;
-
-}
-
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
@@ -616,7 +574,7 @@ void mqttFlush() {
         root[MQTT_TOPIC_IP] = getIP();
     #endif
     #if MQTT_ENQUEUE_MESSAGE_ID
-        root[MQTT_TOPIC_MESSAGE_ID] = _mqttNextMessageId();
+        root[MQTT_TOPIC_MESSAGE_ID] = (Rtcmem->mqtt)++;
     #endif
 
     // Send

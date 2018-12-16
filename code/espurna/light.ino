@@ -469,6 +469,39 @@ void _lightProviderUpdate() {
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
+union rtcmem_light_t {
+    struct {
+        uint8_t channels[5];
+        uint8_t brightness;
+        uint16_t mired;
+    } packed;
+    uint64_t value;
+};
+
+void _rtcmemLightSave() {
+    rtcmem_light_t light;
+    for (unsigned int i=0; i < lightChannels(); i++) {
+        light.packed.channels[i] = _light_channel[i];
+    }
+
+    light.packed.brightness = _light_brightness;
+    light.packed.mired = _light_mireds;
+
+    Rtcmem->light = light.value;
+}
+
+void _rtcmemLightRestore() {
+    rtcmem_light_t light;
+    light.value = Rtcmem->light;
+
+    for (unsigned int i=0; i < lightChannels(); i++) {
+        _light_channel[i] = light.packed.channels[i];
+    }
+
+    _light_brightness = light.packed.brightness;
+    _light_mireds = light.packed.mired;
+}
+
 void _lightColorSave() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         setSetting("ch", i, _light_channel[i].inputValue);
@@ -687,6 +720,8 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     #if WEB_SUPPORT
         wsSend(_lightWebSocketOnSend);
     #endif
+
+    _rtcmemSaveColor();
 
     #if LIGHT_SAVE_ENABLED
         // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
@@ -1136,7 +1171,11 @@ void lightSetup() {
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channel.size());
 
     _lightConfigure();
-    _lightColorRestore();
+    if (rtcmemStatus()) {
+        _rtcmemLightRestore();
+    } else {
+        _lightColorRestore();
+    }
 
     #if WEB_SUPPORT
         wsOnSendRegister(_lightWebSocketOnSend);

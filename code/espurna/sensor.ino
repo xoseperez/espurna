@@ -384,6 +384,35 @@ void _sensorResetTS() {
     #endif
 }
 
+double _sensorEnergyTotal() {
+    double value = 0;
+
+    if (rtcmemStatus()) {
+        value = Rtcmem->energy;
+    } else {
+        value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+    }
+
+    return double;
+}
+
+
+void _sensorEnergyTotal(double value) {
+    static unsigned long save_count = 0;
+
+    // Save to EEPROM every '_sensor_save_every' readings
+    if (_sensor_save_every > 0) {
+        save_count = (save_count + 1) % _sensor_save_every;
+        if (0 == save_count) {
+            setSetting("eneTotal", value);
+            saveSettings();
+        }
+    }
+
+    // Always save to RTCMEM
+    Rtcmem->energy = value;
+}
+
 // -----------------------------------------------------------------------------
 // Sensor initialization
 // -----------------------------------------------------------------------------
@@ -867,7 +896,14 @@ void _sensorInit() {
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
                 sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
                 sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
-                double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+
+                double value = 0;
+                if (rtcmemStatus()) {
+                    value = _rtcmemEnergyTotal();
+                } else {
+                    value = _eepromEnergyTotal();
+                }
+
                 if (value > 0) sensor->resetEnergy(0, value);
             }
 
@@ -890,7 +926,7 @@ void _sensorInit() {
                 value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
-                value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+                value = _sensorEnergyTotal();
                 if (value > 0) sensor->resetEnergy(value);
 
             }
@@ -914,7 +950,7 @@ void _sensorInit() {
                 value = getSetting("pwrRatioP", 0).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
-                value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+                value = _sensorEnergyTotal();
                 if (value > 0) sensor->resetEnergy(value);
 
             }
@@ -1352,7 +1388,6 @@ void sensorLoop() {
     // Check if we should read new data
     static unsigned long last_update = 0;
     static unsigned long report_count = 0;
-    static unsigned long save_count = 0;
     if (millis() - last_update > _sensor_read_interval) {
 
         last_update = millis();
@@ -1453,23 +1488,11 @@ void sensorLoop() {
                         _sensorReport(i, filtered);
                     } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
 
-                    // -------------------------------------------------------------
-                    // Saving to EEPROM
-                    // (we do it every _sensor_save_every readings)
-                    // -------------------------------------------------------------
+                    // Persist total energy value
+                    if (MAGNITUDE_ENERGY == magnitude.type) {
+                        _sensorEnergyTotal(current);
+                    }
 
-                    if (_sensor_save_every > 0) {
-
-                        save_count = (save_count + 1) % _sensor_save_every;
-
-                        if (0 == save_count) {
-                            if (MAGNITUDE_ENERGY == magnitude.type) {
-                                setSetting("eneTotal", current);
-                                saveSettings();
-                            }
-                        } // if (0 == save_count)
-
-                    } // if (_sensor_save_every > 0)
 
                 } // if (report_count == 0)
 

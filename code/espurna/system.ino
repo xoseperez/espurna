@@ -39,7 +39,6 @@ void _rtcmemStabilityCounter(uint8_t counter) {
     data.value = Rtcmem->sys;
     data.parts.stability_counter = counter;
     Rtcmem->sys = data.value;
-    rtcmemCommit();
 }
 
 uint8_t _rtcmemResetReason() {
@@ -53,7 +52,6 @@ void _rtcmemResetReason(uint8_t reason) {
     data.value = Rtcmem->sys;
     data.parts.reset_reason = reason;
     Rtcmem->sys = data.value;
-    rtcmemCommit();
 }
 
 #if SYSTEM_CHECK_ENABLED
@@ -112,16 +110,21 @@ void systemCheckLoop() {
 Ticker _defer_reset;
 uint8_t _reset_reason = 0;
 
-void resetReason(unsigned char reason) {
+// system_get_rst_info() result is cached by the Core init for internal use
+uint32_t systemResetReason() {
+    return resetInfo.reason;
+}
+
+void customResetReason(unsigned char reason) {
     _reset_reason = reason;
     _rtcmemResetReason(reason);
 }
 
-unsigned char resetReason() {
+unsigned char customResetReason() {
     static unsigned char status = 255;
     if (status == 255) {
         if (rtcmemStatus()) status = _rtcmemResetReason();
-        if (status > 0) resetReason(0);
+        if (status > 0) customResetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
     return status;
@@ -132,7 +135,7 @@ void reset() {
 }
 
 void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, resetReason, reason);
+    _defer_reset.once_ms(delay, customResetReason, reason);
 }
 
 bool checkNeedsReset() {

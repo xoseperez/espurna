@@ -6,7 +6,10 @@
 
 extern "C" {
     #include "user_interface.h"
+    extern struct rst_info resetInfo;
 }
+
+uint32_t systemResetReason();
 
 // -----------------------------------------------------------------------------
 // API

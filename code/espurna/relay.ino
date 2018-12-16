@@ -260,7 +260,6 @@ void setSpeed(unsigned char speed) {
 
 void _rtcmemRelayState(uint32_t mask) {
     Rtcmem->relay = mask;
-    rtcmemCommit();
 }
 
 uint32_t _rtcmemRelayState() {

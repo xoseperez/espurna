@@ -186,8 +186,7 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
-        resetReason(CUSTOM_RESET_TERMINAL);
-        _eepromCommit();
+        customResetReason(CUSTOM_RESET_TERMINAL);
         ESP.eraseConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });

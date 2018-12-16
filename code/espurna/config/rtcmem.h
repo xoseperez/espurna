@@ -13,11 +13,10 @@
 
 #define RTCMEM_BLOCKS 96u
 
-// Constant value included in the crc-check.
 // Change this when modifying RtcmemData
 #define RTCMEM_MAGIC 0x45535075
 
-// XXX When using bitfields:
+// XXX When using bitfields / inner structs / etc:
 // ...
 // uint32_t a : 8;
 // uint32_t b : 8;
@@ -27,19 +26,19 @@
 // mem->d = 4;
 // At the same time writes 4 to the a, b and c
 
-// DO NOT PACK, must be aligned
+// TODO replace with custom memory segment in ldscript
 struct RtcmemData {
-    uint32_t crc32;
     uint32_t magic;
     uint32_t sys;
     uint32_t relay;
     uint32_t mqtt;
+    uint64_t light;
+    double energy;
 };
-static_assert(sizeof(RtcmemData) <= (RTCMEM_BLOCKS * 4u), "RTCMEM struct is too big");
 
-// size of usable rtcmem in blocks
+static_assert(sizeof(RtcmemData) <= (RTCMEM_BLOCKS * 4u), "RTCMEM struct is too big");
 constexpr uint8_t RtcmemSize = (sizeof(RtcmemData) / 4u);
 
 auto Rtcmem = reinterpret_cast<volatile RtcmemData*>(RTCMEM_ADDR);
 
-void rtcmemCommit();
+bool rtcmemStatus();
