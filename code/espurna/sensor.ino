@@ -393,7 +393,7 @@ double _sensorEnergyTotal() {
         value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
     }
 
-    return double;
+    return value;
 }
 
 

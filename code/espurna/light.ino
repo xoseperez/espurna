@@ -481,7 +481,7 @@ union rtcmem_light_t {
 void _rtcmemLightSave() {
     rtcmem_light_t light;
     for (unsigned int i=0; i < lightChannels(); i++) {
-        light.packed.channels[i] = _light_channel[i];
+        light.packed.channels[i] = _light_channel[i].inputValue;
     }
 
     light.packed.brightness = _light_brightness;
@@ -495,7 +495,7 @@ void _rtcmemLightRestore() {
     light.value = Rtcmem->light;
 
     for (unsigned int i=0; i < lightChannels(); i++) {
-        _light_channel[i] = light.packed.channels[i];
+        _light_channel[i].inputValue = light.packed.channels[i];
     }
 
     _light_brightness = light.packed.brightness;
@@ -721,7 +721,7 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
         wsSend(_lightWebSocketOnSend);
     #endif
 
-    _rtcmemSaveColor();
+    _rtcmemLightSave();
 
     #if LIGHT_SAVE_ENABLED
         // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
