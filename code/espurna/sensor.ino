@@ -897,12 +897,7 @@ void _sensorInit() {
                 sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
                 sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
 
-                double value = 0;
-                if (rtcmemStatus()) {
-                    value = _rtcmemEnergyTotal();
-                } else {
-                    value = _eepromEnergyTotal();
-                }
+                double value = _sensorEnergyTotal();
 
                 if (value > 0) sensor->resetEnergy(0, value);
             }
