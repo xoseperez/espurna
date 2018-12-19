@@ -100,6 +100,7 @@
 //#define PHYX_ESP12_RGB
 //#define IWOOLE_LED_TABLE_LAMP
 //#define EXS_WIFI_RELAY_V50
+//#define FOXEL_LIGHTFOX_DUAL
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

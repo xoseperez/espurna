@@ -1223,6 +1223,16 @@ void migrate() {
             setSetting("ledGPIO", 1, 15);
             setSetting("ledLogic", 1, 0);
 
+        #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+            setSetting("board", 92);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+            setSetting("btnRelay", 2, 1);
+            setSetting("btnRelay", 3, 0);
+            setSetting("relayProvider", RELAY_PROVIDER_DUAL);
+            setSetting("relays", 2);
+
         #else
 
             // Allow users to define new settings without migration config

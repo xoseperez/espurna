@@ -2853,6 +2853,27 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// Foxel's LightFox dual
+// https://github.com/foxel/esp-dual-rf-switch
+// -----------------------------------------------------------------------------
+
+#elif defined(FOXEL_LIGHTFOX_DUAL)
+
+    // Info
+    #define MANUFACTURER            "Foxel"
+    #define DEVICE                  "LightFox dual"
+    #define SERIAL_BAUDRATE         19200
+    #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
+    #define DUMMY_RELAY_COUNT       2
+    #define DEBUG_SERIAL_SUPPORT    0
+
+    // Buttons
+    #define BUTTON1_RELAY           1
+    #define BUTTON2_RELAY           2
+    #define BUTTON3_RELAY           2
+    #define BUTTON4_RELAY           1
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 

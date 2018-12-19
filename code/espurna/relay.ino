@@ -67,6 +67,8 @@ void _relayProviderStatus(unsigned char id, bool status) {
             if (_relays[i].current_status) mask = mask + (1 << i);
         }
 
+        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
+
         // Send it to F330
         Serial.flush();
         Serial.write(0xA0);
