@@ -6,7 +6,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#if defined(ITEAD_SONOFF_RFBRIDGE) || defined(RF_SUPPORT)
+#if defined(ITEAD_SONOFF_RFBRIDGE) || RF_SUPPORT
 
 #include <queue>
 #include <Ticker.h>
