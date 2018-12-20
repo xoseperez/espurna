@@ -1409,8 +1409,13 @@
 #define RF_PIN                      14
 #endif
 
+#ifndef RF_DEBOUNCE
 #define RF_DEBOUNCE                 500
+#endif
+
+#ifndef RF_LEARN_TIMEOUT
 #define RF_LEARN_TIMEOUT            60000
+#endif
 
 //--------------------------------------------------------------------------------
 // Custom RFM69 to MQTT bridge
