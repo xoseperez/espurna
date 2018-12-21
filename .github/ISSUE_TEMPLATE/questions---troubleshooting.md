@@ -1,8 +1,8 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Questions & troubleshooting
+about: Anything not a bug or feature request
 title: ''
-labels: ''
+labels: question
 assignees: ''
 
 ---
@@ -14,18 +14,12 @@ assignees: ''
 * *asked for help in the [chat](https://gitter.im/tinkerman-cat/espurna)*
 * *done the previous things again :)*
 
-*Fulfilling this template will help developers and contributors to address the issue. Try to be as specific and extensive as possible. If the information provided is not enough the issue will likely be closed.*
+*Fulfilling this template will help developers and contributors help you. Try to be as specific and extensive as possible. If the information provided is not enough the issue will likely be closed.*
 
 *You can now remove this line and the above ones. Text in italic is meant to be replaced by your own words. If any of the sections below are not relevant to the issue (for instance, the screenshots) then you can delete them.*
 
-**Bug description**
-*A clear and concise description of what the bug is.*
-
-**Steps to reproduce**
-*Steps to reproduce the behavior.*
-
-**Expected behavior**
-*A clear and concise description of what you expected to happen.*
+**Question**
+*A clear and concise description of what the problem/doubt is.*
 
 **Screenshots**
 *If applicable, add screenshots to help explain your problem.*
