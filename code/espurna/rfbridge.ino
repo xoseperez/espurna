@@ -487,11 +487,13 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
         }
 
-        bool isRFOut = t.equals(MQTT_TOPIC_RFOUT);
+        #if not RF_SUPPORT
+            bool isRFOut = t.equals(MQTT_TOPIC_RFOUT);
+        #endif
         
         #if RF_RAW_SUPPORT
             bool isRFRaw = !isRFOut && t.equals(MQTT_TOPIC_RFRAW);
-        #else
+        #elif not RF_SUPPORT
             bool isRFRaw = false;
         #endif
 
