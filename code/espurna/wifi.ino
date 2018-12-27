@@ -467,6 +467,8 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 // INFO
 // -----------------------------------------------------------------------------
 
+#if DEBUG_SUPPORT
+
 void wifiDebug(WiFiMode_t modes) {
 
     bool footer = false;
@@ -515,6 +517,8 @@ void wifiDebug(WiFiMode_t modes) {
 void wifiDebug() {
     wifiDebug(WIFI_AP_STA);
 }
+
+#endif //DEBUG_SUPPORT
 
 // -----------------------------------------------------------------------------
 // API
