@@ -467,10 +467,9 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 // INFO
 // -----------------------------------------------------------------------------
 
-#if DEBUG_SUPPORT || TERMINAL_SUPPORT
-
 void wifiDebug(WiFiMode_t modes) {
 
+    #if DEBUG_SUPPORT || TERMINAL_SUPPORT
     bool footer = false;
 
     if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
@@ -511,14 +510,13 @@ void wifiDebug(WiFiMode_t modes) {
     if (footer) {
         DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
     }
+    #endif //DEBUG_SUPPORT
 
 }
 
 void wifiDebug() {
     wifiDebug(WIFI_AP_STA);
 }
-
-#endif //DEBUG_SUPPORT
 
 // -----------------------------------------------------------------------------
 // API
