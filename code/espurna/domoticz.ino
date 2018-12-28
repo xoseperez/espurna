@@ -78,7 +78,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
                 unsigned int cmode = root["Color"]["m"];
                 unsigned int cval;
                 
-                if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom - see 
+                if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom - see domoticz ColorSwitch.h
                     
                     // RED
                     cval = root["Color"]["r"];
