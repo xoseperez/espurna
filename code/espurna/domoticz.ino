@@ -67,11 +67,76 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
             // IDX
             unsigned int idx = root["idx"];
-            unsigned char relayID = _domoticzRelay(idx);
-            if (relayID >= 0) {
-                unsigned char value = root["nvalue"];
-                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
-                relayStatus(relayID, value == 1);
+            String stype = root["stype"];
+
+            if (
+                (stype.equals("RGB") || stype.equals("RGBW") || stype.equals("RGBWW"))
+                && lightHasColor()
+            ) {
+
+                // m field contains information about color mode (enum ColorMode from domoticz ColorSwitch.h):
+                unsigned int cmode = root["Color"]["m"];
+                unsigned int cval;
+                
+                if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom - see 
+                    
+                    // RED
+                    cval = root["Color"]["r"];
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received RED value %u for IDX %u\n"), cval, idx);
+                    lightChannel(0, cval);
+                    
+                    // GREEN
+                    cval = root["Color"]["g"];
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received GREEN value %u for IDX %u\n"), cval, idx);
+                    lightChannel(1, cval);
+                    
+                    // BLUE
+                    cval = root["Color"]["b"];
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received BLUE value %u for IDX %u\n"), cval, idx);
+                    lightChannel(2, cval);
+                    
+                    // WARM WHITE or MONOCHROME WHITE if supported
+                    if (lightChannels() > 3) {
+                        cval = root["Color"]["ww"];
+                        DEBUG_MSG_P(PSTR("[DOMOTICZ] Received WARM WHITE value %u for IDX %u\n"), cval, idx);
+                        lightChannel(3, cval);
+                    }
+                    
+                    // COLD WHITE if supported
+                    if (lightChannels() > 4) {
+                        cval = root["Color"]["cw"];
+                        DEBUG_MSG_P(PSTR("[DOMOTICZ] Received COLD WHITE value %u for IDX %u\n"), cval, idx);
+                        lightChannel(4, cval);
+                    }
+
+                    
+                    unsigned int brightness = root["Level"];
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received BRIGHTNESS value %u for IDX %u\n"), brightness, idx);
+                    unsigned int br = (brightness / 100.0) * LIGHT_MAX_BRIGHTNESS;
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Calculated BRIGHTNESS value %u for IDX %u\n"), br, idx);
+                    lightBrightness(br); // domoticz uses 100 as maximum value while we're using LIGHT_MAX_BRIGHTNESS
+                    
+                    // update lights
+                    lightUpdate(true, mqttForward());
+
+                }
+
+                
+                
+                unsigned char relayID = _domoticzRelay(idx);
+                if (relayID >= 0) {
+                    unsigned char value = root["nvalue"];
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
+                    relayStatus(relayID, value > 0);
+                }
+                
+            } else {
+                unsigned char relayID = _domoticzRelay(idx);
+                if (relayID >= 0) {
+                    unsigned char value = root["nvalue"];
+                    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
+                    relayStatus(relayID, value == 1);
+                }
             }
 
         }
