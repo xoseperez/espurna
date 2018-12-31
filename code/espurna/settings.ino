@@ -213,7 +213,12 @@ void _settingsInitCommands() {
 
     settingsRegisterCommand(F("GPIO"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            DEBUG_MSG_P(PSTR("Printing all GPIO pins:\n"));
+            for (int i = 0; i <= 15; i++) {
+                if (gpioValid(i)) {
+                    DEBUG_MSG_P(PSTR("GPIO %d is %s\n"), i, digitalRead(i) == HIGH ? "HIGH" : "LOW");
+                }
+            }   
             return;
         }
         int pin = String(e->argv[1]).toInt();

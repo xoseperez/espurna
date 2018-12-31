@@ -28,7 +28,7 @@ void _otaLoop() {
 // Terminal OTA
 // -----------------------------------------------------------------------------
 
-#if TERMINAL_SUPPORT
+#if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
 #include <ESPAsyncTCP.h>
 AsyncClient * _ota_client;
@@ -184,6 +184,11 @@ void _otaFrom(String url) {
     _otaFrom(host.c_str(), port, uri.c_str());
 
 }
+
+#endif // TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
+
+
+#if TERMINAL_SUPPORT
 
 void _otaInitCommands() {
 
