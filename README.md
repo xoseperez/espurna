@@ -74,6 +74,7 @@ Since last November, Max Prokhorov (@mcspr) is also working actively with ESPurn
     * Integration via MQTT Discover or copy-pasting configuration code
 * [**InfluxDB**](https://www.influxdata.com/) integration via HTTP API
 * [**Thingspeak**](https://thingspeak.com/) integration via HTTP API (HTTPS available for custom builds)
+* [**Blynk**](https://www.blynk.cc/) integration via native Blynk API.
 * **Sonoff RF Bridge** support
     * Multiple virtual switches (tested with up to 16)
     * MQTT-to-RF two-way bridge (no need to learn codes)

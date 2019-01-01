@@ -1227,6 +1227,9 @@ void _sensorReport(unsigned char index, double value) {
     }
     #endif // DOMOTICZ_SUPPORT
 
+    #if BLYNK_SUPPORT
+        blynkSendMeasurement(index, buffer);
+    #endif //BLYNK_SUPPORT
 }
 
 // -----------------------------------------------------------------------------

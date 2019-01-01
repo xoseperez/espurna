@@ -249,6 +249,7 @@ function addValue(data, name, value) {
         "mqttGroup", "mqttGroupInv", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
+        "blnkRelay", "blnkMagnitude",
         "ledMode",
         "adminPass",
         "node", "key", "topic"
@@ -1425,6 +1426,24 @@ function processData(data) {
         <!-- removeIf(!sensor)-->
         if ("dczMagnitudes" === key) {
             createMagnitudeList(value, "dczMagnitudes", "dczMagnitudeTemplate");
+            return;
+        }
+        <!-- endRemoveIf(!sensor)-->
+		
+		// ---------------------------------------------------------------------
+        // Blynk
+        // ---------------------------------------------------------------------
+
+        // Blynk - Relays
+        if ("blnkRelays" === key) {
+            createRelayList(value, "blnkRelays", "blnkRelayTemplate");
+            return;
+        }
+
+        // Blynk - Magnitudes
+        <!-- removeIf(!sensor)-->
+        if ("blnkMagnitudes" === key) {
+            createMagnitudeList(value, "blnkMagnitudes", "blnkMagnitudeTemplate");
             return;
         }
         <!-- endRemoveIf(!sensor)-->

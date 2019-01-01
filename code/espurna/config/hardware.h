@@ -39,6 +39,7 @@
     #define BROKER_SUPPORT          0
     #define BUTTON_SUPPORT          0
     #define DOMOTICZ_SUPPORT        0
+    #define BLYNK_SUPPORT           0
     #define HOMEASSISTANT_SUPPORT   0
     #define I2C_SUPPORT             0
     #define MDNS_SERVER_SUPPORT     0
@@ -3380,7 +3381,8 @@
     #define NOFUSS_SUPPORT      1
     #define UART_MQTT_SUPPORT   1
     #define INFLUXDB_SUPPORT    1
-    #define IR_SUPPORT    1
+    #define IR_SUPPORT          1
+    #define BLYNK_SUPPORT       1
 
 #elif defined(TRAVIS03)
 

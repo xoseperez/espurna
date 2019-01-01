@@ -160,6 +160,9 @@ void setup() {
     #if INFLUXDB_SUPPORT
         idbSetup();
     #endif
+    #if BLYNK_SUPPORT
+        blynkSetup();
+    #endif
     #if THINGSPEAK_SUPPORT
         tspkSetup();
     #endif

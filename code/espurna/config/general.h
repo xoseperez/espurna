@@ -1090,6 +1090,45 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// BLYNK
+// -----------------------------------------------------------------------------
+
+#ifndef BLYNK_SUPPORT
+#define BLYNK_SUPPORT               0               // Blynk platform support for relays and sensors (8Kb)
+#endif
+
+#ifndef BLYNK_ENABLED
+#define BLYNK_ENABLED               0
+#endif
+
+#ifndef BLYNK_AUTH_TOKEN
+#define BLYNK_AUTH_TOKEN            "insert your blynk auth key here"
+#endif
+
+#ifndef BLYNK_HOST
+#define BLYNK_HOST                  "blynk-cloud.com"
+#endif
+
+#ifndef BLYNK_PORT
+#define BLYNK_PORT                  80
+#endif
+
+// Use BearSSL::WiFiSecureClient instead of default one. Requires **significant** amount of Flash and RAM, so it is advisable to disable all modules involving network:
+// WEB_SUPPORT=0, ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0 and DOMOTICZ_SUPPORT=0
+// NTP_SUPPORT=1 is required for proper certificate validation
+#ifndef BLYNK_SECURE_CLIENT
+#define BLYNK_SECURE_CLIENT         0
+#endif
+
+// For custom certificate, use following format in user_blynk_certificate.h:
+// const char _blynk_cert[] PROGMEM = R"CERT(
+// ...
+// )CERT";
+#ifndef BLYNK_USE_CUSTOM_CERT
+#define BLYNK_USE_CUSTOM_CERT       0
+#endif
+
+// -----------------------------------------------------------------------------
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
