@@ -469,7 +469,7 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 
 void wifiDebug(WiFiMode_t modes) {
 
-    #if DEBUG_SUPPORT || TERMINAL_SUPPORT
+    #if DEBUG_SUPPORT
     bool footer = false;
 
     if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
