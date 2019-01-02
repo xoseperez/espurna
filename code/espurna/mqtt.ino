@@ -51,6 +51,7 @@ char *_mqtt_clientid;
 #if MQTT_SKIP_RETAINED
 unsigned long _mqtt_connected_at = 0;
 #endif
+unsigned long _mqtt_disconnected_at = 0;
 
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
@@ -75,9 +76,7 @@ void _mqttConnect() {
     if (_mqtt.connected()) return;
 
     // Check reconnect interval
-    static unsigned long last = 0;
-    if (millis() - last < _mqtt_reconnect_delay) return;
-    last = millis();
+    if (millis() - _mqtt_disconnected_at < _mqtt_reconnect_delay) return;
 
     // Increase the reconnect delay
     _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
@@ -413,6 +412,8 @@ void _mqttOnConnect() {
 }
 
 void _mqttOnDisconnect() {
+
+    _mqtt_disconnected_at = millis();
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 

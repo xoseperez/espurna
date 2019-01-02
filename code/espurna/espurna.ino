@@ -148,7 +148,7 @@ void setup() {
     #if I2C_SUPPORT
         i2cSetup();
     #endif
-    #ifdef ITEAD_SONOFF_RFBRIDGE
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || RF_SUPPORT
         rfbSetup();
     #endif
     #if ALEXA_SUPPORT
@@ -165,9 +165,6 @@ void setup() {
     #endif
     #if RFM69_SUPPORT
         rfm69Setup();
-    #endif
-    #if RF_SUPPORT
-        rfSetup();
     #endif
     #if IR_SUPPORT
         irSetup();
