@@ -47,7 +47,8 @@ function sensorName(id) {
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
         "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
-        "NTC", "SDS011", "MICS2710", "MICS5525"
+        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075",
+        "EZOPH"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -61,10 +62,10 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Event",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
+        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
         "Count",
-        "NO2", "CO", "Resistance"
+        "NO2", "CO", "Resistance", "pH"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -933,15 +934,16 @@ function createCheckboxes() {
 
 function initRelayConfig(data) {
 
-    var current = $("#relayConfig > div").length;
-    if (current > 0) { return; }
-
+    var current = $("#relayConfig > div").length / 6; // there are 6 divs per each relay
     var template = $("#relayConfigTemplate").children();
     for (var i in data) {
+        
         var relay = data[i];
+        if (current > relay.id) continue;
+
         var line = $(template).clone();
         $("span.gpio", line).html(relay.gpio);
-        $("span.id", line).html(i);
+        $("span.id", line).html(relay.id);
         $("select[name='relayBoot']", line).val(relay.boot);
         $("select[name='relayPulse']", line).val(relay.pulse);
         $("input[name='relayTime']", line).val(relay.pulse_ms);
@@ -949,6 +951,7 @@ function initRelayConfig(data) {
         $("select[name='mqttGroupInv']", line).val(relay.group_inv);
         $("select[name='relayOnDisc']", line).val(relay.on_disc);
         line.appendTo("#relayConfig");
+
     }
 
 }

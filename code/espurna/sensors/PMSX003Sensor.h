@@ -90,7 +90,7 @@ class PMSX003 {
 
                 int avail = _serial->available();
                 #if SENSOR_DEBUG
-                    //debugSend("[SENSOR] PMS: Packet available = %d\n", avail);
+                    //DEBUG_MSG("[SENSOR] PMS: Packet available = %d\n", avail);
                 #endif
                 if (avail < PMS_PACKET_SIZE(data_count)) {
                     break;
@@ -102,7 +102,7 @@ class PMSX003 {
                     uint16_t size = read16(sum);
                     if (size != PMS_PAYLOAD_SIZE(data_count)) {
                         #if SENSOR_DEBUG
-                            debugSend(("[SENSOR] PMS: Payload size: %d != %d.\n"), size, PMS_PAYLOAD_SIZE(data_count));
+                            DEBUG_MSG(("[SENSOR] PMS: Payload size: %d != %d.\n"), size, PMS_PAYLOAD_SIZE(data_count));
                         #endif
                         break;
                     }
@@ -110,7 +110,7 @@ class PMSX003 {
                     for (int i = 0; i < data_count; i++) {
                         data[i] = read16(sum);
                         #if SENSOR_DEBUG
-                            //debugSend(("[SENSOR] PMS:   data[%d] = %d\n"), i, data[i]);
+                            //DEBUG_MSG(("[SENSOR] PMS:   data[%d] = %d\n"), i, data[i]);
                         #endif
                     }
 
@@ -119,7 +119,7 @@ class PMSX003 {
                         return true;
                     } else {
                         #if SENSOR_DEBUG
-                            debugSend(("[SENSOR] PMS checksum: %04X != %04X\n"), sum, checksum);
+                            DEBUG_MSG(("[SENSOR] PMS checksum: %04X != %04X\n"), sum, checksum);
                         #endif
                     }
                     break;
@@ -282,7 +282,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     readCycle = _readCount % 30;
                     if (readCycle == 0) {
                         #if SENSOR_DEBUG
-                            debugSend("[SENSOR] %s: Wake up: %d\n", pms_specs[_type].name, _readCount);
+                            DEBUG_MSG("[SENSOR] %s: Wake up: %d\n", pms_specs[_type].name, _readCount);
                         #endif
                         wakeUp();
                         return;
@@ -321,7 +321,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                 if (readCycle == 6) {
                     sleep();
                     #if SENSOR_DEBUG
-                        debugSend("[SENSOR] %s: Enter sleep mode: %d\n", pms_specs[_type].name, _readCount);
+                        DEBUG_MSG("[SENSOR] %s: Enter sleep mode: %d\n", pms_specs[_type].name, _readCount);
                     #endif
                     return;
                 }

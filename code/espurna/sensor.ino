@@ -42,6 +42,10 @@ unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
 
+#if PZEM004T_SUPPORT
+PZEM004TSensor *pzem004t_sensor;
+#endif
+
 String _sensor_energy_reset_ts = String();
 
 // -----------------------------------------------------------------------------
@@ -52,6 +56,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
 
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
 
+    if (type == MAGNITUDE_ANALOG) return ANALOG_DECIMALS;
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
         if (_sensor_energy_units == ENERGY_KWH) return 3;
@@ -196,6 +201,13 @@ void _sensorWebSocketStart(JsonObject& root) {
             }
         #endif
 
+        #if PULSEMETER_SUPPORT
+            if (sensor->getID() == SENSOR_PULSEMETER_ID) {
+                root["pmVisible"] = 1;
+                root["pwrRatioE"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
+            }
+        #endif
+
     }
 
     if (_magnitudes.size() > 0) {
@@ -272,6 +284,63 @@ void _sensorInitCommands() {
         }
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
+    #if PZEM004T_SUPPORT
+    settingsRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
+        if (e->argc == 1) {
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            unsigned char dev_count = pzem004t_sensor->getAddressesCount();
+            for(unsigned char dev = 0; dev < dev_count; dev++) {
+                DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
+            }
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        } else if(e->argc == 2) {
+            IPAddress addr;
+            if (addr.fromString(String(e->argv[1]))) {
+                if(pzem004t_sensor->setDeviceAddress(&addr)) {
+                    DEBUG_MSG_P(PSTR("+OK\n"));
+                }
+            } else {
+                DEBUG_MSG_P(PSTR("-ERROR: Invalid address argument\n"));
+            }
+        } else {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        }
+    });
+    settingsRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
+        if(e->argc > 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        } else {
+            unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
+            unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            for(unsigned char dev = init; dev < limit; dev++) {
+                float offset = pzem004t_sensor->resetEnergy(dev);
+                setSetting("pzEneTotal", dev, offset);
+                DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
+            }
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        }
+    });
+    settingsRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
+        if(e->argc > 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        } else {
+            unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
+            unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            for(unsigned char dev = init; dev < limit; dev++) {
+                DEBUG_MSG_P(PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s\n"), //
+                            dev,
+                            pzem004t_sensor->getAddress(dev).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_CURRENT_INDEX)).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_VOLTAGE_INDEX)).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_ENERGY_INDEX)).c_str());
+            }
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        }
+    });
+    #endif
 }
 
 #endif
@@ -347,6 +416,9 @@ void _sensorLoad() {
         AnalogSensor * sensor = new AnalogSensor();
         sensor->setSamples(ANALOG_SAMPLES);
         sensor->setDelay(ANALOG_DELAY);
+        //CICM For analog scaling
+        sensor->setFactor(ANALOG_FACTOR);
+        sensor->setOffset(ANALOG_OFFSET);
         _sensors.push_back(sensor);
     }
     #endif
@@ -356,6 +428,14 @@ void _sensorLoad() {
         BH1750Sensor * sensor = new BH1750Sensor();
         sensor->setAddress(BH1750_ADDRESS);
         sensor->setMode(BH1750_MODE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if BMP180_SUPPORT
+    {
+        BMP180Sensor * sensor = new BMP180Sensor();
+        sensor->setAddress(BMP180_ADDRESS);
         _sensors.push_back(sensor);
     }
     #endif
@@ -559,24 +639,6 @@ void _sensorLoad() {
     }
     #endif
 
-    #if SENSEAIR_SUPPORT
-    {
-        SenseAirSensor * sensor = new SenseAirSensor();
-        sensor->setRX(SENSEAIR_RX_PIN);
-        sensor->setTX(SENSEAIR_TX_PIN);
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SDS011_SUPPORT
-    {
-        SDS011Sensor * sensor = new SDS011Sensor();
-        sensor->setRX(SDS011_RX_PIN);
-        sensor->setTX(SDS011_TX_PIN);
-        _sensors.push_back(sensor);
-    }
-    #endif
-
     #if PMSX003_SUPPORT
     {
         PMSX003Sensor * sensor = new PMSX003Sensor();
@@ -591,15 +653,50 @@ void _sensorLoad() {
     }
     #endif
 
+    #if PULSEMETER_SUPPORT
+    {
+        PulseMeterSensor * sensor = new PulseMeterSensor();
+        sensor->setGPIO(PULSEMETER_PIN);
+        sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if PZEM004T_SUPPORT
     {
-        PZEM004TSensor * sensor = new PZEM004TSensor();
+        PZEM004TSensor * sensor = pzem004t_sensor = new PZEM004TSensor();
         #if PZEM004T_USE_SOFT
             sensor->setRX(PZEM004T_RX_PIN);
             sensor->setTX(PZEM004T_TX_PIN);
         #else
             sensor->setSerial(& PZEM004T_HW_PORT);
         #endif
+        sensor->setAddresses(PZEM004T_ADDRESSES);
+        // Read saved energy offset
+        unsigned char dev_count = sensor->getAddressesCount();
+        for(unsigned char dev = 0; dev < dev_count; dev++) {
+            float value = getSetting("pzEneTotal", dev, 0).toFloat();
+            if (value > 0) sensor->resetEnergy(dev, value);
+        }
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SENSEAIR_SUPPORT
+    {
+        SenseAirSensor * sensor = new SenseAirSensor();
+        sensor->setRX(SENSEAIR_RX_PIN);
+        sensor->setTX(SENSEAIR_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if SDS011_SUPPORT
+    {
+        SDS011Sensor * sensor = new SDS011Sensor();
+        sensor->setRX(SDS011_RX_PIN);
+        sensor->setTX(SDS011_TX_PIN);
         _sensors.push_back(sensor);
     }
     #endif
@@ -637,6 +734,43 @@ void _sensorLoad() {
     }
     #endif
 
+    #if MAX6675_SUPPORT
+    {
+        MAX6675Sensor * sensor = new MAX6675Sensor();
+        sensor->setCS(MAX6675_CS_PIN);
+        sensor->setSO(MAX6675_SO_PIN);
+        sensor->setSCK(MAX6675_SCK_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if VEML6075_SUPPORT
+    {
+        VEML6075Sensor * sensor = new VEML6075Sensor();
+        sensor->setIntegrationTime(VEML6075_INTEGRATION_TIME);
+        sensor->setDynamicMode(VEML6075_DYNAMIC_MODE);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if VL53L1X_SUPPORT
+    {
+        VL53L1XSensor * sensor = new VL53L1XSensor();
+        sensor->setInterMeasurementPeriod(VL53L1X_INTER_MEASUREMENT_PERIOD);
+        sensor->setDistanceMode(VL53L1X_DISTANCE_MODE);
+        sensor->setMeasurementTimingBudget(VL53L1X_MEASUREMENT_TIMING_BUDGET);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+    #if EZOPH_SUPPORT
+    {
+        EZOPHSensor * sensor = new EZOPHSensor();
+        sensor->setRX(EZOPH_RX_PIN);
+        sensor->setTX(EZOPH_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
@@ -794,6 +928,13 @@ void _sensorInit() {
             }
 
         #endif // CSE7766_SUPPORT
+
+        #if PULSEMETER_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
+                PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
+                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+            }
+        #endif // PULSEMETER_SUPPORT
 
     }
 
@@ -969,6 +1110,35 @@ void _sensorConfigure() {
             }
 
         #endif // CSE7766_SUPPORT
+
+        #if PULSEMETER_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
+                PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    sensor->resetEnergy();
+                    delSetting("eneTotal");
+                    _sensorResetTS();
+                }
+
+                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+            }
+        #endif // PULSEMETER_SUPPORT
+
+        #if PZEM004T_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_PZEM004T_ID) {
+                PZEM004TSensor * sensor = (PZEM004TSensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    unsigned char dev_count = sensor->getAddressesCount();
+                    for(unsigned char dev = 0; dev < dev_count; dev++) {
+                        sensor->resetEnergy(dev, 0);
+                        delSetting("pzEneTotal", dev);
+                    }
+                    _sensorResetTS();
+                }
+            }
+
+        #endif // PZEM004T_SUPPORT
 
     }
 

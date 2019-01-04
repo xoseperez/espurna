@@ -11,7 +11,7 @@ cache:
 install:
 - pip install -U platformio
 - npm install -g npm@latest
-- cd code ; npm ci ; cd ..
+- cd code && npm ci && cd ..
 env:
   global:
   - BUILDER_TOTAL_THREADS=4

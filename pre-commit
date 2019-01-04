@@ -16,6 +16,7 @@ Copy this file to .git/hooks/
 
 import os
 import sys
+import string
 import re
 
 from subprocess import call, check_output
@@ -35,6 +36,14 @@ if sys.version_info[0] < 3:
             self.close()
 
     FileInput = FileInputCtx
+
+
+class CustomFormatter(string.Formatter):
+    def format_field(self, value, spec):
+        if spec == "escape_hyphen":
+            return value.replace("-", "--")
+        else:
+            return super(CustomFormatter, self).format_field(value, spec)
 
 
 def run(cmd, cwd=None):
@@ -79,12 +88,13 @@ def espurna_get_version(base, version_h="code/espurna/config/version.h"):
 
     return version
 
+
 TEMPLATES = {
-    "![travis]": "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]" \
+    "![travis]": "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]"
         "(https://travis-ci.org/{USER}/{REPO})\n",
-    "![version]": "[![version](https://img.shields.io/badge/version-{VERSION}-brightgreen.svg)](CHANGELOG.md)\n",
-    "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)]" \
-        "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n"
+    "![version]": "[![version](https://img.shields.io/badge/version-{VERSION:escape_hyphen}-brightgreen.svg)](CHANGELOG.md)\n",
+    "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH:escape_hyphen}-orange.svg)]"
+        "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n",
 }
 
 README = "README.md"
@@ -98,10 +108,12 @@ if __name__ == "__main__":
         "USER": user,
         "REPO": repo,
         "BRANCH": git_branch(),
-        "VERSION": espurna_get_version(base)
+        "VERSION": espurna_get_version(base),
     }
+
+    formatter = CustomFormatter()
     templates = [
-        (k, tmpl.format(**fmt))
+        (k, formatter.format(tmpl, **fmt))
         for k, tmpl in TEMPLATES.items()
     ]
 
@@ -121,4 +133,4 @@ if __name__ == "__main__":
     if call(["git", "add", README]):
         sys.exit(1)
 
-    sys.exit(0);
+    sys.exit(0)

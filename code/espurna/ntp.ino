@@ -128,7 +128,11 @@ void _ntpBackwards() {
 // -----------------------------------------------------------------------------
 
 bool ntpSynced() {
-    return (year() > 2017);
+    #if NTP_WAIT_FOR_SYNC
+        return (NTP.getLastNTPSync() > 0);
+    #else
+        return true;
+    #endif
 }
 
 String ntpDateTime(time_t t) {

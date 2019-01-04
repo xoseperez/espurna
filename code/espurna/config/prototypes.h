@@ -69,6 +69,8 @@ extern "C" {
 #include <EEPROM_Rotate.h>
 EEPROM_Rotate EEPROMr;
 
+void eepromSectorsDebug();
+
 // -----------------------------------------------------------------------------
 // GPIO
 // -----------------------------------------------------------------------------
@@ -165,7 +167,9 @@ void nice_delay(unsigned long ms);
     #define AsyncWebSocket void
     #define AwsEventType void *
 #endif
+typedef std::function<bool(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)> web_body_callback_f;
 typedef std::function<bool(AsyncWebServerRequest *request)> web_request_callback_f;
+void webBodyRegister(web_body_callback_f callback);
 void webRequestRegister(web_request_callback_f callback);
 
 // -----------------------------------------------------------------------------
@@ -193,3 +197,4 @@ void webRequestRegister(web_request_callback_f callback);
 #include "JustWifi.h"
 typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
 void wifiRegister(wifi_callback_f callback);
+bool wifiConnected();

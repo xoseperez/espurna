@@ -110,8 +110,8 @@
 #define TELNET_STA              0               // By default, disallow connections via STA interface
 #endif
 
-#ifndef TELNET_PASSWORD
-#define TELNET_PASSWORD         1               // Request password to start telnet session by default
+#ifndef TELNET_AUTHENTICATION
+#define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
 #define TELNET_PORT             23              // Port to listen to telnet clients
@@ -185,22 +185,74 @@
 
 #define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
 
-// Topics that will be reported in heartbeat
+// Values that will be reported in heartbeat
+#ifndef HEARTBEAT_REPORT_STATUS
 #define HEARTBEAT_REPORT_STATUS     1
+#endif
+
+#ifndef HEARTBEAT_REPORT_SSID
+#define HEARTBEAT_REPORT_SSID       1
+#endif
+
+#ifndef HEARTBEAT_REPORT_IP
 #define HEARTBEAT_REPORT_IP         1
+#endif
+
+#ifndef HEARTBEAT_REPORT_MAC
 #define HEARTBEAT_REPORT_MAC        1
+#endif
+
+#ifndef HEARTBEAT_REPORT_RSSI
 #define HEARTBEAT_REPORT_RSSI       1
+#endif
+
+#ifndef HEARTBEAT_REPORT_UPTIME
 #define HEARTBEAT_REPORT_UPTIME     1
+#endif
+
+#ifndef HEARTBEAT_REPORT_DATETIME
 #define HEARTBEAT_REPORT_DATETIME   1
+#endif
+
+#ifndef HEARTBEAT_REPORT_FREEHEAP
 #define HEARTBEAT_REPORT_FREEHEAP   1
+#endif
+
+#ifndef HEARTBEAT_REPORT_VCC
 #define HEARTBEAT_REPORT_VCC        1
+#endif
+
+#ifndef HEARTBEAT_REPORT_RELAY
 #define HEARTBEAT_REPORT_RELAY      1
+#endif
+
+#ifndef HEARTBEAT_REPORT_LIGHT
 #define HEARTBEAT_REPORT_LIGHT      1
+#endif
+
+#ifndef HEARTBEAT_REPORT_HOSTNAME
 #define HEARTBEAT_REPORT_HOSTNAME   1
+#endif
+
+#ifndef HEARTBEAT_REPORT_APP
 #define HEARTBEAT_REPORT_APP        1
+#endif
+
+#ifndef HEARTBEAT_REPORT_VERSION
 #define HEARTBEAT_REPORT_VERSION    1
+#endif
+
+#ifndef HEARTBEAT_REPORT_BOARD
 #define HEARTBEAT_REPORT_BOARD      1
+#endif
+
+#ifndef HEARTBEAT_REPORT_LOADAVG
+#define HEARTBEAT_REPORT_LOADAVG    1
+#endif
+
+#ifndef HEARTBEAT_REPORT_INTERVAL
 #define HEARTBEAT_REPORT_INTERVAL   0
+#endif
 
 //------------------------------------------------------------------------------
 // Load average
@@ -208,10 +260,6 @@
 
 #ifndef LOADAVG_INTERVAL
 #define LOADAVG_INTERVAL        30000           // Interval between calculating load average (in ms)
-#endif
-
-#ifndef LOADAVG_REPORT
-#define LOADAVG_REPORT          1               // Should we report Load average over MQTT?
 #endif
 
 //------------------------------------------------------------------------------
@@ -236,6 +284,9 @@
 
 #ifndef BUTTON_LNGLNGCLICK_DELAY
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
+#endif
+
+#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
 #define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
                                                 // 1 - to send all button events to MQTT
 #endif
@@ -434,7 +485,9 @@
 // or in the Internet. Since the WebUI is just one compressed file with HTML, CSS and JS
 // there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
 // The only requirement is that the resource must be available under this domain.
+#ifndef WEB_REMOTE_DOMAIN
 #define WEB_REMOTE_DOMAIN           "http://tinkerman.cat"
+#endif
 
 // -----------------------------------------------------------------------------
 // WEBSOCKETS
@@ -529,6 +582,10 @@
 
 #ifndef OTA_PORT
 #define OTA_PORT                    8266        // OTA port
+#endif
+
+#ifndef OTA_MQTT_SUPPORT
+#define OTA_MQTT_SUPPORT           0            // No support by default
 #endif
 
 #define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
@@ -731,6 +788,7 @@
 #define MQTT_TOPIC_LED              "led"
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
+#define MQTT_TOPIC_SSID             "ssid"
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"
@@ -756,6 +814,7 @@
 #define MQTT_TOPIC_SPEED            "speed"
 #define MQTT_TOPIC_IRIN             "irin"
 #define MQTT_TOPIC_IROUT            "irout"
+#define MQTT_TOPIC_OTA              "ota"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -766,6 +825,7 @@
 #define MQTT_TOPIC_BRIGHTNESS       "brightness"
 #define MQTT_TOPIC_MIRED            "mired"
 #define MQTT_TOPIC_KELVIN           "kelvin"
+#define MQTT_TOPIC_TRANSITION       "transition"
 
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)
@@ -925,8 +985,13 @@
 #define HOMEASSISTANT_SUPPORT   MQTT_SUPPORT    // Build with home assistant support (if MQTT, 1.64Kb)
 #endif
 
+#ifndef HOMEASSISTANT_ENABLED
 #define HOMEASSISTANT_ENABLED   0               // Integration not enabled by default
+#endif
+
+#ifndef HOMEASSISTANT_PREFIX
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
+#endif
 
 #ifndef HOMEASSISTANT_PAYLOAD_ON
 #define HOMEASSISTANT_PAYLOAD_ON    "1"         // Payload for ON and available messages
@@ -991,6 +1056,11 @@
 
 #ifndef THINGSPEAK_APIKEY
 #define THINGSPEAK_APIKEY           ""              // Default API KEY
+#endif
+
+#ifndef THINGSPEAK_CLEAR_CACHE
+#define THINGSPEAK_CLEAR_CACHE      1               // Clear cache after sending values
+                                                    // Not clearing it will result in latest values for each field being sent every time
 #endif
 
 #define THINGSPEAK_USE_ASYNC        1               // Use AsyncClient instead of WiFiClientSecure
@@ -1069,6 +1139,10 @@
 
 #ifndef NTP_DST_REGION
 #define NTP_DST_REGION              0               // 0 for Europe, 1 for USA (defined in NtpClientLib)
+#endif
+
+#ifndef NTP_WAIT_FOR_SYNC
+#define NTP_WAIT_FOR_SYNC           1               // Do not report any datetime until NTP sync'ed
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1335,8 +1409,13 @@
 #define RF_PIN                      14
 #endif
 
+#ifndef RF_DEBOUNCE
 #define RF_DEBOUNCE                 500
+#endif
+
+#ifndef RF_LEARN_TIMEOUT
 #define RF_LEARN_TIMEOUT            60000
+#endif
 
 //--------------------------------------------------------------------------------
 // Custom RFM69 to MQTT bridge

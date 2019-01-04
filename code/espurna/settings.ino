@@ -22,8 +22,6 @@ EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
 #endif // SERIAL_RX_ENABLED
 #endif // TERMINAL_SUPPORT
 
-bool _settings_save = false;
-
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
 // -----------------------------------------------------------------------------
@@ -175,8 +173,8 @@ void _settingsInitCommands() {
 
     #if DEBUG_SUPPORT
         settingsRegisterCommand(F("CRASH"), [](Embedis* e) {
-            debugDumpCrashInfo();
-            debugClearCrashInfo();
+            crashDump();
+            crashClear();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif
@@ -189,6 +187,7 @@ void _settingsInitCommands() {
     settingsRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
         resetReason(CUSTOM_RESET_TERMINAL);
+        _eepromCommit();
         ESP.eraseConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
@@ -275,12 +274,10 @@ void _settingsInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    #if WEB_SUPPORT
-        settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
-            espurnaReload();
-            DEBUG_MSG_P(PSTR("+OK\n"));
-        });
-    #endif
+    settingsRegisterCommand(F("RELOAD"), [](Embedis* e) {
+        espurnaReload();
+        DEBUG_MSG_P(PSTR("+OK\n"));
+    });
 
     settingsRegisterCommand(F("RESET"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("+OK\n"));
@@ -310,7 +307,7 @@ void _settingsInitCommands() {
 
     #if not SETTINGS_AUTOSAVE
         settingsRegisterCommand(F("SAVE"), [](Embedis* e) {
-            _settings_save = true;
+            eepromCommit();
             DEBUG_MSG_P(PSTR("\n+OK\n"));
         });
     #endif
@@ -367,7 +364,7 @@ bool hasSetting(const String& key, unsigned int index) {
 
 void saveSettings() {
     #if not SETTINGS_AUTOSAVE
-        _settings_save = true;
+        eepromCommit();
     #endif
 }
 
@@ -464,7 +461,7 @@ void settingsSetup() {
         [](size_t pos) -> char { return EEPROMr.read(pos); },
         [](size_t pos, char value) { EEPROMr.write(pos, value); },
         #if SETTINGS_AUTOSAVE
-            []() { _settings_save = true; }
+            []() { eepromCommit(); }
         #else
             []() {}
         #endif
@@ -484,12 +481,6 @@ void settingsSetup() {
 }
 
 void settingsLoop() {
-
-    if (_settings_save) {
-        EEPROMr.commit();
-        _settings_save = false;
-    }
-
 
     #if TERMINAL_SUPPORT
 

@@ -25,6 +25,8 @@ const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "%s\r\n";
 
 bool _tspk_enabled = false;
+bool _tspk_clear = false;
+
 char * _tspk_queue[THINGSPEAK_FIELDS] = {NULL};
 
 bool _tspk_flush = false;
@@ -45,6 +47,7 @@ void _tspkWebSocketOnSend(JsonObject& root) {
 
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
     root["tspkKey"] = getSetting("tspkKey");
+    root["tspkClear"] = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
 
     JsonArray& relays = root.createNestedArray("tspkRelays");
     for (byte i=0; i<relayCount(); i++) {
@@ -71,6 +74,7 @@ void _tspkWebSocketOnSend(JsonObject& root) {
 #endif
 
 void _tspkConfigure() {
+    _tspk_clear = getSetting("tspkClear", THINGSPEAK_CLEAR_CACHE).toInt() == 1;
     _tspk_enabled = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
     if (_tspk_enabled && (getSetting("tspkKey").length() == 0)) {
         _tspk_enabled = false;
@@ -221,10 +225,12 @@ void _tspkEnqueue(unsigned char index, char * payload) {
 }
 
 void _tspkClearQueue() {
-    for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
-        if (_tspk_queue[id] != NULL) {
-            free(_tspk_queue[id]);
-            _tspk_queue[id] = NULL;
+    if (_tspk_clear) {
+        for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
+            if (_tspk_queue[id] != NULL) {
+                free(_tspk_queue[id]);
+                _tspk_queue[id] = NULL;
+            }
         }
     }
 }
@@ -250,6 +256,7 @@ void _tspkFlush() {
     }
 
 }
+
 // -----------------------------------------------------------------------------
 
 bool tspkEnqueueRelay(unsigned char index, unsigned char status) {

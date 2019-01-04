@@ -48,6 +48,7 @@ std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;
 
 std::vector<web_request_callback_f> _web_request_callbacks;
+std::vector<web_body_callback_f> _web_body_callbacks;
 
 // -----------------------------------------------------------------------------
 // HOOKS
@@ -345,6 +346,17 @@ void _onRequest(AsyncWebServerRequest *request){
 
 }
 
+void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+
+    // Send request to subscribers
+    for (unsigned char i = 0; i < _web_body_callbacks.size(); i++) {
+        bool response = (_web_body_callbacks[i])(request, data, len, index, total);
+        if (response) return;
+    }
+
+}
+
+
 // -----------------------------------------------------------------------------
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
@@ -362,6 +374,10 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
 
 AsyncWebServer * webServer() {
     return _server;
+}
+
+void webBodyRegister(web_body_callback_f callback) {
+    _web_body_callbacks.push_back(callback);
 }
 
 void webRequestRegister(web_request_callback_f callback) {
@@ -414,7 +430,9 @@ void webSetup() {
             });
     #endif
 
+
     // Handle other requests, including 404
+    _server->onRequestBody(_onBody);
     _server->onNotFound(_onRequest);
 
     // Run server

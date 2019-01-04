@@ -42,7 +42,7 @@ void systemCheck(bool stable) {
         }
     }
     EEPROMr.write(EEPROM_CRASH_COUNTER, value);
-    EEPROMr.commit();
+    eepromCommit();
 }
 
 bool systemCheck() {
@@ -76,6 +76,14 @@ unsigned long systemLoadAverage() {
 }
 
 void systemLoop() {
+
+    // -------------------------------------------------------------------------
+    // User requested reset
+    // -------------------------------------------------------------------------
+
+    if (checkNeedsReset()) {
+        reset();
+    }
 
     // -------------------------------------------------------------------------
     // Check system stability

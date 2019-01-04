@@ -250,38 +250,44 @@
 // These should remain over time, do not modify them, only add new ones at the end
 //--------------------------------------------------------------------------------
 
-#define SENSOR_DHTXX_ID             0x01
-#define SENSOR_DALLAS_ID            0x02
-#define SENSOR_EMON_ANALOG_ID       0x03
-#define SENSOR_EMON_ADC121_ID       0x04
-#define SENSOR_EMON_ADS1X15_ID      0x05
-#define SENSOR_HLW8012_ID           0x06
-#define SENSOR_V9261F_ID            0x07
-#define SENSOR_ECH1560_ID           0x08
-#define SENSOR_ANALOG_ID            0x09
-#define SENSOR_DIGITAL_ID           0x10
-#define SENSOR_EVENTS_ID            0x11
-#define SENSOR_PMSX003_ID           0x12
-#define SENSOR_BMX280_ID            0x13
-#define SENSOR_MHZ19_ID             0x14
-#define SENSOR_SI7021_ID            0x15
-#define SENSOR_SHT3X_I2C_ID         0x16
-#define SENSOR_BH1750_ID            0x17
-#define SENSOR_PZEM004T_ID          0x18
-#define SENSOR_AM2320_ID            0x19
-#define SENSOR_GUVAS12SD_ID         0x20
-#define SENSOR_CSE7766_ID           0x21
-#define SENSOR_TMP3X_ID             0x22
-#define SENSOR_SONAR_ID             0x23
-#define SENSOR_SENSEAIR_ID          0x24
-#define SENSOR_GEIGER_ID            0x25
-#define SENSOR_NTC_ID               0x26
-#define SENSOR_SDS011_ID            0x27
-#define SENSOR_MICS2710_ID          0x28
-#define SENSOR_MICS5525_ID          0x29
+#define SENSOR_DHTXX_ID             1
+#define SENSOR_DALLAS_ID            2
+#define SENSOR_EMON_ANALOG_ID       3
+#define SENSOR_EMON_ADC121_ID       4
+#define SENSOR_EMON_ADS1X15_ID      5
+#define SENSOR_HLW8012_ID           6
+#define SENSOR_V9261F_ID            7
+#define SENSOR_ECH1560_ID           8
+#define SENSOR_ANALOG_ID            9
+#define SENSOR_DIGITAL_ID           10
+#define SENSOR_EVENTS_ID            11
+#define SENSOR_PMSX003_ID           12
+#define SENSOR_BMX280_ID            13
+#define SENSOR_MHZ19_ID             14
+#define SENSOR_SI7021_ID            15
+#define SENSOR_SHT3X_I2C_ID         16
+#define SENSOR_BH1750_ID            17
+#define SENSOR_PZEM004T_ID          18
+#define SENSOR_AM2320_ID            19
+#define SENSOR_GUVAS12SD_ID         20
+#define SENSOR_CSE7766_ID           21
+#define SENSOR_TMP3X_ID             22
+#define SENSOR_SONAR_ID             23
+#define SENSOR_SENSEAIR_ID          24
+#define SENSOR_GEIGER_ID            25
+#define SENSOR_NTC_ID               26
+#define SENSOR_SDS011_ID            27
+#define SENSOR_MICS2710_ID          28
+#define SENSOR_MICS5525_ID          29
+#define SENSOR_PULSEMETER_ID        30
+#define SENSOR_VEML6075_ID          31
+#define SENSOR_VL53L1X_ID           32
+#define SENSOR_EZOPH_ID             33
+#define SENSOR_BMP180_ID            34
 
 //--------------------------------------------------------------------------------
 // Magnitudes
+// These should remain over time, do not modify their values, only add new ones at the end
 //--------------------------------------------------------------------------------
 
 #define MAGNITUDE_NONE              0
@@ -304,14 +310,17 @@
 #define MAGNITUDE_PM10              17
 #define MAGNITUDE_CO2               18
 #define MAGNITUDE_LUX               19
-#define MAGNITUDE_UV                20
-#define MAGNITUDE_DISTANCE          21
-#define MAGNITUDE_HCHO              22
-#define MAGNITUDE_GEIGER_CPM        23
-#define MAGNITUDE_GEIGER_SIEVERT    24
-#define MAGNITUDE_COUNT             25
-#define MAGNITUDE_NO2               26
-#define MAGNITUDE_CO                27
-#define MAGNITUDE_RESISTANCE        28
+#define MAGNITUDE_UVA               20
+#define MAGNITUDE_UVB               21
+#define MAGNITUDE_UVI               22
+#define MAGNITUDE_DISTANCE          23
+#define MAGNITUDE_HCHO              24
+#define MAGNITUDE_GEIGER_CPM        25
+#define MAGNITUDE_GEIGER_SIEVERT    26
+#define MAGNITUDE_COUNT             27
+#define MAGNITUDE_NO2               28
+#define MAGNITUDE_CO                29
+#define MAGNITUDE_RESISTANCE        30
+#define MAGNITUDE_PH                31
 
-#define MAGNITUDE_MAX               29
+#define MAGNITUDE_MAX               32
