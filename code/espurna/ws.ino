@@ -66,8 +66,6 @@ bool _wsAuth(AsyncWebSocketClient * client) {
     }
 
     if (index == WS_BUFFER_SIZE) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
-        wsSend_P(client->id(), PSTR("{\"message\": 10}"));
         return false;
     }
 
@@ -367,8 +365,15 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
     if (type == WS_EVT_CONNECT) {
 
+        client->_tempObject = nullptr;
+
         #ifndef NOWSAUTH
-            if (!_wsAuth(client)) return;
+            if (!_wsAuth(client)) {
+                wsSend_P(client->id(), PSTR("{\"message\": 10}"));
+                DEBUG_MSG_P(PSTR("[WEBSOCKET] Validation check failed\n"));
+                client->close();
+                return;
+            }
         #endif
 
         IPAddress ip = client->remoteIP();
