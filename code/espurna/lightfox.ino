@@ -49,6 +49,14 @@ void lightfoxClear() {
 
 void _lightfoxWebSocketOnSend(JsonObject& root) {
     root["lightfoxVisible"] = 1;
+    uint8_t buttonsCount = _buttons.size();
+    root["lightfoxRelayCount"] = relayCount();
+    JsonArray& rfb = root.createNestedArray("lightfoxButtons");
+    for (byte id=0; id<buttonsCount; id++) {
+        JsonObject& node = rfb.createNestedObject();
+        node["id"] = id;
+        node["relay"] = getSetting("btnRelay", id, "0");
+    }
 }
 
 void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {

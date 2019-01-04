@@ -1141,6 +1141,48 @@ function addRfbNode() {
 <!-- endRemoveIf(!rfbridge)-->
 
 // -----------------------------------------------------------------------------
+// LightFox
+// -----------------------------------------------------------------------------
+
+<!-- removeIf(!lightfox)-->
+
+function lightfoxLearn() {
+    sendAction("lightfoxLearn", {});
+}
+
+function lightfoxClear() {
+    sendAction("lightfoxClear", {});
+}
+
+function initLightfox(data, relayCount) {
+
+    var numNodes = data.length;
+
+    var template = $("#lightfoxNodeTemplate").children();
+
+    var i, j;
+    for (i=0; i<numNodes; i++) {
+        var $line = $(template).clone();
+        $line.find("label > span").text(data[i]["id"]);
+        $line.find("select").each(function() {
+            $(this).attr("name", "btnRelay" + data[i]["id"]);
+            for (j=0; j < relayCount; j++) {
+                $(this).append($("<option >").attr("value", j).text("Switch #" + j));
+            }
+            $(this).val(data[i]["relay"]);
+            status = !status;
+        });
+        $line.appendTo("#lightfoxNodes");
+    }
+
+    var $panel = $("#panel-lightfox")
+    $(".button-lightfox-learn").off("click").click(lightfoxLearn);
+    $(".button-lightfox-clear").off("click").click(lightfoxClear);
+
+}
+<!-- endRemoveIf(!lightfox)-->
+
+// -----------------------------------------------------------------------------
 // Processing
 // -----------------------------------------------------------------------------
 
@@ -1206,6 +1248,19 @@ function processData(data) {
             }
             return;
         }
+        <!-- endRemoveIf(!rfbridge)-->
+
+        // ---------------------------------------------------------------------
+        // LightFox
+        // ---------------------------------------------------------------------
+
+        <!-- removeIf(!lightfox)-->
+
+        if ("lightfoxButtons" === key) {
+            initLightfox(data["lightfoxButtons"], data["lightfoxRelayCount"]);
+            return;
+        }
+
         <!-- endRemoveIf(!rfbridge)-->
 
         // ---------------------------------------------------------------------
