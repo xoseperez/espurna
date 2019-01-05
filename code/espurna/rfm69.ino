@@ -118,9 +118,8 @@ void _rfm69Process(packet_t * data) {
     // Is node beyond RFM69_MAX_NODES?
     if (data->senderID >= RFM69_MAX_NODES) return;
 
-    // Count seen nodes and packets
+    // Count seen nodes
     if (_rfm69_node_info[data->senderID].count == 0) ++_rfm69_node_count;
-    ++_rfm69_packet_count;
 
     // Detect duplicates and missing packets
     // packetID==0 means device is not sending packetID info
