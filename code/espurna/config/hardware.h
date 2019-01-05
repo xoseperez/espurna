@@ -1637,11 +1637,11 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
-#elif defined(ARILUX_AL_LC02V14)
+#elif defined(ARILUX_AL_LC02_V14)
 
     // Info
     #define MANUFACTURER        "ARILUX"
-    #define DEVICE              "AL_LC02V14"
+    #define DEVICE              "AL_LC02_V14"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
