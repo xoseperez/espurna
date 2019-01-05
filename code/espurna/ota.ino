@@ -118,6 +118,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
         _ota_size += len;
         DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
 
+        delay(0);
 
     }, NULL);
 
