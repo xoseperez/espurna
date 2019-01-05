@@ -80,6 +80,15 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 
 };
 
+#if BROKER_SUPPORT
+void _domoticzBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+        unsigned char value = atoi(payload);
+        domoticzSendRelay(id, value == 1);
+    }
+}
+#endif // BROKER_SUPPORT
+
 #if WEB_SUPPORT
 
 bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
@@ -137,16 +146,16 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
     domoticzSend(key, nvalue, "");
 }
 
-void domoticzSendRelay(unsigned char relayID) {
+void domoticzSendRelay(unsigned char relayID, bool status) {
     if (!_dcz_enabled) return;
     char buffer[15];
     snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
-    domoticzSend(buffer, relayStatus(relayID) ? "1" : "0");
+    domoticzSend(buffer, status ? "1" : "0");
 }
 
 void domoticzSendRelays() {
     for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
-        domoticzSendRelay(relayID);
+        domoticzSendRelay(relayID, relayStatus(relayID));
     }
 }
 
@@ -163,6 +172,10 @@ void domoticzSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_domoticzWebSocketOnSend);
         wsOnReceiveRegister(_domoticzWebSocketOnReceive);
+    #endif
+
+    #if BROKER_SUPPORT
+        brokerRegister(_domoticzBrokerCallback);
     #endif
 
     // Callbacks
