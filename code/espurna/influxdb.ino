@@ -38,6 +38,14 @@ void _idbConfigure() {
     }
 }
 
+#if BROKER_SUPPORT
+void _idbBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+        idbSend(topic, id, (char *) payload);
+    }
+}
+#endif // BROKER_SUPPORT
+
 // -----------------------------------------------------------------------------
 
 bool idbSend(const char * topic, const char * payload) {
@@ -106,6 +114,10 @@ void idbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
         wsOnReceiveRegister(_idbWebSocketOnReceive);
+    #endif
+
+    #if BROKER_SUPPORT
+        brokerRegister(_idbBrokerCallback);
     #endif
 
     // Main callbacks

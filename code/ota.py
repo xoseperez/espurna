@@ -75,7 +75,7 @@ def list_devices():
     """
     Shows the list of discovered devices
     """
-    output_format="{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<8}  {:<25}  {:<8}  {:<8}  {:<10}"
+    output_format="{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<12}  {:<25}  {:<8}  {:<8}  {:<10}"
     print(output_format.format(
         "#",
         "HOSTNAME",
