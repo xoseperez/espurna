@@ -3298,8 +3298,8 @@
 #elif defined(FOXEL_LIGHTFOX_DUAL)
 
     // Info
-    #define MANUFACTURER            "Foxel"
-    #define DEVICE                  "LightFox dual"
+    #define MANUFACTURER            "FOXEL"
+    #define DEVICE                  "LIGHTFOX_DUAL"
     #define SERIAL_BAUDRATE         19200
     #define RELAY_PROVIDER          RELAY_PROVIDER_DUAL
     #define DUMMY_RELAY_COUNT       2
