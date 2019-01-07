@@ -152,9 +152,6 @@ void _rfbLearn() {
 
 }
 
-
-#if not RF_SUPPORT
-
 /*
  From an hexa char array ("A220EE...") to a byte array (half the size)
  */
@@ -169,6 +166,8 @@ static int _rfbToArray(const char * in, byte * out, int length = RF_MESSAGE_SIZE
     }
     return n;
 }
+
+#if not RF_SUPPORT
 
 void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
     for (unsigned char j=0; j<n; j++) {
