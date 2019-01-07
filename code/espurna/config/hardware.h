@@ -3477,6 +3477,7 @@
     #define LLMNR_SUPPORT       1
     #define NETBIOS_SUPPORT     1
     #define SSDP_SUPPORT        1
+    #define RF_SUPPORT          1
 
 #endif
 
