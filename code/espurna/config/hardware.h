@@ -2774,9 +2774,9 @@
 
     // LEDs
     #define LED1_PIN                    3
-    #define LED1_PIN_INVERSE            1
+    #define LED1_PIN_INVERSE            0
     #define LED2_PIN                    13
-    #define LED2_PIN_INVERSE            1
+    #define LED2_PIN_INVERSE            0
     #define LED2_MODE                   LED_MODE_FINDME
     #define LED2_RELAY                  1
 
