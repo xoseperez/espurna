@@ -271,7 +271,7 @@ void _sensorAPISetup() {
 #if TERMINAL_SUPPORT
 
 void _sensorInitCommands() {
-    settingsRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
+    terminalRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
             sensor_magnitude_t magnitude = _magnitudes[i];
             DEBUG_MSG_P(PSTR("[SENSOR] * %2d: %s @ %s (%s/%d)\n"),
@@ -285,7 +285,7 @@ void _sensorInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
     #if PZEM004T_SUPPORT
-    settingsRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
         if (e->argc == 1) {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             unsigned char dev_count = pzem004t_sensor->getAddressesCount();
@@ -306,7 +306,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         }
     });
-    settingsRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
         if(e->argc > 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         } else {
@@ -321,7 +321,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("+OK\n"));
         }
     });
-    settingsRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
         if(e->argc > 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         } else {

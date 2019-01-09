@@ -67,8 +67,13 @@ void setup() {
     // Init Serial, SPIFFS and system check
     systemSetup();
 
-    // Init persistance and terminal features
+    // Init persistance
     settingsSetup();
+
+    // Init terminal features
+    #if TERMINAL_SUPPORT
+        terminalSetup();
+    #endif
 
     // Hostname & board name initialization
     if (getSetting("hostname").length() == 0) {

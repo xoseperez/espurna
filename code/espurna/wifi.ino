@@ -385,37 +385,37 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
-    settingsRegisterCommand(F("WIFI"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI"), [](Embedis* e) {
         wifiDebug();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
         wifiStartAP();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     #if defined(JUSTWIFI_ENABLE_WPS)
-        settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
             wifiStartWPS();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif // defined(JUSTWIFI_ENABLE_WPS)
 
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        settingsRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
             wifiStartSmartConfig();
             DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
-    settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });

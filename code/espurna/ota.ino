@@ -188,7 +188,7 @@ void _otaFrom(String url) {
 
 void _otaInitCommands() {
 
-    settingsRegisterCommand(F("OTA"), [](Embedis* e) {
+    terminalRegisterCommand(F("OTA"), [](Embedis* e) {
         if (e->argc < 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
         } else {

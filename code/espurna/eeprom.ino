@@ -58,7 +58,7 @@ void eepromCommit() {
 
 void _eepromInitCommands() {
 
-    settingsRegisterCommand(F("EEPROM"), [](Embedis* e) {
+    terminalRegisterCommand(F("EEPROM"), [](Embedis* e) {
         infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
         eepromSectorsDebug();
         if (_eeprom_commit_count > 0) {
@@ -68,7 +68,7 @@ void _eepromInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("EEPROM.COMMIT"), [](Embedis* e) {
+    terminalRegisterCommand(F("EEPROM.COMMIT"), [](Embedis* e) {
         const bool res = _eepromCommit();
         if (res) {
             DEBUG_MSG_P(PSTR("+OK\n"));
@@ -77,12 +77,12 @@ void _eepromInitCommands() {
         }
     });
 
-    settingsRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
-        EEPROMr.dump(settingsSerial());
+    terminalRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
+        EEPROMr.dump(terminalSerial());
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
-    settingsRegisterCommand(F("FLASH.DUMP"), [](Embedis* e) {
+    terminalRegisterCommand(F("FLASH.DUMP"), [](Embedis* e) {
         if (e->argc < 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
             return;
@@ -93,7 +93,7 @@ void _eepromInitCommands() {
             DEBUG_MSG_P(PSTR("-ERROR: Sector out of range\n"));
             return;
         }
-        EEPROMr.dump(settingsSerial(), sector);
+        EEPROMr.dump(terminalSerial(), sector);
         DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 

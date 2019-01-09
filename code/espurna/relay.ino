@@ -983,7 +983,7 @@ void relaySetupMQTT() {
 
 void _relayInitCommands() {
 
-    settingsRegisterCommand(F("RELAY"), [](Embedis* e) {
+    terminalRegisterCommand(F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
             return;

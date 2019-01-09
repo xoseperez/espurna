@@ -142,9 +142,15 @@ template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
-void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
-void settingsInject(void *data, size_t len);
-Stream & settingsSerial();
+
+// -----------------------------------------------------------------------------
+// Terminal
+// -----------------------------------------------------------------------------
+#if TERMINAL_SUPPORT
+    void terminalRegisterCommand(const String& name, void (*call)(Embedis*));
+    void terminalInject(void *data, size_t len);
+    Stream & terminalSerial();
+#endif
 
 // -----------------------------------------------------------------------------
 // Utils

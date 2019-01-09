@@ -267,12 +267,12 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 
 void _haInitCommands() {
 
-    settingsRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
         DEBUG_MSG(_haGetConfig().c_str());
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
         #if WEB_SUPPORT
@@ -281,7 +281,7 @@ void _haInitCommands() {
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
         #if WEB_SUPPORT

@@ -605,7 +605,7 @@ void _rfbAPISetup() {
 
 void _rfbInitCommands() {
 
-    settingsRegisterCommand(F("LEARN"), [](Embedis* e) {
+    terminalRegisterCommand(F("LEARN"), [](Embedis* e) {
 
         if (e->argc < 3) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
@@ -626,7 +626,7 @@ void _rfbInitCommands() {
 
     });
 
-    settingsRegisterCommand(F("FORGET"), [](Embedis* e) {
+    terminalRegisterCommand(F("FORGET"), [](Embedis* e) {
 
         if (e->argc < 3) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
