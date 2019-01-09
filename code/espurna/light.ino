@@ -978,7 +978,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        return true;
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
@@ -992,7 +992,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        return true;
     });
 
     terminalRegisterCommand(F("COLOR"), [](Embedis* e) {
@@ -1002,7 +1002,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        return true;
     });
 
     terminalRegisterCommand(F("KELVIN"), [](Embedis* e) {
@@ -1012,7 +1012,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        return true;
     });
 
     terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
@@ -1022,7 +1022,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        return true;
     });
 
 }

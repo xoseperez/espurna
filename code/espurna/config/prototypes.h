@@ -147,7 +147,7 @@ bool settingsRestoreJson(JsonObject& data);
 // Terminal
 // -----------------------------------------------------------------------------
 #if TERMINAL_SUPPORT
-    void terminalRegisterCommand(const String& name, void (*call)(Embedis*));
+    void terminalRegisterCommand(const String& name, bool (*call)(Embedis*));
     void terminalInject(void *data, size_t len);
     Stream & terminalSerial();
 #endif

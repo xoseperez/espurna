@@ -353,7 +353,7 @@ void _mqttInitCommands() {
     terminalRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
         _mqttConfigure();
         mqttDisconnect();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        return true;
     });
 
 }
