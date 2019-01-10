@@ -24,7 +24,7 @@ extern "C" {
 // Broker
 // -----------------------------------------------------------------------------
 #if BROKER_SUPPORT
-    void brokerRegister(void (*)(const char *, unsigned char, const char *));
+    void brokerRegister(void (*)(const unsigned char, const char *, unsigned char, const char *));
 #endif
 
 // -----------------------------------------------------------------------------
