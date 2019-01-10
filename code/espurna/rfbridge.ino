@@ -608,7 +608,7 @@ void _rfbInitCommands() {
     terminalRegisterCommand(F("LEARN"), [](Embedis* e) {
 
         if (e->argc < 3) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         
@@ -622,14 +622,14 @@ void _rfbInitCommands() {
 
         rfbLearn(id, status == 1);
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
 
     });
 
     terminalRegisterCommand(F("FORGET"), [](Embedis* e) {
 
         if (e->argc < 3) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         
@@ -643,7 +643,7 @@ void _rfbInitCommands() {
 
         rfbForget(id, status == 1);
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
 
     });
 

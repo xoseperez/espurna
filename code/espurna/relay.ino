@@ -985,7 +985,7 @@ void _relayInitCommands() {
 
     terminalRegisterCommand(F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         int id = String(e->argv[1]).toInt();
@@ -1008,7 +1008,7 @@ void _relayInitCommands() {
             DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
 
         }
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }

@@ -83,17 +83,17 @@ void _terminalInitCommand() {
         terminalRegisterCommand(F("CRASH"), [](Embedis* e) {
             crashDump();
             crashClear();
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         });
     #endif
 
     terminalRegisterCommand(F("COMMANDS"), [](Embedis* e) {
         _terminalHelpCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
         resetReason(CUSTOM_RESET_TERMINAL);
         _eepromCommit();
         ESP.eraseConfig();
@@ -102,17 +102,17 @@ void _terminalInitCommand() {
 
     terminalRegisterCommand(F("FACTORY.RESET"), [](Embedis* e) {
         resetSettings();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("GPIO"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         int pin = String(e->argv[1]).toInt();
         //if (!gpioValid(pin)) {
-        //    DEBUG_MSG_P(PSTR("-ERROR: Invalid GPIO\n"));
+        //    terminalError(F("Invalid GPIO"));
         //    return;
         //}
         if (e->argc > 2) {
@@ -120,37 +120,37 @@ void _terminalInitCommand() {
             digitalWrite(pin, state);
         }
         DEBUG_MSG_P(PSTR("GPIO %d is %s\n"), pin, digitalRead(pin) == HIGH ? "HIGH" : "LOW");
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("HEAP"), [](Embedis* e) {
         infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("STACK"), [](Embedis* e) {
         infoMemory("Stack", 4096, getFreeStack());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("HELP"), [](Embedis* e) {
         _terminalHelpCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("INFO"), [](Embedis* e) {
         info();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("KEYS"), [](Embedis* e) {
         _terminalKeysCommand();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("GET"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
 
@@ -165,28 +165,28 @@ void _terminalInitCommand() {
             DEBUG_MSG_P(PSTR("> %s => \"%s\"\n"), key.c_str(), value.c_str());
         }
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("RELOAD"), [](Embedis* e) {
         espurnaReload();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("RESET"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
     terminalRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
         EEPROMr.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
 
     terminalRegisterCommand(F("UPTIME"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("Uptime: %d seconds\n"), getUptime());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
@@ -196,7 +196,7 @@ void _terminalInitCommand() {
         String output;
         root.printTo(output);
         DEBUG_MSG(output.c_str());
-        DEBUG_MSG_P(PSTR("\n+OK\n"));
+        
     });
 
     #if not SETTINGS_AUTOSAVE
@@ -248,6 +248,14 @@ Stream & terminalSerial() {
 void terminalRegisterCommand(const String& name, void (*call)(Embedis*)) {
     Embedis::command(name, call);
 };
+
+void terminalOK() {
+    DEBUG_MSG_P(PSTR("+OK\n"));
+}
+
+void terminalError(const String& error) {
+    DEBUG_MSG_P(PSTR("-ERROR: %s\n"), error.c_str());
+}
 
 void terminalSetup() {
 

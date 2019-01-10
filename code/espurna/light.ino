@@ -989,12 +989,12 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         }
         int id = String(e->argv[1]).toInt();
         if (e->argc > 2) {
@@ -1003,7 +1003,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("COLOR"), [](Embedis* e) {
@@ -1013,7 +1013,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("KELVIN"), [](Embedis* e) {
@@ -1023,7 +1023,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
@@ -1033,7 +1033,7 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }

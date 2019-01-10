@@ -282,7 +282,7 @@ void _sensorInitCommands() {
                 magnitude.global
             );
         }
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
     #if PZEM004T_SUPPORT
     terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
@@ -292,23 +292,23 @@ void _sensorInitCommands() {
             for(unsigned char dev = 0; dev < dev_count; dev++) {
                 DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
             }
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         } else if(e->argc == 2) {
             IPAddress addr;
             if (addr.fromString(String(e->argv[1]))) {
                 if(pzem004t_sensor->setDeviceAddress(&addr)) {
-                    DEBUG_MSG_P(PSTR("+OK\n"));
+                    terminalOK();
                 }
             } else {
-                DEBUG_MSG_P(PSTR("-ERROR: Invalid address argument\n"));
+                terminalError(F("Invalid address argument"));
             }
         } else {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         }
     });
     terminalRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
         if(e->argc > 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
@@ -318,12 +318,12 @@ void _sensorInitCommands() {
                 setSetting("pzEneTotal", dev, offset);
                 DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         }
     });
     terminalRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
         if(e->argc > 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
@@ -337,7 +337,7 @@ void _sensorInitCommands() {
                             String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
                             String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_ENERGY_INDEX)).c_str());
             }
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         }
     });
     #endif

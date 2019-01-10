@@ -146,7 +146,7 @@
 //#define SPIFFS_SUPPORT         1
 //#define SSDP_SUPPORT           1
 //#define TELNET_SUPPORT         0
-#define TERMINAL_SUPPORT       0
+//#define TERMINAL_SUPPORT       0
 //#define THINGSPEAK_SUPPORT     0
 //#define UART_MQTT_SUPPORT      1
 //#define WEB_SUPPORT            0
