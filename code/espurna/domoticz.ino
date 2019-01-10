@@ -149,11 +149,16 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 };
 
 #if BROKER_SUPPORT
-void _domoticzBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+
     if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
         unsigned char value = atoi(payload);
         domoticzSendRelay(id, value == 1);
     }
+    
 }
 #endif // BROKER_SUPPORT
 

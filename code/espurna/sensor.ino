@@ -1186,7 +1186,7 @@ void _sensorReport(unsigned char index, double value) {
     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
 
     #if BROKER_SUPPORT
-        brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+        brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
     #endif
 
     #if MQTT_SUPPORT
@@ -1204,14 +1204,6 @@ void _sensorReport(unsigned char index, double value) {
         #endif // SENSOR_PUBLISH_ADDRESSES
 
     #endif // MQTT_SUPPORT
-
-    #if INFLUXDB_SUPPORT
-        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-            idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
-        } else {
-            idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
-        }
-    #endif // INFLUXDB_SUPPORT
 
     #if THINGSPEAK_SUPPORT
         tspkEnqueueMeasurement(index, buffer);
