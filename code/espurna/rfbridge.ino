@@ -555,6 +555,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
 void _rfbAPISetup() {
 
+    #if not RF_SUPPORT
     apiRegister(MQTT_TOPIC_RFOUT,
         [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("OK"));
@@ -563,6 +564,7 @@ void _rfbAPISetup() {
             _rfbParseCode((char *) payload);
         }
     );
+    #endif // RF_SUPPORT
 
     apiRegister(MQTT_TOPIC_RFLEARN,
         [](char * buffer, size_t len) {
