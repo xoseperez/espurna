@@ -269,7 +269,7 @@ void _haInitCommands() {
 
     terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
         DEBUG_MSG(_haGetConfig().c_str());
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("HA.SEND"), [](Embedis* e) {
@@ -278,7 +278,7 @@ void _haInitCommands() {
         #if WEB_SUPPORT
             wsSend(_haWebSocketOnSend);
         #endif
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
@@ -287,7 +287,7 @@ void _haInitCommands() {
         #if WEB_SUPPORT
             wsSend(_haWebSocketOnSend);
         #endif
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
 }

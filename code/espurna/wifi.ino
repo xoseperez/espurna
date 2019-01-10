@@ -387,37 +387,37 @@ void _wifiInitCommands() {
 
     terminalRegisterCommand(F("WIFI"), [](Embedis* e) {
         wifiDebug();
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
         wifiStartAP();
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     #if defined(JUSTWIFI_ENABLE_WPS)
         terminalRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
             wifiStartWPS();
-            return true;
+            DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif // defined(JUSTWIFI_ENABLE_WPS)
 
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
         terminalRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
             wifiStartSmartConfig();
-            return true;
+            DEBUG_MSG_P(PSTR("+OK\n"));
         });
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
     terminalRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
 }

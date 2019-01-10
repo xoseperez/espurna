@@ -609,20 +609,20 @@ void _rfbInitCommands() {
 
         if (e->argc < 3) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-            return false;
+            return;
         }
         
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
-            return false;
+            return;
         }
 
         int status = String(e->argv[2]).toInt();
 
         rfbLearn(id, status == 1);
 
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
 
     });
 
@@ -630,20 +630,20 @@ void _rfbInitCommands() {
 
         if (e->argc < 3) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-            return false;
+            return;
         }
         
         int id = String(e->argv[1]).toInt();
         if (id >= relayCount()) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong relayID (%d)\n"), id);
-            return false;
+            return;
         }
 
         int status = String(e->argv[2]).toInt();
 
         rfbForget(id, status == 1);
 
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
 
     });
 

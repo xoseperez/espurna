@@ -75,8 +75,8 @@ void _nofussConfigure() {
 void _nofussInitCommands() {
 
     terminalRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+        DEBUG_MSG_P(PSTR("+OK\n"));
         nofussRun();
-        return true;
     });
 
 }

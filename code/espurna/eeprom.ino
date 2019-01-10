@@ -65,34 +65,36 @@ void _eepromInitCommands() {
             DEBUG_MSG_P(PSTR("[MAIN] Commits done: %lu\n"), _eeprom_commit_count);
             DEBUG_MSG_P(PSTR("[MAIN]  Last result: %s\n"), _eeprom_last_commit_result ? "OK" : "ERROR");
         }
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("EEPROM.COMMIT"), [](Embedis* e) {
         const bool res = _eepromCommit();
-        if (res) return true;
-        DEBUG_MSG_P(PSTR("-ERROR\n"));
-        return false;
+        if (res) {
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("-ERROR\n"));
+        }
     });
 
     terminalRegisterCommand(F("EEPROM.DUMP"), [](Embedis* e) {
         EEPROMr.dump(terminalSerial());
-        return true;
+        DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
     terminalRegisterCommand(F("FLASH.DUMP"), [](Embedis* e) {
         if (e->argc < 2) {
             DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-            return false;
+            return;
         }
         uint32_t sector = String(e->argv[1]).toInt();
         uint32_t max = ESP.getFlashChipSize() / SPI_FLASH_SEC_SIZE;
         if (sector >= max) {
             DEBUG_MSG_P(PSTR("-ERROR: Sector out of range\n"));
-            return false;
+            return;
         }
         EEPROMr.dump(terminalSerial(), sector);
-        return true;
+        DEBUG_MSG_P(PSTR("\n+OK\n"));
     });
 
 }

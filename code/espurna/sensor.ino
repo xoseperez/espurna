@@ -271,7 +271,6 @@ void _sensorAPISetup() {
 #if TERMINAL_SUPPORT
 
 void _sensorInitCommands() {
-    
     terminalRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
             sensor_magnitude_t magnitude = _magnitudes[i];
@@ -283,40 +282,34 @@ void _sensorInitCommands() {
                 magnitude.global
             );
         }
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
-    
     #if PZEM004T_SUPPORT
-    
-        terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
-            if (e->argc == 1) {
-                DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
-                unsigned char dev_count = pzem004t_sensor->getAddressesCount();
-                for(unsigned char dev = 0; dev < dev_count; dev++) {
-                    DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
+    terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
+        if (e->argc == 1) {
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
+            unsigned char dev_count = pzem004t_sensor->getAddressesCount();
+            for(unsigned char dev = 0; dev < dev_count; dev++) {
+                DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
+            }
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        } else if(e->argc == 2) {
+            IPAddress addr;
+            if (addr.fromString(String(e->argv[1]))) {
+                if(pzem004t_sensor->setDeviceAddress(&addr)) {
+                    DEBUG_MSG_P(PSTR("+OK\n"));
                 }
-                return true;
-            } else if(e->argc == 2) {
-                IPAddress addr;
-                if (addr.fromString(String(e->argv[1]))) {
-                    if (pzem004t_sensor->setDeviceAddress(&addr)) {
-                        return true;
-                    }
-                }
-                DEBUG_MSG_P(PSTR("-ERROR: Invalid address argument\n"));
             } else {
-                DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+                DEBUG_MSG_P(PSTR("-ERROR: Invalid address argument\n"));
             }
-            return false;
-        });
-
-        terminalRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
-            
-            if (e->argc > 2) {
-                DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-                return false;
-            }
-
+        } else {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        }
+    });
+    terminalRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
+        if(e->argc > 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
@@ -325,39 +318,32 @@ void _sensorInitCommands() {
                 setSetting("pzEneTotal", dev, offset);
                 DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
-            return true;
-            
-        });
-        
-        terminalRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
-            
-            if(e->argc > 2) {
-                DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
-                return false;
-            }
-            
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        }
+    });
+    terminalRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
+        if(e->argc > 2) {
+            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+        } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             for(unsigned char dev = init; dev < limit; dev++) {
-                DEBUG_MSG_P(
-                    PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s\n"), //
-                    dev,
-                    pzem004t_sensor->getAddress(dev).c_str(),
-                    String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_CURRENT_INDEX)).c_str(),
-                    String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_VOLTAGE_INDEX)).c_str(),
-                    String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
-                    String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_ENERGY_INDEX)).c_str()
-                );
+                DEBUG_MSG_P(PSTR("Device %d/%s - Current: %s Voltage: %s Power: %s Energy: %s\n"), //
+                            dev,
+                            pzem004t_sensor->getAddress(dev).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_CURRENT_INDEX)).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_VOLTAGE_INDEX)).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
+                            String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_ENERGY_INDEX)).c_str());
             }
-            return true;
-
-        });
-
-    #endif // PZEM004T_SUPPORT
+            DEBUG_MSG_P(PSTR("+OK\n"));
+        }
+    });
+    #endif
 }
 
-#endif // TERMINAL_SUPPORT
+#endif
 
 void _sensorTick() {
     for (unsigned char i=0; i<_sensors.size(); i++) {

@@ -355,12 +355,12 @@ void i2cCommands() {
 
     terminalRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
         i2cScan();
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
     terminalRegisterCommand(F("I2C.CLEAR"), [](Embedis* e) {
         i2cClearBus();
-        return true;
+        DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
 }
