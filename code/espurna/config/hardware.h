@@ -3336,6 +3336,7 @@
     #define PMSX003_SUPPORT       1
     #define SENSEAIR_SUPPORT      1
     #define VL53L1X_SUPPORT       1
+    #define MAX6675_SUPPORT       1
 
     // A bit of lights - pin 5
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
@@ -3370,6 +3371,14 @@
     // MICS-2710 & MICS-5525 test
     #define MICS2710_SUPPORT    1
     #define MICS5525_SUPPORT    1
+
+   // MAX6675  14 11 10
+   #ifndef MAX6675_SUPPORT
+   #define MAX6675_SUPPORT 1
+   #endif
+   #define MAX6675_CS_PIN 	14
+   #define MAX6675_SO_PIN	11
+   #define MAX6675_SCK_PIN	10
 
 #elif defined(TRAVIS02)
 
