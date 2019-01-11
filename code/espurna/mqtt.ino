@@ -350,10 +350,10 @@ void _mqttWebSocketOnSend(JsonObject& root) {
 
 void _mqttInitCommands() {
 
-    settingsRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
         _mqttConfigure();
         mqttDisconnect();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }

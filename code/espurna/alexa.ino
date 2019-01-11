@@ -46,8 +46,11 @@ bool _alexaRequestCallback(AsyncWebServerRequest *request) {
 }
 
 #if BROKER_SUPPORT
-void _alexaBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+void _alexaBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
     
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+
     unsigned char value = atoi(payload);
 
     if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {

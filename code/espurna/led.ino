@@ -74,10 +74,15 @@ void _ledWebSocketOnSend(JsonObject& root) {
 #endif
 
 #if BROKER_SUPPORT
-void _ledBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+void _ledBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+    
     if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
         ledUpdate(true);
     }
+
 }
 #endif // BROKER_SUPPORT
 

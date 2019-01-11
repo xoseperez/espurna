@@ -881,6 +881,10 @@
 #define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
 #endif
 
+#ifndef LIGHT_COMMS_DELAY
+#define LIGHT_COMMS_DELAY       100         // Delay communication after light update (in ms)
+#endif
+
 #ifndef LIGHT_SAVE_DELAY
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #endif

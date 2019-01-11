@@ -108,7 +108,7 @@ void _ntpLoop() {
         static unsigned char last_minute = 60;
         if (ntpSynced() && (minute() != last_minute)) {
             last_minute = minute();
-            brokerPublish(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            brokerPublish(BROKER_MSG_TYPE_DATETIME, MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
         }
     #endif
 

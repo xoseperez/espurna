@@ -128,12 +128,16 @@ void debugWebSetup() {
     });
 
     wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
-        if (strcmp(action, "dbgcmd") == 0) {
-            const char* command = data.get<const char*>("command");
-            char buffer[strlen(command) + 2];
-            snprintf(buffer, sizeof(buffer), "%s\n", command);
-            settingsInject((void*) buffer, strlen(buffer));
-        }
+
+        #if TERMINAL_SUPPORT
+            if (strcmp(action, "dbgcmd") == 0) {
+                const char* command = data.get<const char*>("command");
+                char buffer[strlen(command) + 2];
+                snprintf(buffer, sizeof(buffer), "%s\n", command);
+                terminalInject((void*) buffer, strlen(buffer));
+            }
+        #endif
+        
     });
 
     #if DEBUG_UDP_SUPPORT

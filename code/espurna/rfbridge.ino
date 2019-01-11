@@ -555,6 +555,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
 
 void _rfbAPISetup() {
 
+    #if not RF_SUPPORT
     apiRegister(MQTT_TOPIC_RFOUT,
         [](char * buffer, size_t len) {
             snprintf_P(buffer, len, PSTR("OK"));
@@ -563,6 +564,7 @@ void _rfbAPISetup() {
             _rfbParseCode((char *) payload);
         }
     );
+    #endif // RF_SUPPORT
 
     apiRegister(MQTT_TOPIC_RFLEARN,
         [](char * buffer, size_t len) {
@@ -604,10 +606,10 @@ void _rfbAPISetup() {
 
 void _rfbInitCommands() {
 
-    settingsRegisterCommand(F("LEARN"), [](Embedis* e) {
+    terminalRegisterCommand(F("LEARN"), [](Embedis* e) {
 
         if (e->argc < 3) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         
@@ -621,14 +623,14 @@ void _rfbInitCommands() {
 
         rfbLearn(id, status == 1);
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
 
     });
 
-    settingsRegisterCommand(F("FORGET"), [](Embedis* e) {
+    terminalRegisterCommand(F("FORGET"), [](Embedis* e) {
 
         if (e->argc < 3) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         
@@ -642,7 +644,7 @@ void _rfbInitCommands() {
 
         rfbForget(id, status == 1);
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
 
     });
 
