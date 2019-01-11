@@ -113,7 +113,9 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     }
 
     // Inject command
-    settingsInject(data, len);
+    #if TERMINAL_SUPPORT
+        terminalInject(data, len);
+    #endif
 
 }
 

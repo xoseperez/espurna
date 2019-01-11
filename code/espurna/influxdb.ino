@@ -38,6 +38,17 @@ void _idbConfigure() {
     }
 }
 
+#if BROKER_SUPPORT
+void _idbBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+    
+    // Only process status & senssor messages
+    if ((BROKER_MSG_TYPE_STATUS == type) || (BROKER_MSG_TYPE_SENSOR == type)) {
+        idbSend(topic, id, (char *) payload);
+    }
+
+}
+#endif // BROKER_SUPPORT
+
 // -----------------------------------------------------------------------------
 
 bool idbSend(const char * topic, const char * payload) {
@@ -106,6 +117,10 @@ void idbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_idbWebSocketOnSend);
         wsOnReceiveRegister(_idbWebSocketOnReceive);
+    #endif
+
+    #if BROKER_SUPPORT
+        brokerRegister(_idbBrokerCallback);
     #endif
 
     // Main callbacks

@@ -164,7 +164,7 @@ void _relayProcess(bool mode) {
         // Only process the relays we have to change
         if (target == _relays[id].current_status) continue;
 
-        // Only process the relays we have change to the requested mode
+        // Only process the relays we have to change to the requested mode
         if (target != mode) continue;
 
         // Only process if the change_time has arrived
@@ -177,7 +177,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_RELAY, id, target ? "1" : "0");
         #endif
 
         // Send MQTT
@@ -200,24 +200,6 @@ void _relayProcess(bool mode) {
             #endif
 
         }
-
-        #if DOMOTICZ_SUPPORT
-            domoticzSendRelay(id);
-        #endif
-
-        #if INFLUXDB_SUPPORT
-            relayInfluxDB(id);
-        #endif
-
-        #if THINGSPEAK_SUPPORT
-            tspkEnqueueRelay(id, target);
-            tspkFlush();
-        #endif
-
-        // Flag relay-based LEDs to update status
-        #if LED_SUPPORT
-            ledUpdate(true);
-        #endif
 
         _relays[id].report = false;
         _relays[id].group_report = false;
@@ -994,20 +976,6 @@ void relaySetupMQTT() {
 #endif
 
 //------------------------------------------------------------------------------
-// InfluxDB
-//------------------------------------------------------------------------------
-
-#if INFLUXDB_SUPPORT
-
-void relayInfluxDB(unsigned char id) {
-    if (id >= _relays.size()) return;
-    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
-}
-
-#endif
-
-
-//------------------------------------------------------------------------------
 // Settings
 //------------------------------------------------------------------------------
 
@@ -1015,9 +983,9 @@ void relayInfluxDB(unsigned char id) {
 
 void _relayInitCommands() {
 
-    settingsRegisterCommand(F("RELAY"), [](Embedis* e) {
+    terminalRegisterCommand(F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         int id = String(e->argv[1]).toInt();
@@ -1040,7 +1008,7 @@ void _relayInitCommands() {
             DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
 
         }
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }

@@ -152,9 +152,6 @@ void _rfbLearn() {
 
 }
 
-
-#if not RF_SUPPORT
-
 /*
  From an hexa char array ("A220EE...") to a byte array (half the size)
  */
@@ -169,6 +166,8 @@ static int _rfbToArray(const char * in, byte * out, int length = RF_MESSAGE_SIZE
     }
     return n;
 }
+
+#if not RF_SUPPORT
 
 void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
     for (unsigned char j=0; j<n; j++) {
@@ -453,7 +452,50 @@ bool _rfbSameOnOff(unsigned char id) {
     return _rfbCompare(rfbRetrieve(id, true).c_str(), rfbRetrieve(id, false).c_str());
 }
 
+void _rfbParseCode(char * code) {
+
+    // The payload may be a code in HEX format ([0-9A-Z]{18}) or
+    // the code comma the number of times to transmit it.
+    char * tok = strtok(code, ",");
+
+    // Check if a switch is linked to that message
+    unsigned char id;
+    unsigned char status = 0;
+    if (_rfbMatch(tok, id, status)) {
+        if (status == 2) {
+            relayToggle(id);
+        } else {
+            relayStatus(id, status == 1);
+        }
+        return;
+    }
+
+    #if RF_RAW_SUPPORT
+
+        byte message[RF_MAX_MESSAGE_SIZE];
+        int len = _rfbToArray(tok, message, 0);
+        if ((len > 0) && (isRFRaw || len != RF_MESSAGE_SIZE)) {
+            _rfbSendRawOnce(message, len);
+        } else {
+            tok = strtok(NULL, ",");
+            byte times = (tok != NULL) ? atoi(tok) : 1;
+            _rfbSend(message, times);
+        }
+
+    #else // RF_RAW_SUPPORT
+
+        byte message[RF_MESSAGE_SIZE];
+        if (_rfbToArray(tok, message)) {
+            tok = strtok(NULL, ",");
+            byte times = (tok != NULL) ? atoi(tok) : 1;
+            _rfbSend(message, times);
+        }
+
+    #endif // RF_RAW_SUPPORT    
+}
+
 #if MQTT_SUPPORT
+
 void _rfbMqttCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
@@ -498,64 +540,76 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
         #endif
 
         #if not RF_SUPPORT
-        if (isRFOut || isRFRaw) {
-
-            // The payload may be a code in HEX format ([0-9A-Z]{18}) or
-            // the code comma the number of times to transmit it.
-            char * tok = strtok((char *) payload, ",");
-
-            // Check if a switch is linked to that message
-            unsigned char id;
-            unsigned char status = 0;
-            if (_rfbMatch(tok, id, status)) {
-                if (status == 2) {
-                    relayToggle(id);
-                } else {
-                    relayStatus(id, status == 1);
-                }
-                return;
+            if (isRFOut || isRFRaw) {
+                _rfbParseCode((char *) payload);
             }
-
-            #if RF_RAW_SUPPORT
-
-                byte message[RF_MAX_MESSAGE_SIZE];
-                int len = _rfbToArray(tok, message, 0);
-                if ((len > 0) && (isRFRaw || len != RF_MESSAGE_SIZE)) {
-                    _rfbSendRawOnce(message, len);
-                } else {
-                    tok = strtok(NULL, ",");
-                    byte times = (tok != NULL) ? atoi(tok) : 1;
-                    _rfbSend(message, times);
-                }
-
-            #else // RF_RAW_SUPPORT
-
-                byte message[RF_MESSAGE_SIZE];
-                if (_rfbToArray(tok, message)) {
-                    tok = strtok(NULL, ",");
-                    byte times = (tok != NULL) ? atoi(tok) : 1;
-                    _rfbSend(message, times);
-                }
-
-            #endif // RF_RAW_SUPPORT
-
-        }
-
         #endif // not RF_SUPPORT
 
     }
 
 }
-#endif
+
+#endif // MQTT_SUPPORT
+
+#if API_SUPPORT
+
+void _rfbAPISetup() {
+
+    #if not RF_SUPPORT
+    apiRegister(MQTT_TOPIC_RFOUT,
+        [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("OK"));
+        },
+        [](const char * payload) {
+            _rfbParseCode((char *) payload);
+        }
+    );
+    #endif // RF_SUPPORT
+
+    apiRegister(MQTT_TOPIC_RFLEARN,
+        [](char * buffer, size_t len) {
+            snprintf_P(buffer, len, PSTR("OK"));
+        },
+        [](const char * payload) {
+            // The payload must be the relayID plus the mode (0 or 1)
+            char * tok = strtok((char *) payload, ",");
+            if (NULL == tok) return;
+            if (!isNumber(tok)) return;
+            _learnId = atoi(tok);
+            if (_learnId >= relayCount()) {
+                DEBUG_MSG_P(PSTR("[RF] Wrong learnID (%d)\n"), _learnId);
+                return;
+            }
+            tok = strtok(NULL, ",");
+            if (NULL == tok) return;
+            _learnStatus = (char) tok[0] != '0';
+            _rfbLearn();
+        }
+    );
+
+    #if RF_RAW_SUPPORT
+        apiRegister(MQTT_TOPIC_RFRAW,
+            [](char * buffer, size_t len) {
+                snprintf_P(buffer, len, PSTR("OK"));
+            },
+            [](const char * payload) {
+                _rfbParseCode(payload);
+            }
+        );
+    #endif // RF_RAW_SUPPORT
+
+}
+
+#endif // API_SUPPORT
 
 #if TERMINAL_SUPPORT
 
 void _rfbInitCommands() {
 
-    settingsRegisterCommand(F("LEARN"), [](Embedis* e) {
+    terminalRegisterCommand(F("LEARN"), [](Embedis* e) {
 
         if (e->argc < 3) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         
@@ -569,14 +623,14 @@ void _rfbInitCommands() {
 
         rfbLearn(id, status == 1);
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
 
     });
 
-    settingsRegisterCommand(F("FORGET"), [](Embedis* e) {
+    terminalRegisterCommand(F("FORGET"), [](Embedis* e) {
 
         if (e->argc < 3) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         
@@ -590,7 +644,7 @@ void _rfbInitCommands() {
 
         rfbForget(id, status == 1);
 
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
 
     });
 
@@ -691,6 +745,10 @@ void rfbSetup() {
 
     #if MQTT_SUPPORT
         mqttRegister(_rfbMqttCallback);
+    #endif
+
+    #if API_SUPPORT
+        _rfbAPISetup();
     #endif
 
     #if WEB_SUPPORT

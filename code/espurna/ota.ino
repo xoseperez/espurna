@@ -28,7 +28,7 @@ void _otaLoop() {
 // Terminal OTA
 // -----------------------------------------------------------------------------
 
-#if TERMINAL_SUPPORT
+#if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
 #include <ESPAsyncTCP.h>
 AsyncClient * _ota_client;
@@ -118,6 +118,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
         _ota_size += len;
         DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
 
+        delay(0);
 
     }, NULL);
 
@@ -185,13 +186,18 @@ void _otaFrom(String url) {
 
 }
 
+#endif // TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
+
+
+#if TERMINAL_SUPPORT
+
 void _otaInitCommands() {
 
-    settingsRegisterCommand(F("OTA"), [](Embedis* e) {
+    terminalRegisterCommand(F("OTA"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         } else {
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
             String url = String(e->argv[1]);
             _otaFrom(url);
         }

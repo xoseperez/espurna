@@ -35,6 +35,25 @@ unsigned char _tspk_tries = 0;
 
 // -----------------------------------------------------------------------------
 
+#if BROKER_SUPPORT
+void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Process status messages
+    if (BROKER_MSG_TYPE_STATUS == type) {
+        tspkEnqueueRelay(id, (char *) payload);
+        tspkFlush();
+    }
+
+    // Porcess sensor messages
+    if (BROKER_MSG_TYPE_SENSOR == type) {
+        //tspkEnqueueMeasurement(id, (char *) payload);
+        //tspkFlush();
+    }
+
+}
+#endif // BROKER_SUPPORT
+
+
 #if WEB_SUPPORT
 
 bool _tspkWebSocketOnReceive(const char * key, JsonVariant& value) {
@@ -259,12 +278,10 @@ void _tspkFlush() {
 
 // -----------------------------------------------------------------------------
 
-bool tspkEnqueueRelay(unsigned char index, unsigned char status) {
+bool tspkEnqueueRelay(unsigned char index, char * payload) {
     if (!_tspk_enabled) return true;
     unsigned char id = getSetting("tspkRelay", index, 0).toInt();
     if (id > 0) {
-        char payload[3] = {0};
-        itoa(status ? 1 : 0, payload, 10);
         _tspkEnqueue(id, payload);
         return true;
     }
@@ -296,6 +313,10 @@ void tspkSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_tspkWebSocketOnSend);
         wsOnReceiveRegister(_tspkWebSocketOnReceive);
+    #endif
+
+    #if BROKER_SUPPORT
+        brokerRegister(_tspkBrokerCallback);
     #endif
 
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Async %s, SSL %s\n"),
