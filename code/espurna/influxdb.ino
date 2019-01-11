@@ -39,10 +39,13 @@ void _idbConfigure() {
 }
 
 #if BROKER_SUPPORT
-void _idbBrokerCallback(const char * topic, unsigned char id, const char * payload) {
-    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+void _idbBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+    
+    // Only process status & senssor messages
+    if ((BROKER_MSG_TYPE_STATUS == type) || (BROKER_MSG_TYPE_SENSOR == type)) {
         idbSend(topic, id, (char *) payload);
     }
+
 }
 #endif // BROKER_SUPPORT
 

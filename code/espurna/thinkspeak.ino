@@ -36,11 +36,20 @@ unsigned char _tspk_tries = 0;
 // -----------------------------------------------------------------------------
 
 #if BROKER_SUPPORT
-void _tspkBrokerCallback(const char * topic, unsigned char id, const char * payload) {
-    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Process status messages
+    if (BROKER_MSG_TYPE_STATUS == type) {
         tspkEnqueueRelay(id, (char *) payload);
         tspkFlush();
     }
+
+    // Porcess sensor messages
+    if (BROKER_MSG_TYPE_SENSOR == type) {
+        //tspkEnqueueMeasurement(id, (char *) payload);
+        //tspkFlush();
+    }
+
 }
 #endif // BROKER_SUPPORT
 

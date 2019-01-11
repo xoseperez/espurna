@@ -25,6 +25,7 @@ extern "C" {
 
 // -----------------------------------------------------------------------------
 
+Ticker _light_comms_ticker;
 Ticker _light_save_ticker;
 Ticker _light_transition_ticker;
 
@@ -640,7 +641,7 @@ void lightBroker() {
     char buffer[10];
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         itoa(_light_channel[i].inputValue, buffer, 10);
-        brokerPublish(MQTT_TOPIC_CHANNEL, i, buffer);
+        brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_CHANNEL, i, buffer);
     }
 }
 
@@ -658,6 +659,26 @@ bool lightHasColor() {
     return _light_has_color;
 }
 
+void _lightComms(unsigned char mask) {
+
+    // Report color & brightness to MQTT broker
+    #if MQTT_SUPPORT
+        if (mask & 0x01) lightMQTT();
+        if (mask & 0x02) lightMQTTGroup();
+    #endif
+
+    // Report color to WS clients (using current brightness setting)
+    #if WEB_SUPPORT
+        wsSend(_lightWebSocketOnSend);
+    #endif
+
+    // Report channels to local broker
+    #if BROKER_SUPPORT
+        lightBroker();
+    #endif
+
+}
+
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
     _generateBrightness();
@@ -672,21 +693,11 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     _light_steps_left = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
     _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
 
-    // Report channels to local broker
-    #if BROKER_SUPPORT
-        lightBroker();
-    #endif
-
-    // Report color & brightness to MQTT broker
-    #if MQTT_SUPPORT
-        if (forward) lightMQTT();
-        if (group_forward) lightMQTTGroup();
-    #endif
-
-    // Report color to WS clients (using current brightness setting)
-    #if WEB_SUPPORT
-        wsSend(_lightWebSocketOnSend);
-    #endif
+    // Delay every communication 100ms to avoid jamming
+    unsigned char mask = 0;
+    if (forward) mask += 1;
+    if (group_forward) mask += 2;
+    _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
 
     #if LIGHT_SAVE_ENABLED
         // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
@@ -972,18 +983,18 @@ void _lightAPISetup() {
 
 void _lightInitCommands() {
 
-    settingsRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
+    terminalRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
         if (e->argc > 1) {
             lightBrightness(String(e->argv[1]).toInt());
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("CHANNEL"), [](Embedis* e) {
+    terminalRegisterCommand(F("CHANNEL"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         }
         int id = String(e->argv[1]).toInt();
         if (e->argc > 2) {
@@ -992,37 +1003,37 @@ void _lightInitCommands() {
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("COLOR"), [](Embedis* e) {
+    terminalRegisterCommand(F("COLOR"), [](Embedis* e) {
         if (e->argc > 1) {
             String color = String(e->argv[1]);
             lightColor(color.c_str());
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("KELVIN"), [](Embedis* e) {
+    terminalRegisterCommand(F("KELVIN"), [](Embedis* e) {
         if (e->argc > 1) {
             String color = String("K") + String(e->argv[1]);
             lightColor(color.c_str());
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("MIRED"), [](Embedis* e) {
+    terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
         if (e->argc > 1) {
             String color = String("M") + String(e->argv[1]);
             lightColor(color.c_str());
             lightUpdate(true, true);
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }

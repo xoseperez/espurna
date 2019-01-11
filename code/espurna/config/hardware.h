@@ -112,7 +112,7 @@
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_MINI_RELAYSHIELD"
 
-        // Buttons
+    // Buttons
     // No buttons on the D1 MINI alone, but defining it without adding a button doen't create problems
     #define BUTTON1_PIN         0   // Connect a pushbutton between D3 and GND,
                                     // it's the same as using a Wemos one button shield
