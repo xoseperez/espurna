@@ -82,8 +82,6 @@ unsigned long systemLoadAverage() {
 }
 
 void _systemSetupHeartbeat() {
-    if (getSetting("hbMode").length() == 0)  setSetting("hbMode", HEARTBEAT_MODE);
-    if (getSetting("hbInterval").length() == 0)  setSetting("hbInterval", HEARTBEAT_INTERVAL);
     _heartbeat_mode = getSetting("hbMode", HEARTBEAT_MODE).toInt();
     _heartbeat_interval = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
 }
@@ -116,9 +114,9 @@ void systemLoop() {
     } else if (_heartbeat_mode == HEARTBEAT_REPEAT || _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
         static unsigned long last_hbeat = 0;
         #if NTP_SUPPORT
-            if ((_system_send_heartbeat && ntpSynced()) || (millis() - last_hbeat > _heartbeat_interval)) {
+            if ((_system_send_heartbeat && ntpSynced()) || (millis() - last_hbeat > _heartbeat_interval * 1000)) {
         #else
-            if (_system_send_heartbeat || (millis() - last_hbeat > _heartbeat_interval)) {
+            if (_system_send_heartbeat || (millis() - last_hbeat > _heartbeat_interval * 1000)) {
         #endif
             last_hbeat = millis();
             heartbeat();

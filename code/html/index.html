@@ -621,30 +621,27 @@
                                 </div>
 
                                 <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat mode</label>
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
                                     <select class="pure-u-1 pure-u-lg-1-4" name="hbMode" tabindex="15" >
-                                        <option value="0">HEARTBEAT_NONE</option>
-                                        <option value="1">HEARTBEAT_ONCE</option>
-                                        <option value="2">HEARTBEAT_REPEAT</option>
-                                        <option value="3">HEARTBEAT_REPEAT_STATUS</option>
+                                        <option value="0">Disabled</option>
+                                        <option value="1">On device startup</option>
+                                        <option value="2">Repeat after defined interval</option>
+                                        <option value="3">Repeat only device status</option>
                                     </select>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        <strong>HEARTBEAT_NONE:</strong> no heartbeat at all, never.<br />
-                                        <strong>HEARTBEAT_ONCE:</strong> only on device startup.<br />
-                                        <strong>HEARTBEAT_REPEAT:</strong> on device startup and after HEARTBEAT_INTERVAL.<br />
-                                        <strong>HEARTBEAT_REPEAT_STATUS:</strong> on device startup full heartbeat information and after HEARTBEAT_INTERVAL only STATUS report.
+                                        Define when heartbeat message will be sent.
                                     </div>
                                 </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
-                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="text" tabindex="16" />
+                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" tabindex="16" />
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        This is the interval in <strong>ms</strong> how often to send the heartbeat message.
+                                        This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
                                     </div>
                                 </div>
 
