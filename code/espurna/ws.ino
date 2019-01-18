@@ -350,6 +350,8 @@ void _wsOnStart(JsonObject& root) {
         #if TERMINAL_SUPPORT
             root["cmdVisible"] = 1;
         #endif
+        root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
+        root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
 
     }
 

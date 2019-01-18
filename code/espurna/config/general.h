@@ -169,6 +169,7 @@
 #define HEARTBEAT_NONE              0           // Never send heartbeat
 #define HEARTBEAT_ONCE              1           // Send it only once upon MQTT connection
 #define HEARTBEAT_REPEAT            2           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL
+#define HEARTBEAT_REPEAT_STATUS     3           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL only STATUS report
 
 // Backwards compatibility check
 #if defined(HEARTBEAT_ENABLED) && (HEARTBEAT_ENABLED == 0)
@@ -180,7 +181,7 @@
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          300000      // Interval between heartbeat messages (in ms)
+#define HEARTBEAT_INTERVAL          300         // Interval between heartbeat messages (in sec)
 #endif
 
 #define UPTIME_OVERFLOW             4294967295  // Uptime overflow value

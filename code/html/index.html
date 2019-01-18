@@ -621,6 +621,31 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
+                                    <select class="pure-u-1 pure-u-lg-1-4" name="hbMode" tabindex="15" >
+                                        <option value="0">Disabled</option>
+                                        <option value="1">On device startup</option>
+                                        <option value="2">Repeat after defined interval</option>
+                                        <option value="3">Repeat only device status</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Define when heartbeat message will be sent.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
+                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" tabindex="16" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
                                     <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
@@ -629,7 +654,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
-                                    <input name="upgrade" type="file" tabindex="16" />
+                                    <input name="upgrade" type="file" tabindex="17" />
                                 </div>
 
                             </fieldset>
