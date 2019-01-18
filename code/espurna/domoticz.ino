@@ -70,6 +70,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
             String stype = root["stype"];
             if (
                 (stype.equals("RGB") || stype.equals("RGBW") || stype.equals("RGBWW"))
+                && domoticzIdx(0) == idx
             ) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
                 if (lightHasColor()) {
