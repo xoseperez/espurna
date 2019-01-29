@@ -92,10 +92,11 @@ void _rfbWebSocketSendCodes() {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
-    root["size"] = relayCount();
+    JsonObject& rfb = root.createObject("rfb");
+    rfb["size"] = relayCount();
 
-    JsonArray& on = root.createNestedArray("on");
-    JsonArray& off = root.createNestedArray("off");
+    JsonArray& on = rfb.createNestedArray("on");
+    JsonArray& off = rfb.createNestedArray("off");
 
     for (byte id=0; id<relayCount(); id++) {
         on.add(rfbRetrieve(id, true));

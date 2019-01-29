@@ -1218,8 +1218,8 @@ function processData(data) {
             var rfb = data.rfb;
             var size = data.size;
 
-            var on = rfb[0];
-            var off = rfb[1];
+            var on = rfb["on"];
+            var off = rfb["off"];
 
             for (var i=0; i<size; ++i) {
                 $("input[name='rfbcode'][data-id='" + i + "'][data-status='1']").val(on[i]);
