@@ -75,15 +75,8 @@ void _tspkWebSocketOnSend(JsonObject& root) {
     if (relayCount() > 0) visible = 1;
 
     #if SENSOR_SUPPORT
-        JsonArray& list = root.createNestedArray("tspkMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
-            JsonObject& element = list.createNestedObject();
-            element["name"] = magnitudeName(i);
-            element["type"] = magnitudeType(i);
-            element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("tspkMagnitude", i, 0).toInt();
-        }
-        if (magnitudeCount() > 0) visible = 1;
+        _sensorWebSocketMagnitudes(root, "tspk");
+        visible = visible || (magnitudeCount() > 0);
     #endif
 
     root["tspkVisible"] = visible;

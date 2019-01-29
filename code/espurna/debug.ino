@@ -8,6 +8,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_SUPPORT
 
+constexpr const uint8_t TIMESTAMP_LENGTH = 10;
+
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
@@ -18,20 +20,30 @@ char _udp_syslog_header[40] = {0};
 
 void _debugSend(char * message) {
 
+    size_t msg_len = strlen(message);
     bool pause = false;
 
     #if DEBUG_ADD_TIMESTAMP
         static bool add_timestamp = true;
-        char timestamp[10] = {0};
-        if (add_timestamp) snprintf_P(timestamp, sizeof(timestamp), PSTR("[%06lu] "), millis() % 1000000);
-        add_timestamp = (message[strlen(message)-1] == 10) || (message[strlen(message)-1] == 13);
+
+        size_t offset = 0;
+        char buffer[TIMESTAMP_LENGTH + msg_len];
+
+        if (add_timestamp) {
+            snprintf_P(buffer, TIMESTAMP_LENGTH, PSTR("[%06lu] "), millis() % 1000000);
+            offset = TIMESTAMP_LENGTH - 1;
+        }
+
+        memcpy(buffer + offset, message, msg_len);
+        buffer[msg_len + offset] = '\0';
+
+        add_timestamp = (message[msg_len - 1] == 10) || (message[msg_len - 1] == 13);
+    #else
+        char* buffer = message;
     #endif
 
     #if DEBUG_SERIAL_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            DEBUG_PORT.printf(timestamp);
-        #endif
-        DEBUG_PORT.printf(message);
+        DEBUG_PORT.print(buffer);
     #endif
 
     #if DEBUG_UDP_SUPPORT
@@ -51,31 +63,12 @@ void _debugSend(char * message) {
     #endif
 
     #if DEBUG_TELNET_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            _telnetWrite(timestamp, strlen(timestamp));
-        #endif
-        _telnetWrite(message, strlen(message));
+        _telnetWrite(buffer, strlen(buffer));
         pause = true;
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        if (wsConnected() && (getFreeHeap() > 10000)) {
-            DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(1) + strlen(message) + 17);
-            JsonObject &root = jsonBuffer.createObject();
-            #if DEBUG_ADD_TIMESTAMP
-                char buffer[strlen(timestamp) + strlen(message) + 1];
-                snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
-                root.set("weblog", buffer);
-            #else
-                root.set("weblog", message);
-            #endif
-            String out;
-            root.printTo(out);
-            jsonBuffer.clear();
-
-            wsSend(out.c_str());
-            pause = true;
-        }
+        wsDebugSend(buffer);
     #endif
 
     if (pause) optimistic_yield(100);

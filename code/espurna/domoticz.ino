@@ -171,7 +171,7 @@ bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
 
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
-    root["dczVisible"] = 1;
+    unsigned char visible = 0;
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
@@ -180,17 +180,14 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
+    visible = (relayCount() > 0);
 
     #if SENSOR_SUPPORT
-        JsonArray& list = root.createNestedArray("dczMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
-            JsonObject& element = list.createNestedObject();
-            element["name"] = magnitudeName(i);
-            element["type"] = magnitudeType(i);
-            element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
-        }
+        _sensorWebSocketMagnitudes(root, "dcz");
+        visible = visible || (magnitudeCount() > 0);
     #endif
+
+    root["dczVisible"] = visible;
 
 }
 
