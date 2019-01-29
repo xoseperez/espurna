@@ -1217,11 +1217,12 @@ function processData(data) {
         if ("rfb" === key) {
             var rfb = data.rfb;
             var size = data.size;
+            var start = data.start;
 
             var on = rfb["on"];
             var off = rfb["off"];
 
-            for (var i=0; i<size; ++i) {
+            for (var i=start; i<start+size; ++i) {
                 $("input[name='rfbcode'][data-id='" + i + "'][data-status='1']").val(on[i]);
                 $("input[name='rfbcode'][data-id='" + i + "'][data-status='0']").val(off[i]);
             }

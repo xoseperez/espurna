@@ -88,22 +88,31 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 
 #if WEB_SUPPORT
 
-void _rfbWebSocketSendCodes() {
+void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
-    JsonObject& rfb = root.createObject("rfb");
-    rfb["size"] = relayCount();
+    JsonObject& rfb = root.createNestedObject("rfb");
+    rfb["size"] = size;
+    rfb["start"] = start;
 
     JsonArray& on = rfb.createNestedArray("on");
     JsonArray& off = rfb.createNestedArray("off");
 
-    for (byte id=0; id<relayCount(); id++) {
+    for (byte id=start; id<start+size; id++) {
         on.add(rfbRetrieve(id, true));
         off.add(rfbRetrieve(id, false));
     }
 
     wsSend(rfb);
+}
+
+void _rfbWebSocketSendCode(unsigned char id) {
+    _rfbWebSocketSendCodeArray(id, 1);
+}
+
+void _rfbWebSocketSendCodes() {
+    _rfbWebSocketSendCodeArray(0, relayCount());
 }
 
 void _rfbWebSocketOnSend(JsonObject& root) {
@@ -342,7 +351,7 @@ void _rfbDecode() {
 
         // Websocket update
         #if WEB_SUPPORT
-            _rfbWebSocketSendCode(_learnId, _learnStatus, buffer);
+            _rfbWebSocketSendCode(_learnId);
         #endif
 
     }
