@@ -1487,3 +1487,7 @@
 #ifndef RFM69_IS_RFM69HW
 #define RFM69_IS_RFM69HW            0
 #endif
+
+#ifndef FLOW_SUPPORT
+#define FLOW_SUPPORT                0
+#endif

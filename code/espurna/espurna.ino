@@ -189,6 +189,9 @@ void setup() {
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif
+    #if FLOW_SUPPORT
+        flowSetup();
+    #endif
 
 
     // 3rd party code hook
