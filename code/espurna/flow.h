@@ -1,17 +1,49 @@
 #pragma once
 
-#include "component.h"
+#include <vector>
 #include <map>
-
-typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
 
 enum FlowValueType {
     ANY,
     STRING,
     INT,
     DOUBLE,
-    BOOL
+    BOOL,
+    LIST
 };
+
+class FlowComponent {
+    private:
+        typedef struct {
+            FlowComponent* component;
+            int inputNumber;
+        } output_t;
+
+        std::vector<std::vector<output_t>> _outputs;
+
+    protected:
+        void processOutput(JsonVariant& data, int outputNumber) {
+            if (outputNumber < _outputs.size()) {
+                for (output_t output : _outputs[outputNumber])
+                    output.component->processInput(data, output.inputNumber);
+            }
+        }
+
+    public:
+        FlowComponent() {
+        }
+
+        void addOutput(int outputNumber, FlowComponent* component, int inputNumber) {
+            if (outputNumber >= _outputs.size())
+                _outputs.resize(outputNumber + 1);
+            _outputs[outputNumber].push_back({component, inputNumber});
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+        }
+};
+
+typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
 
 class FlowComponentType {
     private:
@@ -26,6 +58,7 @@ class FlowComponentType {
         std::vector<name_type_t> _inputs;
         std::vector<name_type_t> _outputs;
         std::vector<name_type_t> _properties;
+        std::map<String, std::vector<String>*> _list_values;
 
         void vectorToJSON(AsyncResponseStream *response, std::vector<name_type_t> &v, const char* name) {
             response->printf("\"%s\": [", name);
@@ -33,15 +66,28 @@ class FlowComponentType {
                 for (unsigned int i=0; i < v.size(); i++) {
                     if (i > 0)
                         response->print(",");
+                    FlowValueType type = v[i].type;
                     const char *typeName = "unknown";
-                    switch(v[i].type) {
+                    switch(type) {
                         case ANY: typeName = "any"; break;
                         case STRING: typeName = "string"; break;
                         case INT: typeName = "int"; break;
                         case DOUBLE: typeName = "double"; break;
                         case BOOL: typeName = "bool"; break;
+                        case LIST: typeName = "list"; break;
                     }
-                    response->printf("\n\t\t\t{\"name\": \"%s\", \"type\": \"%s\"}", v[i].name.c_str(), typeName);
+                    response->printf("\n\t\t\t{\"name\": \"%s\", \"type\": \"%s\"", v[i].name.c_str(), typeName);
+                    if (type == LIST) {
+                        std::vector<String>* values = _list_values[v[i].name];
+                        response->print(", \"values\": [");
+                        for (unsigned int j=0; j < values->size(); j++) {
+                            if (j > 0)
+                                response->print(", ");
+                            response->printf("\"%s\"", values->at(j).c_str());
+                        }
+                        response->print("]");
+                    }
+                    response->print("}");
                 }
             }
             response->print("]");
@@ -70,6 +116,12 @@ class FlowComponentType {
 
         FlowComponentType* addProperty(String name, FlowValueType type) {
             _properties.push_back({name, type});
+            return this;
+        }
+
+        FlowComponentType* addProperty(String name, std::vector<String>* values) {
+            _properties.push_back({name, LIST});
+            _list_values[name] = values;
             return this;
         }
 

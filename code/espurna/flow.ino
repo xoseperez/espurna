@@ -11,18 +11,17 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <map>
 
-#include "flow/library.h"
-#include "flow/generic.h"
-
-#if MQTT_SUPPORT
-    #include "flow/mqtt.h"
-#endif
+#include "flow.h"
 
 // -----------------------------------------------------------------------------
 // FLOW
 // -----------------------------------------------------------------------------
 
 FlowComponentLibrary _library;
+
+FlowComponentType* flowRegisterComponent(String name, String icon, flow_component_factory_f factory) {
+    return _library.addType(name, icon, factory);
+}
 
 char* flowLoadData() {
     File file = SPIFFS.open("/flow.json", "r"); // TODO: file name to constant
@@ -72,7 +71,7 @@ void flowStart() {
 
             DynamicJsonBuffer jsonBuffer;
             JsonObject& root = jsonBuffer.parseObject((char *) nbuf);
-            if (root.success()) flowStart(root);
+            if (root.success()) _flowStart(root);
             else DEBUG_MSG("[FLOW] Error: Flow cannot be parsed as correct JSON\n");
 
             free(nbuf);
@@ -83,7 +82,7 @@ void flowStart() {
     }
 }
 
-void flowStart(JsonObject& data) {
+void _flowStart(JsonObject& data) {
     std::map<String, FlowComponentType*> componentTypes;
     std::map<String, FlowComponent*> components;
 
@@ -147,13 +146,41 @@ void flowStart(JsonObject& data) {
     }
 }
 
+class FlowDebugComponent : public FlowComponent {
+    private:
+        String _prefix;
+    public:
+        FlowDebugComponent(JsonObject& properties) {
+            const char * prefix = properties["Prefix"];
+            _prefix = String(prefix != NULL ? prefix : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (data.is<int>()) {
+                DEBUG_MSG_P("[FLOW DEBUG] %s%i\n", _prefix.c_str(), data.as<int>());
+            } else {
+                DEBUG_MSG_P("[FLOW DEBUG] %s%s\n", _prefix.c_str(), data.as<const char*>());
+            }
+        }
+};
+
+class FlowPauseComponent : public FlowComponent {
+    public:
+        FlowPauseComponent(JsonObject& properties) {
+        }
+};
+
 void flowSetup() {
-    flowRegisterGeneric(_library);
+   flowRegisterComponent("Debug", "eye", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }))
+        ->addInput("Data", ANY)
+        ->addProperty("Prefix", STRING)
+        ;
 
-    #if MQTT_SUPPORT
-        flowRegisterMqtt(_library);
-    #endif
-
-    flowStart();
+   flowRegisterComponent("Delay", "pause", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowPauseComponent(properties); }))
+        ->addInput("Payload", ANY)
+        ->addOutput("Payload", ANY)
+        ->addProperty("Time", INT)
+        ;
 }
+
 #endif // FLOW_SUPPORT

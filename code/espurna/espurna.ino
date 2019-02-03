@@ -22,6 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 #include <vector>
 
+#if FLOW_SUPPORT
+#include "flow.h"
+#endif
+
 std::vector<void (*)()> _loop_callbacks;
 std::vector<void (*)()> _reload_callbacks;
 
@@ -114,6 +118,11 @@ void setup() {
         apiSetup();
     #endif
 
+    #if FLOW_SUPPORT
+        // register default flow components first
+        flowSetup();
+    #endif
+
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
@@ -190,7 +199,7 @@ void setup() {
         uartmqttSetup();
     #endif
     #if FLOW_SUPPORT
-        flowSetup();
+        flowStart();
     #endif
 
 

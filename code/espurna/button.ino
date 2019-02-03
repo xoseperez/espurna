@@ -15,10 +15,18 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <DebounceEvent.h>
 #include <vector>
 
+#if FLOW_SUPPORT
+#include "flow.h"
+class FlowButtonComponent; // forward declaration
+#endif
+
 typedef struct {
     DebounceEvent * button;
     unsigned long actions;
     unsigned int relayID;
+    #if FLOW_SUPPORT
+    std::vector<FlowButtonComponent *> flow_components;
+    #endif
 } button_t;
 
 std::vector<button_t> _buttons;
@@ -41,6 +49,27 @@ bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
 }
 
 #endif
+
+// -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+class FlowButtonComponent : public FlowComponent {
+ public:
+     FlowButtonComponent(JsonObject& properties) {
+        int button_id = properties["Button"];
+        _buttons[button_id].flow_components.push_back(this);
+     }
+
+     void buttonEvent(unsigned char event) {
+         JsonVariant data((int)event);
+         processOutput(data, 0);
+     }
+};
+
+#endif // FLOW_SUPPORT
 
 int buttonFromRelay(unsigned int relayID) {
     for (unsigned int i=0; i < _buttons.size(); i++) {
@@ -103,6 +132,12 @@ void buttonEvent(unsigned int id, unsigned char event) {
        if (action != BUTTON_MODE_NONE || BUTTON_MQTT_SEND_ALL_EVENTS) {
            buttonMQTT(id, event);
        }
+    #endif
+
+    #if FLOW_SUPPORT
+        for (FlowButtonComponent* component : _buttons[id].flow_components) {
+            component->buttonEvent(event);
+        }
     #endif
 
     if (action == BUTTON_MODE_TOGGLE) {
@@ -207,6 +242,18 @@ void buttonSetup() {
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsOnReceiveRegister(_buttonWebSocketOnReceive);
+    #endif
+
+    #if FLOW_SUPPORT
+        std::vector<String>* buttons = new std::vector<String>();
+        for (unsigned int i=0; i < _buttons.size(); i++) {
+            buttons->push_back(String(i));
+        }
+
+        flowRegisterComponent("Button", "toggle-on", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowButtonComponent(properties); }))
+            ->addOutput("Event", INT)
+            ->addProperty("Button", buttons)
+            ;
     #endif
 
     // Register loop
