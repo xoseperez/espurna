@@ -204,3 +204,16 @@ void webRequestRegister(web_request_callback_f callback);
 typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
+
+// -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+    class FlowComponent;
+    class FlowComponentType;
+    typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
+#else
+    #define FlowComponentType void
+    #define flow_component_factory_f void *
+#endif
