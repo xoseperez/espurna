@@ -23,22 +23,8 @@ FlowComponentType* flowRegisterComponent(String name, String icon, flow_componen
     return _library.addType(name, icon, factory);
 }
 
-char* flowLoadData() {
-    File file = SPIFFS.open("/flow.json", "r"); // TODO: file name to constant
-    if (file) {
-        size_t size = file.size();
-        uint8_t* nbuf = (uint8_t*) malloc(size + 1);
-        if (nbuf) {
-            size = file.read(nbuf, size);
-            file.close();
-            nbuf[size] = 0;
-            return (char*)nbuf;
-        }
-        file.close();
-    } else {
-        DEBUG_MSG("[FLOW] Error reading data\n");
-    }
-    return 0;
+String flowGetDataPath() {
+    return "/flow.json"; // TODO: file name to constant
 }
 
 bool flowSaveData(char* data) {
