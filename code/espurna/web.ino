@@ -384,18 +384,11 @@ void _onGetFlowConfig(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    AsyncResponseStream *response = request->beginResponseStream("text/json");
+    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, flowGetDataPath(), "text/json");
 
-    response->addHeader("Content-Disposition", "attachment; filename=\"flow.json\"");
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
-
-    char* data = flowLoadData();
-    if (data) {
-        response->print(data);
-        free(data);
-    }
 
     request->send(response);
 }
