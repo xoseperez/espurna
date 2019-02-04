@@ -1016,6 +1016,33 @@ void _relayInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+// -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+class FlowRelayComponent : public FlowComponent {
+    private:
+        int _relay_id;
+    public:
+        FlowRelayComponent(JsonObject& properties) {
+            _relay_id = properties["Relay"];
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) { // State
+                bool state = data.as<bool>();
+                relayStatus(_relay_id, state);
+            } else { // Toggle
+                relayToggle(_relay_id);
+            }
+        }
+
+};
+
+#endif // FLOW_SUPPORT
+
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
@@ -1077,6 +1104,19 @@ void relaySetup() {
     #if TERMINAL_SUPPORT
         _relayInitCommands();
     #endif
+    #if FLOW_SUPPORT
+        std::vector<String>* relays = new std::vector<String>();
+        for (unsigned int i=0; i < _relays.size(); i++) {
+            relays->push_back(String(i));
+        }
+
+        flowRegisterComponent("Relay", "lightbulb-o", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowRelayComponent(properties); }))
+            ->addInput("State", BOOL)
+            ->addInput("Toggle", ANY)
+            ->addProperty("Relay", relays)
+            ;
+    #endif
+
 
     // Main callbacks
     espurnaRegisterLoop(_relayLoop);
