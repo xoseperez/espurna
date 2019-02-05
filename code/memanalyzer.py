@@ -19,15 +19,16 @@ import argparse
 import os
 import re
 import shlex
+import subprocess
 import sys
 from collections import OrderedDict
-from sortedcontainers import SortedDict
-import subprocess
 
-if (sys.version_info > (3, 0)):
-    from subprocess import getstatusoutput as getstatusoutput
+from sortedcontainers import SortedDict
+
+if sys.version_info > (3, 0):
+    from subprocess import getstatusoutput
 else:
-    from commands import getstatusoutput as getstatusoutput
+    from commands import getstatusoutput
 
 # -------------------------------------------------------------------------------
 
@@ -105,10 +106,12 @@ def run(env_, modules_):
     command = "ESPURNA_BOARD=\"WEMOS_D1_MINI_RELAYSHIELD\" ESPURNA_FLAGS=\"%s\" platformio run --silent --environment %s 2>/dev/null" % (flags, env_)
     subprocess.check_call(command, shell=True)
 
+
 def calc_free(module):
     free = 80 * 1024 - module['data'] - module['rodata'] - module['bss']
     free = free + (16 - free % 16)
     module['free'] = free
+
 
 def modules_get():
     modules_ = SortedDict()
@@ -120,7 +123,8 @@ def modules_get():
     del modules_['NETBIOS']
     return modules_
 
-try:
+
+if __name__ == '__main__':
 
     # Parse command line options
     parser = argparse.ArgumentParser(description=description)
@@ -279,7 +283,5 @@ try:
                 total['size'],
         ))
 
-except:
-    raise
 
 print("\n")
