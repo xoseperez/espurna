@@ -196,7 +196,7 @@ def input_board():
     except ValueError:
         index = 0
     if index < 0 or len(devices) < index:
-        print("Board number must be between 1 and %s\n" % str(len(devices)))
+        print("Board number must be between 1 and {}\n".format(str(len(devices))))
         return None
 
     board = get_board_by_index(index)
@@ -208,7 +208,7 @@ def input_board():
         count = 1
         boards = get_boards()
         for name in boards:
-            print("%3d\t%s" % (count, name))
+            print("{:3d}\t{}".format(count, name))
             count += 1
         print()
         try:
@@ -216,7 +216,7 @@ def input_board():
         except ValueError:
             index = 0
         if index < 1 or len(boards) < index:
-            print("Board number must be between 1 and %s\n" % str(len(boards)))
+            print("Board number must be between 1 and {}\n".format(str(len(boards))))
             return None
         board['board'] = boards[index - 1]
 
@@ -240,8 +240,8 @@ def boardname(board):
 
 
 def store(device, env):
-    source = ".pioenvs/%s/firmware.elf" % env
-    destination = ".pioenvs/elfs/%s.elf" % boardname(device).lower()
+    source = ".pioenvs/{}/firmware.elf".format(env)
+    destination = ".pioenvs/elfs/{}.elf".format(boardname(device).lower())
 
     dst_dir = os.path.dirname(destination)
     if not os.path.exists(dst_dir):
@@ -298,7 +298,7 @@ if __name__ == '__main__':
     # Sort list
     field = args.sort.lower()
     if field not in devices[0]:
-        print("Unknown field '%s'\n" % field)
+        print("Unknown field '{}'\n".format(field))
         sys.exit(1)
     devices = sorted(devices, key=lambda device: device.get(field, ''))
 
@@ -340,16 +340,16 @@ if __name__ == '__main__':
             if args.core > 0:
                 board['flags'] = "-DESPURNA_CORE " + board['flags']
 
-            env = "esp8266-%dm-ota" % board['size']
+            env = "esp8266-{:d}m-ota".format(board['size'])
 
             # Summary
             print()
-            print("HOST    = %s" % boardname(board))
-            print("IP      = %s" % board['ip'])
-            print("BOARD   = %s" % board['board'])
-            print("AUTH    = %s" % board['auth'])
-            print("FLAGS   = %s" % board['flags'])
-            print("ENV     = %s" % env)
+            print("HOST    = {}".format(boardname(board)))
+            print("IP      = {}".format(board['ip']))
+            print("BOARD   = {}".format(board['board']))
+            print("AUTH    = {}".format(board['auth']))
+            print("FLAGS   = {}".format(board['flags']))
+            print("ENV     = {}".format(env))
 
             response = True
             if args.yes == 0:
