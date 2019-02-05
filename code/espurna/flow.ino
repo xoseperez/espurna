@@ -10,6 +10,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "flow.h"
 
@@ -150,11 +151,56 @@ class FlowDebugComponent : public FlowComponent {
         }
 };
 
-class FlowPauseComponent : public FlowComponent {
+class FlowDelayComponent;
+
+struct delay_queue_element_t {
+    JsonVariant *data;
+    unsigned long time;
+    FlowDelayComponent *component;
+
+    bool operator() (const delay_queue_element_t& lhs, const delay_queue_element_t& rhs) const {
+        return lhs.time < rhs.time;
+    }
+};
+
+std::set<delay_queue_element_t, delay_queue_element_t> _delay_queue;
+
+class FlowDelayComponent : public FlowComponent {
+    private:
+        long _time;
+        bool _lastOnly;
+        int _queueSize = 0;
+
     public:
-        FlowPauseComponent(JsonObject& properties) {
+        FlowDelayComponent(JsonObject& properties) {
+            _time = 1000 * (int)properties["Seconds"];
+            _lastOnly = properties["Last only"];
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            _delay_queue.insert({clone(data), millis() + _time, this});
+            _queueSize++;
+        }
+
+        void processElement(JsonVariant *data) {
+            if (!_lastOnly || _queueSize == 1)
+                processOutput(*data, 0);
+
+            _queueSize--;
+            release(data);
         }
 };
+
+void _delayComponentLoop() {
+    if (!_delay_queue.empty()) {
+        auto it = _delay_queue.begin();
+        const delay_queue_element_t element = *it;
+        if (element.time <= millis()) {
+            element.component->processElement(element.data);
+            _delay_queue.erase(it);
+        }
+    }
+}
 
 void flowSetup() {
    flowRegisterComponent("Debug", "eye", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }))
@@ -162,11 +208,16 @@ void flowSetup() {
         ->addProperty("Prefix", STRING)
         ;
 
-   flowRegisterComponent("Delay", "pause", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowPauseComponent(properties); }))
-        ->addInput("Payload", ANY)
-        ->addOutput("Payload", ANY)
-        ->addProperty("Time", INT)
+   flowRegisterComponent("Delay", "pause", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDelayComponent(properties); }))
+        ->addInput("Data", ANY)
+        ->addOutput("Data", ANY)
+        ->addProperty("Seconds", INT)
+        ->addProperty("Last only", BOOL)
         ;
+
+    // TODO: each component should have its own loop lambda function, in this case deque instead of set could be used
+    // for delay elements container
+    espurnaRegisterLoop(_delayComponentLoop);
 }
 
 #endif // FLOW_SUPPORT

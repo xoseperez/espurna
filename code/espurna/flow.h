@@ -29,6 +29,23 @@ class FlowComponent {
             }
         }
 
+        JsonVariant* clone(JsonVariant& data) {
+            if (data.is<char*>()) {
+                char *str = strdup(data.as<const char*>());
+                return new JsonVariant(str);
+            } else {
+                return new JsonVariant(data);
+            }
+        }
+
+        void release(JsonVariant* data) {
+            if (data->is<char*>()) {
+                void* str = (void*)data->as<char*>();
+                free(str);
+            }
+            delete data;
+        }
+
     public:
         FlowComponent() {
         }
