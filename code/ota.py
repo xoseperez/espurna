@@ -283,7 +283,7 @@ if __name__ == '__main__':
     print(description)
     print()
 
-    # Look for sevices
+    # Look for services
     zeroconf = Zeroconf()
     browser = ServiceBrowser(zeroconf, "_arduino._tcp.local.", handlers=[on_service_state_change])
     discover_last = time.time()
@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
         queue = sorted(queue, key=lambda device: device.get('board', ''))
 
-        # Flash eash board
+        # Flash each board
         for board in queue:
 
             # Flash core version?
