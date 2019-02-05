@@ -101,8 +101,8 @@ def analyse_memory(elf_file):
 
 def run(env_, modules_):
     flags = ""
-    for item in modules_.items():
-        flags += "-D%s_SUPPORT=%d " % item
+    for k, v in modules_.items():
+        flags += "-D{}_SUPPORT={:d} ".format(k, v)
     command = "ESPURNA_BOARD=\"WEMOS_D1_MINI_RELAYSHIELD\" ESPURNA_FLAGS=\"{}\" platformio run --silent --environment {} 2>/dev/null".format(flags, env_)
     subprocess.check_call(command, shell=True)
 
