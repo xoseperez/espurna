@@ -386,6 +386,7 @@ class FlowMqttSubscribeComponent : public FlowComponent {
         FlowMqttSubscribeComponent(JsonObject& properties) {
             const char * topic = properties["Topic"];
             _topic = String(topic != NULL ? topic : "");
+            _mqttPlaceholders(&_topic);
 
             mqtt_callback_f callback = [this](unsigned int type, const char * topic, const char * payload){ this->mqttCallback(type, topic, payload); };
             mqttRegister(callback);
@@ -401,6 +402,8 @@ class FlowMqttPublishComponent : public FlowComponent {
         FlowMqttPublishComponent(JsonObject& properties) {
             const char * topic = properties["Topic"];
             _topic = String(topic != NULL ? topic : "");
+            _mqttPlaceholders(&_topic);
+
             _retain = properties["Retain"];
         }
 
