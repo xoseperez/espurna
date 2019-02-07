@@ -30,7 +30,15 @@ class FlowComponent {
         }
 
         JsonVariant* clone(JsonVariant& data) {
-            if (data.is<char*>()) {
+            if (data == NULL) {
+                return new JsonVariant(false); // workaround for JSON parsing issue
+            } else if (data.is<int>()) {
+                return new JsonVariant(data.as<int>());
+            } else if (data.is<double>()) {
+                return new JsonVariant(data.as<double>());
+            } else if (data.is<bool>()) {
+                return new JsonVariant(data.as<bool>());
+            } else if (data.is<char*>()) {
                 char *str = strdup(data.as<const char*>());
                 return new JsonVariant(str);
             } else {
@@ -39,6 +47,9 @@ class FlowComponent {
         }
 
         void release(JsonVariant* data) {
+            if (data == NULL)
+                return;
+
             if (data->is<char*>()) {
                 void* str = (void*)data->as<char*>();
                 free(str);

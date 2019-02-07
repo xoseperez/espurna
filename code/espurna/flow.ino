@@ -136,6 +136,7 @@ void _flowStart(JsonObject& data) {
 class FlowDebugComponent : public FlowComponent {
     private:
         String _prefix;
+
     public:
         FlowDebugComponent(JsonObject& properties) {
             const char * prefix = properties["Prefix"];
@@ -143,11 +144,36 @@ class FlowDebugComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            if (data.is<int>()) {
+            if (data == NULL) {
+                DEBUG_MSG_P("[FLOW DEBUG] %sEMPTY\n", _prefix.c_str());
+            } else if (data.is<int>()) {
                 DEBUG_MSG_P("[FLOW DEBUG] %s%i\n", _prefix.c_str(), data.as<int>());
-            } else {
+            } else if (data.is<double>()) {
+                char buffer[64];
+                dtostrf(data.as<double>(), 1 - sizeof(buffer), 3, buffer);
+                DEBUG_MSG_P("[FLOW DEBUG] %s%s\n", _prefix.c_str(), buffer);
+            } else if (data.is<bool>()) {
+                DEBUG_MSG_P("[FLOW DEBUG] %s%s\n", _prefix.c_str(), data.as<bool>() ? "true" : "false");
+            } else if (data.is<char*>()) {
                 DEBUG_MSG_P("[FLOW DEBUG] %s%s\n", _prefix.c_str(), data.as<const char*>());
+            } else {
+                DEBUG_MSG_P("[FLOW DEBUG] %sUNKNOWN\n", _prefix.c_str());
             }
+        }
+};
+
+class FlowChangeComponent : public FlowComponent {
+    private:
+        JsonVariant* _value;
+
+    public:
+        FlowChangeComponent(JsonObject& properties) {
+            JsonVariant value = properties["Value"];
+            _value = clone(value);
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            processOutput(*_value, 0);
         }
 };
 
@@ -206,6 +232,12 @@ void flowSetup() {
    flowRegisterComponent("Debug", "eye", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }))
         ->addInput("Data", ANY)
         ->addProperty("Prefix", STRING)
+        ;
+
+    flowRegisterComponent("Change", "edit", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowChangeComponent(properties); }))
+        ->addInput("Data", ANY)
+        ->addOutput("Data", ANY)
+        ->addProperty("Value", ANY)
         ;
 
    flowRegisterComponent("Delay", "pause", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDelayComponent(properties); }))
