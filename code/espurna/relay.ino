@@ -83,6 +83,11 @@ void _relayProviderStatus(unsigned char id, bool status) {
         Serial.write(id + 1);
         Serial.write(status);
         Serial.write(0xA1 + status + id);
+
+        // The serial init are not full recognized by relais board.
+        // References: https://github.com/xoseperez/espurna/issues/1519 , https://github.com/xoseperez/espurna/issues/1130
+        delay(100);
+
         Serial.flush();
     #endif
 
