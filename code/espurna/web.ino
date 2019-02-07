@@ -367,7 +367,7 @@ void _onGetFlowLibrary(AsyncWebServerRequest *request) {
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
-    response->addHeader("Content-Disposition", "attachment; filename=\"library.json\"");
+    response->addHeader("Content-Disposition", "inline; filename=\"library.json\"");
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");

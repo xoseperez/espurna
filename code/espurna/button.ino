@@ -57,16 +57,16 @@ bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
 #if FLOW_SUPPORT
 
 class FlowButtonComponent : public FlowComponent {
- public:
-     FlowButtonComponent(JsonObject& properties) {
-        int button_id = properties["Button"];
-        _buttons[button_id].flow_components.push_back(this);
-     }
+    public:
+        FlowButtonComponent(JsonObject& properties) {
+            int button_id = properties["Button"];
+            _buttons[button_id].flow_components.push_back(this);
+        }
 
-     void buttonEvent(unsigned char event) {
-         JsonVariant data((int)event);
-         processOutput(data, 0);
-     }
+        void buttonEvent(unsigned char event) {
+            JsonVariant data((int)event);
+            processOutput(data, 0);
+        }
 };
 
 #endif // FLOW_SUPPORT

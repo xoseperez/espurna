@@ -217,13 +217,49 @@ class FlowDelayComponent : public FlowComponent {
         }
 };
 
-void _delayComponentLoop() {
+class FlowTimerComponent;
+std::vector<FlowTimerComponent*> _timer_components;
+
+class FlowTimerComponent : public FlowComponent {
+    private:
+        JsonVariant *_data = new JsonVariant(true);
+        long _period;
+        long _lastMillis;
+
+    public:
+        FlowTimerComponent(JsonObject& properties) {
+            int seconds = properties["Seconds"];
+            _period = 1000 * (int)seconds;
+            _lastMillis = millis();
+
+            if (_period > 0)
+                _timer_components.push_back(this);
+            else
+                DEBUG_MSG_P("[FLOW] Incorrect timer delay: %i\n", seconds);
+        }
+
+        void check() {
+            long now = millis();
+            if (now >= _lastMillis + _period) {
+                processOutput(*_data, 0);
+                _lastMillis = now;
+            }
+        }
+};
+
+void _flowComponentLoop() {
     if (!_delay_queue.empty()) {
         auto it = _delay_queue.begin();
         const delay_queue_element_t element = *it;
         if (element.time <= millis()) {
             element.component->processElement(element.data);
             _delay_queue.erase(it);
+        }
+    }
+
+    if (!_timer_components.empty()) {
+        for (unsigned int i=0; i < _timer_components.size(); i++) {
+            _timer_components[i]->check();
         }
     }
 }
@@ -247,9 +283,14 @@ void flowSetup() {
         ->addProperty("Last only", BOOL)
         ;
 
+   flowRegisterComponent("Timer", "clock-o", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowTimerComponent(properties); }))
+        ->addOutput("Data", ANY)
+        ->addProperty("Seconds", INT)
+        ;
+
     // TODO: each component should have its own loop lambda function, in this case deque instead of set could be used
     // for delay elements container
-    espurnaRegisterLoop(_delayComponentLoop);
+    espurnaRegisterLoop(_flowComponentLoop);
 }
 
 #endif // FLOW_SUPPORT

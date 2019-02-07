@@ -9,7 +9,9 @@ enum FlowValueType {
     INT,
     DOUBLE,
     BOOL,
-    LIST
+    LIST,
+    TIME,
+    WEEKDAYS
 };
 
 class FlowComponent {
@@ -103,6 +105,8 @@ class FlowComponentType {
                         case DOUBLE: typeName = "double"; break;
                         case BOOL: typeName = "bool"; break;
                         case LIST: typeName = "list"; break;
+                        case TIME: typeName = "time"; break;
+                        case WEEKDAYS: typeName = "weekdays"; break;
                     }
                     response->printf("\n\t\t\t{\"name\": \"%s\", \"type\": \"%s\"", v[i].name.c_str(), typeName);
                     if (type == LIST) {
