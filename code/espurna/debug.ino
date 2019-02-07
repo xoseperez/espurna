@@ -8,8 +8,6 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_SUPPORT
 
-constexpr const uint8_t TIMESTAMP_LENGTH = 10;
-
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
@@ -24,14 +22,17 @@ void _debugSend(char * message) {
     bool pause = false;
 
     #if DEBUG_ADD_TIMESTAMP
+        const char TIMESTAMP_FMT[] = "[%06lu] ";
+        const uint8_t TIMESTAMP_SIZE = 10;
+
         static bool add_timestamp = true;
 
         size_t offset = 0;
-        char buffer[TIMESTAMP_LENGTH + msg_len];
+        char buffer[TIMESTAMP_SIZE + msg_len];
 
         if (add_timestamp) {
-            snprintf_P(buffer, TIMESTAMP_LENGTH, PSTR("[%06lu] "), millis() % 1000000);
-            offset = TIMESTAMP_LENGTH - 1;
+            snprintf(buffer, TIMESTAMP_SIZE, TIMESTAMP_FMT, millis() % 1000000);
+            offset = TIMESTAMP_SIZE - 1;
         }
 
         memcpy(buffer + offset, message, msg_len);
