@@ -112,6 +112,7 @@
 //#define SMARTLIFE_MINI_SMART_SOCKET
 //#define GOSUND_SP1_V23
 //#define ARILUX_AL_LC02_V14
+//#define BLITZWOLF_BWSHP2_V23
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
