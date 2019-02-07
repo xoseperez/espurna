@@ -411,7 +411,7 @@ void _wsStart(uint32_t client_id) {
         return;
     }
 
-    for (auto callback : _ws_on_send_callbacks) {
+    for (auto& callback : _ws_on_send_callbacks) {
         callback(root);
     }
 
