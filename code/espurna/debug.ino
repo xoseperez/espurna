@@ -16,35 +16,43 @@ char _udp_syslog_header[40] = {0};
 #endif
 #endif
 
-void _debugSend(char * message) {
+#if DEBUG_SERIAL_SUPPORT
+    void _debugSendSerial(const char* prefix, const char* data) {
+        if (prefix && (prefix[0] != '\0')) {
+            Serial.print(prefix);
+        }
+        Serial.print(data);
 
-    size_t msg_len = strlen(message);
+    }
+#endif
+
+#if DEBUG_TELNET_SUPPORT
+    void _debugSendTelnet(const char* prefix, const char* data) {
+        if (prefix && (prefix[0] != '\0')) {
+            _telnetWrite(prefix);
+        }
+        _telnetWrite(data);
+
+    }
+#endif
+
+void _debugSend(const char * message) {
+
+    const size_t msg_len = strlen(message);
+
     bool pause = false;
+    char timestamp[10] = {0};
 
     #if DEBUG_ADD_TIMESTAMP
-        const char TIMESTAMP_FMT[] = "[%06lu] ";
-        const uint8_t TIMESTAMP_SIZE = 10;
-
         static bool add_timestamp = true;
-
-        size_t offset = 0;
-        char buffer[TIMESTAMP_SIZE + msg_len];
-
         if (add_timestamp) {
-            snprintf(buffer, TIMESTAMP_SIZE, TIMESTAMP_FMT, millis() % 1000000);
-            offset = TIMESTAMP_SIZE - 1;
+            snprintf(timestamp, sizeof(timestamp), "[%06lu] ", millis() % 1000000);
         }
-
-        memcpy(buffer + offset, message, msg_len);
-        buffer[msg_len + offset] = '\0';
-
         add_timestamp = (message[msg_len - 1] == 10) || (message[msg_len - 1] == 13);
-    #else
-        char* buffer = message;
     #endif
 
     #if DEBUG_SERIAL_SUPPORT
-        DEBUG_PORT.print(buffer);
+        _debugSendSerial(timestamp, message);
     #endif
 
     #if DEBUG_UDP_SUPPORT
@@ -64,12 +72,13 @@ void _debugSend(char * message) {
     #endif
 
     #if DEBUG_TELNET_SUPPORT
-        _telnetWrite(buffer, strlen(buffer));
+        _debugSendTelnet(timestamp, message);
         pause = true;
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        wsDebugSend(buffer);
+        wsDebugSend(timestamp, message);
+        pause = true;
     #endif
 
     if (pause) optimistic_yield(100);

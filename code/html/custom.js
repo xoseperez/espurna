@@ -1478,7 +1478,12 @@ function processData(data) {
         // Web log
         if ("weblog" === key) {
             websock.send("{}");
-            $("#weblog").append(new Text(value));
+
+            if (value.prefix) {
+                $("#weblog").append(new Text(value.prefix));
+            }
+            $("#weblog").append(new Text(value.message));
+
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
         }

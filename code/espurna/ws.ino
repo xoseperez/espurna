@@ -75,13 +75,18 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 #if DEBUG_WEB_SUPPORT
 
-bool wsDebugSend(const char* message) {
+bool wsDebugSend(const char* prefix, const char* message) {
     if (!wsConnected()) return false;
     if (getFreeHeap() < (strlen(message) * 3)) return false;
 
     DynamicJsonBuffer jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
-    root.set("weblog", message);
+    JsonObject &weblog = root.createNestedObject("weblog");
+
+    weblog.set("message", message);
+    if (prefix && (prefix[0] != '\0')) {
+        weblog.set("prefix", prefix);
+    }
 
     wsSend(root);
 
