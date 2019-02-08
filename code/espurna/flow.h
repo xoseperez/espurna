@@ -90,39 +90,35 @@ class FlowComponentType {
         std::vector<name_type_t> _properties;
         std::map<String, std::vector<String>*> _list_values;
 
-        void vectorToJSON(AsyncResponseStream *response, std::vector<name_type_t> &v, const char* name) {
-            response->printf("\"%s\": [", name);
-            if (v.size() > 0) {
-                for (unsigned int i=0; i < v.size(); i++) {
-                    if (i > 0)
-                        response->print(",");
-                    FlowValueType type = v[i].type;
-                    const char *typeName = "unknown";
-                    switch(type) {
-                        case ANY: typeName = "any"; break;
-                        case STRING: typeName = "string"; break;
-                        case INT: typeName = "int"; break;
-                        case DOUBLE: typeName = "double"; break;
-                        case BOOL: typeName = "bool"; break;
-                        case LIST: typeName = "list"; break;
-                        case TIME: typeName = "time"; break;
-                        case WEEKDAYS: typeName = "weekdays"; break;
+        void vectorToJSON(JsonObject& root, std::vector<name_type_t> &v, const char* name) {
+            JsonArray& array = root.createNestedArray(name);
+            for (unsigned int i=0; i < v.size(); i++) {
+                name_type_t& element = v[i];
+                JsonObject& elementObject = array.createNestedObject();
+                elementObject["name"] = element.name;
+
+                FlowValueType type = element.type;
+                const char *typeName = "unknown";
+                switch(type) {
+                    case ANY: typeName = "any"; break;
+                    case STRING: typeName = "string"; break;
+                    case INT: typeName = "int"; break;
+                    case DOUBLE: typeName = "double"; break;
+                    case BOOL: typeName = "bool"; break;
+                    case LIST: typeName = "list"; break;
+                    case TIME: typeName = "time"; break;
+                    case WEEKDAYS: typeName = "weekdays"; break;
+                }
+                elementObject["type"] = typeName;
+
+                if (type == LIST) {
+                    std::vector<String>* values = _list_values[element.name];
+                    JsonArray& valuesArray = elementObject.createNestedArray("values");
+                    for (unsigned int j=0; j < values->size(); j++) {
+                        valuesArray.add(values->at(j));
                     }
-                    response->printf("\n\t\t\t{\"name\": \"%s\", \"type\": \"%s\"", v[i].name.c_str(), typeName);
-                    if (type == LIST) {
-                        std::vector<String>* values = _list_values[v[i].name];
-                        response->print(", \"values\": [");
-                        for (unsigned int j=0; j < values->size(); j++) {
-                            if (j > 0)
-                                response->print(", ");
-                            response->printf("\"%s\"", values->at(j).c_str());
-                        }
-                        response->print("]");
-                    }
-                    response->print("}");
                 }
             }
-            response->print("]");
         }
 
     public:
@@ -173,16 +169,13 @@ class FlowComponentType {
             return -1;
         }
 
-        void toJSON(AsyncResponseStream *response) {
-            response->print("{\n\t\t");
-            response->printf("\"name\": \"%s\",\n\t\t", _name.c_str());
-            response->printf("\"icon\": \"%s\",\n\t\t", _icon.c_str());
-            vectorToJSON(response, _inputs, "inports");
-            response->print(",\n\t\t");
-            vectorToJSON(response, _outputs, "outports");
-            response->print(",\n\t\t");
-            vectorToJSON(response, _properties, "properties");
-            response->print("}");
+        void toJSON(JsonObject& root) {
+            root["name"] = _name;
+            root["icon"] = _icon;
+
+            vectorToJSON(root, _inputs, "inports");
+            vectorToJSON(root, _outputs, "outports");
+            vectorToJSON(root, _properties, "properties");
         }
 
         FlowComponent* createComponent(JsonObject& properties) {
@@ -201,19 +194,20 @@ class FlowComponentLibrary {
             return type;
         }
 
-        void toJSON(AsyncResponseStream *response) {
-            response->print("{");
-            bool first = true;
-            for (auto pair : _types) {
-                FlowComponentType* type = pair.second;
-                if (first) first = false; else response->print(",");
-                response->printf("\n\t\"%s\": ", type->name().c_str());
-                type->toJSON(response);
+        FlowComponentType* getComponent(int index) {
+            auto end = _types.end();
+
+            int counter = 0;
+            for (auto const& pair : _types) {
+                if (counter++ == index)
+                    return pair.second;
             }
-            response->print("}");
+            return NULL;
         }
 
         FlowComponentType* getType(String name) {
-            return _types[name];
+            auto it = _types.find(name);
+            if (it == _types.end()) return NULL;
+            return it->second;
         }
 };

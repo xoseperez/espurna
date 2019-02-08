@@ -365,14 +365,51 @@ void _onGetFlowLibrary(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    AsyncResponseStream *response = request->beginResponseStream("text/json");
+    // chunked response to avoid out of memory for big number of components
+    int* ip = new int(0); // index of component in loop
+    AsyncWebServerResponse *response = request->beginChunkedResponse("text/json", [ip](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        size_t size = 0;
+        int i = *ip;
+
+        if (i < 0) { // no more components left
+            delete ip;
+            return size;
+        }
+
+        if (i == 0) {
+            buffer[0] = '{';
+            buffer++; size++; maxLen--;
+        }
+
+        FlowComponentType* component = flowGetComponent(i);
+        if (component != NULL) {
+            if (i > 0) {
+                buffer[0] = ',';
+                buffer++; size++; maxLen--;
+            }
+
+            int count = sprintf((char*)buffer, "\"%s\": ", component->name().c_str());
+            size += count; maxLen -= count; buffer += count;
+
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.createObject();
+            component->toJSON(root);
+            size += root.printTo((char*)buffer, maxLen);
+
+            i++;
+        } else {
+            buffer[0] = '}';
+            size++;
+            i = -1; // last chunk
+        }
+        *ip = i;
+        return size;
+    });
 
     response->addHeader("Content-Disposition", "inline; filename=\"library.json\"");
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
     response->addHeader("X-Frame-Options", "deny");
-
-    flowOutputLibrary(response);
 
     request->send(response);
 }

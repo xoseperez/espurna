@@ -40,8 +40,8 @@ bool flowSaveData(char* data) {
     return result;
 }
 
-void flowOutputLibrary(AsyncResponseStream *response) {
-    _library.toJSON(response);
+FlowComponentType* flowGetComponent(int index) {
+    return _library.getComponent(index);
 }
 
 void flowStart() {
