@@ -257,6 +257,17 @@ void migrate() {
             setSetting("myDCKIGPIO", 15);
             setSetting("relays", 1);
 
+        #elif defined(LYASI_LIGHT)
+
+            setSetting("board", 20);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+            setSetting("myModel", MY92XX_MODEL_MY9291);
+            setSetting("myChips", 1);
+            setSetting("myDIGPIO", 4);
+            setSetting("myDCKIGPIO", 5);
+            setSetting("relays", 1);
+
         #elif defined(MAGICHOME_LED_CONTROLLER)
 
             setSetting("board", 21);
