@@ -247,7 +247,31 @@ class FlowTimerComponent : public FlowComponent {
         }
 };
 
+class FlowStartComponent;
+std::vector<FlowStartComponent*> _start_components;
+
+class FlowStartComponent : public FlowComponent {
+    private:
+        JsonVariant *_data = new JsonVariant(true);
+
+    public:
+        FlowStartComponent(JsonObject& properties) {
+            _start_components.push_back(this);
+        }
+
+        void start() {
+            processOutput(*_data, 0);
+        }
+};
+
 void _flowComponentLoop() {
+    if (!_start_components.empty()) {
+        for (unsigned int i=0; i < _start_components.size(); i++) {
+            _start_components[i]->start();
+        }
+        _start_components.clear();
+    }
+
     if (!_delay_queue.empty()) {
         auto it = _delay_queue.begin();
         const delay_queue_element_t element = *it;
@@ -265,6 +289,10 @@ void _flowComponentLoop() {
 }
 
 void flowSetup() {
+   flowRegisterComponent("Start", "play", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowStartComponent(properties); }))
+        ->addOutput("Event", BOOL)
+        ;
+
    flowRegisterComponent("Debug", "eye", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }))
         ->addInput("Data", ANY)
         ->addProperty("Prefix", STRING)
@@ -284,7 +312,7 @@ void flowSetup() {
         ;
 
    flowRegisterComponent("Timer", "clock-o", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowTimerComponent(properties); }))
-        ->addOutput("Data", ANY)
+        ->addOutput("Event", BOOL)
         ->addProperty("Seconds", INT)
         ;
 
