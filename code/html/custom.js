@@ -1719,6 +1719,8 @@ $(function() {
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);
 
+    $("textarea").on("dblclick", function() { this.select(); });
+
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") { return; }
 
