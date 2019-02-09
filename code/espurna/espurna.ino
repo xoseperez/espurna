@@ -64,11 +64,11 @@ void setup() {
     // Init EEPROM
     eepromSetup();
 
-    // Init Serial, SPIFFS and system check
-    systemSetup();
-
     // Init persistance
     settingsSetup();
+
+    // Init Serial, SPIFFS and system check
+    systemSetup();
 
     // Init terminal features
     #if TERMINAL_SUPPORT
