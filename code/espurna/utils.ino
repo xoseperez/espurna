@@ -181,7 +181,7 @@ namespace Heartbeat {
             (Relay * (HEARTBEAT_REPORT_RELAY)) | \
             (Light * (HEARTBEAT_REPORT_LIGHT)) | \
             (Hostname * (HEARTBEAT_REPORT_HOSTNAME)) | \
-            (Description * (HEARTBEAT_REPORT_DESCRITION)) | \
+            (Description * (HEARTBEAT_REPORT_DESCRIPTION)) | \
             (App * (HEARTBEAT_REPORT_APP)) | \
             (Version * (HEARTBEAT_REPORT_VERSION)) | \
             (Board * (HEARTBEAT_REPORT_BOARD)) | \
