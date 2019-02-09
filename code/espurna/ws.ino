@@ -328,6 +328,7 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
     if (strncmp(key, "ws", 2) == 0) return true;
     if (strncmp(key, "admin", 5) == 0) return true;
     if (strncmp(key, "hostname", 8) == 0) return true;
+    if (strncmp(key, "desc", 4) == 0) return true;
     if (strncmp(key, "webPort", 7) == 0) return true;
     return false;
 }
@@ -357,6 +358,7 @@ void _wsOnStart(JsonObject& root) {
     root["channel"] = WiFi.channel();
     root["device"] = DEVICE;
     root["hostname"] = getSetting("hostname");
+    root["desc"] = getSetting("desc");
     root["network"] = getNetwork();
     root["deviceip"] = getIP();
     root["sketch_size"] = ESP.getSketchSize();

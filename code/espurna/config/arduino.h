@@ -41,6 +41,7 @@
 //#define ELECTRODRAGON_WIFI_IOT
 //#define WORKCHOICE_ECOPLUG
 //#define AITHINKER_AI_LIGHT
+//#define LYASI_LIGHT
 //#define MAGICHOME_LED_CONTROLLER
 //#define MAGICHOME_LED_CONTROLLER_20
 //#define HUACANXING_H801
@@ -112,6 +113,7 @@
 //#define SMARTLIFE_MINI_SMART_SOCKET
 //#define GOSUND_SP1_V23
 //#define ARILUX_AL_LC02_V14
+//#define BLITZWOLF_BWSHP2_V23
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

@@ -84,6 +84,7 @@
 
                     <span class="pure-menu-heading" name="hostname">HOSTNAME</span>
                     <span class="pure-menu-heading small" name="title">ESPurna 0.0.0</span>
+                    <span class="pure-menu-heading small" name="desc"></span>
 
                     <ul class="pure-menu-list">
 
@@ -339,6 +340,16 @@
                                         This name will identify this device in your network (http://&lt;hostname&gt;.local).<br />
                                         Hostname may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-'). They can neither start or end with an hyphen.<br />
                                         For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Description</label>
+                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" tabindex="2" />
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Human-friendly name for your device. Will be reported with the heartbeat.<br />
+                                        You can use this to specify the location or some other identification information.
                                     </div>
                                 </div>
 

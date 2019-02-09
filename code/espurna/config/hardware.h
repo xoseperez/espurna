@@ -1152,6 +1152,28 @@
     #define MY92XX_MAPPING      0, 1, 2, 3
 
 // -----------------------------------------------------------------------------
+// Lyasi LED
+// -----------------------------------------------------------------------------
+
+#elif defined(LYASI_LIGHT)
+
+    // Info
+    #define MANUFACTURER        "LYASI"
+    #define DEVICE              "RGB-LED"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       4
+    #define MY92XX_DCKI_PIN     5
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3
+
+// -----------------------------------------------------------------------------
 // LED Controller
 // -----------------------------------------------------------------------------
 
