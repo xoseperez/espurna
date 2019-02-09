@@ -14,8 +14,6 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 bool _haEnabled = false;
 bool _haSendFlag = false;
 
-std::queue<uint32_t> _ha_send_config;
-
 // -----------------------------------------------------------------------------
 // UTILS
 // -----------------------------------------------------------------------------
@@ -259,6 +257,8 @@ void _haConfigure() {
 
 #if WEB_SUPPORT
 
+std::queue<uint32_t> _ha_send_config;
+
 bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
 }
@@ -313,12 +313,16 @@ void _haInitCommands() {
 
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
 void _haLoop() {
     if (_ha_send_config.empty()) return;
 
     uint32_t client_id = _ha_send_config.front();
     _ha_send_config.pop();
 
+    if (!wsConnected(client_id)) return;
+
+    // TODO check wsConnected after each "printer" call?
     _haDumpConfig([client_id](String& output) {
         output.replace(" ", "&nbsp;");
         output.replace("\n", "<br />");
@@ -327,6 +331,7 @@ void _haLoop() {
         yield();
     });
 }
+#endif
 
 void haSetup() {
 
@@ -336,6 +341,7 @@ void haSetup() {
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnActionRegister(_haWebSocketOnAction);
         wsOnReceiveRegister(_haWebSocketOnReceive);
+        espurnaRegisterLoop(_haLoop);
     #endif
 
     #if TERMINAL_SUPPORT
@@ -349,7 +355,6 @@ void haSetup() {
 
     // Main callbacks
     espurnaRegisterReload(_haConfigure);
-    espurnaRegisterLoop(_haLoop);
 
 }
 
