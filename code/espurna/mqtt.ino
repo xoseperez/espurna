@@ -316,9 +316,7 @@ unsigned long _mqttNextMessageId() {
 #if WEB_SUPPORT
 
 bool _mqttWebSocketOnReceive(const char * key, JsonVariant& value) {
-    if (strncmp(key, "mqtt", 3) == 0) return true;
-    if (strncmp(key, "hb", 2) == 0) return true;
-    return false;
+    return (strncmp(key, "mqtt", 3) == 0);
 }
 
 void _mqttWebSocketOnSend(JsonObject& root) {

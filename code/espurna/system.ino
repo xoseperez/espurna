@@ -86,6 +86,12 @@ void _systemSetupHeartbeat() {
     _heartbeat_interval = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
 }
 
+#if WEB_SUPPORT
+    bool _systemWebSocketOnReceive(const char * key, JsonVariant& value) {
+        return (strncmp(key, "hb", 2) == 0);
+    }
+#endif
+
 void systemLoop() {
 
     // -------------------------------------------------------------------------
@@ -180,6 +186,10 @@ void systemSetup() {
     // Question system stability
     #if SYSTEM_CHECK_ENABLED
         systemCheck(false);
+    #endif
+
+    #if WEB_SUPPORT
+        wsOnReceiveRegister(_systemWebSocketOnReceive);
     #endif
 
     // Init device-specific hardware
