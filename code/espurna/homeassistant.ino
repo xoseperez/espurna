@@ -148,7 +148,7 @@ void _haSendSwitches() {
 
 // -----------------------------------------------------------------------------
 
-void _haDumpConfig(std::function<void(String&)> printer) {
+void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
 
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
@@ -164,6 +164,10 @@ void _haDumpConfig(std::function<void(String&)> printer) {
 
         String output;
         output.reserve(config.measureLength() + 32);
+
+        if (wrapJson) {
+            output += "{\"haConfig\": \"";
+        }
 
         output += "\n\n" + type + ":\n";
         bool first = true;
@@ -182,6 +186,10 @@ void _haDumpConfig(std::function<void(String&)> printer) {
         }
         output += " ";
 
+        if (wrapJson) {
+            output += "\"}";
+        }
+
         jsonBuffer.clear();
 
         printer(output);
@@ -198,6 +206,10 @@ void _haDumpConfig(std::function<void(String&)> printer) {
 
             String output;
             output.reserve(config.measureLength() + 32);
+
+            if (wrapJson) {
+                output += "{\"haConfig\": \"";
+            }
 
             output += "\n\nsensor:\n";
             bool first = true;
@@ -217,6 +229,10 @@ void _haDumpConfig(std::function<void(String&)> printer) {
                 output += "\n";
             }
             output += " ";
+
+            if (wrapJson) {
+                output += "\"}";
+            }
 
             jsonBuffer.clear();
 
@@ -324,12 +340,9 @@ void _haLoop() {
 
     // TODO check wsConnected after each "printer" call?
     _haDumpConfig([client_id](String& output) {
-        output.replace(" ", "&nbsp;");
-        output.replace("\n", "<br />");
-        output = String("{\"haConfig\": \"") + output + String("\"}");
         wsSend(client_id, output.c_str());
         yield();
-    });
+    }, true);
 }
 #endif
 

@@ -657,8 +657,10 @@ function doScan() {
 }
 
 function doHAConfig() {
-    $("#haConfig").html("");
-    $("#haConfig").show();
+    $("#haConfig")
+        .text("")
+        .height(0)
+        .show();
     sendAction("haconfig", {});
     return false;
 }
@@ -1368,7 +1370,9 @@ function processData(data) {
 
         if ("haConfig" === key) {
             websock.send("{}");
-            $("#haConfig").append(value);
+            $("#haConfig")
+                .append(new Text(value))
+                .height($("#haConfig")[0].scrollHeight);
             return;
         }
 
