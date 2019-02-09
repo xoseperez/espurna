@@ -265,6 +265,7 @@ class FlowStartComponent : public FlowComponent {
 };
 
 void _flowComponentLoop() {
+    // TODO: have single scheduler map for all components
     if (!_start_components.empty()) {
         for (unsigned int i=0; i < _start_components.size(); i++) {
             _start_components[i]->start();
@@ -287,6 +288,25 @@ void _flowComponentLoop() {
         }
     }
 }
+
+class FlowGateComponent : public FlowComponent {
+    private:
+        bool _state = true;
+
+    public:
+        FlowGateComponent(JsonObject& properties) {
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) { // data
+                if (_state) {
+                    processOutput(data, 0);
+                }
+            } else { // state
+                _state = data.as<bool>();
+            }
+        }
+};
 
 void flowSetup() {
    flowRegisterComponent("Start", "play", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowStartComponent(properties); }))
@@ -314,6 +334,12 @@ void flowSetup() {
    flowRegisterComponent("Timer", "clock-o", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowTimerComponent(properties); }))
         ->addOutput("Event", BOOL)
         ->addProperty("Seconds", INT)
+        ;
+
+   flowRegisterComponent("Gate", "unlock", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowGateComponent(properties); }))
+        ->addInput("Data", ANY)
+        ->addInput("State", BOOL)
+        ->addOutput("Data", ANY)
         ;
 
     // TODO: each component should have its own loop lambda function, in this case deque instead of set could be used
