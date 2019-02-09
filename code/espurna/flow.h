@@ -185,29 +185,26 @@ class FlowComponentType {
 
 class FlowComponentLibrary {
     private:
-        std::map<String, FlowComponentType*> _types;
+        std::vector<FlowComponentType*> _types;
+        std::map<String, FlowComponentType*> _typesMap;
 
     public:
         FlowComponentType* addType(String name, String icon, flow_component_factory_f factory) {
             FlowComponentType* type = new FlowComponentType(name, icon, factory);
-            _types[name] = type;
+            _types.push_back(type);
+            _typesMap[name] = type;
             return type;
         }
 
         FlowComponentType* getComponent(int index) {
-            auto end = _types.end();
-
-            int counter = 0;
-            for (auto const& pair : _types) {
-                if (counter++ == index)
-                    return pair.second;
-            }
-            return NULL;
+            if (index >= _types.size())
+                return NULL;
+            return _types[index];
         }
 
         FlowComponentType* getType(String name) {
-            auto it = _types.find(name);
-            if (it == _types.end()) return NULL;
+            auto it = _typesMap.find(name);
+            if (it == _typesMap.end()) return NULL;
             return it->second;
         }
 };
