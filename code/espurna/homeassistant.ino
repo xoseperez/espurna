@@ -9,6 +9,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #if HOMEASSISTANT_SUPPORT
 
 #include <ArduinoJson.h>
+#include <queue>
 
 bool _haEnabled = false;
 bool _haSendFlag = false;
@@ -147,9 +148,7 @@ void _haSendSwitches() {
 
 // -----------------------------------------------------------------------------
 
-String _haGetConfig() {
-
-    String output;
+void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
 
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
@@ -163,8 +162,16 @@ String _haGetConfig() {
         JsonObject& config = jsonBuffer.createObject();
         _haSendSwitch(i, config);
 
-        output += "\n" + type + ":\n";
+        String output;
+        output.reserve(config.measureLength() + 32);
+
+        if (wrapJson) {
+            output += "{\"haConfig\": \"";
+        }
+
+        output += "\n\n" + type + ":\n";
         bool first = true;
+
         for (auto kv : config) {
             if (first) {
                 output += "  - ";
@@ -172,10 +179,20 @@ String _haGetConfig() {
             } else {
                 output += "    ";
             }
-            output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
+            output += kv.key;
+            output += ": ";
+            output += kv.value.as<String>();
+            output += "\n";
+        }
+        output += " ";
+
+        if (wrapJson) {
+            output += "\"}";
         }
 
         jsonBuffer.clear();
+
+        printer(output);
 
     }
 
@@ -187,8 +204,16 @@ String _haGetConfig() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
 
-            output += "\nsensor:\n";
+            String output;
+            output.reserve(config.measureLength() + 32);
+
+            if (wrapJson) {
+                output += "{\"haConfig\": \"";
+            }
+
+            output += "\n\nsensor:\n";
             bool first = true;
+
             for (auto kv : config) {
                 if (first) {
                     output += "  - ";
@@ -198,17 +223,24 @@ String _haGetConfig() {
                 }
                 String value = kv.value.as<String>();
                 value.replace("%", "'%'");
-                output += kv.key + String(": ") + value + String("\n");
+                output += kv.key;
+                output += ": ";
+                output += value;
+                output += "\n";
             }
-            output += "\n";
+            output += " ";
+
+            if (wrapJson) {
+                output += "\"}";
+            }
 
             jsonBuffer.clear();
+
+            printer(output);
 
         }
 
     #endif
-
-    return output;
 
 }
 
@@ -241,6 +273,8 @@ void _haConfigure() {
 
 #if WEB_SUPPORT
 
+std::queue<uint32_t> _ha_send_config;
+
 bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
 }
@@ -253,11 +287,7 @@ void _haWebSocketOnSend(JsonObject& root) {
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
     if (strcmp(action, "haconfig") == 0) {
-        String output = _haGetConfig();
-        output.replace(" ", "&nbsp;");
-        output.replace("\n", "<br />");
-        output = String("{\"haConfig\": \"") + output + String("\"}");
-        wsSend(client_id, output.c_str());
+        _ha_send_config.push(client_id);
     }
 }
 
@@ -268,7 +298,10 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 void _haInitCommands() {
 
     terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
-        DEBUG_MSG(_haGetConfig().c_str());
+        _haDumpConfig([](String& data) {
+            DEBUG_MSG(data.c_str());
+        });
+        DEBUG_MSG("\n");
         terminalOK();
     });
 
@@ -296,6 +329,23 @@ void _haInitCommands() {
 
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+void _haLoop() {
+    if (_ha_send_config.empty()) return;
+
+    uint32_t client_id = _ha_send_config.front();
+    _ha_send_config.pop();
+
+    if (!wsConnected(client_id)) return;
+
+    // TODO check wsConnected after each "printer" call?
+    _haDumpConfig([client_id](String& output) {
+        wsSend(client_id, output.c_str());
+        yield();
+    }, true);
+}
+#endif
+
 void haSetup() {
 
     _haConfigure();
@@ -304,6 +354,7 @@ void haSetup() {
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnActionRegister(_haWebSocketOnAction);
         wsOnReceiveRegister(_haWebSocketOnReceive);
+        espurnaRegisterLoop(_haLoop);
     #endif
 
     #if TERMINAL_SUPPORT

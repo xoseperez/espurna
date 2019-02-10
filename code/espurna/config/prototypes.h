@@ -191,6 +191,9 @@ void webRequestRegister(web_request_callback_f callback);
 
     typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
     void wsOnReceiveRegister(ws_on_receive_callback_f callback);
+
+    bool wsConnected();
+    bool wsConnected(uint32_t);
 #else
     #define ws_on_send_callback_f void *
     #define ws_on_action_callback_f void *
