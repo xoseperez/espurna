@@ -64,16 +64,16 @@ void _flowStart(JsonObject& data) {
     std::map<String, FlowComponentType*> componentTypes;
     std::map<String, FlowComponent*> components;
 
-    JsonObject& processes = data["processes"];
+    JsonObject& processes = data.containsKey("P") ? data["P"] : data["processes"];
     for (auto process_kv: processes) {
         String id = process_kv.key;
-        JsonVariant& value = process_kv.value;
-        String componentName = value["component"];
+        JsonObject& value = process_kv.value;
+        String componentName = value.containsKey("C") ? value["C"] : value["component"];
         FlowComponentType* componentType = _library.getType(componentName);
 
         if (componentType != NULL) {
-            JsonObject& metadata = value["metadata"];
-            JsonObject& properties = metadata["properties"];
+            JsonObject& metadata = value.containsKey("M") ? value["M"] : value["metadata"];
+            JsonObject& properties = metadata.containsKey("R") ? metadata["R"] : metadata["properties"];
             FlowComponent* component = componentType->createComponent(properties);
 
             componentTypes[id] = componentType;
@@ -83,15 +83,15 @@ void _flowStart(JsonObject& data) {
         }
     }
 
-    JsonArray& connections = data["connections"];
+    JsonArray& connections = data.containsKey("X") ? data["X"] : data["connections"];
     for (JsonObject& connection: connections) {
-        JsonObject& src = connection["src"];
-        String srcProcess = src["process"];
-        String srcPort = src["port"];
+        JsonObject& src = connection.containsKey("S") ? connection["S"] : connection["src"];
+        String srcProcess = src.containsKey("I") ? src["I"] : src["process"];
+        String srcPort = src.containsKey("N") ? src["N"] : src["port"];
 
-        JsonObject& tgt = connection["tgt"];
-        String tgtProcess = tgt["process"];
-        String tgtPort = tgt["port"];
+        JsonObject& tgt = connection.containsKey("T") ? connection["T"] : connection["tgt"];
+        String tgtProcess = tgt.containsKey("I") ? tgt["I"] : tgt["process"];
+        String tgtPort = tgt.containsKey("N") ? tgt["N"] : tgt["port"];
 
         FlowComponent* srcComponent = components[srcProcess];
         if (srcComponent == NULL) {
