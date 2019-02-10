@@ -49,20 +49,11 @@ void flowStart() {
 
     File file = SPIFFS.open("/flow.json", "r"); // TODO: file name to constant
     if (file) {
-        size_t size = file.size();
-        uint8_t* nbuf = (uint8_t*) malloc(size + 1);
-        if (nbuf) {
-            size = file.read(nbuf, size);
-            file.close();
-            nbuf[size] = 0;
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.parseObject(file);
+        if (root.success()) _flowStart(root);
+        else DEBUG_MSG("[FLOW] Error: Flow cannot be parsed as correct JSON\n");
 
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& root = jsonBuffer.parseObject((char *) nbuf);
-            if (root.success()) _flowStart(root);
-            else DEBUG_MSG("[FLOW] Error: Flow cannot be parsed as correct JSON\n");
-
-            free(nbuf);
-        }
         file.close();
     } else {
         DEBUG_MSG("[FLOW] No flow found\n");
@@ -144,9 +135,11 @@ class FlowDebugComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            if (data == NULL) {
-                DEBUG_MSG_P("[FLOW DEBUG] %sEMPTY\n", _prefix.c_str());
-            } else if (data.is<int>()) {
+//            if (data == NULL) {
+//            if (data.as<const char *>() == NULL) {
+//                DEBUG_MSG_P("[FLOW DEBUG] %sEMPTY\n", _prefix.c_str());
+//            } else
+            if (data.is<int>()) {
                 DEBUG_MSG_P("[FLOW DEBUG] %s%i\n", _prefix.c_str(), data.as<int>());
             } else if (data.is<double>()) {
                 char buffer[64];
@@ -308,12 +301,51 @@ class FlowGateComponent : public FlowComponent {
         }
 };
 
+class FlowHysteresisComponent : public FlowComponent {
+    private:
+        bool _state = false;
+        double _min = NAN;
+        double _max = NAN;
+        double _value = NAN;
+
+    public:
+        FlowHysteresisComponent(JsonObject& properties) {
+            JsonVariant min = properties["Min"];
+            JsonVariant max = properties["Max"];
+            _min = min.success() && min.is<double>() ? min.as<double>() : NAN;
+            _max = max.success() && max.is<double>() ? max.as<double>() : NAN;
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) { // value
+                _value = data.as<double>();
+                if ((_state && _value >= _max) || (!_state && _value <= _min))
+                    _state = !_state;
+                processOutput(data, _state ? 0 : 1);
+            } else if (inputNumber == 1) { // min
+                _min = data.as<double>();
+                if (!_state && _value <= _min) {
+                    _state = true;
+                    JsonVariant value(_value);
+                    processOutput(value, 0);
+                }
+            } else { // max
+                _max = data.as<double>();
+                if (_state && _value >= _max) {
+                    _state = false;
+                    JsonVariant value(_value);
+                    processOutput(value, 1);
+                }
+            }
+        }
+};
+
 void flowSetup() {
    flowRegisterComponent("Start", "play", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowStartComponent(properties); }))
         ->addOutput("Event", BOOL)
         ;
 
-   flowRegisterComponent("Debug", "eye", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }))
+   flowRegisterComponent("Debug", "bug", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }))
         ->addInput("Data", ANY)
         ->addProperty("Prefix", STRING)
         ;
@@ -340,6 +372,16 @@ void flowSetup() {
         ->addInput("Data", ANY)
         ->addInput("State", BOOL)
         ->addOutput("Data", ANY)
+        ;
+
+   flowRegisterComponent("Hysteresis", "line-chart", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowHysteresisComponent(properties); }))
+        ->addInput("Value", DOUBLE)
+        ->addInput("Min", DOUBLE)
+        ->addInput("Max", DOUBLE)
+        ->addOutput("Rise", DOUBLE)
+        ->addOutput("Fall", DOUBLE)
+        ->addProperty("Min", DOUBLE)
+        ->addProperty("Max", DOUBLE)
         ;
 
     // TODO: each component should have its own loop lambda function, in this case deque instead of set could be used

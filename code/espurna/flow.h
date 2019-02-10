@@ -32,9 +32,10 @@ class FlowComponent {
         }
 
         JsonVariant* clone(JsonVariant& data) {
-            if (data == NULL) {
-                return new JsonVariant(false); // workaround for JSON parsing issue
-            } else if (data.is<int>()) {
+//            if (data == NULL) {
+//                return new JsonVariant(false); // workaround for JSON parsing issue
+//            } else
+            if (data.is<int>()) {
                 return new JsonVariant(data.as<int>());
             } else if (data.is<double>()) {
                 return new JsonVariant(data.as<double>());
