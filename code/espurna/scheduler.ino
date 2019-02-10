@@ -75,7 +75,7 @@ class FlowScheduleComponent : public FlowComponent {
         }
 
         void check(time_t& time) {
-            if (_schIsThisWeekday(time, _weekdays) && _schMinutesLeft(time, _hour, _minute) == 0) {
+            if (_schMinutesLeft(time, _hour, _minute) == 0 && (_weekdays.length() == 0 || _schIsThisWeekday(time, _weekdays))) {
                 processOutput(*_data, 0);
             }
         }
