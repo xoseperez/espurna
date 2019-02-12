@@ -482,6 +482,10 @@ bool wsConnected() {
     return (_ws.count() > 0);
 }
 
+bool wsConnected(uint32_t client_id) {
+    return _ws.hasClient(client_id);
+}
+
 void wsOnSendRegister(ws_on_send_callback_f callback) {
     _ws_on_send_callbacks.push_back(callback);
 }

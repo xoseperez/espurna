@@ -657,7 +657,10 @@ function doScan() {
 }
 
 function doHAConfig() {
-    $("#haConfig").html("");
+    $("#haConfig")
+        .text("")
+        .height(0)
+        .show();
     sendAction("haconfig", {});
     return false;
 }
@@ -1384,7 +1387,11 @@ function processData(data) {
         // -----------------------------------------------------------------------------
 
         if ("haConfig" === key) {
-            $("#haConfig").show();
+            websock.send("{}");
+            $("#haConfig")
+                .append(new Text(value))
+                .height($("#haConfig")[0].scrollHeight);
+            return;
         }
 
         // -----------------------------------------------------------------------------
@@ -1735,6 +1742,8 @@ $(function() {
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);
+
+    $("textarea").on("dblclick", function() { this.select(); });
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") { return; }
