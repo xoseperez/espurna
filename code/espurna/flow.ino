@@ -52,7 +52,7 @@ void flowStart() {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.parseObject(file);
         if (root.success()) _flowStart(root);
-        else DEBUG_MSG("[FLOW] Error: Flow cannot be parsed as correct JSON\n");
+        else DEBUG_MSG("[FLOW] Error: flow cannot be parsed as correct JSON\n");
 
         file.close();
     } else {
