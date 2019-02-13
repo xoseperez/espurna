@@ -292,9 +292,7 @@ class FlowGateComponent : public FlowComponent {
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
             if (inputNumber == 0) { // data
-                if (_state) {
-                    processOutput(data, 0);
-                }
+                processOutput(data, _state ? 0 : 1);
             } else { // state
                 _state = data.as<bool>();
             }
@@ -371,7 +369,8 @@ void flowSetup() {
    flowRegisterComponent("Gate", "unlock", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowGateComponent(properties); }))
         ->addInput("Data", ANY)
         ->addInput("State", BOOL)
-        ->addOutput("Data", ANY)
+        ->addOutput("Open", ANY)
+        ->addOutput("Close", ANY)
         ;
 
    flowRegisterComponent("Hysteresis", "line-chart", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowHysteresisComponent(properties); }))
