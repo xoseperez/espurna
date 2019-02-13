@@ -356,9 +356,19 @@ class FlowSensorComponent : public FlowComponent {
 
     public:
         FlowSensorComponent(JsonObject& properties) {
-            String magnitude = properties["Magnitude"];
-            for (unsigned int i=0; i < magnitudeCount(); i++) {
-                if (magnitudeName(i).equals(magnitude)) {
+            String magnitude = properties["Sensor"];
+
+            int slash = magnitude.indexOf("/");
+            if (slash < 0) {
+                DEBUG_MSG_P("[FLOW] Sensor %s has incorrect name\n", magnitude.c_str());
+                return;
+            }
+            String sensor = magnitude.substring(0, slash);
+            String topic = magnitude.substring(slash + 1);
+
+            for (unsigned char i = 0; i < _magnitudes.size(); i++) {
+                sensor_magnitude_t m = _magnitudes[i];
+                if (magnitudeName(i).equals(sensor) && magnitudeTopic(m.type).equals(topic)) {
                     _magnitude = i;
                 }
             }
@@ -1370,14 +1380,17 @@ void sensorSetup() {
 
     // Flow
     #if FLOW_SUPPORT
-        std::vector<String>* magnitudes = new std::vector<String>();
-        for (unsigned int i=0; i < magnitudeCount(); i++) {
-            magnitudes->push_back(magnitudeName(i));
+        std::vector<String>* sensors = new std::vector<String>();
+        for (unsigned char i = 0; i < _magnitudes.size(); i++) {
+            sensor_magnitude_t magnitude = _magnitudes[i];
+            String sensor = magnitudeName(i);
+            String topic = magnitudeTopic(magnitude.type);
+            sensors->push_back(sensor + "/" + topic);
         }
 
         flowRegisterComponent("Sensor", "thermometer-3", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSensorComponent(properties); }))
             ->addOutput("Data", DOUBLE)
-            ->addProperty("Magnitude", magnitudes)
+            ->addProperty("Sensor", sensors)
             ;
     #endif
 
