@@ -259,7 +259,9 @@ void _haGetDeviceConfig(JsonObject& config) {
     
     config.createNestedArray("identifiers").add(identifier);
     config["name"] = _haFixName(getSetting("hostname"));
-    config["manufacturer"] = "Espurna";
+    config["manufacturer"] = String("Espurna");
+    config["model"] = getBoardName();
+    config["sw_version"] = String(APP_VERSION) + " (" + getCoreVersion() + ")";
 }
 
 void _haSend() {
