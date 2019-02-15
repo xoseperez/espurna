@@ -38,9 +38,11 @@ void _haSendMagnitude(unsigned char i, const JsonObject& deviceConfig, JsonObjec
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
-    config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
-    config["device"] = deviceConfig;
 
+    if (deviceConfig.size() > 0) {
+        config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
+        config["device"] = deviceConfig;
+    }
 }
 
 void _haSendMagnitudes(const JsonObject& deviceConfig) {
@@ -84,8 +86,10 @@ void _haSendSwitch(unsigned char i, const JsonObject& deviceConfig, JsonObject& 
     config.set("name", _haFixName(name));
     config.set("platform", "mqtt");
 
-    config["uniq_id"] = getIdentifier() + "_switch_" + String(i);
-    config["device"] = deviceConfig;
+    if (deviceConfig.size() > 0) {
+        config["uniq_id"] = getIdentifier() + "_switch_" + String(i);
+        config["device"] = deviceConfig;
+    }
 
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
@@ -156,8 +160,7 @@ void _haSendSwitches(const JsonObject& deviceConfig) {
 void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
 
     DynamicJsonBuffer deviceConfigJsonBuffer;
-    JsonObject& deviceConfig = deviceConfigJsonBuffer.createObject();
-    _haGetDeviceConfig(deviceConfig);
+    JsonObject& emptyDeviceConfig = deviceConfigJsonBuffer.createObject();
 
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
@@ -169,7 +172,7 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& config = jsonBuffer.createObject();
-        _haSendSwitch(i, deviceConfig, config);
+        _haSendSwitch(i, emptyDeviceConfig, config);
 
         String output;
         output.reserve(config.measureLength() + 32);
@@ -211,7 +214,7 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
-            _haSendMagnitude(i, deviceConfig, config);
+            _haSendMagnitude(i, emptyDeviceConfig, config);
 
             String output;
             output.reserve(config.measureLength() + 32);
@@ -259,9 +262,9 @@ void _haGetDeviceConfig(JsonObject& config) {
     
     config.createNestedArray("identifiers").add(identifier);
     config["name"] = _haFixName(getSetting("hostname"));
-    config["manufacturer"] = String("Espurna");
-    config["model"] = getBoardName();
-    config["sw_version"] = String(APP_VERSION) + " (" + getCoreVersion() + ")";
+    config["manufacturer"] = String(MANUFACTURER);
+    config["model"] = String(DEVICE);
+    config["sw_version"] = String(APP_NAME) + " " + String(APP_VERSION) + " (" + getCoreVersion() + ")";
 }
 
 void _haSend() {
