@@ -261,7 +261,7 @@ void _haGetDeviceConfig(JsonObject& config) {
     String identifier = getIdentifier();
     
     config.createNestedArray("identifiers").add(identifier);
-    config["name"] = _haFixName(getSetting("hostname"));
+    config["name"] = getSetting("desc", getSetting("hostname"));
     config["manufacturer"] = String(MANUFACTURER);
     config["model"] = String(DEVICE);
     config["sw_version"] = String(APP_NAME) + " " + String(APP_VERSION) + " (" + getCoreVersion() + ")";
