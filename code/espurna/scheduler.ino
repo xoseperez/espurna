@@ -51,6 +51,21 @@ void _schWebSocketOnSend(JsonObject &root){
 
 #if FLOW_SUPPORT
 
+PROGMEM const FlowConnections flow_schedule_component = {
+    0, NULL,
+    1, flow_data_array,
+};
+
+PROGMEM const char flow_schedule_component_json[] =
+    "\"Schedule\": "
+    "{"
+        "\"name\":\"Schedule\","
+        "\"icon\":\"calendar\","
+        "\"inports\":[],"
+        "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
+        "\"properties\":[{\"name\":\"Time\",\"type\":\"time\"}, {\"name\":\"Weekdays\",\"type\":\"weekdays\"}]"
+    "}";
+
 class FlowScheduleComponent;
 std::vector<FlowScheduleComponent*> _schedule_components;
 
@@ -262,11 +277,8 @@ void schSetup() {
     #endif
 
     #if FLOW_SUPPORT
-        flowRegisterComponent("Schedule", "calendar", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowScheduleComponent(properties); }))
-            ->addOutput("Event", BOOL)
-            ->addProperty("Time", TIME)
-            ->addProperty("Weekdays", WEEKDAYS)
-            ;
+        flowRegisterComponent("Schedule", &flow_schedule_component, flow_schedule_component_json,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowScheduleComponent(properties); }));
     #endif
 
     // Main callbacks

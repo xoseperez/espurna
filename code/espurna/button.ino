@@ -16,7 +16,6 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 
 #if FLOW_SUPPORT
-#include "flow.h"
 class FlowButtonComponent; // forward declaration
 #endif
 
@@ -55,6 +54,24 @@ bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
 // -----------------------------------------------------------------------------
 
 #if FLOW_SUPPORT
+
+PROGMEM const char flow_data2[] = "Data";
+PROGMEM const char* const flow_data2_array[] = {flow_data2};
+
+PROGMEM const FlowConnections flow_button_component = {
+    0, NULL,
+    1, flow_data2_array,
+};
+
+PROGMEM const char flow_button_component_json[] =
+    "\"Button\": "
+    "{"
+        "\"name\":\"Button\","
+        "\"icon\":\"toggle-on\","
+        "\"inports\":[],"
+        "\"outports\":[{\"name\":\"Data\",\"type\":\"int\"}],"
+        "\"properties\":[{\"name\":\"Button\",\"type\":\"list\"}]"
+    "}";
 
 class FlowButtonComponent : public FlowComponent {
     public:
@@ -250,10 +267,9 @@ void buttonSetup() {
             buttons->push_back(String(i));
         }
 
-        flowRegisterComponent("Button", "toggle-on", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowButtonComponent(properties); }))
-            ->addOutput("Event", INT)
-            ->addProperty("Button", buttons)
-            ;
+        flowRegisterComponent("Button", &flow_button_component, flow_button_component_json,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowButtonComponent(properties); }));
+        flowRegisterComponentValues("Button", "Button", buttons);
     #endif
 
     // Register loop

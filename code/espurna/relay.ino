@@ -1022,6 +1022,24 @@ void _relayInitCommands() {
 
 #if FLOW_SUPPORT
 
+PROGMEM const char flow_toggle[] = "Toggle";
+PROGMEM const char* const flow_relay_component_inputs[] = {flow_state, flow_toggle};
+
+PROGMEM const FlowConnections flow_relay_component = {
+    2, flow_relay_component_inputs,
+    0, NULL,
+};
+
+PROGMEM const char flow_relay_component_json[] =
+    "\"Relay\": "
+    "{"
+        "\"name\":\"Relay\","
+        "\"icon\":\"lightbulb-o\","
+        "\"inports\":[{\"name\":\"State\",\"type\":\"bool\"}, {\"name\":\"Toggle\",\"type\":\"any\"}],"
+        "\"outports\":[{\"name\":\"Data\",\"type\":\"int\"}],"
+        "\"properties\":[{\"name\":\"Relay\",\"type\":\"list\"}]"
+    "}";
+
 class FlowRelayComponent : public FlowComponent {
     private:
         int _relay_id;
@@ -1110,11 +1128,9 @@ void relaySetup() {
             relays->push_back(String(i));
         }
 
-        flowRegisterComponent("Relay", "lightbulb-o", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowRelayComponent(properties); }))
-            ->addInput("State", BOOL)
-            ->addInput("Toggle", ANY)
-            ->addProperty("Relay", relays)
-            ;
+        flowRegisterComponent("Relay", &flow_relay_component, flow_relay_component_json,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowRelayComponent(properties); }));
+        flowRegisterComponentValues("Relay", "Relay", relays);
     #endif
 
 

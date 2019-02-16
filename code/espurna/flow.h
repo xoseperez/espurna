@@ -3,15 +3,11 @@
 #include <vector>
 #include <map>
 
-enum FlowValueType {
-    ANY,
-    STRING,
-    INT,
-    DOUBLE,
-    BOOL,
-    LIST,
-    TIME,
-    WEEKDAYS
+struct FlowConnections {
+    int inputsNumber;
+    const char* const* inputs;
+    int outputsNumber;
+    const char* const* outputs;
 };
 
 class FlowComponent {
@@ -32,9 +28,6 @@ class FlowComponent {
         }
 
         JsonVariant* clone(JsonVariant& data) {
-//            if (data == NULL) {
-//                return new JsonVariant(false); // workaround for JSON parsing issue
-//            } else
             if (data.is<int>()) {
                 return new JsonVariant(data.as<int>());
             } else if (data.is<double>()) {
@@ -76,136 +69,57 @@ class FlowComponent {
 
 typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
 
-class FlowComponentType {
-    private:
-        typedef struct {
-            String name;
-            FlowValueType type;
-        } name_type_t;
-
-        String _name;
-        String _icon;
-        flow_component_factory_f _factory;
-        std::vector<name_type_t> _inputs;
-        std::vector<name_type_t> _outputs;
-        std::vector<name_type_t> _properties;
-        std::map<String, std::vector<String>*> _list_values;
-
-        void vectorToJSON(JsonObject& root, std::vector<name_type_t> &v, const char* name) {
-            JsonArray& array = root.createNestedArray(name);
-            for (unsigned int i=0; i < v.size(); i++) {
-                name_type_t& element = v[i];
-                JsonObject& elementObject = array.createNestedObject();
-                elementObject["name"] = element.name;
-
-                FlowValueType type = element.type;
-                const char *typeName = "unknown";
-                switch(type) {
-                    case ANY: typeName = "any"; break;
-                    case STRING: typeName = "string"; break;
-                    case INT: typeName = "int"; break;
-                    case DOUBLE: typeName = "double"; break;
-                    case BOOL: typeName = "bool"; break;
-                    case LIST: typeName = "list"; break;
-                    case TIME: typeName = "time"; break;
-                    case WEEKDAYS: typeName = "weekdays"; break;
-                }
-                elementObject["type"] = typeName;
-
-                if (type == LIST) {
-                    std::vector<String>* values = _list_values[element.name];
-                    JsonArray& valuesArray = elementObject.createNestedArray("values");
-                    for (unsigned int j=0; j < values->size(); j++) {
-                        valuesArray.add(values->at(j));
-                    }
-                }
-            }
-        }
-
-    public:
-        FlowComponentType(String name, String icon, flow_component_factory_f factory) {
-            _name = name;
-            _icon = icon;
-            _factory = factory;
-        }
-
-        String name() {
-            return _name;
-        }
-
-        FlowComponentType* addInput(String name, FlowValueType type) {
-            _inputs.push_back({name, type});
-            return this;
-        }
-
-        FlowComponentType* addOutput(String name, FlowValueType type) {
-            _outputs.push_back({name, type});
-            return this;
-        }
-
-        FlowComponentType* addProperty(String name, FlowValueType type) {
-            _properties.push_back({name, type});
-            return this;
-        }
-
-        FlowComponentType* addProperty(String name, std::vector<String>* values) {
-            _properties.push_back({name, LIST});
-            _list_values[name] = values;
-            return this;
-        }
-
-        int getInputNumber(String& name) {
-            for (int i = 0; i < _inputs.size(); i++) {
-                if (_inputs[i].name.equalsIgnoreCase(name))
-                    return i;
-            }
-            return -1;
-        }
-
-        int getOutputNumber(String& name) {
-            for (int i = 0; i < _outputs.size(); i++) {
-                if (_outputs[i].name.equalsIgnoreCase(name))
-                    return i;
-            }
-            return -1;
-        }
-
-        void toJSON(JsonObject& root) {
-            root["name"] = _name;
-            root["icon"] = _icon;
-
-            vectorToJSON(root, _inputs, "inports");
-            vectorToJSON(root, _outputs, "outports");
-            vectorToJSON(root, _properties, "properties");
-        }
-
-        FlowComponent* createComponent(JsonObject& properties) {
-            return _factory(properties);
-        }
-};
-
 class FlowComponentLibrary {
     private:
-        std::vector<FlowComponentType*> _types;
-        std::map<String, FlowComponentType*> _typesMap;
+        std::vector<const char*> _jsons;
+        std::map<String, const FlowConnections*> _connectionsMap;
+        std::map<String, flow_component_factory_f> _factoryMap;
 
     public:
-        FlowComponentType* addType(String name, String icon, flow_component_factory_f factory) {
-            FlowComponentType* type = new FlowComponentType(name, icon, factory);
-            _types.push_back(type);
-            _typesMap[name] = type;
-            return type;
+        void addType(String name, const FlowConnections* connections, const char* json, flow_component_factory_f factory) {
+            _jsons.push_back(json);
+            _connectionsMap[name] = connections;
+            _factoryMap[name] = factory;
         }
 
-        FlowComponentType* getComponent(int index) {
-            if (index >= _types.size())
+        const char* getComponentJson(int index) {
+            if (index >= _jsons.size())
                 return NULL;
-            return _types[index];
+            return _jsons[index];
         }
 
-        FlowComponentType* getType(String name) {
-            auto it = _typesMap.find(name);
-            if (it == _typesMap.end()) return NULL;
-            return it->second;
+        FlowComponent* createComponent(String name, JsonObject& properties) {
+            flow_component_factory_f& factory = _factoryMap[name];
+            return factory != NULL ? factory(properties) : NULL;
+        }
+
+        int getInputNumber(String name, String input) {
+            const FlowConnections* connections = _connectionsMap[name];
+            if (connections == NULL)
+                return -1;
+
+            FlowConnections temp;
+            memcpy_P (&temp, connections, sizeof (FlowConnections));
+            for (int i = 0; i < temp.inputsNumber; i++) {
+                if (strcmp_P(input.c_str(), temp.inputs[i]) == 0)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        int getOutputNumber(String name, String output) {
+            const FlowConnections* connections = _connectionsMap[name];
+            if (connections == NULL)
+                return -1;
+
+            FlowConnections temp;
+            memcpy_P (&temp, connections, sizeof (FlowConnections));
+            for (int i = 0; i < temp.outputsNumber; i++) {
+                if (strcmp_P(output.c_str(), temp.outputs[i]) == 0)
+                    return i;
+            }
+
+            return -1;
         }
 };

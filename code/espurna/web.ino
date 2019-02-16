@@ -376,28 +376,28 @@ void _onGetFlowLibrary(AsyncWebServerRequest *request) {
             return size;
         }
 
-        if (i == 0) {
-            buffer[0] = '{';
-            buffer++; size++; maxLen--;
-        }
+        buffer[0] = i == 0 ? '{' : ',';
+        buffer++; size++; maxLen--;
 
-        FlowComponentType* component = flowGetComponent(i);
-        if (component != NULL) {
-            if (i > 0) {
-                buffer[0] = ',';
-                buffer++; size++; maxLen--;
-            }
-
-            int count = sprintf((char*)buffer, "\"%s\": ", component->name().c_str());
-            size += count; maxLen -= count; buffer += count;
-
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& root = jsonBuffer.createObject();
-            component->toJSON(root);
-            size += root.printTo((char*)buffer, maxLen);
+        const char* json = flowGetComponentJson(i);
+        if (json != NULL) {
+            strncpy_P((char*)buffer, json, maxLen);
+            int count = strnlen_P(json, maxLen);
+            size += count; //maxLen -= count; buffer += count;
 
             i++;
         } else {
+            // last chunk is always list values array
+            strcpy((char*)buffer, "_values: ");
+            buffer+=9; size+=9; maxLen-=9;
+
+            DynamicJsonBuffer jsonBuffer;
+            JsonArray& values = jsonBuffer.createArray();
+            flowGetComponentValuesJson(values);
+            int count = values.printTo((char*)buffer, maxLen);
+            size += count;
+            buffer += count;
+
             buffer[0] = '}';
             size++;
             i = -1; // last chunk

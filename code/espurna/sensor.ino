@@ -347,6 +347,21 @@ void _sensorInitCommands() {
 
 #if FLOW_SUPPORT
 
+PROGMEM const FlowConnections flow_sensor_component = {
+    0, NULL,
+    1, flow_data_array,
+};
+
+PROGMEM const char flow_sensor_component_json[] =
+    "\"Sensor\": "
+    "{"
+        "\"name\":\"Sensor\","
+        "\"icon\":\"thermometer-3\","
+        "\"inports\":[],"
+        "\"outports\":[{\"name\":\"Data\",\"type\":\"double\"}],"
+        "\"properties\":[{\"name\":\"Sensor\",\"type\":\"list\"}]"
+    "}";
+
 class FlowSensorComponent;
 std::vector<FlowSensorComponent*> _flow_sensors;
 
@@ -1388,10 +1403,9 @@ void sensorSetup() {
             sensors->push_back(sensor + "/" + topic);
         }
 
-        flowRegisterComponent("Sensor", "thermometer-3", (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSensorComponent(properties); }))
-            ->addOutput("Data", DOUBLE)
-            ->addProperty("Sensor", sensors)
-            ;
+        flowRegisterComponent("Sensor", &flow_sensor_component, flow_sensor_component_json,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSensorComponent(properties); }));
+        flowRegisterComponentValues("Sensor", "Sensor", sensors);
     #endif
 
     // Main callbacks

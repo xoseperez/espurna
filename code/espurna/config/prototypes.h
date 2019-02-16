@@ -210,10 +210,10 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 
 #if FLOW_SUPPORT
-    class FlowComponent;
-    class FlowComponentType;
+    #include "flow.h"
     typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
+    void flowRegisterComponentValues(String component, String property, std::vector<String>* values);
 #else
-    #define FlowComponentType void
+    #define FlowConnections void
     #define flow_component_factory_f void *
 #endif
