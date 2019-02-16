@@ -388,8 +388,8 @@ void _onGetFlowLibrary(AsyncWebServerRequest *request) {
             i++;
         } else {
             // last chunk is always list values array
-            strcpy((char*)buffer, "_values: ");
-            buffer+=9; size+=9; maxLen-=9;
+            strcpy((char*)buffer, "\"_values\": ");
+            buffer+=11; size+=11; maxLen-=11;
 
             DynamicJsonBuffer jsonBuffer;
             JsonArray& values = jsonBuffer.createArray();
