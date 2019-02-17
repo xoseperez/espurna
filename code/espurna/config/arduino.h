@@ -73,6 +73,7 @@
 //#define LINGAN_SWA1
 //#define HEYGO_HY02
 //#define MAXCIO_WUS002S
+//#define OUKITEL_P1
 //#define YIDIAN_XSSSA05
 //#define TONBUX_XSSSA06
 //#define TONBUX_XSSSA01
