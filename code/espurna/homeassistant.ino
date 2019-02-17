@@ -31,18 +31,13 @@ String _haFixName(String name) {
 
 #if SENSOR_SUPPORT
 
-void _haSendMagnitude(unsigned char i, const JsonObject& deviceConfig, JsonObject& config) {
+void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
     unsigned char type = magnitudeType(i);
     config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
-
-    if (deviceConfig.size() > 0) {
-        config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
-        config["device"] = deviceConfig;
-    }
 }
 
 void _haSendMagnitudes(const JsonObject& deviceConfig) {
@@ -58,7 +53,10 @@ void _haSendMagnitudes(const JsonObject& deviceConfig) {
         if (_haEnabled) {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
-            _haSendMagnitude(i, deviceConfig, config);
+            _haSendMagnitude(i, config);
+            config["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
+            config["device"] = deviceConfig;
+            
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -76,7 +74,7 @@ void _haSendMagnitudes(const JsonObject& deviceConfig) {
 // SWITCHES & LIGHTS
 // -----------------------------------------------------------------------------
 
-void _haSendSwitch(unsigned char i, const JsonObject& deviceConfig, JsonObject& config) {
+void _haSendSwitch(unsigned char i, JsonObject& config) {
 
     String name = getSetting("hostname");
     if (relayCount() > 1) {
@@ -85,11 +83,6 @@ void _haSendSwitch(unsigned char i, const JsonObject& deviceConfig, JsonObject& 
 
     config.set("name", _haFixName(name));
     config.set("platform", "mqtt");
-
-    if (deviceConfig.size() > 0) {
-        config["uniq_id"] = getIdentifier() + "_switch_" + String(i);
-        config["device"] = deviceConfig;
-    }
 
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
@@ -143,7 +136,10 @@ void _haSendSwitches(const JsonObject& deviceConfig) {
         if (_haEnabled) {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
-            _haSendSwitch(i, deviceConfig, config);
+            _haSendSwitch(i, config);
+            config["uniq_id"] = getIdentifier() + "_switch_" + String(i);
+            config["device"] = deviceConfig;
+
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -159,9 +155,6 @@ void _haSendSwitches(const JsonObject& deviceConfig) {
 
 void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
 
-    DynamicJsonBuffer deviceConfigJsonBuffer;
-    JsonObject& emptyDeviceConfig = deviceConfigJsonBuffer.createObject();
-
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
     #else
@@ -172,7 +165,7 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
         DynamicJsonBuffer jsonBuffer;
         JsonObject& config = jsonBuffer.createObject();
-        _haSendSwitch(i, emptyDeviceConfig, config);
+        _haSendSwitch(i, config);
 
         String output;
         output.reserve(config.measureLength() + 32);
@@ -214,7 +207,7 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
-            _haSendMagnitude(i, emptyDeviceConfig, config);
+            _haSendMagnitude(i, config);
 
             String output;
             output.reserve(config.measureLength() + 32);
@@ -253,8 +246,6 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
         }
 
     #endif
-
-    deviceConfigJsonBuffer.clear();
 }
 
 void _haGetDeviceConfig(JsonObject& config) {
