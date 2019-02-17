@@ -137,7 +137,7 @@ void _haSendSwitches(const JsonObject& deviceConfig) {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
             _haSendSwitch(i, config);
-            config["uniq_id"] = getIdentifier() + "_switch_" + String(i);
+            config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
             config["device"] = deviceConfig;
 
             config.printTo(output);
