@@ -88,12 +88,12 @@ class FlowComponentLibrary {
             return _jsons[index];
         }
 
-        FlowComponent* createComponent(String name, JsonObject& properties) {
+        FlowComponent* createComponent(String& name, JsonObject& properties) {
             flow_component_factory_f& factory = _factoryMap[name];
             return factory != NULL ? factory(properties) : NULL;
         }
 
-        int getInputNumber(String name, String input) {
+        int getInputNumber(String& name, String& input) {
             const FlowConnections* connections = _connectionsMap[name];
             if (connections == NULL)
                 return -1;
@@ -108,7 +108,7 @@ class FlowComponentLibrary {
             return -1;
         }
 
-        int getOutputNumber(String name, String output) {
+        int getOutputNumber(String& name, String& output) {
             const FlowConnections* connections = _connectionsMap[name];
             if (connections == NULL)
                 return -1;

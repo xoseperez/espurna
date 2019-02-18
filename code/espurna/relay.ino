@@ -1036,7 +1036,7 @@ PROGMEM const char flow_relay_component_json[] =
         "\"name\":\"Relay\","
         "\"icon\":\"lightbulb-o\","
         "\"inports\":[{\"name\":\"State\",\"type\":\"bool\"}, {\"name\":\"Toggle\",\"type\":\"any\"}],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"int\"}],"
+        "\"outports\":[],"
         "\"properties\":[{\"name\":\"Relay\",\"type\":\"list\"}]"
     "}";
 

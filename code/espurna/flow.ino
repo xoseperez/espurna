@@ -2,7 +2,7 @@
 
 FLOW MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2018 by Xose Pï¿½rez <xose dot perez at gmail dot com>
 
 */
 
@@ -491,25 +491,25 @@ class FlowHysteresisComponent : public FlowComponent {
         }
 };
 
-void _flowMQTTCallback(unsigned int type, const char * topic, const char * payload) {
-
-    if (type == MQTT_CONNECT_EVENT) {
-        mqttSubscribe("flow");
-    }
-
-    if (type == MQTT_MESSAGE_EVENT) {
-
-        // Match topic
-        String t = mqttMagnitude((char *) topic);
-        if (t.equals("flow")) {
-            flowStart();
-        }
-
-    }
-}
+//void _flowMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+//
+//    if (type == MQTT_CONNECT_EVENT) {
+//        mqttSubscribe("flow");
+//    }
+//
+//    if (type == MQTT_MESSAGE_EVENT) {
+//
+//        // Match topic
+//        String t = mqttMagnitude((char *) topic);
+//        if (t.equals("flow")) {
+//            flowStart();
+//        }
+//
+//    }
+//}
 
 void flowSetup() {
-    mqttRegister(_flowMQTTCallback);
+//    mqttRegister(_flowMQTTCallback);
 
     flowRegisterComponent("Start", &flow_start_component, flow_start_component_json,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowStartComponent(properties); }));
