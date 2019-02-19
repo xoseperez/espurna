@@ -3,8 +3,10 @@ from __future__ import print_function
 
 import os
 import sys
+import json
 from subprocess import call
 import click
+import semantic_version
 
 Import("env", "projenv")
 
@@ -43,6 +45,29 @@ def print_filler(fill, color=Color.WHITE, err=False):
 
     out = sys.stderr if err else sys.stdout
     print(clr(color, fill * width), file=out)
+
+def ldscript_inject_libpath():
+    with open(env['PLATFORM_MANIFEST'], 'r') as f:
+        manifest = json.load(f)
+    platform_version = semantic_version.Version(manifest['version'])
+
+    # 1.5.0 did not append this directory into the LIBPATH
+    libpath_sdk = os.path.join("$FRAMEWORK_ARDUINOESP8266_DIR", "tools", "sdk", "ld")
+
+    # deduce required directory based on PIO platform version
+    # TODO try reading platform.txt from framework dir?
+    # TODO try to avoid semantic_version module use
+    libpath_base = os.path.join("$PROJECT_DIR", "..", "dist", "ld")
+    libpath = os.path.join(libpath_base, "latest")
+
+    if platform_version <= semantic_version.Version("1.8.0"):
+        libpath = os.path.join(libpath_base, "pre_2.5.0")
+
+    env.Append(LIBPATH=[
+        libpath_sdk,
+        libpath
+    ])
+    print(env["LIBPATH"])
 
 # ------------------------------------------------------------------------------
 # Callbacks
@@ -86,5 +111,6 @@ def check_size(source, target, env):
 projenv.ProcessUnFlags("-w")
 
 remove_float_support()
+ldscript_inject_libpath()
 
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
