@@ -58,6 +58,35 @@ espurna.menu.FlashMode.qio=QIO (fast)
 espurna.menu.FlashMode.qio.build.flash_mode=qio
 espurna.menu.FlashMode.qio.build.flash_flags=-DFLASHMODE_QIO
 
+# lwip versions
+espurna.menu.ip.lm2f=v2 Lower Memory
+espurna.menu.ip.lm2f.build.lwip_include=lwip2/include
+espurna.menu.ip.lm2f.build.lwip_lib=-llwip2-536-feat
+espurna.menu.ip.lm2f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=1 -DLWIP_IPV6=0
+espurna.menu.ip.hb2f=v2 Higher Bandwidth
+espurna.menu.ip.hb2f.build.lwip_include=lwip2/include
+espurna.menu.ip.hb2f.build.lwip_lib=-llwip2-1460-feat
+espurna.menu.ip.hb2f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=1 -DLWIP_IPV6=0
+espurna.menu.ip.lm2n=v2 Lower Memory (no features)
+espurna.menu.ip.lm2n.build.lwip_include=lwip2/include
+espurna.menu.ip.lm2n.build.lwip_lib=-llwip2-536
+espurna.menu.ip.lm2n.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=0 -DLWIP_IPV6=0
+espurna.menu.ip.hb2n=v2 Higher Bandwidth (no features)
+espurna.menu.ip.hb2n.build.lwip_include=lwip2/include
+espurna.menu.ip.hb2n.build.lwip_lib=-llwip2-1460
+espurna.menu.ip.hb2n.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=0 -DLWIP_IPV6=0
+espurna.menu.ip.lm6f=v2 IPv6 Lower Memory
+espurna.menu.ip.lm6f.build.lwip_include=lwip2/include
+espurna.menu.ip.lm6f.build.lwip_lib=-llwip6-536-feat
+espurna.menu.ip.lm6f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=1 -DLWIP_IPV6=1
+espurna.menu.ip.hb6f=v2 IPv6 Higher Bandwidth
+espurna.menu.ip.hb6f.build.lwip_include=lwip2/include
+espurna.menu.ip.hb6f.build.lwip_lib=-llwip6-1460-feat
+espurna.menu.ip.hb6f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=1 -DLWIP_IPV6=1
+espurna.menu.ip.hb1=v1.4 Higher Bandwidth
+espurna.menu.ip.hb1.build.lwip_lib=-llwip_gcc
+espurna.menu.ip.hb1.build.lwip_flags=-DLWIP_OPEN_SRC
+
 # customizable printf/scanf float support (enabled by default via platform.txt:build.float)
 espurna.menu.float_support.disabled=Disabled (Recommended)
 espurna.menu.float_support.disabled.build.float=
@@ -94,3 +123,34 @@ espurna.menu.eesz.4M.build.flash_ld=eagle.flash.4m1m4s.ld
 espurna.menu.eesz.4M.build.spiffs_pagesize=256
 espurna.menu.eesz.4M.upload.maximum_size=1044464
 espurna.menu.eesz.4M.build.rfcal_addr=0x3FC000
+
+espurna.menu.eesz.4M=4M4S (3M SPIFFS)
+espurna.menu.eesz.4M.build.flash_size=4M
+espurna.menu.eesz.4M.build.flash_size_bytes=0x400000
+espurna.menu.eesz.4M.build.flash_ld=eagle.flash.4m3m4s.ld
+espurna.menu.eesz.4M.build.spiffs_pagesize=256
+espurna.menu.eesz.4M.upload.maximum_size=1044464
+espurna.menu.eesz.4M.build.rfcal_addr=0x3FC000
+
+# nothing set as default
+espurna.menu.baud.115200=115200
+espurna.menu.baud.115200.upload.speed=115200
+espurna.menu.baud.9600=9600
+espurna.menu.baud.9600.upload.speed=9600
+espurna.menu.baud.57600=57600
+espurna.menu.baud.57600.upload.speed=57600
+espurna.menu.baud.230400.linux=230400
+espurna.menu.baud.230400.macosx=230400
+espurna.menu.baud.230400.upload.speed=230400
+espurna.menu.baud.256000.windows=256000
+espurna.menu.baud.256000.upload.speed=256000
+espurna.menu.baud.460800.linux=460800
+espurna.menu.baud.460800.macosx=460800
+espurna.menu.baud.460800.upload.speed=460800
+espurna.menu.baud.512000.windows=512000
+espurna.menu.baud.512000.upload.speed=512000
+espurna.menu.baud.921600=921600
+espurna.menu.baud.921600.upload.speed=921600
+
+# TODO
+# core / app debug options?
