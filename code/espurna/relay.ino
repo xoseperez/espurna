@@ -478,6 +478,12 @@ unsigned char relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        if (!hasSetting("mqttGroupInv", i)) continue;
+        setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
+        delSetting("mqttGroupInv", i);
+    }
+
     byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
