@@ -212,6 +212,91 @@ void settingsGetJson(JsonObject& root) {
 }
 
 // -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+//PROGMEM const char flow_value[] = "Value";
+PROGMEM const char* const flow_value_array[] = {flow_value};
+
+PROGMEM const FlowConnections flow_save_setting_component = {
+    1, flow_value_array,
+    0, NULL,
+};
+
+PROGMEM const char flow_save_setting_component_json[] =
+    "\"Save setting\": "
+    "{"
+        "\"name\":\"Save setting\","
+        "\"icon\":\"save\","
+        "\"inports\":[{\"name\":\"Value\",\"type\":\"string\"}],"
+        "\"outports\":[],"
+        "\"properties\":[{\"name\":\"Name\",\"type\":\"string\"}]"
+    "}";
+
+class FlowSaveSettingComponent : public FlowComponent {
+    private:
+        String _name;
+
+    public:
+        FlowSaveSettingComponent(JsonObject& properties) {
+            const char * name = properties["Name"];
+            _name = String(name != NULL ? name : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            setSetting(_name, data.as<String>());
+        }
+
+        static void reg() {
+            flowRegisterComponent("Save setting", &flow_save_setting_component, flow_save_setting_component_json,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSaveSettingComponent(properties); }));
+        }
+};
+
+PROGMEM const char flow_name[] = "Name";
+PROGMEM const char* const flow_name_array[] = {flow_name};
+
+PROGMEM const FlowConnections flow_load_setting_component = {
+    1, flow_name_array,
+    1, flow_value_array,
+};
+
+PROGMEM const char flow_load_setting_component_json[] =
+    "\"Load setting\": "
+    "{"
+        "\"name\":\"Load setting\","
+        "\"icon\":\"database\","
+        "\"inports\":[{\"name\":\"Name\",\"type\":\"string\"}],"
+        "\"outports\":[{\"name\":\"Value\",\"type\":\"string\"}],"
+        "\"properties\":[{\"name\":\"Default\",\"type\":\"string\"}]"
+    "}";
+
+class FlowLoadSettingComponent : public FlowComponent {
+    private:
+        String _default;
+
+    public:
+        FlowLoadSettingComponent(JsonObject& properties) {
+            const char * def = properties["Default"];
+            _default = String(def != NULL ? def : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            JsonVariant value(getSetting(data.as<String>(), _default));
+            processOutput(value, 0);
+        }
+
+        static void reg() {
+            flowRegisterComponent("Load setting", &flow_load_setting_component, flow_load_setting_component_json,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowLoadSettingComponent(properties); }));
+        }
+};
+
+#endif // FLOW_SUPPORT
+
+// -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
 
@@ -227,5 +312,10 @@ void settingsSetup() {
             []() {}
         #endif
     );
+
+    #if FLOW_SUPPORT
+        FlowSaveSettingComponent::reg();
+        FlowLoadSettingComponent::reg();
+    #endif
 
 }
