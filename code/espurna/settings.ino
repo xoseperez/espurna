@@ -246,7 +246,12 @@ class FlowSaveSettingComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            setSetting(_name, data.as<String>());
+            String value = data.as<String>();
+            if (value != "") {
+                setSetting(_name, value);
+            } else {
+                delSetting(_name);
+            }
         }
 
         static void reg() {
@@ -284,8 +289,10 @@ class FlowLoadSettingComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            JsonVariant value(getSetting(data.as<String>(), _default));
-            processOutput(value, 0);
+            String name = data.as<String>();
+            String value = getSetting(name, _default);
+            JsonVariant output(value.c_str());
+            processOutput(output, 0);
         }
 
         static void reg() {
@@ -293,6 +300,11 @@ class FlowLoadSettingComponent : public FlowComponent {
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowLoadSettingComponent(properties); }));
         }
 };
+
+void settingsFlowSetup() {
+    FlowSaveSettingComponent::reg();
+    FlowLoadSettingComponent::reg();
+}
 
 #endif // FLOW_SUPPORT
 
@@ -312,10 +324,5 @@ void settingsSetup() {
             []() {}
         #endif
     );
-
-    #if FLOW_SUPPORT
-        FlowSaveSettingComponent::reg();
-        FlowLoadSettingComponent::reg();
-    #endif
 
 }

@@ -117,6 +117,8 @@ void setup() {
     #if FLOW_SUPPORT
         // register default flow components first
         flowSetup();
+        // settings component after
+        settingsFlowSetup();
     #endif
 
     // lightSetup must be called before relaySetup

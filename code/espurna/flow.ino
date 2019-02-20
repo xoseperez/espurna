@@ -250,7 +250,7 @@ class FlowDebugComponent : public FlowComponent {
                 dtostrf(data.as<double>(), 1 - sizeof(buffer), 3, buffer);
                 DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), buffer);
             } else if (data.is<bool>()) {
-                DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), data.as<bool>() ? "true" : "false");
+                DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), data.as<bool>() ? "<true>" : "<false>");
             } else if (data.is<char*>()) {
                 DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), data.as<const char*>());
             } else {
