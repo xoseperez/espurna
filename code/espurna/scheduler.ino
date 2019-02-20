@@ -63,7 +63,7 @@ PROGMEM const char flow_schedule_component_json[] =
         "\"icon\":\"calendar\","
         "\"inports\":[],"
         "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
-        "\"properties\":[{\"name\":\"Time\",\"type\":\"time\"}, {\"name\":\"Weekdays\",\"type\":\"weekdays\"}]"
+        "\"properties\":[{\"name\":\"Time\",\"type\":\"time\"}, {\"name\":\"Weekdays\",\"type\":\"weekdays\"},{\"name\":\"Value\",\"type\":\"any\"}]"
     "}";
 
 class FlowScheduleComponent;
@@ -71,13 +71,16 @@ std::vector<FlowScheduleComponent*> _schedule_components;
 
 class FlowScheduleComponent : public FlowComponent {
     private:
-        JsonVariant *_data = new JsonVariant(true);
+        JsonVariant *_value;
         String _weekdays;
         int _hour;
         int _minute;
 
     public:
         FlowScheduleComponent(JsonObject& properties) {
+            JsonVariant value = properties["Value"];
+            _value = clone(value);
+
             _weekdays = String((const char *)properties["Weekdays"]);
             String time = String((const char *)properties["Time"]);
             int colon = time.indexOf(":");
@@ -91,7 +94,7 @@ class FlowScheduleComponent : public FlowComponent {
 
         void check(time_t& time) {
             if (_schMinutesLeft(time, _hour, _minute) == 0 && (_weekdays.length() == 0 || _schIsThisWeekday(time, _weekdays))) {
-                processOutput(*_data, 0);
+                processOutput(*_value, 0);
             }
         }
 };

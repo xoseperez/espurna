@@ -188,21 +188,24 @@ PROGMEM const char flow_start_component_json[] =
         "\"icon\":\"play\","
         "\"inports\":[],"
         "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
-        "\"properties\":[]"
+        "\"properties\":[{\"name\":\"Value\",\"type\":\"any\"}]"
     "}";
 
 class FlowStartComponent : public FlowComponent {
     private:
-        JsonVariant *_data = new JsonVariant(true);
+        JsonVariant *_value;
 
     public:
         FlowStartComponent(JsonObject& properties) {
+            JsonVariant value = properties["Value"];
+            _value = clone(value);
+
             flow_scheduled_task_callback_f callback = [this](unsigned long time, JsonVariant *data){ this->onStart(); };
             _flow_scheduled_tasks_queue.insert({NULL, 0, callback});
         }
 
         void onStart() {
-            processOutput(*_data, 0);
+            processOutput(*_value, 0);
         }
 };
 
@@ -353,19 +356,22 @@ PROGMEM const char flow_timer_component_json[] =
         "\"icon\":\"clock-o\","
         "\"inports\":[],"
         "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
-        "\"properties\":[{\"name\":\"Seconds\",\"type\":\"int\"}]"
+        "\"properties\":[{\"name\":\"Seconds\",\"type\":\"int\"},{\"name\":\"Value\",\"type\":\"any\"}]"
     "}";
 
 PROGMEM const char flow_incorrect_timer_delay[] = "[FLOW] Incorrect timer delay: %i\n";
 
 class FlowTimerComponent : public FlowComponent {
     private:
-        JsonVariant *_data = new JsonVariant(true);
+        JsonVariant *_value;
         unsigned long _period;
         flow_scheduled_task_callback_f _callback;
 
     public:
         FlowTimerComponent(JsonObject& properties) {
+            JsonVariant value = properties["Value"];
+            _value = clone(value);
+
             int seconds = properties["Seconds"];
             _period = 1000 * (int)seconds;
 
@@ -378,7 +384,7 @@ class FlowTimerComponent : public FlowComponent {
         }
 
         void onSchedule(unsigned long now) {
-            processOutput(*_data, 0);
+            processOutput(*_value, 0);
 
             // reschedule
             _flow_scheduled_tasks_queue.insert({NULL, now + _period, _callback});
