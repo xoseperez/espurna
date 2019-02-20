@@ -132,6 +132,13 @@ espurna.menu.eesz.4M.build.spiffs_pagesize=256
 espurna.menu.eesz.4M.upload.maximum_size=1044464
 espurna.menu.eesz.4M.build.rfcal_addr=0x3FC000
 
+espurna.menu.wipe.none=Only Sketch
+espurna.menu.wipe.none.upload.erase_cmd=
+espurna.menu.wipe.sdk=Sketch + WiFi Settings
+espurna.menu.wipe.sdk.upload.erase_cmd=-ca "{build.rfcal_addr}" -cz 0x4000
+espurna.menu.wipe.all=All Flash Contents
+espurna.menu.wipe.all.upload.erase_cmd=-ca 0x0 -cz "{build.flash_size_bytes}"
+
 # nothing set as default
 espurna.menu.baud.115200=115200
 espurna.menu.baud.115200.upload.speed=115200
