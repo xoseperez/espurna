@@ -85,7 +85,7 @@ espurna.menu.FlashSize.2M.build.flash_size=2M
 espurna.menu.FlashSize.2M.build.flash_size_bytes=0x200000
 espurna.menu.FlashSize.2M.build.flash_ld=eagle.flash.2m1m4s.ld
 espurna.menu.FlashSize.2M.build.spiffs_pagesize=256
-epsurna.menu.FlashSize.2M.upload.maximum_size=1044464
+espurna.menu.FlashSize.2M.upload.maximum_size=1044464
 espurna.menu.FlashSize.2M.build.rfcal_addr=0x1FC000
 
 espurna.menu.FlashSize.4M=4M4S (1M SPIFFS)
