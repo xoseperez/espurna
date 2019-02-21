@@ -21,6 +21,7 @@ String _flow;
 unsigned long _mqtt_flow_sent_at = 0;
 #endif
 
+bool _flow_started = false;
 FlowComponentLibrary _library;
 
 typedef struct {
@@ -93,6 +94,11 @@ const char* flowGetComponentJson(int index) {
 }
 
 void flowStart() {
+    if (_flow_started) {
+        DEBUG_MSG_P(PSTR("[FLOW] Started already\n"));
+        return;
+    }
+
     DEBUG_MSG_P(PSTR("[FLOW] Starting\n"));
 
     #if SPIFFS_SUPPORT
@@ -113,6 +119,8 @@ void flowStart() {
     #if SPIFFS_SUPPORT
         source.close();
     #endif
+
+    _flow_started = true;
 }
 
 void _flowStart(JsonObject& data) {
