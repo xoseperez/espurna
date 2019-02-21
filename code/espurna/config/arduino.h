@@ -92,7 +92,7 @@
 //#define NEO_COOLCAM_NAS_WR01W
 //#define ESTINK_WIFI_POWER_STRIP
 //#define PILOTAK_ESP_DIN_V1
-//#define BLITZWOLF_BWSHP2
+//#define BLITZWOLF_BWSHPX
 //#define BH_ONOFRE
 //#define ITEAD_SONOFF_IFAN02
 //#define GENERIC_AG_L4
@@ -115,7 +115,7 @@
 //#define GOSUND_SP1_V23
 //#define GOSUND_WS1
 //#define ARILUX_AL_LC02_V14
-//#define BLITZWOLF_BWSHP2_V23
+//#define BLITZWOLF_BWSHPX_V23
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

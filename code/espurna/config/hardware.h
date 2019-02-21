@@ -2723,7 +2723,8 @@
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
-// Several boards under different names uing a power chip labelled BL0937 or HJL-01
+// BlitzWolf SHP2 and SHP6
+// Also several boards under different names uing a power chip labelled BL0937 or HJL-01
 // * Blitzwolf (https://www.amazon.es/Inteligente-Temporización-Dispositivos-Cualquier-BlitzWolf/dp/B07BMQP142)
 // * HomeCube (https://www.amazon.de/Steckdose-Homecube-intelligente-Verbrauchsanzeige-funktioniert/dp/B076Q2LKHG)
 // * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
@@ -2731,11 +2732,11 @@
 // * Ablue (https://www.amazon.de/Intelligente-Steckdose-Ablue-Funktioniert-Assistant/dp/B076DRFRZC)
 // -----------------------------------------------------------------------------
 
-#elif defined(BLITZWOLF_BWSHP2)
+#elif defined(BLITZWOLF_BWSHPX)
 
     // Info
     #define MANUFACTURER                "BLITZWOLF"
-    #define DEVICE                      "BWSHP2"
+    #define DEVICE                      "BWSHPX"
 
     // Buttons
     #define BUTTON1_PIN                 13
@@ -2770,13 +2771,15 @@
 
 // -----------------------------------------------------------------------------
 // Same as the above but new board version marked V2.3
+// BlitzWolf SHP2 V2.3
+// Gosund SP1 V2.3
 // -----------------------------------------------------------------------------
 
-#elif defined(BLITZWOLF_BWSHP2_V23)
+#elif defined(BLITZWOLF_BWSHPX_V23)
 
     // Info
     #define MANUFACTURER                "BLITZWOLF"
-    #define DEVICE                      "BWSHP2V2.3"
+    #define DEVICE                      "BWSHPX_V23"
 
     // Buttons
     #define BUTTON1_PIN                 3
@@ -2873,6 +2876,7 @@
     #define LED1_PIN            1
     #define LED1_PIN_INVERSE    1
 
+// This one is the same as the BLITZWOLF_BWSHPX_V23
 #elif defined(GOSUND_SP1_V23)
 
     // Info
