@@ -166,8 +166,10 @@ void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsig
     if (BROKER_MSG_TYPE_STATUS != type) return;
 
     if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
-        unsigned char value = atoi(payload);
-        domoticzSendRelay(id, value == 1);
+        bool status = atoi(payload) == 1;
+        if (_domoticzStatus(id) == status) return;
+        _dcz_relay_state[id] = status;
+        domoticzSendRelay(id, status);
     }
     
 }
@@ -238,8 +240,6 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
 
 void domoticzSendRelay(unsigned char relayID, bool status) {
     if (!_dcz_enabled) return;
-    if (_domoticzStatus(relayID) == status) return;
-    _dcz_relay_state[relayID] = status;
     char buffer[15];
     snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     domoticzSend(buffer, status ? "1" : "0");
