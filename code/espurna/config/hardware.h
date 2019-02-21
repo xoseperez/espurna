@@ -2852,6 +2852,25 @@
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
 // -----------------------------------------------------------------------------
 
+#elif defined(GOSUND_WS1)
+
+    // Info
+    #define MANUFACTURER        "GOSUND"
+    #define DEVICE              "WS1"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            1
+    #define LED1_PIN_INVERSE    1
+
 #elif defined(GOSUND_SP1_V23)
 
     // Info
