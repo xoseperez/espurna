@@ -36,6 +36,8 @@ WiFiClientSecure _mqtt_client_secure;
 bool _mqtt_enabled = MQTT_ENABLED;
 bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
+unsigned long _mqtt_last_connection = 0;
+bool _mqtt_connecting = false;
 unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
 unsigned long _mqtt_keepalive = MQTT_KEEPALIVE;
@@ -48,10 +50,6 @@ char *_mqtt_user = 0;
 char *_mqtt_pass = 0;
 char *_mqtt_will;
 char *_mqtt_clientid;
-#if MQTT_SKIP_RETAINED
-unsigned long _mqtt_connected_at = 0;
-#endif
-unsigned long _mqtt_disconnected_at = 0;
 
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
@@ -72,11 +70,13 @@ void _mqttConnect() {
     // Do not connect if disabled
     if (!_mqtt_enabled) return;
 
-    // Do not connect if already connected
-    if (_mqtt.connected()) return;
+    // Do not connect if already connected or still trying to connect
+    if (_mqtt.connected() || _mqtt_connecting) return;
 
     // Check reconnect interval
-    if (millis() - _mqtt_disconnected_at < _mqtt_reconnect_delay) return;
+    if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
+
+    _mqtt_connecting = true;
 
     // Increase the reconnect delay
     _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
@@ -397,9 +397,7 @@ void _mqttOnConnect() {
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
-    #if MQTT_SKIP_RETAINED
-        _mqtt_connected_at = millis();
-    #endif
+    _mqtt_last_connection = millis();
 
     // Clean subscriptions
     mqttUnsubscribeRaw("#");
@@ -413,7 +411,9 @@ void _mqttOnConnect() {
 
 void _mqttOnDisconnect() {
 
-    _mqtt_disconnected_at = millis();
+    // Reset reconnection delay
+    _mqtt_last_connection = millis();
+    _mqtt_connecting = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
@@ -432,7 +432,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     strlcpy(message, (char *) payload, len + 1);
 
     #if MQTT_SKIP_RETAINED
-        if (millis() - _mqtt_connected_at < MQTT_SKIP_TIME) {
+        if (millis() - _mqtt_last_connection < MQTT_SKIP_TIME) {
             DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
 			return;
 		}
