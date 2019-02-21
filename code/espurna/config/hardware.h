@@ -2102,6 +2102,38 @@
     #define LED1_PIN_INVERSE	1
 
 // -----------------------------------------------------------------------------
+// Oukitel - P1
+// -----------------------------------------------------------------------------
+
+#elif defined(OUKITEL_P1)
+    // -----------------------------------------------------------------------------
+    // Oukitel P1 Smart Plug
+    // https://www.amazon.com/Docooler-OUKITEL-Control-Wireless-Adaptor/dp/B07J3BYFJX/ref=sr_1_fkmrnull_2?keywords=oukitel+p1+smart+switch&qid=1550424399&s=gateway&sr=8-2-fkmrnull
+    // -----------------------------------------------------------------------------
+
+    // Info
+    #define MANUFACTURER		"Oukitel"
+    #define DEVICE				"P1"
+
+    // Buttons
+    #define BUTTON1_PIN			13
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    // Right
+    #define RELAY1_PIN			12
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    // Left
+    #define RELAY2_PIN			15
+    #define RELAY2_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			0  // blue
+    #define LED1_PIN_INVERSE	1
+    #define LED1_MODE           LED_MODE_WIFI
+
+// -----------------------------------------------------------------------------
 // YiDian XS-SSA05
 // -----------------------------------------------------------------------------
 
