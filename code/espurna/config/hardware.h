@@ -2331,7 +2331,9 @@
 
     // Relays
     #define RELAY1_PIN          0
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #ifndef RELAY1_TYPE
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL   // See #1504 and #1554
+    #endif
 
     // LEDs
     #define LED1_PIN            2
