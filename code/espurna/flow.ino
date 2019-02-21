@@ -336,6 +336,89 @@ class FlowChangeComponent : public FlowComponent {
 };
 
 // -----------------------------------------------------------------------------
+// Math component
+// -----------------------------------------------------------------------------
+
+PROGMEM const char flow_input1[] = "Input 1";
+PROGMEM const char flow_input2[] = "Input 2";
+PROGMEM const char* const flow_inputs_array[] = {flow_input1, flow_input2};
+
+PROGMEM const FlowConnections flow_math_component = {
+    2, flow_inputs_array,
+    1, flow_data_array,
+};
+
+PROGMEM const char flow_math_component_json[] =
+    "\"Math\": "
+    "{"
+        "\"name\":\"Math\","
+        "\"icon\":\"plus-circle\","
+        "\"inports\":[{\"name\":\"Input 1\",\"type\":\"any\"},{\"name\":\"Input 2\",\"type\":\"any\"}],"
+        "\"outports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
+        "\"properties\":[{\"name\":\"Operation\",\"type\":\"list\","
+            "\"values\":[\"+\",\"-\",\"*\",\"/\"]}]"
+    "}";
+
+
+class FlowMathComponent : public FlowComponent {
+    private:
+        String _operation;
+        JsonVariant *_input1, *_input2;
+
+    public:
+        FlowMathComponent(JsonObject& properties) {
+            const char * operation = properties["Operation"];
+            _operation = String(operation != NULL ? operation : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) {
+                if (_input1 != NULL) release(_input1);
+                _input1 = clone(data);
+            } else if (inputNumber == 1) {
+                if (_input2 != NULL) release(_input2);
+                _input2 = clone(data);
+            }
+
+            if (_input1 != NULL && _input2 != NULL) {
+                if (_input1->is<int>()) {
+                    JsonVariant r(
+                        _operation.equals("+") ? _input1->as<int>() + _input2->as<int>() :
+                        _operation.equals("-") ? _input1->as<int>() - _input2->as<int>() :
+                        _operation.equals("*") ? _input1->as<int>() * _input2->as<int>() :
+                        /*_operation.equals("/") ?*/ _input1->as<int>() / _input2->as<int>()
+                    );
+                    processOutput(r, 0);
+                } else if (_input1->is<double>()) {
+                    JsonVariant r(
+                        _operation.equals("+") ? _input1->as<double>() + _input2->as<double>() :
+                        _operation.equals("-") ? _input1->as<double>() - _input2->as<double>() :
+                        _operation.equals("*") ? _input1->as<double>() * _input2->as<double>() :
+                        /*_operation.equals("/") ?*/ _input1->as<double>() / _input2->as<double>()
+                    );
+                    processOutput(r, 0);
+                } else if (_input1->is<char*>()) {
+                    // only + is supported
+                    const char *s1 = _input1->as<char*>();
+                    const char *s2 = _input2->as<char*>();
+                    char *concat = new char[strlen(s1) + (s2 != NULL ? strlen(s2) : 0) + 1];
+                    strcpy(concat, s1);
+                    if (s2 != NULL)
+                        strcat(concat, s2);
+                    JsonVariant r(concat);
+                    processOutput(r, 0);
+                    free(concat);
+                }
+            }
+        }
+
+        static void reg() {
+            flowRegisterComponent("Math", &flow_math_component, flow_math_component_json,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMathComponent(properties); }));
+        }
+};
+
+// -----------------------------------------------------------------------------
 // Delay component
 // -----------------------------------------------------------------------------
 
@@ -569,6 +652,8 @@ void flowSetup() {
 
     flowRegisterComponent("Change", &flow_change_component, flow_change_component_json,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowChangeComponent(properties); }));
+
+    FlowMathComponent::reg();
 
     flowRegisterComponent("Delay", &flow_delay_component, flow_delay_component_json,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDelayComponent(properties); }));
