@@ -16,6 +16,11 @@ Copyright (C) 2016-2018 by Xose P�rez <xose dot perez at gmail dot com>
 // FLOW
 // -----------------------------------------------------------------------------
 
+#if !SPIFFS_SUPPORT
+String _flow;
+unsigned long _mqtt_flow_sent_at = 0;
+#endif
+
 FlowComponentLibrary _library;
 
 typedef struct {
@@ -46,19 +51,40 @@ void flowGetComponentValuesJson(JsonArray& root) {
     }
 }
 
-String flowGetDataPath() {
-    return "/flow.json"; // TODO: file name to constant
+AsyncWebServerResponse* flowGetConfigResponse(AsyncWebServerRequest *request) {
+    #if SPIFFS_SUPPORT
+        return request->beginResponse(SPIFFS, FLOW_SPIFFS_FILE, "text/json");
+    #else
+        return request->beginResponse(200, "text/json", _flow);
+    #endif
 }
 
-bool flowSaveData(char* data) {
+bool flowSaveConfig(char* data) {
     bool result = false;
-    File file = SPIFFS.open("/flow.json", "w"); // TODO: file name to constant
-    if (file) {
-        result = file.print(data);
-        file.close();
-    } else {
-        DEBUG_MSG_P(PSTR("[FLOW] Error saving data\n"));
-    }
+
+    #if SPIFFS_SUPPORT
+        File file = SPIFFS.open(FLOW_SPIFFS_FILE, "w");
+        if (file) {
+            result = file.print(data);
+            file.close();
+        } else {
+            DEBUG_MSG_P(PSTR("[FLOW] Error saving flow to file\n"));
+        }
+    #elif MQTT_SUPPORT
+        result = mqttConnected();
+        _flow = String(data);
+        if (result) {
+            _mqtt_flow_sent_at = millis();
+            mqttSendRaw(mqttTopic("flow", true).c_str(), data, true);
+        }
+        else {
+            DEBUG_MSG_P(PSTR("[FLOW] Error publishing flow because MQTT is disconnected\n"));
+        }
+    #else
+        _flow = String(data);
+        DEBUG_MSG_P(PSTR("[FLOW] Error saving flow\n"));
+    #endif
+
     return result;
 }
 
@@ -69,17 +95,24 @@ const char* flowGetComponentJson(int index) {
 void flowStart() {
     DEBUG_MSG_P(PSTR("[FLOW] Starting\n"));
 
-    File file = SPIFFS.open("/flow.json", "r"); // TODO: file name to constant
-    if (file) {
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject(file);
-        if (root.success()) _flowStart(root);
-        else DEBUG_MSG_P(PSTR("[FLOW] Error: flow cannot be parsed as correct JSON\n"));
+    #if SPIFFS_SUPPORT
+        File source = SPIFFS.open(FLOW_SPIFFS_FILE, "r");
+        if (!source) {
+            DEBUG_MSG_P(PSTR("[FLOW] No flow file found\n"));
+            return;
+        }
+    #else
+        String& source = _flow;
+    #endif
 
-        file.close();
-    } else {
-        DEBUG_MSG_P(PSTR("[FLOW] No flow found\n"));
-    }
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(source);
+    if (root.success()) _flowStart(root);
+    else DEBUG_MSG_P(PSTR("[FLOW] Error: flow cannot be parsed as correct JSON\n"));
+
+    #if SPIFFS_SUPPORT
+        source.close();
+    #endif
 }
 
 void _flowStart(JsonObject& data) {
@@ -497,25 +530,28 @@ class FlowHysteresisComponent : public FlowComponent {
         }
 };
 
-//void _flowMQTTCallback(unsigned int type, const char * topic, const char * payload) {
-//
-//    if (type == MQTT_CONNECT_EVENT) {
-//        mqttSubscribe("flow");
-//    }
-//
-//    if (type == MQTT_MESSAGE_EVENT) {
-//
-//        // Match topic
-//        String t = mqttMagnitude((char *) topic);
-//        if (t.equals("flow")) {
-//            flowStart();
-//        }
-//
-//    }
-//}
+#if !SPIFFS_SUPPORT && MQTT_SUPPORT
+void _flowMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(FLOW_MQTT_TOPIC);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        // Match topic
+        String t = mqttMagnitude((char *) topic);
+        if (t.equals(FLOW_MQTT_TOPIC) && millis() - _mqtt_flow_sent_at > MQTT_SKIP_TIME) {
+            _flow = String(payload);
+            flowStart();
+        }
+    }
+}
+#endif
 
 void flowSetup() {
-//    mqttRegister(_flowMQTTCallback);
+    #if !SPIFFS_SUPPORT && MQTT_SUPPORT
+        mqttRegister(_flowMQTTCallback);
+    #endif
 
     flowRegisterComponent("Start", &flow_start_component, flow_start_component_json,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowStartComponent(properties); }));

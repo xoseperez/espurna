@@ -406,6 +406,11 @@ class FlowMqttSubscribeComponent : public FlowComponent {
 
             mqtt_callback_f callback = [this](unsigned int type, const char * topic, const char * payload){ this->mqttCallback(type, topic, payload); };
             mqttRegister(callback);
+
+            // emulate connect event if MQTT is connected already
+            if (mqttConnected) {
+                mqttCallback(MQTT_CONNECT_EVENT, NULL, NULL);
+            }
         }
 };
 
@@ -516,7 +521,15 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     strlcpy(message, (char *) payload, len + 1);
 
     #if MQTT_SKIP_RETAINED
-        if (millis() - _mqtt_connected_at < MQTT_SKIP_TIME) {
+        bool skip = millis() - _mqtt_connected_at < MQTT_SKIP_TIME;
+
+        #if FLOW_SUPPORT
+            // workaround for persisted flow
+            if (skip && mqttMagnitude((char *) topic).equals(FLOW_MQTT_TOPIC))
+                skip = false;
+        #endif
+
+        if (skip) {
             DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
 			return;
 		}

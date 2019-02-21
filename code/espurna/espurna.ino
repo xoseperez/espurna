@@ -196,7 +196,7 @@ void setup() {
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif
-    #if FLOW_SUPPORT
+    #if FLOW_SUPPORT && SPIFFS_SUPPORT
         flowStart();
     #endif
 

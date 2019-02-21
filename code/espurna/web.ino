@@ -421,7 +421,7 @@ void _onGetFlowConfig(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    AsyncWebServerResponse *response = request->beginResponse(SPIFFS, flowGetDataPath(), "text/json");
+    AsyncWebServerResponse *response = flowGetConfigResponse(request);
 
     response->addHeader("X-XSS-Protection", "1; mode=block");
     response->addHeader("X-Content-Type-Options", "nosniff");
@@ -442,7 +442,7 @@ void _onPostFlowConfigData(AsyncWebServerRequest *request, String filename, size
     // No buffer
     if (final && (index == 0)) {
         data[len] = 0;
-        _webFlowSuccess = flowSaveData((char *) data);
+        _webFlowSuccess = flowSaveConfig((char *) data);
         return;
     }
 
@@ -464,7 +464,7 @@ void _onPostFlowConfigData(AsyncWebServerRequest *request, String filename, size
     // Ending
     if (final) {
         _webFlowBuffer->push_back(0);
-        _webFlowSuccess = flowSaveData((char *) _webFlowBuffer->data());
+        _webFlowSuccess = flowSaveConfig((char *) _webFlowBuffer->data());
         delete _webFlowBuffer;
     }
 }
