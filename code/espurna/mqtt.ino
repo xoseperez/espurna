@@ -76,8 +76,6 @@ void _mqttConnect() {
     // Check reconnect interval
     if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
 
-    _mqtt_connecting = true;
-
     // Increase the reconnect delay
     _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
     if (_mqtt_reconnect_delay > MQTT_RECONNECT_DELAY_MAX) {
@@ -109,6 +107,7 @@ void _mqttConnect() {
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
 
     #if MQTT_USE_ASYNC
+        _mqtt_connecting = true;
 
         _mqtt.setServer(host, port);
         _mqtt.setClientId(_mqtt_clientid);
