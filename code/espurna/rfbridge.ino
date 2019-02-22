@@ -88,17 +88,31 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 
 #if WEB_SUPPORT
 
-void _rfbWebSocketSendCode(unsigned char id, bool status, const char * code) {
-    char wsb[192]; // (32 * 5): 46 bytes for json , 116 bytes raw code, reserve
-    snprintf_P(wsb, sizeof(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"%s\"}]}"), id, status ? 1 : 0, code);
-    wsSend(wsb);
+void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+
+    JsonObject& rfb = root.createNestedObject("rfb");
+    rfb["size"] = size;
+    rfb["start"] = start;
+
+    JsonArray& on = rfb.createNestedArray("on");
+    JsonArray& off = rfb.createNestedArray("off");
+
+    for (byte id=start; id<start+size; id++) {
+        on.add(rfbRetrieve(id, true));
+        off.add(rfbRetrieve(id, false));
+    }
+
+    wsSend(rfb);
+}
+
+void _rfbWebSocketSendCode(unsigned char id) {
+    _rfbWebSocketSendCodeArray(id, 1);
 }
 
 void _rfbWebSocketSendCodes() {
-    for (unsigned char id=0; id<relayCount(); id++) {
-        _rfbWebSocketSendCode(id, true, rfbRetrieve(id, true).c_str());
-        _rfbWebSocketSendCode(id, false, rfbRetrieve(id, false).c_str());
-    }
+    _rfbWebSocketSendCodeArray(0, relayCount());
 }
 
 void _rfbWebSocketOnSend(JsonObject& root) {
@@ -337,7 +351,7 @@ void _rfbDecode() {
 
         // Websocket update
         #if WEB_SUPPORT
-            _rfbWebSocketSendCode(_learnId, _learnStatus, buffer);
+            _rfbWebSocketSendCode(_learnId);
         #endif
 
     }

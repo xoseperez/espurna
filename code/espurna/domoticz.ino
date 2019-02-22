@@ -166,8 +166,10 @@ void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsig
     if (BROKER_MSG_TYPE_STATUS != type) return;
 
     if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
-        unsigned char value = atoi(payload);
-        domoticzSendRelay(id, value == 1);
+        bool status = atoi(payload) == 1;
+        if (_domoticzStatus(id) == status) return;
+        _dcz_relay_state[id] = status;
+        domoticzSendRelay(id, status);
     }
     
 }
@@ -181,7 +183,7 @@ bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
 
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
-    root["dczVisible"] = 1;
+    unsigned char visible = 0;
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
@@ -190,17 +192,14 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
+    visible = (relayCount() > 0);
 
     #if SENSOR_SUPPORT
-        JsonArray& list = root.createNestedArray("dczMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
-            JsonObject& element = list.createNestedObject();
-            element["name"] = magnitudeName(i);
-            element["type"] = magnitudeType(i);
-            element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
-        }
+        _sensorWebSocketMagnitudes(root, "dcz");
+        visible = visible || (magnitudeCount() > 0);
     #endif
+
+    root["dczVisible"] = visible;
 
 }
 
@@ -238,8 +237,6 @@ template<typename T> void domoticzSend(const char * key, T nvalue) {
 
 void domoticzSendRelay(unsigned char relayID, bool status) {
     if (!_dcz_enabled) return;
-    if (_domoticzStatus(relayID) == status) return;
-    _dcz_relay_state[relayID] = status;
     char buffer[15];
     snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
     domoticzSend(buffer, status ? "1" : "0");

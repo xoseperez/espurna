@@ -1256,6 +1256,19 @@ void migrate() {
             setSetting("relayGPIO", 0, 4);
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
 
+        #elif defined(OUKITEL_P1)
+
+            setSetting("board", 94);
+            setSetting("ledGPIO", 0, 0); // Blue LED
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);  // Right outlet
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 15);  // Left outlet
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            
+
         #else
 
             // Allow users to define new settings without migration config
