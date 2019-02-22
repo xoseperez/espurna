@@ -353,7 +353,6 @@ PROGMEM const char flow_change_component_json[] =
         "\"properties\":[{\"name\":\"Value\",\"type\":\"any\"}]"
     "}";
 
-
 class FlowChangeComponent : public FlowComponent {
     private:
         JsonVariant* _value;
@@ -393,7 +392,6 @@ PROGMEM const char flow_math_component_json[] =
             "\"values\":[\"+\",\"-\",\"*\",\"/\"]}]"
     "}";
 
-
 class FlowMathComponent : public FlowComponent {
     private:
         String _operation;
@@ -416,19 +414,23 @@ class FlowMathComponent : public FlowComponent {
 
             if (_input1 != NULL && _input2 != NULL) {
                 if (_input1->is<int>()) {
+                    int i1 = _input1->as<int>();
+                    int i2 = _input2->as<int>();
                     JsonVariant r(
-                        _operation.equals("+") ? _input1->as<int>() + _input2->as<int>() :
-                        _operation.equals("-") ? _input1->as<int>() - _input2->as<int>() :
-                        _operation.equals("*") ? _input1->as<int>() * _input2->as<int>() :
-                        /*_operation.equals("/") ?*/ _input1->as<int>() / _input2->as<int>()
+                        _operation.equals("+") ? i1 + i2 :
+                        _operation.equals("-") ? i1 - i2 :
+                        _operation.equals("*") ? i1 * i2 :
+                        /*_operation.equals("/") ?*/ i1 / i2
                     );
                     processOutput(r, 0);
                 } else if (_input1->is<double>()) {
+                    double d1 = _input1->as<double>();
+                    double d2 = _input2->as<double>();
                     JsonVariant r(
-                        _operation.equals("+") ? _input1->as<double>() + _input2->as<double>() :
-                        _operation.equals("-") ? _input1->as<double>() - _input2->as<double>() :
-                        _operation.equals("*") ? _input1->as<double>() * _input2->as<double>() :
-                        /*_operation.equals("/") ?*/ _input1->as<double>() / _input2->as<double>()
+                        _operation.equals("+") ? d1 + d2 :
+                        _operation.equals("-") ? d1 - d2 :
+                        _operation.equals("*") ? d1 * d2 :
+                        /*_operation.equals("/") ?*/ d1 / d2
                     );
                     processOutput(r, 0);
                 } else if (_input1->is<char*>()) {
@@ -442,13 +444,104 @@ class FlowMathComponent : public FlowComponent {
                     JsonVariant r(concat);
                     processOutput(r, 0);
                     free(concat);
-                }
+                } else if (_input1->is<bool>()) {
+                     bool b1 = _input1->as<bool>();
+                     bool b2 = _input2->as<bool>();
+                     JsonVariant r(
+                         _operation.equals("+") ? b1 || b2 :
+                         _operation.equals("-") ? !b1 : // NOT for first only
+                         _operation.equals("*") ? b1 && b2 :
+                         /*_operation.equals("/") ?*/ (b1 && !b2) || (!b1 && b2) // XOR
+                     );
+                     processOutput(r, 0);
+                 }
             }
         }
 
         static void reg() {
             flowRegisterComponent("Math", &flow_math_component, flow_math_component_json,
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMathComponent(properties); }));
+        }
+};
+
+// -----------------------------------------------------------------------------
+// Compare component
+// -----------------------------------------------------------------------------
+
+PROGMEM const char flow_true[] = "True";
+PROGMEM const char flow_false[] = "False";
+PROGMEM const char flow_test[] = "Test";
+PROGMEM const char* const flow_compare_inputs[] = {flow_data, flow_test};
+PROGMEM const char* const flow_compare_outputs[] = {flow_true, flow_false};
+
+PROGMEM const FlowConnections flow_compare_component = {
+    2, flow_compare_inputs,
+    2, flow_compare_outputs,
+};
+
+PROGMEM const char flow_compare_component_json[] =
+    "\"Compare\": "
+    "{"
+        "\"name\":\"Compare\","
+        "\"icon\":\"chevron-circle-right\","
+        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"},{\"name\":\"Test\",\"type\":\"any\"}],"
+        "\"outports\":[{\"name\":\"True\",\"type\":\"any\"},{\"name\":\"False\",\"type\":\"any\"}],"
+        "\"properties\":[{\"name\":\"Operation\",\"type\":\"list\",\"values\":[\"=\",\">\",\"<\"]},{\"name\":\"Test\",\"type\":\"any\"}]"
+    "}";
+
+class FlowCompareComponent : public FlowComponent {
+    private:
+        String _operation;
+        JsonVariant *_data, *_test;
+
+    public:
+        FlowCompareComponent(JsonObject& properties) {
+            const char * operation = properties["Operation"];
+            _operation = String(operation != NULL ? operation : "");
+
+            JsonVariant test = properties["Test"];
+            _test = clone(test);
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) {
+                if (_data != NULL) release(_data);
+                _data = clone(data);
+            } else if (inputNumber == 1) {
+                if (_test != NULL) release(_test);
+                _test = clone(data);
+            }
+
+            if (_data != NULL && _test != NULL) {
+                bool r;
+                if (_data->is<double>()) {
+                    double d1 = _data->as<double>();
+                    double d2 = _test->as<double>();
+                    r = _operation.equals("=") ? d1 == d2 :
+                        _operation.equals(">") ? d1 > d2 :
+                        /*_operation.equals("<") ?*/ d1 < d2
+                    ;
+                } else if (_data->is<char*>()) {
+                    int cmp = strcmp(_data->as<char*>(), _test->as<char*>());
+                    r = _operation.equals("=") ? cmp == 0 :
+                        _operation.equals(">") ? cmp > 0 :
+                        /*_operation.equals("<") ?*/ cmp < 0
+                    ;
+                } else if (_data->is<bool>()) {
+                    bool b1 = _data->as<bool>();
+                    bool b2 = _test->as<bool>();
+                    r = _operation.equals("=") ? b1 == b2 :
+                        _operation.equals(">") ? b1 > b2 :
+                        /*_operation.equals("<") ?*/ b1 < b2
+                    ;
+                }
+                processOutput(*_data, r ? 0 : 1);
+            }
+        }
+
+        static void reg() {
+            flowRegisterComponent("Compare", &flow_compare_component, flow_compare_component_json,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowCompareComponent(properties); }));
         }
 };
 
@@ -688,6 +781,7 @@ void flowSetup() {
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowChangeComponent(properties); }));
 
     FlowMathComponent::reg();
+    FlowCompareComponent::reg();
 
     flowRegisterComponent("Delay", &flow_delay_component, flow_delay_component_json,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDelayComponent(properties); }));
