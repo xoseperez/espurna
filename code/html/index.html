@@ -84,6 +84,7 @@
 
                     <span class="pure-menu-heading" name="hostname">HOSTNAME</span>
                     <span class="pure-menu-heading small" name="title">ESPurna 0.0.0</span>
+                    <span class="pure-menu-heading small" name="desc"></span>
 
                     <ul class="pure-menu-list">
 
@@ -125,6 +126,10 @@
 
                         <li class="pure-menu-item module module-mqtt">
                             <a href="#" class="pure-menu-link" data="panel-mqtt">MQTT</a>
+                        </li>
+
+                        <li class="pure-menu-item module module-nofuss">
+                            <a href="#" class="pure-menu-link" data="panel-nofuss">NOFUSS</a>
                         </li>
 
                         <li class="pure-menu-item module module-ntp">
@@ -335,6 +340,16 @@
                                         This name will identify this device in your network (http://&lt;hostname&gt;.local).<br />
                                         Hostname may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-'). They can neither start or end with an hyphen.<br />
                                         For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Description</label>
+                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" tabindex="2" />
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Human-friendly name for your device. Will be reported with the heartbeat.<br />
+                                        You can use this to specify the location or some other identification information.
                                     </div>
                                 </div>
 
@@ -608,17 +623,36 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Turn ON to be able to telnet to your device while connected to your home router.<br />TELNET is always enabled in AP mode.</div>
                                 </div>
 
-
-                                <div class="pure-g module module-nofuss">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Automatic remote updates (NoFUSS)</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofussEnabled" /></div>
+                                <div class="pure-g module module-telnet">
+                                    <label class="pure-u-1 pure-u-lg-1-4">TELNET Password</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="telnetAuth" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Request password when starting telnet session</div>
                                 </div>
 
-                                <div class="pure-g module module-nofuss">
-                                    <label class="pure-u-1 pure-u-lg-1-4">NoFUSS server</label>
-                                    <input name="nofussServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15" />
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
+                                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" tabindex="15" >
+                                        <option value="0">Disabled</option>
+                                        <option value="1">On device startup</option>
+                                        <option value="2">Repeat after defined interval</option>
+                                        <option value="3">Repeat only device status</option>
+                                    </select>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">This name address of the NoFUSS server for automatic remote updates (see https://bitbucket.org/xoseperez/nofuss).</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Define when heartbeat message will be sent.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
+                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" tabindex="16" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
+                                    </div>
                                 </div>
 
                                 <div class="pure-g">
@@ -630,7 +664,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
-                                    <input name="upgrade" type="file" tabindex="16" />
+                                    <input name="upgrade" type="file" tabindex="17" />
                                 </div>
 
                             </fieldset>
@@ -651,6 +685,11 @@
                             <fieldset>
 
                                 <legend>General</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Device hostname can be configured on the GENERAL tab.</div>
+                                </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Scan networks</label>
@@ -815,6 +854,11 @@
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">MQTT User</label>
                                     <input class="pure-u-1 pure-u-lg-1-4" name="mqttUser" type="text" tabindex="23" placeholder="Leave blank if no user" autocomplete="off" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        You can use the following placeholders: {hostname}, {mac}
+                                    </div>
                                 </div>
 
                                 <div class="pure-g">
@@ -829,7 +873,7 @@
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">
-                                        If left empty the firmware will generate a client ID based on the serial number of the chip.
+                                        If left empty the firmware will generate a client ID based on the serial number of the chip. You can use the following placeholders: {hostname}, {mac}
                                     </div>
                                 </div>
 
@@ -901,6 +945,33 @@
                                     </div>
                                 </div>
 
+                            </fieldset>
+                        </div>
+
+                    </div>
+                </form>
+
+                <form id="form-nofuss" class="pure-form form-settings">
+                    <div class="panel" id="panel-nofuss">
+
+                        <div class="header">
+                            <h1>NoFUSS</h1>
+                            <h2>Automatically upgrade the firmware (see <a href="https://bitbucket.org/xoseperez/nofuss">xoseperez/nofuss</a> for details)</h2>
+                        </div>
+
+                        <div class="page">
+                            <fieldset>
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Enable</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="nofussEnabled" /></div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Server</label>
+                                    <input name="nofussServer" class="pure-u-1 pure-u-lg-3-4" type="text" tabindex="15" />
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Address of the NoFUSS server</div>
+                                </div>
                             </fieldset>
                         </div>
 
@@ -1048,7 +1119,7 @@
                                     </div>
                                 </div>
                                 <div class="pure-g">
-                                    <span class="pure-u-1 terminal" id="haConfig" name="haConfig"></span>
+                                    <textarea class="pure-u-1 terminal" id="haConfig" name="haConfig" wrap="off" readonly></textarea>
                                 </div>
 
 
@@ -1080,8 +1151,20 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Clear cache</label>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="tspkClear" tabindex="31" /></div>
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        With every POST to thinkspeak.com only enqueued fields are sent.
+                                        If you select to clear the cache after every sending this will result in only those fields that have changed will be posted.
+                                        If you want all fields to be sent with every POST do not clear the cache.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Thingspeak API Key</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="31" />
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="tspkKey" type="text" tabindex="32" />
                                 </div>
 
                                 <legend>Sensors &amp; actuators</legend>
@@ -1329,20 +1412,27 @@
                                     <label class="pure-u-1 pure-u-lg-1-4">Expected Power</label>
                                     <input class="pure-u-1 pure-u-lg-3-4 pwrExpected" name="pwrExpectedP" type="text" tabindex="54" placeholder="0" />
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
-                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here the its nominal power or use a multimeter.</div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here its nominal power or use a multimeter.</div>
+                                </div>
+
+                                <div class="pure-g module module-pm">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Energy Ratio</label>
+                                    <input class="pure-u-1 pure-u-lg-3-4" name="pwrRatioE" type="text" tabindex="55" placeholder="0" />
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Energy ratio in pulses/kWh.</div>
                                 </div>
 
                                 <div class="pure-g module module-hlw module-cse module-emon">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset calibration</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="55" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetCalibration" tabindex="56" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to revert to factory calibration values.</div>
                                 </div>
 
-                                <div class="pure-g module module-hlw module-cse module-emon">
+                                <div class="pure-g module module-hlw module-cse module-emon module-pm">
                                     <label class="pure-u-1 pure-u-lg-1-4">Reset energy</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetE" tabindex="56" /></div>
+                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="pwrResetE" tabindex="57" /></div>
                                     <div class="pure-u-0 pure-u-lg-1-2"></div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">Move this switch to ON and press "Save" to set energy count to 0.</div>
@@ -1518,7 +1608,7 @@
         </div>
 
         <div id="relayConfigTemplate" class="template">
-            <legend>Switch #<span class="id"></span> (GPIO<span class="gpio"></span>)</legend>
+            <legend>Switch #<span class="id"></span> (<span class="gpio"></span>)</legend>
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Boot mode</label></div>
                 <select class="pure-u-1 pure-u-lg-3-4" name="relayBoot">

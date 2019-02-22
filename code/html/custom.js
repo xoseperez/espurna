@@ -47,7 +47,8 @@ function sensorName(id) {
         "Events", "PMSX003", "BMX280", "MHZ19", "SI7021",
         "SHT3X I2C", "BH1750", "PZEM004T", "AM2320 I2C", "GUVAS12SD",
         "TMP3X", "Sonar", "SenseAir", "GeigerTicks", "GeigerCPM",
-        "NTC", "SDS011", "MICS2710", "MICS5525"
+        "NTC", "SDS011", "MICS2710", "MICS5525", "VL53L1X", "VEML6075",
+        "EZOPH"
     ];
     if (1 <= id && id <= names.length) {
         return names[id - 1];
@@ -61,10 +62,10 @@ function magnitudeType(type) {
         "Current", "Voltage", "Active Power", "Apparent Power",
         "Reactive Power", "Power Factor", "Energy", "Energy (delta)",
         "Analog", "Digital", "Event",
-        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UV", "Distance" , "HCHO",
+        "PM1.0", "PM2.5", "PM10", "CO2", "Lux", "UVA", "UVB", "UV Index", "Distance" , "HCHO",
         "Local Dose Rate", "Local Dose Rate",
         "Count",
-        "NO2", "CO", "Resistance"
+        "NO2", "CO", "Resistance", "pH"
     ];
     if (1 <= type && type <= types.length) {
         return types[type - 1];
@@ -656,7 +657,10 @@ function doScan() {
 }
 
 function doHAConfig() {
-    $("#haConfig").html("");
+    $("#haConfig")
+        .text("")
+        .height(0)
+        .show();
     sendAction("haconfig", {});
     return false;
 }
@@ -766,12 +770,13 @@ function createMagnitudeList(data, container, template_name) {
     if (current > 0) { return; }
 
     var template = $("#" + template_name + " .pure-g")[0];
-    for (var i in data) {
-        var magnitude = data[i];
+    var size = data.size;
+
+    for (var i=0; i<size; ++i) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
-        $("div.hint", line).html(magnitude.name);
-        $("input", line).attr("tabindex", 40 + i).val(magnitude.idx);
+        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
+        $("div.hint", line).html(data.name[i]);
+        $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         line.appendTo("#" + container);
     }
 
@@ -933,21 +938,33 @@ function createCheckboxes() {
 
 function initRelayConfig(data) {
 
-    var current = $("#relayConfig > div").length;
+    var current = $("#relayConfig > legend").length; // there is a legend per relay
     if (current > 0) { return; }
 
+    var size = data.size;
+    var start = data.start;
+
     var template = $("#relayConfigTemplate").children();
-    for (var i in data) {
-        var relay = data[i];
+
+    for (var i=start; i<size; ++i) {
         var line = $(template).clone();
-        $("span.gpio", line).html(relay.gpio);
+
         $("span.id", line).html(i);
-        $("select[name='relayBoot']", line).val(relay.boot);
-        $("select[name='relayPulse']", line).val(relay.pulse);
-        $("input[name='relayTime']", line).val(relay.pulse_ms);
-        $("input[name='mqttGroup']", line).val(relay.group);
-        $("select[name='mqttGroupInv']", line).val(relay.group_inv);
-        $("select[name='relayOnDisc']", line).val(relay.on_disc);
+        $("span.gpio", line).html(data.gpio[i]);
+        $("select[name='relayBoot']", line).val(data.boot[i]);
+        $("select[name='relayPulse']", line).val(data.pulse[i]);
+        $("input[name='relayTime']", line).val(data.pulse_time[i]);
+
+        if ("group" in data) {
+            $("input[name='mqttGroup']", line).val(data.group[i]);
+        }
+        if ("group_inv" in data) {
+            $("input[name='mqttGroupInv']", line).val(data.group_inv[i]);
+        }
+        if ("on_disc" in data) {
+            $("input[name='relayOnDisc']", line).val(data.on_disc[i]);
+        }
+
         line.appendTo("#relayConfig");
     }
 
@@ -960,17 +977,19 @@ function initRelayConfig(data) {
 <!-- removeIf(!sensor)-->
 function initMagnitudes(data) {
 
-    // check if already initialized
+    // check if already initialized (each magnitude is inside div.pure-g)
     var done = $("#magnitudes > div").length;
     if (done > 0) { return; }
 
+    var size = data.size;
+
     // add templates
     var template = $("#magnitudeTemplate").children();
-    for (var i in data) {
-        var magnitude = data[i];
+
+    for (var i=0; i<size; ++i) {
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(magnitude.type) + " #" + parseInt(magnitude.index, 10));
-        $("div.hint", line).html(magnitude.description);
+        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
+        $("div.hint", line).html(data.description[i]);
         $("input", line).attr("data", i);
         line.appendTo("#magnitudes");
     }
@@ -1199,11 +1218,18 @@ function processData(data) {
         }
 
         if ("rfb" === key) {
-            var nodes = data.rfb;
-            for (i in nodes) {
-                var node = nodes[i];
-                $("input[name='rfbcode'][data-id='" + node.id + "'][data-status='" + node.status + "']").val(node.data);
+            var rfb = data.rfb;
+            var size = data.size;
+            var start = data.start;
+
+            var on = rfb["on"];
+            var off = rfb["off"];
+
+            for (var i=start; i<start+size; ++i) {
+                $("input[name='rfbcode'][data-id='" + i + "'][data-status='1']").val(on[i]);
+                $("input[name='rfbcode'][data-id='" + i + "'][data-status='0']").val(off[i]);
             }
+
             return;
         }
         <!-- endRemoveIf(!rfbridge)-->
@@ -1318,15 +1344,13 @@ function processData(data) {
 
         if ("magnitudes" === key) {
             initMagnitudes(value);
-            for (i in value) {
-                var magnitude = value[i];
-                var error = magnitude.error || 0;
+            for (var i=0; i<value.size; ++i) {
+                var error = value.error[i] || 0;
                 var text = (0 === error) ?
-                    magnitude.value + magnitude.units :
+                    value.value[i] + value.units[i] :
                     magnitudeError(error);
                 var element = $("input[name='magnitude'][data='" + i + "']");
                 element.val(text);
-                $("div.hint", element.parent().parent()).html(magnitude.description);
             }
             return;
         }
@@ -1363,7 +1387,11 @@ function processData(data) {
         // -----------------------------------------------------------------------------
 
         if ("haConfig" === key) {
-            $("#haConfig").show();
+            websock.send("{}");
+            $("#haConfig")
+                .append(new Text(value))
+                .height($("#haConfig")[0].scrollHeight);
+            return;
         }
 
         // -----------------------------------------------------------------------------
@@ -1375,13 +1403,13 @@ function processData(data) {
             return;
         }
 
-        if ("schedule" === key) {
-            for (i in value) {
-                var schedule = value[i];
-                var sch_line = addSchedule({ data: {schType: schedule["schType"] }});
+        if ("schedules" === key) {
+            for (var i=0; i<value.size; ++i) {
+                var sch_line = addSchedule({ data: {schType: value.schType[i] }});
 
-                Object.keys(schedule).forEach(function(key) {
-                    var sch_value = schedule[key];
+                Object.keys(value).forEach(function(key) {
+                    if ("size" == key) return;
+                    var sch_value = value[key][i];
                     $("input[name='" + key + "']", sch_line).val(sch_value);
                     $("select[name='" + key + "']", sch_line).prop("value", sch_value);
                     $("input[type='checkbox'][name='" + key + "']", sch_line).prop("checked", sch_value);
@@ -1456,7 +1484,13 @@ function processData(data) {
 
         // Web log
         if ("weblog" === key) {
-            $("#weblog").append(new Text(value));
+            websock.send("{}");
+
+            if (value.prefix) {
+                $("#weblog").append(new Text(value.prefix));
+            }
+            $("#weblog").append(new Text(value.message));
+
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
         }
@@ -1708,6 +1742,8 @@ $(function() {
 
     $(document).on("change", "input", hasChanged);
     $(document).on("change", "select", hasChanged);
+
+    $("textarea").on("dblclick", function() { this.select(); });
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") { return; }

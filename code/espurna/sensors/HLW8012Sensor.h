@@ -9,8 +9,6 @@
 
 #include "Arduino.h"
 #include "BaseSensor.h"
-
-#include <ESP8266WiFi.h>
 #include <HLW8012.h>
 
 class HLW8012Sensor : public BaseSensor {
@@ -148,14 +146,10 @@ class HLW8012Sensor : public BaseSensor {
 
             // Handle interrupts
             #if HLW8012_USE_INTERRUPTS
-                _enableInterrupts(true);
-            #else
-                _onconnect_handler = WiFi.onStationModeGotIP([this](WiFiEventStationModeGotIP ipInfo) {
-                    _enableInterrupts(true);
-                });
-                _ondisconnect_handler = WiFi.onStationModeDisconnected([this](WiFiEventStationModeDisconnected ipInfo) {
+                #if HLW8012_WAIT_FOR_WIFI == 0
                     _enableInterrupts(false);
-                });
+                    _enableInterrupts(true);
+                #endif
             #endif
 
             _ready = true;
@@ -205,6 +199,15 @@ class HLW8012Sensor : public BaseSensor {
             return 0;
         }
 
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        #if HLW8012_USE_INTERRUPTS
+        #if HLW8012_WAIT_FOR_WIFI
+        void pre() {
+            _enableInterrupts(wifiConnected());
+        }
+        #endif
+        #endif
+
         // Toggle between current and voltage monitoring
         #if HLW8012_USE_INTERRUPTS == 0
         // Post-read hook (usually to reset things)
@@ -247,10 +250,15 @@ class HLW8012Sensor : public BaseSensor {
 
             } else {
 
-                _detach(_cf);
-                _detach(_cf1);
-                _interrupt_cf = GPIO_NONE;
-                _interrupt_cf1 = GPIO_NONE;
+                if (GPIO_NONE != _interrupt_cf) {
+                    _detach(_interrupt_cf);
+                    _interrupt_cf = GPIO_NONE;
+                }
+
+                if (GPIO_NONE != _interrupt_cf1) {
+                    _detach(_interrupt_cf1);
+                    _interrupt_cf1 = GPIO_NONE;
+                }
 
             }
 
@@ -265,11 +273,6 @@ class HLW8012Sensor : public BaseSensor {
         double _energy_offset = 0;
 
         HLW8012 * _hlw8012 = NULL;
-
-        #if HLW8012_USE_INTERRUPTS == 0
-            WiFiEventHandler _onconnect_handler;
-            WiFiEventHandler _ondisconnect_handler;
-        #endif
 
 };
 

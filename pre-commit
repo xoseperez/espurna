@@ -15,16 +15,18 @@ Copy this file to .git/hooks/
 """
 
 import os
-import sys
 import re
-
+import string
+import sys
 from subprocess import call, check_output
+
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 
 from fileinput import FileInput
+
 # https://github.com/python/cpython/commit/6cb7b659#diff-78790b53ff259619377058acd4f74672
 if sys.version_info[0] < 3:
     class FileInputCtx(FileInput):
@@ -34,7 +36,16 @@ if sys.version_info[0] < 3:
         def __exit__(self, type, value, traceback):
             self.close()
 
+
     FileInput = FileInputCtx
+
+
+class CustomFormatter(string.Formatter):
+    def format_field(self, value, spec):
+        if spec == "escape_hyphen":
+            return value.replace("-", "--")
+        else:
+            return super(CustomFormatter, self).format_field(value, spec)
 
 
 def run(cmd, cwd=None):
@@ -79,16 +90,17 @@ def espurna_get_version(base, version_h="code/espurna/config/version.h"):
 
     return version
 
+
 TEMPLATES = {
-    "![travis]": "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]" \
-        "(https://travis-ci.org/{USER}/{REPO})\n",
-    "![version]": "[![version](https://img.shields.io/badge/version-{VERSION}-brightgreen.svg)](CHANGELOG.md)\n",
-    "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH}-orange.svg)]" \
-        "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n"
+    "![travis]": "[![travis](https://travis-ci.org/{USER}/{REPO}.svg?branch={BRANCH})]"
+                 "(https://travis-ci.org/{USER}/{REPO})\n",
+    "![version]": "[![version](https://img.shields.io/badge/version-{VERSION:escape_hyphen}-brightgreen.svg)]"
+                  "(CHANGELOG.md)\n",
+    "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH:escape_hyphen}-orange.svg)]"
+                 "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n",
 }
 
 README = "README.md"
-
 
 if __name__ == "__main__":
     base = os.getcwd()
@@ -98,12 +110,15 @@ if __name__ == "__main__":
         "USER": user,
         "REPO": repo,
         "BRANCH": git_branch(),
-        "VERSION": espurna_get_version(base)
+        "VERSION": espurna_get_version(base),
     }
+
+    formatter = CustomFormatter()
     templates = [
-        (k, tmpl.format(**fmt))
+        (k, formatter.format(tmpl, **fmt))
         for k, tmpl in TEMPLATES.items()
     ]
+
 
     def fmt_line(line):
         for match, tmpl in templates:
@@ -111,6 +126,7 @@ if __name__ == "__main__":
                 return tmpl
 
         return line
+
 
     path = os.path.join(base, README)
 
@@ -121,4 +137,4 @@ if __name__ == "__main__":
     if call(["git", "add", README]):
         sys.exit(1)
 
-    sys.exit(0);
+    sys.exit(0)

@@ -19,7 +19,6 @@ typedef struct {
     api_put_callback_f putFn = NULL;
 } web_api_t;
 std::vector<web_api_t> _apis;
-bool _api_restful = API_RESTFUL;
 
 // -----------------------------------------------------------------------------
 
@@ -32,13 +31,12 @@ void _apiWebSocketOnSend(JsonObject& root) {
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
     root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
-    root["apiRestFul"] = _api_restful;
+    root["apiRestFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
 }
 
 void _apiConfigure() {
-    _api_restful = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
+    // Nothing to do
 }
-
 
 // -----------------------------------------------------------------------------
 // API
@@ -165,7 +163,7 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
         // Check if its a PUT
         if (api.putFn != NULL) {
-            if (!_api_restful || (request->method() == HTTP_PUT)) {
+            if ((getSetting("apiRestFul", API_RESTFUL).toInt() != 1) || (request->method() == HTTP_PUT)) {
                 if (request->hasParam("value", request->method() == HTTP_PUT)) {
                     AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
                     (api.putFn)((p->value()).c_str());
@@ -221,6 +219,7 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 }
 
 void apiSetup() {
+    _apiConfigure();
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
     webRequestRegister(_apiRequestCallback);

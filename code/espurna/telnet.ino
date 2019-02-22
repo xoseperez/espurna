@@ -15,9 +15,9 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 AsyncServer * _telnetServer;
 AsyncClient * _telnetClients[TELNET_MAX_CLIENTS];
 bool _telnetFirst = true;
-#if TELNET_PASSWORD
-    bool _authenticated[TELNET_MAX_CLIENTS];
-#endif
+
+bool _telnetAuth = TELNET_AUTHENTICATION;
+bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -32,6 +32,7 @@ bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _telnetWebSocketOnSend(JsonObject& root) {
     root["telnetVisible"] = 1;
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
+    root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
 
 #endif
@@ -44,32 +45,32 @@ void _telnetDisconnect(unsigned char clientId) {
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
 
-bool _telnetWrite(unsigned char clientId, void *data, size_t len) {
+bool _telnetWrite(unsigned char clientId, const char *data, size_t len) {
     if (_telnetClients[clientId] && _telnetClients[clientId]->connected()) {
-        return (_telnetClients[clientId]->write((const char*) data, len) > 0);
+        return (_telnetClients[clientId]->write(data, len) > 0);
     }
     return false;
 }
 
-unsigned char _telnetWrite(void *data, size_t len) {
+unsigned char _telnetWrite(const char *data, size_t len) {
     unsigned char count = 0;
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
+        // Do not send broadcast messages to unauthenticated clients
+        if (_telnetAuth && !_telnetClientsAuth[i]) {
+            continue;
+        }
 
-        #if TELNET_PASSWORD
-            // Do not send broadcast messages to unauthenticated clients
-            if (_authenticated[i]) {
-                if (_telnetWrite(i, data, len)) ++count;
-            }
-        #else
-            if (_telnetWrite(i, data, len)) ++count;
-        #endif
-
+        if (_telnetWrite(i, data, len)) ++count;
     }
     return count;
 }
 
+unsigned char _telnetWrite(const char *data) {
+    return _telnetWrite(data, strlen(data));
+}
+
 bool _telnetWrite(unsigned char clientId, const char * message) {
-    return _telnetWrite(clientId, (void *) message, strlen(message));
+    return _telnetWrite(clientId, message, strlen(message));
 }
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
@@ -96,23 +97,29 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
         return;
     }
 
-    // Password
-    #if TELNET_PASSWORD
-        if (!_authenticated[clientId]) {
-            String password = getAdminPass();
-            if (strncmp(p, password.c_str(), password.length()) == 0) {
-                DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
-                _telnetWrite(clientId, "Welcome!\n");
-                _authenticated[clientId] = true;
-            } else {
-                _telnetWrite(clientId, "Password: ");
-            }
-            return;
+    // Password prompt (disable on CORE variant)
+    #ifdef ESPURNA_CORE
+        const bool authenticated = true;
+    #else
+        const bool authenticated = _telnetClientsAuth[clientId];
+    #endif
+
+    if (_telnetAuth && !authenticated) {
+        String password = getAdminPass();
+        if (strncmp(p, password.c_str(), password.length()) == 0) {
+            DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
+            _telnetWrite(clientId, "Welcome!\n");
+            _telnetClientsAuth[clientId] = true;
+        } else {
+            _telnetWrite(clientId, "Password: ");
         }
-    #endif // TELNET_PASSWORD
+        return;
+    }
 
     // Inject command
-    settingsInject(data, len);
+    #if TERMINAL_SUPPORT
+        terminalInject(data, len);
+    #endif
 
 }
 
@@ -171,13 +178,15 @@ void _telnetNewClient(AsyncClient *client) {
             #if TERMINAL_SUPPORT == 0
                 info();
                 wifiDebug();
-                debugDumpCrashInfo();
-                debugClearCrashInfo();
+                crashDump();
+                crashClear();
             #endif
 
-            #if TELNET_PASSWORD
-                _authenticated[i] = false;
-                _telnetWrite(i, "Password: ");
+            #ifdef ESPURNA_CORE
+                _telnetClientsAuth[i] = true;
+            #else
+                _telnetClientsAuth[i] = !_telnetAuth;
+                if (_telnetAuth) _telnetWrite(i, "Password: ");
             #endif
 
             _telnetFirst = true;
@@ -214,6 +223,10 @@ unsigned char telnetWrite(unsigned char ch) {
     return _telnetWrite(data, 1);
 }
 
+void _telnetConfigure() {
+    _telnetAuth = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+}
+
 void telnetSetup() {
 
     _telnetServer = new AsyncServer(TELNET_PORT);
@@ -226,6 +239,9 @@ void telnetSetup() {
         wsOnSendRegister(_telnetWebSocketOnSend);
         wsOnReceiveRegister(_telnetWebSocketOnReceive);
     #endif
+
+    espurnaRegisterReload(_telnetConfigure);
+    _telnetConfigure();
 
     DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);
 

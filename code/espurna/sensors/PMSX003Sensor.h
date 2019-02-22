@@ -22,6 +22,7 @@
 #define PMS_TYPE_X003_9     1
 #define PMS_TYPE_5003T      2
 #define PMS_TYPE_5003ST     3
+#define PMS_TYPE_5003S      4
 
 // Sensor type specified data
 #define PMS_SLOT_MAX        4
@@ -35,7 +36,8 @@ const static struct {
     {"PMSX003", 13, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
     {"PMSX003_9", 9, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
     {"PMS5003T", 13, 3, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY}},
-    {"PMS5003ST", 17, 4, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}}
+    {"PMS5003ST", 17, 4, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}},
+    {"PMS5003S", 13, 3, {MAGNITUDE_PM2dot5, MAGNITUDE_PM10, MAGNITUDE_HCHO}},
 };
 
 // [MAGIC][LEN][DATA9|13|17][SUM]
@@ -90,7 +92,7 @@ class PMSX003 {
 
                 int avail = _serial->available();
                 #if SENSOR_DEBUG
-                    //debugSend("[SENSOR] PMS: Packet available = %d\n", avail);
+                    //DEBUG_MSG("[SENSOR] PMS: Packet available = %d\n", avail);
                 #endif
                 if (avail < PMS_PACKET_SIZE(data_count)) {
                     break;
@@ -102,7 +104,7 @@ class PMSX003 {
                     uint16_t size = read16(sum);
                     if (size != PMS_PAYLOAD_SIZE(data_count)) {
                         #if SENSOR_DEBUG
-                            debugSend(("[SENSOR] PMS: Payload size: %d != %d.\n"), size, PMS_PAYLOAD_SIZE(data_count));
+                            DEBUG_MSG(("[SENSOR] PMS: Payload size: %d != %d.\n"), size, PMS_PAYLOAD_SIZE(data_count));
                         #endif
                         break;
                     }
@@ -110,7 +112,7 @@ class PMSX003 {
                     for (int i = 0; i < data_count; i++) {
                         data[i] = read16(sum);
                         #if SENSOR_DEBUG
-                            //debugSend(("[SENSOR] PMS:   data[%d] = %d\n"), i, data[i]);
+                            //DEBUG_MSG(("[SENSOR] PMS:   data[%d] = %d\n"), i, data[i]);
                         #endif
                     }
 
@@ -119,7 +121,7 @@ class PMSX003 {
                         return true;
                     } else {
                         #if SENSOR_DEBUG
-                            debugSend(("[SENSOR] PMS checksum: %04X != %04X\n"), sum, checksum);
+                            DEBUG_MSG(("[SENSOR] PMS checksum: %04X != %04X\n"), sum, checksum);
                         #endif
                     }
                     break;
@@ -282,7 +284,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     readCycle = _readCount % 30;
                     if (readCycle == 0) {
                         #if SENSOR_DEBUG
-                            debugSend("[SENSOR] %s: Wake up: %d\n", pms_specs[_type].name, _readCount);
+                            DEBUG_MSG("[SENSOR] %s: Wake up: %d\n", pms_specs[_type].name, _readCount);
                         #endif
                         wakeUp();
                         return;
@@ -306,6 +308,10 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     _slot_values[1] = (double)data[13] / 10;
                     _slot_values[2] = (double)data[14] / 10;
                     _slot_values[3] = (double)data[12] / 1000;
+                } else if (_type == PMS_TYPE_5003S) {
+                    _slot_values[0] = data[4];
+                    _slot_values[1] = data[5];
+                    _slot_values[2] = (double)data[12] / 1000;
                 } else if (_type == PMS_TYPE_5003T) {
                     _slot_values[0] = data[4];
                     _slot_values[1] = (double)data[10] / 10;
@@ -321,7 +327,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                 if (readCycle == 6) {
                     sleep();
                     #if SENSOR_DEBUG
-                        debugSend("[SENSOR] %s: Enter sleep mode: %d\n", pms_specs[_type].name, _readCount);
+                        DEBUG_MSG("[SENSOR] %s: Enter sleep mode: %d\n", pms_specs[_type].name, _readCount);
                     #endif
                     return;
                 }

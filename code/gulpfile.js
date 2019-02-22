@@ -27,7 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 const gulp = require('gulp');
-const runSequence = require('run-sequence');
 const through = require('through2');
 
 const htmlmin = require('gulp-htmlmin');
@@ -191,15 +190,15 @@ gulp.task('webui_all', function() {
     return buildWebUI('all');
 });
 
-gulp.task('webui', function(cb) {
-    runSequence([
+gulp.task('webui',
+    gulp.parallel(
         'webui_small',
         'webui_sensor',
         'webui_light',
         'webui_rfbridge',
         'webui_rfm69',
         'webui_all'
-    ], cb);
-});
+    )
+);
 
-gulp.task('default', ['webui']);
+gulp.task('default', gulp.series('webui'));

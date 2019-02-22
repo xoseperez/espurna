@@ -257,6 +257,17 @@ void migrate() {
             setSetting("myDCKIGPIO", 15);
             setSetting("relays", 1);
 
+        #elif defined(LYASI_LIGHT)
+
+            setSetting("board", 20);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+            setSetting("myModel", MY92XX_MODEL_MY9291);
+            setSetting("myChips", 1);
+            setSetting("myDIGPIO", 4);
+            setSetting("myDCKIGPIO", 5);
+            setSetting("relays", 1);
+
         #elif defined(MAGICHOME_LED_CONTROLLER)
 
             setSetting("board", 21);
@@ -1016,7 +1027,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(BLITZWOLF_BWSHP2)
+        #elif defined(BLITZWOLF_BWSHPX)
 
             setSetting("board", 79);
             setSetting("ledGPIO", 0, 2);
@@ -1222,6 +1233,41 @@ void migrate() {
 
             setSetting("ledGPIO", 1, 15);
             setSetting("ledLogic", 1, 0);
+
+        #elif defined(TONBUX_XSSSA01)
+
+            setSetting("board", 92);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(EUROMATE_WIFI_STECKER_SCHUKO_V2)
+
+            setSetting("board", 93);
+            setSetting("ledGPIO", 0, 13);      // Red LED
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 12);      // Green LED
+            setSetting("ledLogic", 1, 1);
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(OUKITEL_P1)
+
+            setSetting("board", 94);
+            setSetting("ledGPIO", 0, 0); // Blue LED
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);  // Right outlet
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 15);  // Left outlet
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            
 
         #else
 
