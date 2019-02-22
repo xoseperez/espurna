@@ -73,6 +73,7 @@
 //#define LINGAN_SWA1
 //#define HEYGO_HY02
 //#define MAXCIO_WUS002S
+//#define OUKITEL_P1
 //#define YIDIAN_XSSSA05
 //#define TONBUX_XSSSA06
 //#define TONBUX_XSSSA01
@@ -91,7 +92,7 @@
 //#define NEO_COOLCAM_NAS_WR01W
 //#define ESTINK_WIFI_POWER_STRIP
 //#define PILOTAK_ESP_DIN_V1
-//#define BLITZWOLF_BWSHP2
+//#define BLITZWOLF_BWSHPX
 //#define BH_ONOFRE
 //#define ITEAD_SONOFF_IFAN02
 //#define GENERIC_AG_L4
@@ -112,8 +113,9 @@
 //#define GBLIFE_RGBW_SOCKET
 //#define SMARTLIFE_MINI_SMART_SOCKET
 //#define GOSUND_SP1_V23
+//#define GOSUND_WS1
 //#define ARILUX_AL_LC02_V14
-//#define BLITZWOLF_BWSHP2_V23
+//#define BLITZWOLF_BWSHPX_V23
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

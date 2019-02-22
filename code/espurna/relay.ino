@@ -586,65 +586,78 @@ bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char i=0; i<relayCount(); i++) {
-        relay.add(_relays[i].target_status);
+        relay.add<uint8_t>(_relays[i].target_status);
     }
 }
 
-void _relayWebSocketSendRelay(unsigned char i) {
+String _relayFriendlyName(unsigned char i) {
+    String res = String("GPIO") + String(_relays[i].pin);
 
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-    JsonArray& config = root.createNestedArray("relayConfig");
-    JsonObject& line = config.createNestedObject();
-
-    line["id"] = i;
     if (GPIO_NONE == _relays[i].pin) {
         #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
             uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
             if (i >= physical) {
                 if (DUMMY_RELAY_COUNT == lightChannels()) {
-                    line["gpio"] = String("CH") + String(i-physical);
+                    res = String("CH") + String(i-physical);
                 } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
                     if (physical == i) {
-                        line["gpio"] = String("Light");
+                        res = String("Light");
                     } else {
-                        line["gpio"] = String("CH") + String(i-1-physical);
+                        res = String("CH") + String(i-1-physical);
                     }
                 } else {
-                    line["gpio"] = String("Light");
+                    res = String("Light");
                 }
             } else {
-                line["gpio"] = String("?");
+                res = String("?");
             }
         #else
-            line["gpio"] = String("SW") + String(i);
+            res = String("SW") + String(i);
         #endif
-    } else {
-        line["gpio"] = String("GPIO") + String(_relays[i].pin);
     }
-    
-    line["type"] = _relays[i].type;
-    line["reset"] = _relays[i].reset_pin;
-    line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-    line["pulse"] = _relays[i].pulse;
-    line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
-    #if MQTT_SUPPORT
-        line["group"] = getSetting("mqttGroup", i, "");
-        line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
-        line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
-    #endif
 
-    String output;
-    root.printTo(output);
-    jsonBuffer.clear();
-    wsSend((char *) output.c_str());
-
+    return res;
 }
 
 void _relayWebSocketSendRelays() {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& relays = root.createNestedObject("relayConfig");
+
+    relays["size"] = relayCount();
+    relays["start"] = 0;
+
+    JsonArray& gpio = relays.createNestedArray("gpio");
+    JsonArray& type = relays.createNestedArray("type");
+    JsonArray& reset = relays.createNestedArray("reset");
+    JsonArray& boot = relays.createNestedArray("boot");
+    JsonArray& pulse = relays.createNestedArray("pulse");
+    JsonArray& pulse_time = relays.createNestedArray("pulse_time");
+
+    #if MQTT_SUPPORT
+        JsonArray& group = relays.createNestedArray("group");
+        JsonArray& group_inverse = relays.createNestedArray("group_inv");
+        JsonArray& on_disconnect = relays.createNestedArray("on_disc");
+    #endif
+
     for (unsigned char i=0; i<relayCount(); i++) {
-        _relayWebSocketSendRelay(i);
+        gpio.add(_relayFriendlyName(i));
+
+        type.add(_relays[i].type);
+        reset.add(_relays[i].reset_pin);
+        boot.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt());
+
+        pulse.add(_relays[i].pulse);
+        pulse_time.add(_relays[i].pulse_ms / 1000.0);
+
+        #if MQTT_SUPPORT
+            group.add(getSetting("mqttGroup", i, ""));
+            group_inverse.add(getSetting("mqttGroupInv", i, 0).toInt() == 1);
+            on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
+        #endif
     }
+
+    wsSend(root);
 }
 
 void _relayWebSocketOnStart(JsonObject& root) {

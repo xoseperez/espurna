@@ -34,7 +34,6 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
     root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-    if (ntpSynced()) root["now"] = now();
 }
 
 #endif

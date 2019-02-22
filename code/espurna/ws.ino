@@ -73,6 +73,27 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 }
 
+#if DEBUG_WEB_SUPPORT
+
+bool wsDebugSend(const char* prefix, const char* message) {
+    if (!wsConnected()) return false;
+    if (getFreeHeap() < (strlen(message) * 3)) return false;
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &root = jsonBuffer.createObject();
+    JsonObject &weblog = root.createNestedObject("weblog");
+
+    weblog.set("message", message);
+    if (prefix && (prefix[0] != '\0')) {
+        weblog.set("prefix", prefix);
+    }
+
+    wsSend(root);
+
+    return true;
+}
+#endif
+
 // -----------------------------------------------------------------------------
 
 #if MQTT_SUPPORT
@@ -289,6 +310,20 @@ void _wsUpdate(JsonObject& root) {
     #endif
 }
 
+void _wsDoUpdate(bool reset = false) {
+    static unsigned long last = 0;
+    if (reset) {
+        last = 0;
+        return;
+    }
+
+    if (millis() - last > WS_UPDATE_INTERVAL) {
+        last = millis();
+        wsSend(_wsUpdate);
+    }
+}
+
+
 bool _wsOnReceive(const char * key, JsonVariant& value) {
     if (strncmp(key, "ws", 2) == 0) return true;
     if (strncmp(key, "admin", 5) == 0) return true;
@@ -299,70 +334,95 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
 }
 
 void _wsOnStart(JsonObject& root) {
+    char chipid[7];
+    snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
+    uint8_t * bssid = WiFi.BSSID();
+    char bssid_str[20];
+    snprintf_P(bssid_str, sizeof(bssid_str),
+        PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
+        bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
+    );
 
+    root["webMode"] = WEB_MODE_NORMAL;
+
+    root["app_name"] = APP_NAME;
+    root["app_version"] = APP_VERSION;
+    root["app_build"] = buildTime();
+    #if defined(APP_REVISION)
+        root["app_revision"] = APP_REVISION;
+    #endif
+    root["manufacturer"] = MANUFACTURER;
+    root["chipid"] = String(chipid);
+    root["mac"] = WiFi.macAddress();
+    root["bssid"] = String(bssid_str);
+    root["channel"] = WiFi.channel();
+    root["device"] = DEVICE;
+    root["hostname"] = getSetting("hostname");
+    root["desc"] = getSetting("desc");
+    root["network"] = getNetwork();
+    root["deviceip"] = getIP();
+    root["sketch_size"] = ESP.getSketchSize();
+    root["free_size"] = ESP.getFreeSketchSpace();
+    root["sdk"] = ESP.getSdkVersion();
+    root["core"] = getCoreVersion();
+
+    root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+    root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
+    root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
+    #if TERMINAL_SUPPORT
+        root["cmdVisible"] = 1;
+    #endif
+    root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
+    root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+
+    _wsDoUpdate(true);
+
+}
+
+void wsSend(JsonObject& root) {
+    size_t len = root.measureLength();
+    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+
+    if (buffer) {
+        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        _ws.textAll(buffer);
+    }
+}
+
+void wsSend(uint32_t client_id, JsonObject& root) {
+    AsyncWebSocketClient* client = _ws.client(client_id);
+    if (client == nullptr) return;
+
+    size_t len = root.measureLength();
+    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+
+    if (buffer) {
+        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        client->text(buffer);
+    }
+}
+
+void _wsStart(uint32_t client_id) {
     #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
         bool changePassword = getAdminPass().equals(ADMIN_PASS);
     #else
         bool changePassword = false;
     #endif
 
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+
     if (changePassword) {
-
         root["webMode"] = WEB_MODE_PASSWORD;
-
-    } else {
-
-        char chipid[7];
-        snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
-        uint8_t * bssid = WiFi.BSSID();
-        char bssid_str[20];
-        snprintf_P(bssid_str, sizeof(bssid_str),
-            PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
-            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
-        );
-
-        root["webMode"] = WEB_MODE_NORMAL;
-
-        root["app_name"] = APP_NAME;
-        root["app_version"] = APP_VERSION;
-        root["app_build"] = buildTime();
-        #if defined(APP_REVISION)
-            root["app_revision"] = APP_REVISION;
-        #endif
-        root["manufacturer"] = MANUFACTURER;
-        root["chipid"] = String(chipid);
-        root["mac"] = WiFi.macAddress();
-        root["bssid"] = String(bssid_str);
-        root["channel"] = WiFi.channel();
-        root["device"] = DEVICE;
-        root["hostname"] = getSetting("hostname");
-        root["desc"] = getSetting("desc");
-        root["network"] = getNetwork();
-        root["deviceip"] = getIP();
-        root["sketch_size"] = ESP.getSketchSize();
-        root["free_size"] = ESP.getFreeSketchSpace();
-        root["sdk"] = ESP.getSdkVersion();
-        root["core"] = getCoreVersion();
-
-        _wsUpdate(root);
-
-        root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-        root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
-        root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-        #if TERMINAL_SUPPORT
-            root["cmdVisible"] = 1;
-        #endif
-        root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
-        root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
-
+        wsSend(root);
+        return;
     }
 
-}
-
-void _wsStart(uint32_t client_id) {
-    for (unsigned char i = 0; i < _ws_on_send_callbacks.size(); i++) {
-        wsSend(client_id, _ws_on_send_callbacks[i]);
+    for (auto& callback : _ws_on_send_callbacks) {
+        callback(root);
     }
+
+    wsSend(client_id, root);
 }
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
@@ -410,12 +470,8 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 }
 
 void _wsLoop() {
-    static unsigned long last = 0;
     if (!wsConnected()) return;
-    if (millis() - last > WS_UPDATE_INTERVAL) {
-        last = millis();
-        wsSend(_wsUpdate);
-    }
+    _wsDoUpdate();
 }
 
 // -----------------------------------------------------------------------------
@@ -447,10 +503,8 @@ void wsSend(ws_on_send_callback_f callback) {
         DynamicJsonBuffer jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
         callback(root);
-        String output;
-        root.printTo(output);
-        jsonBuffer.clear();
-        _ws.textAll((char *) output.c_str());
+
+        wsSend(root);
     }
 }
 
@@ -469,13 +523,20 @@ void wsSend_P(PGM_P payload) {
 }
 
 void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
+    AsyncWebSocketClient* client = _ws.client(client_id);
+    if (client == nullptr) return;
+
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
     callback(root);
-    String output;
-    root.printTo(output);
-    jsonBuffer.clear();
-    _ws.text(client_id, (char *) output.c_str());
+
+    size_t len = root.measureLength();
+    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+
+    if (buffer) {
+        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        client->text(buffer);
+    }
 }
 
 void wsSend(uint32_t client_id, const char * payload) {
