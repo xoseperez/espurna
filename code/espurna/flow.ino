@@ -123,64 +123,98 @@ void flowStart() {
     _flow_started = true;
 }
 
+void _flowAddConnection(std::map<String, FlowComponent*>& components, std::map<String, String>& componentsNames,
+                        String& srcProcess, String& srcPort, String& tgtProcess, String& tgtPort) {
+    FlowComponent* srcComponent = components[srcProcess];
+    if (srcComponent == NULL) {
+        DEBUG_MSG_P(PSTR("[FLOW] Error: component ID='%s' is not registered\n"), srcProcess.c_str());
+        return;
+    }
+
+    FlowComponent* tgtComponent = components[tgtProcess];
+    if (tgtComponent == NULL) {
+        DEBUG_MSG_P(PSTR("[FLOW] Error: component ID='%s' is not registered\n"), tgtProcess.c_str());
+        return;
+    }
+
+    int srcNumber = _library.getOutputNumber(componentsNames[srcProcess], srcPort);
+    if (srcNumber < 0) {
+        DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' has no output named '%s'\n"), componentsNames[srcProcess].c_str(), srcPort.c_str());
+        return;
+    }
+
+    int tgtNumber = _library.getInputNumber(componentsNames[tgtProcess], tgtPort);
+    if (tgtNumber < 0) {
+        DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' has no input named '%s'\n"), componentsNames[tgtProcess].c_str(), tgtPort.c_str());
+        return;
+    }
+
+    srcComponent->addOutput(srcNumber, tgtComponent, tgtNumber);
+}
+
 void _flowStart(JsonObject& data) {
     std::map<String, FlowComponent*> components;
     std::map<String, String> componentsNames;
 
-    JsonObject& processes = data.containsKey("P") ? data["P"] : data["processes"];
-    for (auto process_kv: processes) {
-        String id = process_kv.key;
-        JsonObject& value = process_kv.value;
+    JsonVariant processes = data.containsKey("P") ? data["P"] : data["processes"];
+    if (processes.is<JsonObject>()) {
+        for (auto process_kv: processes.as<JsonObject>()) {
+            String id = process_kv.key;
+            JsonObject& value = process_kv.value;
 
-        String componentName = value.containsKey("C") ? value["C"] : value["component"];
-        JsonObject& metadata = value.containsKey("M") ? value["M"] : value["metadata"];
-        JsonObject& properties = metadata.containsKey("R") ? metadata["R"] : metadata["properties"];
+            String componentName = value.containsKey("C") ? value["C"] : value["component"];
+            JsonObject& metadata = value.containsKey("M") ? value["M"] : value["metadata"];
+            JsonObject& properties = metadata.containsKey("R") ? metadata["R"] : metadata["properties"];
 
-        FlowComponent* component = _library.createComponent(componentName, properties);
+            FlowComponent* component = _library.createComponent(componentName, properties);
 
-        if (component != NULL) {
-            components[id] = component;
-            componentsNames[id] = componentName;
-        } else {
-            DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' is not registered\n"), componentName.c_str());
+            if (component != NULL) {
+                components[id] = component;
+                componentsNames[id] = componentName;
+            } else {
+                DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' is not registered\n"), componentName.c_str());
+            }
+        }
+    } else {
+        for (JsonArray& process: processes.as<JsonArray>()) {
+            String id = process[0];
+            String componentName = process[1];
+            JsonObject& properties = process[5];
+
+            FlowComponent* component = _library.createComponent(componentName, properties);
+
+            if (component != NULL) {
+                components[id] = component;
+                componentsNames[id] = componentName;
+            } else {
+                DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' is not registered\n"), componentName.c_str());
+            }
         }
     }
 
     JsonArray& connections = data.containsKey("X") ? data["X"] : data["connections"];
-    for (JsonObject& connection: connections) {
-        JsonObject& src = connection.containsKey("S") ? connection["S"] : connection["src"];
-        String srcProcess = src.containsKey("I") ? src["I"] : src["process"];
-        String srcPort = src.containsKey("N") ? src["N"] : src["port"];
+    for (JsonVariant& connectionVariant: connections) {
+        if (connectionVariant.is<JsonObject>()) {
+            JsonObject& connection = connectionVariant.as<JsonObject>();
+            JsonObject& src = connection.containsKey("S") ? connection["S"] : connection["src"];
+            JsonObject& tgt = connection.containsKey("T") ? connection["T"] : connection["tgt"];
 
-        JsonObject& tgt = connection.containsKey("T") ? connection["T"] : connection["tgt"];
-        String tgtProcess = tgt.containsKey("I") ? tgt["I"] : tgt["process"];
-        String tgtPort = tgt.containsKey("N") ? tgt["N"] : tgt["port"];
+            String srcProcess = src.containsKey("I") ? src["I"] : src["process"];
+            String srcPort = src.containsKey("N") ? src["N"] : src["port"];
+            String tgtProcess = tgt.containsKey("I") ? tgt["I"] : tgt["process"];
+            String tgtPort = tgt.containsKey("N") ? tgt["N"] : tgt["port"];
 
-        FlowComponent* srcComponent = components[srcProcess];
-        if (srcComponent == NULL) {
-            DEBUG_MSG_P(PSTR("[FLOW] Error: component ID='%s' is not registered\n"), srcProcess.c_str());
-            continue;
+            _flowAddConnection(components, componentsNames, srcProcess, srcPort, tgtProcess, tgtPort);
+        } else {
+            JsonArray& connection = connectionVariant.as<JsonArray>();
+
+            String srcProcess = connection[0];
+            String srcPort = connection[1];
+            String tgtProcess = connection[2];
+            String tgtPort = connection[3];
+
+            _flowAddConnection(components, componentsNames, srcProcess, srcPort, tgtProcess, tgtPort);
         }
-
-        FlowComponent* tgtComponent = components[tgtProcess];
-        if (tgtComponent == NULL) {
-            DEBUG_MSG_P(PSTR("[FLOW] Error: component ID='%s' is not registered\n"), tgtProcess.c_str());
-            continue;
-        }
-
-        int srcNumber = _library.getOutputNumber(componentsNames[srcProcess], srcPort);
-        if (srcNumber < 0) {
-            DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' has no output named '%s'\n"), componentsNames[srcProcess].c_str(), srcPort.c_str());
-            continue;
-        }
-
-        int tgtNumber = _library.getInputNumber(componentsNames[tgtProcess], tgtPort);
-        if (tgtNumber < 0) {
-            DEBUG_MSG_P(PSTR("[FLOW] Error: component '%s' has no input named '%s'\n"), componentsNames[tgtProcess].c_str(), tgtPort.c_str());
-            continue;
-        }
-
-        srcComponent->addOutput(srcNumber, tgtComponent, tgtNumber);
     }
 }
 
