@@ -1,5 +1,11 @@
+#version=2.3.0
+
+menu.variant=ESPurna board variant
+menu.float_support=scanf and printf float support
+
 espurna.name=ESPurna Board
 espurna.build.board=ESP8266_ESPURNA
+espurna.upload.speed=115200
 espurna.upload.tool=esptool
 espurna.upload.maximum_data_size=81920
 espurna.upload.wait_for_upload_port=true
@@ -8,25 +14,23 @@ espurna.serial.disableDTR=true
 espurna.serial.disableRTS=true
 espurna.build.mcu=esp8266
 espurna.build.core=esp8266
+espurna.build.variant=generic
 espurna.build.spiffs_pagesize=256
 espurna.build.debug_port=
 espurna.build.debug_level=
+espurna.build.flash_mode=dout
+espurna.build.flash_flags=-DFLASHMODE_DOUT
+
 espurna.menu.CpuFrequency.80=80 MHz
 espurna.menu.CpuFrequency.80.build.f_cpu=80000000L
 espurna.menu.CpuFrequency.160=160 MHz
 espurna.menu.CpuFrequency.160.build.f_cpu=160000000L
-espurna.menu.ResetMethod.ck=ck
-espurna.menu.ResetMethod.ck.upload.resetmethod=ck
-espurna.menu.ResetMethod.nodemcu=nodemcu
-espurna.menu.ResetMethod.nodemcu.upload.resetmethod=nodemcu
-espurna.menu.ResetMethod.none=none
-espurna.menu.ResetMethod.none.upload.resetmethod=none
-espurna.menu.ResetMethod.dtrset=dtrset
-espurna.menu.ResetMethod.dtrset.upload.resetmethod=dtrset
+
 espurna.menu.FlashFreq.40=40MHz
 espurna.menu.FlashFreq.40.build.flash_freq=40
 espurna.menu.FlashFreq.80=80MHz
 espurna.menu.FlashFreq.80.build.flash_freq=80
+
 espurna.menu.FlashMode.dout=DOUT (compatible)
 espurna.menu.FlashMode.dout.build.flash_mode=dout
 espurna.menu.FlashMode.dout.build.flash_flags=-DFLASHMODE_DOUT
@@ -40,7 +44,6 @@ espurna.menu.FlashMode.qio=QIO (fast)
 espurna.menu.FlashMode.qio.build.flash_mode=qio
 espurna.menu.FlashMode.qio.build.flash_flags=-DFLASHMODE_QIO
 
-# espurna-specific flash sizes via custom ld scripts
 espurna.menu.FlashSize.1M=1M1S (no SPIFFS)
 espurna.menu.FlashSize.1M.build.flash_size=1M
 espurna.menu.FlashSize.1M.build.flash_size_bytes=0x100000
@@ -48,7 +51,6 @@ espurna.menu.FlashSize.1M.build.flash_ld=eagle.flash.1m0m1s.ld
 espurna.menu.FlashSize.1M.build.spiffs_pagesize=256
 espurna.menu.FlashSize.1M.upload.maximum_size=1023984
 espurna.menu.FlashSize.1M.build.rfcal_addr=0xFC000
-
 espurna.menu.FlashSize.2M=2M4S (1M SPIFFS)
 espurna.menu.FlashSize.2M.build.flash_size=2M
 espurna.menu.FlashSize.2M.build.flash_size_bytes=0x200000
@@ -56,22 +58,20 @@ espurna.menu.FlashSize.2M.build.flash_ld=eagle.flash.2m1m4s.ld
 espurna.menu.FlashSize.2M.build.spiffs_pagesize=256
 espurna.menu.FlashSize.2M.upload.maximum_size=1044464
 espurna.menu.FlashSize.2M.build.rfcal_addr=0x1FC000
-
-espurna.menu.FlashSize.4M=4M4S (1M SPIFFS)
-espurna.menu.FlashSize.4M.build.flash_size=4M
-espurna.menu.FlashSize.4M.build.flash_size_bytes=0x400000
-espurna.menu.FlashSize.4M.build.flash_ld=eagle.flash.4m1m4s.ld
-espurna.menu.FlashSize.4M.build.spiffs_pagesize=256
-espurna.menu.FlashSize.4M.upload.maximum_size=1044464
-espurna.menu.FlashSize.4M.build.rfcal_addr=0x3FC000
-
-espurna.menu.FlashSize.4M=4M4S (3M SPIFFS)
-espurna.menu.FlashSize.4M.build.flash_size=4M
-espurna.menu.FlashSize.4M.build.flash_size_bytes=0x400000
-espurna.menu.FlashSize.4M.build.flash_ld=eagle.flash.4m3m4s.ld
-espurna.menu.FlashSize.4M.build.spiffs_pagesize=256
-espurna.menu.FlashSize.4M.upload.maximum_size=1044464
-espurna.menu.FlashSize.4M.build.rfcal_addr=0x3FC000
+espurna.menu.FlashSize.4M1M=4M4S (1M SPIFFS)
+espurna.menu.FlashSize.4M1M.build.flash_size=4M
+espurna.menu.FlashSize.4M1M.build.flash_size_bytes=0x400000
+espurna.menu.FlashSize.4M1M.build.flash_ld=eagle.flash.4m1m4s.ld
+espurna.menu.FlashSize.4M1M.build.spiffs_pagesize=256
+espurna.menu.FlashSize.4M1M.upload.maximum_size=1044464
+espurna.menu.FlashSize.4M1M.build.rfcal_addr=0x3FC000
+espurna.menu.FlashSize.4M3M=4M4S (3M SPIFFS)
+espurna.menu.FlashSize.4M3M.build.flash_size=4M
+espurna.menu.FlashSize.4M3M.build.flash_size_bytes=0x400000
+espurna.menu.FlashSize.4M3M.build.flash_ld=eagle.flash.4m3m4s.ld
+espurna.menu.FlashSize.4M3M.build.spiffs_pagesize=256
+espurna.menu.FlashSize.4M3M.upload.maximum_size=1044464
+espurna.menu.FlashSize.4M3M.build.rfcal_addr=0x3FC000
 
 espurna.menu.FlashErase.none=Only Sketch
 espurna.menu.FlashErase.none.upload.erase_cmd=
@@ -80,18 +80,26 @@ espurna.menu.FlashErase.sdk.upload.erase_cmd=-ca "{build.rfcal_addr}" -cz 0x4000
 espurna.menu.FlashErase.all=All Flash Contents
 espurna.menu.FlashErase.all.upload.erase_cmd=-ca 0x0 -cz "{build.flash_size_bytes}"
 
-# nothing set as default
+espurna.menu.ResetMethod.ck=ck
+espurna.menu.ResetMethod.ck.upload.resetmethod=ck
+espurna.menu.ResetMethod.nodemcu=nodemcu
+espurna.menu.ResetMethod.nodemcu.upload.resetmethod=nodemcu
+espurna.menu.ResetMethod.none=none
+espurna.menu.ResetMethod.none.upload.resetmethod=none
+espurna.menu.ResetMethod.dtrset=dtrset
+espurna.menu.ResetMethod.dtrset.upload.resetmethod=dtrset
+
 espurna.menu.UploadSpeed.115200=115200
 espurna.menu.UploadSpeed.115200.upload.speed=115200
 espurna.menu.UploadSpeed.9600=9600
 espurna.menu.UploadSpeed.9600.upload.speed=9600
 espurna.menu.UploadSpeed.57600=57600
 espurna.menu.UploadSpeed.57600.upload.speed=57600
+espurna.menu.UploadSpeed.256000.windows=256000
+espurna.menu.UploadSpeed.256000.upload.speed=256000
 espurna.menu.UploadSpeed.230400.linux=230400
 espurna.menu.UploadSpeed.230400.macosx=230400
 espurna.menu.UploadSpeed.230400.upload.speed=230400
-espurna.menu.UploadSpeed.256000.windows=256000
-espurna.menu.UploadSpeed.256000.upload.speed=256000
 espurna.menu.UploadSpeed.460800.linux=460800
 espurna.menu.UploadSpeed.460800.macosx=460800
 espurna.menu.UploadSpeed.460800.upload.speed=460800
@@ -100,5 +108,4 @@ espurna.menu.UploadSpeed.512000.upload.speed=512000
 espurna.menu.UploadSpeed.921600=921600
 espurna.menu.UploadSpeed.921600.upload.speed=921600
 
-# TODO
-# core / app debug options?
+espurna.compiler.cpp.extra_flags=-DNO_GLOBAL_EEPROM -DMQTT_MAX_PACKET_SIZE=400
