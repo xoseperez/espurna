@@ -24,7 +24,7 @@ extern "C" {
 // Broker
 // -----------------------------------------------------------------------------
 #if BROKER_SUPPORT
-    void brokerRegister(void (*)(const char *, unsigned char, const char *));
+    void brokerRegister(void (*)(const unsigned char, const char *, unsigned char, const char *));
 #endif
 
 // -----------------------------------------------------------------------------
@@ -142,9 +142,15 @@ template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
-void settingsRegisterCommand(const String& name, void (*call)(Embedis*));
-void settingsInject(void *data, size_t len);
-Stream & settingsSerial();
+
+// -----------------------------------------------------------------------------
+// Terminal
+// -----------------------------------------------------------------------------
+#if TERMINAL_SUPPORT
+    void terminalRegisterCommand(const String& name, void (*call)(Embedis*));
+    void terminalInject(void *data, size_t len);
+    Stream & terminalSerial();
+#endif
 
 // -----------------------------------------------------------------------------
 // Utils
@@ -178,6 +184,8 @@ void webRequestRegister(web_request_callback_f callback);
 #if WEB_SUPPORT
     typedef std::function<void(JsonObject&)> ws_on_send_callback_f;
     void wsOnSendRegister(ws_on_send_callback_f callback);
+    void wsSend(uint32_t, JsonObject& root);
+    void wsSend(JsonObject& root);
     void wsSend(ws_on_send_callback_f sender);
 
     typedef std::function<void(uint32_t, const char *, JsonObject&)> ws_on_action_callback_f;
@@ -185,6 +193,10 @@ void webRequestRegister(web_request_callback_f callback);
 
     typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
     void wsOnReceiveRegister(ws_on_receive_callback_f callback);
+
+    bool wsConnected();
+    bool wsConnected(uint32_t);
+    bool wsDebugSend(const char*, const char*);
 #else
     #define ws_on_send_callback_f void *
     #define ws_on_action_callback_f void *

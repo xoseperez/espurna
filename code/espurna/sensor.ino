@@ -102,6 +102,32 @@ double _magnitudeProcess(unsigned char type, double value) {
 
 #if WEB_SUPPORT
 
+template<typename T>
+void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+
+    // ws produces flat list <prefix>Magnitudes
+    String ws_name = String(prefix);
+    ws_name.concat("Magnitudes");
+
+    // config uses <prefix>Magnitude<index> (cut 's')
+    String conf_name = ws_name.substring(0, ws_name.length() - 1);
+
+    JsonObject& list = root.createNestedObject(ws_name);
+    list["size"] = magnitudeCount();
+
+    JsonArray& name = list.createNestedArray("name");
+    JsonArray& type = list.createNestedArray("type");
+    JsonArray& index = list.createNestedArray("index");
+    JsonArray& idx = list.createNestedArray("idx");
+
+    for (unsigned char i=0; i<magnitudeCount(); ++i) {
+        name.add(magnitudeName(i));
+        type.add(magnitudeType(i));
+        index.add(magnitudeIndex(i));
+        idx.add(getSetting(conf_name, i, 0).toInt());
+    }
+}
+
 bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
     if (strncmp(key, "pwr", 3) == 0) return true;
     if (strncmp(key, "sns", 3) == 0) return true;
@@ -118,27 +144,36 @@ void _sensorWebSocketSendData(JsonObject& root) {
     bool hasHumidity = false;
     bool hasMICS = false;
 
-    JsonArray& list = root.createNestedArray("magnitudes");
-    for (unsigned char i=0; i<_magnitudes.size(); i++) {
+    JsonObject& magnitudes = root.createNestedObject("magnitudes");
+    uint8_t size = 0;
+
+    JsonArray& index = magnitudes.createNestedArray("index");
+    JsonArray& type = magnitudes.createNestedArray("type");
+    JsonArray& value = magnitudes.createNestedArray("value");
+    JsonArray& units = magnitudes.createNestedArray("units");
+    JsonArray& error = magnitudes.createNestedArray("error");
+    JsonArray& description = magnitudes.createNestedArray("description");
+
+    for (unsigned char i=0; i<magnitudeCount(); i++) {
 
         sensor_magnitude_t magnitude = _magnitudes[i];
         if (magnitude.type == MAGNITUDE_EVENT) continue;
+        ++size;
 
         unsigned char decimals = _magnitudeDecimals(magnitude.type);
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
-        JsonObject& element = list.createNestedObject();
-        element["index"] = int(magnitude.global);
-        element["type"] = int(magnitude.type);
-        element["value"] = String(buffer);
-        element["units"] = magnitudeUnits(magnitude.type);
-        element["error"] = magnitude.sensor->error();
+        index.add<uint8_t>(magnitude.global);
+        type.add<uint8_t>(magnitude.type);
+        value.add(buffer);
+        units.add(magnitudeUnits(magnitude.type));
+        error.add(magnitude.sensor->error());
 
         if (magnitude.type == MAGNITUDE_ENERGY) {
             if (_sensor_energy_reset_ts.length() == 0) _sensorResetTS();
-            element["description"] = magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")");
+            description.add(magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")"));
         } else {
-            element["description"] = magnitude.sensor->slot(magnitude.local);
+            description.add(magnitude.sensor->slot(magnitude.local));
         }
 
         if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
@@ -147,6 +182,8 @@ void _sensorWebSocketSendData(JsonObject& root) {
         if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) hasMICS = true;
         #endif
     }
+
+    magnitudes["size"] = size;
 
     if (hasTemperature) root["temperatureVisible"] = 1;
     if (hasHumidity) root["humidityVisible"] = 1;
@@ -210,7 +247,7 @@ void _sensorWebSocketStart(JsonObject& root) {
 
     }
 
-    if (_magnitudes.size() > 0) {
+    if (magnitudeCount()) {
         root["snsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
         root["pwrUnits"] = _sensor_power_units;
@@ -271,7 +308,7 @@ void _sensorAPISetup() {
 #if TERMINAL_SUPPORT
 
 void _sensorInitCommands() {
-    settingsRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
+    terminalRegisterCommand(F("MAGNITUDES"), [](Embedis* e) {
         for (unsigned char i=0; i<_magnitudes.size(); i++) {
             sensor_magnitude_t magnitude = _magnitudes[i];
             DEBUG_MSG_P(PSTR("[SENSOR] * %2d: %s @ %s (%s/%d)\n"),
@@ -282,33 +319,33 @@ void _sensorInitCommands() {
                 magnitude.global
             );
         }
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
     #if PZEM004T_SUPPORT
-    settingsRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.ADDRESS"), [](Embedis* e) {
         if (e->argc == 1) {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             unsigned char dev_count = pzem004t_sensor->getAddressesCount();
             for(unsigned char dev = 0; dev < dev_count; dev++) {
                 DEBUG_MSG_P(PSTR("Device %d/%s\n"), dev, pzem004t_sensor->getAddress(dev).c_str());
             }
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         } else if(e->argc == 2) {
             IPAddress addr;
             if (addr.fromString(String(e->argv[1]))) {
                 if(pzem004t_sensor->setDeviceAddress(&addr)) {
-                    DEBUG_MSG_P(PSTR("+OK\n"));
+                    terminalOK();
                 }
             } else {
-                DEBUG_MSG_P(PSTR("-ERROR: Invalid address argument\n"));
+                terminalError(F("Invalid address argument"));
             }
         } else {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         }
     });
-    settingsRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.RESET"), [](Embedis* e) {
         if(e->argc > 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
@@ -318,12 +355,12 @@ void _sensorInitCommands() {
                 setSetting("pzEneTotal", dev, offset);
                 DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         }
     });
-    settingsRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
+    terminalRegisterCommand(F("PZ.VALUE"), [](Embedis* e) {
         if(e->argc > 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         } else {
             unsigned char init = e->argc == 2 ? String(e->argv[1]).toInt() : 0;
             unsigned char limit = e->argc == 2 ? init +1 : pzem004t_sensor->getAddressesCount();
@@ -337,7 +374,7 @@ void _sensorInitCommands() {
                             String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_POWER_ACTIVE_INDEX)).c_str(),
                             String(pzem004t_sensor->value(dev * PZ_MAGNITUDE_ENERGY_INDEX)).c_str());
             }
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         }
     });
     #endif
@@ -1172,7 +1209,7 @@ void _sensorReport(unsigned char index, double value) {
     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
 
     #if BROKER_SUPPORT
-        brokerPublish(magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
+        brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
     #endif
 
     #if MQTT_SUPPORT
@@ -1190,14 +1227,6 @@ void _sensorReport(unsigned char index, double value) {
         #endif // SENSOR_PUBLISH_ADDRESSES
 
     #endif // MQTT_SUPPORT
-
-    #if INFLUXDB_SUPPORT
-        if (SENSOR_USE_INDEX || (_counts[magnitude.type] > 1)) {
-            idbSend(magnitudeTopic(magnitude.type).c_str(), magnitude.global, buffer);
-        } else {
-            idbSend(magnitudeTopic(magnitude.type).c_str(), buffer);
-        }
-    #endif // INFLUXDB_SUPPORT
 
     #if THINGSPEAK_SUPPORT
         tspkEnqueueMeasurement(index, buffer);

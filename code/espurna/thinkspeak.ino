@@ -36,11 +36,20 @@ unsigned char _tspk_tries = 0;
 // -----------------------------------------------------------------------------
 
 #if BROKER_SUPPORT
-void _tspkBrokerCallback(const char * topic, unsigned char id, const char * payload) {
-    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Process status messages
+    if (BROKER_MSG_TYPE_STATUS == type) {
         tspkEnqueueRelay(id, (char *) payload);
         tspkFlush();
     }
+
+    // Porcess sensor messages
+    if (BROKER_MSG_TYPE_SENSOR == type) {
+        //tspkEnqueueMeasurement(id, (char *) payload);
+        //tspkFlush();
+    }
+
 }
 #endif // BROKER_SUPPORT
 
@@ -66,15 +75,8 @@ void _tspkWebSocketOnSend(JsonObject& root) {
     if (relayCount() > 0) visible = 1;
 
     #if SENSOR_SUPPORT
-        JsonArray& list = root.createNestedArray("tspkMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
-            JsonObject& element = list.createNestedObject();
-            element["name"] = magnitudeName(i);
-            element["type"] = magnitudeType(i);
-            element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("tspkMagnitude", i, 0).toInt();
-        }
-        if (magnitudeCount() > 0) visible = 1;
+        _sensorWebSocketMagnitudes(root, "tspk");
+        visible = visible || (magnitudeCount() > 0);
     #endif
 
     root["tspkVisible"] = visible;

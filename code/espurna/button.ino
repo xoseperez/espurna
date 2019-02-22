@@ -105,36 +105,60 @@ void buttonEvent(unsigned int id, unsigned char event) {
        }
     #endif
 
-    if (action == BUTTON_MODE_TOGGLE) {
+    if (BUTTON_MODE_TOGGLE == action) {
         if (_buttons[id].relayID > 0) {
             relayToggle(_buttons[id].relayID - 1);
         }
     }
-    if (action == BUTTON_MODE_ON) {
+
+    if (BUTTON_MODE_ON == action) {
         if (_buttons[id].relayID > 0) {
             relayStatus(_buttons[id].relayID - 1, true);
         }
     }
-    if (action == BUTTON_MODE_OFF) {
+
+    if (BUTTON_MODE_OFF == action) {
         if (_buttons[id].relayID > 0) {
             relayStatus(_buttons[id].relayID - 1, false);
         }
     }
-    if (action == BUTTON_MODE_AP) wifiStartAP();
-    #if defined(JUSTWIFI_ENABLE_WPS)
-        if (action == BUTTON_MODE_WPS) wifiStartWPS();
-    #endif // defined(JUSTWIFI_ENABLE_WPS)
-    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        if (action == BUTTON_MODE_SMART_CONFIG) wifiStartSmartConfig();
-    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-    if (action == BUTTON_MODE_RESET) {
+    
+    if (BUTTON_MODE_AP == action) {
+        wifiStartAP();
+    }
+    
+    if (BUTTON_MODE_RESET == action) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
-    if (action == BUTTON_MODE_FACTORY) {
+
+    if (BUTTON_MODE_FACTORY == action) {
         DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
         resetSettings();
         deferredReset(100, CUSTOM_RESET_FACTORY);
     }
+
+    #if defined(JUSTWIFI_ENABLE_WPS)
+        if (BUTTON_MODE_WPS == action) {
+            wifiStartWPS();
+        }
+    #endif // defined(JUSTWIFI_ENABLE_WPS)
+    
+    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+        if (BUTTON_MODE_SMART_CONFIG == action) {
+            wifiStartSmartConfig();
+        }
+    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+    
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    if (BUTTON_MODE_DIM_UP == action) {
+        lightBrightnessStep(1);
+        lightUpdate(true, true);
+    }
+    if (BUTTON_MODE_DIM_DOWN == action) {
+        lightBrightnessStep(-1);
+        lightUpdate(true, true);
+    }
+    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
 }
 

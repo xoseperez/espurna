@@ -16,22 +16,43 @@ char _udp_syslog_header[40] = {0};
 #endif
 #endif
 
-void _debugSend(char * message) {
+#if DEBUG_SERIAL_SUPPORT
+    void _debugSendSerial(const char* prefix, const char* data) {
+        if (prefix && (prefix[0] != '\0')) {
+            Serial.print(prefix);
+        }
+        Serial.print(data);
+
+    }
+#endif
+
+#if DEBUG_TELNET_SUPPORT
+    void _debugSendTelnet(const char* prefix, const char* data) {
+        if (prefix && (prefix[0] != '\0')) {
+            _telnetWrite(prefix);
+        }
+        _telnetWrite(data);
+
+    }
+#endif
+
+void _debugSend(const char * message) {
+
+    const size_t msg_len = strlen(message);
 
     bool pause = false;
+    char timestamp[10] = {0};
 
     #if DEBUG_ADD_TIMESTAMP
         static bool add_timestamp = true;
-        char timestamp[10] = {0};
-        if (add_timestamp) snprintf_P(timestamp, sizeof(timestamp), PSTR("[%06lu] "), millis() % 1000000);
-        add_timestamp = (message[strlen(message)-1] == 10) || (message[strlen(message)-1] == 13);
+        if (add_timestamp) {
+            snprintf(timestamp, sizeof(timestamp), "[%06lu] ", millis() % 1000000);
+        }
+        add_timestamp = (message[msg_len - 1] == 10) || (message[msg_len - 1] == 13);
     #endif
 
     #if DEBUG_SERIAL_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            DEBUG_PORT.printf(timestamp);
-        #endif
-        DEBUG_PORT.printf(message);
+        _debugSendSerial(timestamp, message);
     #endif
 
     #if DEBUG_UDP_SUPPORT
@@ -51,31 +72,13 @@ void _debugSend(char * message) {
     #endif
 
     #if DEBUG_TELNET_SUPPORT
-        #if DEBUG_ADD_TIMESTAMP
-            _telnetWrite(timestamp, strlen(timestamp));
-        #endif
-        _telnetWrite(message, strlen(message));
+        _debugSendTelnet(timestamp, message);
         pause = true;
     #endif
 
     #if DEBUG_WEB_SUPPORT
-        if (wsConnected() && (getFreeHeap() > 10000)) {
-            DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(1) + strlen(message) + 17);
-            JsonObject &root = jsonBuffer.createObject();
-            #if DEBUG_ADD_TIMESTAMP
-                char buffer[strlen(timestamp) + strlen(message) + 1];
-                snprintf_P(buffer, sizeof(buffer), "%s%s", timestamp, message);
-                root.set("weblog", buffer);
-            #else
-                root.set("weblog", message);
-            #endif
-            String out;
-            root.printTo(out);
-            jsonBuffer.clear();
-
-            wsSend(out.c_str());
-            pause = true;
-        }
+        wsDebugSend(timestamp, message);
+        pause = true;
     #endif
 
     if (pause) optimistic_yield(100);
@@ -128,12 +131,16 @@ void debugWebSetup() {
     });
 
     wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
-        if (strcmp(action, "dbgcmd") == 0) {
-            const char* command = data.get<const char*>("command");
-            char buffer[strlen(command) + 2];
-            snprintf(buffer, sizeof(buffer), "%s\n", command);
-            settingsInject((void*) buffer, strlen(buffer));
-        }
+
+        #if TERMINAL_SUPPORT
+            if (strcmp(action, "dbgcmd") == 0) {
+                const char* command = data.get<const char*>("command");
+                char buffer[strlen(command) + 2];
+                snprintf(buffer, sizeof(buffer), "%s\n", command);
+                terminalInject((void*) buffer, strlen(buffer));
+            }
+        #endif
+        
     });
 
     #if DEBUG_UDP_SUPPORT

@@ -74,12 +74,12 @@ void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObj
 
 void _lightfoxInitCommands() {
 
-    settingsRegisterCommand(F("LIGHTFOX.LEARN"), [](Embedis* e) {
+    terminalRegisterCommand(F("LIGHTFOX.LEARN"), [](Embedis* e) {
         lightfoxLearn();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });
 
-    settingsRegisterCommand(F("LIGHTFOX.CLEAR"), [](Embedis* e) {
+    terminalRegisterCommand(F("LIGHTFOX.CLEAR"), [](Embedis* e) {
         lightfoxClear();
         DEBUG_MSG_P(PSTR("+OK\n"));
     });

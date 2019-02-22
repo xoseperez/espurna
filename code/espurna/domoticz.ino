@@ -11,6 +11,7 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 
 bool _dcz_enabled = false;
+std::vector<bool> _dcz_relay_state;
 
 //------------------------------------------------------------------------------
 // Private methods
@@ -34,6 +35,15 @@ void _domoticzMqttSubscribe(bool value) {
         mqttUnsubscribeRaw(dczTopicOut.c_str());
     }
 
+}
+
+bool _domoticzStatus(unsigned char id) {
+    return _dcz_relay_state[id];
+}
+
+void _domoticzStatus(unsigned char id, bool status) {
+    _dcz_relay_state[id] = status;
+    relayStatus(id, status);
 }
 
 void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) {
@@ -70,6 +80,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
             String stype = root["stype"];
             if (
                 (stype.equals("RGB") || stype.equals("RGBW") || stype.equals("RGBWW"))
+                && domoticzIdx(0) == idx
             ) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
                 if (lightHasColor()) {
@@ -127,7 +138,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
                     if (relayID >= 0) {
                         unsigned char value = root["nvalue"];
                         DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
-                        relayStatus(relayID, value > 0);
+                        _domoticzStatus(relayID, value > 0);
                     }
                 }
 #else
@@ -138,7 +149,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
                 if (relayID >= 0) {
                     unsigned char value = root["nvalue"];
                     DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
-                    relayStatus(relayID, value == 1);
+                    _domoticzStatus(relayID, value == 1);
                 }
             }
 
@@ -149,11 +160,18 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
 };
 
 #if BROKER_SUPPORT
-void _domoticzBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+
     if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
-        unsigned char value = atoi(payload);
-        domoticzSendRelay(id, value == 1);
+        bool status = atoi(payload) == 1;
+        if (_domoticzStatus(id) == status) return;
+        _dcz_relay_state[id] = status;
+        domoticzSendRelay(id, status);
     }
+    
 }
 #endif // BROKER_SUPPORT
 
@@ -165,7 +183,7 @@ bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
 
 void _domoticzWebSocketOnSend(JsonObject& root) {
 
-    root["dczVisible"] = 1;
+    unsigned char visible = 0;
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
@@ -174,17 +192,14 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
+    visible = (relayCount() > 0);
 
     #if SENSOR_SUPPORT
-        JsonArray& list = root.createNestedArray("dczMagnitudes");
-        for (byte i=0; i<magnitudeCount(); i++) {
-            JsonObject& element = list.createNestedObject();
-            element["name"] = magnitudeName(i);
-            element["type"] = magnitudeType(i);
-            element["index"] = magnitudeIndex(i);
-            element["idx"] = getSetting("dczMagnitude", i, 0).toInt();
-        }
+        _sensorWebSocketMagnitudes(root, "dcz");
+        visible = visible || (magnitudeCount() > 0);
     #endif
+
+    root["dczVisible"] = visible;
 
 }
 
@@ -193,6 +208,12 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
 void _domoticzConfigure() {
     bool enabled = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
+
+    _dcz_relay_state.reserve(relayCount());
+    for (size_t n = 0; n < relayCount(); ++n) {
+        _dcz_relay_state[n] = relayStatus(n);
+    }
+
     _dcz_enabled = enabled;
 }
 

@@ -34,7 +34,6 @@ void _ntpWebSocketOnSend(JsonObject& root) {
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
     root["ntpRegion"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-    if (ntpSynced()) root["now"] = now();
 }
 
 #endif
@@ -108,7 +107,7 @@ void _ntpLoop() {
         static unsigned char last_minute = 60;
         if (ntpSynced() && (minute() != last_minute)) {
             last_minute = minute();
-            brokerPublish(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+            brokerPublish(BROKER_MSG_TYPE_DATETIME, MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
         }
     #endif
 

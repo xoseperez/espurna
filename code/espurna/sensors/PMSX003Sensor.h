@@ -22,6 +22,7 @@
 #define PMS_TYPE_X003_9     1
 #define PMS_TYPE_5003T      2
 #define PMS_TYPE_5003ST     3
+#define PMS_TYPE_5003S      4
 
 // Sensor type specified data
 #define PMS_SLOT_MAX        4
@@ -35,7 +36,8 @@ const static struct {
     {"PMSX003", 13, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
     {"PMSX003_9", 9, 3, {MAGNITUDE_PM1dot0, MAGNITUDE_PM2dot5, MAGNITUDE_PM10}},
     {"PMS5003T", 13, 3, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY}},
-    {"PMS5003ST", 17, 4, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}}
+    {"PMS5003ST", 17, 4, {MAGNITUDE_PM2dot5, MAGNITUDE_TEMPERATURE, MAGNITUDE_HUMIDITY, MAGNITUDE_HCHO}},
+    {"PMS5003S", 13, 3, {MAGNITUDE_PM2dot5, MAGNITUDE_PM10, MAGNITUDE_HCHO}},
 };
 
 // [MAGIC][LEN][DATA9|13|17][SUM]
@@ -306,6 +308,10 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
                     _slot_values[1] = (double)data[13] / 10;
                     _slot_values[2] = (double)data[14] / 10;
                     _slot_values[3] = (double)data[12] / 1000;
+                } else if (_type == PMS_TYPE_5003S) {
+                    _slot_values[0] = data[4];
+                    _slot_values[1] = data[5];
+                    _slot_values[2] = (double)data[12] / 1000;
                 } else if (_type == PMS_TYPE_5003T) {
                     _slot_values[0] = data[4];
                     _slot_values[1] = (double)data[10] / 10;

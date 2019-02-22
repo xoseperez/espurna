@@ -58,6 +58,14 @@ String getCoreRevision() {
     #endif
 }
 
+unsigned char getHeartbeatMode() {
+    return getSetting("hbMode", HEARTBEAT_MODE).toInt();
+}
+
+unsigned char getHeartbeatInterval() {
+    return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+}
+
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
@@ -135,8 +143,6 @@ unsigned long getUptime() {
 
 }
 
-#if HEARTBEAT_MODE != HEARTBEAT_NONE
-
 // -----------------------------------------------------------------------------
 // Heartbeat helper
 // -----------------------------------------------------------------------------
@@ -158,7 +164,8 @@ namespace Heartbeat {
         Version = 1 << 14,
         Board = 1 << 15,
         Loadavg = 1 << 16,
-        Interval = 1 << 17
+        Interval = 1 << 17,
+        Description = 1 << 18
     };
 
     constexpr uint32_t defaultValue() {
@@ -174,6 +181,7 @@ namespace Heartbeat {
             (Relay * (HEARTBEAT_REPORT_RELAY)) | \
             (Light * (HEARTBEAT_REPORT_LIGHT)) | \
             (Hostname * (HEARTBEAT_REPORT_HOSTNAME)) | \
+            (Description * (HEARTBEAT_REPORT_DESCRIPTION)) | \
             (App * (HEARTBEAT_REPORT_APP)) | \
             (Version * (HEARTBEAT_REPORT_VERSION)) | \
             (Board * (HEARTBEAT_REPORT_BOARD)) | \
@@ -196,6 +204,7 @@ void heartbeat() {
     unsigned int free_heap = getFreeHeap();
 
     #if MQTT_SUPPORT
+        unsigned char _heartbeat_mode = getHeartbeatMode();
         bool serial = !mqttConnected();
     #else
         bool serial = true;
@@ -224,9 +233,9 @@ void heartbeat() {
     // -------------------------------------------------------------------------
 
     #if MQTT_SUPPORT
-        if (!serial) {
+        if (!serial && (_heartbeat_mode == HEARTBEAT_REPEAT || systemGetHeartbeat())) {
             if (hb_cfg & Heartbeat::Interval)
-                mqttSend(MQTT_TOPIC_INTERVAL, String(HEARTBEAT_INTERVAL / 1000).c_str());
+                mqttSend(MQTT_TOPIC_INTERVAL, String(getHeartbeatInterval() / 1000).c_str());
 
             if (hb_cfg & Heartbeat::App)
                 mqttSend(MQTT_TOPIC_APP, APP_NAME);
@@ -239,6 +248,12 @@ void heartbeat() {
 
             if (hb_cfg & Heartbeat::Hostname)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname", getIdentifier()).c_str());
+
+            if (hb_cfg & Heartbeat::Description) {
+                if (hasSetting("desc")) {
+                    mqttSend(MQTT_TOPIC_DESCRIPTION, getSetting("desc").c_str());
+                }
+            }
 
             if (hb_cfg & Heartbeat::Ssid)
                 mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
@@ -280,7 +295,10 @@ void heartbeat() {
             if (hb_cfg & Heartbeat::Loadavg)
                 mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
 
+        } else if (!serial && _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
+            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
         }
+
     #endif
 
     // -------------------------------------------------------------------------
@@ -299,8 +317,6 @@ void heartbeat() {
     #endif
 
 }
-
-#endif /// HEARTBEAT_MODE != HEARTBEAT_NONE
 
 // -----------------------------------------------------------------------------
 // INFO

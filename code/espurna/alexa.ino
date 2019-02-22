@@ -36,18 +36,23 @@ void _alexaConfigure() {
     alexa.enable(wifiConnected() && alexaEnabled());
 }
 
-bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), String((char *)data));
-}
+#if WEB_SUPPORT
+    bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), String((char *)data));
+    }
 
-bool _alexaRequestCallback(AsyncWebServerRequest *request) {
-    String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
-    return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
-}
+    bool _alexaRequestCallback(AsyncWebServerRequest *request) {
+        String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
+        return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
+    }
+#endif
 
 #if BROKER_SUPPORT
-void _alexaBrokerCallback(const char * topic, unsigned char id, const char * payload) {
+void _alexaBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
     
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+
     unsigned char value = atoi(payload);
 
     if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
@@ -76,7 +81,7 @@ void alexaSetup() {
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
     // Basic fauxmoESP configuration
-    alexa.createServer(false);
+    alexa.createServer(!WEB_SUPPORT);
     alexa.setPort(80);
 
     // Uses hostname as base name for all devices
@@ -113,6 +118,8 @@ void alexaSetup() {
 
     // Websockets
     #if WEB_SUPPORT
+        webBodyRegister(_alexaBodyCallback);
+        webRequestRegister(_alexaRequestCallback);
         wsOnSendRegister(_alexaWebSocketOnSend);
         wsOnReceiveRegister(_alexaWebSocketOnReceive);
     #endif
@@ -134,8 +141,6 @@ void alexaSetup() {
     });
 
     // Register main callbacks
-    webBodyRegister(_alexaBodyCallback);
-    webRequestRegister(_alexaRequestCallback);
     #if BROKER_SUPPORT
         brokerRegister(_alexaBrokerCallback);
     #endif

@@ -84,6 +84,7 @@
 
                     <span class="pure-menu-heading" name="hostname">HOSTNAME</span>
                     <span class="pure-menu-heading small" name="title">ESPurna 0.0.0</span>
+                    <span class="pure-menu-heading small" name="desc"></span>
 
                     <ul class="pure-menu-list">
 
@@ -345,6 +346,16 @@
                                         This name will identify this device in your network (http://&lt;hostname&gt;.local).<br />
                                         Hostname may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-'). They can neither start or end with an hyphen.<br />
                                         For this setting to take effect you should restart the wifi interface by clicking the "Reconnect" button.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Description</label>
+                                    <input name="desc" class="pure-u-1 pure-u-lg-3-4"  maxlength="64" type="text" tabindex="2" />
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Human-friendly name for your device. Will be reported with the heartbeat.<br />
+                                        You can use this to specify the location or some other identification information.
                                     </div>
                                 </div>
 
@@ -627,6 +638,30 @@
                                 </div>
 
                                 <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat message</label>
+                                    <select class="pure-u-1 pure-u-lg-3-4" name="hbMode" tabindex="15" >
+                                        <option value="0">Disabled</option>
+                                        <option value="1">On device startup</option>
+                                        <option value="2">Repeat after defined interval</option>
+                                        <option value="3">Repeat only device status</option>
+                                    </select>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        Define when heartbeat message will be sent.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Heartbeat interval</label>
+                                    <input name="hbInterval" class="pure-u-1 pure-u-lg-1-4" type="number" tabindex="16" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">
+                                        This is the interval in <strong>seconds</strong> how often to send the heartbeat message.
+                                    </div>
+                                </div>
+
+                                <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Upgrade</label>
                                     <input class="pure-u-1-2 pure-u-lg-1-2" name="filename" type="text" readonly />
                                     <div class="pure-u-1-4 pure-u-lg-1-8"><button type="button" class="pure-button button-upgrade-browse pure-u-23-24">Browse</button></div>
@@ -635,7 +670,7 @@
                                     <div class="pure-u-1 pure-u-lg-3-4 hint">The device has <span name="free_size"></span> bytes available for OTA updates. If your image is larger than this consider doing a <a href="https://github.com/xoseperez/espurna/wiki/TwoStepUpdates" rel="noopener" target="_blank"><strong>two-step update</strong></a>.</div>
                                     <div class="pure-u-0 pure-u-lg-1-4"></div>
                                     <div class="pure-u-1 pure-u-lg-3-4"><progress id="upgrade-progress"></progress></div>
-                                    <input name="upgrade" type="file" tabindex="16" />
+                                    <input name="upgrade" type="file" tabindex="17" />
                                 </div>
 
                             </fieldset>
@@ -656,6 +691,11 @@
                             <fieldset>
 
                                 <legend>General</legend>
+
+                                <div class="pure-g">
+                                    <div class="pure-u-1 pure-u-lg-1-4"></div>
+                                    <div class="pure-u-1 pure-u-lg-3-4 hint">Device hostname can be configured on the GENERAL tab.</div>
+                                </div>
 
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Scan networks</label>
@@ -1085,7 +1125,7 @@
                                     </div>
                                 </div>
                                 <div class="pure-g">
-                                    <span class="pure-u-1 terminal" id="haConfig" name="haConfig"></span>
+                                    <textarea class="pure-u-1 terminal" id="haConfig" name="haConfig" wrap="off" readonly></textarea>
                                 </div>
 
 
