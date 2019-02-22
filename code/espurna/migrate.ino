@@ -1027,7 +1027,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(BLITZWOLF_BWSHP2)
+        #elif defined(BLITZWOLF_BWSHPX)
 
             setSetting("board", 79);
             setSetting("ledGPIO", 0, 2);
