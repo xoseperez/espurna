@@ -164,7 +164,8 @@ namespace Heartbeat {
         Version = 1 << 14,
         Board = 1 << 15,
         Loadavg = 1 << 16,
-        Interval = 1 << 17
+        Interval = 1 << 17,
+        Description = 1 << 18
     };
 
     constexpr uint32_t defaultValue() {
@@ -180,6 +181,7 @@ namespace Heartbeat {
             (Relay * (HEARTBEAT_REPORT_RELAY)) | \
             (Light * (HEARTBEAT_REPORT_LIGHT)) | \
             (Hostname * (HEARTBEAT_REPORT_HOSTNAME)) | \
+            (Description * (HEARTBEAT_REPORT_DESCRIPTION)) | \
             (App * (HEARTBEAT_REPORT_APP)) | \
             (Version * (HEARTBEAT_REPORT_VERSION)) | \
             (Board * (HEARTBEAT_REPORT_BOARD)) | \
@@ -246,6 +248,12 @@ void heartbeat() {
 
             if (hb_cfg & Heartbeat::Hostname)
                 mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname", getIdentifier()).c_str());
+
+            if (hb_cfg & Heartbeat::Description) {
+                if (hasSetting("desc")) {
+                    mqttSend(MQTT_TOPIC_DESCRIPTION, getSetting("desc").c_str());
+                }
+            }
 
             if (hb_cfg & Heartbeat::Ssid)
                 mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());

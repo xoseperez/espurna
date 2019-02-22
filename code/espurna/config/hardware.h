@@ -1152,6 +1152,28 @@
     #define MY92XX_MAPPING      0, 1, 2, 3
 
 // -----------------------------------------------------------------------------
+// Lyasi LED
+// -----------------------------------------------------------------------------
+
+#elif defined(LYASI_LIGHT)
+
+    // Info
+    #define MANUFACTURER        "LYASI"
+    #define DEVICE              "RGB-LED"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_MY92XX
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define MY92XX_MODEL        MY92XX_MODEL_MY9291
+    #define MY92XX_CHIPS        1
+    #define MY92XX_DI_PIN       4
+    #define MY92XX_DCKI_PIN     5
+    #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
+    #define MY92XX_MAPPING      0, 1, 2, 3
+
+// -----------------------------------------------------------------------------
 // LED Controller
 // -----------------------------------------------------------------------------
 
@@ -2080,6 +2102,38 @@
     #define LED1_PIN_INVERSE	1
 
 // -----------------------------------------------------------------------------
+// Oukitel - P1
+// -----------------------------------------------------------------------------
+
+#elif defined(OUKITEL_P1)
+    // -----------------------------------------------------------------------------
+    // Oukitel P1 Smart Plug
+    // https://www.amazon.com/Docooler-OUKITEL-Control-Wireless-Adaptor/dp/B07J3BYFJX/ref=sr_1_fkmrnull_2?keywords=oukitel+p1+smart+switch&qid=1550424399&s=gateway&sr=8-2-fkmrnull
+    // -----------------------------------------------------------------------------
+
+    // Info
+    #define MANUFACTURER		"Oukitel"
+    #define DEVICE				"P1"
+
+    // Buttons
+    #define BUTTON1_PIN			13
+    #define BUTTON1_MODE		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY		1
+
+    // Relays
+    // Right
+    #define RELAY1_PIN			12
+    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    // Left
+    #define RELAY2_PIN			15
+    #define RELAY2_TYPE			RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN			0  // blue
+    #define LED1_PIN_INVERSE	1
+    #define LED1_MODE           LED_MODE_WIFI
+
+// -----------------------------------------------------------------------------
 // YiDian XS-SSA05
 // -----------------------------------------------------------------------------
 
@@ -2277,7 +2331,9 @@
 
     // Relays
     #define RELAY1_PIN          0
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+    #ifndef RELAY1_TYPE
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL   // See #1504 and #1554
+    #endif
 
     // LEDs
     #define LED1_PIN            2
@@ -2667,7 +2723,8 @@
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
 // -----------------------------------------------------------------------------
-// Several boards under different names uing a power chip labelled BL0937 or HJL-01
+// BlitzWolf SHP2 and SHP6
+// Also several boards under different names uing a power chip labelled BL0937 or HJL-01
 // * Blitzwolf (https://www.amazon.es/Inteligente-Temporización-Dispositivos-Cualquier-BlitzWolf/dp/B07BMQP142)
 // * HomeCube (https://www.amazon.de/Steckdose-Homecube-intelligente-Verbrauchsanzeige-funktioniert/dp/B076Q2LKHG)
 // * Coosa (https://www.amazon.com/COOSA-Monitoring-Function-Campatible-Assiatant/dp/B0788W9TDR)
@@ -2675,11 +2732,11 @@
 // * Ablue (https://www.amazon.de/Intelligente-Steckdose-Ablue-Funktioniert-Assistant/dp/B076DRFRZC)
 // -----------------------------------------------------------------------------
 
-#elif defined(BLITZWOLF_BWSHP2)
+#elif defined(BLITZWOLF_BWSHPX)
 
     // Info
     #define MANUFACTURER                "BLITZWOLF"
-    #define DEVICE                      "BWSHP2"
+    #define DEVICE                      "BWSHPX"
 
     // Buttons
     #define BUTTON1_PIN                 13
@@ -2714,13 +2771,15 @@
 
 // -----------------------------------------------------------------------------
 // Same as the above but new board version marked V2.3
+// BlitzWolf SHP2 V2.3
+// Gosund SP1 V2.3
 // -----------------------------------------------------------------------------
 
-#elif defined(BLITZWOLF_BWSHP2_V23)
+#elif defined(BLITZWOLF_BWSHPX_V23)
 
     // Info
     #define MANUFACTURER                "BLITZWOLF"
-    #define DEVICE                      "BWSHP2V2.3"
+    #define DEVICE                      "BWSHPX_V23"
 
     // Buttons
     #define BUTTON1_PIN                 3
@@ -2798,6 +2857,26 @@
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
 // -----------------------------------------------------------------------------
 
+#elif defined(GOSUND_WS1)
+
+    // Info
+    #define MANUFACTURER        "GOSUND"
+    #define DEVICE              "WS1"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            1
+    #define LED1_PIN_INVERSE    1
+
+// This one is the same as the BLITZWOLF_BWSHPX_V23
 #elif defined(GOSUND_SP1_V23)
 
     // Info

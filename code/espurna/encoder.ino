@@ -105,7 +105,7 @@ void _encoderLoop() {
         // action
         if (encoder.button_pin == GPIO_NONE) {
 
-            // if there is no button, the encoder driver the CHANNEL1
+            // if there is no button, the encoder drives CHANNEL1
             lightChannelStep(encoder.channel1, delta);
 
         } else {

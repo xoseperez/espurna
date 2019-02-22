@@ -235,6 +235,10 @@
 #define HEARTBEAT_REPORT_HOSTNAME   1
 #endif
 
+#ifndef HEARTBEAT_REPORT_DESCRIPTION
+#define HEARTBEAT_REPORT_DESCRIPTION 1
+#endif
+
 #ifndef HEARTBEAT_REPORT_APP
 #define HEARTBEAT_REPORT_APP        1
 #endif
@@ -802,6 +806,7 @@
 #define MQTT_TOPIC_APP              "app"
 #define MQTT_TOPIC_INTERVAL         "interval"
 #define MQTT_TOPIC_HOSTNAME         "host"
+#define MQTT_TOPIC_DESCRIPTION      "desc"
 #define MQTT_TOPIC_TIME             "time"
 #define MQTT_TOPIC_RFOUT            "rfout"
 #define MQTT_TOPIC_RFIN             "rfin"

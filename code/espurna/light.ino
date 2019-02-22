@@ -669,7 +669,7 @@ void _lightComms(unsigned char mask) {
 
     // Report color to WS clients (using current brightness setting)
     #if WEB_SUPPORT
-        wsSend(_lightWebSocketOnSend);
+        wsSend(_lightWebSocketStatus);
     #endif
 
     // Report channels to local broker
@@ -824,23 +824,13 @@ bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _lightWebSocketOnSend(JsonObject& root) {
-    root["colorVisible"] = 1;
-    root["mqttGroupColor"] = getSetting("mqttGroupColor");
-    root["useColor"] = _light_has_color;
-    root["useWhite"] = _light_use_white;
-    root["useGamma"] = _light_use_gamma;
-    root["useTransitions"] = _light_use_transitions;
-    root["lightTime"] = _light_transition_time;
-    root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
-    bool useRGB = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
-    root["useRGB"] = useRGB;
+void _lightWebSocketStatus(JsonObject& root) {
     if (_light_has_color) {
         if (_light_use_cct) {
             root["useCCT"] = _light_use_cct;
             root["mireds"] = _light_mireds;
         }
-        if (useRGB) {
+        if (getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1) {
             root["rgb"] = lightColor(true);
         } else {
             root["hsv"] = lightColor(false);
@@ -850,7 +840,20 @@ void _lightWebSocketOnSend(JsonObject& root) {
     for (unsigned char id=0; id < _light_channel.size(); id++) {
         channels.add(lightChannel(id));
     }
-    root["brightness"] = lightBrightness();
+}
+
+void _lightWebSocketOnSend(JsonObject& root) {
+    root["colorVisible"] = 1;
+    root["mqttGroupColor"] = getSetting("mqttGroupColor");
+    root["useColor"] = _light_has_color;
+    root["useWhite"] = _light_use_white;
+    root["useGamma"] = _light_use_gamma;
+    root["useTransitions"] = _light_use_transitions;
+    root["useCSS"] = getSetting("useCSS", LIGHT_USE_CSS).toInt() == 1;
+    root["useRGB"] = getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1;
+    root["lightTime"] = _light_transition_time;
+
+    _lightWebSocketStatus(root);
 }
 
 void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {

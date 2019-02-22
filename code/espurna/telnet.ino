@@ -45,14 +45,14 @@ void _telnetDisconnect(unsigned char clientId) {
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
 
-bool _telnetWrite(unsigned char clientId, void *data, size_t len) {
+bool _telnetWrite(unsigned char clientId, const char *data, size_t len) {
     if (_telnetClients[clientId] && _telnetClients[clientId]->connected()) {
-        return (_telnetClients[clientId]->write((const char*) data, len) > 0);
+        return (_telnetClients[clientId]->write(data, len) > 0);
     }
     return false;
 }
 
-unsigned char _telnetWrite(void *data, size_t len) {
+unsigned char _telnetWrite(const char *data, size_t len) {
     unsigned char count = 0;
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
         // Do not send broadcast messages to unauthenticated clients
@@ -65,8 +65,12 @@ unsigned char _telnetWrite(void *data, size_t len) {
     return count;
 }
 
+unsigned char _telnetWrite(const char *data) {
+    return _telnetWrite(data, strlen(data));
+}
+
 bool _telnetWrite(unsigned char clientId, const char * message) {
-    return _telnetWrite(clientId, (void *) message, strlen(message));
+    return _telnetWrite(clientId, message, strlen(message));
 }
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
