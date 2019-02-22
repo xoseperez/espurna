@@ -727,9 +727,10 @@ class FlowHysteresisComponent : public FlowComponent {
         virtual void processInput(JsonVariant& data, int inputNumber) {
             if (inputNumber == 0) { // value
                 _value = data.as<double>();
-                if ((_state && _value >= _max) || (!_state && _value <= _min))
+                if ((_state && _value >= _max) || (!_state && _value <= _min)) {
                     _state = !_state;
-                processOutput(data, _state ? 0 : 1);
+                    processOutput(data, _state ? 0 : 1);
+                }
             } else if (inputNumber == 1) { // min
                 _min = data.as<double>();
                 if (!_state && _value <= _min) {
