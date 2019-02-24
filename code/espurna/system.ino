@@ -10,7 +10,10 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
+#if WIFI_SLEEP_MODE != WIFI_NONE_SLEEP
 unsigned long _loop_delay = 0;
+#endif
+
 bool _system_send_heartbeat = false;
 unsigned char _heartbeat_mode = HEARTBEAT_MODE;
 unsigned long _heartbeat_interval = HEARTBEAT_INTERVAL;
@@ -72,10 +75,11 @@ bool systemGetHeartbeat() {
     return _system_send_heartbeat;
 }
 
+#if WIFI_SLEEP_MODE != WIFI_NONE_SLEEP
 unsigned long systemLoopDelay() {
     return _loop_delay;
 }
-
+#endif
 
 unsigned long systemLoadAverage() {
     return _load_average;
@@ -157,7 +161,9 @@ void systemLoop() {
     // Power saving delay
     // -------------------------------------------------------------------------
 
-    delay(_loop_delay);
+    #if WIFI_SLEEP_MODE != WIFI_NONE_SLEEP
+        delay(_loop_delay);
+    #endif
 
 }
 
@@ -196,8 +202,10 @@ void systemSetup() {
     _systemSetupSpecificHardware();
 
     // Cache loop delay value to speed things (recommended max 250ms)
-    _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
-    _loop_delay = constrain(_loop_delay, 0, 300);
+    #if WIFI_SLEEP_MODE != WIFI_NONE_SLEEP
+        _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
+        _loop_delay = constrain(_loop_delay, 0, 300);
+    #endif
 
     // Register Loop
     espurnaRegisterLoop(systemLoop);
