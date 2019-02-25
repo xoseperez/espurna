@@ -373,6 +373,7 @@ const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
         case WIFI_NONE_SLEEP: return "NONE";
         case WIFI_LIGHT_SLEEP: return "LIGHT";
         case WIFI_MODEM_SLEEP: return "MODEM";
+        default: return "UNKNOWN";
     }
 }
 
