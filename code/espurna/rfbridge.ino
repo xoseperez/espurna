@@ -89,6 +89,7 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 #if WEB_SUPPORT
 
 void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
+    
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
 
@@ -104,7 +105,8 @@ void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
         off.add(rfbRetrieve(id, false));
     }
 
-    wsSend(rfb);
+    wsSend(root);
+    
 }
 
 void _rfbWebSocketSendCode(unsigned char id) {
