@@ -2,7 +2,7 @@
 
 RELAY MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -478,6 +478,12 @@ unsigned char relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        if (!hasSetting("mqttGroupInv", i)) continue;
+        setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
+        delSetting("mqttGroupInv", i);
+    }
+
     byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
@@ -636,7 +642,7 @@ void _relayWebSocketSendRelays() {
 
     #if MQTT_SUPPORT
         JsonArray& group = relays.createNestedArray("group");
-        JsonArray& group_inverse = relays.createNestedArray("group_inv");
+        JsonArray& group_sync = relays.createNestedArray("group_sync");
         JsonArray& on_disconnect = relays.createNestedArray("on_disc");
     #endif
 
@@ -652,7 +658,7 @@ void _relayWebSocketSendRelays() {
 
         #if MQTT_SUPPORT
             group.add(getSetting("mqttGroup", i, ""));
-            group_inverse.add(getSetting("mqttGroupInv", i, 0).toInt() == 1);
+            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt() == 1);
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }
@@ -807,6 +813,18 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
+void _relayMQTTGroup(unsigned char id) {
+    String topic = getSetting("mqttGroup", id, "");
+    if (!topic.length()) return;
+
+    unsigned char mode = getSetting("mqttGroupSync", id, RELAY_GROUP_SYNC_NORMAL).toInt();
+    if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
+
+    bool status = relayStatus(id);
+    if (mode == RELAY_GROUP_SYNC_INVERSE) status = !status;
+    mqttSendRaw(topic.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+}
+
 void relayMQTT(unsigned char id) {
 
     if (id >= _relays.size()) return;
@@ -820,12 +838,7 @@ void relayMQTT(unsigned char id) {
     // Check group topic
     if (_relays[id].group_report) {
         _relays[id].group_report = false;
-        String t = getSetting("mqttGroup", id, "");
-        if (t.length() > 0) {
-            bool status = relayStatus(id);
-            if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
-        }
+        _relayMQTTGroup(id);
     }
 
     // Send speed for IFAN02
@@ -952,7 +965,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 if (value == 0xFF) return;
 
                 if (value < 2) {
-                    if (getSetting("mqttGroupInv", i, 0).toInt() == 1) {
+                    if (getSetting("mqttGroupSync", i, RELAY_GROUP_SYNC_NORMAL).toInt() == RELAY_GROUP_SYNC_INVERSE) {
                         value = 1 - value;
                     }
                 }
