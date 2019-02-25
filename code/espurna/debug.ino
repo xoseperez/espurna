@@ -19,9 +19,9 @@ char _udp_syslog_header[40] = {0};
 #if DEBUG_SERIAL_SUPPORT
     void _debugSendSerial(const char* prefix, const char* data) {
         if (prefix && (prefix[0] != '\0')) {
-            Serial.print(prefix);
+            DEBUG_PORT.print(prefix);
         }
-        Serial.print(data);
+        DEBUG_PORT.print(data);
 
     }
 #endif
