@@ -248,7 +248,7 @@ class PZEM004TSensor : public BaseSensor {
 
             // Clear buffer in case of late response(Timeout)
             if (_serial) {
-                while(_serial.available() > 0) _serial.read();
+                while(_serial->available() > 0) _serial->read();
             } else {
                 // This we cannot do it from outside the library
             }
