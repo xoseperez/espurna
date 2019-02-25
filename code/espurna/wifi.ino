@@ -75,6 +75,10 @@ void _wifiConfigure() {
 
     jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
 
+    unsigned char sleep_mode = getSetting("wifiSleep", WIFI_SLEEP_MODE).toInt();
+    sleep_mode = constrain(sleep_mode, 0, 2);
+
+    WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
 }
 
 void _wifiScan(uint32_t client_id = 0) {
@@ -602,8 +606,6 @@ void wifiRegister(wifi_callback_f callback) {
 // -----------------------------------------------------------------------------
 
 void wifiSetup() {
-
-    WiFi.setSleepMode(WIFI_SLEEP_MODE);
 
     _wifiInject();
     _wifiConfigure();
