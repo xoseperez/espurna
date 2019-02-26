@@ -168,9 +168,27 @@
                                                 // 6 for 10ms, 7 for 20ms
 #define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 16bit/0.0050C resolution
+                                                // 0b010 = 2 = 2x 17bit/0.0025C
+                                                // 0b011 = 3 = 4x 18bit/0.0012C
+                                                // 0b100 = 4 = 8x 19bit/0.0006C
+                                                // 0b101 = 5 = 16x 20bit/0.0003C
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 0.07% resolution
+                                                // 0b010 = 2 = 2x 0.05%
+                                                // 0b011 = 3 = 4x 0.04%
+                                                // 0b100 = 4 = 8x 0.03%
+                                                // 0b101 = 5 = 16x 0.02%
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
-
+                                                // 0b000 = 0 = Skipped
+                                                // 0b001 = 1 = 1x 16bit/2.62 Pa resolution
+                                                // 0b010 = 2 = 2x 17bit/1.31 Pa
+                                                // 0b011 = 3 = 4x 18bit/0.66 Pa
+                                                // 0b100 = 4 = 8x 19bit/0.33 Pa
+                                                // 0b101 = 5 = 16x 20bit/0.16 Pa
+  
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
 // Enable support by passing DALLAS_SUPPORT=1 build flag
