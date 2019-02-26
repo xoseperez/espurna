@@ -102,8 +102,7 @@ double _magnitudeProcess(unsigned char type, double value) {
 
 #if WEB_SUPPORT
 
-template<typename T>
-void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
 
     // ws produces flat list <prefix>Magnitudes
     String ws_name = String(prefix);
