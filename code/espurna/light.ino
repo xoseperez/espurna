@@ -840,6 +840,7 @@ void _lightWebSocketStatus(JsonObject& root) {
     for (unsigned char id=0; id < _light_channel.size(); id++) {
         channels.add(lightChannel(id));
     }
+    root["brightness"] = lightBrightness();
 }
 
 void _lightWebSocketOnSend(JsonObject& root) {
