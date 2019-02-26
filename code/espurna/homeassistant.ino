@@ -38,10 +38,9 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
-
 }
 
-void _haSendMagnitudes() {
+void _haSendMagnitudes(const JsonObject& deviceConfig) {
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
@@ -55,6 +54,9 @@ void _haSendMagnitudes() {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
+            config["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
+            config["device"] = deviceConfig;
+            
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -115,7 +117,7 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendSwitches() {
+void _haSendSwitches(const JsonObject& deviceConfig) {
 
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
@@ -135,6 +137,9 @@ void _haSendSwitches() {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
             _haSendSwitch(i, config);
+            config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
+            config["device"] = deviceConfig;
+
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -241,7 +246,16 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
         }
 
     #endif
+}
 
+void _haGetDeviceConfig(JsonObject& config) {
+    String identifier = getIdentifier();
+    
+    config.createNestedArray("identifiers").add(identifier);
+    config["name"] = getSetting("desc", getSetting("hostname"));
+    config["manufacturer"] = String(MANUFACTURER);
+    config["model"] = String(DEVICE);
+    config["sw_version"] = String(APP_NAME) + " " + String(APP_VERSION) + " (" + getCoreVersion() + ")";
 }
 
 void _haSend() {
@@ -254,12 +268,18 @@ void _haSend() {
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
-    // Send messages
-    _haSendSwitches();
-    #if SENSOR_SUPPORT
-        _haSendMagnitudes();
-    #endif
+    // Get common device config
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& deviceConfig = jsonBuffer.createObject();
+    _haGetDeviceConfig(deviceConfig);
 
+    // Send messages
+    _haSendSwitches(deviceConfig);
+    #if SENSOR_SUPPORT
+        _haSendMagnitudes(deviceConfig);
+    #endif
+    
+    jsonBuffer.clear();
     _haSendFlag = false;
 
 }
