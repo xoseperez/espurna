@@ -17,7 +17,7 @@ std::vector<bool> _dcz_relay_state;
 // Private methods
 //------------------------------------------------------------------------------
 
-unsigned char _domoticzRelay(unsigned int idx) {
+int _domoticzRelay(unsigned int idx) {
     for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
         if (domoticzIdx(relayID) == idx) {
             return relayID;
@@ -135,7 +135,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
                 }
             #endif
 
-            unsigned char relayID = _domoticzRelay(idx);
+            int relayID = _domoticzRelay(idx);
             if (relayID >= 0) {
                 unsigned char value = root["nvalue"];
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
