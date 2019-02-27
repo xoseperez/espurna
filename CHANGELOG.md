@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.6] Unreleased
+### Fixed
+
+### Added
+
+### Changed
+
 ## [1.13.5] 2019-02-27
 ### Fixed
 - Revert loopDelay dependency on wifi sleep mode (#1574)
