@@ -1140,6 +1140,15 @@ void _sensorConfigure() {
 
         #endif // PZEM004T_SUPPORT
 
+        #if MHZ19_SUPPORT
+            if (_sensors[i]->getID() == SENSOR_MHZ19_ID) {
+                MHZ19Sensor * sensor = (MHZ19Sensor *) _sensors[i];
+                if (getSetting("mhz19CalibrateAuto", 0).toInt() == 1) {
+                    sensor->calibrateAuto(true);
+                }
+            }
+        #endif // MHZ19_SUPPORT
+
     }
 
     // Update filter sizes
