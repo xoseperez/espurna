@@ -42,6 +42,20 @@ class FlowComponent {
             }
         }
 
+        String toString(JsonVariant& data) {
+            if (data.is<int>()) {
+                return String(data.as<int>());
+            } else if (data.is<double>()) {
+                return String(data.as<double>(), 3);
+            } else if (data.is<bool>()) {
+                return String(data.as<bool>() ? "<true>" : "<false>");
+            } else if (data.is<char*>()) {
+                return String(data.as<const char*>());
+            } else {
+                return String();
+            }
+        }
+
         void release(JsonVariant* data) {
             if (data == NULL)
                 return;

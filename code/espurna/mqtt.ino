@@ -443,7 +443,8 @@ class FlowMqttPublishComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            mqttSendRaw(_topic.c_str(), data.as<const char*>(), _retain);
+            String s = toString(data);
+            mqttSendRaw(_topic.c_str(), s.c_str(), _retain);
         }
 };
 #endif //FLOW_SUPPORT

@@ -303,9 +303,7 @@ PROGMEM const char flow_debug_component_json[] =
         "\"properties\":[{\"name\":\"Prefix\",\"type\":\"string\"}]"
     "}";
 
-PROGMEM const char flow_debug_int[] = "[FLOW DEBUG] %s%i\n";
 PROGMEM const char flow_debug_string[] = "[FLOW DEBUG] %s%s\n";
-PROGMEM const char flow_debug_unknown[] = "[FLOW DEBUG] %sUNKNOWN\n";
 
 class FlowDebugComponent : public FlowComponent {
     private:
@@ -318,19 +316,8 @@ class FlowDebugComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            if (data.is<int>()) {
-                DEBUG_MSG_P(flow_debug_int, _prefix.c_str(), data.as<int>());
-            } else if (data.is<double>()) {
-                char buffer[64];
-                dtostrf(data.as<double>(), 1 - sizeof(buffer), 3, buffer);
-                DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), buffer);
-            } else if (data.is<bool>()) {
-                DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), data.as<bool>() ? "<true>" : "<false>");
-            } else if (data.is<char*>()) {
-                DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), data.as<const char*>());
-            } else {
-                DEBUG_MSG_P(flow_debug_unknown, _prefix.c_str());
-            }
+            String s = toString(data);
+            DEBUG_MSG_P(flow_debug_string, _prefix.c_str(), s.c_str());
         }
 };
 
@@ -435,15 +422,11 @@ class FlowMathComponent : public FlowComponent {
                     processOutput(r, 0);
                 } else if (_input1->is<char*>()) {
                     // only + is supported
-                    const char *s1 = _input1->as<char*>();
-                    const char *s2 = _input2->as<char*>();
-                    char *concat = new char[strlen(s1) + (s2 != NULL ? strlen(s2) : 0) + 1];
-                    strcpy(concat, s1);
-                    if (s2 != NULL)
-                        strcat(concat, s2);
-                    JsonVariant r(concat);
+                    String s(_input1->as<char*>());
+                    s += toString(*_input2);
+
+                    JsonVariant r(s.c_str());
                     processOutput(r, 0);
-                    free(concat);
                 } else if (_input1->is<bool>()) {
                      bool b1 = _input1->as<bool>();
                      bool b2 = _input2->as<bool>();
@@ -522,7 +505,11 @@ class FlowCompareComponent : public FlowComponent {
                         /*_operation.equals("<") ?*/ d1 < d2
                     ;
                 } else if (_data->is<char*>()) {
-                    int cmp = strcmp(_data->as<char*>(), _test->as<char*>());
+                    const char *s1 = _data->as<const char*>();
+                    const char *s2 = _test->as<const char*>();
+                    int cmp = s1 == NULL ? (s2 == NULL ? 0 : -1) :
+                              s2 == NULL ? 1 :
+                              strcmp(s1, s2);
                     r = _operation.equals("=") ? cmp == 0 :
                         _operation.equals(">") ? cmp > 0 :
                         /*_operation.equals("<") ?*/ cmp < 0
@@ -549,8 +536,11 @@ class FlowCompareComponent : public FlowComponent {
 // Delay component
 // -----------------------------------------------------------------------------
 
+PROGMEM const char flow_reset[] = "Reset";
+PROGMEM const char* const flow_delay_inputs[] = {flow_data, flow_reset};
+
 PROGMEM const FlowConnections flow_delay_component = {
-    1, flow_data_array,
+    2, flow_delay_inputs,
     1, flow_data_array,
 };
 
@@ -559,7 +549,7 @@ PROGMEM const char flow_delay_component_json[] =
     "{"
         "\"name\":\"Delay\","
         "\"icon\":\"pause\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
+        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"},{\"name\":\"Reset\",\"type\":\"any\"}],"
         "\"outports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
         "\"properties\":[{\"name\":\"Seconds\",\"type\":\"int\"}, {\"name\":\"Last only\",\"type\":\"bool\"}]"
     "}";
@@ -569,6 +559,7 @@ class FlowDelayComponent : public FlowComponent {
         long _time;
         bool _lastOnly;
         int _queueSize = 0;
+        long _skipUntil = 0;
 
     public:
         FlowDelayComponent(JsonObject& properties) {
@@ -577,13 +568,17 @@ class FlowDelayComponent : public FlowComponent {
         }
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
-            flow_scheduled_task_callback_f callback = [this](unsigned long time, JsonVariant *data){ this->onDelay(data); };
-            _flow_scheduled_tasks_queue.insert({clone(data), millis() + _time, callback});
-            _queueSize++;
+            if (inputNumber == 0) { // data
+                flow_scheduled_task_callback_f callback = [this](unsigned long time, JsonVariant *data){ this->onDelay(time, data); };
+                _flow_scheduled_tasks_queue.insert({clone(data), millis() + _time, callback});
+                _queueSize++;
+            } else { // reset
+                _skipUntil = millis() + _time;
+            }
         }
 
-        void onDelay(JsonVariant *data) {
-            if (!_lastOnly || _queueSize == 1)
+        void onDelay(long now, JsonVariant *data) {
+            if (now > _skipUntil && (!_lastOnly || _queueSize == 1))
                 processOutput(*data, 0);
 
             _queueSize--;
@@ -729,21 +724,21 @@ class FlowHysteresisComponent : public FlowComponent {
                 _value = data.as<double>();
                 if ((_state && _value >= _max) || (!_state && _value <= _min)) {
                     _state = !_state;
-                    processOutput(data, _state ? 0 : 1);
+                    processOutput(data, _state ? 1 : 0);
                 }
             } else if (inputNumber == 1) { // min
                 _min = data.as<double>();
                 if (!_state && _value <= _min) {
                     _state = true;
                     JsonVariant value(_value);
-                    processOutput(value, 0);
+                    processOutput(value, 1);
                 }
             } else { // max
                 _max = data.as<double>();
                 if (_state && _value >= _max) {
                     _state = false;
                     JsonVariant value(_value);
-                    processOutput(value, 1);
+                    processOutput(value, 0);
                 }
             }
         }
