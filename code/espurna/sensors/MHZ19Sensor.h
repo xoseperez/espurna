@@ -78,7 +78,7 @@ class MHZ19Sensor : public BaseSensor {
             _serial = new SoftwareSerial(_pin_rx, _pin_tx, false, 32);
             _serial->enableIntTx(false);
             _serial->begin(9600);
-            calibrateAuto(false);
+            calibrateAuto(_calibrateAuto);
 
             _ready = true;
             _dirty = false;
@@ -137,6 +137,13 @@ class MHZ19Sensor : public BaseSensor {
             buffer[3] = ppm >> 8;
             buffer[4] = ppm & 0xFF;
             _write(buffer);
+        }
+
+        void setCalibrateAuto(boolean value) {
+            _calibrateAuto = value;
+            if (_ready) {
+                calibrateAuto(value);
+            }
         }
 
     protected:
@@ -214,6 +221,7 @@ class MHZ19Sensor : public BaseSensor {
         double _co2 = 0;
         unsigned int _pin_rx;
         unsigned int _pin_tx;
+        bool _calibrateAuto = false;
         SoftwareSerial * _serial = NULL;
 
 };
