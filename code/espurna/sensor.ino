@@ -638,6 +638,8 @@ void _sensorLoad() {
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setRX(MHZ19_RX_PIN);
         sensor->setTX(MHZ19_TX_PIN);
+        if (getSetting("mhz19CalibrateAuto", 0).toInt() == 1)
+            sensor->setCalibrateAuto(true);
         _sensors.push_back(sensor);
     }
     #endif
