@@ -38,6 +38,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #define RF_CODE_LEARN_OK_NEW    0xAB
 #define RF_CODE_RFOUT_BUCKET    0xB0
 #define RF_CODE_STOP            0x55
+#define RF_DO_BEEP              0xC0
 
 // Settings
 
