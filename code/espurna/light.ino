@@ -648,6 +648,54 @@ void lightBroker() {
 #endif
 
 // -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+PROGMEM const char flow_color[] = "Color";
+PROGMEM const char flow_brightness[] = "Brightness";
+PROGMEM const char* const flow_light_component_inputs[] = {flow_color, flow_brightness};
+
+PROGMEM const FlowConnections flow_light_component = {
+    2, flow_light_component_inputs,
+    0, NULL,
+};
+
+PROGMEM const char flow_light_component_json[] =
+    "\"Light\": "
+    "{"
+        "\"name\":\"Light\","
+        "\"icon\":\"sun-o\","
+        "\"inports\":[{\"name\":\"Color\",\"type\":\"string\"}, {\"name\":\"Brightness\",\"type\":\"int\"}],"
+        "\"outports\":[],"
+        "\"properties\":[]"
+    "}";
+
+class FlowLightComponent : public FlowComponent {
+    public:
+        FlowLightComponent(JsonObject& properties) {
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) { // color
+                lightColor(data.as<char*>(), true);
+                lightUpdate(true, true);
+            } else { // brightness
+                _light_brightness = constrain(data.as<int>(), 0, LIGHT_MAX_BRIGHTNESS);
+                lightUpdate(true, true);
+            }
+        }
+
+        static void reg() {
+            flowRegisterComponent("Light", &flow_light_component, flow_light_component_json,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowLightComponent(properties); }));
+        }
+};
+
+#endif // FLOW_SUPPORT
+
+// -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
 
@@ -1168,6 +1216,10 @@ void lightSetup() {
 
     #if TERMINAL_SUPPORT
         _lightInitCommands();
+    #endif
+
+    #if FLOW_SUPPORT
+        FlowLightComponent::reg();
     #endif
 
     // Main callbacks
