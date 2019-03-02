@@ -189,6 +189,12 @@ void setup() {
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif
+    #if THERMOSTAT_SUPPORT
+        thermostatSetup();
+    #endif
+    #if THERMOSTAT_DISPLAY_SUPPORT
+        displaySetup();
+    #endif
 
 
     // 3rd party code hook
