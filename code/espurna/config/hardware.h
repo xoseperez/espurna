@@ -3567,11 +3567,11 @@
     #define SSDP_SUPPORT        1
     #define RF_SUPPORT          1
 
-#elif defined(HAMA_WIFI_STECKDOSE_00176552)
+#elif defined(HAMA_WIFI_STECKDOSE_00176533)
 
     // Info
     #define MANUFACTURER        "HAMA"
-    #define DEVICE              "WiFi-Steckdose 00176552"
+    #define DEVICE              "WiFi-Steckdose 00176533"
 
     // Buttons
     #define BUTTON1_PIN         13
