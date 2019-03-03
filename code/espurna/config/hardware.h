@@ -3369,6 +3369,30 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// ----------------------------------------------------------------------------------------
+// Hama WiFi Steckdose (00176533)
+// https://at.hama.com/00176533/hama-wifi-steckdose-3500w-16a
+// ----------------------------------------------------------------------------------------
+
+#elif defined(HAMA_WIFI_STECKDOSE_00176533)
+
+    // Info
+    #define MANUFACTURER        "HAMA"
+    #define DEVICE              "WIFI_STECKDOSE_00176533"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
