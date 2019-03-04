@@ -1268,6 +1268,27 @@ void migrate() {
             setSetting("relayGPIO", 1, 15);  // Left outlet
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
             
+        #elif defined(DIGOO_NX_SP202)
+
+            setSetting("board", 95);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnGPIO", 1, 16);
+            setSetting("btnRelay", 1, 1);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 14);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+            setSetting("pwrRatioC", 23296);
+            setSetting("pwrRatioV", 310085);
+            setSetting("pwrRatioP", 3368471);
+            setSetting("hlwSelC", LOW);
+            setSetting("hlwIntM", FALLING);
 
         #else
 

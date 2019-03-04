@@ -1404,7 +1404,7 @@ void sensorLoop() {
 
         // Get the first relay state
         #if SENSOR_POWER_CHECK_STATUS
-            bool relay_off = (relayCount() > 0) && (relayStatus(0) == 0);
+            bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
         #endif
 
         // Get readings
