@@ -2,7 +2,7 @@
 
 WEBSERVER MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -329,7 +329,8 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     } else {
-        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        //Removed to avoid websocket ping back during upgrade (see #1574)
+        //DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
 

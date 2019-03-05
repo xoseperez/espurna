@@ -3369,6 +3369,75 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// ----------------------------------------------------------------------------------------
+// Hama WiFi Steckdose (00176533)
+// https://at.hama.com/00176533/hama-wifi-steckdose-3500w-16a
+// ----------------------------------------------------------------------------------------
+
+#elif defined(HAMA_WIFI_STECKDOSE_00176533)
+
+    // Info
+    #define MANUFACTURER        "HAMA"
+    #define DEVICE              "WIFI_STECKDOSE_00176533"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Oxaoxe NX-SP202
+// Digoo NX-SP202 (not tested)
+// Digoo DG-SP202 (not tested)
+// https://github.com/xoseperez/espurna/issues/1502
+// -----------------------------------------------------------------------------
+
+#elif defined(DIGOO_NX_SP202)
+
+    // Info
+    #define MANUFACTURER                "DIGOO"
+    #define DEVICE                      "NX_SP202"
+
+    // Buttons
+    #define BUTTON1_PIN                 0
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+    #define BUTTON2_PIN                 16
+    #define BUTTON2_MODE                BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_RELAY               2
+
+    // Relays
+    #define RELAY1_PIN                  15
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+    #define RELAY2_PIN                  14
+    #define RELAY2_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                    13
+    #define LED1_PIN_INVERSE            1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             5
+    #define HLW8012_CF_PIN              4
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       23296
+    #define HLW8012_VOLTAGE_RATIO       310085
+    #define HLW8012_POWER_RATIO         3368471
+    #define HLW8012_INTERRUPT_ON        FALLING
+
 // -----------------------------------------------------------------------------
 // Foxel's LightFox dual
 // https://github.com/foxel/esp-dual-rf-switch

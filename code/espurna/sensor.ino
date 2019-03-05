@@ -2,7 +2,7 @@
 
 SENSOR MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -102,8 +102,7 @@ double _magnitudeProcess(unsigned char type, double value) {
 
 #if WEB_SUPPORT
 
-template<typename T>
-void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
 
     // ws produces flat list <prefix>Magnitudes
     String ws_name = String(prefix);
@@ -639,6 +638,8 @@ void _sensorLoad() {
         MHZ19Sensor * sensor = new MHZ19Sensor();
         sensor->setRX(MHZ19_RX_PIN);
         sensor->setTX(MHZ19_TX_PIN);
+        if (getSetting("mhz19CalibrateAuto", 0).toInt() == 1)
+            sensor->setCalibrateAuto(true);
         _sensors.push_back(sensor);
     }
     #endif
@@ -1403,7 +1404,7 @@ void sensorLoop() {
 
         // Get the first relay state
         #if SENSOR_POWER_CHECK_STATUS
-            bool relay_off = (relayCount() > 0) && (relayStatus(0) == 0);
+            bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
         #endif
 
         // Get readings

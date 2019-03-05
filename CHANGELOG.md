@@ -3,6 +3,32 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.6] Unreleased
+### Fixed
+
+### Added
+
+### Changed
+
+## [1.13.5] 2019-02-27
+### Fixed
+- Revert loopDelay dependency on wifi sleep mode (#1574)
+- Fix hardcoded serial objects in _debugSendSerial, terminalLoop and PZEM sensor (#1573)
+- Fix RFBridge not showing codes in web UI as per @mcspr suggested change (#1571)
+- Fix BSSIDs in scan output (#1567)
+- Fix PZEM004TSensor pointer use
+- RFBridge: fix webui codes parsing
+- Avoid websocket ping back on fw upgrade via web UI form (#1574)
+- Revert loopDelay dependency on wifi sleep mode
+- Removing line break before templated variable to fix issue with Windows Arduino IDE (#1579, thanks to @AlbertWeterings)
+- Send brightness to websocket
+
+### Added
+- Relay MQTT group receive-only sync mode setting
+- Set wifi sleep mode from settings
+- Add unique id and device support for better HA UI integration (#1547, thanks to @abmantis)
+- Improved inline documentation of BMX280 settings (#1585, thanks to CraigMarkwardt)
+
 ## [1.13.4] 2019-02-21
 ### Fixed
 - Travis fixes

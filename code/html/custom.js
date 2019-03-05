@@ -246,7 +246,7 @@ function addValue(data, name, value) {
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
-        "mqttGroup", "mqttGroupInv", "relayOnDisc",
+        "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
         "ledMode",
@@ -958,8 +958,8 @@ function initRelayConfig(data) {
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
         }
-        if ("group_inv" in data) {
-            $("input[name='mqttGroupInv']", line).val(data.group_inv[i]);
+        if ("group_sync" in data) {
+            $("input[name='mqttGroupSync']", line).val(data.group_sync[i]);
         }
         if ("on_disc" in data) {
             $("input[name='relayOnDisc']", line).val(data.on_disc[i]);
@@ -1261,19 +1261,21 @@ function processData(data) {
 
         if ("rfb" === key) {
             var rfb = data.rfb;
-            var size = data.size;
-            var start = data.start;
 
-            var on = rfb["on"];
-            var off = rfb["off"];
+            var size = rfb.size;
+            var start = rfb.start;
 
-            for (var i=start; i<start+size; ++i) {
-                $("input[name='rfbcode'][data-id='" + i + "'][data-status='1']").val(on[i]);
-                $("input[name='rfbcode'][data-id='" + i + "'][data-status='0']").val(off[i]);
+            var processOn = ((rfb.on !== undefined) && (rfb.on.length > 0));
+            var processOff = ((rfb.off !== undefined) && (rfb.off.length > 0));
+
+            for (var i=0; i<size; ++i) {
+                if (processOn) $("input[name='rfbcode'][data-id='" + (i + start) + "'][data-status='1']").val(rfb.on[i]);
+                if (processOff) $("input[name='rfbcode'][data-id='" + (i + start) + "'][data-status='0']").val(rfb.off[i]);
             }
 
             return;
         }
+
         <!-- endRemoveIf(!rfbridge)-->
 
         // ---------------------------------------------------------------------

@@ -221,7 +221,7 @@ void _terminalLoop() {
     #if SERIAL_RX_ENABLED
 
         while (SERIAL_RX_PORT.available() > 0) {
-            char rc = Serial.read();
+            char rc = SERIAL_RX_PORT.read();
             _serial_rx_buffer[_serial_rx_pointer++] = rc;
             if ((_serial_rx_pointer == TERMINAL_BUFFER_SIZE) || (rc == 10)) {
                 terminalInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
