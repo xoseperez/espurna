@@ -1267,7 +1267,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayGPIO", 1, 15);  // Left outlet
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
-            
+
         #elif defined(DIGOO_NX_SP202)
 
             setSetting("board", 95);
@@ -1289,6 +1289,16 @@ void migrate() {
             setSetting("pwrRatioP", 3368471);
             setSetting("hlwSelC", LOW);
             setSetting("hlwIntM", FALLING);
+
+        #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+            setSetting("board", 96);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+            setSetting("btnRelay", 2, 1);
+            setSetting("btnRelay", 3, 0);
+            setSetting("relayProvider", RELAY_PROVIDER_DUAL);
+            setSetting("relays", 2);
 
         #else
 

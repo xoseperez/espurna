@@ -117,6 +117,7 @@
 //#define ARILUX_AL_LC02_V14
 //#define BLITZWOLF_BWSHPX_V23
 //#define DIGOO_NX_SP202
+//#define FOXEL_LIGHTFOX_DUAL
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
