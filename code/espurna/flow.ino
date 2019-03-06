@@ -8,6 +8,7 @@ Copyright (C) 2016-2018 by Xose P�rez <xose dot perez at gmail dot com>
 
 #if FLOW_SUPPORT
 
+#include <Ticker.h>
 #include <vector>
 #include <map>
 #include <set>
@@ -218,32 +219,6 @@ void _flowStart(JsonObject& data) {
     }
 }
 
-typedef std::function<void(unsigned long time, JsonVariant *data)> flow_scheduled_task_callback_f;
-
-struct flow_scheduled_task_t {
-    JsonVariant *data;
-    unsigned long time;
-    flow_scheduled_task_callback_f callback;
-
-    bool operator() (const flow_scheduled_task_t& lhs, const flow_scheduled_task_t& rhs) const {
-        return lhs.time < rhs.time;
-    }
-};
-
-std::set<flow_scheduled_task_t, flow_scheduled_task_t> _flow_scheduled_tasks_queue;
-
-void _flowComponentLoop() {
-    if (!_flow_scheduled_tasks_queue.empty()) {
-        auto it = _flow_scheduled_tasks_queue.begin();
-        const flow_scheduled_task_t element = *it;
-        unsigned long now = millis();
-        if (element.time <= now) {
-            element.callback(now, element.data);
-            _flow_scheduled_tasks_queue.erase(it);
-        }
-    }
-}
-
 // -----------------------------------------------------------------------------
 // Start component
 // -----------------------------------------------------------------------------
@@ -269,18 +244,18 @@ PROGMEM const char flow_start_component_json[] =
 class FlowStartComponent : public FlowComponent {
     private:
         JsonVariant *_value;
+        Ticker _startTicker;
 
     public:
         FlowStartComponent(JsonObject& properties) {
             JsonVariant value = properties["Value"];
             _value = clone(value);
 
-            flow_scheduled_task_callback_f callback = [this](unsigned long time, JsonVariant *data){ this->onStart(); };
-            _flow_scheduled_tasks_queue.insert({NULL, 0, callback});
+            _startTicker.once_ms(100, onStart, this);
         }
 
-        void onStart() {
-            processOutput(*_value, 0);
+        static void onStart(FlowStartComponent* component) {
+            component->processOutput(*component->_value, 0);
         }
 };
 
@@ -556,6 +531,12 @@ PROGMEM const char flow_delay_component_json[] =
 
 class FlowDelayComponent : public FlowComponent {
     private:
+        struct scheduled_task_t {
+            FlowDelayComponent *component;
+            Ticker *ticker;
+            JsonVariant *data;
+        };
+
         long _time;
         bool _lastOnly;
         int _queueSize = 0;
@@ -569,20 +550,31 @@ class FlowDelayComponent : public FlowComponent {
 
         virtual void processInput(JsonVariant& data, int inputNumber) {
             if (inputNumber == 0) { // data
-                flow_scheduled_task_callback_f callback = [this](unsigned long time, JsonVariant *data){ this->onDelay(time, data); };
-                _flow_scheduled_tasks_queue.insert({clone(data), millis() + _time, callback});
+                Ticker *ticker = new Ticker();
+                scheduled_task_t *task = new flow_scheduled_task_t();
+                task->component = this;
+                task->ticker = ticker;
+                task->data = clone(data);
+
+                ticker->once_ms(_time, onDelay, task);
+
                 _queueSize++;
             } else { // reset
                 _skipUntil = millis() + _time;
             }
         }
 
-        void onDelay(long now, JsonVariant *data) {
-            if (now > _skipUntil && (!_lastOnly || _queueSize == 1))
-                processOutput(*data, 0);
+        static void onDelay(scheduled_task_t *task) {
+            FlowDelayComponent *that = task->component;
+            if (millis() > that->_skipUntil && (!that->_lastOnly || that->_queueSize == 1))
+                that->processOutput(*task->data, 0);
 
-            _queueSize--;
-            release(data);
+            that->_queueSize--;
+
+            that->release(task->data);
+            task->ticker->detach();
+            free(task->ticker);
+            free(task);
         }
 };
 
@@ -610,8 +602,7 @@ PROGMEM const char flow_incorrect_timer_delay[] = "[FLOW] Incorrect timer delay:
 class FlowTimerComponent : public FlowComponent {
     private:
         JsonVariant *_value;
-        unsigned long _period;
-        flow_scheduled_task_callback_f _callback;
+        Ticker _ticker;
 
     public:
         FlowTimerComponent(JsonObject& properties) {
@@ -619,21 +610,17 @@ class FlowTimerComponent : public FlowComponent {
             _value = clone(value);
 
             int seconds = properties["Seconds"];
-            _period = 1000 * (int)seconds;
+            int period = 1000 * (int)seconds;
 
-            if (_period > 0) {
-                _callback = [this](unsigned long time, JsonVariant *data){ this->onSchedule(time); };
-                _flow_scheduled_tasks_queue.insert({NULL, millis() + _period, _callback});
+            if (period > 0) {
+                _ticker.attach_ms(period, onSchedule, this);
             } else {
                 DEBUG_MSG_P(flow_incorrect_timer_delay, seconds);
             }
         }
 
-        void onSchedule(unsigned long now) {
-            processOutput(*_value, 0);
-
-            // reschedule
-            _flow_scheduled_tasks_queue.insert({NULL, now + _period, _callback});
+        static void onSchedule(FlowTimerComponent *component) {
+            component->processOutput(*component->_value, 0);
         }
 };
 
@@ -790,8 +777,6 @@ void flowSetup() {
 
     flowRegisterComponent("Hysteresis", &flow_hysteresis_component, flow_hysteresis_component_json,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowHysteresisComponent(properties); }));
-
-    espurnaRegisterLoop(_flowComponentLoop);
 }
 
 #endif // FLOW_SUPPORT
