@@ -779,8 +779,14 @@
 #endif
 
 
-#ifndef MQTT_USE_JSON
-#define MQTT_USE_JSON               1               // Group messages in a JSON body
+#if THERMOSTAT_SUPPORT == 1
+    #ifndef MQTT_USE_JSON
+    #define MQTT_USE_JSON               1           // Group messages in a JSON body
+    #endif
+#else
+    #ifndef MQTT_USE_JSON
+    #define MQTT_USE_JSON               0           // Don't group messages in a JSON body (default)
+    #endif
 #endif
 
 #ifndef MQTT_USE_JSON_DELAY

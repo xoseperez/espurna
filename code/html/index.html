@@ -96,9 +96,11 @@
                             <a href="#" class="pure-menu-link" data="panel-general">GENERAL</a>
                         </li>
 
+                        <!-- removeIf(!thermostat) -->
                         <li class="pure-menu-item module module-thermostat">
                             <a href="#" class="pure-menu-link" data="panel-thermostat">THERMOSTAT</a>
                         </li>
+                        <!-- endRemoveIf(!thermostat) -->
 
                         <li class="pure-menu-item module module-dcz">
                             <a href="#" class="pure-menu-link" data="panel-domoticz">DOMOTICZ</a>
@@ -1028,6 +1030,7 @@
                     </div>
                 </form>
 
+                <!-- removeIf(!thermostat) -->
                 <form id="form-thermostat" class="pure-form form-settings">
                     <div class="panel" id="panel-thermostat">
 
@@ -1149,6 +1152,7 @@
                         </div>
                     </div>
                 </form>
+                <!-- endRemoveIf(!thermostat) -->
 
                 <form id="form-domoticz" class="pure-form form-settings">
                     <div class="panel" id="panel-domoticz">

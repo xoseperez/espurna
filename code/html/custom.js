@@ -380,12 +380,14 @@ function checkTempRangeMax() {
     }
 }
 
+<!-- removeIf(!thermostat)-->
 function doResetThermostatCounters(ask) {
     var question = (typeof ask === "undefined" || false === ask) ?
         null :
         "Are you sure you want to reset burning counters?";
     return doAction(question, "thermostat_reset_counters");
 }
+<!-- endRemoveIf(!thermostat)-->
 
 // -----------------------------------------------------------------------------
 // Actions
@@ -1735,7 +1737,10 @@ $(function() {
     $(".button-settings-factory").on("click", doFactoryReset);
     $("#uploader").on("change", onFileUpload);
     $(".button-upgrade").on("click", doUpgrade);
+
+    <!-- removeIf(!thermostat)-->
     $(".button-thermostat-reset-counters").on('click', doResetThermostatCounters);
+    <!-- endRemoveIf(!thermostat)-->
 
     $(".button-apikey").on("click", generateAPIKey);
     $(".button-upgrade-browse").on("click", function() {
