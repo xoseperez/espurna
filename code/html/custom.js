@@ -1616,9 +1616,11 @@ function processData(data) {
             var days    = uptime;
             value = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
         }
+        <!-- removeIf(!thermostat)-->
         if ("tmpUnits" == key) {
             $("span.tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
         }
+        <!-- endRemoveIf(!thermostat)-->
 
         // ---------------------------------------------------------------------
         // Matching
