@@ -540,7 +540,7 @@ class FlowDelayComponent : public FlowComponent {
         long _time;
         bool _lastOnly;
         int _queueSize = 0;
-        long _skipUntil = 0;
+        long _skipNumber = 0;
 
     public:
         FlowDelayComponent(JsonObject& properties) {
@@ -551,7 +551,7 @@ class FlowDelayComponent : public FlowComponent {
         virtual void processInput(JsonVariant& data, int inputNumber) {
             if (inputNumber == 0) { // data
                 Ticker *ticker = new Ticker();
-                scheduled_task_t *task = new flow_scheduled_task_t();
+                scheduled_task_t *task = new scheduled_task_t();
                 task->component = this;
                 task->ticker = ticker;
                 task->data = clone(data);
@@ -560,21 +560,29 @@ class FlowDelayComponent : public FlowComponent {
 
                 _queueSize++;
             } else { // reset
-                _skipUntil = millis() + _time;
+                _skipNumber = _queueSize;
             }
         }
 
         static void onDelay(scheduled_task_t *task) {
-            FlowDelayComponent *that = task->component;
-            if (millis() > that->_skipUntil && (!that->_lastOnly || that->_queueSize == 1))
-                that->processOutput(*task->data, 0);
+            task->component->onDelayImpl(task->data);
 
-            that->_queueSize--;
-
-            that->release(task->data);
             task->ticker->detach();
             free(task->ticker);
             free(task);
+        }
+
+        void onDelayImpl(JsonVariant *data) {
+            if (_skipNumber == 0) {
+                if (!_lastOnly || _queueSize == 1)
+                    processOutput(*data, 0);
+            } else {
+                _skipNumber--;
+            }
+
+            _queueSize--;
+
+            release(data);
         }
 };
 
