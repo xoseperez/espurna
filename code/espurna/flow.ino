@@ -22,35 +22,16 @@ String _flow;
 unsigned long _mqtt_flow_sent_at = 0;
 #endif
 
-bool _flow_started = false;
 FlowComponentLibrary _library;
+bool _flow_started = false;
+std::map<String, std::vector<String>*> _flow_placeholder_values;
 
-typedef struct {
-    String component;
-    String property;
-    std::vector<String>* values;
-} component_property_values_t;
-
-std::vector<component_property_values_t> _component_property_values_list;
-
-void flowRegisterComponent(String name, const FlowConnections* connections, const char* json, flow_component_factory_f factory) {
-    _library.addType(name, connections, json, factory);
+void flowRegisterComponent(String name, const FlowConnections* connections, flow_component_factory_f factory) {
+    _library.addType(name, connections, factory);
 }
 
-void flowRegisterComponentValues(String component, String property, std::vector<String>* values) {
-    _component_property_values_list.push_back({component, property, values});
-}
-
-void flowGetComponentValuesJson(JsonArray& root) {
-    for (component_property_values_t entry : _component_property_values_list) {
-        JsonObject& object = root.createNestedObject();
-        object["component"] = entry.component;
-        object["property"] = entry.property;
-        JsonArray& valuesArray = object.createNestedArray("values");
-        for (unsigned int j=0; j < entry.values->size(); j++) {
-            valuesArray.add(entry.values->at(j));
-        }
-    }
+void flowRegisterComponentValues(String placeholder, std::vector<String>* values) {
+    _flow_placeholder_values[placeholder] = values;
 }
 
 AsyncWebServerResponse* flowGetConfigResponse(AsyncWebServerRequest *request) {
@@ -90,8 +71,18 @@ bool flowSaveConfig(char* data) {
     return result;
 }
 
-const char* flowGetComponentJson(int index) {
-    return _library.getComponentJson(index);
+String flowLibraryProcessor(const String& var)
+{
+    std::vector<String>* values = _flow_placeholder_values[var];
+    if (values != NULL) {
+        String result;
+        for (String& value : *values) {
+            if (result.length() > 0) result += ",";
+            result += "\"" + value + "\"";
+        }
+        return result;
+    }
+    return String();
 }
 
 void flowStart() {
@@ -231,16 +222,6 @@ PROGMEM const FlowConnections flow_start_component = {
     1, flow_data_array,
 };
 
-PROGMEM const char flow_start_component_json[] =
-    "\"Start\": "
-    "{"
-        "\"name\":\"Start\","
-        "\"icon\":\"play\","
-        "\"inports\":[],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
-        "\"properties\":[{\"name\":\"Value\",\"type\":\"any\"}]"
-    "}";
-
 class FlowStartComponent : public FlowComponent {
     private:
         JsonVariant *_value;
@@ -267,16 +248,6 @@ PROGMEM const FlowConnections flow_debug_component = {
     1, flow_data_array,
     0, NULL,
 };
-
-PROGMEM const char flow_debug_component_json[] =
-    "\"Debug\": "
-    "{"
-        "\"name\":\"Debug\","
-        "\"icon\":\"bug\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
-        "\"outports\":[],"
-        "\"properties\":[{\"name\":\"Prefix\",\"type\":\"string\"}]"
-    "}";
 
 PROGMEM const char flow_debug_string[] = "[FLOW DEBUG] %s%s\n";
 
@@ -305,16 +276,6 @@ PROGMEM const FlowConnections flow_change_component = {
     1, flow_data_array,
 };
 
-PROGMEM const char flow_change_component_json[] =
-    "\"Change\": "
-    "{"
-        "\"name\":\"Change\","
-        "\"icon\":\"edit\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
-        "\"properties\":[{\"name\":\"Value\",\"type\":\"any\"}]"
-    "}";
-
 class FlowChangeComponent : public FlowComponent {
     private:
         JsonVariant* _value;
@@ -342,17 +303,6 @@ PROGMEM const FlowConnections flow_math_component = {
     2, flow_inputs_array,
     1, flow_data_array,
 };
-
-PROGMEM const char flow_math_component_json[] =
-    "\"Math\": "
-    "{"
-        "\"name\":\"Math\","
-        "\"icon\":\"plus-circle\","
-        "\"inports\":[{\"name\":\"Input 1\",\"type\":\"any\"},{\"name\":\"Input 2\",\"type\":\"any\"}],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
-        "\"properties\":[{\"name\":\"Operation\",\"type\":\"list\","
-            "\"values\":[\"+\",\"-\",\"*\",\"/\"]}]"
-    "}";
 
 class FlowMathComponent : public FlowComponent {
     private:
@@ -417,7 +367,7 @@ class FlowMathComponent : public FlowComponent {
         }
 
         static void reg() {
-            flowRegisterComponent("Math", &flow_math_component, flow_math_component_json,
+            flowRegisterComponent("Math", &flow_math_component,
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMathComponent(properties); }));
         }
 };
@@ -436,16 +386,6 @@ PROGMEM const FlowConnections flow_compare_component = {
     2, flow_compare_inputs,
     2, flow_compare_outputs,
 };
-
-PROGMEM const char flow_compare_component_json[] =
-    "\"Compare\": "
-    "{"
-        "\"name\":\"Compare\","
-        "\"icon\":\"chevron-circle-right\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"},{\"name\":\"Test\",\"type\":\"any\"}],"
-        "\"outports\":[{\"name\":\"True\",\"type\":\"any\"},{\"name\":\"False\",\"type\":\"any\"}],"
-        "\"properties\":[{\"name\":\"Operation\",\"type\":\"list\",\"values\":[\"=\",\">\",\"<\"]},{\"name\":\"Test\",\"type\":\"any\"}]"
-    "}";
 
 class FlowCompareComponent : public FlowComponent {
     private:
@@ -502,7 +442,7 @@ class FlowCompareComponent : public FlowComponent {
         }
 
         static void reg() {
-            flowRegisterComponent("Compare", &flow_compare_component, flow_compare_component_json,
+            flowRegisterComponent("Compare", &flow_compare_component,
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowCompareComponent(properties); }));
         }
 };
@@ -518,16 +458,6 @@ PROGMEM const FlowConnections flow_delay_component = {
     2, flow_delay_inputs,
     1, flow_data_array,
 };
-
-PROGMEM const char flow_delay_component_json[] =
-    "\"Delay\": "
-    "{"
-        "\"name\":\"Delay\","
-        "\"icon\":\"pause\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"},{\"name\":\"Reset\",\"type\":\"any\"}],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"any\"}],"
-        "\"properties\":[{\"name\":\"Seconds\",\"type\":\"int\"}, {\"name\":\"Last only\",\"type\":\"bool\"}]"
-    "}";
 
 class FlowDelayComponent : public FlowComponent {
     private:
@@ -595,16 +525,6 @@ PROGMEM const FlowConnections flow_timer_component = {
     1, flow_data_array,
 };
 
-PROGMEM const char flow_timer_component_json[] =
-    "\"Timer\": "
-    "{"
-        "\"name\":\"Timer\","
-        "\"icon\":\"clock-o\","
-        "\"inports\":[],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
-        "\"properties\":[{\"name\":\"Seconds\",\"type\":\"int\"},{\"name\":\"Value\",\"type\":\"any\"}]"
-    "}";
-
 PROGMEM const char flow_incorrect_timer_delay[] = "[FLOW] Incorrect timer delay: %i\n";
 
 class FlowTimerComponent : public FlowComponent {
@@ -646,16 +566,6 @@ PROGMEM const FlowConnections flow_gate_component = {
     2, flow_gate_component_outputs,
 };
 
-PROGMEM const char flow_gate_component_json[] =
-    "\"Gate\": "
-    "{"
-        "\"name\":\"Gate\","
-        "\"icon\":\"unlock\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"any\"}, {\"name\":\"State\",\"type\":\"bool\"}],"
-        "\"outports\":[{\"name\":\"Open\",\"type\":\"any\"}, {\"name\":\"Close\",\"type\":\"any\"}],"
-        "\"properties\":[]"
-    "}";
-
 class FlowGateComponent : public FlowComponent {
     private:
         bool _state = true;
@@ -688,16 +598,6 @@ PROGMEM const FlowConnections flow_hysteresis_component = {
     3, flow_hysteresis_component_inputs,
     2, flow_hysteresis_component_outputs,
 };
-
-PROGMEM const char flow_hysteresis_component_json[] =
-    "\"Hysteresis\": "
-    "{"
-        "\"name\":\"Hysteresis\","
-        "\"icon\":\"line-chart\","
-        "\"inports\":[{\"name\":\"Value\",\"type\":\"double\"}, {\"name\":\"Min\",\"type\":\"double\"}, {\"name\":\"Max\",\"type\":\"double\"}],"
-        "\"outports\":[{\"name\":\"Rise\",\"type\":\"double\"}, {\"name\":\"Fall\",\"type\":\"double\"}],"
-        "\"properties\":[{\"name\":\"Min\",\"type\":\"double\"}, {\"name\":\"Max\",\"type\":\"double\"}]"
-    "}";
 
 class FlowHysteresisComponent : public FlowComponent {
     private:
@@ -762,28 +662,28 @@ void flowSetup() {
         mqttRegister(_flowMQTTCallback);
     #endif
 
-    flowRegisterComponent("Start", &flow_start_component, flow_start_component_json,
+    flowRegisterComponent("Start", &flow_start_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowStartComponent(properties); }));
 
-    flowRegisterComponent("Debug", &flow_debug_component, flow_debug_component_json,
+    flowRegisterComponent("Debug", &flow_debug_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDebugComponent(properties); }));
 
-    flowRegisterComponent("Change", &flow_change_component, flow_change_component_json,
+    flowRegisterComponent("Change", &flow_change_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowChangeComponent(properties); }));
 
     FlowMathComponent::reg();
     FlowCompareComponent::reg();
 
-    flowRegisterComponent("Delay", &flow_delay_component, flow_delay_component_json,
+    flowRegisterComponent("Delay", &flow_delay_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowDelayComponent(properties); }));
 
-    flowRegisterComponent("Timer", &flow_timer_component, flow_timer_component_json,
+    flowRegisterComponent("Timer", &flow_timer_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowTimerComponent(properties); }));
 
-    flowRegisterComponent("Gate", &flow_gate_component, flow_gate_component_json,
+    flowRegisterComponent("Gate", &flow_gate_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowGateComponent(properties); }));
 
-    flowRegisterComponent("Hysteresis", &flow_hysteresis_component, flow_hysteresis_component_json,
+    flowRegisterComponent("Hysteresis", &flow_hysteresis_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowHysteresisComponent(properties); }));
 }
 

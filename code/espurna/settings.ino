@@ -225,16 +225,6 @@ PROGMEM const FlowConnections flow_save_setting_component = {
     0, NULL,
 };
 
-PROGMEM const char flow_save_setting_component_json[] =
-    "\"Save setting\": "
-    "{"
-        "\"name\":\"Save setting\","
-        "\"icon\":\"save\","
-        "\"inports\":[{\"name\":\"Value\",\"type\":\"string\"}],"
-        "\"outports\":[],"
-        "\"properties\":[{\"name\":\"Name\",\"type\":\"string\"}]"
-    "}";
-
 class FlowSaveSettingComponent : public FlowComponent {
     private:
         String _name;
@@ -255,7 +245,7 @@ class FlowSaveSettingComponent : public FlowComponent {
         }
 
         static void reg() {
-            flowRegisterComponent("Save setting", &flow_save_setting_component, flow_save_setting_component_json,
+            flowRegisterComponent("Save setting", &flow_save_setting_component,
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSaveSettingComponent(properties); }));
         }
 };
@@ -267,16 +257,6 @@ PROGMEM const FlowConnections flow_load_setting_component = {
     1, flow_name_array,
     1, flow_value_array,
 };
-
-PROGMEM const char flow_load_setting_component_json[] =
-    "\"Load setting\": "
-    "{"
-        "\"name\":\"Load setting\","
-        "\"icon\":\"database\","
-        "\"inports\":[{\"name\":\"Name\",\"type\":\"string\"}],"
-        "\"outports\":[{\"name\":\"Value\",\"type\":\"string\"}],"
-        "\"properties\":[{\"name\":\"Default\",\"type\":\"string\"}]"
-    "}";
 
 class FlowLoadSettingComponent : public FlowComponent {
     private:
@@ -296,7 +276,7 @@ class FlowLoadSettingComponent : public FlowComponent {
         }
 
         static void reg() {
-            flowRegisterComponent("Load setting", &flow_load_setting_component, flow_load_setting_component_json,
+            flowRegisterComponent("Load setting", &flow_load_setting_component,
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowLoadSettingComponent(properties); }));
         }
 };

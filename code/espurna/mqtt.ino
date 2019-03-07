@@ -370,16 +370,6 @@ PROGMEM const FlowConnections flow_mqtt_subscribe_component = {
     1, flow_data_array,
 };
 
-PROGMEM const char flow_mqtt_subscribe_component_json[] =
-    "\"MQTT subscribe\": "
-    "{"
-        "\"name\":\"MQTT subscribe\","
-        "\"icon\":\"sign-out\","
-        "\"inports\":[],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"string\"}],"
-        "\"properties\":[{\"name\":\"Topic\",\"type\":\"string\"}]"
-    "}";
-
 class FlowMqttSubscribeComponent : public FlowComponent {
     private:
         String _topic;
@@ -417,16 +407,6 @@ PROGMEM const FlowConnections flow_mqtt_publish_component = {
     1, flow_data_array,
     0, NULL,
 };
-
-PROGMEM const char flow_mqtt_publish_component_json[] =
-    "\"MQTT publish\": "
-    "{"
-        "\"name\":\"MQTT publish\","
-        "\"icon\":\"sign-in\","
-        "\"inports\":[{\"name\":\"Data\",\"type\":\"string\"}],"
-        "\"outports\":[],"
-        "\"properties\":[{\"name\":\"Topic\",\"type\":\"string\"}, {\"name\":\"Retain\",\"type\":\"bool\"}]"
-    "}";
 
 class FlowMqttPublishComponent : public FlowComponent {
     private:
@@ -934,10 +914,10 @@ void mqttSetup() {
     #endif
 
     #if FLOW_SUPPORT
-        flowRegisterComponent("MQTT subscribe", &flow_mqtt_subscribe_component, flow_mqtt_subscribe_component_json,
+        flowRegisterComponent("MQTT subscribe", &flow_mqtt_subscribe_component,
             (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMqttSubscribeComponent(properties); }));
 
-        flowRegisterComponent("MQTT publish", &flow_mqtt_publish_component, flow_mqtt_publish_component_json,
+        flowRegisterComponent("MQTT publish", &flow_mqtt_publish_component,
             (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMqttPublishComponent(properties); }));
     #endif
 

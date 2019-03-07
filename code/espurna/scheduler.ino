@@ -71,16 +71,6 @@ PROGMEM const FlowConnections flow_schedule_component = {
     1, flow_data_array,
 };
 
-PROGMEM const char flow_schedule_component_json[] =
-    "\"Schedule\": "
-    "{"
-        "\"name\":\"Schedule\","
-        "\"icon\":\"calendar\","
-        "\"inports\":[],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"bool\"}],"
-        "\"properties\":[{\"name\":\"Time\",\"type\":\"time\"}, {\"name\":\"Weekdays\",\"type\":\"weekdays\"},{\"name\":\"Value\",\"type\":\"any\"}]"
-    "}";
-
 class FlowScheduleComponent;
 std::vector<FlowScheduleComponent*> _schedule_components;
 
@@ -295,7 +285,7 @@ void schSetup() {
     #endif
 
     #if FLOW_SUPPORT
-        flowRegisterComponent("Schedule", &flow_schedule_component, flow_schedule_component_json,
+        flowRegisterComponent("Schedule", &flow_schedule_component,
             (flow_component_factory_f)([] (JsonObject& properties) { return new FlowScheduleComponent(properties); }));
     #endif
 

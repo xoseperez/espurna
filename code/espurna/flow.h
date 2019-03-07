@@ -85,21 +85,13 @@ typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
 
 class FlowComponentLibrary {
     private:
-        std::vector<const char*> _jsons;
         std::map<String, const FlowConnections*> _connectionsMap;
         std::map<String, flow_component_factory_f> _factoryMap;
 
     public:
-        void addType(String name, const FlowConnections* connections, const char* json, flow_component_factory_f factory) {
-            _jsons.push_back(json);
+        void addType(String name, const FlowConnections* connections, flow_component_factory_f factory) {
             _connectionsMap[name] = connections;
             _factoryMap[name] = factory;
-        }
-
-        const char* getComponentJson(int index) {
-            if (index >= _jsons.size())
-                return NULL;
-            return _jsons[index];
         }
 
         FlowComponent* createComponent(String& name, JsonObject& properties) {

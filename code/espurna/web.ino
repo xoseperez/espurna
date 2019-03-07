@@ -365,46 +365,7 @@ void _onGetFlowLibrary(AsyncWebServerRequest *request) {
         return request->requestAuthentication(getSetting("hostname").c_str());
     }
 
-    // chunked response to avoid out of memory for big number of components
-    int* ip = new int(0); // index of component in loop
-    AsyncWebServerResponse *response = request->beginChunkedResponse("text/json", [ip](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-        size_t size = 0;
-        int i = *ip;
-
-        if (i < 0) { // no more components left
-            delete ip;
-            return size;
-        }
-
-        buffer[0] = i == 0 ? '{' : ',';
-        buffer++; size++; maxLen--;
-
-        const char* json = flowGetComponentJson(i);
-        if (json != NULL) {
-            strncpy_P((char*)buffer, json, maxLen);
-            int count = strnlen_P(json, maxLen);
-            size += count; //maxLen -= count; buffer += count;
-
-            i++;
-        } else {
-            // last chunk is always list values array
-            strcpy((char*)buffer, "\"_values\": ");
-            buffer+=11; size+=11; maxLen-=11;
-
-            DynamicJsonBuffer jsonBuffer;
-            JsonArray& values = jsonBuffer.createArray();
-            flowGetComponentValuesJson(values);
-            int count = values.printTo((char*)buffer, maxLen);
-            size += count;
-            buffer += count;
-
-            buffer[0] = '}';
-            size++;
-            i = -1; // last chunk
-        }
-        *ip = i;
-        return size;
-    });
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/json", flow_library_json, flowLibraryProcessor);
 
     response->addHeader("Content-Disposition", "inline; filename=\"library.json\"");
     response->addHeader("X-XSS-Protection", "1; mode=block");

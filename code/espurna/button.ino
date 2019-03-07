@@ -63,16 +63,6 @@ PROGMEM const FlowConnections flow_button_component = {
     1, flow_data2_array,
 };
 
-PROGMEM const char flow_button_component_json[] =
-    "\"Button\": "
-    "{"
-        "\"name\":\"Button\","
-        "\"icon\":\"toggle-on\","
-        "\"inports\":[],"
-        "\"outports\":[{\"name\":\"Data\",\"type\":\"int\"}],"
-        "\"properties\":[{\"name\":\"Button\",\"type\":\"list\"}]"
-    "}";
-
 class FlowButtonComponent : public FlowComponent {
     public:
         FlowButtonComponent(JsonObject& properties) {
@@ -291,9 +281,9 @@ void buttonSetup() {
             buttons->push_back(String(i));
         }
 
-        flowRegisterComponent("Button", &flow_button_component, flow_button_component_json,
+        flowRegisterComponent("Button", &flow_button_component,
             (flow_component_factory_f)([] (JsonObject& properties) { return new FlowButtonComponent(properties); }));
-        flowRegisterComponentValues("Button", "Button", buttons);
+        flowRegisterComponentValues("BUTTON_VALUES", buttons);
     #endif
 
     // Register loop

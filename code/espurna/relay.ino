@@ -1048,16 +1048,6 @@ PROGMEM const FlowConnections flow_relay_component = {
     0, NULL,
 };
 
-PROGMEM const char flow_relay_component_json[] =
-    "\"Relay\": "
-    "{"
-        "\"name\":\"Relay\","
-        "\"icon\":\"lightbulb-o\","
-        "\"inports\":[{\"name\":\"State\",\"type\":\"bool\"}, {\"name\":\"Toggle\",\"type\":\"any\"}],"
-        "\"outports\":[],"
-        "\"properties\":[{\"name\":\"Relay\",\"type\":\"list\"}]"
-    "}";
-
 class FlowRelayComponent : public FlowComponent {
     private:
         int _relay_id;
@@ -1146,9 +1136,9 @@ void relaySetup() {
             relays->push_back(String(i));
         }
 
-        flowRegisterComponent("Relay", &flow_relay_component, flow_relay_component_json,
+        flowRegisterComponent("Relay", &flow_relay_component,
             (flow_component_factory_f)([] (JsonObject& properties) { return new FlowRelayComponent(properties); }));
-        flowRegisterComponentValues("Relay", "Relay", relays);
+        flowRegisterComponentValues("RELAY_VALUES", relays);
     #endif
 
 

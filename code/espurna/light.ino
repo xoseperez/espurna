@@ -662,16 +662,6 @@ PROGMEM const FlowConnections flow_light_component = {
     0, NULL,
 };
 
-PROGMEM const char flow_light_component_json[] =
-    "\"Light\": "
-    "{"
-        "\"name\":\"Light\","
-        "\"icon\":\"sun-o\","
-        "\"inports\":[{\"name\":\"Color\",\"type\":\"string\"}, {\"name\":\"Brightness\",\"type\":\"int\"}],"
-        "\"outports\":[],"
-        "\"properties\":[]"
-    "}";
-
 class FlowLightComponent : public FlowComponent {
     public:
         FlowLightComponent(JsonObject& properties) {
@@ -688,7 +678,7 @@ class FlowLightComponent : public FlowComponent {
         }
 
         static void reg() {
-            flowRegisterComponent("Light", &flow_light_component, flow_light_component_json,
+            flowRegisterComponent("Light", &flow_light_component,
                 (flow_component_factory_f)([] (JsonObject& properties) { return new FlowLightComponent(properties); }));
         }
 };
