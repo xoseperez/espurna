@@ -364,6 +364,7 @@ function getJson(str) {
     }
 }
 
+<!-- removeIf(!thermostat)-->
 function checkTempRangeMin() {
     var min = parseInt($("#tempRangeMinInput").val(), 10);
     var max = parseInt($("#tempRangeMaxInput").val(), 10);
@@ -380,7 +381,6 @@ function checkTempRangeMax() {
     }
 }
 
-<!-- removeIf(!thermostat)-->
 function doResetThermostatCounters(ask) {
     var question = (typeof ask === "undefined" || false === ask) ?
         null :
