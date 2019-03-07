@@ -139,7 +139,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
             if (relayID >= 0) {
                 unsigned char value = root["nvalue"];
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
-                _domoticzStatus(relayID, value > 1);
+                _domoticzStatus(relayID, value >= 1);
             }
 
         }

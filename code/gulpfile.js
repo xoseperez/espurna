@@ -115,6 +115,7 @@ var buildWebUI = function(module) {
         modules['sensor'] = true;
         modules['rfbridge'] = true;
         modules['rfm69'] = false;   // we will never be adding this except when building RFM69GW
+        modules['lightfox'] = false;   // we will never be adding this except when building lightfox
         modules['thermostat'] = true;
     } else if ('small' !== module) {
         modules[module] = true;
@@ -187,6 +188,10 @@ gulp.task('webui_rfm69', function() {
     return buildWebUI('rfm69');
 });
 
+gulp.task('webui_lightfox', function() {
+    return buildWebUI('lightfox');
+});
+
 gulp.task('webui_thermostat', function() {
     return buildWebUI('thermostat');
 });
@@ -202,6 +207,7 @@ gulp.task('webui',
         'webui_light',
         'webui_rfbridge',
         'webui_rfm69',
+        'webui_lightfox',
         'webui_thermostat',
         'webui_all'
     )

@@ -189,6 +189,9 @@ void setup() {
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif
+    #ifdef FOXEL_LIGHTFOX_DUAL
+        lightfoxSetup();
+    #endif
     #if THERMOSTAT_SUPPORT
         thermostatSetup();
     #endif

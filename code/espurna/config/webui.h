@@ -7,7 +7,8 @@
 #define WEBUI_IMAGE_SENSOR     2
 #define WEBUI_IMAGE_RFBRIDGE   4
 #define WEBUI_IMAGE_RFM69      8
-#define WEBUI_IMAGE_THERMOSTAT 9
+#define WEBUI_IMAGE_LIGHTFOX   16
+#define WEBUI_IMAGE_THERMOSTAT 32
 #define WEBUI_IMAGE_FULL       15
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -46,6 +47,13 @@
     #endif
 #endif
 
+#if defined(FOXEL_LIGHTFOX_DUAL)
+    #ifdef WEBUI_IMAGE
+        #undef WEBUI_IMAGE
+    #endif
+    #define WEBUI_IMAGE        WEBUI_IMAGE_LIGHTFOX
+#endif
+
 #if THERMOSTAT_SUPPORT == 1
     #ifndef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_THERMOSTAT
@@ -76,6 +84,9 @@ PROGMEM const char espurna_webui[] =
     #endif
     #if WEBUI_IMAGE == WEBUI_IMAGE_RFM69
         "RFM69"
+    #endif
+    #if WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
+        "LIGHTFOX"
     #endif
     #if WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
         "THERMOSTAT"
