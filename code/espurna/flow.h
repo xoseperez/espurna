@@ -128,4 +128,9 @@ class FlowComponentLibrary {
 
             return -1;
         }
+
+        void clear() {
+            _connectionsMap.clear();
+            _factoryMap.clear();
+        }
 };

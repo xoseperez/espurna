@@ -112,6 +112,7 @@ void flowStart() {
         source.close();
     #endif
 
+    _library.clear(); // clear library to release memory
     _flow_started = true;
 }
 
