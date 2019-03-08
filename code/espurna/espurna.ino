@@ -114,13 +114,6 @@ void setup() {
         apiSetup();
     #endif
 
-    #if FLOW_SUPPORT
-        // register default flow components first
-        flowSetup();
-        // settings component after
-        settingsFlowSetup();
-    #endif
-
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
@@ -199,8 +192,9 @@ void setup() {
     #ifdef FOXEL_LIGHTFOX_DUAL
         lightfoxSetup();
     #endif
-    #if FLOW_SUPPORT && SPIFFS_SUPPORT
-        flowStart();
+    #if FLOW_SUPPORT
+        // after all other components are set up
+        flowSetup();
     #endif
 
 

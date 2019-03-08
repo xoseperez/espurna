@@ -686,6 +686,10 @@ void flowSetup() {
 
     flowRegisterComponent("Hysteresis", &flow_hysteresis_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowHysteresisComponent(properties); }));
+
+    #if SPIFFS_SUPPORT
+        flowStart();
+    #endif
 }
 
 #endif // FLOW_SUPPORT

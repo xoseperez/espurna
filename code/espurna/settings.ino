@@ -281,10 +281,6 @@ class FlowLoadSettingComponent : public FlowComponent {
         }
 };
 
-void settingsFlowSetup() {
-    FlowSaveSettingComponent::reg();
-    FlowLoadSettingComponent::reg();
-}
 
 #endif // FLOW_SUPPORT
 
@@ -304,5 +300,10 @@ void settingsSetup() {
             []() {}
         #endif
     );
+
+    #if FLOW_SUPPORT
+        FlowSaveSettingComponent::reg();
+        FlowLoadSettingComponent::reg();
+    #endif
 
 }
