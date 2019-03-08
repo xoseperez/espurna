@@ -3,7 +3,7 @@
 RFM69Wrap
 
 RFM69 by Felix Ruso (http://LowPowerLab.com/contact) wrapper for ESP8266
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

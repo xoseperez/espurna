@@ -2,7 +2,7 @@
 
 LIGHT MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -878,6 +878,7 @@ void _lightWebSocketStatus(JsonObject& root) {
     for (unsigned char id=0; id < _light_channel.size(); id++) {
         channels.add(lightChannel(id));
     }
+    root["brightness"] = lightBrightness();
 }
 
 void _lightWebSocketOnSend(JsonObject& root) {
@@ -1026,8 +1027,15 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("BRIGHTNESS"), [](Embedis* e) {
         if (e->argc > 1) {
-            lightBrightness(String(e->argv[1]).toInt());
-            lightUpdate(true, true);
+            const String value(e->argv[1]);
+            if( value.length() > 0 ) {
+                if( value[0] == '+' || value[0] == '-' ) {
+                    lightBrightness(lightBrightness()+String(e->argv[1]).toInt());
+                } else {
+                    lightBrightness(String(e->argv[1]).toInt());
+                }
+                lightUpdate(true, true);
+            }
         }
         DEBUG_MSG_P(PSTR("Brightness: %d\n"), lightBrightness());
         terminalOK();
@@ -1069,9 +1077,17 @@ void _lightInitCommands() {
 
     terminalRegisterCommand(F("MIRED"), [](Embedis* e) {
         if (e->argc > 1) {
-            String color = String("M") + String(e->argv[1]);
-            lightColor(color.c_str());
-            lightUpdate(true, true);
+            const String value(e->argv[1]);
+            String color = String("M");
+            if( value.length() > 0 ) {
+                if( value[0] == '+' || value[0] == '-' ) {
+                    color += String(_light_mireds + String(e->argv[1]).toInt());
+                } else {
+                    color += String(e->argv[1]);
+                }
+                lightColor(color.c_str());
+                lightUpdate(true, true);
+            }
         }
         DEBUG_MSG_P(PSTR("Color: %s\n"), lightColor().c_str());
         terminalOK();

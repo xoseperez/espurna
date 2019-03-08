@@ -368,6 +368,16 @@ void infoMemory(const char * name, unsigned int total_memory, unsigned int free_
 
 }
 
+const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
+    switch (type) {
+        case WIFI_NONE_SLEEP: return "NONE";
+        case WIFI_LIGHT_SLEEP: return "LIGHT";
+        case WIFI_MODEM_SLEEP: return "MODEM";
+        default: return "UNKNOWN";
+    }
+}
+
+
 void info() {
 
     DEBUG_MSG_P(PSTR("\n\n---8<-------\n\n"));
@@ -469,7 +479,14 @@ void info() {
     #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif
-    DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    if (systemLoopDelay()) {
+        DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    }
+
+    const WiFiSleepType_t sleep_mode = WiFi.getSleepMode();
+    if (sleep_mode != WIFI_NONE_SLEEP) {
+        DEBUG_MSG_P(PSTR("[MAIN] WiFi Sleep Mode: %s\n"), _info_wifi_sleep_mode(sleep_mode));
+    }
 
     // -------------------------------------------------------------------------
 

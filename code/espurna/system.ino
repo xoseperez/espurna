@@ -11,6 +11,7 @@ Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 unsigned long _loop_delay = 0;
+
 bool _system_send_heartbeat = false;
 unsigned char _heartbeat_mode = HEARTBEAT_MODE;
 unsigned long _heartbeat_interval = HEARTBEAT_INTERVAL;
@@ -75,7 +76,6 @@ bool systemGetHeartbeat() {
 unsigned long systemLoopDelay() {
     return _loop_delay;
 }
-
 
 unsigned long systemLoadAverage() {
     return _load_average;
@@ -156,8 +156,7 @@ void systemLoop() {
     // -------------------------------------------------------------------------
     // Power saving delay
     // -------------------------------------------------------------------------
-
-    delay(_loop_delay);
+    if (_loop_delay) delay(_loop_delay);
 
 }
 
@@ -171,7 +170,7 @@ void _systemSetupSpecificHardware() {
 
     // These devices use the hardware UART
     // to communicate to secondary microcontrollers
-    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || (RELAY_PROVIDER == RELAY_PROVIDER_DUAL) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
         Serial.begin(SERIAL_BAUDRATE);
     #endif
 
