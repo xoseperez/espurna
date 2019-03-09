@@ -96,7 +96,7 @@ void _terminalInitCommand() {
         terminalOK();
         resetReason(CUSTOM_RESET_TERMINAL);
         _eepromCommit();
-        ESP.eraseConfig();
+        eraseSDKConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
 
