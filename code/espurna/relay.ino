@@ -660,7 +660,7 @@ void _relayWebSocketSendRelays() {
 
         #if MQTT_SUPPORT
             group.add(getSetting("mqttGroup", i, ""));
-            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt() == 1);
+            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }
