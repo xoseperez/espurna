@@ -3463,11 +3463,11 @@
 // Charging Essentials / LITESUN LA-WF3
 // -----------------------------------------------------------------------------
 
-#elif defined(LITESUN_LAWF3)
+#elif defined(LITESUN_LA_WF3)
 
     // Info
     #define MANUFACTURER        "LITESUN"
-    #define DEVICE              "LA-WF3"
+    #define DEVICE              "LA_WF3"
 
     // Buttons
     #define BUTTON1_PIN         13
