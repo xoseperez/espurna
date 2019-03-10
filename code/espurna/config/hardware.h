@@ -3500,6 +3500,33 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+// -----------------------------------------------------------------------------
+// Charging Essentials / LITESUN LA-WF3
+// -----------------------------------------------------------------------------
+
+#elif defined(LITESUN_LA_WF3)
+
+    // Info
+    #define MANUFACTURER        "LITESUN"
+    #define DEVICE              "LA_WF3"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4  // 4 blue led
+    #define LED1_MODE           LED_MODE_WIFI
+    #define LED1_PIN_INVERSE    1
+    
+    #define LED2_PIN            5  // 5 red led
+    #define LED2_MODE           LED_MODE_RELAY
+    #define LED2_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
