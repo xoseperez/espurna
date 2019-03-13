@@ -3147,6 +3147,7 @@
     #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_RESET
 
     // Light
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define LIGHT_STEP          8
