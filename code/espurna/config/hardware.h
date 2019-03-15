@@ -228,7 +228,6 @@
     #define RELAY1_PIN          12
     #define RELAY1_TYPE         RELAY_TYPE_INVERSE
 
-
 // Check http://tinkerman.cat/rfm69-wifi-gateway/
 #elif defined(TINKERMAN_RFM69GW)
 

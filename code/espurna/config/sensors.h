@@ -1026,7 +1026,7 @@
 #endif
 
 #if MAX6675_SUPPORT
-    #include "../sensors/MAX6675.h"
+    #include "../sensors/MAX6675Sensor.h"
 #endif 
 
 #if MHZ19_SUPPORT
