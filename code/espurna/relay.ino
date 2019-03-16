@@ -67,6 +67,8 @@ void _relayProviderStatus(unsigned char id, bool status) {
             if (_relays[i].current_status) mask = mask + (1 << i);
         }
 
+        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
+
         // Send it to F330
         Serial.flush();
         Serial.write(0xA0);
@@ -658,7 +660,7 @@ void _relayWebSocketSendRelays() {
 
         #if MQTT_SUPPORT
             group.add(getSetting("mqttGroup", i, ""));
-            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt() == 1);
+            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }

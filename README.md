@@ -18,7 +18,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Collaborators
 
-Since last November, Max Prokhorov (@mcspr) is also working actively with ESPurna as a collaborator of the project. 
+Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collaborator of the project. 
 
 ## Contributors
 

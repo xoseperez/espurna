@@ -578,6 +578,25 @@ bool checkNeedsReset() {
     return _reset_reason > 0;
 }
 
+// Use fixed method for Core 2.3.0, because it erases only 2 out of 4 SDK-reserved sectors
+// Fixed since 2.4.0, see: esp8266/core/esp8266/Esp.cpp: ESP::eraseConfig()
+bool eraseSDKConfig() {
+    #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+        const size_t cfgsize = 0x4000;
+        size_t cfgaddr = ESP.getFlashChipSize() - cfgsize;
+
+        for (size_t offset = 0; offset < cfgsize; offset += SPI_FLASH_SEC_SIZE) {
+            if (!ESP.flashEraseSector((cfgaddr + offset) / SPI_FLASH_SEC_SIZE)) {
+                return false;
+            }
+        }
+
+        return true;
+    #else
+        return ESP.eraseConfig();
+    #endif
+}
+
 // -----------------------------------------------------------------------------
 
 char * ltrim(char * s) {

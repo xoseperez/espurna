@@ -164,12 +164,24 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
 void buttonSetup() {
 
-    #ifdef ITEAD_SONOFF_DUAL
+    #if defined(ITEAD_SONOFF_DUAL)
 
         unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, BUTTON3_RELAY});
+
+    #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
+        unsigned int btn1Relay = getSetting("btnRelay", 0, BUTTON1_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn1Relay});
+        unsigned int btn2Relay = getSetting("btnRelay", 1, BUTTON2_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn2Relay});
+        unsigned int btn3Relay = getSetting("btnRelay", 2, BUTTON3_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn3Relay});
+        unsigned int btn4Relay = getSetting("btnRelay", 3, BUTTON4_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn4Relay});
 
     #else
 
@@ -240,7 +252,7 @@ void buttonSetup() {
 
 void buttonLoop() {
 
-    #ifdef ITEAD_SONOFF_DUAL
+    #if defined(ITEAD_SONOFF_DUAL)
 
         if (Serial.available() >= 4) {
             if (Serial.read() == 0xA0) {
@@ -275,6 +287,29 @@ void buttonLoop() {
 
                         }
 
+                    }
+                }
+            }
+        }
+
+    #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+        if (Serial.available() >= 4) {
+            if (Serial.read() == 0xA0) {
+                if (Serial.read() == 0x04) {
+                    unsigned char value = Serial.read();
+                    if (Serial.read() == 0xA1) {
+
+                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d\n"), value);
+
+                        for (unsigned int i=0; i<_buttons.size(); i++) {
+
+                            bool clicked = (value & (1 << i)) > 0;
+
+                            if (clicked) {
+                                buttonEvent(i, BUTTON_EVENT_CLICK);
+                            }
+                        }
                     }
                 }
             }
