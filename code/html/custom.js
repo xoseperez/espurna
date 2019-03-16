@@ -244,6 +244,7 @@ function addValue(data, name, value) {
     // These fields will always be a list of values
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
+        "idbHost", "idbPort", "idbDatabase", "idbUsername", "idbPassword",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
         "relayBoot", "relayPulse", "relayTime",
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
@@ -270,7 +271,6 @@ function addValue(data, name, value) {
     } else {
         data[name] = value;
     }
-
 }
 
 function getData(form) {
@@ -665,6 +665,26 @@ function doHAConfig() {
     return false;
 }
 
+function doAddIdbConfig() {
+    var numNidbs = $("#panel-idb-list > fieldset").length;
+    var tabindex = 200 + numNidbs * 10;
+    var template = $("#idbTemplate").children();
+    var line = $(template).clone();
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex);
+        tabindex++;
+    });
+    $(line).find(".button-del-influxdb").on("click", doDelIdbConfig);
+    line.appendTo("#panel-idb-list");
+
+    return line;
+}
+
+function doDelIdbConfig() {
+    var parent = $(this).parents(".p-g");
+    $(parent).remove();
+}
+
 function doDebugCommand() {
     var el = $("input[name='dbgcmd']");
     var command = el.val();
@@ -810,7 +830,7 @@ function delMapping() {
 // -----------------------------------------------------------------------------
 
 function delNetwork() {
-    var parent = $(this).parents(".pure-g");
+    var parent = $(this).parents(".p-g");
     $(parent).remove();
 }
 
@@ -927,11 +947,9 @@ function initRelays(data) {
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
-
         if($(this).prop("name"))$(this).prop("id", $(this).prop("name"));
         $(this).parent().addClass("toggleWrapper");
         $(this).after('<label for="' + $(this).prop("name") + '" class="toggle"><span class="toggle__handler"></span></label>')
-
     });
 
 }
@@ -1379,9 +1397,23 @@ function processData(data) {
             return;
         }
 
+        if("idbs" === key) {
+            console.log('"' + key + '"', key, "idbs" === key, value );
+            console.log("chanfle");
+            for (i in value) {
+                var idbs = value[i];
+                var nidbs_line = doAddIdbConfig();
+                Object.keys(idbs).forEach(function(key) {
+                    $("input[name='" + key + "']", nidbs_line).val(idbs[key]);
+                });
+            }
+        }
+        
+
         if ("scanResult" === key) {
             $("div.scan.loading").hide();
             $("#scanResult").show();
+            
         }
 
         // -----------------------------------------------------------------------------
@@ -1701,6 +1733,7 @@ $(function() {
     $(".button-reconnect").on("click", doReconnect);
     $(".button-wifi-scan").on("click", doScan);
     $(".button-ha-config").on("click", doHAConfig);
+    $(".button-add-influxdb").on("click", doAddIdbConfig);
     $(".button-dbgcmd").on("click", doDebugCommand);
     $("input[name='dbgcmd']").enterKey(doDebugCommand);
     $(".button-dbg-clear").on("click", doDebugClear);
