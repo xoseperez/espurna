@@ -2,7 +2,7 @@
 
 ALEXA MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -36,6 +36,39 @@ void _alexaConfigure() {
     alexa.enable(wifiConnected() && alexaEnabled());
 }
 
+#if WEB_SUPPORT
+    bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), String((char *)data));
+    }
+
+    bool _alexaRequestCallback(AsyncWebServerRequest *request) {
+        String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
+        return alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
+    }
+#endif
+
+#if BROKER_SUPPORT
+void _alexaBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+    
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+
+    unsigned char value = atoi(payload);
+
+    if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
+        alexa.setState(id+1, value > 0, value);
+    }
+
+    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+        #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+            if (id > 0) return;
+        #endif
+        alexa.setState(id, value, value > 0 ? 255 : 0);
+    }
+
+}
+#endif // BROKER_SUPPORT
+
 // -----------------------------------------------------------------------------
 
 bool alexaEnabled() {
@@ -47,8 +80,9 @@ void alexaSetup() {
     // Backwards compatibility
     moveSetting("fauxmoEnabled", "alexaEnabled");
 
-    // Load & cache settings
-    _alexaConfigure();
+    // Basic fauxmoESP configuration
+    alexa.createServer(!WEB_SUPPORT);
+    alexa.setPort(80);
 
     // Uses hostname as base name for all devices
     // TODO: use custom switch name when available
@@ -79,8 +113,13 @@ void alexaSetup() {
 
     #endif
 
+    // Load & cache settings
+    _alexaConfigure();
+
     // Websockets
     #if WEB_SUPPORT
+        webBodyRegister(_alexaBodyCallback);
+        webRequestRegister(_alexaRequestCallback);
         wsOnSendRegister(_alexaWebSocketOnSend);
         wsOnReceiveRegister(_alexaWebSocketOnReceive);
     #endif
@@ -102,8 +141,11 @@ void alexaSetup() {
     });
 
     // Register main callbacks
-    espurnaRegisterLoop(alexaLoop);
+    #if BROKER_SUPPORT
+        brokerRegister(_alexaBrokerCallback);
+    #endif
     espurnaRegisterReload(_alexaConfigure);
+    espurnaRegisterLoop(alexaLoop);
 
 }
 

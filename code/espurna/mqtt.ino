@@ -2,7 +2,7 @@
 
 MQTT MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -36,6 +36,8 @@ WiFiClientSecure _mqtt_client_secure;
 bool _mqtt_enabled = MQTT_ENABLED;
 bool _mqtt_use_json = false;
 unsigned long _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
+unsigned long _mqtt_last_connection = 0;
+bool _mqtt_connecting = false;
 unsigned char _mqtt_qos = MQTT_QOS;
 bool _mqtt_retain = MQTT_RETAIN;
 unsigned long _mqtt_keepalive = MQTT_KEEPALIVE;
@@ -48,9 +50,6 @@ char *_mqtt_user = 0;
 char *_mqtt_pass = 0;
 char *_mqtt_will;
 char *_mqtt_clientid;
-#if MQTT_SKIP_RETAINED
-unsigned long _mqtt_connected_at = 0;
-#endif
 
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
@@ -71,13 +70,11 @@ void _mqttConnect() {
     // Do not connect if disabled
     if (!_mqtt_enabled) return;
 
-    // Do not connect if already connected
-    if (_mqtt.connected()) return;
+    // Do not connect if already connected or still trying to connect
+    if (_mqtt.connected() || _mqtt_connecting) return;
 
     // Check reconnect interval
-    static unsigned long last = 0;
-    if (millis() - last < _mqtt_reconnect_delay) return;
-    last = millis();
+    if (millis() - _mqtt_last_connection < _mqtt_reconnect_delay) return;
 
     // Increase the reconnect delay
     _mqtt_reconnect_delay += MQTT_RECONNECT_DELAY_STEP;
@@ -98,14 +95,19 @@ void _mqttConnect() {
     if (_mqtt_will) free(_mqtt_will);
     if (_mqtt_clientid) free(_mqtt_clientid);
 
-    _mqtt_user = strdup(getSetting("mqttUser", MQTT_USER).c_str());
+    String user = getSetting("mqttUser", MQTT_USER);
+    _mqttPlaceholders(&user);
+    _mqtt_user = strdup(user.c_str());
     _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
     _mqtt_will = strdup(mqttTopic(MQTT_TOPIC_STATUS, false).c_str());
-    _mqtt_clientid = strdup(getSetting("mqttClientID", getIdentifier()).c_str());
+    String clientid = getSetting("mqttClientID", getIdentifier());
+    _mqttPlaceholders(&clientid);
+    _mqtt_clientid = strdup(clientid.c_str());
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
 
     #if MQTT_USE_ASYNC
+        _mqtt_connecting = true;
 
         _mqtt.setServer(host, port);
         _mqtt.setClientId(_mqtt_clientid);
@@ -211,6 +213,17 @@ void _mqttConnect() {
 
 }
 
+void _mqttPlaceholders(String *text) {
+    
+    text->replace("{hostname}", getSetting("hostname"));
+    text->replace("{magnitude}", "#");
+    
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    text->replace("{mac}", mac);
+
+}
+
 void _mqttConfigure() {
 
     // Get base topic
@@ -218,12 +231,8 @@ void _mqttConfigure() {
     if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
 
     // Placeholders
-    _mqtt_topic.replace("{hostname}", getSetting("hostname"));
-    _mqtt_topic.replace("{magnitude}", "#");
+    _mqttPlaceholders(&_mqtt_topic);
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
-    _mqtt_topic.replace("{mac}", mac);
 
     // Getters and setters
     _mqtt_setter = getSetting("mqttSetter", MQTT_SETTER);
@@ -298,10 +307,10 @@ void _mqttWebSocketOnSend(JsonObject& root) {
 
 void _mqttInitCommands() {
 
-    settingsRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
         _mqttConfigure();
         mqttDisconnect();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }
@@ -345,9 +354,7 @@ void _mqttOnConnect() {
     DEBUG_MSG_P(PSTR("[MQTT] Connected!\n"));
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
-    #if MQTT_SKIP_RETAINED
-        _mqtt_connected_at = millis();
-    #endif
+    _mqtt_last_connection = millis();
 
     // Clean subscriptions
     mqttUnsubscribeRaw("#");
@@ -360,6 +367,10 @@ void _mqttOnConnect() {
 }
 
 void _mqttOnDisconnect() {
+
+    // Reset reconnection delay
+    _mqtt_last_connection = millis();
+    _mqtt_connecting = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
@@ -378,7 +389,7 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     strlcpy(message, (char *) payload, len + 1);
 
     #if MQTT_SKIP_RETAINED
-        if (millis() - _mqtt_connected_at < MQTT_SKIP_TIME) {
+        if (millis() - _mqtt_last_connection < MQTT_SKIP_TIME) {
             DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
 			return;
 		}

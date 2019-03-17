@@ -2,7 +2,7 @@
 
 ESP8266 file system builder
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -115,6 +115,7 @@ var buildWebUI = function(module) {
         modules['sensor'] = true;
         modules['rfbridge'] = true;
         modules['rfm69'] = false;   // we will never be adding this except when building RFM69GW
+        modules['lightfox'] = false;   // we will never be adding this except when building lightfox
     } else if ('small' !== module) {
         modules[module] = true;
     }
@@ -186,6 +187,10 @@ gulp.task('webui_rfm69', function() {
     return buildWebUI('rfm69');
 });
 
+gulp.task('webui_lightfox', function() {
+    return buildWebUI('lightfox');
+});
+
 gulp.task('webui_all', function() {
     return buildWebUI('all');
 });
@@ -197,6 +202,7 @@ gulp.task('webui',
         'webui_light',
         'webui_rfbridge',
         'webui_rfm69',
+        'webui_lightfox',
         'webui_all'
     )
 );

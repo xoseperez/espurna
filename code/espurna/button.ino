@@ -2,7 +2,7 @@
 
 BUTTON MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -105,47 +105,83 @@ void buttonEvent(unsigned int id, unsigned char event) {
        }
     #endif
 
-    if (action == BUTTON_MODE_TOGGLE) {
+    if (BUTTON_MODE_TOGGLE == action) {
         if (_buttons[id].relayID > 0) {
             relayToggle(_buttons[id].relayID - 1);
         }
     }
-    if (action == BUTTON_MODE_ON) {
+
+    if (BUTTON_MODE_ON == action) {
         if (_buttons[id].relayID > 0) {
             relayStatus(_buttons[id].relayID - 1, true);
         }
     }
-    if (action == BUTTON_MODE_OFF) {
+
+    if (BUTTON_MODE_OFF == action) {
         if (_buttons[id].relayID > 0) {
             relayStatus(_buttons[id].relayID - 1, false);
         }
     }
-    if (action == BUTTON_MODE_AP) wifiStartAP();
-    #if defined(JUSTWIFI_ENABLE_WPS)
-        if (action == BUTTON_MODE_WPS) wifiStartWPS();
-    #endif // defined(JUSTWIFI_ENABLE_WPS)
-    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        if (action == BUTTON_MODE_SMART_CONFIG) wifiStartSmartConfig();
-    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-    if (action == BUTTON_MODE_RESET) {
+    
+    if (BUTTON_MODE_AP == action) {
+        wifiStartAP();
+    }
+    
+    if (BUTTON_MODE_RESET == action) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
-    if (action == BUTTON_MODE_FACTORY) {
+
+    if (BUTTON_MODE_FACTORY == action) {
         DEBUG_MSG_P(PSTR("\n\nFACTORY RESET\n\n"));
         resetSettings();
         deferredReset(100, CUSTOM_RESET_FACTORY);
     }
 
+    #if defined(JUSTWIFI_ENABLE_WPS)
+        if (BUTTON_MODE_WPS == action) {
+            wifiStartWPS();
+        }
+    #endif // defined(JUSTWIFI_ENABLE_WPS)
+    
+    #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+        if (BUTTON_MODE_SMART_CONFIG == action) {
+            wifiStartSmartConfig();
+        }
+    #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
+    
+    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    if (BUTTON_MODE_DIM_UP == action) {
+        lightBrightnessStep(1);
+        lightUpdate(true, true);
+    }
+    if (BUTTON_MODE_DIM_DOWN == action) {
+        lightBrightnessStep(-1);
+        lightUpdate(true, true);
+    }
+    #endif // LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+
 }
 
 void buttonSetup() {
 
-    #ifdef ITEAD_SONOFF_DUAL
+    #if defined(ITEAD_SONOFF_DUAL)
 
         unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 1});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, 2});
         _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, BUTTON3_RELAY});
+
+    #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+        unsigned int actions = buttonStore(BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
+        unsigned int btn1Relay = getSetting("btnRelay", 0, BUTTON1_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn1Relay});
+        unsigned int btn2Relay = getSetting("btnRelay", 1, BUTTON2_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn2Relay});
+        unsigned int btn3Relay = getSetting("btnRelay", 2, BUTTON3_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn3Relay});
+        unsigned int btn4Relay = getSetting("btnRelay", 3, BUTTON4_RELAY - 1).toInt() + 1;
+        _buttons.push_back({new DebounceEvent(0, BUTTON_PUSHBUTTON), actions, btn4Relay});
 
     #else
 
@@ -216,7 +252,7 @@ void buttonSetup() {
 
 void buttonLoop() {
 
-    #ifdef ITEAD_SONOFF_DUAL
+    #if defined(ITEAD_SONOFF_DUAL)
 
         if (Serial.available() >= 4) {
             if (Serial.read() == 0xA0) {
@@ -251,6 +287,29 @@ void buttonLoop() {
 
                         }
 
+                    }
+                }
+            }
+        }
+
+    #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+        if (Serial.available() >= 4) {
+            if (Serial.read() == 0xA0) {
+                if (Serial.read() == 0x04) {
+                    unsigned char value = Serial.read();
+                    if (Serial.read() == 0xA1) {
+
+                        DEBUG_MSG_P(PSTR("[BUTTON] [LIGHTFOX] Received buttons mask: %d\n"), value);
+
+                        for (unsigned int i=0; i<_buttons.size(); i++) {
+
+                            bool clicked = (value & (1 << i)) > 0;
+
+                            if (clicked) {
+                                buttonEvent(i, BUTTON_EVENT_CLICK);
+                            }
+                        }
                     }
                 }
             }

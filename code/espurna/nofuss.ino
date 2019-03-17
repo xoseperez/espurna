@@ -2,7 +2,7 @@
 
 NOFUSS MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -74,8 +74,8 @@ void _nofussConfigure() {
 
 void _nofussInitCommands() {
 
-    settingsRegisterCommand(F("NOFUSS"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
+    terminalRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+        terminalOK();
         nofussRun();
     });
 

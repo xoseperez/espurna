@@ -55,6 +55,14 @@ String getCoreRevision() {
     #endif
 }
 
+unsigned char getHeartbeatMode() {
+    return getSetting("hbMode", HEARTBEAT_MODE).toInt();
+}
+
+unsigned char getHeartbeatInterval() {
+    return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
+}
+
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
@@ -132,7 +140,60 @@ unsigned long getUptime() {
 
 }
 
-#if HEARTBEAT_MODE != HEARTBEAT_NONE
+// -----------------------------------------------------------------------------
+// Heartbeat helper
+// -----------------------------------------------------------------------------
+namespace Heartbeat {
+    enum Report : uint32_t { 
+        Status = 1 << 1,
+        Ssid = 1 << 2,
+        Ip = 1 << 3,
+        Mac = 1 << 4,
+        Rssi = 1 << 5,
+        Uptime = 1 << 6,
+        Datetime = 1 << 7,
+        Freeheap = 1 << 8,
+        Vcc = 1 << 9,
+        Relay = 1 << 10,
+        Light = 1 << 11,
+        Hostname = 1 << 12,
+        App = 1 << 13,
+        Version = 1 << 14,
+        Board = 1 << 15,
+        Loadavg = 1 << 16,
+        Interval = 1 << 17,
+        Description = 1 << 18
+    };
+
+    constexpr uint32_t defaultValue() {
+        return (Status * (HEARTBEAT_REPORT_STATUS)) | \
+            (Ssid * (HEARTBEAT_REPORT_SSID)) | \
+            (Ip * (HEARTBEAT_REPORT_IP)) | \
+            (Mac * (HEARTBEAT_REPORT_MAC)) | \
+            (Rssi * (HEARTBEAT_REPORT_RSSI)) | \
+            (Uptime * (HEARTBEAT_REPORT_UPTIME)) | \
+            (Datetime * (HEARTBEAT_REPORT_DATETIME)) | \
+            (Freeheap * (HEARTBEAT_REPORT_FREEHEAP)) | \
+            (Vcc * (HEARTBEAT_REPORT_VCC)) | \
+            (Relay * (HEARTBEAT_REPORT_RELAY)) | \
+            (Light * (HEARTBEAT_REPORT_LIGHT)) | \
+            (Hostname * (HEARTBEAT_REPORT_HOSTNAME)) | \
+            (Description * (HEARTBEAT_REPORT_DESCRIPTION)) | \
+            (App * (HEARTBEAT_REPORT_APP)) | \
+            (Version * (HEARTBEAT_REPORT_VERSION)) | \
+            (Board * (HEARTBEAT_REPORT_BOARD)) | \
+            (Loadavg * (HEARTBEAT_REPORT_LOADAVG)) | \
+            (Interval * (HEARTBEAT_REPORT_INTERVAL));
+    }
+
+    uint32_t currentValue() {
+        const String cfg = getSetting("hbReport");
+        if (!cfg.length()) return defaultValue();
+
+        return strtoul(cfg.c_str(), NULL, 10);
+    }
+
+}
 
 void heartbeat() {
 
@@ -140,6 +201,7 @@ void heartbeat() {
     unsigned int free_heap = getFreeHeap();
 
     #if MQTT_SUPPORT
+        unsigned char _heartbeat_mode = getHeartbeatMode();
         bool serial = !mqttConnected();
     #else
         bool serial = true;
@@ -160,66 +222,80 @@ void heartbeat() {
         #endif
     }
 
+    const uint32_t hb_cfg = Heartbeat::currentValue();
+    if (!hb_cfg) return;
+
     // -------------------------------------------------------------------------
     // MQTT
     // -------------------------------------------------------------------------
 
     #if MQTT_SUPPORT
-        if (!serial) {
-            #if (HEARTBEAT_REPORT_INTERVAL)
-                mqttSend(MQTT_TOPIC_INTERVAL, HEARTBEAT_INTERVAL / 1000);
-            #endif
-            #if (HEARTBEAT_REPORT_APP)
+        if (!serial && (_heartbeat_mode == HEARTBEAT_REPEAT || systemGetHeartbeat())) {
+            if (hb_cfg & Heartbeat::Interval)
+                mqttSend(MQTT_TOPIC_INTERVAL, String(getHeartbeatInterval() / 1000).c_str());
+
+            if (hb_cfg & Heartbeat::App)
                 mqttSend(MQTT_TOPIC_APP, APP_NAME);
-            #endif
-            #if (HEARTBEAT_REPORT_VERSION)
+
+            if (hb_cfg & Heartbeat::Version)
                 mqttSend(MQTT_TOPIC_VERSION, APP_VERSION);
-            #endif
-            #if (HEARTBEAT_REPORT_BOARD)
+
+            if (hb_cfg & Heartbeat::Board)
                 mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_HOSTNAME)
-                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname").c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_SSID)
+
+            if (hb_cfg & Heartbeat::Hostname)
+                mqttSend(MQTT_TOPIC_HOSTNAME, getSetting("hostname", getIdentifier()).c_str());
+
+            if (hb_cfg & Heartbeat::Description) {
+                if (hasSetting("desc")) {
+                    mqttSend(MQTT_TOPIC_DESCRIPTION, getSetting("desc").c_str());
+                }
+            }
+
+            if (hb_cfg & Heartbeat::Ssid)
                 mqttSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_IP)
+
+            if (hb_cfg & Heartbeat::Ip)
                 mqttSend(MQTT_TOPIC_IP, getIP().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_MAC)
+
+            if (hb_cfg & Heartbeat::Mac)
                 mqttSend(MQTT_TOPIC_MAC, WiFi.macAddress().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_RSSI)
+
+            if (hb_cfg & Heartbeat::Rssi)
                 mqttSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_UPTIME)
+
+            if (hb_cfg & Heartbeat::Uptime)
                 mqttSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
+
+            #if NTP_SUPPORT
+                if ((hb_cfg & Heartbeat::Datetime) && (ntpSynced()))
+                    mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
             #endif
-            #if (HEARTBEAT_REPORT_DATETIME) && (NTP_SUPPORT)
-                if (ntpSynced())  mqttSend(MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_FREEHEAP)
+
+            if (hb_cfg & Heartbeat::Freeheap)
                 mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-            #endif
-            #if (HEARTBEAT_REPORT_RELAY)
+
+            if (hb_cfg & Heartbeat::Relay)
                 relayMQTT();
+
+            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+                if (hb_cfg & Heartbeat::Light)
+                    lightMQTT();
             #endif
-            #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) & (HEARTBEAT_REPORT_LIGHT)
-                lightMQTT();
-            #endif
-            #if (HEARTBEAT_REPORT_VCC)
-            #if ADC_MODE_VALUE == ADC_VCC
+
+            if ((hb_cfg & Heartbeat::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
-            #endif
-            #endif
-            #if (HEARTBEAT_REPORT_STATUS)
+
+            if (hb_cfg & Heartbeat::Status)
                 mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-            #endif
-            #if (LOADAVG_REPORT)
+
+            if (hb_cfg & Heartbeat::Loadavg)
                 mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
-            #endif
+
+        } else if (!serial && _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
+            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
         }
+
     #endif
 
     // -------------------------------------------------------------------------
@@ -227,20 +303,17 @@ void heartbeat() {
     // -------------------------------------------------------------------------
 
     #if INFLUXDB_SUPPORT
-        #if (HEARTBEAT_REPORT_UPTIME)
+        if (hb_cfg & Heartbeat::Uptime)
             idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_FREEHEAP)
+
+        if (hb_cfg & Heartbeat::Freeheap)
             idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
-        #endif
-        #if (HEARTBEAT_REPORT_RSSI)
+
+        if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
-        #endif
     #endif
 
 }
-
-#endif /// HEARTBEAT_MODE != HEARTBEAT_NONE
 
 // -----------------------------------------------------------------------------
 // INFO
@@ -291,6 +364,16 @@ void infoMemory(const char * name, unsigned int total_memory, unsigned int free_
     );
 
 }
+
+const char* _info_wifi_sleep_mode(WiFiSleepType_t type) {
+    switch (type) {
+        case WIFI_NONE_SLEEP: return "NONE";
+        case WIFI_LIGHT_SLEEP: return "LIGHT";
+        case WIFI_MODEM_SLEEP: return "MODEM";
+        default: return "UNKNOWN";
+    }
+}
+
 
 void info() {
 
@@ -393,7 +476,14 @@ void info() {
     #if ADC_MODE_VALUE == ADC_VCC
         DEBUG_MSG_P(PSTR("[MAIN] Power: %u mV\n"), ESP.getVcc());
     #endif
-    DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    if (systemLoopDelay()) {
+        DEBUG_MSG_P(PSTR("[MAIN] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    }
+
+    const WiFiSleepType_t sleep_mode = WiFi.getSleepMode();
+    if (sleep_mode != WIFI_NONE_SLEEP) {
+        DEBUG_MSG_P(PSTR("[MAIN] WiFi Sleep Mode: %s\n"), _info_wifi_sleep_mode(sleep_mode));
+    }
 
     // -------------------------------------------------------------------------
 
@@ -454,6 +544,31 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 #endif
 
 // -----------------------------------------------------------------------------
+// Reset
+// -----------------------------------------------------------------------------
+
+// Use fixed method for Core 2.3.0, because it erases only 2 out of 4 SDK-reserved sectors
+// Fixed since 2.4.0, see: esp8266/core/esp8266/Esp.cpp: ESP::eraseConfig()
+bool eraseSDKConfig() {
+    #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+        const size_t cfgsize = 0x4000;
+        size_t cfgaddr = ESP.getFlashChipSize() - cfgsize;
+
+        for (size_t offset = 0; offset < cfgsize; offset += SPI_FLASH_SEC_SIZE) {
+            if (!ESP.flashEraseSector((cfgaddr + offset) / SPI_FLASH_SEC_SIZE)) {
+                return false;
+            }
+        }
+
+        return true;
+    #else
+        return ESP.eraseConfig();
+    #endif
+}
+
+// -----------------------------------------------------------------------------
+// Helper functions
+// -----------------------------------------------------------------------------
 
 char * ltrim(char * s) {
     char *p = s;
@@ -481,15 +596,19 @@ bool isNumber(const char * s) {
     unsigned char len = strlen(s);
     if (0 == len) return false;
     bool decimal = false;
+    bool digit = false;
     for (unsigned char i=0; i<len; i++) {
-        if (s[i] == '-') {
+        if (('-' == s[i]) || ('+' == s[i])) {
             if (i>0) return false;
         } else if (s[i] == '.') {
+            if (!digit) return false;
             if (decimal) return false;
             decimal = true;
         } else if (!isdigit(s[i])) {
             return false;
+        } else {
+            digit = true;
         }
     }
-    return true;
+    return digit;
 }

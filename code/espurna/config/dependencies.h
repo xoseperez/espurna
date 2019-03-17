@@ -33,9 +33,21 @@
 #define DEBUG_SERIAL_SUPPORT        0
 #endif
 
+#if ALEXA_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If Alexa enabled enable BROKER
+#endif
+
+#if INFLUXDB_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If InfluxDB enabled enable BROKER
+#endif
+
 #if DOMOTICZ_SUPPORT
 #undef MQTT_SUPPORT
 #define MQTT_SUPPORT                1               // If Domoticz enabled enable MQTT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If Domoticz enabled enable BROKER
 #endif
 
 #if HOMEASSISTANT_SUPPORT
@@ -45,8 +57,14 @@
 
 #ifndef ASYNC_TCP_SSL_ENABLED
 #if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
-#undef THINGSPEAK_SUPPORT                       // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#undef THINGSPEAK_SUPPORT                       
+#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
 #endif
+#endif
+
+#if THINKSPEAK_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1               // If Thingspeak enabled enable BROKER
 #endif
 
 #if SCHEDULER_SUPPORT

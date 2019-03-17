@@ -9,6 +9,7 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #if HOMEASSISTANT_SUPPORT
 
 #include <ArduinoJson.h>
+#include <queue>
 
 bool _haEnabled = false;
 bool _haSendFlag = false;
@@ -37,10 +38,9 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
-
 }
 
-void _haSendMagnitudes() {
+void _haSendMagnitudes(const JsonObject& deviceConfig) {
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
@@ -54,6 +54,9 @@ void _haSendMagnitudes() {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
+            config["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
+            config["device"] = deviceConfig;
+            
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -114,7 +117,7 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendSwitches() {
+void _haSendSwitches(const JsonObject& deviceConfig) {
 
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
@@ -134,6 +137,9 @@ void _haSendSwitches() {
             DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
             _haSendSwitch(i, config);
+            config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
+            config["device"] = deviceConfig;
+
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -147,9 +153,7 @@ void _haSendSwitches() {
 
 // -----------------------------------------------------------------------------
 
-String _haGetConfig() {
-
-    String output;
+void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
 
     #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
         String type = String("light");
@@ -163,8 +167,16 @@ String _haGetConfig() {
         JsonObject& config = jsonBuffer.createObject();
         _haSendSwitch(i, config);
 
-        output += "\n" + type + ":\n";
+        String output;
+        output.reserve(config.measureLength() + 32);
+
+        if (wrapJson) {
+            output += "{\"haConfig\": \"";
+        }
+
+        output += "\n\n" + type + ":\n";
         bool first = true;
+
         for (auto kv : config) {
             if (first) {
                 output += "  - ";
@@ -172,10 +184,20 @@ String _haGetConfig() {
             } else {
                 output += "    ";
             }
-            output += kv.key + String(": ") + kv.value.as<String>() + String("\n");
+            output += kv.key;
+            output += ": ";
+            output += kv.value.as<String>();
+            output += "\n";
+        }
+        output += " ";
+
+        if (wrapJson) {
+            output += "\"}";
         }
 
         jsonBuffer.clear();
+
+        printer(output);
 
     }
 
@@ -187,8 +209,16 @@ String _haGetConfig() {
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
 
-            output += "\nsensor:\n";
+            String output;
+            output.reserve(config.measureLength() + 32);
+
+            if (wrapJson) {
+                output += "{\"haConfig\": \"";
+            }
+
+            output += "\n\nsensor:\n";
             bool first = true;
+
             for (auto kv : config) {
                 if (first) {
                     output += "  - ";
@@ -198,18 +228,34 @@ String _haGetConfig() {
                 }
                 String value = kv.value.as<String>();
                 value.replace("%", "'%'");
-                output += kv.key + String(": ") + value + String("\n");
+                output += kv.key;
+                output += ": ";
+                output += value;
+                output += "\n";
             }
-            output += "\n";
+            output += " ";
+
+            if (wrapJson) {
+                output += "\"}";
+            }
 
             jsonBuffer.clear();
+
+            printer(output);
 
         }
 
     #endif
+}
 
-    return output;
-
+void _haGetDeviceConfig(JsonObject& config) {
+    String identifier = getIdentifier();
+    
+    config.createNestedArray("identifiers").add(identifier);
+    config["name"] = getSetting("desc", getSetting("hostname"));
+    config["manufacturer"] = String(MANUFACTURER);
+    config["model"] = String(DEVICE);
+    config["sw_version"] = String(APP_NAME) + " " + String(APP_VERSION) + " (" + getCoreVersion() + ")";
 }
 
 void _haSend() {
@@ -222,12 +268,18 @@ void _haSend() {
 
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
-    // Send messages
-    _haSendSwitches();
-    #if SENSOR_SUPPORT
-        _haSendMagnitudes();
-    #endif
+    // Get common device config
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& deviceConfig = jsonBuffer.createObject();
+    _haGetDeviceConfig(deviceConfig);
 
+    // Send messages
+    _haSendSwitches(deviceConfig);
+    #if SENSOR_SUPPORT
+        _haSendMagnitudes(deviceConfig);
+    #endif
+    
+    jsonBuffer.clear();
     _haSendFlag = false;
 
 }
@@ -241,6 +293,8 @@ void _haConfigure() {
 
 #if WEB_SUPPORT
 
+std::queue<uint32_t> _ha_send_config;
+
 bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
 }
@@ -253,11 +307,7 @@ void _haWebSocketOnSend(JsonObject& root) {
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
     if (strcmp(action, "haconfig") == 0) {
-        String output = _haGetConfig();
-        output.replace(" ", "&nbsp;");
-        output.replace("\n", "<br />");
-        output = String("{\"haConfig\": \"") + output + String("\"}");
-        wsSend(client_id, output.c_str());
+        _ha_send_config.push(client_id);
     }
 }
 
@@ -267,27 +317,30 @@ void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& d
 
 void _haInitCommands() {
 
-    settingsRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
-        DEBUG_MSG(_haGetConfig().c_str());
-        DEBUG_MSG_P(PSTR("+OK\n"));
+    terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
+        _haDumpConfig([](String& data) {
+            DEBUG_MSG(data.c_str());
+        });
+        DEBUG_MSG("\n");
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("HA.SEND"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.SEND"), [](Embedis* e) {
         setSetting("haEnabled", "1");
         _haConfigure();
         #if WEB_SUPPORT
             wsSend(_haWebSocketOnSend);
         #endif
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
+    terminalRegisterCommand(F("HA.CLEAR"), [](Embedis* e) {
         setSetting("haEnabled", "0");
         _haConfigure();
         #if WEB_SUPPORT
             wsSend(_haWebSocketOnSend);
         #endif
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }
@@ -295,6 +348,23 @@ void _haInitCommands() {
 #endif
 
 // -----------------------------------------------------------------------------
+
+#if WEB_SUPPORT
+void _haLoop() {
+    if (_ha_send_config.empty()) return;
+
+    uint32_t client_id = _ha_send_config.front();
+    _ha_send_config.pop();
+
+    if (!wsConnected(client_id)) return;
+
+    // TODO check wsConnected after each "printer" call?
+    _haDumpConfig([client_id](String& output) {
+        wsSend(client_id, output.c_str());
+        yield();
+    }, true);
+}
+#endif
 
 void haSetup() {
 
@@ -304,6 +374,7 @@ void haSetup() {
         wsOnSendRegister(_haWebSocketOnSend);
         wsOnActionRegister(_haWebSocketOnAction);
         wsOnReceiveRegister(_haWebSocketOnReceive);
+        espurnaRegisterLoop(_haLoop);
     #endif
 
     #if TERMINAL_SUPPORT

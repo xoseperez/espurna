@@ -2,7 +2,7 @@
 
 LED MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -72,6 +72,19 @@ void _ledWebSocketOnSend(JsonObject& root) {
 }
 
 #endif
+
+#if BROKER_SUPPORT
+void _ledBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
+
+    // Only process status messages
+    if (BROKER_MSG_TYPE_STATUS != type) return;
+    
+    if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+        ledUpdate(true);
+    }
+
+}
+#endif // BROKER_SUPPORT
 
 #if MQTT_SUPPORT
 void _ledMQTTCallback(unsigned int type, const char * topic, const char * payload) {
@@ -172,6 +185,11 @@ void ledSetup() {
         wsOnSendRegister(_ledWebSocketOnSend);
         wsOnReceiveRegister(_ledWebSocketOnReceive);
     #endif
+
+    #if BROKER_SUPPORT
+        brokerRegister(_ledBrokerCallback);
+    #endif
+
 
     DEBUG_MSG_P(PSTR("[LED] Number of leds: %d\n"), _leds.size());
 

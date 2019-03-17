@@ -2,7 +2,7 @@
 
 RELAY MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -67,6 +67,8 @@ void _relayProviderStatus(unsigned char id, bool status) {
             if (_relays[i].current_status) mask = mask + (1 << i);
         }
 
+        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
+
         // Send it to F330
         Serial.flush();
         Serial.write(0xA0);
@@ -83,6 +85,11 @@ void _relayProviderStatus(unsigned char id, bool status) {
         Serial.write(id + 1);
         Serial.write(status);
         Serial.write(0xA1 + status + id);
+
+        // The serial init are not full recognized by relais board.
+        // References: https://github.com/xoseperez/espurna/issues/1519 , https://github.com/xoseperez/espurna/issues/1130
+        delay(100);
+
         Serial.flush();
     #endif
 
@@ -164,7 +171,7 @@ void _relayProcess(bool mode) {
         // Only process the relays we have to change
         if (target == _relays[id].current_status) continue;
 
-        // Only process the relays we have change to the requested mode
+        // Only process the relays we have to change to the requested mode
         if (target != mode) continue;
 
         // Only process if the change_time has arrived
@@ -177,7 +184,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_RELAY, id, target ? "1" : "0");
         #endif
 
         // Send MQTT
@@ -200,24 +207,6 @@ void _relayProcess(bool mode) {
             #endif
 
         }
-
-        #if DOMOTICZ_SUPPORT
-            domoticzSendRelay(id);
-        #endif
-
-        #if INFLUXDB_SUPPORT
-            relayInfluxDB(id);
-        #endif
-
-        #if THINGSPEAK_SUPPORT
-            tspkEnqueueRelay(id, target);
-            tspkFlush();
-        #endif
-
-        // Flag relay-based LEDs to update status
-        #if LED_SUPPORT
-            ledUpdate(true);
-        #endif
 
         _relays[id].report = false;
         _relays[id].group_report = false;
@@ -499,6 +488,12 @@ unsigned char relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        if (!hasSetting("mqttGroupInv", i)) continue;
+        setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
+        delSetting("mqttGroupInv", i);
+    }
+
     byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
@@ -584,6 +579,9 @@ void _relayBoot() {
 
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
+        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
+        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+
         if (GPIO_NONE == _relays[i].pin) continue;
 
         pinMode(_relays[i].pin, OUTPUT);
@@ -594,8 +592,6 @@ void _relayConfigure() {
             //set to high to block short opening of relay
             digitalWrite(_relays[i].pin, HIGH);
         }
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
     }
 }
 
@@ -612,64 +608,91 @@ bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char i=0; i<relayCount(); i++) {
-        relay.add(_relays[i].target_status);
+        relay.add<uint8_t>(_relays[i].target_status);
     }
+}
+
+String _relayFriendlyName(unsigned char i) {
+    String res = String("GPIO") + String(_relays[i].pin);
+
+    if (GPIO_NONE == _relays[i].pin) {
+        #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+            uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+            if (i >= physical) {
+                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                    res = String("CH") + String(i-physical);
+                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                    if (physical == i) {
+                        res = String("Light");
+                    } else {
+                        res = String("CH") + String(i-1-physical);
+                    }
+                } else {
+                    res = String("Light");
+                }
+            } else {
+                res = String("?");
+            }
+        #else
+            res = String("SW") + String(i);
+        #endif
+    }
+
+    return res;
+}
+
+void _relayWebSocketSendRelays() {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& relays = root.createNestedObject("relayConfig");
+
+    relays["size"] = relayCount();
+    relays["start"] = 0;
+
+    JsonArray& gpio = relays.createNestedArray("gpio");
+    JsonArray& type = relays.createNestedArray("type");
+    JsonArray& reset = relays.createNestedArray("reset");
+    JsonArray& boot = relays.createNestedArray("boot");
+    JsonArray& pulse = relays.createNestedArray("pulse");
+    JsonArray& pulse_time = relays.createNestedArray("pulse_time");
+
+    #if MQTT_SUPPORT
+        JsonArray& group = relays.createNestedArray("group");
+        JsonArray& group_sync = relays.createNestedArray("group_sync");
+        JsonArray& on_disconnect = relays.createNestedArray("on_disc");
+    #endif
+
+    for (unsigned char i=0; i<relayCount(); i++) {
+        gpio.add(_relayFriendlyName(i));
+
+        type.add(_relays[i].type);
+        reset.add(_relays[i].reset_pin);
+        boot.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt());
+
+        pulse.add(_relays[i].pulse);
+        pulse_time.add(_relays[i].pulse_ms / 1000.0);
+
+        #if MQTT_SUPPORT
+            group.add(getSetting("mqttGroup", i, ""));
+            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
+            on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
+        #endif
+    }
+
+    wsSend(root);
 }
 
 void _relayWebSocketOnStart(JsonObject& root) {
 
     if (relayCount() == 0) return;
 
+    // Per-relay configuration
+    _relayWebSocketSendRelays();
+
     // Statuses
     _relayWebSocketUpdate(root);
 
-    // Number of physical relays
-    #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
-    #endif
-
-    // Configuration
-    JsonArray& config = root.createNestedArray("relayConfig");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        
-        JsonObject& line = config.createNestedObject();
-        
-        if (GPIO_NONE == _relays[i].pin) {
-            #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-                if (i >= physical) {
-                    if (DUMMY_RELAY_COUNT == lightChannels()) {
-                        line["gpio"] = String("CH") + String(i-physical);
-                    } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
-                        if (physical == i) {
-                            line["gpio"] = String("Light");
-                        } else {
-                            line["gpio"] = String("CH") + String(i-1-physical);
-                        }
-                    } else {
-                        line["gpio"] = String("Light");
-                    }
-                } else {
-                    line["gpio"] = String("?");
-                }
-            #else
-                line["gpio"] = String("SW") + String(i);
-            #endif
-        } else {
-            line["gpio"] = String("GPIO") + String(_relays[i].pin);
-        }
-        
-        line["type"] = _relays[i].type;
-        line["reset"] = _relays[i].reset_pin;
-        line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-        line["pulse"] = _relays[i].pulse;
-        line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
-        #if MQTT_SUPPORT
-            line["group"] = getSetting("mqttGroup", i, "");
-            line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
-            line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
-        #endif
-    }
-
+    // Options
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
@@ -806,6 +829,18 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
+void _relayMQTTGroup(unsigned char id) {
+    String topic = getSetting("mqttGroup", id, "");
+    if (!topic.length()) return;
+
+    unsigned char mode = getSetting("mqttGroupSync", id, RELAY_GROUP_SYNC_NORMAL).toInt();
+    if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
+
+    bool status = relayStatus(id);
+    if (mode == RELAY_GROUP_SYNC_INVERSE) status = !status;
+    mqttSendRaw(topic.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+}
+
 void relayMQTT(unsigned char id) {
 
     if (id >= _relays.size()) return;
@@ -819,12 +854,7 @@ void relayMQTT(unsigned char id) {
     // Check group topic
     if (_relays[id].group_report) {
         _relays[id].group_report = false;
-        String t = getSetting("mqttGroup", id, "");
-        if (t.length() > 0) {
-            bool status = relayStatus(id);
-            if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
-        }
+        _relayMQTTGroup(id);
     }
 
     // Send speed for IFAN02
@@ -951,7 +981,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 if (value == 0xFF) return;
 
                 if (value < 2) {
-                    if (getSetting("mqttGroupInv", i, 0).toInt() == 1) {
+                    if (getSetting("mqttGroupSync", i, RELAY_GROUP_SYNC_NORMAL).toInt() == RELAY_GROUP_SYNC_INVERSE) {
                         value = 1 - value;
                     }
                 }
@@ -994,20 +1024,6 @@ void relaySetupMQTT() {
 #endif
 
 //------------------------------------------------------------------------------
-// InfluxDB
-//------------------------------------------------------------------------------
-
-#if INFLUXDB_SUPPORT
-
-void relayInfluxDB(unsigned char id) {
-    if (id >= _relays.size()) return;
-    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
-}
-
-#endif
-
-
-//------------------------------------------------------------------------------
 // Settings
 //------------------------------------------------------------------------------
 
@@ -1015,9 +1031,9 @@ void relayInfluxDB(unsigned char id) {
 
 void _relayInitCommands() {
 
-    settingsRegisterCommand(F("RELAY"), [](Embedis* e) {
+    terminalRegisterCommand(F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         int id = String(e->argv[1]).toInt();
@@ -1040,7 +1056,7 @@ void _relayInitCommands() {
             DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
 
         }
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }

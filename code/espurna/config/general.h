@@ -21,7 +21,7 @@
 #endif
 
 #ifndef LOOP_DELAY_TIME
-#define LOOP_DELAY_TIME         10              // Delay for this millis in the main loop [0-250]
+#define LOOP_DELAY_TIME         1               // Delay for this millis in the main loop [0-250] (see https://github.com/xoseperez/espurna/issues/1541)
 #endif
 
 //------------------------------------------------------------------------------
@@ -169,6 +169,7 @@
 #define HEARTBEAT_NONE              0           // Never send heartbeat
 #define HEARTBEAT_ONCE              1           // Send it only once upon MQTT connection
 #define HEARTBEAT_REPEAT            2           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL
+#define HEARTBEAT_REPEAT_STATUS     3           // Send it upon MQTT connection and every HEARTBEAT_INTERVAL only STATUS report
 
 // Backwards compatibility check
 #if defined(HEARTBEAT_ENABLED) && (HEARTBEAT_ENABLED == 0)
@@ -180,28 +181,83 @@
 #endif
 
 #ifndef HEARTBEAT_INTERVAL
-#define HEARTBEAT_INTERVAL          300000      // Interval between heartbeat messages (in ms)
+#define HEARTBEAT_INTERVAL          300         // Interval between heartbeat messages (in sec)
 #endif
 
 #define UPTIME_OVERFLOW             4294967295  // Uptime overflow value
 
-// Topics that will be reported in heartbeat
+// Values that will be reported in heartbeat
+#ifndef HEARTBEAT_REPORT_STATUS
 #define HEARTBEAT_REPORT_STATUS     1
+#endif
+
+#ifndef HEARTBEAT_REPORT_SSID
 #define HEARTBEAT_REPORT_SSID       1
+#endif
+
+#ifndef HEARTBEAT_REPORT_IP
 #define HEARTBEAT_REPORT_IP         1
+#endif
+
+#ifndef HEARTBEAT_REPORT_MAC
 #define HEARTBEAT_REPORT_MAC        1
+#endif
+
+#ifndef HEARTBEAT_REPORT_RSSI
 #define HEARTBEAT_REPORT_RSSI       1
+#endif
+
+#ifndef HEARTBEAT_REPORT_UPTIME
 #define HEARTBEAT_REPORT_UPTIME     1
+#endif
+
+#ifndef HEARTBEAT_REPORT_DATETIME
 #define HEARTBEAT_REPORT_DATETIME   1
+#endif
+
+#ifndef HEARTBEAT_REPORT_FREEHEAP
 #define HEARTBEAT_REPORT_FREEHEAP   1
+#endif
+
+#ifndef HEARTBEAT_REPORT_VCC
 #define HEARTBEAT_REPORT_VCC        1
+#endif
+
+#ifndef HEARTBEAT_REPORT_RELAY
 #define HEARTBEAT_REPORT_RELAY      1
+#endif
+
+#ifndef HEARTBEAT_REPORT_LIGHT
 #define HEARTBEAT_REPORT_LIGHT      1
+#endif
+
+#ifndef HEARTBEAT_REPORT_HOSTNAME
 #define HEARTBEAT_REPORT_HOSTNAME   1
+#endif
+
+#ifndef HEARTBEAT_REPORT_DESCRIPTION
+#define HEARTBEAT_REPORT_DESCRIPTION 1
+#endif
+
+#ifndef HEARTBEAT_REPORT_APP
 #define HEARTBEAT_REPORT_APP        1
+#endif
+
+#ifndef HEARTBEAT_REPORT_VERSION
 #define HEARTBEAT_REPORT_VERSION    1
+#endif
+
+#ifndef HEARTBEAT_REPORT_BOARD
 #define HEARTBEAT_REPORT_BOARD      1
+#endif
+
+#ifndef HEARTBEAT_REPORT_LOADAVG
+#define HEARTBEAT_REPORT_LOADAVG    1
+#endif
+
+#ifndef HEARTBEAT_REPORT_INTERVAL
 #define HEARTBEAT_REPORT_INTERVAL   0
+#endif
 
 //------------------------------------------------------------------------------
 // Load average
@@ -209,10 +265,6 @@
 
 #ifndef LOADAVG_INTERVAL
 #define LOADAVG_INTERVAL        30000           // Interval between calculating load average (in ms)
-#endif
-
-#ifndef LOADAVG_REPORT
-#define LOADAVG_REPORT          1               // Should we report Load average over MQTT?
 #endif
 
 //------------------------------------------------------------------------------
@@ -542,6 +594,10 @@
 #define OTA_PORT                    8266        // OTA port
 #endif
 
+#ifndef OTA_MQTT_SUPPORT
+#define OTA_MQTT_SUPPORT           0            // No support by default
+#endif
+
 #define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
 
 // -----------------------------------------------------------------------------
@@ -755,6 +811,7 @@
 #define MQTT_TOPIC_APP              "app"
 #define MQTT_TOPIC_INTERVAL         "interval"
 #define MQTT_TOPIC_HOSTNAME         "host"
+#define MQTT_TOPIC_DESCRIPTION      "desc"
 #define MQTT_TOPIC_TIME             "time"
 #define MQTT_TOPIC_RFOUT            "rfout"
 #define MQTT_TOPIC_RFIN             "rfin"
@@ -768,6 +825,7 @@
 #define MQTT_TOPIC_SPEED            "speed"
 #define MQTT_TOPIC_IRIN             "irin"
 #define MQTT_TOPIC_IROUT            "irout"
+#define MQTT_TOPIC_OTA              "ota"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
@@ -832,6 +890,10 @@
 
 #ifndef LIGHT_SAVE_ENABLED
 #define LIGHT_SAVE_ENABLED      1           // Light channel values saved by default after each change
+#endif
+
+#ifndef LIGHT_COMMS_DELAY
+#define LIGHT_COMMS_DELAY       100         // Delay communication after light update (in ms)
 #endif
 
 #ifndef LIGHT_SAVE_DELAY
@@ -1362,8 +1424,13 @@
 #define RF_PIN                      14
 #endif
 
+#ifndef RF_DEBOUNCE
 #define RF_DEBOUNCE                 500
+#endif
+
+#ifndef RF_LEARN_TIMEOUT
 #define RF_LEARN_TIMEOUT            60000
+#endif
 
 //--------------------------------------------------------------------------------
 // Custom RFM69 to MQTT bridge

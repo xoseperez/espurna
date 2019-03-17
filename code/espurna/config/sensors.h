@@ -135,37 +135,19 @@
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
 
 //------------------------------------------------------------------------------
-// VL53L1X
-// Enable support by passing VL53L1X_SUPPORT=1 build flag
+// BMP085/BMP180
+// Enable support by passing BMP180_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
-#ifndef VL53L1X_SUPPORT
-#define VL53L1X_SUPPORT                              0
+#ifndef BMP180_SUPPORT
+#define BMP180_SUPPORT                  0
 #endif
 
-#ifndef VL53L1X_I2C_ADDRESS
-#define VL53L1X_I2C_ADDRESS                          0x00          // 0x00 means auto
+#ifndef BMP180_ADDRESS
+#define BMP180_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
-#ifndef VL53L1X_DISTANCE_MODE
-#define VL53L1X_DISTANCE_MODE                        VL53L1X::Long // The distance mode of the sensor. Can be one of
-#endif                                                             // `VL53L1X::Short`, `VL53L1X::Medium`, or `VL53L1X::Long.
-                                                                   // Shorter distance modes are less affected by ambient light
-                                                                   // but have lower maximum ranges, especially in the dark.
-
-
-#ifndef VL53L1X_MEASUREMENT_TIMING_BUDGET
-#define VL53L1X_MEASUREMENT_TIMING_BUDGET            140000        // The time, in microseconds, allocated for a single
-                                                                   // measurement. A longer timing budget allows for more
-                                                                   // accurate at the cost of power. The minimum budget is
-                                                                   // 20 ms (20000 us) in short distance mode and 33 ms for
-                                                                   // medium and long distance modes.
-#endif
-
-#ifndef VL53L1X_INTER_MEASUREMENT_PERIOD
-#define VL53L1X_INTER_MEASUREMENT_PERIOD             50            // Period, in milliseconds, determining how
-#endif                                                             // often the sensor takes a measurement.
-
+#define BMP180_MODE                     3       // 0 for ultra-low power, 1 for standard, 2 for high resolution and 3 for ultrahigh resolution
 
 //------------------------------------------------------------------------------
 // BME280/BMP280
@@ -186,9 +168,27 @@
                                                 // 6 for 10ms, 7 for 20ms
 #define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 16bit/0.0050C resolution
+                                                // 0b010 = 2 = 2x 17bit/0.0025C
+                                                // 0b011 = 3 = 4x 18bit/0.0012C
+                                                // 0b100 = 4 = 8x 19bit/0.0006C
+                                                // 0b101 = 5 = 16x 20bit/0.0003C
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 0.07% resolution
+                                                // 0b010 = 2 = 2x 0.05%
+                                                // 0b011 = 3 = 4x 0.04%
+                                                // 0b100 = 4 = 8x 0.03%
+                                                // 0b101 = 5 = 16x 0.02%
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
-
+                                                // 0b000 = 0 = Skipped
+                                                // 0b001 = 1 = 1x 16bit/2.62 Pa resolution
+                                                // 0b010 = 2 = 2x 17bit/1.31 Pa
+                                                // 0b011 = 3 = 4x 18bit/0.66 Pa
+                                                // 0b100 = 4 = 8x 19bit/0.33 Pa
+                                                // 0b101 = 5 = 16x 20bit/0.16 Pa
+  
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
 // Enable support by passing DALLAS_SUPPORT=1 build flag
@@ -636,7 +636,9 @@
 #define PULSEMETER_INTERRUPT_ON         FALLING
 #endif
 
+#ifndef PULSEMETER_DEBOUNCE
 #define PULSEMETER_DEBOUNCE             50         // Do not register pulses within less than 50 millis
+#endif
 
 //------------------------------------------------------------------------------
 // PZEM004T based power monitor
@@ -817,6 +819,39 @@
 #define VEML6075_DYNAMIC_MODE             VEML6075::DYNAMIC_NORMAL  // The dynamic mode can either be normal or high. In high
 #endif                                                              // dynamic mode, the resolution increases by about two
                                                                     // times.
+//------------------------------------------------------------------------------
+// VL53L1X
+// Enable support by passing VL53L1X_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+
+#ifndef VL53L1X_SUPPORT
+#define VL53L1X_SUPPORT                              0
+#endif
+
+#ifndef VL53L1X_I2C_ADDRESS
+#define VL53L1X_I2C_ADDRESS                          0x00          // 0x00 means auto
+#endif
+
+#ifndef VL53L1X_DISTANCE_MODE
+#define VL53L1X_DISTANCE_MODE                        VL53L1X::Long // The distance mode of the sensor. Can be one of
+#endif                                                             // `VL53L1X::Short`, `VL53L1X::Medium`, or `VL53L1X::Long.
+                                                                   // Shorter distance modes are less affected by ambient light
+                                                                   // but have lower maximum ranges, especially in the dark.
+
+
+#ifndef VL53L1X_MEASUREMENT_TIMING_BUDGET
+#define VL53L1X_MEASUREMENT_TIMING_BUDGET            140000        // The time, in microseconds, allocated for a single
+                                                                   // measurement. A longer timing budget allows for more
+                                                                   // accurate at the cost of power. The minimum budget is
+                                                                   // 20 ms (20000 us) in short distance mode and 33 ms for
+                                                                   // medium and long distance modes.
+#endif
+
+#ifndef VL53L1X_INTER_MEASUREMENT_PERIOD
+#define VL53L1X_INTER_MEASUREMENT_PERIOD             50            // Period, in milliseconds, determining how
+#endif                                                             // often the sensor takes a measurement.
+
+//------------------------------------------------------------------------------
 // EZOPH pH meter
 // Enable support by passing EZOPH_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -846,6 +881,7 @@
     AM2320_SUPPORT || \
     ANALOG_SUPPORT || \
     BH1750_SUPPORT || \
+    BMP180_SUPPORT || \
     BMX280_SUPPORT || \
     CSE7766_SUPPORT || \
     DALLAS_SUPPORT || \
@@ -927,6 +963,10 @@
 
 #if BH1750_SUPPORT
     #include "../sensors/BH1750Sensor.h"
+#endif
+
+#if BMP180_SUPPORT
+    #include "../sensors/BMP180Sensor.h"
 #endif
 
 #if BMX280_SUPPORT

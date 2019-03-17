@@ -3,6 +3,147 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.13.6] Unreleased
+### Fixed
+
+### Added
+
+### Changed
+
+## [1.13.5] 2019-02-27
+### Fixed
+- Revert loopDelay dependency on wifi sleep mode (#1574)
+- Fix hardcoded serial objects in _debugSendSerial, terminalLoop and PZEM sensor (#1573)
+- Fix RFBridge not showing codes in web UI as per @mcspr suggested change (#1571)
+- Fix BSSIDs in scan output (#1567)
+- Fix PZEM004TSensor pointer use
+- RFBridge: fix webui codes parsing
+- Avoid websocket ping back on fw upgrade via web UI form (#1574)
+- Revert loopDelay dependency on wifi sleep mode
+- Removing line break before templated variable to fix issue with Windows Arduino IDE (#1579, thanks to @AlbertWeterings)
+- Send brightness to websocket
+
+### Added
+- Relay MQTT group receive-only sync mode setting
+- Set wifi sleep mode from settings
+- Add unique id and device support for better HA UI integration (#1547, thanks to @abmantis)
+- Improved inline documentation of BMX280 settings (#1585, thanks to CraigMarkwardt)
+
+## [1.13.4] 2019-02-21
+### Fixed
+- Travis fixes
+- IR results on raw mode (thanks to @vtochq)
+- Missing configuration in HTTP API (#1288)
+- NTP  sync changes (#1342)
+- Proper buffer size to fit two digit rfbOFF key (#1348)
+- Use correct arguments for stat on macOS (#1355, thanks to @jackwilson)
+- Enable `reload` command when no web support (#1383)
+- Wrong GPIO value for dummy relay (#1386)
+- Wait until mqtt client has finished trying to connect
+- Disable EEPROM Rotate before NoFUSS update (#1398, thanks to @arihantdaga)
+- Only check domoticz state in broker callback (#1562)
+- Fix upload_port and upload_args
+- Fix heartbeat dropdown size
+- Setup settings before using them in system module (#1542)
+- Fix HEARTBEAT_REPORT_DESCRIPTION typo (#1539)
+- Fix wsDebugSend prototype
+- Fix pulse for dummy relays (#1496, thanks to @Niek)
+- Fix RFBridge websocket data
+- Only process Domoticz RGB MQTT Messages for the current idx (#1489, thanks to @soif)
+- Fix pulse for dummy relays
+- Fix compile error when both RF_SUPPORT and API_SUPPORT are enabled (#1479, thanks to @Niek)
+- Fix compile error when TERMINAL_SUPPORT is disabled (#1426)
+- Fix compile error when RF_SUPPORT is enabled (#1475)
+- Fix CodingStyle link (#1473)
+- Fix: Add Debug flag for compilation of wifiDebug() function (#1454)
+- Fix bug in RFM69 that counted packets twice
+- Escape hyphens in img.shields.io urls
+- Fix travis builds based on latest core
+- Increase buffer size to fit B0 code (#1423)
+- Fix function call typo in RF code (#1421)
+- Fix RF code conversion to long (#1410)
+
+### Added
+- Support for MAXCIO W-DE003 device (thanks to @kerk1v)
+- Support for Tonbux XS-SSA01 device (thanks to @StevenWolfe)
+- Support for Blitzwolf BW-SHP2 v2.3 (#1351)
+- Support for Tecking SP22 v1.4+
+- Support for Lombez Lux Nova 2 smart bulbs (thanks to @kcghost)
+- Support for Orvibo B25 (#1402, thanks to @plutec)
+- Support for GBLife RGBW Socket (#1305)
+- Support for Generic Relay ESP01 V4.0 in inverse relay version (#1504, #1554)
+- Support for Gosund WS1 aka KS-602S (#1551, thanks to @nsvrana)
+- Support for Oukitel P1 smart switch (#1553, thanks to @quinnsam)
+- Support for Lyasi light bulb (#1533, thanks to Eichhoernchen)
+- Support for RGB(WW) controlled using Domoticz MQTT messages (#1459, thanks to @sq5gvm)
+- Support for newer AL-LC02 boards with different pinout (#1469, thanks to @sq5gvm)
+- Support for SmartLife Mini Smart Socket RGB (thanks to @kuppe234, #1411)
+- Support for Gosund SP1 v2.3 (#1448)
+- Support for OBI Wifi Schuko Plug V2 (#1408, thanks to @arthurf1969)
+- Support for pulse meter power sensor for new-generation smart-meters
+- Support for VL53L1X ToF sensor (thanks to @ruimarinho)
+- Support for VEML6075 UV sensor (thanks to @ruimarinho)
+- Support for EZO pH Circuit sensor (thanks to @ruimarinho)
+- Support for MAX6675 temperature sensor (#1375, thanks to @lucciano)
+- Support for MagicHome ZJ WFMN A/B v1.1 (#1339)
+- Support for multiple PZEM004T sensors (thanks to @0x3333)
+- Support for Support PMS5003S (#1511, thanks to @Yonsm)
+- Support for pulse meter power sensor for new-generation smart-meters (including debouncing and energy ratio support by @jackwilson)
+- Support for BMP085 and BMP180 sensors (#1082)
+- Add dim up and down actions to button handler (#1250)
+- Compact WS data (#1387)
+- Improved analog sensor (#1326, thanks to @cconde)
+- Report SSID in heartbeat messages
+- Option to send full data to thinkgspeak on every message (#1369)
+- Added RSSI to InfluxDB heartbeat (#1400, tahnks to @BuildTheRobots)
+- Option to report time even if no NTP sync (#1310)
+- Support for mixed combination of real and dummy relays (#1305)
+- Report target color values on MQTT and API
+- Note on WiFi tab about hostname (#1555)
+- Allow saving heartbeat settings from web (#1538)
+- Build images for Sonoff Basic R2 with DHT and DALLAS support
+- Add warning about TELNET_PASSWORD
+- Domoticz: track last relay state (#1536)
+- Adding description field to web UI, reporting it via MQTT (#1523)
+- ESP-01 + 2ch 5v relay LC tech Exclusive relay on (#1519, thanks to @clabnet)
+- Add OTA support over MQTT (#1424, thanks to @Niek)
+- Configure Heartbeat from WebUI & option HEARTBEAT_REPEAT_STATUS (#1474, thanks to martiera)
+- Delay light comms (mqtt, ws, broker) to avoid jamming
+- Added message type to broker
+- Yield() after handling OTA request
+- Disconnect websocket when auth fails
+- Manage relay changes in third party modules via broker
+- Added API entry points for RFBridge module (#1407)
+- Domoticz over MQTT to Espurna RGB/RGBW/RGBWW
+- Debug check position to make sure definition is not nullified to avoid putting checks in all places
+- MQTT reconnect delay based on last disconnection
+- Add terminal support for wifiDebug
+- Created contribute.md and support.md files
+- Created issue templates
+- Runtime heartbeat configuration (#1406)
+- APP_VERSION suffix (#1418)
+- Allow {hostname} and {mac} placeholder for mqtt user and client_id fields (#1338)
+- Split ws messages for relays and rf codes (#262)
+- Added learn and forget terminal commands to RFBridge and RF modules (#1253)
+- Change light transition time via MQTT or API (#1412)
+
+### Changed
+- Telnet password requirements (#1382)
+- Separate tab for NoFUSS options (#1404)
+- Updated to use gulp4 (#1403)
+- Updated to EEPROM_Rotate 0.9.2
+- Show proper switches names in web UI
+- Removing loop delay if WIFI is not set to sleep, reducing it to 1ms otherwise (#1541)
+- Change naming for BlitzWolf SHP2 and SHP6 (now SHPX) boards
+- Print each HA config entry separately (#1535)
+- Updated DebounceEvent to 2.0.5 (#1527, #1254)
+- Python cleanup (@1526, thanks to Cabalist)
+- Normalize naming for Arilux AL LC02 v14
+- Increase version field size in OTA manager
+- Merge RF and RFBridge code (#1435, thanks to @Niek)
+- Update to fauxmoESP 3.1.0
+- Move crash code to it's own module
+
 ## [1.13.3] 2018-10-08
 ### Fixed
 - Honour build time settings for MQTT on fresh install (#719)

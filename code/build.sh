@@ -19,14 +19,25 @@ stat_bytes() {
 # Script settings
 
 destination=../firmware
-version=$(grep APP_VERSION espurna/config/version.h | awk '{print $3}' | sed 's/"//g')
+version_file=espurna/config/version.h
+version=$(grep -E '^#define APP_VERSION' $version_file | awk '{print $3}' | sed 's/"//g')
 
-if is_git; then
+if ${TRAVIS:-false}; then
+    git_revision=${TRAVIS_COMMIT::7}
+    git_tag=${TRAVIS_TAG}
+elif is_git; then
     git_revision=$(git rev-parse --short HEAD)
-    git_version=${version}-${git_revision}
+    git_tag=$(git tag --contains HEAD)
 else
-    git_revision=
-    git_version=$version
+    git_revision=unknown
+    git_tag=
+fi
+
+if [[ -n $git_tag ]]; then
+    new_version=${version/-*}
+    sed -i -e "s@$version@$new_version@" $version_file
+    version=$new_version
+    trap "git checkout -- $version_file" EXIT
 fi
 
 par_build=false
@@ -139,7 +150,7 @@ shift $((OPTIND-1))
 # Welcome
 echo "--------------------------------------------------------------"
 echo "ESPURNA FIRMWARE BUILDER"
-echo "Building for version ${git_version}"
+echo "Building for version ${version}" ${git_revision:+($git_revision)}
 
 # Environments to build
 environments=$@

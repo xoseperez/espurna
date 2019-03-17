@@ -4,6 +4,15 @@
 //------------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
+// BROKER
+// -----------------------------------------------------------------------------
+
+#define BROKER_MSG_TYPE_SYSTEM      0
+#define BROKER_MSG_TYPE_DATETIME    1
+#define BROKER_MSG_TYPE_STATUS      2
+#define BROKER_MSG_TYPE_SENSOR      3
+
+// -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
 
@@ -39,6 +48,9 @@
 #define BUTTON_MODE_FACTORY         7
 #define BUTTON_MODE_WPS             8
 #define BUTTON_MODE_SMART_CONFIG    9
+#define BUTTON_MODE_DIM_UP          10
+#define BUTTON_MODE_DIM_DOWN        11
+
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON
@@ -83,6 +95,10 @@
 #define RELAY_PROVIDER_LIGHT        2
 #define RELAY_PROVIDER_RFBRIDGE     3
 #define RELAY_PROVIDER_STM          4
+
+#define RELAY_GROUP_SYNC_NORMAL      0
+#define RELAY_GROUP_SYNC_INVERSE     1
+#define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG
@@ -283,6 +299,8 @@
 #define SENSOR_VEML6075_ID          31
 #define SENSOR_VL53L1X_ID           32
 #define SENSOR_EZOPH_ID             33
+#define SENSOR_BMP180_ID            34
+#define SENSOR_MAX6675_ID           35
 
 //--------------------------------------------------------------------------------
 // Magnitudes

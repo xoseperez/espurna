@@ -351,6 +351,20 @@ void i2cScan() {
     if (nDevices == 0) DEBUG_MSG_P(PSTR("[I2C] No devices found\n"));
 }
 
+void i2cCommands() {
+
+    terminalRegisterCommand(F("I2C.SCAN"), [](Embedis* e) {
+        i2cScan();
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("I2C.CLEAR"), [](Embedis* e) {
+        i2cClearBus();
+        terminalOK();
+    });
+
+}
+
 void i2cSetup() {
 
     unsigned char sda = getSetting("i2cSDA", I2C_SDA_PIN).toInt();
@@ -365,6 +379,10 @@ void i2cSetup() {
     #endif
 
     DEBUG_MSG_P(PSTR("[I2C] Using GPIO%u for SDA and GPIO%u for SCL\n"), sda, scl);
+
+    #if TERMINAL_SUPPORT
+        i2cCommands();
+    #endif
 
     #if I2C_CLEAR_BUS
         i2cClearBus();

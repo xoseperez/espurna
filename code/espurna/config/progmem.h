@@ -97,7 +97,7 @@ PROGMEM const char espurna_modules[] =
     #if RFM69_SUPPORT
         "RFM69 "
     #endif
-    #if RF_SUPPORT
+    #if RF_SUPPORT || defined(ITEAD_SONOFF_RFBRIDGE)
         "RF "
     #endif
     #if SCHEDULER_SUPPORT
@@ -144,6 +144,9 @@ PROGMEM const char espurna_sensors[] =
     #endif
     #if BH1750_SUPPORT
         "BH1750 "
+    #endif
+    #if BMP180_SUPPORT
+        "BMP180 "
     #endif
     #if BMX280_SUPPORT
         "BMX280 "
