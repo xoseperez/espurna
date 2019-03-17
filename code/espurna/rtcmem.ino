@@ -26,14 +26,14 @@ bool _rtcmemStatus() {
 #if TERMINAL_SUPPORT
 
 void _rtcmemInitCommands() {
-    settingsRegisterCommand(F("RTCMEM.REINIT"), [](Embedis* e) {
+    terminalRegisterCommand(F("RTCMEM.REINIT"), [](Embedis* e) {
         _rtcmemInit();
     });
 
-    settingsRegisterCommand(F("RTCMEM.TEST"), [](Embedis* e) {
+    terminalRegisterCommand(F("RTCMEM.TEST"), [](Embedis* e) {
     });
 
-    settingsRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
+    terminalRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
         DEBUG_MSG_P(PSTR("[RTCMEM] status:%u blocks:%u addr:0x%p\n"),
             _rtcmemStatus(), RtcmemSize, Rtcmem);
 
