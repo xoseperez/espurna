@@ -123,7 +123,7 @@
     #define RELAY1_PIN          5
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // Light RGBW 
+    // Light RGBW
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
@@ -911,10 +911,26 @@
     #define BUTTON2_PIN             9
     #define BUTTON3_PIN             10
     #define BUTTON4_PIN             14
+
     #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON2_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON3_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON4_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_RELAY       2
+    #define BUTTON3_RELAY       3
+    #define BUTTON4_RELAY       4
+
+    #define BUTTON1_PRESS       BUTTON_MODE_NONE
+    #define BUTTON1_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON1_LNGCLICK    BUTTON_MODE_OFF
+    #define BUTTON2_PRESS       BUTTON_MODE_NONE
+    #define BUTTON2_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON3_PRESS       BUTTON_MODE_NONE
+    #define BUTTON3_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON4_PRESS       BUTTON_MODE_NONE
+    #define BUTTON4_CLICK       BUTTON_MODE_TOGGLE
 
     // Relays
     #define RELAY1_PIN              12
@@ -929,6 +945,9 @@
     // LEDs
     #define LED1_PIN                13
     #define LED1_PIN_INVERSE        1
+    // Hack: drive GPIO2 low
+    #define LED2_PIN            2 /* DUMMY: exploit default off state for GPIO2=low */
+    #define LED2_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // ORVIBO
@@ -3147,7 +3166,6 @@
     #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_RESET
 
     // Light
-    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
     #define LIGHT_STEP          8
@@ -3302,9 +3320,9 @@
 
     // Relays
     #define RELAY1_PIN          15
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL 
- 
-    // Light RGBW 
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Light RGBW
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
@@ -3317,8 +3335,8 @@
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0	
-    
+    #define LIGHT_CH4_INVERSE   0
+
 // ----------------------------------------------------------------------------------------
 //  Smart life Mini Smart Socket is similar Homecube 16A but some GPIOs differ
 //  https://www.ebay.de/itm/Smart-Steckdose-WIFI-WLAN-Amazon-Alexa-Fernbedienung-Home-Socket-Zeitschaltuh-DE/123352026749?hash=item1cb85a8e7d:g:IasAAOSwk6dbj390
@@ -3524,7 +3542,7 @@
     #define LED1_PIN            4  // 4 blue led
     #define LED1_MODE           LED_MODE_WIFI
     #define LED1_PIN_INVERSE    1
-    
+
     #define LED2_PIN            5  // 5 red led
     #define LED2_MODE           LED_MODE_RELAY
     #define LED2_PIN_INVERSE    1

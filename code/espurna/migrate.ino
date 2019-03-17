@@ -1057,15 +1057,18 @@ void migrate() {
         #elif defined(ITEAD_SONOFF_IFAN02)
 
             setSetting("board", 81);
-
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledGPIO", 1, 2);
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledLogic", 1, 0);
             setSetting("btnGPIO", 0, 0);
             setSetting("btnGPIO", 1, 9);
             setSetting("btnGPIO", 2, 10);
             setSetting("btnGPIO", 3, 14);
-
-            setSetting("ledGPIO", 1, 13);
-            setSetting("ledLogic", 1, 1);
-
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+            setSetting("btnRelay", 2, 2);
+            setSetting("btnRelay", 3, 3);
             setSetting("relayGPIO", 0, 12);
             setSetting("relayGPIO", 1, 5);
             setSetting("relayGPIO", 2, 4);

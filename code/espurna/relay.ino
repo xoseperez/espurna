@@ -123,7 +123,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
             lightUpdate(true, true);
             return;
-        
+
         }
 
     #endif
@@ -238,6 +238,19 @@ void setSpeed(unsigned char speed) {
             relayStatus(i+1, states & 1 == 1);
             states >>= 1;
         }
+    }
+}
+
+unsigned char getLight() {
+    unsigned char light = (_relays[0].target_status ? 1 : 0);
+    return light;
+}
+
+void setLight(unsigned char light) {
+    if ((0 <= light) & (light <= 1)) {
+        if (getLight() == light) return;
+        unsigned char states = light;
+        relayStatus(0, states & 1 == 1);
     }
 }
 
@@ -801,6 +814,15 @@ void relaySetupAPI() {
                 }
             );
 
+            apiRegister(MQTT_TOPIC_LIGHT,
+                [relayID](char * buffer, size_t len) {
+                    snprintf(buffer, len, "%u", getLight());
+                },
+                [relayID](const char * payload) {
+                    setLight(atoi(payload));
+                }
+            );
+
         #endif
 
     }
@@ -848,6 +870,8 @@ void relayMQTT(unsigned char id) {
         char buffer[5];
         snprintf(buffer, sizeof(buffer), "%u", getSpeed());
         mqttSend(MQTT_TOPIC_SPEED, buffer);
+        snprintf(buffer, sizeof(buffer), "%u", getLight());
+        mqttSend(MQTT_TOPIC_LIGHT, buffer);
     #endif
 
 }
@@ -897,6 +921,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
         #if defined(ITEAD_SONOFF_IFAN02)
             mqttSubscribe(MQTT_TOPIC_SPEED);
+            mqttSubscribe(MQTT_TOPIC_LIGHT);
         #endif
 
         // Subscribe to group topics
@@ -982,6 +1007,9 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
         #if defined (ITEAD_SONOFF_IFAN02)
             if (t.startsWith(MQTT_TOPIC_SPEED)) {
                 setSpeed(atoi(payload));
+            }
+            if (t.startsWith(MQTT_TOPIC_LIGHT)) {
+                setLight(atoi(payload));
             }
         #endif
 
