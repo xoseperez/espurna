@@ -280,7 +280,7 @@ class CSE7766Sensor : public BaseSensor {
 			unsigned int active = _active;
 			unsigned int apparent = _voltage * _current;
             if (apparent > active) {
-                _reactive = (apparent * apparent - active * active);
+                _reactive = sqrt(apparent * apparent - active * active);
             } else {
                 _reactive = 0;
             }
