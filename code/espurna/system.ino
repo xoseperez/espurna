@@ -31,13 +31,13 @@ union system_rtcmem_t {
     uint32_t value;
 };
 
-uint8_t _systemStabilityCounter() {
+uint8_t systemStabilityCounter() {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
     return data.parts.stability_counter;
 }
 
-void _systemStabilityCounter(uint8_t counter) {
+void systemStabilityCounter(uint8_t counter) {
     system_rtcmem_t data;
     data.value = Rtcmem->sys;
     data.parts.stability_counter = counter;
@@ -76,11 +76,11 @@ void systemCheck(bool stable) {
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
     } else {
         if (!rtcmemStatus()) {
-            _systemStabilityCounter(1);
+            systemStabilityCounter(1);
             return;
         }
 
-        value = _systemStabilityCounter();
+        value = systemStabilityCounter();
 
         if (++value > SYSTEM_CHECK_MAX) {
             _systemStable = false;
@@ -89,7 +89,7 @@ void systemCheck(bool stable) {
         }
     }
 
-    _systemStabilityCounter(value);
+    systemStabilityCounter(value);
 }
 
 bool systemCheck() {

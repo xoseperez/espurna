@@ -9,7 +9,13 @@ extern "C" {
     extern struct rst_info resetInfo;
 }
 
+// -----------------------------------------------------------------------------
+// System
+// -----------------------------------------------------------------------------
+
 uint32_t systemResetReason();
+uint8_t systemStabilityCounter();
+void systemStabilityCounter(uint8_t);
 
 // -----------------------------------------------------------------------------
 // API

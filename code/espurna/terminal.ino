@@ -178,7 +178,7 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
-        _rtcmemStabilityCounter(SYSTEM_CHECK_MAX);
+        systemStabilityCounter(SYSTEM_CHECK_MAX);
         terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });
