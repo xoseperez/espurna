@@ -479,8 +479,13 @@ union rtcmem_light_t {
     uint64_t value;
 };
 
+#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(rtcmem_light_t().packed.channels)
+
 void _rtcmemLightSave() {
+    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+
     rtcmem_light_t light;
+
     for (unsigned int i=0; i < lightChannels(); i++) {
         light.packed.channels[i] = _light_channel[i].inputValue;
     }
@@ -492,6 +497,8 @@ void _rtcmemLightSave() {
 }
 
 void _rtcmemLightRestore() {
+    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+
     rtcmem_light_t light;
     light.value = Rtcmem->light;
 
