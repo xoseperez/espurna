@@ -470,7 +470,7 @@ void _lightProviderUpdate() {
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
-union rtcmem_light_t {
+union light_rtcmem_t {
     struct {
         uint8_t channels[5];
         uint8_t brightness;
@@ -479,12 +479,12 @@ union rtcmem_light_t {
     uint64_t value;
 };
 
-#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(rtcmem_light_t().packed.channels)
+#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(light_rtcmem_t().packed.channels)
 
-void _rtcmemLightSave() {
+void _lightSaveRtcmem() {
     if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
 
-    rtcmem_light_t light;
+    light_rtcmem_t light;
 
     for (unsigned int i=0; i < lightChannels(); i++) {
         light.packed.channels[i] = _light_channel[i].inputValue;
@@ -496,10 +496,10 @@ void _rtcmemLightSave() {
     Rtcmem->light = light.value;
 }
 
-void _rtcmemLightRestore() {
+void _lightRestoreRtcmem() {
     if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
 
-    rtcmem_light_t light;
+    light_rtcmem_t light;
     light.value = Rtcmem->light;
 
     for (unsigned int i=0; i < lightChannels(); i++) {
@@ -510,7 +510,7 @@ void _rtcmemLightRestore() {
     _light_mireds = light.packed.mired;
 }
 
-void _lightColorSave() {
+void _lightSaveSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         setSetting("ch", i, _light_channel[i].inputValue);
     }
@@ -519,7 +519,7 @@ void _lightColorSave() {
     saveSettings();
 }
 
-void _lightColorRestore() {
+void _lightRestoreSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         _light_channel[i].inputValue = getSetting("ch", i, i==0 ? 255 : 0).toInt();
     }
@@ -739,11 +739,11 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     if (group_forward) mask += 2;
     _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
 
-    _rtcmemLightSave();
+    _lightSaveRtcmem();
 
     #if LIGHT_SAVE_ENABLED
         // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightColorSave);
+        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightSaveSettings);
     #endif
 
 };
@@ -754,7 +754,7 @@ void lightUpdate(bool save, bool forward) {
 
 #if LIGHT_SAVE_ENABLED == 0
 void lightSave() {
-    _lightColorSave();
+    _lightSaveSettings();
 }
 #endif
 
@@ -1209,9 +1209,9 @@ void lightSetup() {
 
     _lightConfigure();
     if (rtcmemStatus()) {
-        _rtcmemLightRestore();
+        _lightRestoreRtcmem();
     } else {
-        _lightColorRestore();
+        _lightRestoreSettings();
     }
 
     #if WEB_SUPPORT

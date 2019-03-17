@@ -247,11 +247,11 @@ void setSpeed(unsigned char speed) {
 // RELAY
 // -----------------------------------------------------------------------------
 
-void _rtcmemRelayState(uint32_t mask) {
+void _relayMaskRtcmem(uint32_t mask) {
     Rtcmem->relay = mask;
 }
 
-uint32_t _rtcmemRelayState() {
+uint32_t _relayMaskRtcmem() {
     return Rtcmem->relay;
 }
 
@@ -417,7 +417,7 @@ void relaySave(bool eeprom) {
     DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %u\n"), mask_value);
 
     // Persist only to rtcmem, unless requested to save to the eeprom
-    _rtcmemRelayState(mask_value);
+    _relayMaskRtcmem(mask_value);
 
     // The 'eeprom' flag controls wether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
@@ -428,7 +428,7 @@ void relaySave(bool eeprom) {
     if (eeprom) {
         EEPROMr.write(EEPROM_RELAY_STATUS, mask_value);
         // We are actually enqueuing the commit so it will be
-        // executed on the main loop, in case this is called from a callback
+        // executed on the main loop, in case this is called from a system context callback
         eepromCommit();
     }
 
@@ -518,7 +518,7 @@ void _relayBoot() {
     uint32_t stored_mask = 0;
 
     if (rtcmemStatus()) {
-        stored_mask = _rtcmemRelayState();
+        stored_mask = _relayMaskRtcmem();
     } else {
         stored_mask = EEPROMr.read(EEPROM_RELAY_STATUS);
     }
@@ -567,7 +567,7 @@ void _relayBoot() {
 
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
-        _rtcmemRelayState(mask.to_ulong());
+        _relayMaskRtcmem(mask.to_ulong());
 
         EEPROMr.write(EEPROM_RELAY_STATUS, mask.to_ulong());
         eepromCommit();

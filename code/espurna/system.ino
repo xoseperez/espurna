@@ -22,7 +22,7 @@ unsigned short int _load_average = 100;
 
 // -----------------------------------------------------------------------------
 
-union sys_rtcmem_data_t {
+union system_rtcmem_t {
     struct {
         uint8_t stability_counter;
         uint8_t reset_reason;
@@ -31,27 +31,27 @@ union sys_rtcmem_data_t {
     uint32_t value;
 };
 
-uint8_t _rtcmemStabilityCounter() {
-    sys_rtcmem_data_t data;
+uint8_t _systemStabilityCounter() {
+    system_rtcmem_t data;
     data.value = Rtcmem->sys;
     return data.parts.stability_counter;
 }
 
-void _rtcmemStabilityCounter(uint8_t counter) {
-    sys_rtcmem_data_t data;
+void _systemStabilityCounter(uint8_t counter) {
+    system_rtcmem_t data;
     data.value = Rtcmem->sys;
     data.parts.stability_counter = counter;
     Rtcmem->sys = data.value;
 }
 
-uint8_t _rtcmemResetReason() {
-    sys_rtcmem_data_t data;
+uint8_t _systemResetReason() {
+    system_rtcmem_t data;
     data.value = Rtcmem->sys;
     return data.parts.reset_reason;
 }
 
-void _rtcmemResetReason(uint8_t reason) {
-    sys_rtcmem_data_t data;
+void _systemResetReason(uint8_t reason) {
+    system_rtcmem_t data;
     data.value = Rtcmem->sys;
     data.parts.reset_reason = reason;
     Rtcmem->sys = data.value;
@@ -76,11 +76,11 @@ void systemCheck(bool stable) {
         DEBUG_MSG_P(PSTR("[MAIN] System OK\n"));
     } else {
         if (!rtcmemStatus()) {
-            _rtcmemStabilityCounter(1);
+            _systemStabilityCounter(1);
             return;
         }
 
-        value = _rtcmemStabilityCounter();
+        value = _systemStabilityCounter();
 
         if (++value > SYSTEM_CHECK_MAX) {
             _systemStable = false;
@@ -89,7 +89,7 @@ void systemCheck(bool stable) {
         }
     }
 
-    _rtcmemStabilityCounter(value);
+    _systemStabilityCounter(value);
 }
 
 bool systemCheck() {
@@ -120,13 +120,13 @@ uint32_t systemResetReason() {
 
 void customResetReason(unsigned char reason) {
     _reset_reason = reason;
-    _rtcmemResetReason(reason);
+    _systemResetReason(reason);
 }
 
 unsigned char customResetReason() {
     static unsigned char status = 255;
     if (status == 255) {
-        if (rtcmemStatus()) status = _rtcmemResetReason();
+        if (rtcmemStatus()) status = _systemResetReason();
         if (status > 0) customResetReason(0);
         if (status > CUSTOM_RESET_MAX) status = 0;
     }
