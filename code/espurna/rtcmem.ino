@@ -7,13 +7,14 @@ void _rtcmemInit() {
 
 // Treat memory as dirty on cold boot, hardware wdt reset and rst pin
 bool _rtcmemStatus() {
-    bool readable = true;
+    bool readable;
 
     switch (systemResetReason()) {
         case REASON_EXT_SYS_RST:
         case REASON_WDT_RST:
         case REASON_DEFAULT_RST:
             readable = false;
+            break;
         default:
             readable = true;
     }
