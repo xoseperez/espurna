@@ -19,6 +19,7 @@ public:
     bool setInterval(int shortInterval, int longInterval) {
         _shortInterval = shortInterval;
         _longInterval = longInterval;
+        return true;
     }
 
 };
