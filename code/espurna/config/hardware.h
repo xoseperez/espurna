@@ -125,7 +125,7 @@
     #define RELAY1_PIN          5
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
-    // Light RGBW 
+    // LED
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 

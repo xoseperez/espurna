@@ -249,7 +249,7 @@ function addValue(data, name, value) {
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
-        "ledMode",
+        "ledMode", "ledRelay",
         "adminPass",
         "node", "key", "topic"
     ];
@@ -974,6 +974,27 @@ function initRelayConfig(data) {
 // Sensors & Magnitudes
 // -----------------------------------------------------------------------------
 
+function initLeds(data) {
+
+    var current = $("#ledConfig > div").length;
+    if (current > 0) { return; }
+
+    var size = data.length;
+    var template = $("#ledConfigTemplate").children();
+    for (var i=0; i<size; ++i) {
+        var line = $(template).clone();
+        $("span.id", line).html(i);
+        $("select", line).attr("data", i);
+        $("input", line).attr("data", i);
+        line.appendTo("#ledConfig");
+    }
+
+}
+
+// -----------------------------------------------------------------------------
+// Sensors & Magnitudes
+// -----------------------------------------------------------------------------
+
 <!-- removeIf(!sensor)-->
 function initMagnitudes(data) {
 
@@ -1490,6 +1511,19 @@ function processData(data) {
         // Relay configuration
         if ("relayConfig" === key) {
             initRelayConfig(value);
+            return;
+        }
+
+        // ---------------------------------------------------------------------
+        // LEDs
+        // ---------------------------------------------------------------------
+
+        if ("ledConfig" === key) {
+            initLeds(value);
+            for (var i=0; i<value.length; ++i) {
+                $("select[name='ledMode'][data='" + i + "']", line).val(value[i].mode);
+                $("input[name='ledRelay'][data='" + i + "']", line).val(value[i].relay);
+            }
             return;
         }
 

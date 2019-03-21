@@ -51,6 +51,16 @@ void _ledMode(unsigned char id, unsigned char mode) {
     _leds[id].mode = mode;
 }
 
+unsigned char _ledRelay(unsigned char id) {
+    if (id >= _ledCount()) return false;
+    return _leds[id].relay;
+}
+
+void _ledRelay(unsigned char id, unsigned char relay) {
+    if (id >= _ledCount()) return;
+    _leds[id].relay = relay;
+}
+
 void _ledBlink(unsigned char id, unsigned long delayOff, unsigned long delayOn) {
     if (id >= _ledCount()) return;
     static unsigned long next = millis();
@@ -68,7 +78,12 @@ bool _ledWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _ledWebSocketOnSend(JsonObject& root) {
     if (_ledCount() == 0) return;
     root["ledVisible"] = 1;
-    root["ledMode0"] = _ledMode(0);
+    JsonArray& leds = root.createNestedArray("ledConfig");
+    for (byte i=0; i<_ledCount(); i++) {
+        JsonObject& led = leds.createNestedObject();
+        led["mode"] = getSetting("ledMode", i, "").toInt();
+        led["relay"] = getSetting("ledRelay", i, "").toInt();
+    }
 }
 
 #endif
@@ -133,6 +148,7 @@ unsigned char _ledCount() {
 void _ledConfigure() {
     for (unsigned int i=0; i < _leds.size(); i++) {
         _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
+        _ledRelay(i, getSetting("ledRelay", i, _ledRelay(i)).toInt());
     }
     _led_update = true;
 }
@@ -146,32 +162,34 @@ void ledUpdate(bool value) {
 void ledSetup() {
 
     #if LED1_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE, LED1_RELAY });
+        _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE, LED1_RELAY - 1 });
     #endif
     #if LED2_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE, LED2_RELAY });
+        _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE, LED2_RELAY - 1 });
     #endif
     #if LED3_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE, LED3_RELAY });
+        _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE, LED3_RELAY - 1 });
     #endif
     #if LED4_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY });
+        _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE, LED4_RELAY - 1 });
     #endif
     #if LED5_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY });
+        _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE, LED5_RELAY - 1 });
     #endif
     #if LED6_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY });
+        _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE, LED6_RELAY - 1 });
     #endif
     #if LED7_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY });
+        _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE, LED7_RELAY - 1 });
     #endif
     #if LED8_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY });
+        _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE, LED8_RELAY - 1 });
     #endif
 
     for (unsigned int i=0; i < _leds.size(); i++) {
         pinMode(_leds[i].pin, OUTPUT);
+        setSetting("ledMode", i, _leds[i].mode);
+        setSetting("ledRelay", i, _leds[i].relay);
         _ledStatus(i, false);
     }
 
@@ -225,13 +243,13 @@ void ledLoop() {
             if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
                 _ledBlink(i, 100, 100);
             } else if (wifi_state & WIFI_STATE_STA) {
-                if (relayStatus(_leds[i].relay-1)) {
+                if (relayStatus(_leds[i].relay)) {
                     _ledBlink(i, 4900, 100);
                 } else {
                     _ledBlink(i, 100, 4900);
                 }
             } else if (wifi_state & WIFI_STATE_AP) {
-                if (relayStatus(_leds[i].relay-1)) {
+                if (relayStatus(_leds[i].relay)) {
                     _ledBlink(i, 900, 100);
                 } else {
                     _ledBlink(i, 100, 900);
@@ -247,13 +265,13 @@ void ledLoop() {
             if (wifi_state & WIFI_STATE_WPS || wifi_state & WIFI_STATE_SMARTCONFIG) {
                 _ledBlink(i, 100, 100);
             } else if (wifi_state & WIFI_STATE_STA) {
-                if (relayStatus(_leds[i].relay-1)) {
+                if (relayStatus(_leds[i].relay)) {
                     _ledBlink(i, 100, 4900);
                 } else {
                     _ledBlink(i, 4900, 100);
                 }
             } else if (wifi_state & WIFI_STATE_AP) {
-                if (relayStatus(_leds[i].relay-1)) {
+                if (relayStatus(_leds[i].relay)) {
                     _ledBlink(i, 100, 900);
                 } else {
                     _ledBlink(i, 900, 100);
@@ -268,11 +286,11 @@ void ledLoop() {
         if (!_led_update) continue;
 
         if (_ledMode(i) == LED_MODE_FOLLOW) {
-            _ledStatus(i, relayStatus(_leds[i].relay-1));
+            _ledStatus(i, relayStatus(_leds[i].relay));
         }
 
         if (_ledMode(i) == LED_MODE_FOLLOW_INVERSE) {
-            _ledStatus(i, !relayStatus(_leds[i].relay-1));
+            _ledStatus(i, !relayStatus(_leds[i].relay));
         }
 
         if (_ledMode(i) == LED_MODE_FINDME) {
