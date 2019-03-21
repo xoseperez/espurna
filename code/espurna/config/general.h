@@ -356,6 +356,10 @@
 #define RELAY_SAVE_DELAY            1000
 #endif
 
+#ifndef RELAY_REPORT_STATUS
+#define RELAY_REPORT_STATUS         1
+#endif
+
 // Configure the MQTT payload for ON/OFF
 #ifndef RELAY_MQTT_ON
 #define RELAY_MQTT_ON               "1"

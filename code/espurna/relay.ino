@@ -339,7 +339,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    return relayStatus(id, status, true, true);
+    return relayStatus(id, status, RELAY_REPORT_STATUS, true);
 }
 
 bool relayStatus(unsigned char id) {
