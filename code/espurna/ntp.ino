@@ -50,20 +50,14 @@ void _ntpWantSync() {
     _ntp_want_sync = true;
 }
 
-int _ntpSyncInterval() {
+// Randomized in time to avoid clogging the server with simultaious requests from multiple devices
+// (for example, when multiple devices start up at the same time)
+int inline _ntpSyncInterval() {
     return secureRandom(NTP_SYNC_INTERVAL, NTP_SYNC_INTERVAL * 2);
 }
 
-int _ntpUpdateInterval() {
+int inline _ntpUpdateInterval() {
     return secureRandom(NTP_UPDATE_INTERVAL, NTP_UPDATE_INTERVAL * 2);
-}
-
-void inline _ntpSetSyncInterval(bool shortInterval = false) {
-    if (shortInterval) {
-        setSyncInterval(_ntpSyncInterval());
-    } else {
-        setSyncInterval(_ntpUpdateInterval());
-    }
 }
 
 void _ntpStart() {
@@ -79,7 +73,8 @@ void _ntpStart() {
     // Avoid triggering sync immediatly by canceling sync provider flag and resetting sync interval again
     setSyncProvider(_ntpSyncProvider);
     _ntp_want_sync = false;
-    _ntpSetSyncInterval(true);
+
+    setSyncInterval(NTPw.getShortInterval());
 
 }
 
@@ -110,9 +105,6 @@ void _ntpConfigure() {
 
     uint8_t dst_region = getSetting("ntpRegion", NTP_DST_REGION).toInt();
     NTPw.setDSTZone(dst_region);
-
-    // Set short interval to sync again shortly, randomized in time to avoid clogging the server with simultaious requests from multiple devices (i.e. on power surge, when devices start up at the same time)
-    setSyncInterval(true);
 
     // Some remote servers can be slow to respond, increase accordingly
     // TODO does this need upper constrain?
