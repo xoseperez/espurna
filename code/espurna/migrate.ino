@@ -986,7 +986,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(ESTINK_WIFI_POWER_STRIP)
+        #elif defined(FORNORM_ZLD_34EU)
 
             setSetting("board", 77);
             setSetting("btnGPIO", 0, 16);

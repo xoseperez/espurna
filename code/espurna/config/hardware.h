@@ -2103,14 +2103,10 @@
     #define LED1_PIN_INVERSE	1
 
 // -----------------------------------------------------------------------------
-// Oukitel - P1
+// Oukitel P1 Smart Plug
+// https://www.amazon.com/Docooler-OUKITEL-Control-Wireless-Adaptor/dp/B07J3BYFJX/ref=sr_1_fkmrnull_2?keywords=oukitel+p1+smart+switch&qid=1550424399&s=gateway&sr=8-2-fkmrnull
 // -----------------------------------------------------------------------------
-
 #elif defined(OUKITEL_P1)
-    // -----------------------------------------------------------------------------
-    // Oukitel P1 Smart Plug
-    // https://www.amazon.com/Docooler-OUKITEL-Control-Wireless-Adaptor/dp/B07J3BYFJX/ref=sr_1_fkmrnull_2?keywords=oukitel+p1+smart+switch&qid=1550424399&s=gateway&sr=8-2-fkmrnull
-    // -----------------------------------------------------------------------------
 
     // Info
     #define MANUFACTURER		"Oukitel"
@@ -2645,17 +2641,16 @@
 
 
 // ------------------------------------------------------------------------------
-// Estink Wifi Power Strip
-// https://www.amazon.de/Steckdosenleiste-Ladeger%C3%A4t-Sprachsteuerung-SmartphonesTablets-Android/dp/B0796W5FZY
 // Fornorm Wi-Fi USB Extension Socket (ZLD-34EU)
 // https://www.aliexpress.com/item/Fornorm-WiFi-Extension-Socket-with-Surge-Protector-Smart-Power-Strip-3-Outlets-and-4-USB-Charging/32849743948.html
+// Also: Estink Wifi Power Strip
 // -----------------------------------------------------------------------------
 
-#elif defined(ESTINK_WIFI_POWER_STRIP)
+#elif defined(FORNORM_ZLD_34EU)
 
     // Info
-    #define MANUFACTURER        "ESTINK"
-    #define DEVICE              "WIFI_POWER_STRIP"
+    #define MANUFACTURER        "FORNORM"
+    #define DEVICE              "ZLD_34EU"
 
     // Disable UART noise since this board uses GPIO3
     #define DEBUG_SERIAL_SUPPORT    0
@@ -2856,6 +2851,7 @@
 
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
+// Also model number KS-602S
 // -----------------------------------------------------------------------------
 
 #elif defined(GOSUND_WS1)
@@ -2876,44 +2872,6 @@
     // LEDs
     #define LED1_PIN            1
     #define LED1_PIN_INVERSE    1
-
-// This one is the same as the BLITZWOLF_BWSHPX_V23
-#elif defined(GOSUND_SP1_V23)
-
-    // Info
-    #define MANUFACTURER                "GOSUND"
-    #define DEVICE                      "SP1_v23"
-
-    // Buttons
-    #define BUTTON1_PIN                 3
-    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY               1
-
-    // Relays
-    #define RELAY1_PIN                  14
-    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
-
-    // LEDs
-    #define LED1_PIN                    1
-    #define LED1_PIN_INVERSE            1
-    #define LED2_PIN                    13
-    #define LED2_PIN_INVERSE            0
-    #define LED2_MODE                   LED_MODE_FINDME
-    #define LED2_RELAY                  1
-
-    // HJL01 / BL0937
-    #ifndef HLW8012_SUPPORT
-    #define HLW8012_SUPPORT             1
-    #endif
-    #define HLW8012_SEL_PIN             12
-    #define HLW8012_CF1_PIN             5
-    #define HLW8012_CF_PIN              4
-
-    #define HLW8012_SEL_CURRENT         LOW
-    #define HLW8012_CURRENT_RATIO       25740
-    #define HLW8012_VOLTAGE_RATIO       313400
-    #define HLW8012_POWER_RATIO         3414290
-    #define HLW8012_INTERRUPT_ON        FALLING
 
 // ----------------------------------------------------------------------------------------
 //  Homecube 16A is similar but some pins differ and it also has RGB LEDs
@@ -3321,8 +3279,10 @@
     #define LIGHT_CH4_INVERSE   0	
     
 // ----------------------------------------------------------------------------------------
-//  Smart life Mini Smart Socket is similar Homecube 16A but some GPIOs differ
-//  https://www.ebay.de/itm/Smart-Steckdose-WIFI-WLAN-Amazon-Alexa-Fernbedienung-Home-Socket-Zeitschaltuh-DE/123352026749?hash=item1cb85a8e7d:g:IasAAOSwk6dbj390
+// Smart life Mini Smart Socket is similar Homecube 16A but some GPIOs differ
+// https://www.ebay.de/itm/Smart-Steckdose-WIFI-WLAN-Amazon-Alexa-Fernbedienung-Home-Socket-Zeitschaltuh-DE/123352026749?hash=item1cb85a8e7d:g:IasAAOSwk6dbj390
+// Also labeled NETVIP
+// https://www.amazon.es/Inteligente-NETVIP-Inal%C3%A1mbrico-Interruptor-Funciona/dp/B07KH8YWS5
 // ----------------------------------------------------------------------------------------
 
 #elif defined(SMARTLIFE_MINI_SMART_SOCKET)
