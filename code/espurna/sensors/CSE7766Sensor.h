@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // CSE7766 based power monitor
-// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // http://www.chipsea.com/UploadFiles/2017/08/11144342F01B5662.pdf
 // -----------------------------------------------------------------------------
 

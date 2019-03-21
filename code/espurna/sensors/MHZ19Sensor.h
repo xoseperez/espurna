@@ -3,7 +3,7 @@
 // Based on: https://github.com/nara256/mhz19_uart
 // http://www.winsen-sensor.com/d/files/infrared-gas-sensor/mh-z19b-co2-ver1_0.pdf
 // Uses SoftwareSerial library
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && MHZ19_SUPPORT

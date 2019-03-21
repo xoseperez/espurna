@@ -354,7 +354,7 @@ KMC 4 Outlet, Gosund WS1, MakerFocus Intelligent Module LM33 for Lamps
 
 ## License
 
-Copyright (C) 2016-2018 by Xose Pérez (@xoseperez)
+Copyright (C) 2016-2019 by Xose Pérez (@xoseperez)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

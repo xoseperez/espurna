@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Abstract I2C sensor class (other sensor classes extend this class)
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && ( I2C_SUPPORT || EMON_ANALOG_SUPPORT )

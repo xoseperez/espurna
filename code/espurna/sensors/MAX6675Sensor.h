@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // MAX6675 Sensor
 // Uses MAX6675_Thermocouple library
-// Copyright (C) 2017-2018 by Xose Pérez <andrade dot luciano at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <andrade dot luciano at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && MAX6675_SUPPORT
