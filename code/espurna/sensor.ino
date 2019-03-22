@@ -481,6 +481,13 @@ void _sensorLoad() {
         BMX280Sensor * sensor = new BMX280Sensor();
         sensor->setAddress(BMX280_ADDRESS);
         _sensors.push_back(sensor);
+
+      #ifdef BMX280_ADDRESS2
+        // Up to two BME sensors allowed on one bus
+        BMX280Sensor * sensor2 = new BMX280Sensor();
+        sensor->setAddress(BMX280_ADDRESS2);
+        _sensors.push_back(sensor2);
+      #endif
     }
     #endif
 

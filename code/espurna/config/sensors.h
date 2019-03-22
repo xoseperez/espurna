@@ -159,8 +159,9 @@
 #endif
 
 #ifndef BMX280_ADDRESS
-#define BMX280_ADDRESS                  0x00    // 0x00 means auto
+#define BMX280_ADDRESS                  0x00    // 0x00 means auto (0x76 or 0x77 allowed)
 #endif
+//#define BMX280_ADDRESS2                 0x77    // Address of 2nd BMX (must not use auto for either if two are present)
 
 #define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
 #define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
