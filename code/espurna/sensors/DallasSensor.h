@@ -192,6 +192,11 @@ class DallasSensor : public BaseSensor {
             return MAGNITUDE_NONE;
         }
 
+	// Number of decimals for a magnitude (or -1 for default)
+	signed char decimals(unsigned char type) { 
+	  return 2; // smallest increment is 0.0625 C, so 2 decimals
+	}
+
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {
             _error = SENSOR_ERROR_OK;
