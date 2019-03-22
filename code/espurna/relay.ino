@@ -436,7 +436,7 @@ void relayToggle(unsigned char id, bool report, bool group_report) {
 }
 
 void relayToggle(unsigned char id) {
-    relayToggle(id, true, true);
+    relayToggle(id, RELAY_REPORT_STATUS, true);
 }
 
 unsigned char relayCount() {
