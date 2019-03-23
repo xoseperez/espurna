@@ -10,6 +10,9 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
+// we are bound by usable GPIOs
+#define EVENTS_SENSORS_MAX 10
+
 class EventSensor : public BaseSensor {
 
     public:
@@ -119,12 +122,17 @@ class EventSensor : public BaseSensor {
         }
 
         // Handle interrupt calls
-        void handleInterrupt(unsigned char gpio) {
+        void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
             (void) gpio;
             static unsigned long last = 0;
-            if (millis() - last > _debounce) {
 
-                last = millis();
+            // ~27000ms when F_CPU is 80MHz
+            // ~12000ms when F_CPU is 160MHz
+            unsigned long ms = clockCyclesToMicroseconds(ESP.getCycleCount()) / 1000u;
+
+            if (ms - last > _debounce) {
+
+                last = ms;
                 _events = _events + 1;
 
                 if (_trigger) {
@@ -140,20 +148,16 @@ class EventSensor : public BaseSensor {
         // Interrupt management
         // ---------------------------------------------------------------------
 
-        void _attach(EventSensor * instance, unsigned char gpio, unsigned char mode);
+        void _attach(unsigned char gpio, unsigned char mode);
         void _detach(unsigned char gpio);
 
         void _enableInterrupts(bool value) {
 
-            static unsigned char _interrupt_gpio = GPIO_NONE;
-
             if (value) {
-                if (_interrupt_gpio != GPIO_NONE) _detach(_interrupt_gpio);
-                _attach(this, _gpio, _interrupt_mode);
-                _interrupt_gpio = _gpio;
-            } else if (_interrupt_gpio != GPIO_NONE) {
-                _detach(_interrupt_gpio);
-                _interrupt_gpio = GPIO_NONE;
+                _detach(_gpio);
+                _attach(_gpio, _interrupt_mode);
+            } else {
+                _detach(_gpio);
             }
 
         }
@@ -175,7 +179,7 @@ class EventSensor : public BaseSensor {
 // Interrupt helpers
 // -----------------------------------------------------------------------------
 
-EventSensor * _event_sensor_instance[10] = {NULL};
+EventSensor * _event_sensor_instance[EVENTS_SENSORS_MAX] = {nullptr};
 
 void ICACHE_RAM_ATTR _event_sensor_isr(unsigned char gpio) {
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
@@ -202,14 +206,18 @@ static void (*_event_sensor_isr_list[10])() = {
     _event_sensor_isr_15
 };
 
-void EventSensor::_attach(EventSensor * instance, unsigned char gpio, unsigned char mode) {
+void EventSensor::_attach(unsigned char gpio, unsigned char mode) {
     if (!gpioValid(gpio)) return;
-    _detach(gpio);
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    _event_sensor_instance[index] = instance;
+
+    if (_event_sensor_instance[index] == this) return;
+    if (_event_sensor_instance[index]) detachInterrupt(gpio);
+
+    _event_sensor_instance[index] = this;
     attachInterrupt(gpio, _event_sensor_isr_list[index], mode);
+
     #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
+        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, this->description().c_str());
     #endif
 }
 
@@ -218,10 +226,11 @@ void EventSensor::_detach(unsigned char gpio) {
     unsigned char index = gpio > 5 ? gpio-6 : gpio;
     if (_event_sensor_instance[index]) {
         detachInterrupt(gpio);
+        _event_sensor_instance[index] = nullptr;
+
         #if SENSOR_DEBUG
             DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _event_sensor_instance[index]->description().c_str());
         #endif
-        _event_sensor_instance[index] = NULL;
     }
 }
 
