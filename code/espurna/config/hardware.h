@@ -3174,6 +3174,31 @@
     #define LIGHT_CH4_INVERSE   0
 
 // -----------------------------------------------------------------------------
+// Generic GU10
+// https://www.ebay.com/itm/1-10PC-GU10-RGB-Smart-Bulb-Wireless-WiFi-App-Remote-Ctrl-Light-for-Alexa-Google/173724116351
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_GU10)
+
+    // Info
+    #define MANUFACTURER        "GENERIC"
+    #define DEVICE              "GU10"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       4       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
+// -----------------------------------------------------------------------------
 // Lombex Lux Nova 2 Tunable White
 // https://www.amazon.com/Lombex-Compatible-Equivalent-Dimmable-2700K-6500K/dp/B07B8K72PR
 // -----------------------------------------------------------------------------
