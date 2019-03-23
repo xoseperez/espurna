@@ -126,8 +126,10 @@ class EventSensor : public BaseSensor {
             (void) gpio;
             static unsigned long last = 0;
 
-            // ~27000ms when F_CPU is 80MHz
-            // ~12000ms when F_CPU is 160MHz
+            // clock count in 32bit value, overflowing:
+            // ~53s when F_CPU is 80MHz
+            // ~26s when F_CPU is 160MHz
+            // see: cores/esp8266/Arduino.h definitions
             unsigned long ms = clockCyclesToMicroseconds(ESP.getCycleCount()) / 1000u;
 
             if (ms - last > _debounce) {
