@@ -9,17 +9,35 @@ is_git() {
     return 0
 }
 
+stat_bytes() {
+    case "$(uname -s)" in
+        Darwin) stat -f %z "$1";;
+        *) stat -c %s "$1";;
+    esac
+}
+
 # Script settings
 
 destination=../firmware
-version=$(grep APP_VERSION espurna/config/version.h | awk '{print $3}' | sed 's/"//g')
+version_file=espurna/config/version.h
+version=$(grep -E '^#define APP_VERSION' $version_file | awk '{print $3}' | sed 's/"//g')
 
-if is_git; then
+if ${TRAVIS:-false}; then
+    git_revision=${TRAVIS_COMMIT::7}
+    git_tag=${TRAVIS_TAG}
+elif is_git; then
     git_revision=$(git rev-parse --short HEAD)
-    git_version=${version}-${git_revision}
+    git_tag=$(git tag --contains HEAD)
 else
-    git_revision=
-    git_version=$version
+    git_revision=unknown
+    git_tag=
+fi
+
+if [[ -n $git_tag ]]; then
+    new_version=${version/-*}
+    sed -i -e "s@$version@$new_version@" $version_file
+    version=$new_version
+    trap "git checkout -- $version_file" EXIT
 fi
 
 par_build=false
@@ -104,7 +122,7 @@ build_environments() {
     for environment in $environments; do
         echo -n "* espurna-$version-$environment.bin --- "
         platformio run --silent --environment $environment || exit 1
-        stat -c %s .pioenvs/$environment/firmware.bin
+        stat_bytes .pioenvs/$environment/firmware.bin
         [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
             mv .pioenvs/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
     done
@@ -132,7 +150,7 @@ shift $((OPTIND-1))
 # Welcome
 echo "--------------------------------------------------------------"
 echo "ESPURNA FIRMWARE BUILDER"
-echo "Building for version ${git_version}"
+echo "Building for version ${version}" ${git_revision:+($git_revision)}
 
 # Environments to build
 environments=$@

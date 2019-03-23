@@ -2,7 +2,7 @@
 
 WEBSERVER MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -27,6 +27,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
     #include "static/index.rfbridge.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
     #include "static/index.rfm69.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
+    #include "static/index.lightfox.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.gz.h"
 #endif
@@ -46,6 +48,7 @@ std::vector<uint8_t> * _webConfigBuffer;
 bool _webConfigSuccess = false;
 
 std::vector<web_request_callback_f> _web_request_callbacks;
+std::vector<web_body_callback_f> _web_body_callbacks;
 
 // -----------------------------------------------------------------------------
 // HOOKS
@@ -326,7 +329,8 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     } else {
-        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        //Removed to avoid websocket ping back during upgrade (see #1574)
+        //DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
 
@@ -342,6 +346,17 @@ void _onRequest(AsyncWebServerRequest *request){
     request->send(404);
 
 }
+
+void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+
+    // Send request to subscribers
+    for (unsigned char i = 0; i < _web_body_callbacks.size(); i++) {
+        bool response = (_web_body_callbacks[i])(request, data, len, index, total);
+        if (response) return;
+    }
+
+}
+
 
 // -----------------------------------------------------------------------------
 
@@ -360,6 +375,10 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
 
 AsyncWebServer * webServer() {
     return _server;
+}
+
+void webBodyRegister(web_body_callback_f callback) {
+    _web_body_callbacks.push_back(callback);
 }
 
 void webRequestRegister(web_request_callback_f callback) {
@@ -412,7 +431,9 @@ void webSetup() {
             });
     #endif
 
+
     // Handle other requests, including 404
+    _server->onRequestBody(_onBody);
     _server->onNotFound(_onRequest);
 
     // Run server

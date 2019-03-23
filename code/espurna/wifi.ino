@@ -2,7 +2,7 @@
 
 WIFI MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -75,6 +75,10 @@ void _wifiConfigure() {
 
     jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
 
+    unsigned char sleep_mode = getSetting("wifiSleep", WIFI_SLEEP_MODE).toInt();
+    sleep_mode = constrain(sleep_mode, 0, 2);
+
+    WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
 }
 
 void _wifiScan(uint32_t client_id = 0) {
@@ -116,7 +120,7 @@ void _wifiScan(uint32_t client_id = 0) {
 
             snprintf_P(buffer, sizeof(buffer),
                 PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
-                BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5], BSSID_scan[6],
+                BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
                 (sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
                 rssi_scan,
                 chan_scan,
@@ -385,39 +389,39 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
 
 void _wifiInitCommands() {
 
-    settingsRegisterCommand(F("WIFI"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI"), [](Embedis* e) {
         wifiDebug();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
-    settingsRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
         wifiStartAP();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
     #if defined(JUSTWIFI_ENABLE_WPS)
-        settingsRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.WPS"), [](Embedis* e) {
             wifiStartWPS();
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         });
     #endif // defined(JUSTWIFI_ENABLE_WPS)
 
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-        settingsRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
+        terminalRegisterCommand(F("WIFI.SMARTCONFIG"), [](Embedis* e) {
             wifiStartSmartConfig();
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
         });
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
 
-    settingsRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
+    terminalRegisterCommand(F("WIFI.SCAN"), [](Embedis* e) {
         _wifiScan();
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }
@@ -469,6 +473,7 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 
 void wifiDebug(WiFiMode_t modes) {
 
+    #if DEBUG_SUPPORT
     bool footer = false;
 
     if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
@@ -509,6 +514,7 @@ void wifiDebug(WiFiMode_t modes) {
     if (footer) {
         DEBUG_MSG_P(PSTR("[WIFI] ----------------------------------------------\n"));
     }
+    #endif //DEBUG_SUPPORT
 
 }
 
@@ -600,8 +606,6 @@ void wifiRegister(wifi_callback_f callback) {
 // -----------------------------------------------------------------------------
 
 void wifiSetup() {
-
-    WiFi.setSleepMode(WIFI_SLEEP_MODE);
 
     _wifiInject();
     _wifiConfigure();

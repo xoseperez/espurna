@@ -2,7 +2,7 @@
 
 OTA MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -28,7 +28,7 @@ void _otaLoop() {
 // Terminal OTA
 // -----------------------------------------------------------------------------
 
-#if TERMINAL_SUPPORT
+#if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
 #include <ESPAsyncTCP.h>
 AsyncClient * _ota_client;
@@ -118,6 +118,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
         _ota_size += len;
         DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
 
+        delay(0);
 
     }, NULL);
 
@@ -158,6 +159,10 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
 }
 
 void _otaFrom(String url) {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
+        return;
+    }
 
     // Port from protocol
     unsigned int port = 80;
@@ -181,13 +186,18 @@ void _otaFrom(String url) {
 
 }
 
+#endif // TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
+
+
+#if TERMINAL_SUPPORT
+
 void _otaInitCommands() {
 
-    settingsRegisterCommand(F("OTA"), [](Embedis* e) {
+    terminalRegisterCommand(F("OTA"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
         } else {
-            DEBUG_MSG_P(PSTR("+OK\n"));
+            terminalOK();
             String url = String(e->argv[1]);
             _otaFrom(url);
         }
@@ -197,6 +207,25 @@ void _otaInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+#if OTA_MQTT_SUPPORT
+
+void _otaMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_OTA);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        // Match topic
+        String t = mqttMagnitude((char *) topic);
+        if (t.equals(MQTT_TOPIC_OTA)) {
+            DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
+            _otaFrom(payload);
+        }
+    }
+}
+
+#endif // OTA_MQTT_SUPPORT
+
 // -----------------------------------------------------------------------------
 
 void otaSetup() {
@@ -205,6 +234,10 @@ void otaSetup() {
 
     #if TERMINAL_SUPPORT
         _otaInitCommands();
+    #endif
+
+    #if OTA_MQTT_SUPPORT
+        mqttRegister(_otaMQTTCallback);
     #endif
 
     // Main callbacks

@@ -2,7 +2,7 @@
 
 NOFUSS MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -74,8 +74,8 @@ void _nofussConfigure() {
 
 void _nofussInitCommands() {
 
-    settingsRegisterCommand(F("NOFUSS"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("+OK\n"));
+    terminalRegisterCommand(F("NOFUSS"), [](Embedis* e) {
+        terminalOK();
         nofussRun();
     });
 
@@ -120,6 +120,9 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"message\": 1}"));
             #endif
+
+            // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+            eepromRotate(false);
         }
 
         if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
@@ -147,7 +150,8 @@ void nofussSetup() {
         }
 
         if (code == NOFUSS_END) {
-    	    DEBUG_MSG_P(PSTR("[NoFUSS] End\n"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] End\n"));
+            eepromRotate(true);
         }
 
     });

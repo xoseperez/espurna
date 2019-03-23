@@ -2,7 +2,7 @@
 
 ESPurna
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -64,11 +64,16 @@ void setup() {
     // Init EEPROM
     eepromSetup();
 
+    // Init persistance
+    settingsSetup();
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 
-    // Init persistance and terminal features
-    settingsSetup();
+    // Init terminal features
+    #if TERMINAL_SUPPORT
+        terminalSetup();
+    #endif
 
     // Hostname & board name initialization
     if (getSetting("hostname").length() == 0) {
@@ -148,7 +153,7 @@ void setup() {
     #if I2C_SUPPORT
         i2cSetup();
     #endif
-    #ifdef ITEAD_SONOFF_RFBRIDGE
+    #if defined(ITEAD_SONOFF_RFBRIDGE) || RF_SUPPORT
         rfbSetup();
     #endif
     #if ALEXA_SUPPORT
@@ -165,9 +170,6 @@ void setup() {
     #endif
     #if RFM69_SUPPORT
         rfm69Setup();
-    #endif
-    #if RF_SUPPORT
-        rfSetup();
     #endif
     #if IR_SUPPORT
         irSetup();
@@ -186,6 +188,9 @@ void setup() {
     #endif
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
+    #endif
+    #ifdef FOXEL_LIGHTFOX_DUAL
+        lightfoxSetup();
     #endif
 
 

@@ -2,7 +2,7 @@
 
 MIGRATE MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -255,6 +255,17 @@ void migrate() {
             setSetting("myChips", 1);
             setSetting("myDIGPIO", 13);
             setSetting("myDCKIGPIO", 15);
+            setSetting("relays", 1);
+
+        #elif defined(LYASI_LIGHT)
+
+            setSetting("board", 20);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_MY92XX);
+            setSetting("myModel", MY92XX_MODEL_MY9291);
+            setSetting("myChips", 1);
+            setSetting("myDIGPIO", 4);
+            setSetting("myDCKIGPIO", 5);
             setSetting("relays", 1);
 
         #elif defined(MAGICHOME_LED_CONTROLLER)
@@ -975,7 +986,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(ESTINK_WIFI_POWER_STRIP)
+        #elif defined(FORNORM_ZLD_34EU)
 
             setSetting("board", 77);
             setSetting("btnGPIO", 0, 16);
@@ -1016,7 +1027,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(BLITZWOLF_BWSHP2)
+        #elif defined(BLITZWOLF_BWSHPX)
 
             setSetting("board", 79);
             setSetting("ledGPIO", 0, 2);
@@ -1203,6 +1214,91 @@ void migrate() {
             setSetting("chLogic", 2, 0);
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
+
+        #elif defined(EXS_WIFI_RELAY_V50)
+
+            setSetting("board", 91);
+
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnGPIO", 1, 4);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+
+            setSetting("relayGPIO", 0, 14);
+            setSetting("relayGPIO", 1, 13);
+            setSetting("relayResetGPIO", 0, 16);
+            setSetting("relayResetGPIO", 1, 12);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+            setSetting("relayType", 0, RELAY_TYPE_LATCHED);
+
+            setSetting("ledGPIO", 1, 15);
+            setSetting("ledLogic", 1, 0);
+
+        #elif defined(TONBUX_XSSSA01)
+
+            setSetting("board", 92);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 5);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(EUROMATE_WIFI_STECKER_SCHUKO_V2)
+
+            setSetting("board", 93);
+            setSetting("ledGPIO", 0, 13);      // Red LED
+            setSetting("ledLogic", 0, 1);
+            setSetting("ledGPIO", 1, 12);      // Green LED
+            setSetting("ledLogic", 1, 1);
+            setSetting("btnGPIO", 0, 5);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 4);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
+        #elif defined(OUKITEL_P1)
+
+            setSetting("board", 94);
+            setSetting("ledGPIO", 0, 0); // Blue LED
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);  // Right outlet
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 15);  // Left outlet
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+
+        #elif defined(DIGOO_NX_SP202)
+
+            setSetting("board", 95);
+            setSetting("ledGPIO", 0, 13);
+            setSetting("ledLogic", 0, 1);
+            setSetting("btnGPIO", 0, 0);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnGPIO", 1, 16);
+            setSetting("btnRelay", 1, 1);
+            setSetting("relayGPIO", 0, 15);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+            setSetting("relayGPIO", 1, 14);
+            setSetting("relayType", 1, RELAY_TYPE_NORMAL);
+            setSetting("selGPIO", 12);
+            setSetting("cf1GPIO", 5);
+            setSetting("cfGPIO", 4);
+            setSetting("pwrRatioC", 23296);
+            setSetting("pwrRatioV", 310085);
+            setSetting("pwrRatioP", 3368471);
+            setSetting("hlwSelC", LOW);
+            setSetting("hlwIntM", FALLING);
+
+        #elif defined(FOXEL_LIGHTFOX_DUAL)
+
+            setSetting("board", 96);
+            setSetting("btnRelay", 0, 0);
+            setSetting("btnRelay", 1, 1);
+            setSetting("btnRelay", 2, 1);
+            setSetting("btnRelay", 3, 0);
+            setSetting("relayProvider", RELAY_PROVIDER_DUAL);
+            setSetting("relays", 2);
 
         #else
 

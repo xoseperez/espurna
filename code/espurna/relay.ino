@@ -2,7 +2,7 @@
 
 RELAY MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -67,6 +67,8 @@ void _relayProviderStatus(unsigned char id, bool status) {
             if (_relays[i].current_status) mask = mask + (1 << i);
         }
 
+        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
+
         // Send it to F330
         Serial.flush();
         Serial.write(0xA0);
@@ -83,37 +85,54 @@ void _relayProviderStatus(unsigned char id, bool status) {
         Serial.write(id + 1);
         Serial.write(status);
         Serial.write(0xA1 + status + id);
+
+        // The serial init are not full recognized by relais board.
+        // References: https://github.com/xoseperez/espurna/issues/1519 , https://github.com/xoseperez/espurna/issues/1130
+        delay(100);
+
         Serial.flush();
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
-        // If the number of relays matches the number of light channels
-        // assume each relay controls one channel.
-        // If the number of relays is the number of channels plus 1
-        // assume the first one controls all the channels and
-        // the rest one channel each.
-        // Otherwise every relay controls all channels.
-        // TODO: this won't work with a mixed of dummy and real relays
-        // but this option is not allowed atm (YANGNI)
-        if (_relays.size() == lightChannels()) {
-            lightState(id, status);
-            lightState(true);
-        } else if (_relays.size() == (lightChannels() + 1u)) {
-            if (id == 0) {
-                lightState(status);
-            } else {
-                lightState(id-1, status);
-            }
-        } else {
-            lightState(status);
-        }
+        // Real relays
+        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
 
-        lightUpdate(true, true);
+        // Support for a mixed of dummy and real relays
+        // Reference: https://github.com/xoseperez/espurna/issues/1305
+        if (id >= physical) {
+
+            // If the number of dummy relays matches the number of light channels
+            // assume each relay controls one channel.
+            // If the number of dummy relays is the number of channels plus 1
+            // assume the first one controls all the channels and
+            // the rest one channel each.
+            // Otherwise every dummy relay controls all channels.
+            if (DUMMY_RELAY_COUNT == lightChannels()) {
+                lightState(id-physical, status);
+                lightState(true);
+            } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                if (id == physical) {
+                    lightState(status);
+                } else {
+                    lightState(id-1-physical, status);
+                }
+            } else {
+                lightState(status);
+            }
+
+            lightUpdate(true, true);
+            return;
+        
+        }
 
     #endif
 
-    #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
+    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+
+        // If this is a light, all dummy relays have already been processed above
+        // we reach here if the user has toggled a physical relay
+
         if (_relays[id].type == RELAY_TYPE_NORMAL) {
             digitalWrite(_relays[id].pin, status);
         } else if (_relays[id].type == RELAY_TYPE_INVERSE) {
@@ -131,6 +150,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
             digitalWrite(_relays[id].pin, !pulse);
             if (GPIO_NONE != _relays[id].reset_pin) digitalWrite(_relays[id].reset_pin, !pulse);
         }
+
     #endif
 
 }
@@ -151,7 +171,7 @@ void _relayProcess(bool mode) {
         // Only process the relays we have to change
         if (target == _relays[id].current_status) continue;
 
-        // Only process the relays we have change to the requested mode
+        // Only process the relays we have to change to the requested mode
         if (target != mode) continue;
 
         // Only process if the change_time has arrived
@@ -164,7 +184,7 @@ void _relayProcess(bool mode) {
 
         // Send to Broker
         #if BROKER_SUPPORT
-            brokerPublish(MQTT_TOPIC_RELAY, id, target ? "1" : "0");
+            brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_RELAY, id, target ? "1" : "0");
         #endif
 
         // Send MQTT
@@ -173,30 +193,20 @@ void _relayProcess(bool mode) {
         #endif
 
         if (!_relayRecursive) {
+
             relayPulse(id);
-            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave);
+
+            // We will trigger a commit only if
+            // we care about current relay status on boot
+            unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            bool do_commit = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, do_commit);
+
             #if WEB_SUPPORT
                 wsSend(_relayWebSocketUpdate);
             #endif
+
         }
-
-        #if DOMOTICZ_SUPPORT
-            domoticzSendRelay(id);
-        #endif
-
-        #if INFLUXDB_SUPPORT
-            relayInfluxDB(id);
-        #endif
-
-        #if THINGSPEAK_SUPPORT
-            tspkEnqueueRelay(id, target);
-            tspkFlush();
-        #endif
-
-        // Flag relay-based LEDs to update status
-        #if LED_SUPPORT
-            ledUpdate(true);
-        #endif
 
         _relays[id].report = false;
         _relays[id].group_report = false;
@@ -383,16 +393,41 @@ void relaySync(unsigned char id) {
 
 }
 
-void relaySave() {
+void relaySave(bool do_commit) {
+
+    // Relay status is stored in a single byte
+    // This means that, atm,
+    // we are only storing the status of the first 8 relays.
     unsigned char bit = 1;
     unsigned char mask = 0;
-    for (unsigned int i=0; i < _relays.size(); i++) {
+    unsigned char count = _relays.size();
+    if (count > 8) count = 8;
+    for (unsigned int i=0; i < count; i++) {
         if (relayStatus(i)) mask += bit;
         bit += bit;
     }
+
     EEPROMr.write(EEPROM_RELAY_STATUS, mask);
-    DEBUG_MSG_P(PSTR("[RELAY] Saving mask: %d\n"), mask);
-    EEPROMr.commit();
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %d\n"), mask);
+
+    // The 'do_commit' flag controls wether we are commiting this change or not.
+    // It is useful to set it to 'false' if the relay change triggering the
+    // save involves a relay whose boot mode is independent from current mode,
+    // thus storing the last relay value is not absolutely necessary.
+    // Nevertheless, we store the value in the EEPROM buffer so it will be written
+    // on the next commit.
+    if (do_commit) {
+
+        // We are actually enqueuing the commit so it will be
+        // executed on the main loop, in case this is called from a callback
+        eepromCommit();
+
+    }
+
+}
+
+void relaySave() {
+    relaySave(true);
 }
 
 void relayToggle(unsigned char id, bool report, bool group_report) {
@@ -445,6 +480,12 @@ unsigned char relayParsePayload(const char * payload) {
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
 
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        if (!hasSetting("mqttGroupInv", i)) continue;
+        setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
+        delSetting("mqttGroupInv", i);
+    }
+
     byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
     float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
@@ -474,27 +515,34 @@ void _relayBoot() {
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
 
     // Walk the relays
-    bool status = false;
+    bool status;
     for (unsigned int i=0; i<_relays.size(); i++) {
+
         unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
         DEBUG_MSG_P(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
+
+        status = false;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
-                status = ((mask & bit) == bit);
+                if (i < 8) {
+                    status = ((mask & bit) == bit);
+                }
                 break;
             case RELAY_BOOT_TOGGLE:
-                status = ((mask & bit) != bit);
-                mask ^= bit;
-                trigger_save = true;
+                if (i < 8) {
+                    status = ((mask & bit) != bit);
+                    mask ^= bit;
+                    trigger_save = true;
+                }
                 break;
             case RELAY_BOOT_ON:
                 status = true;
                 break;
             case RELAY_BOOT_OFF:
             default:
-                status = false;
                 break;
         }
+
         _relays[i].current_status = !status;
         _relays[i].target_status = status;
         #if RELAY_PROVIDER == RELAY_PROVIDER_STM
@@ -508,7 +556,7 @@ void _relayBoot() {
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
         EEPROMr.write(EEPROM_RELAY_STATUS, mask);
-        EEPROMr.commit();
+        eepromCommit();
     }
 
     _relayRecursive = false;
@@ -517,6 +565,11 @@ void _relayBoot() {
 
 void _relayConfigure() {
     for (unsigned int i=0; i<_relays.size(); i++) {
+        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
+        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
+
+        if (GPIO_NONE == _relays[i].pin) continue;
+
         pinMode(_relays[i].pin, OUTPUT);
         if (GPIO_NONE != _relays[i].reset_pin) {
             pinMode(_relays[i].reset_pin, OUTPUT);
@@ -525,8 +578,6 @@ void _relayConfigure() {
             //set to high to block short opening of relay
             digitalWrite(_relays[i].pin, HIGH);
         }
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
     }
 }
 
@@ -543,34 +594,91 @@ bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _relayWebSocketUpdate(JsonObject& root) {
     JsonArray& relay = root.createNestedArray("relayStatus");
     for (unsigned char i=0; i<relayCount(); i++) {
-        relay.add(_relays[i].target_status);
+        relay.add<uint8_t>(_relays[i].target_status);
     }
+}
+
+String _relayFriendlyName(unsigned char i) {
+    String res = String("GPIO") + String(_relays[i].pin);
+
+    if (GPIO_NONE == _relays[i].pin) {
+        #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
+            uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+            if (i >= physical) {
+                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                    res = String("CH") + String(i-physical);
+                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                    if (physical == i) {
+                        res = String("Light");
+                    } else {
+                        res = String("CH") + String(i-1-physical);
+                    }
+                } else {
+                    res = String("Light");
+                }
+            } else {
+                res = String("?");
+            }
+        #else
+            res = String("SW") + String(i);
+        #endif
+    }
+
+    return res;
+}
+
+void _relayWebSocketSendRelays() {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& relays = root.createNestedObject("relayConfig");
+
+    relays["size"] = relayCount();
+    relays["start"] = 0;
+
+    JsonArray& gpio = relays.createNestedArray("gpio");
+    JsonArray& type = relays.createNestedArray("type");
+    JsonArray& reset = relays.createNestedArray("reset");
+    JsonArray& boot = relays.createNestedArray("boot");
+    JsonArray& pulse = relays.createNestedArray("pulse");
+    JsonArray& pulse_time = relays.createNestedArray("pulse_time");
+
+    #if MQTT_SUPPORT
+        JsonArray& group = relays.createNestedArray("group");
+        JsonArray& group_sync = relays.createNestedArray("group_sync");
+        JsonArray& on_disconnect = relays.createNestedArray("on_disc");
+    #endif
+
+    for (unsigned char i=0; i<relayCount(); i++) {
+        gpio.add(_relayFriendlyName(i));
+
+        type.add(_relays[i].type);
+        reset.add(_relays[i].reset_pin);
+        boot.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt());
+
+        pulse.add(_relays[i].pulse);
+        pulse_time.add(_relays[i].pulse_ms / 1000.0);
+
+        #if MQTT_SUPPORT
+            group.add(getSetting("mqttGroup", i, ""));
+            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
+            on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
+        #endif
+    }
+
+    wsSend(root);
 }
 
 void _relayWebSocketOnStart(JsonObject& root) {
 
     if (relayCount() == 0) return;
 
+    // Per-relay configuration
+    _relayWebSocketSendRelays();
+
     // Statuses
     _relayWebSocketUpdate(root);
 
-    // Configuration
-    JsonArray& config = root.createNestedArray("relayConfig");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        JsonObject& line = config.createNestedObject();
-        line["gpio"] = _relays[i].pin;
-        line["type"] = _relays[i].type;
-        line["reset"] = _relays[i].reset_pin;
-        line["boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-        line["pulse"] = _relays[i].pulse;
-        line["pulse_ms"] = _relays[i].pulse_ms / 1000.0;
-        #if MQTT_SUPPORT
-            line["group"] = getSetting("mqttGroup", i, "");
-            line["group_inv"] = getSetting("mqttGroupInv", i, 0).toInt();
-            line["on_disc"] = getSetting("relayOnDisc", i, 0).toInt();
-        #endif
-    }
-
+    // Options
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
@@ -707,6 +815,18 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
+void _relayMQTTGroup(unsigned char id) {
+    String topic = getSetting("mqttGroup", id, "");
+    if (!topic.length()) return;
+
+    unsigned char mode = getSetting("mqttGroupSync", id, RELAY_GROUP_SYNC_NORMAL).toInt();
+    if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
+
+    bool status = relayStatus(id);
+    if (mode == RELAY_GROUP_SYNC_INVERSE) status = !status;
+    mqttSendRaw(topic.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+}
+
 void relayMQTT(unsigned char id) {
 
     if (id >= _relays.size()) return;
@@ -720,12 +840,7 @@ void relayMQTT(unsigned char id) {
     // Check group topic
     if (_relays[id].group_report) {
         _relays[id].group_report = false;
-        String t = getSetting("mqttGroup", id, "");
-        if (t.length() > 0) {
-            bool status = relayStatus(id);
-            if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
-        }
+        _relayMQTTGroup(id);
     }
 
     // Send speed for IFAN02
@@ -766,7 +881,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
     if (type == MQTT_CONNECT_EVENT) {
 
         // Send status on connect
-        #if not HEARTBEAT_REPORT_RELAY
+        #if (HEARTBEAT_MODE == HEARTBEAT_NONE) or (not HEARTBEAT_REPORT_RELAY)
             relayMQTT();
         #endif
 
@@ -852,7 +967,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 if (value == 0xFF) return;
 
                 if (value < 2) {
-                    if (getSetting("mqttGroupInv", i, 0).toInt() == 1) {
+                    if (getSetting("mqttGroupSync", i, RELAY_GROUP_SYNC_NORMAL).toInt() == RELAY_GROUP_SYNC_INVERSE) {
                         value = 1 - value;
                     }
                 }
@@ -895,20 +1010,6 @@ void relaySetupMQTT() {
 #endif
 
 //------------------------------------------------------------------------------
-// InfluxDB
-//------------------------------------------------------------------------------
-
-#if INFLUXDB_SUPPORT
-
-void relayInfluxDB(unsigned char id) {
-    if (id >= _relays.size()) return;
-    idbSend(MQTT_TOPIC_RELAY, id, relayStatus(id) ? "1" : "0");
-}
-
-#endif
-
-
-//------------------------------------------------------------------------------
 // Settings
 //------------------------------------------------------------------------------
 
@@ -916,9 +1017,9 @@ void relayInfluxDB(unsigned char id) {
 
 void _relayInitCommands() {
 
-    settingsRegisterCommand(F("RELAY"), [](Embedis* e) {
+    terminalRegisterCommand(F("RELAY"), [](Embedis* e) {
         if (e->argc < 2) {
-            DEBUG_MSG_P(PSTR("-ERROR: Wrong arguments\n"));
+            terminalError(F("Wrong arguments"));
             return;
         }
         int id = String(e->argv[1]).toInt();
@@ -941,7 +1042,7 @@ void _relayInitCommands() {
             DEBUG_MSG_P(PSTR("Pulse time: %d\n"), _relays[id].pulse_ms);
 
         }
-        DEBUG_MSG_P(PSTR("+OK\n"));
+        terminalOK();
     });
 
 }
@@ -959,44 +1060,38 @@ void _relayLoop() {
 
 void relaySetup() {
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801,
-    // Sonoff Dual and Sonoff RF Bridge
-    #if DUMMY_RELAY_COUNT > 0
-
-        unsigned int _delay_on[8] = {RELAY1_DELAY_ON, RELAY2_DELAY_ON, RELAY3_DELAY_ON, RELAY4_DELAY_ON, RELAY5_DELAY_ON, RELAY6_DELAY_ON, RELAY7_DELAY_ON, RELAY8_DELAY_ON};
-        unsigned int _delay_off[8] = {RELAY1_DELAY_OFF, RELAY2_DELAY_OFF, RELAY3_DELAY_OFF, RELAY4_DELAY_OFF, RELAY5_DELAY_OFF, RELAY6_DELAY_OFF, RELAY7_DELAY_OFF, RELAY8_DELAY_OFF};
-        for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-            _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL,0,_delay_on[i], _delay_off[i]});
-        }
-
-    #else
-
-        #if RELAY1_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
-        #endif
-        #if RELAY2_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
-        #endif
-        #if RELAY3_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
-        #endif
-        #if RELAY4_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
-        #endif
-        #if RELAY5_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
-        #endif
-        #if RELAY6_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
-        #endif
-        #if RELAY7_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
-        #endif
-        #if RELAY8_PIN != GPIO_NONE
-            _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
-        #endif
-
+    // Ad-hoc relays
+    #if RELAY1_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
     #endif
+    #if RELAY2_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+    #endif
+    #if RELAY3_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+    #endif
+    #if RELAY4_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+    #endif
+    #if RELAY5_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+    #endif
+    #if RELAY6_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+    #endif
+    #if RELAY7_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+    #endif
+    #if RELAY8_PIN != GPIO_NONE
+        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
+    #endif
+
+    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
+    // No delay_on or off for these devices to easily allow having more than
+    // 8 channels. This behaviour will be recovered with v2.
+    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
+        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+    }
 
     _relayBackwards();
     _relayConfigure();

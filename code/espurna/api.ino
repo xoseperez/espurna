@@ -2,7 +2,7 @@
 
 API MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -31,6 +31,11 @@ void _apiWebSocketOnSend(JsonObject& root) {
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
     root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
+    root["apiRestFul"] = getSetting("apiRestFul", API_RESTFUL).toInt() == 1;
+}
+
+void _apiConfigure() {
+    // Nothing to do
 }
 
 // -----------------------------------------------------------------------------
@@ -158,9 +163,11 @@ bool _apiRequestCallback(AsyncWebServerRequest *request) {
 
         // Check if its a PUT
         if (api.putFn != NULL) {
-            if (request->hasParam("value", request->method() == HTTP_PUT)) {
-                AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
-                (api.putFn)((p->value()).c_str());
+            if ((getSetting("apiRestFul", API_RESTFUL).toInt() != 1) || (request->method() == HTTP_PUT)) {
+                if (request->hasParam("value", request->method() == HTTP_PUT)) {
+                    AsyncWebParameter* p = request->getParam("value", request->method() == HTTP_PUT);
+                    (api.putFn)((p->value()).c_str());
+                }
             }
         }
 
@@ -212,9 +219,11 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 }
 
 void apiSetup() {
+    _apiConfigure();
     wsOnSendRegister(_apiWebSocketOnSend);
     wsOnReceiveRegister(_apiWebSocketOnReceive);
     webRequestRegister(_apiRequestCallback);
+    espurnaRegisterReload(_apiConfigure);
 }
 
 #endif // API_SUPPORT
