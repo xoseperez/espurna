@@ -984,10 +984,10 @@ function initRelayConfig(data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
         }
         if ("group_sync" in data) {
-            $("input[name='mqttGroupSync']", line).val(data.group_sync[i]);
+            $("select[name='mqttGroupSync']", line).val(data.group_sync[i]);
         }
         if ("on_disc" in data) {
-            $("input[name='relayOnDisc']", line).val(data.on_disc[i]);
+            $("select[name='relayOnDisc']", line).val(data.on_disc[i]);
         }
 
         line.appendTo("#relayConfig");
