@@ -1521,8 +1521,8 @@ function processData(data) {
         if ("ledConfig" === key) {
             initLeds(value);
             for (var i=0; i<value.length; ++i) {
-                $("select[name='ledMode'][data='" + i + "']", line).val(value[i].mode);
-                $("input[name='ledRelay'][data='" + i + "']", line).val(value[i].relay);
+                $("select[name='ledMode'][data='" + i + "']").val(value[i].mode);
+                $("input[name='ledRelay'][data='" + i + "']").val(value[i].relay);
             }
             return;
         }
