@@ -165,7 +165,9 @@ namespace Heartbeat {
         Board = 1 << 15,
         Loadavg = 1 << 16,
         Interval = 1 << 17,
-        Description = 1 << 18
+        Description = 1 << 18,
+        Range = 1 << 19,
+        Remote_temp = 1 << 20
     };
 
     constexpr uint32_t defaultValue() {
@@ -186,7 +188,9 @@ namespace Heartbeat {
             (Version * (HEARTBEAT_REPORT_VERSION)) | \
             (Board * (HEARTBEAT_REPORT_BOARD)) | \
             (Loadavg * (HEARTBEAT_REPORT_LOADAVG)) | \
-            (Interval * (HEARTBEAT_REPORT_INTERVAL));
+            (Interval * (HEARTBEAT_REPORT_INTERVAL)) | \
+            (Range * (HEARTBEAT_REPORT_RANGE)) | \
+            (Remote_temp * (HEARTBEAT_REPORT_REMOTE_TEMP));
     }
 
     uint32_t currentValue() {
@@ -294,6 +298,19 @@ void heartbeat() {
 
             if (hb_cfg & Heartbeat::Loadavg)
                 mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
+
+            #if THERMOSTAT_SUPPORT
+                if (hb_cfg & Heartbeat::Range) {
+                    mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MIN, String(_temp_range.min).c_str());
+                    mqttSend(MQTT_TOPIC_HOLD_TEMP "_" MQTT_TOPIC_HOLD_TEMP_MAX, String(_temp_range.max).c_str());
+                }
+
+                if (hb_cfg & Heartbeat::Remote_temp) {
+                    char remote_temp[6];
+                    dtostrf(_remote_temp.temp, 1-sizeof(remote_temp), 1, remote_temp);
+                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, String(remote_temp).c_str());
+                }
+            #endif
 
         } else if (!serial && _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
             mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);

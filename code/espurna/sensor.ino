@@ -15,6 +15,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "filters/MovingAverageFilter.h"
 #include "sensors/BaseSensor.h"
 
+#include <float.h>
+
 typedef struct {
     BaseSensor * sensor;        // Sensor object
     BaseFilter * filter;        // Filter object
@@ -1288,6 +1290,13 @@ unsigned char magnitudeType(unsigned char index) {
         return int(_magnitudes[index].type);
     }
     return MAGNITUDE_NONE;
+}
+
+double magnitudeValue(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        return _sensor_realtime ? _magnitudes[index].current : _magnitudes[index].reported;
+    }
+    return DBL_MIN;
 }
 
 unsigned char magnitudeIndex(unsigned char index) {

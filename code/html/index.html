@@ -96,6 +96,12 @@
                             <a href="#" class="pure-menu-link" data="panel-general">GENERAL</a>
                         </li>
 
+                        <!-- removeIf(!thermostat) -->
+                        <li class="pure-menu-item module module-thermostat">
+                            <a href="#" class="pure-menu-link" data="panel-thermostat">THERMOSTAT</a>
+                        </li>
+                        <!-- endRemoveIf(!thermostat) -->
+
                         <!-- removeIf(!lightfox) -->
                         <li class="pure-menu-item module module-lightfox">
                             <a href="#" class="pure-menu-link" data="panel-lightfox">LIGHTFOX RF</a>
@@ -1042,6 +1048,130 @@
 
                     </div>
                 </form>
+
+                <!-- removeIf(!thermostat) -->
+                <form id="form-thermostat" class="pure-form form-settings">
+                    <div class="panel" id="panel-thermostat">
+
+                        <div class="header">
+                            <h1>THERMOSTAT</h1>
+                            <h2>Thermostat configuration</h2>
+                        </div>
+
+                        <div class="page">
+
+                            <div class="pure-g">
+                                <label class="pure-u-1 pure-u-lg-1-4" for="thermostatOperationMode">Operation mode</label>
+                                <input class="pure-u-1 pure-u-lg-1-4" name="thermostatOperationMode" type="text" readonly />
+                            </div>
+
+                            <fieldset>
+
+                                <legend>Temperature range</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Max (<span class="tmpUnit"></span>)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" id="tempRangeMaxInput" name="tempRangeMax" type="number" min="1" max="100" tabindex="32" data="20" onchange="checkTempRangeMax()" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Min (<span class="tmpUnit"></span>)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" id="tempRangeMinInput" name="tempRangeMin" type="number" min="0" max="99" tabindex="31" data="10" onchange="checkTempRangeMin()" />
+                                </div>
+
+                            </fieldset>
+
+                            <fieldset>
+
+                                <legend>Remote sensor</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="remoteSensorName">Remote sensor name</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="remoteSensorName" type="text" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="remoteTmp">Remote temperature (<span class="tmpUnit"></span>)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="remoteTmp" type="text" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="remoteTempMaxWait">Remote temperature waiting (s)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="remoteTempMaxWait" type="number" min="0" max="1800" tabindex="33" data="120" />
+                                </div>
+
+                            </fieldset>
+
+                            <fieldset>
+
+                                <legend>Operation mode</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="maxOnTime">Max heating time (m)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="maxOnTime" type="number" min="0" max="180" tabindex="34" data="30" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="minOffTime">Min rest time (m)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="minOffTime" type="number" min="0" max="60" tabindex="35" data="10" />
+                                </div>
+
+                            </fieldset>
+
+                            <fieldset>
+
+                                <legend>Autonomous mode</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="aloneOnTime">Heating time (m)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="aloneOnTime" type="number" min="0" max="180" tabindex="36" data="5" />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="aloneOffTime">Rest time (m)</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" name="aloneOffTime" type="number" min="0" max="180" tabindex="37" data="55" />
+                                </div>
+
+                            </fieldset>
+
+                            <fieldset>
+
+                                <legend>Time worked</legend>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="burnToday">Today</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="text" name="burnToday" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="burnYesterday">Yesterday</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="text" name="burnYesterday" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="burnThisMonth">Current month</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="text" name="burnThisMonth" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="burnPrevMonth">Previous month</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="text" name="burnPrevMonth" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4" for="burnTotal">Total</label>
+                                    <input class="pure-u-1 pure-u-lg-1-4" type="text" name="burnTotal" readonly />
+                                </div>
+
+                                <div class="pure-g">
+                                    <button type="button" class="pure-button button-thermostat-reset-counters">Reset counters</button>
+                                </div>
+
+                            </fieldset>
+                        </div>
+                    </div>
+                </form>
+                <!-- endRemoveIf(!thermostat) -->
 
                 <form id="form-domoticz" class="pure-form form-settings">
                     <div class="panel" id="panel-domoticz">

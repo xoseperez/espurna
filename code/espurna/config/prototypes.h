@@ -211,3 +211,14 @@ void webRequestRegister(web_request_callback_f callback);
 typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
+
+// -----------------------------------------------------------------------------
+// THERMOSTAT
+// -----------------------------------------------------------------------------
+#if THERMOSTAT_SUPPORT
+    typedef std::function<void(bool)> thermostat_callback_f;
+    void thermostatRegister(thermostat_callback_f callback);
+#else
+    #define thermostat_callback_f void *
+#endif
+

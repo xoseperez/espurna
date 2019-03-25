@@ -192,6 +192,12 @@ void setup() {
     #ifdef FOXEL_LIGHTFOX_DUAL
         lightfoxSetup();
     #endif
+    #if THERMOSTAT_SUPPORT
+        thermostatSetup();
+    #endif
+    #if THERMOSTAT_DISPLAY_SUPPORT
+        displaySetup();
+    #endif
 
 
     // 3rd party code hook

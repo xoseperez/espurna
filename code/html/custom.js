@@ -364,6 +364,31 @@ function getJson(str) {
     }
 }
 
+<!-- removeIf(!thermostat)-->
+function checkTempRangeMin() {
+    var min = parseInt($("#tempRangeMinInput").val(), 10);
+    var max = parseInt($("#tempRangeMaxInput").val(), 10);
+    if (min > max - 1) {
+        $("#tempRangeMinInput").val(max - 1);
+    }
+}
+  
+function checkTempRangeMax() {
+    var min = parseInt($("#tempRangeMinInput").val(), 10);
+    var max = parseInt($("#tempRangeMaxInput").val(), 10);
+    if (max < min + 1) {
+        $("#tempRangeMaxInput").val(min + 1);
+    }
+}
+
+function doResetThermostatCounters(ask) {
+    var question = (typeof ask === "undefined" || false === ask) ?
+        null :
+        "Are you sure you want to reset burning counters?";
+    return doAction(question, "thermostat_reset_counters");
+}
+<!-- endRemoveIf(!thermostat)-->
+
 // -----------------------------------------------------------------------------
 // Actions
 // -----------------------------------------------------------------------------
@@ -1625,6 +1650,11 @@ function processData(data) {
             var days    = uptime;
             value = days + "d " + zeroPad(hours, 2) + "h " + zeroPad(minutes, 2) + "m " + zeroPad(seconds, 2) + "s";
         }
+        <!-- removeIf(!thermostat)-->
+        if ("tmpUnits" == key) {
+            $("span.tmpUnit").html(data[key] == 1 ? "ºF" : "ºC");
+        }
+        <!-- endRemoveIf(!thermostat)-->
 
         // ---------------------------------------------------------------------
         // Matching
@@ -1798,6 +1828,10 @@ $(function() {
     $(".button-settings-factory").on("click", doFactoryReset);
     $("#uploader").on("change", onFileUpload);
     $(".button-upgrade").on("click", doUpgrade);
+
+    <!-- removeIf(!thermostat)-->
+    $(".button-thermostat-reset-counters").on('click', doResetThermostatCounters);
+    <!-- endRemoveIf(!thermostat)-->
 
     $(".button-apikey").on("click", generateAPIKey);
     $(".button-upgrade-browse").on("click", function() {

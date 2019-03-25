@@ -118,6 +118,12 @@ PROGMEM const char espurna_modules[] =
     #if TERMINAL_SUPPORT
         "TERMINAL "
     #endif
+    #if THERMOSTAT_SUPPORT
+        "THERMOSTAT "
+    #endif
+    #if THERMOSTAT_DISPLAY_SUPPORT
+        "THERMOSTAT_DISPLAY "
+    #endif
     #if THINGSPEAK_SUPPORT
         "THINGSPEAK "
     #endif
