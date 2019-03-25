@@ -127,6 +127,7 @@ var buildWebUI = function(module) {
             'rules': {
                 'id-class-style': false,
                 'label-req-for': false,
+                'line-end-style': false,
             }
         }, htmllintReporter)).
         pipe(favicon()).
