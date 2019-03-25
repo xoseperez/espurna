@@ -237,7 +237,7 @@ void _mqttConfigure() {
     // Getters and setters
     _mqtt_setter = getSetting("mqttSetter", MQTT_SETTER);
     _mqtt_getter = getSetting("mqttGetter", MQTT_GETTER);
-    _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter);
+    _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter)  && RELAY_REPORT_STATUS;
 
     // MQTT options
     _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
