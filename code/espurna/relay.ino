@@ -339,7 +339,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    return relayStatus(id, status, RELAY_REPORT_STATUS, true);
+    return relayStatus(id, status, mqttForward(), true);
 }
 
 bool relayStatus(unsigned char id) {
@@ -436,7 +436,7 @@ void relayToggle(unsigned char id, bool report, bool group_report) {
 }
 
 void relayToggle(unsigned char id) {
-    relayToggle(id, RELAY_REPORT_STATUS, true);
+    relayToggle(id, mqttForward(), true);
 }
 
 unsigned char relayCount() {
