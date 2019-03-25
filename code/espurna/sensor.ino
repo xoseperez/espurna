@@ -20,6 +20,7 @@ typedef struct {
     BaseFilter * filter;        // Filter object
     unsigned char local;        // Local index in its provider
     unsigned char type;         // Type of measurement
+    unsigned char decimals;     // Number of decimals in textual representation
     unsigned char global;       // Global index in its type
     double current;             // Current (last) value, unfiltered
     double reported;            // Last reported value
@@ -71,7 +72,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
 
 }
 
-double _magnitudeProcess(unsigned char type, double value) {
+double _magnitudeProcess(unsigned char type, unsigned char decimals, double value) {
 
     // Hardcoded conversions (these should be linked to the unit, instead of the magnitude)
 
@@ -94,7 +95,7 @@ double _magnitudeProcess(unsigned char type, double value) {
         if (_sensor_power_units == POWER_KILOWATTS) value = value  / 1000;
     }
 
-    return roundTo(value, _magnitudeDecimals(type));
+    return roundTo(value, decimals);
 
 }
 
@@ -159,7 +160,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
         if (magnitude.type == MAGNITUDE_EVENT) continue;
         ++size;
 
-        unsigned char decimals = _magnitudeDecimals(magnitude.type);
+        unsigned char decimals = magnitude.decimals;
         dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
 
         index.add<uint8_t>(magnitude.global);
@@ -293,7 +294,7 @@ void _sensorAPISetup() {
 
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
-            unsigned char decimals = _magnitudeDecimals(magnitude.type);
+            unsigned char decimals = magnitude.decimals;
             double value = _sensor_realtime ? magnitude.current : magnitude.reported;
             dtostrf(value, 1-len, decimals, buffer);
         });
@@ -847,11 +848,14 @@ void _sensorInit() {
         for (unsigned char k=0; k<_sensors[i]->count(); k++) {
 
             unsigned char type = _sensors[i]->type(k);
+	    signed char decimals = _sensors[i]->decimals(type);
+	    if (decimals < 0) decimals = _magnitudeDecimals(type);
 
             sensor_magnitude_t new_magnitude;
             new_magnitude.sensor = _sensors[i];
             new_magnitude.local = k;
             new_magnitude.type = type;
+	    new_magnitude.decimals = (unsigned char) decimals;
             new_magnitude.global = _counts[type];
             new_magnitude.current = 0;
             new_magnitude.reported = 0;
@@ -1204,7 +1208,7 @@ void _sensorConfigure() {
 void _sensorReport(unsigned char index, double value) {
 
     sensor_magnitude_t magnitude = _magnitudes[index];
-    unsigned char decimals = _magnitudeDecimals(magnitude.type);
+    unsigned char decimals = magnitude.decimals;
 
     char buffer[10];
     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
@@ -1447,7 +1451,7 @@ void sensorLoop() {
                     current = magnitude.filter->result();
                 }
 
-                current = _magnitudeProcess(magnitude.type, current);
+                current = _magnitudeProcess(magnitude.type, magnitude.decimals, current);
                 _magnitudes[i].current = current;
 
                 // -------------------------------------------------------------
@@ -1457,7 +1461,7 @@ void sensorLoop() {
                 #if SENSOR_DEBUG
                 {
                     char buffer[64];
-                    dtostrf(current, 1-sizeof(buffer), _magnitudeDecimals(magnitude.type), buffer);
+                    dtostrf(current, 1-sizeof(buffer), magnitude.decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
@@ -1475,14 +1479,14 @@ void sensorLoop() {
                 bool report = (0 == report_count);
                 if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0)) {
                     // for MAGNITUDE_ENERGY, filtered value is last value
-                    double value = _magnitudeProcess(magnitude.type, current);
+                    double value = _magnitudeProcess(magnitude.type, magnitude.decimals, current);
                     report = (fabs(value - magnitude.reported) >= magnitude.max_change);
                 } // if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0))
 
                 if (report) {
 
                     filtered = magnitude.filter->result();
-                    filtered = _magnitudeProcess(magnitude.type, filtered);
+                    filtered = _magnitudeProcess(magnitude.type, magnitude.decimals, filtered);
                     magnitude.filter->reset();
 
                     // Check if there is a minimum change threshold to report
