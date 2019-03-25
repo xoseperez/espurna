@@ -372,6 +372,14 @@ void relaySync(unsigned char id) {
             if (i != id) relayStatus(i, status);
         }
 
+    // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
+    } else if (relaySync == RELAY_SYNC_FIRST) {
+        if (id == 0) {
+            for (unsigned short i=1; i<_relays.size(); i++) {
+                relayStatus(i, status);
+            }
+        }
+
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
     } else if (status) {
         if (relaySync != RELAY_SYNC_ANY) {
