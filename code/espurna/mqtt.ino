@@ -870,4 +870,10 @@ void mqttLoop() {
 
 }
 
+#else
+
+bool mqttForward() {
+    return false;
+}
+
 #endif // MQTT_SUPPORT
