@@ -445,5 +445,5 @@ get_pwm_version(void)
 void ICACHE_FLASH_ATTR
 set_pwm_debug_en(uint8_t print_en)
 {
-	(void) print_en;
+	UNUSED(print_en);
 }

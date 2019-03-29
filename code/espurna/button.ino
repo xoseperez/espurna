@@ -186,6 +186,7 @@ void buttonSetup() {
     #else
 
         unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+        UNUSED(btnDelay);
 
         #if BUTTON1_PIN != GPIO_NONE
         {

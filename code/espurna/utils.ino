@@ -206,6 +206,9 @@ void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
     unsigned int free_heap = getFreeHeap();
+    
+    UNUSED(uptime_seconds);
+    UNUSED(free_heap);
 
     #if MQTT_SUPPORT
         unsigned char _heartbeat_mode = getHeartbeatMode();
@@ -418,6 +421,7 @@ void info() {
     // -------------------------------------------------------------------------
 
     FlashMode_t mode = ESP.getFlashChipMode();
+    UNUSED(mode);
     DEBUG_MSG_P(PSTR("[MAIN] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     DEBUG_MSG_P(PSTR("[MAIN] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
     DEBUG_MSG_P(PSTR("[MAIN] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");

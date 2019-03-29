@@ -119,7 +119,7 @@ class EmonAnalogSensor : public EmonSensor {
     protected:
 
         unsigned int readADC(unsigned char channel) {
-            (void) channel;
+            UNUSED(channel);
             return analogRead(0);
         }
 

@@ -123,7 +123,7 @@ class EventSensor : public BaseSensor {
 
         // Handle interrupt calls
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
-            (void) gpio;
+            UNUSED(gpio);
             static unsigned long last = 0;
 
             // clock count in 32bit value, overflowing:

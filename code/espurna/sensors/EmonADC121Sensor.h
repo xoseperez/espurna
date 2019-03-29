@@ -140,7 +140,7 @@ class EmonADC121Sensor : public EmonSensor {
         }
 
         unsigned int readADC(unsigned char channel) {
-            (void) channel;
+            UNUSED(channel);
             unsigned int value = i2c_read_uint16(_address, ADC121_REG_RESULT) & 0x0FFF;
             return value;
         }
