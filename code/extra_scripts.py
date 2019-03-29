@@ -85,10 +85,8 @@ def dummy_ets_printf(target, source, env):
     cmd = ["xtensa-lx106-elf-objcopy"]
 
     # recent Core switched to cpp+newlib & ets_printf_P
-    if postmortem_src_file.get_abspath().endswith(".cpp"):
-        cmd.extend(["--redefine-sym", "ets_printf_P=dummy_ets_printf"])
-    else:
-        cmd.extend(["--redefine-sym", "ets_printf=dummy_ets_printf"])
+    cmd.extend(["--redefine-sym", "ets_printf=dummy_ets_printf"])
+    cmd.extend(["--redefine-sym", "ets_printf_P=dummy_ets_printf"])
 
     cmd.append(postmortem_obj_file.get_abspath())
     env.Execute(env.VerboseAction(" ".join(cmd), "Removing ets_printf / ets_printf_P"))
