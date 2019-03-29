@@ -59,12 +59,12 @@ def remove_float_support():
         LINKFLAGS = newflags
     )
 
-def cpp_check(source, target, env):
+def cpp_check(target, source, env):
     print("Started cppcheck...\n")
     call(["cppcheck", os.getcwd()+"/espurna", "--force", "--enable=all"])
     print("Finished cppcheck...\n")
 
-def check_size(source, target, env):
+def check_size(target, source, env):
     (binary,) = target
     path = binary.get_abspath()
     size = os.stat(path).st_size
@@ -78,6 +78,20 @@ def check_size(source, target, env):
         print_warning("https://github.com/xoseperez/espurna/wiki/TwoStepUpdates", color=Color.LIGHT_CYAN)
         print_filler("*", color=Color.LIGHT_YELLOW, err=True)
 
+def dummy_ets_printf(target, source, env):
+    (postmortem_src_file, ) = source
+    (postmortem_obj_file, ) = target
+
+    cmd = ["xtensa-lx106-elf-objcopy"]
+
+    # recent Core switched to cpp+newlib & ets_printf_P
+    cmd.extend(["--redefine-sym", "ets_printf=dummy_ets_printf"])
+    cmd.extend(["--redefine-sym", "ets_printf_P=dummy_ets_printf"])
+
+    cmd.append(postmortem_obj_file.get_abspath())
+    env.Execute(env.VerboseAction(" ".join(cmd), "Removing ets_printf / ets_printf_P"))
+    env.Depends(postmortem_obj_file,"$BUILD_DIR/src/dummy_ets_printf.c.o")
+
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
@@ -85,6 +99,13 @@ def check_size(source, target, env):
 # Always show warnings for project code
 projenv.ProcessUnFlags("-w")
 
+# 2.4.0 and up
 remove_float_support()
 
+# two-step update hint when using 1MB boards
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
+
+# disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
+if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
+    env.AddPostAction("$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.c.o", dummy_ets_printf)
+    env.AddPostAction("$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf)
