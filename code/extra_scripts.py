@@ -91,7 +91,8 @@ def dummy_ets_printf(target, source, env):
         cmd.extend(["--redefine-sym", "ets_printf=dummy_ets_printf"])
 
     cmd.append(postmortem_obj_file.get_abspath())
-    env.VerboseAction(cmd, "Running $TARGET")
+    env.Execute(env.VerboseAction(" ".join(cmd), "Removing ets_printf / ets_printf_P"))
+    env.Depends(postmortem_obj_file,"$BUILD_DIR/src/dummy_ets_printf.c.o")
 
 # ------------------------------------------------------------------------------
 # Hooks
@@ -107,6 +108,6 @@ remove_float_support()
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
 
 # disable postmortem printing to the uart. another one is in eboot, but this is what causes the most harm
-if "DISABLE_POSTMORTEM_STACKDUMP" if env["CPPFLAGS"]:
+if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
     env.AddPostAction("$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.c.o", dummy_ets_printf)
     env.AddPostAction("$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf)
