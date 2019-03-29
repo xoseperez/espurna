@@ -127,7 +127,7 @@ class ECH1560Sensor : public BaseSensor {
 
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
 
-            UNSUSED(gpio);
+            UNUSED(gpio);
 
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
             if (_dosync == false) {
