@@ -484,6 +484,15 @@ void _sensorLoad() {
         BMX280Sensor * sensor = new BMX280Sensor();
         sensor->setAddress(BMX280_ADDRESS);
         _sensors.push_back(sensor);
+
+        #if (BMX280_NUMBER == 2)
+        // Up to two BME sensors allowed on one I2C bus
+        BMX280Sensor * sensor2 = new BMX280Sensor();
+	// For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
+	//   otherwise choose the other unnamed sensor address
+        sensor->setAddress( (BMX280_ADDRESS == 0x00) ? 0x00 : (0x76 + 0x77 - BMX280_ADDRESS));
+        _sensors.push_back(sensor2);
+        #endif
     }
     #endif
 
