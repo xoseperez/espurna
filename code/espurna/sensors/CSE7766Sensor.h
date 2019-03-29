@@ -22,7 +22,7 @@ class CSE7766Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         CSE7766Sensor(): BaseSensor(), _data() {
-            _count = 6;
+            _count = 7;
             _sensor_id = SENSOR_CSE7766_ID;
         }
 
@@ -161,7 +161,7 @@ class CSE7766Sensor : public BaseSensor {
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-			if (index == 3) return MAGNITUDE_POWER_REACTIVE;
+            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
             if (index == 4) return MAGNITUDE_POWER_APPARENT;
             if (index == 5) return MAGNITUDE_POWER_FACTOR;
             if (index == 6) return MAGNITUDE_ENERGY;
@@ -275,10 +275,10 @@ class CSE7766Sensor : public BaseSensor {
                 }
             }
 
-			// Calculate reactive power
-			_reactive = 0;
-			unsigned int active = _active;
-			unsigned int apparent = _voltage * _current;
+            // Calculate reactive power
+            _reactive = 0;
+            unsigned int active = _active;
+            unsigned int apparent = _voltage * _current;
             if (apparent > active) {
                 _reactive = sqrt(apparent * apparent - active * active);
             } else {
