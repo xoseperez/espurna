@@ -12,7 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiClient.h>
 #include <Ticker.h>
 
-#include <libs/NtpClientWrap.h>
+#include "libs/NtpClientWrap.h"
 
 Ticker _ntp_defer;
 
