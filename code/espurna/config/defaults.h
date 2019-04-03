@@ -574,3 +574,35 @@
 #ifndef LIGHT_PROVIDER
 #define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif
+
+#ifndef LIGHT_CH1_PIN
+#define LIGHT_CH1_PIN            GPIO_NONE
+#endif
+#ifndef LIGHT_CH2_PIN
+#define LIGHT_CH2_PIN            GPIO_NONE
+#endif
+#ifndef LIGHT_CH3_PIN
+#define LIGHT_CH3_PIN            GPIO_NONE
+#endif
+#ifndef LIGHT_CH4_PIN
+#define LIGHT_CH4_PIN            GPIO_NONE
+#endif
+#ifndef LIGHT_CH5_PIN
+#define LIGHT_CH5_PIN            GPIO_NONE
+#endif
+
+#ifndef LIGHT_CH1_INVERSE
+#define LIGHT_CH1_INVERSE            0
+#endif
+#ifndef LIGHT_CH2_INVERSE
+#define LIGHT_CH2_INVERSE            0
+#endif
+#ifndef LIGHT_CH3_INVERSE
+#define LIGHT_CH3_INVERSE            0
+#endif
+#ifndef LIGHT_CH4_INVERSE
+#define LIGHT_CH4_INVERSE            0
+#endif
+#ifndef LIGHT_CH5_INVERSE
+#define LIGHT_CH5_INVERSE            0
+#endif

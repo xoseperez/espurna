@@ -62,14 +62,15 @@ void migrate() {
             setSetting("btnRelay", 0, BUTTON1_RELAY - 1);
             setSetting("btnActions", 0, buttonStore(
                 BUTTON1_PRESS, BUTTON1_CLICK, BUTTON1_DBLCLICK,
-                BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK, BUTTON1_TRIPLECLICK);
+                BUTTON1_LNGCLICK, BUTTON1_LNGLNGCLICK, BUTTON1_TRIPLECLICK));
+        #endif
         #if BUTTON2_PIN != GPIO_NONE
             setSetting("btnGPIO", 1, BUTTON2_PIN);
             setSetting("btnMode", 1, BUTTON2_MODE);
             setSetting("btnRelay", 1, BUTTON2_RELAY - 1);
             setSetting("btnActions", 1, buttonStore(
                 BUTTON2_PRESS, BUTTON2_CLICK, BUTTON2_DBLCLICK,
-                BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK, BUTTON2_TRIPLECLICK);
+                BUTTON2_LNGCLICK, BUTTON2_LNGLNGCLICK, BUTTON2_TRIPLECLICK));
         #endif
         #if BUTTON3_PIN != GPIO_NONE
             setSetting("btnGPIO", 2, BUTTON3_PIN);
@@ -77,7 +78,7 @@ void migrate() {
             setSetting("btnRelay", 2, BUTTON3_RELAY - 1);
             setSetting("btnActions", 2, buttonStore(
                 BUTTON3_PRESS, BUTTON3_CLICK, BUTTON3_DBLCLICK,
-                BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK);
+                BUTTON3_LNGCLICK, BUTTON3_LNGLNGCLICK, BUTTON3_TRIPLECLICK));
         #endif
         #if BUTTON4_PIN != GPIO_NONE
             setSetting("btnGPIO", 3, BUTTON4_PIN);
@@ -85,7 +86,7 @@ void migrate() {
             setSetting("btnRelay", 3, BUTTON4_RELAY - 1);
             setSetting("btnActions", 3, buttonStore(
                 BUTTON4_PRESS, BUTTON4_CLICK, BUTTON4_DBLCLICK,
-                BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK);
+                BUTTON4_LNGCLICK, BUTTON4_LNGLNGCLICK, BUTTON4_TRIPLECLICK));
         #endif
         #if BUTTON5_PIN != GPIO_NONE
             setSetting("btnGPIO", 4, BUTTON5_PIN);
@@ -93,7 +94,7 @@ void migrate() {
             setSetting("btnRelay", 4, BUTTON5_RELAY - 1);
             setSetting("btnActions", 4, buttonStore(
                 BUTTON5_PRESS, BUTTON5_CLICK, BUTTON5_DBLCLICK,
-                BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK);
+                BUTTON5_LNGCLICK, BUTTON5_LNGLNGCLICK, BUTTON5_TRIPLECLICK));
         #endif
         #if BUTTON6_PIN != GPIO_NONE
             setSetting("btnGPIO", 5, BUTTON6_PIN);
@@ -101,7 +102,7 @@ void migrate() {
             setSetting("btnRelay", 5, BUTTON6_RELAY - 1);
             setSetting("btnActions", 5, buttonStore(
                 BUTTON6_PRESS, BUTTON6_CLICK, BUTTON6_DBLCLICK,
-                BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK);
+                BUTTON6_LNGCLICK, BUTTON6_LNGLNGCLICK, BUTTON6_TRIPLECLICK));
         #endif
         #if BUTTON7_PIN != GPIO_NONE
             setSetting("btnGPIO", 6, BUTTON7_PIN);
@@ -109,7 +110,7 @@ void migrate() {
             setSetting("btnRelay", 6, BUTTON7_RELAY - 1);
             setSetting("btnActions", 6, buttonStore(
                 BUTTON7_PRESS, BUTTON7_CLICK, BUTTON7_DBLCLICK,
-                BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK);
+                BUTTON7_LNGCLICK, BUTTON7_LNGLNGCLICK, BUTTON7_TRIPLECLICK));
         #endif
         #if BUTTON8_PIN != GPIO_NONE
             setSetting("btnGPIO", 7, BUTTON8_PIN);
@@ -117,7 +118,7 @@ void migrate() {
             setSetting("btnRelay", 7, BUTTON8_RELAY - 1);
             setSetting("btnActions", 7, buttonStore(
                 BUTTON8_PRESS, BUTTON8_CLICK, BUTTON8_DBLCLICK,
-                BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK);
+                BUTTON8_LNGCLICK, BUTTON8_LNGLNGCLICK, BUTTON8_TRIPLECLICK));
         #endif
 
         // Simple LED
@@ -146,13 +147,11 @@ void migrate() {
             setSetting("ledMode", 3, LED4_MODE);
             setSetting("ledRelay", 3, LED4_RELAY - 1);
         #endif
-        #endif
         #if LED5_PIN != GPIO_NONE
             setSetting("ledGPIO", 4, LED5_PIN);
             setSetting("ledLogic", 4, LED5_PIN_INVERSE);
             setSetting("ledMode", 4, LED5_MODE);
             setSetting("ledRelay", 4, LED5_RELAY - 1);
-        #endif
         #endif
         #if LED6_PIN != GPIO_NONE
             setSetting("ledGPIO", 5, LED6_PIN);
@@ -179,7 +178,7 @@ void migrate() {
 
         // Allow to set-up N dummy relays automatically
         #ifdef DUMMY_RELAY_COUNT
-            setSettin("relays", DUMMY_RELAY_COUNT);
+            setSetting("relays", DUMMY_RELAY_COUNT);
         #endif
 
         #if RELAY1_PIN != GPIO_NONE
