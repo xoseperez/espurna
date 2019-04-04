@@ -1097,7 +1097,7 @@ void _lightSaveChannelMap(String& result, unsigned char array[], size_t length) 
 
 void _lightLoadChannelMap(String& source, unsigned char array[], size_t length) {
 
-    if (!source.length() || (source.length() != LIGHT_CHANNES)) return;
+    if (!source.length() || (source.length() != LIGHT_CHANNELS)) return;
 
     for (unsigned char i=0; i<length; ++i) {
         array[i] = static_cast<unsigned char>(source[i] - '0');
