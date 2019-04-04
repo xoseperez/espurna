@@ -25,65 +25,6 @@ std::vector<encoder_t> _encoders;
 
 void _encoderConfigure() {
 
-    // Clean previous encoders
-    for (unsigned char i=0; i<_encoders.size(); i++) {
-        free(_encoders[i].encoder);
-    }
-    _encoders.clear();
-
-    // Load encoders
-    #if (ENCODER1_PIN1 != GPIO_NONE) && (ENCODER1_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER1_PIN1, ENCODER1_PIN2),
-            ENCODER1_BUTTON_PIN, ENCODER1_BUTTON_LOGIC, ENCODER1_BUTTON_MODE, ENCODER1_MODE,
-            ENCODER1_CHANNEL1, ENCODER1_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER2_PIN1 != GPIO_NONE) && (ENCODER2_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER2_PIN1, ENCODER2_PIN2),
-            ENCODER2_BUTTON_PIN, ENCODER2_BUTTON_LOGIC, ENCODER2_BUTTON_MODE, ENCODER2_MODE,
-            ENCODER2_CHANNEL1, ENCODER2_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER3_PIN1 != GPIO_NONE) && (ENCODER3_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER3_PIN1, ENCODER3_PIN2),
-            ENCODER3_BUTTON_PIN, ENCODER3_BUTTON_LOGIC, ENCODER3_BUTTON_MODE, ENCODER3_MODE,
-            ENCODER3_CHANNEL1, ENCODER3_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER4_PIN1 != GPIO_NONE) && (ENCODER4_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER4_PIN1, ENCODER4_PIN2),
-            ENCODER4_BUTTON_PIN, ENCODER4_BUTTON_LOGIC, ENCODER4_BUTTON_MODE, ENCODER4_MODE,
-            ENCODER4_CHANNEL1, ENCODER4_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER5_PIN1 != GPIO_NONE) && (ENCODER5_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER5_PIN1, ENCODER5_PIN2),
-            ENCODER5_BUTTON_PIN, ENCODER5_BUTTON_LOGIC, ENCODER5_BUTTON_MODE, ENCODER5_MODE,
-            ENCODER5_CHANNEL1, ENCODER5_CHANNEL2
-        });
-    }
-    #endif
-
-    // Setup encoders
-    for (unsigned char i=0; i<_encoders.size(); i++) {
-        if (GPIO_NONE != _encoders[i].button_pin) {
-            pinMode(_encoders[i].button_pin, _encoders[i].button_mode);
-        }
-    }
 
 }
 
@@ -138,18 +79,63 @@ void _encoderLoop() {
 
 }
 
+void _encoderConfigure() {
+
+    for (unsigned char index=0; _encoders.size(); ++id) {
+        _encoders[index].mode = getSetting("encMode", index, ENCODER_MODE_RATIO).toInt();
+        _encoders[index].channel1 = getSetting("encCh", index, 0).toInt();
+        _encoders[index].channel2 = getSetting("encBtnCh", index, 1).toInt();
+    }
+
+}
+
+void _encoderSetup() {
+
+    // TODO: separate encoder max / max_components from v2?
+
+    unsigned char index = 0;
+    while (index < 8) {
+
+        unsigned char pin1 = getSetting("encA", index, GPIO_NONE).toInt();
+        unsigned char pin2 = getSetting("encB", index, GPIO_NONE).toInt();
+        if ((GPIO_NONE == pin1) || (GPIO_NONE == pin2)) break;
+
+        unsigned char button_pin = getSetting("encBtn", index, GPIO_NONE).toInt();
+        unsigned char button_logic = getSetting("encBtnLogic", index, GPIO_LOGIC_INVERSE).toInt();
+        unsigned char button_mode = getSetting("encBtnMode", index, INPUT_PULLUP).toInt();
+        unsigned char mode = getSetting("encMode", index, ENCODER_MODE_RATIO).toInt();
+        unsigned char channel1 = getSetting("encCh", index, 0).toInt();
+        unsigned char channel2 = getSetting("encBtnCh", index, 1).toInt();
+
+        _encoders.push_back({
+            new Encoder(pin1, pin2),
+            button_pin, button_logic, button_mode,
+            mode,
+            channel1, channel2
+        });
+
+        if (GPIO_NONE != button_pin) {
+            pinMode(button_pin, button_mode);
+        }
+
+        ++index;
+
+    }
+
+    DEBUG_MSG_P(PSTR("[ENCODER] Number of encoders: %u\n"), _encoders.size());
+}
+
 // -----------------------------------------------------------------------------
 
 void encoderSetup() {
 
     // Configure encoders
+    _encoderSetup();
     _encoderConfigure();
 
     // Main callbacks
     espurnaRegisterLoop(_encoderLoop);
     espurnaRegisterReload(_encoderConfigure);
-
-    DEBUG_MSG_P(PSTR("[ENCODER] Number of encoders: %u\n"), _encoders.size());
 
 }
 

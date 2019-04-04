@@ -1161,7 +1161,7 @@ void lightSetup() {
         unsigned char gpio;
         unsigned char index = 0;
         while ((gpio = getSetting("chGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
-            bool inverse = getSetting("chLogic", index).toInt() == 1;
+            bool inverse = getSetting("chLogic", index, GPIO_LOGIC_DIRECT).toInt() == GPIO_LOGIC_INVERSE;
             _light_channel.push_back((channel_t) {gpio, inverse, true, 0, 0, 0});
             ++index;
         }
