@@ -857,6 +857,22 @@
 #endif                                                             // often the sensor takes a measurement.
 
 //------------------------------------------------------------------------------
+// MAX6675
+// Enable support by passing MAX6675_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+#ifndef MAX6675_CS_PIN
+#define MAX6675_CS_PIN                               13
+#endif
+
+#ifndef MAX6675_SO_PIN
+#define MAX6675_SO_PIN                               12
+#endif
+
+#ifndef MAX6675_SCK_PIN
+#define MAX6675_SCK_PIN                              14
+#endif
+
+//------------------------------------------------------------------------------
 // EZOPH pH meter
 // Enable support by passing EZOPH_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -916,6 +932,7 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
+    MAX6675_SUPPORT || \
     EZOPH_SUPPORT \
 )
 #endif
