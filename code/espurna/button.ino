@@ -246,8 +246,13 @@ void buttonLoop() {
 
 void buttonSetup() {
 
+    // TODO v2: maybe this setting should be changed, btnDelay => btnClickDelay?
     unsigned long btnDelay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
     UNUSED(btnDelay);
+
+    unsigned long btnDefaultActions = buttonStore(
+        BUTTON_MODE_NONE, BUTTON_MODE_TOGGLE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE, BUTTON_MODE_NONE);
+    UNUSED(btnDefaultActions);
 
     // TODO: max buttons / max_components from v2 ?
     unsigned char index = 0;
@@ -257,7 +262,8 @@ void buttonSetup() {
         if (GPIO_NONE == pin) break;
         unsigned char relayId = getSetting("btnRelay", index, RELAY_NONE).toInt();
         unsigned char mode = getSetting("btnMode", index, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH).toInt();
-        unsigned long actions = _buttonGetActionMask(index);
+
+        unsigned long actions = getSetting("btnActions", index, btnDefaultActions).toInt();
 
         // DebounceEvent takes 4 parameters
         // * GPIO
