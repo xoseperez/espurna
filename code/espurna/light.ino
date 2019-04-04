@@ -1134,7 +1134,6 @@ void _lightConfigure() {
 
 void lightSetup() {
 
-    #ifdef LIGHT_ENABLE_PIN
     {
         unsigned char gpio = getSetting("lightEnGPIO", GPIO_NONE).toInt();
         if (GPIO_NONE != gpio) {
@@ -1142,7 +1141,6 @@ void lightSetup() {
             digitalWrite(gpio, HIGH);
         }
     }
-    #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
     {

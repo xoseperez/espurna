@@ -212,11 +212,11 @@ void _migrateSetFromDefaults() {
 
     // Lights
 
-    #ifdef LIGHT_ENABLE_PIN
+    #if LIGHT_ENABLE_PIN != GPIO_NONE
         setSetting("lightEnGPIO", LIGHT_ENABLE_PIN);
     #endif
 
-    #ifdef LIGHT_CHANNELS
+    #if LIGHT_CHANNELS
         setSetting("chMax", LIGHT_CHANNELS);
     #endif
 

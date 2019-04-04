@@ -575,6 +575,14 @@
 #define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif
 
+#ifndef LIGHT_CHANNELS
+#define LIGHT_CHANNELS           0
+#endif
+
+#ifndef LIGHT_ENABLE_PIN
+#define LIGHT_ENABLE_PIN         GPIO_NONE
+#endif
+
 #ifndef LIGHT_CH1_PIN
 #define LIGHT_CH1_PIN            GPIO_NONE
 #endif
