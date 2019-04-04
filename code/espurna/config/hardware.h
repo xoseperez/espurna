@@ -477,8 +477,19 @@
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
 
-    // Buttons
+    // These are purely virtual, only to set up CLICK event
+    #define BUTTON1_GPIO        0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON1_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON2_GPIO        0
+    #define BUTTON2_RELAY       2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON2_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON3_GPIO        0
     #define BUTTON3_RELAY       1
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON3_CLICK       BUTTON_MODE_TOGGLE
 
     // LEDs
     #define LED1_PIN            13
@@ -3439,11 +3450,23 @@
     #define DUMMY_RELAY_COUNT       2
     #define DEBUG_SERIAL_SUPPORT    0
 
-    // Buttons
-    #define BUTTON1_RELAY           1
-    #define BUTTON2_RELAY           2
-    #define BUTTON3_RELAY           2
-    #define BUTTON4_RELAY           1
+    // Like SONOFF_DUAL, these are only for CLICK event definition
+    #define BUTTON1_GPIO        0
+    #define BUTTON1_RELAY       1
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON1_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON2_GPIO        0
+    #define BUTTON2_RELAY       2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON2_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON3_GPIO        0
+    #define BUTTON3_RELAY       2
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON3_CLICK       BUTTON_MODE_TOGGLE
+    #define BUTTON4_GPIO        0
+    #define BUTTON4_RELAY       1
+    #define BUTTON4_MODE        BUTTON_PUSHBUTTON
+    #define BUTTON4_CLICK       BUTTON_MODE_TOGGLE
 
 // -----------------------------------------------------------------------------
 // Teckin SP20
