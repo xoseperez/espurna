@@ -101,6 +101,8 @@
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
+#define RELAY_NONE                  0xFF
+
 //------------------------------------------------------------------------------
 // UDP SYSLOG
 //------------------------------------------------------------------------------
