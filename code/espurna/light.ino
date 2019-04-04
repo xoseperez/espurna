@@ -54,7 +54,7 @@ unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 my92xx * _my92xx;
-ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
+unsigned char _light_channel_map[5] = {0};
 #endif
 
 // Gamma Correction lookup table (8 bit)
@@ -1083,6 +1083,29 @@ unsigned long getIOFunc(unsigned long gpio) {
 
 #endif
 
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+
+void _lightSaveChannelMap(String& result, unsigned char array[], size_t length) {
+
+    result.reserve(5);
+
+    for (unsigned char i=0; i<length; ++i) {
+        result[i] = static_cast<char>(array[i]) + '0';
+    }
+
+}
+
+void _lightLoadChannelMap(String& source, unsigned char array[], size_t length) {
+
+    if (!source.length() || (source.length() != LIGHT_CHANNES)) return;
+
+    for (unsigned char i=0; i<length; ++i) {
+        array[i] = static_cast<unsigned char>(source[i] - '0');
+    }
+
+}
+#endif
+
 void _lightConfigure() {
 
     _light_has_color = getSetting("useColor", LIGHT_USE_COLOR).toInt() == 1;
@@ -1112,40 +1135,36 @@ void _lightConfigure() {
 void lightSetup() {
 
     #ifdef LIGHT_ENABLE_PIN
-        pinMode(LIGHT_ENABLE_PIN, OUTPUT);
-        digitalWrite(LIGHT_ENABLE_PIN, HIGH);
+    {
+        unsigned char gpio = getSetting("lightEnGPIO", GPIO_NONE).toInt();
+        if (GPIO_NONE != gpio) {
+            pinMode(gpio, OUTPUT);
+            digitalWrite(gpio, HIGH);
+        }
+    }
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-
+    {
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
         for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
             _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0});
         }
 
+        String mapping = getSetting("myMap");
+        _lightLoadChannelMap(mapping, _light_channel_map, LIGHT_CHANNELS);
+    }
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-
-        #ifdef LIGHT_CH1_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH1_PIN, LIGHT_CH1_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH2_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH2_PIN, LIGHT_CH2_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH3_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH3_PIN, LIGHT_CH3_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH4_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH4_PIN, LIGHT_CH4_INVERSE, true, 0, 0, 0});
-        #endif
-
-        #ifdef LIGHT_CH5_PIN
-            _light_channel.push_back((channel_t) {LIGHT_CH5_PIN, LIGHT_CH5_INVERSE, true, 0, 0, 0});
-        #endif
+    {
+        unsigned char gpio;
+        unsigned char index = 0;
+        while ((gpio = getSetting("chGPIO", index, GPIO_NONE).toInt()) != GPIO_NONE) {
+            bool inverse = getSetting("chLogic", index).toInt() == 1;
+            _light_channel.push_back((channel_t) {gpio, inverse, true, 0, 0, 0});
+            ++index;
+        }
 
         uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
         uint32 io_info[PWM_CHANNEL_NUM_MAX][3];
@@ -1158,12 +1177,11 @@ void lightSetup() {
         }
         pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
         pwm_start();
-
-
+    }
     #endif
 
     DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
-    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channel.size());
+    DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), _light_channel.size());
 
     _lightConfigure();
     _lightColorRestore();

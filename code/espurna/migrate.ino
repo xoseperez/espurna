@@ -286,7 +286,7 @@ void migrate() {
             setSetting("myDI", MY92XX_DI_PIN);
             setSetting("myDCKI", MY92XX_DCKI_PIN);
             setSetting("myCmd", MY92XX_COMMAND);
-            setSetting("myMap", #MY92XX_MAPPING);
+            setSetting("myMap", MY92XX_MAPPING);
         #endif
 
         // Encoder controlled lights

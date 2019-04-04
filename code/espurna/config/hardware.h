@@ -740,7 +740,7 @@
     #define MY92XX_DI_PIN       12
     #define MY92XX_DCKI_PIN     14
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      4, 3, 5, 0, 1
+    #define MY92XX_MAPPING      "43501"
     #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
 #elif defined(ITEAD_SONOFF_LED)
@@ -1149,7 +1149,7 @@
     #define MY92XX_DI_PIN       13
     #define MY92XX_DCKI_PIN     15
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      0, 1, 2, 3
+    #define MY92XX_MAPPING      "0123"
 
 // -----------------------------------------------------------------------------
 // Lyasi LED
@@ -1171,7 +1171,7 @@
     #define MY92XX_DI_PIN       4
     #define MY92XX_DCKI_PIN     5
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      0, 1, 2, 3
+    #define MY92XX_MAPPING      "0123"
 
 // -----------------------------------------------------------------------------
 // LED Controller
@@ -1739,7 +1739,7 @@
     #define MY92XX_DI_PIN       13
     #define MY92XX_DCKI_PIN     15
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      0, 1, 2, 3
+    #define MY92XX_MAPPING      "0123"
 
 // -----------------------------------------------------------------------------
 // XENON SM-PW701U
@@ -3073,7 +3073,7 @@
     #define MY92XX_DI_PIN       13
     #define MY92XX_DCKI_PIN     15
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      0, 1, 2, 3, 4
+    #define MY92XX_MAPPING      "01234"
     #define LIGHT_WHITE_FACTOR  (0.1)                    // White LEDs are way more bright in the B1
 
 // -----------------------------------------------------------------------------
@@ -3211,14 +3211,14 @@
     #define DUMMY_RELAY_COUNT   1
 
     // Light
-    #define LIGHT_CHANNELS      5
+    #define LIGHT_CHANNELS      2
     #define MY92XX_MODEL        MY92XX_MODEL_MY9291
     #define MY92XX_CHIPS        1
     #define MY92XX_DI_PIN       4
     #define MY92XX_DCKI_PIN     5
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     // No RGB on this bulb. Warm white on channel 0, cool white on channel 3
-    #define MY92XX_MAPPING      255, 255, 255, 3, 0
+    #define MY92XX_MAPPING      "30"
 
 // -----------------------------------------------------------------------------
 // Lombex Lux Nova 2 White and Color
@@ -3242,7 +3242,7 @@
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     // RGB on channels 0/1/2, either cool or warm white on channel 3
     // The bulb *should* have cool leds, but could also have warm leds as a common defect
-    #define MY92XX_MAPPING      0, 1, 2, 3
+    #define MY92XX_MAPPING      "0123"
 
 // -----------------------------------------------------------------------------
 // Bestek Smart Plug with 2 USB ports
@@ -3697,7 +3697,7 @@
     #define MY92XX_DI_PIN       1
     #define MY92XX_DCKI_PIN     2
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
-    #define MY92XX_MAPPING      4, 3, 5, 0, 1
+    #define MY92XX_MAPPING      "43501"
 
     // A bit of Analog EMON (analog)
     #ifndef EMON_ANALOG_SUPPORT
