@@ -572,21 +572,48 @@ void _relayBoot() {
 }
 
 void _relayConfigure() {
-    for (unsigned int i=0; i<_relays.size(); i++) {
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_MODE).toFloat();
 
-        if (GPIO_NONE == _relays[i].pin) continue;
+    for (unsigned char id=0; id < _relays.size(); ++id) {
+        _relays[id].delay_on = getSetting("relayDelayOn", id, 0).toInt();
+        _relays[id].delay_off = getSetting("relayDelayOff", id, 0).toInt();
 
-        pinMode(_relays[i].pin, OUTPUT);
-        if (GPIO_NONE != _relays[i].reset_pin) {
-            pinMode(_relays[i].reset_pin, OUTPUT);
-        }
-        if (_relays[i].type == RELAY_TYPE_INVERSE) {
-            //set to high to block short opening of relay
-            digitalWrite(_relays[i].pin, HIGH);
-        }
+        _relays[id].pulse = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
+        _relays[id].pulse_ms = 1000 * getSetting("relayTime", id, RELAY_PULSE_TIME).toFloat();
     }
+
+}
+
+// TODO: relay_max / max_components from v2 to limit relays array size
+// TODO: short key? relay -> rly/rel/rl/sw/s/...
+
+void _relaySetupDummy(unsigned char dummy) {
+    for (unsigned char index=0; index < dummy; index++) {
+        unsigned long delay_on = getSetting("relayDelayOn", index, 0).toInt();
+        unsigned long delay_off = getSetting("relayDelayOff", index, 0).toInt();
+        _relays.push_back((relay_t) {0, RELAY_TYPE_NORMAL, 0, delay_on, delay_off});
+    }
+}
+
+void _relaySetup() {
+
+    unsigned char index = 0;
+    while (index < 8) {
+
+        unsigned char pin = getSetting("relayGPIO", index, GPIO_NONE).toInt();
+        if (GPIO_NONE == pin) break;
+        pinMode(pin, OUTPUT);
+
+        unsigned char type = getSetting("relayType", index, RELAY_TYPE_NORMAL).toInt();
+        if (RELAY_TYPE_INVERSE == type) digitalWrite(pin, HIGH);
+
+        unsigned char reset = getSetting("relayResetGPIO", index, GPIO_NONE).toInt();
+        if (GPIO_NONE != reset) pinMode(reset, OUTPUT);
+
+        _relays.push_back((relay_t) { pin, type, reset, 0, 0, 0, 0 });
+        ++index;
+
+    }
+
 }
 
 //------------------------------------------------------------------------------
@@ -1068,40 +1095,15 @@ void _relayLoop() {
 
 void relaySetup() {
 
-    // Ad-hoc relays
-    #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
-    #endif
-    #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
-    #endif
-    #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
-    #endif
-    #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
-    #endif
-    #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
-    #endif
-    #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
-    #endif
-    #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
-    #endif
-    #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
-    #endif
+    _relayBackwards();
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
-    // No delay_on or off for these devices to easily allow having more than
-    // 8 channels. This behaviour will be recovered with v2.
-    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+    unsigned char dummy = getSetting("relayDummy", 0).toInt();
+    if (dummy > 0) {
+        _relaySetupDummy(dummy);
+    } else {
+        _relaySetup();
     }
 
-    _relayBackwards();
     _relayConfigure();
     _relayBoot();
     _relayLoop();

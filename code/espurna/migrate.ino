@@ -178,7 +178,7 @@ void migrate() {
 
         // Allow to set-up N dummy relays automatically
         #ifdef DUMMY_RELAY_COUNT
-            setSetting("relays", DUMMY_RELAY_COUNT);
+            setSetting("relayDummy", DUMMY_RELAY_COUNT);
         #endif
 
         #if RELAY1_PIN != GPIO_NONE
