@@ -67,6 +67,15 @@ void setup() {
     // Init persistance
     settingsSetup();
 
+    // Hostname & board name initialization
+    if (getSetting("hostname").length() == 0) {
+        setDefaultHostname();
+    }
+    setBoardName();
+
+    // Prepare configuration for version 2.0
+    migrate();
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 
@@ -74,12 +83,6 @@ void setup() {
     #if TERMINAL_SUPPORT
         terminalSetup();
     #endif
-
-    // Hostname & board name initialization
-    if (getSetting("hostname").length() == 0) {
-        setDefaultHostname();
-    }
-    setBoardName();
 
     // Show welcome message and system configuration
     info();
@@ -204,9 +207,6 @@ void setup() {
     #if USE_EXTRA
         extraSetup();
     #endif
-
-    // Prepare configuration for version 2.0
-    migrate();
 
     saveSettings();
 
