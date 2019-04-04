@@ -336,7 +336,7 @@ void migrate() {
         #endif
 
         // Dynamic module settings
-
+        /*
         #if HLW8012_SUPPORT
 
             setSetting("hlwSEL", HLW8012_SEL_PIN);
@@ -357,6 +357,7 @@ void migrate() {
             #endif
 
         #endif
+        */
 
     }
 
