@@ -126,10 +126,12 @@ void _mqttConnect() {
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 unsigned char fp[20] = {0};
-                if (sslFingerPrintArray(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
-                    _mqtt.addServerFingerprint(fp);
-                } else {
-                    DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
+                if (!getSetting("mqttFP", MQTT_SSL_FINGERPRINT).equals("")) {
+                    if (sslFingerPrintArray(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                        _mqtt.addServerFingerprint(fp);
+                    } else {
+                        DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
+                    }
                 }
             }
 
@@ -154,7 +156,11 @@ void _mqttConnect() {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
                 if (_mqtt_client_secure.connect(host, port)) {
                     char fp[60] = {0};
-                    if (sslFingerPrintChar(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                    if (getSetting("mqttFP", MQTT_SSL_FINGERPRINT).equals("")) {
+                        _mqtt.setClient(_mqtt_client_secure);
+                        _mqtt_client_secure.stop();
+                        yield();
+                    } else if (sslFingerPrintChar(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                         if (_mqtt_client_secure.verify(fp, host)) {
                             _mqtt.setClient(_mqtt_client_secure);
                         } else {
