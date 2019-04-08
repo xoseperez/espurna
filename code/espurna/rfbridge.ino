@@ -379,7 +379,7 @@ void _rfbDecode() {
         }
 
         #if MQTT_SUPPORT
-            mqttSend(MQTT_TOPIC_RFIN, buffer);
+            mqttSend(MQTT_TOPIC_RFIN, buffer, false, false);
         #endif
 
     }
