@@ -57,8 +57,8 @@ class BaseSensor {
         // Type for slot # index
         virtual unsigned char type(unsigned char index) = 0;
 
-	// Number of decimals for a magnitude (or -1 for default)
-	virtual signed char decimals(unsigned char type) { return -1; }
+	    // Number of decimals for a magnitude (or -1 for default)
+	    virtual signed char decimals(unsigned char type) { return -1; }
 
         // Current value for slot # index
         virtual double value(unsigned char index) = 0;
