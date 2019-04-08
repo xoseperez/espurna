@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // ADS121-based Energy Monitor Sensor over I2C
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ADC121_SUPPORT
@@ -140,7 +140,7 @@ class EmonADC121Sensor : public EmonSensor {
         }
 
         unsigned int readADC(unsigned char channel) {
-            (void) channel;
+            UNUSED(channel);
             unsigned int value = i2c_read_uint16(_address, ADC121_REG_RESULT) & 0x0FFF;
             return value;
         }

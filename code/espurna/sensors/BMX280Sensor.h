@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // BME280/BMP280 Sensor over I2C
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && BMX280_SUPPORT
@@ -98,6 +98,16 @@ class BMX280Sensor : public I2CSensor {
             #endif
             return MAGNITUDE_NONE;
         }
+	// Number of decimals for a magnitude (or -1 for default)
+	signed char decimals(unsigned char type) { 
+	    // These numbers of decimals correspond to maximum sensor resolution settings
+	    switch (type) {  
+	    case MAGNITUDE_TEMPERATURE: return 3;
+	    case MAGNITUDE_PRESSURE:    return 4;
+	    case MAGNITUDE_HUMIDITY:    return 2;
+	    }
+	    return -1;
+	}
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         virtual void pre() {

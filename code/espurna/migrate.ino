@@ -986,7 +986,7 @@ void migrate() {
             setSetting("relayType", 0, RELAY_TYPE_NORMAL);
             setSetting("relayType", 1, RELAY_TYPE_NORMAL);
 
-        #elif defined(ESTINK_WIFI_POWER_STRIP)
+        #elif defined(FORNORM_ZLD_34EU)
 
             setSetting("board", 77);
             setSetting("btnGPIO", 0, 16);
@@ -1299,6 +1299,21 @@ void migrate() {
             setSetting("btnRelay", 3, 0);
             setSetting("relayProvider", RELAY_PROVIDER_DUAL);
             setSetting("relays", 2);
+
+        #elif defined(GENERIC_GU10)
+
+            setSetting("board", 97);
+            setSetting("relayProvider", RELAY_PROVIDER_LIGHT);
+            setSetting("lightProvider", LIGHT_PROVIDER_DIMMER);
+            setSetting("chGPIO", 0, 14);
+            setSetting("chGPIO", 1, 12);
+            setSetting("chGPIO", 2, 13);
+            setSetting("chGPIO", 3, 4);
+            setSetting("chLogic", 0, 0);
+            setSetting("chLogic", 1, 0);
+            setSetting("chLogic", 2, 0);
+            setSetting("chLogic", 3, 0);
+            setSetting("relays", 1);
 
         #else
 

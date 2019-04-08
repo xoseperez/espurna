@@ -347,7 +347,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    return relayStatus(id, status, true, true);
+    return relayStatus(id, status, mqttForward(), true);
 }
 
 bool relayStatus(unsigned char id) {
@@ -378,6 +378,14 @@ void relaySync(unsigned char id) {
     if (relaySync == RELAY_SYNC_SAME) {
         for (unsigned short i=0; i<_relays.size(); i++) {
             if (i != id) relayStatus(i, status);
+        }
+
+    // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
+    } else if (relaySync == RELAY_SYNC_FIRST) {
+        if (id == 0) {
+            for (unsigned short i=1; i<_relays.size(); i++) {
+                relayStatus(i, status);
+            }
         }
 
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
@@ -444,7 +452,7 @@ void relayToggle(unsigned char id, bool report, bool group_report) {
 }
 
 void relayToggle(unsigned char id) {
-    relayToggle(id, true, true);
+    relayToggle(id, mqttForward(), true);
 }
 
 unsigned char relayCount() {

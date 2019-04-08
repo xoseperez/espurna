@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // ECH1560 based power monitor
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && ECH1560_SUPPORT
@@ -127,7 +127,7 @@ class ECH1560Sensor : public BaseSensor {
 
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
 
-            (void) gpio;
+            UNUSED(gpio);
 
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
             if (_dosync == false) {

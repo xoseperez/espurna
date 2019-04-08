@@ -163,6 +163,21 @@
 #define EEPROM_DATA_END         14              // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
+// THERMOSTAT
+//------------------------------------------------------------------------------
+
+#ifndef THERMOSTAT_SUPPORT
+#define THERMOSTAT_SUPPORT          0
+#endif
+
+#ifndef THERMOSTAT_DISPLAY_SUPPORT
+#define THERMOSTAT_DISPLAY_SUPPORT  0
+#endif
+
+#define THERMOSTAT_SERVER_LOST_INTERVAL  120000 //server means lost after 2 min from last response
+#define THERMOSTAT_REMOTE_TEMP_MAX_WAIT     120 // 2 min
+
+//------------------------------------------------------------------------------
 // HEARTBEAT
 //------------------------------------------------------------------------------
 
@@ -257,6 +272,18 @@
 
 #ifndef HEARTBEAT_REPORT_INTERVAL
 #define HEARTBEAT_REPORT_INTERVAL   0
+#endif
+
+#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_RANGE
+#define HEARTBEAT_REPORT_RANGE      1
+#else
+#define HEARTBEAT_REPORT_RANGE      0
+#endif
+
+#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_REMOTE_TEMP
+#define HEARTBEAT_REPORT_REMOTE_TEMP 1
+#else
+#define HEARTBEAT_REPORT_REMOTE_TEMP 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -354,6 +381,10 @@
 // Do not save relay state after these many milliseconds
 #ifndef RELAY_SAVE_DELAY
 #define RELAY_SAVE_DELAY            1000
+#endif
+
+#ifndef RELAY_REPORT_STATUS
+#define RELAY_REPORT_STATUS         1
 #endif
 
 // Configure the MQTT payload for ON/OFF
@@ -496,7 +527,7 @@
 // there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
 // The only requirement is that the resource must be available under this domain.
 #ifndef WEB_REMOTE_DOMAIN
-#define WEB_REMOTE_DOMAIN           "http://tinkerman.cat"
+#define WEB_REMOTE_DOMAIN           "http://espurna.io"
 #endif
 
 // -----------------------------------------------------------------------------
@@ -757,8 +788,14 @@
 #endif
 
 
-#ifndef MQTT_USE_JSON
-#define MQTT_USE_JSON               0               // Group messages in a JSON body
+#if THERMOSTAT_SUPPORT == 1
+    #ifndef MQTT_USE_JSON
+    #define MQTT_USE_JSON               1           // Group messages in a JSON body
+    #endif
+#else
+    #ifndef MQTT_USE_JSON
+    #define MQTT_USE_JSON               0           // Don't group messages in a JSON body (default)
+    #endif
 #endif
 
 #ifndef MQTT_USE_JSON_DELAY
@@ -837,6 +874,16 @@
 #define MQTT_TOPIC_MIRED            "mired"
 #define MQTT_TOPIC_KELVIN           "kelvin"
 #define MQTT_TOPIC_TRANSITION       "transition"
+
+// Thermostat module
+#define MQTT_TOPIC_HOLD_TEMP        "hold_temp"
+#define MQTT_TOPIC_HOLD_TEMP_MIN    "min"
+#define MQTT_TOPIC_HOLD_TEMP_MAX    "max"
+#define MQTT_TOPIC_REMOTE_TEMP      "remote_temp"
+#define MQTT_TOPIC_ASK_TEMP_RANGE   "ask_temp_range"
+#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MIN "notify_temp_range_min"
+#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MAX "notify_temp_range_max"
+
 
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)

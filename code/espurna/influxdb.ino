@@ -2,17 +2,18 @@
 
 INFLUXDB MODULE
 
-Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
 #if INFLUXDB_SUPPORT
 
 #include "ESPAsyncTCP.h"
-#include "SyncClient.h"
+
+#include "libs/SyncClientWrap.h"
 
 bool _idb_enabled = false;
-SyncClient _idb_client;
+SyncClientWrap * _idb_client;
 
 // -----------------------------------------------------------------------------
 
@@ -66,8 +67,8 @@ bool idbSend(const char * topic, const char * payload) {
 
     bool success = false;
 
-    _idb_client.setTimeout(2);
-    if (_idb_client.connect((const char *) host, port)) {
+    _idb_client->setTimeout(2);
+    if (_idb_client->connect((const char *) host, (unsigned int) port)) {
 
         char data[128];
         snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getSetting("hostname").c_str(), String(payload).c_str());
@@ -79,17 +80,17 @@ bool idbSend(const char * topic, const char * payload) {
             getSetting("idbUsername", INFLUXDB_USERNAME).c_str(), getSetting("idbPassword", INFLUXDB_PASSWORD).c_str(),
             host, port, strlen(data), data);
 
-        if (_idb_client.printf(request) > 0) {
-            while (_idb_client.connected() && _idb_client.available() == 0) delay(1);
-            while (_idb_client.available()) _idb_client.read();
-            if (_idb_client.connected()) _idb_client.stop();
+        if (_idb_client->printf(request) > 0) {
+            while (_idb_client->connected() && _idb_client->available() == 0) delay(1);
+            while (_idb_client->available()) _idb_client->read();
+            if (_idb_client->connected()) _idb_client->stop();
             success = true;
         } else {
             DEBUG_MSG_P(PSTR("[INFLUXDB] Sent failed\n"));
         }
 
-        _idb_client.stop();
-        while (_idb_client.connected()) yield();
+        _idb_client->stop();
+        while (_idb_client->connected()) yield();
 
     } else {
         DEBUG_MSG_P(PSTR("[INFLUXDB] Connection failed\n"));
@@ -111,6 +112,8 @@ bool idbEnabled() {
 }
 
 void idbSetup() {
+
+    _idb_client = new SyncClientWrap();
 
     _idbConfigure();
 
