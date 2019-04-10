@@ -481,18 +481,21 @@ void _sensorLoad() {
 
     #if BMX280_SUPPORT
     {
-        BMX280Sensor * sensor = new BMX280Sensor();
-        sensor->setAddress(BMX280_ADDRESS);
-        _sensors.push_back(sensor);
+        // Support up to two sensors with full auto-discovery.
+        const unsigned char number = constrain(getSetting("bmx280Number", BMX280_NUMBER).toInt(), 1, 2);
 
-        #if (BMX280_NUMBER == 2)
-        // Up to two BME sensors allowed on one I2C bus
-        BMX280Sensor * sensor2 = new BMX280Sensor();
-	// For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
-	//   otherwise choose the other unnamed sensor address
-        sensor->setAddress( (BMX280_ADDRESS == 0x00) ? 0x00 : (0x76 + 0x77 - BMX280_ADDRESS));
-        _sensors.push_back(sensor2);
-        #endif
+        // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
+        // otherwise choose the other unnamed sensor address
+        const unsigned char first = getSetting("bmx280Address", BMX280_ADDRESS).toInt();
+        const unsigned char second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
+
+        const unsigned char address_map[2] = { first, second };
+
+        for (unsigned char n=0; n < number; ++n) {
+            BMX280Sensor * sensor = new BMX280Sensor();
+            sensor->setAddress(address_map[n]);
+            _sensors.push_back(sensor);
+        }
     }
     #endif
 
