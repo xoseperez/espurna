@@ -111,7 +111,7 @@ def dummy_ets_printf(target, source, env):
 
 # Intermediate solution to the hardware migration.
 # Generate hardware headers with dynamic settings
-def get_legacy_hardware(env, hardware_h=os.path.join("$PROJECT_DIR", "espurna", "config", "hardware.h"), ignore=("TRAVIS",)):
+def get_legacy_hardware(env, hardware_h=os.path.join("$PROJECT_DIR", "espurna", "config", "hardware.h"), ignore=("TRAVIS", "MANUFACTURER", "DEVICE")):
 
     def extract(line):
         plain_re = re.compile("defined\s+(?P<plain>\w+)")
@@ -126,13 +126,20 @@ def get_legacy_hardware(env, hardware_h=os.path.join("$PROJECT_DIR", "espurna", 
 
         return None
 
+    def check_ignore(hardware):
+        for token in ignore:
+            if token in hardware:
+                return False
+
+        return True
+
     with open(env.subst(hardware_h), "r") as header:
         for line in header:
             if not any([line.startswith("#if"), line.startswith("#elif")]):
                 continue
 
             out = extract(line)
-            if out in ignore:
+            if not check_ignore(out):
                 continue
 
             yield out
