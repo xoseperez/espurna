@@ -2,11 +2,16 @@
 from __future__ import print_function
 
 import os
+import re
 import sys
 from subprocess import call
+from fileinput import FileInput
+
 import click
 
 Import("env", "projenv")
+from SCons.Subst import quote_spaces
+from SCons.Script import Mkdir
 
 # ------------------------------------------------------------------------------
 # Utils
@@ -43,6 +48,18 @@ def print_filler(fill, color=Color.WHITE, err=False):
 
     out = sys.stderr if err else sys.stdout
     print(clr(color, fill * width), file=out)
+
+# https://github.com/python/cpython/commit/6cb7b659#diff-78790b53ff259619377058acd4f74672
+if sys.version_info[0] < 3:
+    class FileInputCtx(FileInput):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, type, value, traceback):
+            self.close()
+
+
+    FileInput = FileInputCtx
 
 # ------------------------------------------------------------------------------
 # Callbacks
@@ -92,6 +109,91 @@ def dummy_ets_printf(target, source, env):
     env.Execute(env.VerboseAction(" ".join(cmd), "Removing ets_printf / ets_printf_P"))
     env.Depends(postmortem_obj_file,"$BUILD_DIR/src/dummy_ets_printf.c.o")
 
+# Intermediate solution to the hardware migration.
+# Generate hardware headers with dynamic settings
+def get_legacy_hardware(env, hardware_h=os.path.join("$PROJECT_DIR", "espurna", "config", "hardware.h"), ignore=("TRAVIS",)):
+
+    def extract(line):
+        plain_re = re.compile("defined\s+(?P<plain>\w+)")
+        paren_re = re.compile("defined\s*\((?P<paren>\w+)\)")
+
+        res = paren_re.search(line)
+        if res:
+            return res.group(1)
+        res = plain_re.search(line)
+        if res:
+            return res.group(1)
+
+        return None
+
+    with open(env.subst(hardware_h), "r") as header:
+        for line in header:
+            if not any([line.startswith("#if"), line.startswith("#elif")]):
+                continue
+
+            out = extract(line)
+            if out in ignore:
+                continue
+
+            yield out
+
+def generate_hardware_header(env, out_dir, hardware):
+    template = env.subst(os.path.join("$PROJECT_DIR", "espurna", "libs", "migrate_template.h"))
+    cmd_template = "$CC -x c++ -dI -E $CCFLAGS $_CCCOMCOM -D{hardware} $_ESPURNA_ALL_H {source} -o {target}"
+
+    out = env.subst(os.path.join(out_dir, "{}.h".format(hardware)))
+    cmd = cmd_template.format(hardware=hardware, source=template, target=out)
+
+    # first, we a generating raw header file
+    env.Execute(env.Action(cmd, "Generating {}".format(out)))
+
+    # then, we modify it to skip raw included files and keep only migrate_template contents
+    with FileInput(out, inplace=True) as header:
+        write = False
+        first = True
+        for line in header:
+            if first:
+                first = False
+                continue
+
+            if not line.strip():
+                continue
+            if not write and "migrate_template.h" in line:
+                write = True
+            if line.startswith("#"):
+                continue
+
+            if write:
+                sys.stdout.write(line.strip())
+                sys.stdout.write("\n")
+
+env.AddMethod(get_legacy_hardware)
+env.AddMethod(generate_hardware_header)
+
+def generate_hardware(target, source, env):
+    all_hardware = list(env.get_legacy_hardware())
+
+    # ignore current hardware setting from platformio.ini
+    defines = list(env["CPPDEFINES"])
+    for hardware in all_hardware:
+        entry = (hardware, )
+        if entry in defines:
+            defines.remove(entry)
+            env.Replace(CPPDEFINES=defines)
+            break
+
+    # add include paths from libraries
+    for builder in env.GetLibBuilders():
+        env.PrependUnique(CPPPATH=[quote_spaces(x) for x in builder.env.get("CPPPATH")])
+
+    # our local header chain (NOTE: will include custom.h if build flags allow it)
+    env.Append(_ESPURNA_ALL_H=["-include", os.path.join("$PROJECT_DIR", "espurna", "config", "all.h")])
+    env.Append(CPPPATH=[os.path.join("$PROJECT_DIR", "espurna")])
+
+    out_dir = os.path.join("$PROJECT_DIR", "espurna", "hardware")
+    for hardware in all_hardware:
+        env.generate_hardware_header(out_dir, hardware)
+
 # ------------------------------------------------------------------------------
 # Hooks
 # ------------------------------------------------------------------------------
@@ -100,7 +202,7 @@ def dummy_ets_printf(target, source, env):
 projenv.ProcessUnFlags("-w")
 
 # 2.4.0 and up
-remove_float_support()
+#remove_float_support()
 
 # two-step update hint when using 1MB boards
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
@@ -109,3 +211,5 @@ env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", check_size)
 if "DISABLE_POSTMORTEM_STACKDUMP" in env["CPPFLAGS"]:
     env.AddPostAction("$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.c.o", dummy_ets_printf)
     env.AddPostAction("$BUILD_DIR/FrameworkArduino/core_esp8266_postmortem.cpp.o", dummy_ets_printf)
+
+env.AlwaysBuild(env.Alias("generate-hardware", None, generate_hardware))
