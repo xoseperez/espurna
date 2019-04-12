@@ -208,7 +208,8 @@ void _rfbSend(byte * code, unsigned char times) {
     // Enable the ticker if not running
     if (!_rfb_ticker_active) {
         _rfb_ticker_active = true;
-        _rfb_ticker.attach_ms(RF_SEND_DELAY, _rfbSend);
+        void (*send_func)(void) = _rfbSend; // XXX: fix for Ticker::attach_ms(..., std::function<>())
+        _rfb_ticker.attach_ms(RF_SEND_DELAY, send_func);
     }
 
 }
