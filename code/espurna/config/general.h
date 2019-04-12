@@ -1219,9 +1219,20 @@
 #endif
 
 // -----------------------------------------------------------------------------
-// RFBRIDGE
-// This module is not compatible with RF_SUPPORT=1
+// MQTT RF BRIDGE
 // -----------------------------------------------------------------------------
+
+#ifndef RF_SUPPORT
+#define RF_SUPPORT                  0
+#endif
+
+#ifndef RF_DEBOUNCE
+#define RF_DEBOUNCE                 500
+#endif
+
+#ifndef RF_LEARN_TIMEOUT
+#define RF_LEARN_TIMEOUT            60000
+#endif
 
 #ifndef RF_SEND_TIMES
 #define RF_SEND_TIMES               4               // How many times to send the message
@@ -1235,10 +1246,21 @@
 #define RF_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid debouncing)
 #endif
 
-#ifndef RF_RAW_SUPPORT
-#define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
-                                                    // https://github.com/rhx/RF-Bridge-EFM8BB1
+// Enable RCSwitch support
+// Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
+// https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+#ifndef RFB_DIRECT
+#define RFB_DIRECT                  0
 #endif
+
+#ifndef RFB_RX_PIN
+#define RFB_RX_PIN                  GPIO_NONE
+#endif
+
+#ifndef RFB_TX_PIN
+#define RFB_TX_PIN                  GPIO_NONE
+#endif
+
 
 // -----------------------------------------------------------------------------
 // IR Bridge
@@ -1449,29 +1471,6 @@
 
 #ifndef IR_BUTTON_COUNT
 #define IR_BUTTON_COUNT 0
-#endif
-
-//--------------------------------------------------------------------------------
-// Custom RF module
-// Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
-// Enable support by passing RF_SUPPORT=1 build flag
-// This module is not compatible with RFBRIDGE or SONOFF RF
-//--------------------------------------------------------------------------------
-
-#ifndef RF_SUPPORT
-#define RF_SUPPORT                  0
-#endif
-
-#ifndef RF_PIN
-#define RF_PIN                      14
-#endif
-
-#ifndef RF_DEBOUNCE
-#define RF_DEBOUNCE                 500
-#endif
-
-#ifndef RF_LEARN_TIMEOUT
-#define RF_LEARN_TIMEOUT            60000
 #endif
 
 //--------------------------------------------------------------------------------
