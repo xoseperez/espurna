@@ -628,7 +628,7 @@ void _rfbAPISetup() {
                 snprintf_P(buffer, len, PSTR("OK"));
             },
             [](const char * payload) {
-                _rfbParseRaw((char *)raw);
+                _rfbParseRaw((char *)payload);
             }
         );
     #endif
