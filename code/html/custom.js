@@ -1301,10 +1301,6 @@ function processData(data) {
             return;
         }
 
-        if ("rfbrawVisible" === key) {
-            $("input[name='rfbcode']").attr("maxlength", 116);
-        }
-
         if ("rfb" === key) {
             var rfb = data.rfb;
 

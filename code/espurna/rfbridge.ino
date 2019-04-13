@@ -122,8 +122,10 @@ void _rfbWebSocketSendCodes() {
 void _rfbWebSocketOnSend(JsonObject& root) {
     root["rfbVisible"] = 1;
     root["rfbCount"] = relayCount();
-    #if RF_RAW_SUPPORT
-        root["rfbrawVisible"] = 1;
+    #if RFB_DIRECT
+        root["rfbdirectVisible"] = 1;
+        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
+        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
     #endif
     _rfb_sendcodes.once_ms(1000, _rfbWebSocketSendCodes);
 }
