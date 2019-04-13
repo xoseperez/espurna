@@ -59,8 +59,6 @@ typedef struct {
     byte times;
 } rfb_message_t;
 static std::queue<rfb_message_t> _rfb_message_queue;
-Ticker _rfb_ticker;
-bool _rfb_ticker_active = false;
 
 #if RFB_DIRECT
     RCSwitch * _rfModem;
@@ -69,6 +67,7 @@ bool _rfb_ticker_active = false;
 
 bool _rfb_receive = false;
 bool _rfb_transmit = false;
+unsigned char _rfb_repeat = RF_SEND_TIMES;
 
 #if WEB_SUPPORT
     Ticker _rfb_sendcodes;
@@ -121,6 +120,7 @@ void _rfbWebSocketSendCodes() {
 
 void _rfbWebSocketOnSend(JsonObject& root) {
     root["rfbVisible"] = 1;
+    root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
     root["rfbCount"] = relayCount();
     #if RFB_DIRECT
         root["rfbdirectVisible"] = 1;
@@ -134,6 +134,10 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& 
     if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
     if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
     if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+}
+
+bool _rfbWebSocketOnReceive(const char * key, JsonVariant& value) {
+    return (strncmp(key, "rfb", 3) == 0);
 }
 
 #endif // WEB_SUPPORT
@@ -161,29 +165,27 @@ void _rfbSendRaw(const byte *message, const unsigned char n = RF_MESSAGE_SIZE) {
 
 void _rfbSend() {
 
+    if (!_rfb_transmit) return;
+
     // Check if there is something in the queue
     if (_rfb_message_queue.empty()) return;
 
-    // Pop the first element
+    static unsigned long last = 0;
+    if (millis() - last < RF_SEND_DELAY) return;
+    last = millis();
+
+    // Pop the first message and send it
     rfb_message_t message = _rfb_message_queue.front();
     _rfb_message_queue.pop();
-
-    if (!_rfb_transmit) return;
-
-    // Send the message
     _rfbSend(message.code);
 
-    // If it should be further sent, push it to the stack again
+    // Push it to the stack again if we need to send it more than once
     if (message.times > 1) {
         message.times = message.times - 1;
         _rfb_message_queue.push(message);
     }
 
-    // if there are still messages in the queue...
-    if (_rfb_message_queue.empty()) {
-        _rfb_ticker.detach();
-        _rfb_ticker_active = false;
-    }
+    yield();
 
 }
 
@@ -191,6 +193,7 @@ void _rfbSend(byte * code, unsigned char times) {
 
     if (!_rfb_transmit) return;
 
+    // rc-switch will repeat on its own
     #if RFB_DIRECT
         times = 1;
     #endif
@@ -203,13 +206,6 @@ void _rfbSend(byte * code, unsigned char times) {
     memcpy(message.code, code, RF_MESSAGE_SIZE);
     message.times = times;
     _rfb_message_queue.push(message);
-
-    // Enable the ticker if not running
-    if (!_rfb_ticker_active) {
-        _rfb_ticker_active = true;
-        void (*send_func)(void) = _rfbSend; // XXX: fix for Ticker::attach_ms(..., std::function<>())
-        _rfb_ticker.attach_ms(RF_SEND_DELAY, send_func);
-    }
 
 }
 
@@ -516,6 +512,8 @@ void _rfbReceive() {
         _rfModem->resetAvailable();
     }
 
+    yield();
+
 }
 
 #endif // RFB_DIRECT
@@ -720,7 +718,7 @@ void rfbStatus(unsigned char id, bool status) {
                  message[len-1] != RF_CODE_STOP)) {     // and finish with 0x55
 
             if (!_rfbin) {
-                unsigned char times = same ? 1 : RF_SEND_TIMES;
+                unsigned char times = same ? 1 : _rfb_repeat;
                 _rfbSend(message, times);
             }
 
@@ -772,18 +770,21 @@ void rfbSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_rfbWebSocketOnSend);
         wsOnActionRegister(_rfbWebSocketOnAction);
+        wsOnReceiveRegister(_rfbWebSocketOnReceive);
     #endif
 
     #if TERMINAL_SUPPORT
         _rfbInitCommands();
     #endif
 
-    #if RFB_DIRECT
-        unsigned char gpioRX = getSetting("rfbRX", RFB_RX_PIN).toInt();
-        unsigned char gpioTX = getSetting("rfbTX", RFB_TX_PIN).toInt();
+    _rfb_repeat = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
 
-        _rfb_receive = (gpioRX != GPIO_NONE);
-        _rfb_transmit = (gpioTX != GPIO_NONE);
+    #if RFB_DIRECT
+        unsigned char rx = getSetting("rfbRX", RFB_RX_PIN).toInt();
+        unsigned char tx = getSetting("rfbTX", RFB_TX_PIN).toInt();
+
+        _rfb_receive = gpioValid(rx);
+        _rfb_transmit = gpioValid(tx);
         if (!_rfb_transmit && !_rfb_receive) {
             DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
             return;
@@ -791,26 +792,27 @@ void rfbSetup() {
 
         _rfModem = new RCSwitch();
         if (_rfb_receive) {
-            _rfModem->enableReceive(RFB_RX_PIN);
-            DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), RFB_RX_PIN);
+            _rfModem->enableReceive(rx);
+            DEBUG_MSG_P(PSTR("[RF] RF receiver on GPIO %u\n"), rx);
         }
         if (_rfb_transmit) {
-            _rfModem->enableTransmit(RFB_TX_PIN);
-            _rfModem->setRepeatTransmit(RF_SEND_TIMES);
-            DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), RFB_TX_PIN);
+            _rfModem->enableTransmit(tx);
+            _rfModem->setRepeatTransmit(_rfb_repeat);
+            DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
         }
     #else
         _rfb_receive = true;
         _rfb_transmit = true;
     #endif
 
-    // Register loop
+    // Register loop only when properly configured
     espurnaRegisterLoop(rfbLoop);
 
 }
 
 void rfbLoop() {
     _rfbReceive();
+    _rfbSend();
 }
 
 #endif
