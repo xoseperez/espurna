@@ -65,13 +65,10 @@ bool _rfb_ticker_active = false;
 #if RFB_DIRECT
     RCSwitch * _rfModem;
     bool _learning = false;
-    constexpr bool _rfb_receive = (RFB_RX_PIN != GPIO_NONE);
-    constexpr bool _rfb_transmit = (RFB_TX_PIN != GPIO_NONE);
-    static_assert((_rfb_receive || _rfb_transmit), "RFB_DIRECT=1, but no pins are defined");
-#else
-    constexpr bool _rfb_receive = true;
-    constexpr bool _rfb_transmit = true;
 #endif
+
+bool _rfb_receive = false;
+bool _rfb_transmit = false;
 
 #if WEB_SUPPORT
     Ticker _rfb_sendcodes;
@@ -780,6 +777,16 @@ void rfbSetup() {
     #endif
 
     #if RFB_DIRECT
+        unsigned char gpioRX = getSetting("rfbRX", RFB_RX_PIN).toInt();
+        unsigned char gpioTX = getSetting("rfbTX", RFB_TX_PIN).toInt();
+
+        _rfb_receive = (gpioRX != GPIO_NONE);
+        _rfb_transmit = (gpioTX != GPIO_NONE);
+        if (!_rfb_transmit && !_rfb_receive) {
+            DEBUG_MSG_P(PSTR("[RF] Neither RX or TX are set\n"));
+            return;
+        }
+
         _rfModem = new RCSwitch();
         if (_rfb_receive) {
             _rfModem->enableReceive(RFB_RX_PIN);
@@ -790,6 +797,9 @@ void rfbSetup() {
             _rfModem->setRepeatTransmit(RF_SEND_TIMES);
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), RFB_TX_PIN);
         }
+    #else
+        _rfb_receive = true;
+        _rfb_transmit = true;
     #endif
 
     // Register loop
