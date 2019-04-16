@@ -403,6 +403,7 @@ function initSelectGPIO(select) {
     // TODO: cross-check used GPIOs
     // TODO: support 9 & 10 with esp8285 variant
     var mapping = [
+        [153, "NONE"],
         [0, "0"],
         [1, "1 (U0TXD)"],
         [2, "2 (U1TXD)"],
@@ -413,7 +414,6 @@ function initSelectGPIO(select) {
         [13, "13 (MTCK)"],
         [14, "14 (MTMS)"],
         [15, "15 (MTDO)"],
-        [153, "NONE"]
     ];
     for (n in mapping) {
         var elem = $('<option value="' + mapping[n][0] + '">');
