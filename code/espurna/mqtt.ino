@@ -211,9 +211,9 @@ void _mqttPlaceholders(String& text) {
 template<typename T>
 void _mqttApplySetting(T& current, T& updated) {
     if (current != updated) {
+        current = updated;
         mqttDisconnect();
     }
-    current = updated;
 }
 
 void _mqttConfigure() {
