@@ -46,10 +46,12 @@ String _mqtt_topic_json;
 String _mqtt_setter;
 String _mqtt_getter;
 bool _mqtt_forward;
-char *_mqtt_user = 0;
-char *_mqtt_pass = 0;
-char *_mqtt_will;
-char *_mqtt_clientid;
+String _mqtt_user;
+String _mqtt_pass;
+String _mqtt_will;
+String _mqtt_server;
+uint16_t _mqtt_port;
+String _mqtt_clientid;
 
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
@@ -82,27 +84,19 @@ void _mqttConnect() {
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    String h = getSetting("mqttServer", MQTT_SERVER);
+    String h = _mqtt_server;
     #if MDNS_CLIENT_SUPPORT
         h = mdnsResolve(h);
     #endif
     char * host = strdup(h.c_str());
 
-    unsigned int port = getSetting("mqttPort", MQTT_PORT).toInt();
+    uint16_t port = getSetting("mqttPort", MQTT_PORT).toInt();
 
-    if (_mqtt_user) free(_mqtt_user);
-    if (_mqtt_pass) free(_mqtt_pass);
-    if (_mqtt_will) free(_mqtt_will);
-    if (_mqtt_clientid) free(_mqtt_clientid);
+    String user = _mqtt_user;
+    _mqttPlaceholders(user);
 
-    String user = getSetting("mqttUser", MQTT_USER);
-    _mqttPlaceholders(&user);
-    _mqtt_user = strdup(user.c_str());
-    _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
-    _mqtt_will = strdup(mqttTopic(MQTT_TOPIC_STATUS, false).c_str());
-    String clientid = getSetting("mqttClientID", getIdentifier());
-    _mqttPlaceholders(&clientid);
-    _mqtt_clientid = strdup(clientid.c_str());
+    String clientid = _mqtt_clientid;
+    _mqttPlaceholders(clientid);
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%d\n"), host, port);
 
@@ -110,13 +104,13 @@ void _mqttConnect() {
         _mqtt_connecting = true;
 
         _mqtt.setServer(host, port);
-        _mqtt.setClientId(_mqtt_clientid);
+        _mqtt.setClientId(_mqtt_clientid.c_str());
         _mqtt.setKeepAlive(_mqtt_keepalive);
         _mqtt.setCleanSession(false);
-        _mqtt.setWill(_mqtt_will, _mqtt_qos, _mqtt_retain, "0");
-        if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
-            DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
-            _mqtt.setCredentials(_mqtt_user, _mqtt_pass);
+        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
+        if (user.length() && _mqtt_pass.length()) {
+            DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), user.c_str());
+            _mqtt.setCredentials(user.c_str(), _mqtt_pass.c_str());
         }
 
         #if ASYNC_TCP_SSL_ENABLED
@@ -135,11 +129,11 @@ void _mqttConnect() {
 
         #endif // ASYNC_TCP_SSL_ENABLED
 
-        DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
+        DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), clientid.c_str());
         DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
         DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
         DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
-        DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+        DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
 
         _mqtt.connect();
 
@@ -184,20 +178,20 @@ void _mqttConnect() {
 
         if (response) {
 
-            _mqtt.setServer(host, port);
+            _mqtt.setServer(host.c_str(), port);
 
-            if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
-                DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user);
-                response = _mqtt.connect(_mqtt_clientid, _mqtt_user, _mqtt_pass, _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
+            if (user.length() && _mqtt_pass.length()) {
+                DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), user.c_str());
+                response = _mqtt.connect(clientid.c_str(), user.c_str(), _mqtt_pass.c_str(), _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
             } else {
-				response = _mqtt.connect(_mqtt_clientid, _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
+				response = _mqtt.connect(clientid.c_str(), _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
             }
 
-            DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
+            DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), clientid.c_str());
             DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
             DEBUG_MSG_P(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
-            DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
+            DEBUG_MSG_P(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will.c_str());
 
         }
 
@@ -213,47 +207,98 @@ void _mqttConnect() {
 
 }
 
-void _mqttPlaceholders(String *text) {
-    
-    text->replace("{hostname}", getSetting("hostname"));
-    text->replace("{magnitude}", "#");
-    
+void _mqttPlaceholders(String& text) {
+
+    text.replace("{hostname}", getSetting("hostname"));
+    text.replace("{magnitude}", "#");
+
     String mac = WiFi.macAddress();
     mac.replace(":", "");
-    text->replace("{mac}", mac);
+    text.replace("{mac}", mac);
 
+}
+
+template<typename T>
+void _mqttApplySetting(T& current, T& updated) {
+    if (current != updated) {
+        mqttReset();
+    }
+    current = updated;
 }
 
 void _mqttConfigure() {
 
-    // Get base topic
-    _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
-    if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
+    // Get base topic and apply placeholders
+    {
+        String topic = getSetting("mqttTopic", MQTT_TOPIC);
+        if (topic.endsWith("/")) topic.remove(_mqtt_topic.length()-1);
 
-    // Placeholders
-    _mqttPlaceholders(&_mqtt_topic);
-    if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
+        // Replace things inside curly braces (like {hostname}, {mac} etc.)
+        _mqttPlaceholders(topic);
 
-    // Getters and setters
-    _mqtt_setter = getSetting("mqttSetter", MQTT_SETTER);
-    _mqtt_getter = getSetting("mqttGetter", MQTT_GETTER);
-    _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter)  && RELAY_REPORT_STATUS;
+        if (topic.indexOf("#") == -1) topic.concat("/#");
+        _mqttApplySetting(_mqtt_topic, topic);
+    }
+
+    // Getter and setter
+    {
+        String setter = getSetting("mqttSetter", MQTT_SETTER);
+        String getter = getSetting("mqttGetter", MQTT_GETTER);
+        bool forward = !setter.equals(setter) && RELAY_REPORT_STATUS;
+
+        _mqttApplySetting(_mqtt_setter, setter);
+        _mqttApplySetting(_mqtt_getter, getter);
+        _mqttApplySetting(_mqtt_forward, forward);
+    }
 
     // MQTT options
-    _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
-    _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
-    _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
-    if (getSetting("mqttClientID").length() == 0) delSetting("mqttClientID");
+    {
+        String user = getSetting("mqttUser", MQTT_USER);
+        String pass = getSetting("mqttPassword", MQTT_PASS);
 
-    // Enable
-    if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
-        mqttEnabled(false);
-    } else {
-        _mqtt_enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
+        unsigned char qos = getSetting("mqttQoS", MQTT_QOS).toInt();
+        bool retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
+        unsigned long keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
+
+        String id = getSetting("mqttClientID");
+        if (!id.length()) delSetting("mqttClientID");
+
+        _mqttApplySetting(_mqtt_user, user);
+        _mqttApplySetting(_mqtt_pass, pass);
+        _mqttApplySetting(_mqtt_qos, qos);
+        _mqttApplySetting(_mqtt_retain, retain);
+        _mqttApplySetting(_mqtt_keepalive, keepalive);
+        _mqttApplySetting(_mqtt_clientid, id);
     }
-    _mqtt_use_json = (getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
-    mqttQueueTopic(MQTT_TOPIC_JSON);
 
+    // Enable only when server is set
+    {
+        String server = getSetting("mqttServer", MQTT_SERVER);
+        uint16_t port = getSetting("mqttPort", MQTT_PORT).toInt();
+        bool enabled = false;
+        if (server.length()) {
+            enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
+        }
+
+        _mqttApplySetting(_mqtt_server, server);
+        _mqttApplySetting(_mqtt_enabled, enabled);
+        _mqttApplySetting(_mqtt_port, port);
+    }
+
+    // MQTT JSON
+    {
+        // No need to reconnect. Immediatly use new topic
+        String json_topic = mqttTopic(MQTT_TOPIC_JSON, false);
+        if (!json_topic.equals(_mqtt_topic_json)) {
+            mqttFlush();
+            _mqtt_topic_json = json_topic;
+        }
+
+        bool json = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
+        _mqttApplySetting(_mqtt_use_json, json);
+    }
+
+    _mqtt_will = mqttTopic(MQTT_TOPIC_STATUS, false);
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
 }
@@ -322,10 +367,10 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttVisible"] = 1;
     root["mqttStatus"] = mqttConnected();
     root["mqttEnabled"] = mqttEnabled();
-    root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
+    root["mqttServer"] = _mqtt_server;
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
     root["mqttUser"] = getSetting("mqttUser", MQTT_USER);
-    root["mqttClientID"] = getSetting("mqttClientID");
+    root["mqttClientID"] = _mqtt_clientid;
     root["mqttPassword"] = getSetting("mqttPassword", MQTT_PASS);
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
