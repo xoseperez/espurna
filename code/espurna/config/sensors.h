@@ -159,7 +159,7 @@
 #endif
 
 #ifndef BMX280_NUMBER
-#define BMX280_NUMBER                   2       // Number of sensors present. Either 1 or 2 allowed
+#define BMX280_NUMBER                   1       // Number of sensors present. Either 1 or 2 allowed
 #endif
 #ifndef BMX280_ADDRESS
 #define BMX280_ADDRESS                  0x00    // 0x00 means auto (0x76 or 0x77 allowed) for sensor #0
