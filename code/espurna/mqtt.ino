@@ -173,10 +173,10 @@ void _mqttConnect() {
             _mqtt.setServer(_mqtt_server.c_str(), port);
 
             if (_mqtt_user.length() && _mqtt_pass.length()) {
-                DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), user.c_str());
-                response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str(), _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
+                DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user.c_str());
+                response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
             } else {
-				response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_will, _mqtt_qos, _mqtt_retain, "0");
+				response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
             }
 
             DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
