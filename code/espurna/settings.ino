@@ -193,6 +193,9 @@ bool settingsRestoreJson(JsonObject& data) {
     // Persist to EEPROM
     saveSettings();
 
+    // Reload module configuration
+    espurnaReload();
+
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
     return true;
 
@@ -229,3 +232,4 @@ void settingsSetup() {
     );
 
 }
+
