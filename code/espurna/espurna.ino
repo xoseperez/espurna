@@ -42,10 +42,6 @@ void espurnaReload() {
     _reload_config = true;
 }
 
-unsigned long espurnaLoopDelay() {
-    return _loop_delay;
-}
-
 void _espurnaReload() {
     for (unsigned char i = 0; i < _reload_callbacks.size(); i++) {
         (_reload_callbacks[i])();
