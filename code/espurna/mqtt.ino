@@ -221,7 +221,7 @@ void _mqttPlaceholders(String& text) {
 template<typename T>
 void _mqttApplySetting(T& current, T& updated) {
     if (current != updated) {
-        mqttReset();
+        mqttDisconnect();
     }
     current = updated;
 }
@@ -801,11 +801,6 @@ void mqttSetBroker(IPAddress ip, unsigned int port) {
 
 void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
-}
-
-void mqttReset() {
-    _mqttConfigure();
-    mqttDisconnect();
 }
 
 // -----------------------------------------------------------------------------
