@@ -104,7 +104,7 @@ void _mqttConnect() {
         _mqtt_connecting = true;
 
         _mqtt.setServer(host, port);
-        _mqtt.setClientId(_mqtt_clientid.c_str());
+        _mqtt.setClientId(clientid.c_str());
         _mqtt.setKeepAlive(_mqtt_keepalive);
         _mqtt.setCleanSession(false);
         _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
@@ -260,7 +260,7 @@ void _mqttConfigure() {
         bool retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
         unsigned long keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
 
-        String id = getSetting("mqttClientID");
+        String id = getSetting("mqttClientID", getIdentitifer());
         if (!id.length()) delSetting("mqttClientID");
 
         _mqttApplySetting(_mqtt_user, user);
