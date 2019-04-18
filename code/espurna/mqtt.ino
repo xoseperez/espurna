@@ -93,7 +93,7 @@ void _mqttConnect() {
     #if MQTT_USE_ASYNC
         _mqtt_connecting = true;
 
-        _mqtt.setServer(_mqtt_server.c_str(), port);
+        _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
         _mqtt.setClientId(_mqtt_clientid.c_str());
         _mqtt.setKeepAlive(_mqtt_keepalive);
         _mqtt.setCleanSession(false);
@@ -136,7 +136,7 @@ void _mqttConnect() {
             bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
-                if (_mqtt_client_secure.connect(_mqtt_server.c_str(), port)) {
+                if (_mqtt_client_secure.connect(_mqtt_server.c_str(), _mqtt_port)) {
                     char fp[60] = {0};
                     if (sslFingerPrintChar(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
                         if (_mqtt_client_secure.verify(fp, _mqtt_server.c_str())) {
