@@ -785,7 +785,11 @@ void mqttRegister(mqtt_callback_f callback) {
 
 void mqttSetBroker(IPAddress ip, unsigned int port) {
     setSetting("mqttServer", ip.toString());
+    _mqtt_server = ip.toString();
+
     setSetting("mqttPort", port);
+    _mqtt_port = port;
+
     mqttEnabled(MQTT_AUTOCONNECT);
 }
 
