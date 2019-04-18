@@ -88,9 +88,7 @@ void _mqttConnect() {
         _mqtt_server = mdnsResolve(_mqtt_server);
     #endif
 
-    uint16_t port = getSetting("mqttPort", MQTT_PORT).toInt();
-
-    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%u\n"), _mqtt_server.c_str(), port);
+    DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%u\n"), _mqtt_server.c_str(), _mqtt_port);
 
     #if MQTT_USE_ASYNC
         _mqtt_connecting = true;
@@ -170,7 +168,7 @@ void _mqttConnect() {
 
         if (response) {
 
-            _mqtt.setServer(_mqtt_server.c_str(), port);
+            _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
 
             if (_mqtt_user.length() && _mqtt_pass.length()) {
                 DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user.c_str());
