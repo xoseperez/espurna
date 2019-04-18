@@ -205,6 +205,7 @@ void _mqttConnect() {
             _mqttOnConnect();
         } else {
             DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
+	    _mqtt_last_connection = millis();
         }
 
     #endif // MQTT_USE_ASYNC
