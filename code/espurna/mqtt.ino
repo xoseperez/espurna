@@ -228,6 +228,8 @@ void _mqttConfigure() {
         _mqttApplySetting(_mqtt_server, server);
         _mqttApplySetting(_mqtt_enabled, enabled);
         _mqttApplySetting(_mqtt_port, port);
+
+        if (!enabled) return;
     }
 
     // Get base topic and apply placeholders
