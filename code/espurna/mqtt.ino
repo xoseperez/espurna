@@ -216,6 +216,20 @@ void _mqttApplySetting(T& current, T& updated) {
 
 void _mqttConfigure() {
 
+    // Enable only when server is set
+    {
+        String server = getSetting("mqttServer", MQTT_SERVER);
+        uint16_t port = getSetting("mqttPort", MQTT_PORT).toInt();
+        bool enabled = false;
+        if (server.length()) {
+            enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
+        }
+
+        _mqttApplySetting(_mqtt_server, server);
+        _mqttApplySetting(_mqtt_enabled, enabled);
+        _mqttApplySetting(_mqtt_port, port);
+    }
+
     // Get base topic and apply placeholders
     {
         String topic = getSetting("mqttTopic", MQTT_TOPIC);
@@ -259,20 +273,6 @@ void _mqttConfigure() {
         _mqttApplySetting(_mqtt_retain, retain);
         _mqttApplySetting(_mqtt_keepalive, keepalive);
         _mqttApplySetting(_mqtt_clientid, id);
-    }
-
-    // Enable only when server is set
-    {
-        String server = getSetting("mqttServer", MQTT_SERVER);
-        uint16_t port = getSetting("mqttPort", MQTT_PORT).toInt();
-        bool enabled = false;
-        if (server.length()) {
-            enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
-        }
-
-        _mqttApplySetting(_mqtt_server, server);
-        _mqttApplySetting(_mqtt_enabled, enabled);
-        _mqttApplySetting(_mqtt_port, port);
     }
 
     // MQTT JSON
