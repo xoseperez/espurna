@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix PZEM004TSensor pointer use
 - RFBridge: fix webui codes parsing
 - Avoid websocket ping back on fw upgrade via web UI form (#1574)
-- Revert loopDelay dependency on wifi sleep mode
 - Removing line break before templated variable to fix issue with Windows Arduino IDE (#1579, thanks to @AlbertWeterings)
 - Send brightness to websocket
 
