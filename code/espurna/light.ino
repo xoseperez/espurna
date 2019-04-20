@@ -1164,17 +1164,19 @@ void lightSetup() {
             ++index;
         }
 
-        uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
-        uint32 io_info[PWM_CHANNEL_NUM_MAX][3];
-        for (unsigned int i=0; i < _light_channel.size(); i++) {
-            pwm_duty_init[i] = 0;
-            io_info[i][0] = getIOMux(_light_channel[i].pin);
-            io_info[i][1] = getIOFunc(_light_channel[i].pin);
-            io_info[i][2] = _light_channel[i].pin;
-            pinMode(_light_channel[i].pin, OUTPUT);
+        if (index > 0) {
+            uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
+            uint32 io_info[PWM_CHANNEL_NUM_MAX][3];
+            for (unsigned int i=0; i < _light_channel.size(); i++) {
+                pwm_duty_init[i] = 0;
+                io_info[i][0] = getIOMux(_light_channel[i].pin);
+                io_info[i][1] = getIOFunc(_light_channel[i].pin);
+                io_info[i][2] = _light_channel[i].pin;
+                pinMode(_light_channel[i].pin, OUTPUT);
+            }
+            pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
+            pwm_start();
         }
-        pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
-        pwm_start();
     }
     #endif
 

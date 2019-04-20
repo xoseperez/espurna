@@ -37,10 +37,10 @@ void migrate() {
     // Update schema version to the current one
     unsigned int config_version = getSetting("cfg", 0).toInt();
 
-    if (config_version == CFG_VERSION) return;
+    if (CFG_VERSION == config_version) return;
     setSetting("cfg", CFG_VERSION);
 
-    if (config_version == 2) {
+    if (2 == config_version) {
         _cmpMoveIndexDown("ledGPIO");
         _cmpMoveIndexDown("ledLogic");
         _cmpMoveIndexDown("btnGPIO");
@@ -52,7 +52,7 @@ void migrate() {
     // Apply default settings based on HW definitions from hardware.h / user's custom.h
     // NOTE: indexes of preprocessor tokens are 1-based, while settings are 0-based
     // TODO: moveSetting for relay/encoder/light keys
-    if (config_version == 3) {
+    if ((0 == config_version) || (3 == config_version)) {
         _migrateSetFromDefaults();
     }
 
