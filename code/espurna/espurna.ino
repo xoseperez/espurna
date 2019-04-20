@@ -26,6 +26,8 @@ std::vector<void (*)()> _loop_callbacks;
 std::vector<void (*)()> _reload_callbacks;
 
 bool _reload_config = false;
+unsigned long _loop_delay = 0;
+
 // -----------------------------------------------------------------------------
 // GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
@@ -46,6 +48,10 @@ void _espurnaReload() {
     for (unsigned char i = 0; i < _reload_callbacks.size(); i++) {
         (_reload_callbacks[i])();
     }
+}
+
+unsigned long espurnaLoopDelay() {
+    return _loop_delay;
 }
 
 // -----------------------------------------------------------------------------
@@ -213,6 +219,11 @@ void setup() {
     // Prepare configuration for version 2.0
     migrate();
 
+    // Set up delay() after loop callbacks are finished
+    // Note: should be after settingsSetup()
+    _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
+    _loop_delay = constrain(_loop_delay, 0, 300);
+
     saveSettings();
 
 }
@@ -229,5 +240,8 @@ void loop() {
     for (unsigned char i = 0; i < _loop_callbacks.size(); i++) {
         (_loop_callbacks[i])();
     }
+
+    // Power saving delay
+    if (_loop_delay) delay(_loop_delay);
 
 }
