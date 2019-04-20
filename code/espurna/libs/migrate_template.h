@@ -128,58 +128,106 @@ setSetting("relayProvider", RELAY_PROVIDER);
 #if RELAY1_PIN != GPIO_NONE
     setSetting("relayGPIO", 0, RELAY1_PIN);
     setSetting("relayType", 0, RELAY1_TYPE);
-    setSetting("relayDelayON", 0, RELAY1_DELAY_ON);
-    setSetting("relayDelayOFF", 0, RELAY1_DELAY_OFF);
-    setSetting("relayResetGPIO", 0, RELAY1_RESET_PIN);
+    #if RELAY1_DELAY_ON
+        setSetting("relayDelayON", 0, RELAY1_DELAY_ON);
+    #endif
+    #if RELAY1_DELAY_OFF
+        setSetting("relayDelayOFF", 0, RELAY1_DELAY_OFF);
+    #endif
+    #if RELAY1_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 0, RELAY1_RESET_PIN);
+    #endif
 #endif
 #if RELAY2_PIN != GPIO_NONE
     setSetting("relayGPIO", 1, RELAY2_PIN);
     setSetting("relayType", 1, RELAY2_TYPE);
-    setSetting("relayDelayON", 1, RELAY2_DELAY_ON);
-    setSetting("relayDelayOFF", 1, RELAY2_DELAY_OFF);
-    setSetting("relayResetGPIO", 1, RELAY2_RESET_PIN);
+    #if RELAY2_DELAY_ON
+        setSetting("relayDelayON", 1, RELAY2_DELAY_ON);
+    #endif
+    #if RELAY2_DELAY_OFF
+        setSetting("relayDelayOFF", 1, RELAY2_DELAY_OFF);
+    #endif
+    #if RELAY2_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 1, RELAY2_RESET_PIN);
+    #endif
 #endif
 #if RELAY3_PIN != GPIO_NONE
     setSetting("relayGPIO", 2, RELAY3_PIN);
     setSetting("relayType", 2, RELAY3_TYPE);
-    setSetting("relayDelayON", 2, RELAY3_DELAY_ON);
-    setSetting("relayDelayOFF", 2, RELAY3_DELAY_OFF);
-    setSetting("relayResetGPIO", 2, RELAY3_RESET_PIN);
+    #if RELAY3_DELAY_ON
+        setSetting("relayDelayON", 2, RELAY3_DELAY_ON);
+    #endif
+    #if RELAY3_DELAY_OFF
+        setSetting("relayDelayOFF", 2, RELAY3_DELAY_OFF);
+    #endif
+    #if RELAY3_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 2, RELAY3_RESET_PIN);
+    #endif
 #endif
 #if RELAY4_PIN != GPIO_NONE
     setSetting("relayGPIO", 3, RELAY4_PIN);
     setSetting("relayType", 3, RELAY4_TYPE);
-    setSetting("relayDelayON", 3, RELAY4_DELAY_ON);
-    setSetting("relayDelayOFF", 3, RELAY4_DELAY_OFF);
-    setSetting("relayResetGPIO", 3, RELAY4_RESET_PIN);
+    #if RELAY4_DELAY_ON
+        setSetting("relayDelayON", 3, RELAY4_DELAY_ON);
+    #endif
+    #if RELAY4_DELAY_OFF
+        setSetting("relayDelayOFF", 3, RELAY4_DELAY_OFF);
+    #endif
+    #if RELAY4_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 3, RELAY4_RESET_PIN);
+    #endif
 #endif
 #if RELAY5_PIN != GPIO_NONE
     setSetting("relayGPIO", 4, RELAY5_PIN);
     setSetting("relayType", 4, RELAY5_TYPE);
-    setSetting("relayDelayON", 4, RELAY5_DELAY_ON);
-    setSetting("relayDelayOFF", 4, RELAY5_DELAY_OFF);
-    setSetting("relayResetGPIO", 4, RELAY5_RESET_PIN);
+    #if RELAY5_DELAY_ON
+        setSetting("relayDelayON", 4, RELAY5_DELAY_ON);
+    #endif
+    #if RELAY5_DELAY_OFF
+        setSetting("relayDelayOFF", 4, RELAY5_DELAY_OFF);
+    #endif
+    #if RELAY5_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 4, RELAY5_RESET_PIN);
+    #endif
 #endif
 #if RELAY6_PIN != GPIO_NONE
     setSetting("relayGPIO", 5, RELAY6_PIN);
     setSetting("relayType", 5, RELAY6_TYPE);
-    setSetting("relayDelayON", 5, RELAY6_DELAY_ON);
-    setSetting("relayDelayOFF", 5, RELAY6_DELAY_OFF);
-    setSetting("relayResetGPIO", 5, RELAY6_RESET_PIN);
+    #if RELAY6_DELAY_ON
+        setSetting("relayDelayON", 5, RELAY6_DELAY_ON);
+    #endif
+    #if RELAY6_DELAY_OFF
+        setSetting("relayDelayOFF", 5, RELAY6_DELAY_OFF);
+    #endif
+    #if RELAY6_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 5, RELAY6_RESET_PIN);
+    #endif
 #endif
 #if RELAY7_PIN != GPIO_NONE
     setSetting("relayGPIO", 6, RELAY7_PIN);
     setSetting("relayType", 6, RELAY7_TYPE);
-    setSetting("relayDelayON", 6, RELAY7_DELAY_ON);
-    setSetting("relayDelayOFF", 6, RELAY7_DELAY_OFF);
-    setSetting("relayResetGPIO", 6, RELAY7_RESET_PIN);
+    #if RELAY7_DELAY_ON
+        setSetting("relayDelayON", 6, RELAY7_DELAY_ON);
+    #endif
+    #if RELAY7_DELAY_OFF
+        setSetting("relayDelayOFF", 6, RELAY7_DELAY_OFF);
+    #endif
+    #if RELAY7_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 6, RELAY7_RESET_PIN);
+    #endif
 #endif
 #if RELAY8_PIN != GPIO_NONE
     setSetting("relayGPIO", 7, RELAY8_PIN);
     setSetting("relayType", 7, RELAY8_TYPE);
-    setSetting("relayDelayON", 7, RELAY8_DELAY_ON);
-    setSetting("relayDelayOFF", 7, RELAY8_DELAY_OFF);
-    setSetting("relayResetGPIO", 7, RELAY8_RESET_PIN);
+    #if RELAY8_DELAY_ON
+        setSetting("relayDelayON", 7, RELAY8_DELAY_ON);
+    #endif
+    #if RELAY8_DELAY_OFF
+        setSetting("relayDelayOFF", 7, RELAY8_DELAY_OFF);
+    #endif
+    #if RELAY8_RESET_PIN != GPIO_NONE
+        setSetting("relayResetGPIO", 7, RELAY8_RESET_PIN);
+    #endif
 #endif
 
 // NOTE: Writing internal ID
