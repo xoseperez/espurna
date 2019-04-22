@@ -2,7 +2,7 @@
 
 MQTT MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -205,6 +205,7 @@ void _mqttConnect() {
             _mqttOnConnect();
         } else {
             DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
+	    _mqtt_last_connection = millis();
         }
 
     #endif // MQTT_USE_ASYNC
@@ -237,7 +238,7 @@ void _mqttConfigure() {
     // Getters and setters
     _mqtt_setter = getSetting("mqttSetter", MQTT_SETTER);
     _mqtt_getter = getSetting("mqttGetter", MQTT_GETTER);
-    _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter);
+    _mqtt_forward = !_mqtt_getter.equals(_mqtt_setter)  && RELAY_REPORT_STATUS;
 
     // MQTT options
     _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
@@ -868,6 +869,12 @@ void mqttLoop() {
 
     #endif
 
+}
+
+#else
+
+bool mqttForward() {
+    return false;
 }
 
 #endif // MQTT_SUPPORT

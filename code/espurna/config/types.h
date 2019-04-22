@@ -85,6 +85,7 @@
 #define RELAY_SYNC_NONE_OR_ONE      1
 #define RELAY_SYNC_ONE              2
 #define RELAY_SYNC_SAME             3
+#define RELAY_SYNC_FIRST            4
 
 #define RELAY_PULSE_NONE            0
 #define RELAY_PULSE_OFF             1
@@ -95,6 +96,10 @@
 #define RELAY_PROVIDER_LIGHT        2
 #define RELAY_PROVIDER_RFBRIDGE     3
 #define RELAY_PROVIDER_STM          4
+
+#define RELAY_GROUP_SYNC_NORMAL      0
+#define RELAY_GROUP_SYNC_INVERSE     1
+#define RELAY_GROUP_SYNC_RECEIVEONLY 2
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG

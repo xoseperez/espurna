@@ -7,115 +7,129 @@
 // Hardware
 //--------------------------------------------------------------------------------
 
-//#define NODEMCU_LOLIN
-//#define WEMOS_D1_MINI
-//#define WEMOS_D1_MINI_RELAYSHIELD
-//#define TINKERMAN_ESPURNA_H06
-//#define TINKERMAN_ESPURNA_H08
-//#define TINKERMAN_RFM69GW
-//#define ITEAD_SONOFF_BASIC
-//#define ITEAD_SONOFF_RF
-//#define ITEAD_SONOFF_TH
-//#define ITEAD_SONOFF_SV
-//#define ITEAD_SLAMPHER
+//#define AITHINKER_AI_LIGHT
+//#define ALLNET_4DUINO_IOT_WLAN_RELAIS
+//#define ALLTERCO_SHELLY1
+//#define ALLTERCO_SHELLY2
+//#define ARILUX_AL_LC01
+//#define ARILUX_AL_LC02
+//#define ARILUX_AL_LC02_V14
+//#define ARILUX_AL_LC06
+//#define ARILUX_AL_LC11
+//#define ARILUX_E27
+//#define ARNIEX_SWIFITCH
+//#define AUTHOMETION_LYT8266
+//#define BESTEK_MRJ1011
+//#define BH_ONOFRE
+//#define BLITZWOLF_BWSHPX
+//#define BLITZWOLF_BWSHPX_V23
+//#define DIGOO_NX_SP202
+//#define ELECTRODRAGON_WIFI_IOT
+//#define ESPURNA_CORE
+//#define EUROMATE_WIFI_STECKER_SCHUKO
+//#define EUROMATE_WIFI_STECKER_SCHUKO_V2
+//#define EXS_WIFI_RELAY_V31
+//#define EXS_WIFI_RELAY_V50
+//#define FORNORM_ZLD_34EU
+//#define FOXEL_LIGHTFOX_DUAL
+//#define GBLIFE_RGBW_SOCKET
+//#define GENERIC_8CH
+//#define GENERIC_AG_L4
+//#define GENERIC_ECH1560
+//#define GENERIC_ESP01S_DHT11_V10
+//#define GENERIC_ESP01S_DS18B20_V10
+//#define GENERIC_ESP01S_RELAY_V40
+//#define GENERIC_ESP01S_RGBLED_V10
+//#define GENERIC_GU10
+//#define GENERIC_V9261F
+//#define GIZWITS_WITTY_CLOUD
+//#define GOSUND_WS1
+//#define GREEN_ESP8266RELAY
+//#define HAMA_WIFI_STECKDOSE_00176533
+//#define HELTEC_TOUCHRELAY
+//#define HEYGO_HY02
+//#define HOMECUBE_16A
+//#define HUACANXING_H801
+//#define HUACANXING_H802
+//#define IKE_ESPIKE
+//#define INTERMITTECH_QUINLED
+//#define ITEAD_1CH_INCHING
+//#define ITEAD_BNSZ01
+//#define ITEAD_MOTOR
 //#define ITEAD_S20
-//#define ITEAD_SONOFF_TOUCH
-//#define ITEAD_SONOFF_POW
-//#define ITEAD_SONOFF_POW_R2
-//#define ITEAD_SONOFF_DUAL
-//#define ITEAD_SONOFF_DUAL_R2
+//#define ITEAD_SLAMPHER
 //#define ITEAD_SONOFF_4CH
 //#define ITEAD_SONOFF_4CH_PRO
-//#define ITEAD_1CH_INCHING
-//#define ITEAD_MOTOR
-//#define ITEAD_SONOFF_BNSZ01
-//#define ITEAD_SONOFF_RFBRIDGE
 //#define ITEAD_SONOFF_B1
+//#define ITEAD_SONOFF_BASIC
+//#define ITEAD_SONOFF_BNSZ01
+//#define ITEAD_SONOFF_DUAL
+//#define ITEAD_SONOFF_DUAL_R2
+//#define ITEAD_SONOFF_IFAN02
 //#define ITEAD_SONOFF_LED
+//#define ITEAD_SONOFF_POW
+//#define ITEAD_SONOFF_POW_R2
+//#define ITEAD_SONOFF_RF
+//#define ITEAD_SONOFF_RFBRIDGE
+//#define ITEAD_SONOFF_S31
+//#define ITEAD_SONOFF_SV
 //#define ITEAD_SONOFF_T1_1CH
 //#define ITEAD_SONOFF_T1_2CH
 //#define ITEAD_SONOFF_T1_3CH
-//#define ITEAD_SONOFF_S31
-//#define ORVIBO_B25
-//#define YJZK_SWITCH_2CH
-//#define ELECTRODRAGON_WIFI_IOT
-//#define WORKCHOICE_ECOPLUG
-//#define AITHINKER_AI_LIGHT
-//#define LYASI_LIGHT
-//#define MAGICHOME_LED_CONTROLLER
-//#define MAGICHOME_LED_CONTROLLER_20
-//#define HUACANXING_H801
-//#define HUACANXING_H802
+//#define ITEAD_SONOFF_TH
+//#define ITEAD_SONOFF_TOUCH
+//#define IWOOLE_LED_TABLE_LAMP
 //#define JANGOE_WIFI_RELAY_NC
 //#define JANGOE_WIFI_RELAY_NO
 //#define JORGEGARCIA_WIFI_RELAYS
-//#define OPENENERGYMONITOR_MQTT_RELAY
-//#define WION_50055
-//#define EXS_WIFI_RELAY_V31
-//#define GENERIC_V9261F
-//#define GENERIC_ECH1560
-//#define MANCAVEMADE_ESPLIVE
-//#define INTERMITTECH_QUINLED
-//#define ARILUX_AL_LC06
-//#define ARILUX_E27
-//#define XENON_SM_PW702U
-//#define AUTHOMETION_LYT8266
 //#define KMC_70011
-//#define GENERIC_8CH
-//#define ARILUX_AL_LC01
-//#define ARILUX_AL_LC11
-//#define ARILUX_AL_LC02
-//#define WEMOS_D1_TARPUNA_SHIELD
-//#define GIZWITS_WITTY_CLOUD
-//#define EUROMATE_WIFI_STECKER_SCHUKO
-//#define EUROMATE_WIFI_STECKER_SCHUKO_V2
-//#define TONBUX_POWERSTRIP02
 //#define LINGAN_SWA1
-//#define HEYGO_HY02
-//#define MAXCIO_WUS002S
-//#define OUKITEL_P1
-//#define YIDIAN_XSSSA05
-//#define TONBUX_XSSSA06
-//#define TONBUX_XSSSA01
-//#define GREEN_ESP8266RELAY
-//#define IKE_ESPIKE
-//#define ARNIEX_SWIFITCH
-//#define GENERIC_ESP01S_RELAY_V40
-//#define GENERIC_ESP01S_RGBLED_V10
-//#define GENERIC_ESP01S_DHT11_V10
-//#define GENERIC_ESP01S_DS18B20_V10
-//#define HELTEC_TOUCHRELAY
-//#define ZHILDE_EU44_W
-//#define LUANI_HVIO
-//#define ALLNET_4DUINO_IOT_WLAN_RELAIS
-//#define TONBUX_MOSQUITO_KILLER
-//#define NEO_COOLCAM_NAS_WR01W
-//#define ESTINK_WIFI_POWER_STRIP
-//#define PILOTAK_ESP_DIN_V1
-//#define BLITZWOLF_BWSHPX
-//#define BH_ONOFRE
-//#define ITEAD_SONOFF_IFAN02
-//#define GENERIC_AG_L4
-//#define ALLTERCO_SHELLY1
+//#define LITESUN_LA_WF3
 //#define LOHAS_9W
-//#define YJZK_SWITCH_1CH
-//#define YJZK_SWITCH_3CH
-//#define XIAOMI_SMART_DESK_LAMP
-//#define ALLTERCO_SHELLY2
-//#define PHYX_ESP12_RGB
-//#define IWOOLE_LED_TABLE_LAMP
-//#define EXS_WIFI_RELAY_V50
-//#define TECKIN_SP22_V14
 //#define LOMBEX_LUX_NOVA2_TUNABLE_WHITE
 //#define LOMBEX_LUX_NOVA2_WHITE_COLOR
+//#define LUANI_HVIO
+//#define LYASI_LIGHT
+//#define MAGICHOME_LED_CONTROLLER
+//#define MAGICHOME_LED_CONTROLLER_20
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
-//#define GBLIFE_RGBW_SOCKET
+//#define MANCAVEMADE_ESPLIVE
+//#define MAXCIO_WDE004
+//#define MAXCIO_WUS002S
+//#define NEO_COOLCAM_NAS_WR01W
+//#define NODEMCU_BASIC
+//#define NODEMCU_LOLIN
+//#define OPENENERGYMONITOR_MQTT_RELAY
+//#define ORVIBO_B25
+//#define OUKITEL_P1
+//#define PHYX_ESP12_RGB
+//#define PILOTAK_ESP_DIN_V1
 //#define SMARTLIFE_MINI_SMART_SOCKET
-//#define GOSUND_SP1_V23
-//#define GOSUND_WS1
-//#define ARILUX_AL_LC02_V14
-//#define BLITZWOLF_BWSHPX_V23
+//#define STM_RELAY
+//#define TECKIN_SP20
+//#define TECKIN_SP22_V14
+//#define TINKERMAN_ESPURNA_H06
+//#define TINKERMAN_ESPURNA_H08
+//#define TINKERMAN_ESPURNA_SWITCH
+//#define TINKERMAN_RFM69GW
+//#define TONBUX_MOSQUITO_KILLER
+//#define TONBUX_POWERSTRIP02
+//#define TONBUX_XSSSA01
+//#define TONBUX_XSSSA06
+//#define VANZAVANZU_SMART_WIFI_PLUG_MINI
+//#define WEMOS_D1_MINI
+//#define WEMOS_D1_MINI_RELAYSHIELD
+//#define WEMOS_D1_TARPUNA_SHIELD
+//#define WION_50055
+//#define WORKCHOICE_ECOPLUG
+//#define XENON_SM_PW702U
+//#define XIAOMI_SMART_DESK_LAMP
+//#define YIDIAN_XSSSA05
+//#define YJZK_SWITCH_1CH
+//#define YJZK_SWITCH_2CH
+//#define YJZK_SWITCH_3CH
+//#define ZHILDE_EU44_W
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)
@@ -143,8 +157,8 @@
 //#define NETBIOS_SUPPORT        1  // Only with Arduino Core 2.4.0
 //#define NOFUSS_SUPPORT         1
 //#define NTP_SUPPORT            0
-//#define RFM69_SUPPORT          1
 //#define RF_SUPPORT             1
+//#define RFM69_SUPPORT          1
 //#define SCHEDULER_SUPPORT      0
 //#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
@@ -173,9 +187,11 @@
 //#define EMON_ADS1X15_SUPPORT   1
 //#define EMON_ANALOG_SUPPORT    1
 //#define EVENTS_SUPPORT         1
+//#define EZOPH_SUPPORT          1
 //#define GEIGER_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
+//#define MAX6675_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define MICS2710_SUPPORT       1
 //#define MICS5525_SUPPORT       1
@@ -190,5 +206,5 @@
 //#define SONAR_SUPPORT          1
 //#define TMP3X_SUPPORT          1
 //#define V9261F_SUPPORT         1
+//#define VEML6075_SUPPORT       1
 //#define VL53L1X_SUPPORT        1
-//#define EZOPH_SUPPORT          1

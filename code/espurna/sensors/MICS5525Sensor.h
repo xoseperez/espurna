@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // MICS-5525 (and MICS-4514) CO Analog Sensor
-// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && MICS5525_SUPPORT

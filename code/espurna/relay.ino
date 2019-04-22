@@ -2,7 +2,7 @@
 
 RELAY MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -66,6 +66,8 @@ void _relayProviderStatus(unsigned char id, bool status) {
         for (unsigned char i=0; i<_relays.size(); i++) {
             if (_relays[i].current_status) mask = mask + (1 << i);
         }
+
+        DEBUG_MSG_P(PSTR("[RELAY] [DUAL] Sending relay mask: %d\n"), mask);
 
         // Send it to F330
         Serial.flush();
@@ -337,7 +339,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    return relayStatus(id, status, true, true);
+    return relayStatus(id, status, mqttForward(), true);
 }
 
 bool relayStatus(unsigned char id) {
@@ -368,6 +370,14 @@ void relaySync(unsigned char id) {
     if (relaySync == RELAY_SYNC_SAME) {
         for (unsigned short i=0; i<_relays.size(); i++) {
             if (i != id) relayStatus(i, status);
+        }
+
+    // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
+    } else if (relaySync == RELAY_SYNC_FIRST) {
+        if (id == 0) {
+            for (unsigned short i=1; i<_relays.size(); i++) {
+                relayStatus(i, status);
+            }
         }
 
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
@@ -434,7 +444,7 @@ void relayToggle(unsigned char id, bool report, bool group_report) {
 }
 
 void relayToggle(unsigned char id) {
-    relayToggle(id, true, true);
+    relayToggle(id, mqttForward(), true);
 }
 
 unsigned char relayCount() {
@@ -477,6 +487,12 @@ unsigned char relayParsePayload(const char * payload) {
 
 // BACKWARDS COMPATIBILITY
 void _relayBackwards() {
+
+    for (unsigned int i=0; i<_relays.size(); i++) {
+        if (!hasSetting("mqttGroupInv", i)) continue;
+        setSetting("mqttGroupSync", i, getSetting("mqttGroupInv", i));
+        delSetting("mqttGroupInv", i);
+    }
 
     byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
     byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
@@ -636,7 +652,7 @@ void _relayWebSocketSendRelays() {
 
     #if MQTT_SUPPORT
         JsonArray& group = relays.createNestedArray("group");
-        JsonArray& group_inverse = relays.createNestedArray("group_inv");
+        JsonArray& group_sync = relays.createNestedArray("group_sync");
         JsonArray& on_disconnect = relays.createNestedArray("on_disc");
     #endif
 
@@ -652,7 +668,7 @@ void _relayWebSocketSendRelays() {
 
         #if MQTT_SUPPORT
             group.add(getSetting("mqttGroup", i, ""));
-            group_inverse.add(getSetting("mqttGroupInv", i, 0).toInt() == 1);
+            group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }
@@ -807,6 +823,18 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
+void _relayMQTTGroup(unsigned char id) {
+    String topic = getSetting("mqttGroup", id, "");
+    if (!topic.length()) return;
+
+    unsigned char mode = getSetting("mqttGroupSync", id, RELAY_GROUP_SYNC_NORMAL).toInt();
+    if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
+
+    bool status = relayStatus(id);
+    if (mode == RELAY_GROUP_SYNC_INVERSE) status = !status;
+    mqttSendRaw(topic.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+}
+
 void relayMQTT(unsigned char id) {
 
     if (id >= _relays.size()) return;
@@ -820,12 +848,7 @@ void relayMQTT(unsigned char id) {
     // Check group topic
     if (_relays[id].group_report) {
         _relays[id].group_report = false;
-        String t = getSetting("mqttGroup", id, "");
-        if (t.length() > 0) {
-            bool status = relayStatus(id);
-            if (getSetting("mqttGroupInv", id, 0).toInt() == 1) status = !status;
-            mqttSendRaw(t.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
-        }
+        _relayMQTTGroup(id);
     }
 
     // Send speed for IFAN02
@@ -952,7 +975,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 if (value == 0xFF) return;
 
                 if (value < 2) {
-                    if (getSetting("mqttGroupInv", i, 0).toInt() == 1) {
+                    if (getSetting("mqttGroupSync", i, RELAY_GROUP_SYNC_NORMAL).toInt() == RELAY_GROUP_SYNC_INVERSE) {
                         value = 1 - value;
                     }
                 }

@@ -158,9 +158,14 @@
 #define BMX280_SUPPORT                  0
 #endif
 
-#ifndef BMX280_ADDRESS
-#define BMX280_ADDRESS                  0x00    // 0x00 means auto
+#ifndef BMX280_NUMBER
+#define BMX280_NUMBER                   1       // Number of sensors present. Either 1 or 2 allowed
 #endif
+#ifndef BMX280_ADDRESS
+#define BMX280_ADDRESS                  0x00    // 0x00 means auto (0x76 or 0x77 allowed) for sensor #0
+#endif                                          // If (BMX280_NUMBER == 2) and
+                                                //   (BMX280_ADDRESS == 0x00) then sensor #1 is auto-discovered
+                                                //   (BMX280_ADDRESS != 0x00) then sensor #1 is the unnamed address
 
 #define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
 #define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
@@ -168,9 +173,27 @@
                                                 // 6 for 10ms, 7 for 20ms
 #define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 16bit/0.0050C resolution
+                                                // 0b010 = 2 = 2x 17bit/0.0025C
+                                                // 0b011 = 3 = 4x 18bit/0.0012C
+                                                // 0b100 = 4 = 8x 19bit/0.0006C
+                                                // 0b101 = 5 = 16x 20bit/0.0003C
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 0.07% resolution
+                                                // 0b010 = 2 = 2x 0.05%
+                                                // 0b011 = 3 = 4x 0.04%
+                                                // 0b100 = 4 = 8x 0.03%
+                                                // 0b101 = 5 = 16x 0.02%
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
-
+                                                // 0b000 = 0 = Skipped
+                                                // 0b001 = 1 = 1x 16bit/2.62 Pa resolution
+                                                // 0b010 = 2 = 2x 17bit/1.31 Pa
+                                                // 0b011 = 3 = 4x 18bit/0.66 Pa
+                                                // 0b100 = 4 = 8x 19bit/0.33 Pa
+                                                // 0b101 = 5 = 16x 20bit/0.16 Pa
+  
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
 // Enable support by passing DALLAS_SUPPORT=1 build flag
@@ -834,6 +857,22 @@
 #endif                                                             // often the sensor takes a measurement.
 
 //------------------------------------------------------------------------------
+// MAX6675
+// Enable support by passing MAX6675_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+#ifndef MAX6675_CS_PIN
+#define MAX6675_CS_PIN                               13
+#endif
+
+#ifndef MAX6675_SO_PIN
+#define MAX6675_SO_PIN                               12
+#endif
+
+#ifndef MAX6675_SCK_PIN
+#define MAX6675_SCK_PIN                              14
+#endif
+
+//------------------------------------------------------------------------------
 // EZOPH pH meter
 // Enable support by passing EZOPH_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -893,6 +932,7 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
+    MAX6675_SUPPORT || \
     EZOPH_SUPPORT \
 )
 #endif
@@ -1008,7 +1048,7 @@
 #endif
 
 #if MAX6675_SUPPORT
-    #include "../sensors/MAX6675.h"
+    #include "../sensors/MAX6675Sensor.h"
 #endif 
 
 #if MHZ19_SUPPORT

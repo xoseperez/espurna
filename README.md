@@ -3,7 +3,7 @@
 ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
 
-[![version](https://img.shields.io/badge/version-1.13.4--dev-brightgreen.svg)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.13.6--dev-brightgreen.svg)](CHANGELOG.md)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
 [![license](https://img.shields.io/github/license/xoseperez/espurna.svg)](LICENSE)
 [![travis](https://travis-ci.org/xoseperez/espurna.svg?branch=dev)](https://travis-ci.org/xoseperez/espurna)
@@ -18,7 +18,7 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ## Collaborators
 
-Since last November, Max Prokhorov (@mcspr) is also working actively with ESPurna as a collaborator of the project. 
+Since November 2018, Max Prokhorov (@mcspr) is also actively working as a collaborator of the project. 
 
 ## Contributors
 
@@ -82,20 +82,27 @@ Since last November, Max Prokhorov (@mcspr) is also working actively with ESPurn
 * Support for [different **sensors**](Sensors)
     * Environment
         * **DHT11 / DHT12 / DHT22 / DHT21 / AM2301 / Itead's SI7021**
-        * **BMP280** and **BME280** temperature, humidity (BME280) and pressure sensor by Bosch
+        * **BMP180**, **BMP280** and **BME280** pressure, humidity (BME280) and temperature (BMP280 & BME280) sensor by Bosch
         * **TMP35** and **TMP36** analog temperature sensors
+        * **MAX6675** temperature sensor
         * **NTC** temperature sensors
         * **SI7021** temperature and humidity sensor
         * **SHT3X** temperature and humidity sensor over I2C (Wemos shield)
         * **AM2320** temperature and humidity sensor over I2C
         * **Dallas OneWire sensors** like the DS18B20
         * **MHZ19** CO2 sensor
+        * **MICS2710** CO2 & NO2 sensor
+        * **MICS5525** CO & CO2 sensor
         * **SenseAir S8** CO2 sensor
         * **PMSX003/PMS5003T/ST** dust sensors
+        * **SDS011** dust sensor
         * **BH1750** luminosity sensor
         * **GUVAS12SD** UV sensor
-        * **GEIGER COUNTER** by RH Electronics
+        * **VEML6075** UV Sensor
+        * **EZO pH Circuit**
+        * **Geiger counter** by RH Electronics
         * **HC-SR04**, **SRF05**, **SRF06**, **DYP-ME007**, **JSN-SR04T** & **Parallax PING)))™** distance sensors
+        * **VL53L1X** distance sensor
     * Power monitoring
         * **HLW8012** using the [HLW8012 Library](https://bitbucket.org/xoseperez/hlw8012) (Sonoff POW)
         * **CSE7766** and **CSE7759B** power monitor chips
@@ -220,77 +227,134 @@ For more information please refer to the [ESPurna Wiki](https://github.com/xosep
 
 Here is the list of supported hardware. For more information please refer to the [ESPurna Wiki Hardware page](https://github.com/xoseperez/espurna/wiki/Hardware).
 
+
+### Power monitoring devices
+
 ||||
 |---|---|---|
-|![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)|![Tinkerman RFM69GW](images/devices/tinkerman-rfm69gw.jpg)||
-|**Tinkerman ESPurna H**|**Tinkerman RFM69GW**||
-|![Itead Sonoff RF Bridge](images/devices/itead-sonoff-rfbridge.jpg)|![Itead Sonoff RF](images/devices/itead-sonoff-rf.jpg)|![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|
-|**Itead Sonoff RF Bridge**|**Itead Sonoff RF**|**Itead Sonoff 4CH**|
-|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)|||
-|**Itead Sonoff 4CH Pro**|||
-|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|![BlitzWolf BW-SPP2](images/devices/blitzwolf-bw-shp2.jpg)|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|
-|**Itead Sonoff S31**|**Blitzwolf BW-SHP2<br />(also by Coosa, Goosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
-|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|
-|**Itead Sonoff POW**|**Itead Sonoff POW R2**|**Vanzavanzu Smart WiFi Plug Mini**|
+|![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|
+|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Goosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
+|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|
+|**Itead Sonoff POW**|**Itead Sonoff POW R2**|**Itead Sonoff S31**|
+|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|
+|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|**Digoo NX SP202**|
+|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|||
+|**Vanzavanzu Smart WiFi Plug Mini**|||
+
+### Embedded switches
+
+||||
+|---|---|---|
 |![Itead Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![Itead Sonoff Dual/Dual R2](images/devices/itead-sonoff-dual.jpg)|![Itead Sonoff TH10/TH16](images/devices/itead-sonoff-th.jpg)|
 |**Itead Sonoff Basic**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
 |![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)||
 |**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
-|![Itead S20](images/devices/itead-s20.jpg)|![Itead S20](images/devices/itead-s26.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
+|![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||
+|**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**||
+|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|![Allterco Shelly2](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
+|**Alterco Shelly1**|**Alterco Shelly2**|**Jan Goedeke Wifi Relay (NO/NC)**|
+|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
+|**EXS Wifi Relay v3.1**|**EXS Wifi Relay v5.0**|**Jorge García Wifi + Relays Board Kit**|
+|![Allnet ESP8266-UP-Relay](images/devices/allnet-esp8266-up-relay.jpg)|![Bruno Horta's OnOfre](images/devices/bh-onofre.jpg)|![Luani HVIO](images/devices/luani-hvio.jpg)|
+|**Allnet ESP8266-UP-Relay**|**Bruno Horta's OnOfre**|**Luani HVIO**|
+
+
+### Wall Sockets
+
+||||
+|---|---|---|
+|![Itead S20](images/devices/itead-s20.jpg)|![Itead S26](images/devices/itead-s26.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
 |**Itead S20**|**Itead S26**|**Neo Coolcam NAS WR01W**|
-|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![Schuko Wifi Plug V2](images/devices/schuko-wifi-plug-v2.jpg)|
-|**Schuko Wifi Plug**|**Schuko Wifi Plug V2**|
-|![KMC 70011](images/devices/kmc-70011.jpg)|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)||
-**KMC 70011**|**Xenon SM-PW702U**||
 |![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
 |**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
 |**WiOn 50055**|**LINGAN SWA1**|**HomeCube 16A**|
 |![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Bestek MRJ1011](images/devices/bestek-mrj1011.jpg)|![Tonbux XS-SSA01](images/devices/tonbux-xs-ssa01.jpg)|
 |**WorkChoice EcoPlug**|**Bestek MRJ1011**|**Tonbux XS-SSA01**|
-|![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm Power Strip](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
-|**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
+|![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![Schuko Wifi Plug V2](images/devices/schuko-wifi-plug-v2.jpg)|![KMC 70011](images/devices/kmc-70011.jpg)|
+|**Schuko Wifi Plug**|**Schuko Wifi Plug V2**|**KMC 70011**|
+|![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)|![Orvibo B25](images/devices/orvibo-b25.jpg)|![Oukitel P1](images/devices/oukitel-p1.jpg)|
+|**Xenon SM-PW702U**|**Orvibo B25**|**Oukitel P1**|
+|![Tonbux XS-SSA06](images/devices/tonbux-xs-ssa06.jpg)|![Litesun LA-WF3](images/devices/litesun-la-wf3.jpg)|![Maxcio W DE-004](images/devices/maxcio-w-de004.jpg)|
+|**Tonbux XS-SSA06**|**Litesun LA-WF3**|**Maxcio W DE-004**|
+|![Hama WiFi Steckdose](images/devices/hama-wifi-steckdose.jpg)|![GBLife RGBW Socket](images/devices/gblife-rgbw-socket.jpg)||
+|**Hama WiFi Steckdose**|**GBLife RGBW Socket**||
+
+### Wall switches
+
+||||
+|---|---|---|
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK switch](images/devices/yjzk-2gang-switch.jpg)|
 |**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 1/2/3-gangs switch**|
+|![Gosund WS1 / KS-602S](images/devices/gosund-ws1.jpg)|||
+|**Gosund WS1 / KS-602S**|||
+
+### Power strips
+
+||||
+|---|---|---|
+|![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm ZLD-34EU](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
+|**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
+
+### Smart lights
+
+||||
+|---|---|---|
 |![Itead Slampher](images/devices/itead-slampher.jpg)|![Arilux E27](images/devices/arilux-e27.jpg)|![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|
 |**Itead Slampher**|**Arilux E27**|**Itead Sonoff B1**|
 |![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|![AG-L4](images/devices/ag-l4.jpg)|
 |**AI-Thinker Wifi Light / Noduino OpenLight**|**Authometion LYT8266**|**AG-L4**|
 |![Lohas 9W](images/devices/lohas-9w.jpg)|![Xiaomi Smart Desk Lamp](images/devices/xiaomi-smart-desk-lamp.jpg)|![iWoole LED Table Lamp](images/devices/iwoole-led-table-lamp.jpg)|
 |**Lohas 9W**|**Xiaomi Smart Desk Lamp**|**iWoole LED Table Lamp**|
-|![Itead Sonoff LED](images/devices/itead-sonoff-led.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|![InterMitTech QuinLED 2.6](images/devices/intermittech-quinled-2.6.jpg)|
-|**Itead Sonoff LED**|**Itead BN-SZ01**|**InterMitTech QuinLED 2.6**|
+|![Itead Sonoff LED](images/devices/itead-sonoff-led.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|![Lombox LUX Nova 2](images/devices/lombex-lux-nova2.jpg)|
+|**Itead Sonoff LED**|**Itead BN-SZ01**|**Lombex LUX Nova 2 (white and color)**|
 |![Arilux AL-LC01 (RGB)](images/devices/arilux-al-lc01.jpg)|![Arilux AL-LC02 (RGBW)](images/devices/arilux-al-lc02.jpg)|![Arilux AL-LC06 (RGBWWCW)](images/devices/arilux-al-lc06.jpg)|
 |**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**Arilux AL-LC06 (RGBWWCW)**|
 |![Arilux AL-LC11 (RGBWWW) & RF](images/devices/arilux-al-lc11.jpg)|![MagicHome LED Controller (1.0 and 2.x)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801/802](images/devices/huacanxing-h801.jpg)|
-|**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x)**|**Huacanxing H801/802**|
+|**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x, also ZJ WFMN A/B11)**|**Huacanxing H801/802**|
+
+### Radio links / gateways
+
+||||
+|---|---|---|
+|![Tinkerman RFM69GW](images/devices/tinkerman-rfm69gw.jpg)|![Itead Sonoff RF Bridge](images/devices/itead-sonoff-rfbridge.jpg)|![Itead Sonoff RF](images/devices/itead-sonoff-rf.jpg)|
+|**Tinkerman RFM69GW**|**Itead Sonoff RF Bridge**|**Itead Sonoff RF**|
+
+### Other devices
+
+||||
+|---|---|---|
+|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|![Itead Sonoff IFAN02](images/devices/itead-sonoff-ifan02.jpg)||
+|**Tonbux Mosquito Killer**|**Itead Sonoff IFAN02**|||
+
+### Custom & Development boards
+
+||||
+|---|---|---|
+|![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)||![NodeMCU](images/devices/nodemcu-lolin-v3.jpg)|
+|**Tinkerman ESPurna H**||**NodeMCU Lolin V3**|
 |![Itead Sonoff SV](images/devices/itead-sonoff-sv.jpg)|![Itead 1CH Inching](images/devices/itead-1ch-inching.jpg)|![Itead Motor Clockwise/Anticlockwise](images/devices/itead-motor.jpg)|
 |**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
-|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|
-|**Jan Goedeke Wifi Relay (NO/NC)**|**Jorge García Wifi + Relays Board Kit**|**EXS Wifi Relay v3.1**|
-|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Allterco Shelly1](images/devices/allterco-shelly1.jpg)|![Allterco Shelly2](images/devices/allterco-shelly2.jpg)|
-|**EXS Wifi Relay v5.0**|**Alterco Shelly1**|**Alterco Shelly2**|
-|![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-mini-relayshield.jpg)|![Witty Cloud](images/devices/witty-cloud.jpg)|
-|**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Witty Cloud**|
+|![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-relayshield.jpg)|![Gizwits Witty Cloud](images/devices/witty-cloud.jpg)|
+|**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Gizwits Witty Cloud**|
 |![IKE ESPike](images/devices/ike-espike.jpg)|![Pilotak ESP DIN](images/devices/pilotak-esp-din.jpg)|![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
 |**IKE ESPike**|**Pilotak ESP DIN|**Arniex Swifitch**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
 |**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
-|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)|![Bruno Horta's OnOfre](images/devices/bh-onofre.jpg)|
-|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**|**Bruno Horta's OnOfre**|
-|![Allnet ESP8266-UP-Relay](images/devices/allnet-esp8266-up-relay.jpg)|![RH Electronics Geiger Counter](images/devices/generic-geiger-diy.png)|![Luani HVIO](images/devices/luani-hvio.jpg)|
-|**Allnet ESP8266-UP-Relay**|**RH Electronics Geiger Counter**|**Luani HVIO**|
-|![Phyx ESP12 RGBW](images/devices/phyx-esp12-rgbw.jpg)|||
-|**Phyx ESP12 RGBW**||||
-|![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|![Itead Sonoff IFAN02](images/devices/itead-sonoff-ifan02.jpg)||
-|**Tonbux Mosquito Killer**|**Itead Sonoff IFAN02**|||
+|![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)|![InterMitTech QuinLED 2.6](images/devices/intermittech-quinled-2.6.jpg)|
+|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**|**InterMitTech QuinLED 2.6**|
+|![Phyx ESP12 RGBW](images/devices/phyx-esp12-rgbw.jpg)|![RH Electronics Geiger Counter](images/devices/generic-geiger-diy.png)|![Green ESP Relay](images/devices/green-esp-relay.jpg)|
+|**Phyx ESP12 RGBW**|**RH Electronics Geiger Counter**|**Green ESP Relay**|
+|![Foxel Lightfox Dual](images/devices/foxel-lightfox-dual.jpg)|||
+|**Foxel Lightfox Dual**|||
+
 
 **Other supported boards (beta):**
 KMC 4 Outlet, Gosund WS1, MakerFocus Intelligent Module LM33 for Lamps
 
 ## License
 
-Copyright (C) 2016-2018 by Xose Pérez (@xoseperez)
+Copyright (C) 2016-2019 by Xose Pérez (@xoseperez)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

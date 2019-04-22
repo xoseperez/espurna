@@ -2,7 +2,7 @@
 
 DEBUG MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -19,9 +19,9 @@ char _udp_syslog_header[40] = {0};
 #if DEBUG_SERIAL_SUPPORT
     void _debugSendSerial(const char* prefix, const char* data) {
         if (prefix && (prefix[0] != '\0')) {
-            Serial.print(prefix);
+            DEBUG_PORT.print(prefix);
         }
-        Serial.print(data);
+        DEBUG_PORT.print(data);
 
     }
 #endif

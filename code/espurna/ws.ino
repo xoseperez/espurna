@@ -2,7 +2,7 @@
 
 WEBSOCKET MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -311,9 +311,9 @@ void _wsUpdate(JsonObject& root) {
 }
 
 void _wsDoUpdate(bool reset = false) {
-    static unsigned long last = 0;
+    static unsigned long last = millis();
     if (reset) {
-        last = 0;
+        last = millis() + WS_UPDATE_INTERVAL;
         return;
     }
 

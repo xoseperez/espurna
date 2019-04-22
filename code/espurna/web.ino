@@ -2,7 +2,7 @@
 
 WEBSERVER MODULE
 
-Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -27,6 +27,10 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
     #include "static/index.rfbridge.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
     #include "static/index.rfm69.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
+    #include "static/index.lightfox.html.gz.h"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
+    #include "static/index.thermostat.html.gz.h"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.gz.h"
 #endif
@@ -327,7 +331,8 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     } else {
-        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        //Removed to avoid websocket ping back during upgrade (see #1574)
+        //DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
 
