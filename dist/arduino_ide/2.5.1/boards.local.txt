@@ -1,0 +1,174 @@
+#version=2.5.1
+
+menu.variant=ESPurna board variant
+menu.float_support=scanf and printf float support
+
+espurna.name=ESPurna Board
+espurna.build.board=ESP8266_ESPURNA
+espurna.upload.speed=115200
+espurna.upload.tool=esptool
+espurna.upload.maximum_data_size=81920
+espurna.upload.wait_for_upload_port=true
+espurna.upload.erase_cmd=
+espurna.serial.disableDTR=true
+espurna.serial.disableRTS=true
+espurna.build.mcu=esp8266
+espurna.build.core=esp8266
+espurna.build.variant=generic
+espurna.build.spiffs_pagesize=256
+espurna.build.debug_port=
+espurna.build.debug_level=
+espurna.build.flash_mode=dout
+espurna.build.flash_flags=-DFLASHMODE_DOUT
+
+espurna.menu.xtal.80=80 MHz
+espurna.menu.xtal.80.build.f_cpu=80000000L
+espurna.menu.xtal.160=160 MHz
+espurna.menu.xtal.160.build.f_cpu=160000000L
+
+espurna.menu.FlashFreq.40=40MHz
+espurna.menu.FlashFreq.40.build.flash_freq=40
+espurna.menu.FlashFreq.80=80MHz
+espurna.menu.FlashFreq.80.build.flash_freq=80
+
+espurna.menu.FlashMode.dout=DOUT (compatible)
+espurna.menu.FlashMode.dout.build.flash_mode=dout
+espurna.menu.FlashMode.dout.build.flash_flags=-DFLASHMODE_DOUT
+espurna.menu.FlashMode.dio=DIO
+espurna.menu.FlashMode.dio.build.flash_mode=dio
+espurna.menu.FlashMode.dio.build.flash_flags=-DFLASHMODE_DIO
+espurna.menu.FlashMode.qout=QOUT
+espurna.menu.FlashMode.qout.build.flash_mode=qout
+espurna.menu.FlashMode.qout.build.flash_flags=-DFLASHMODE_QOUT
+espurna.menu.FlashMode.qio=QIO (fast)
+espurna.menu.FlashMode.qio.build.flash_mode=qio
+espurna.menu.FlashMode.qio.build.flash_flags=-DFLASHMODE_QIO
+
+espurna.menu.eesz.1M=1M1S (no SPIFFS)
+espurna.menu.eesz.1M.build.flash_size=1M
+espurna.menu.eesz.1M.build.flash_size_bytes=0x100000
+espurna.menu.eesz.1M.build.flash_ld=eagle.flash.1m0m1s.ld
+espurna.menu.eesz.1M.build.spiffs_pagesize=256
+espurna.menu.eesz.1M.upload.maximum_size=1023984
+espurna.menu.eesz.1M.build.rfcal_addr=0xFC000
+espurna.menu.eesz.2M=2M4S (1M SPIFFS)
+espurna.menu.eesz.2M.build.flash_size=2M
+espurna.menu.eesz.2M.build.flash_size_bytes=0x200000
+espurna.menu.eesz.2M.build.flash_ld=eagle.flash.2m1m4s.ld
+espurna.menu.eesz.2M.build.spiffs_pagesize=256
+espurna.menu.eesz.2M.upload.maximum_size=1044464
+espurna.menu.eesz.2M.build.rfcal_addr=0x1FC000
+espurna.menu.eesz.4M1M=4M4S (1M SPIFFS)
+espurna.menu.eesz.4M1M.build.flash_size=4M
+espurna.menu.eesz.4M1M.build.flash_size_bytes=0x400000
+espurna.menu.eesz.4M1M.build.flash_ld=eagle.flash.4m1m4s.ld
+espurna.menu.eesz.4M1M.build.spiffs_pagesize=256
+espurna.menu.eesz.4M1M.upload.maximum_size=1044464
+espurna.menu.eesz.4M1M.build.rfcal_addr=0x3FC000
+espurna.menu.eesz.4M3M=4M4S (3M SPIFFS)
+espurna.menu.eesz.4M3M.build.flash_size=4M
+espurna.menu.eesz.4M3M.build.flash_size_bytes=0x400000
+espurna.menu.eesz.4M3M.build.flash_ld=eagle.flash.4m3m4s.ld
+espurna.menu.eesz.4M3M.build.spiffs_pagesize=256
+espurna.menu.eesz.4M3M.upload.maximum_size=1044464
+espurna.menu.eesz.4M3M.build.rfcal_addr=0x3FC000
+
+espurna.menu.wipe.none=Only Sketch
+espurna.menu.wipe.none.upload.erase_cmd=
+espurna.menu.wipe.sdk=Sketch + WiFi Settings
+espurna.menu.wipe.sdk.upload.erase_cmd=-ca "{build.rfcal_addr}" -cz 0x4000
+espurna.menu.wipe.all=All Flash Contents
+espurna.menu.wipe.all.upload.erase_cmd=-ca 0x0 -cz "{build.flash_size_bytes}"
+
+espurna.menu.ResetMethod.ck=ck
+espurna.menu.ResetMethod.ck.upload.resetmethod=ck
+espurna.menu.ResetMethod.nodemcu=nodemcu
+espurna.menu.ResetMethod.nodemcu.upload.resetmethod=nodemcu
+espurna.menu.ResetMethod.none=none
+espurna.menu.ResetMethod.none.upload.resetmethod=none
+espurna.menu.ResetMethod.dtrset=dtrset
+espurna.menu.ResetMethod.dtrset.upload.resetmethod=dtrset
+
+espurna.menu.baud.115200=115200
+espurna.menu.baud.115200.upload.speed=115200
+espurna.menu.baud.9600=9600
+espurna.menu.baud.9600.upload.speed=9600
+espurna.menu.baud.57600=57600
+espurna.menu.baud.57600.upload.speed=57600
+espurna.menu.baud.256000.windows=256000
+espurna.menu.baud.256000.upload.speed=256000
+espurna.menu.baud.230400.linux=230400
+espurna.menu.baud.230400.macosx=230400
+espurna.menu.baud.230400.upload.speed=230400
+espurna.menu.baud.460800.linux=460800
+espurna.menu.baud.460800.macosx=460800
+espurna.menu.baud.460800.upload.speed=460800
+espurna.menu.baud.512000.windows=512000
+espurna.menu.baud.512000.upload.speed=512000
+espurna.menu.baud.921600=921600
+espurna.menu.baud.921600.upload.speed=921600
+
+espurna.menu.variant.generic=Generic
+espurna.menu.variant.generic.build.variant=generic
+espurna.menu.variant.esp8285=ESP8285 (1M)
+espurna.menu.variant.esp8285.build.variant=esp8285
+
+espurna.menu.CrystalFreq.26=26 MHz
+espurna.menu.CrystalFreq.40=40 MHz
+espurna.menu.CrystalFreq.40.build.extra_flags=-DF_CRYSTAL=40000000 -DESP8266
+
+espurna.menu.ip.hb1=v1.4 Higher Bandwidth
+espurna.menu.ip.hb1.build.lwip_lib=-llwip_gcc
+espurna.menu.ip.hb1.build.lwip_flags=-DLWIP_OPEN_SRC
+espurna.menu.ip.src=v1.4 Compile from source
+espurna.menu.ip.src.build.lwip_lib=-llwip_src
+espurna.menu.ip.src.build.lwip_flags=-DLWIP_OPEN_SRC
+espurna.menu.ip.src.recipe.hooks.sketch.prebuild.1.pattern=make -C "{runtime.platform.path}/tools/sdk/lwip/src" install TOOLS_PATH="{runtime.tools.xtensa-lx106-elf-gcc.path}/bin/xtensa-lx106-elf-"
+
+espurna.menu.ip.lm2f=v2 Lower Memory
+espurna.menu.ip.lm2f.build.lwip_include=lwip2/include
+espurna.menu.ip.lm2f.build.lwip_lib=-llwip2-536-feat
+espurna.menu.ip.lm2f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=1 -DLWIP_IPV6=0
+espurna.menu.ip.hb2f=v2 Higher Bandwidth
+espurna.menu.ip.hb2f.build.lwip_include=lwip2/include
+espurna.menu.ip.hb2f.build.lwip_lib=-llwip2-1460-feat
+espurna.menu.ip.hb2f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=1 -DLWIP_IPV6=0
+espurna.menu.ip.lm2n=v2 Lower Memory (no features)
+espurna.menu.ip.lm2n.build.lwip_include=lwip2/include
+espurna.menu.ip.lm2n.build.lwip_lib=-llwip2-536
+espurna.menu.ip.lm2n.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=0 -DLWIP_IPV6=0
+espurna.menu.ip.hb2n=v2 Higher Bandwidth (no features)
+espurna.menu.ip.hb2n.build.lwip_include=lwip2/include
+espurna.menu.ip.hb2n.build.lwip_lib=-llwip2-1460
+espurna.menu.ip.hb2n.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=0 -DLWIP_IPV6=0
+espurna.menu.ip.lm6f=v2 IPv6 Lower Memory
+espurna.menu.ip.lm6f.build.lwip_include=lwip2/include
+espurna.menu.ip.lm6f.build.lwip_lib=-llwip6-536-feat
+espurna.menu.ip.lm6f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=1 -DLWIP_IPV6=1
+espurna.menu.ip.hb6f=v2 IPv6 Higher Bandwidth
+espurna.menu.ip.hb6f.build.lwip_include=lwip2/include
+espurna.menu.ip.hb6f.build.lwip_lib=-llwip6-1460-feat
+espurna.menu.ip.hb6f.build.lwip_flags=-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=1 -DLWIP_IPV6=1
+
+espurna.menu.vt.flash=Flash
+espurna.menu.vt.flash.build.vtable_flags=-DVTABLES_IN_FLASH
+espurna.menu.vt.heap=Heap
+espurna.menu.vt.heap.build.vtable_flags=-DVTABLES_IN_DRAM
+espurna.menu.vt.iram=IRAM
+espurna.menu.vt.iram.build.vtable_flags=-DVTABLES_IN_IRAM
+
+espurna.menu.exception.disabled=Disabled
+espurna.menu.exception.disabled.build.exception_flags=-fno-exceptions
+espurna.menu.exception.disabled.build.stdcpp_lib=-lstdc++
+espurna.menu.exception.enabled=Enabled
+espurna.menu.exception.enabled.build.exception_flags=-fexceptions
+espurna.menu.exception.enabled.build.stdcpp_lib=-lstdc++-exc
+
+espurna.menu.sdk.nonosdk221=nonos-sdk 2.2.1 (legacy)
+espurna.menu.sdk.nonosdk221.build.sdk=NONOSDK221
+espurna.menu.sdk.nonosdk222=nonos-sdk 2.2.2-190313 (testing)
+espurna.menu.sdk.nonosdk222.build.sdk=NONOSDK22x
+espurna.menu.sdk.nonosdk3v0=nonos-sdk pre-3 (known issues)
+espurna.menu.sdk.nonosdk3v0.build.sdk=NONOSDK3V0
+
+espurna.compiler.cpp.extra_flags=-DNO_GLOBAL_EEPROM -DMQTT_MAX_PACKET_SIZE=400

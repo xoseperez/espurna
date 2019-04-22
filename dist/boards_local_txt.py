@@ -262,13 +262,24 @@ BOARDS_LOCAL = {
         ( '.menu.{wipe}.all.upload.erase_cmd', '-ca 0x0 -cz "{build.flash_size_bytes}"' ),
         ]),
 
+    ####################### sdk selection
+
+    'sdk': collections.OrderedDict([
+        ( '.menu.sdk.nonosdk221', 'nonos-sdk 2.2.1 (legacy)' ),
+        ( '.menu.sdk.nonosdk221.build.sdk', 'NONOSDK221' ),
+        ( '.menu.sdk.nonosdk222', 'nonos-sdk 2.2.2-190313 (testing)' ),
+        ( '.menu.sdk.nonosdk222.build.sdk', 'NONOSDK22x' ),
+        ( '.menu.sdk.nonosdk3v0', 'nonos-sdk pre-3 (known issues)' ),
+        ( '.menu.sdk.nonosdk3v0.build.sdk', 'NONOSDK3V0' ),
+        ]),
+
     }
 
 
 BOARD = "espurna"
 
 
-CORE_VERSIONS = ["2.3.0", "2.4.2", "2.5.0"]
+CORE_VERSIONS = ["2.3.0", "2.4.2", "2.5.0", "2.5.1"]
 
 
 MENUS = {}
@@ -285,6 +296,10 @@ MENUS["2.4.2"].extend(["crystal_freq", "lwip", "lwip2_242", "vtables"])
 
 MENUS["2.5.0"] = list(MENUS["2.3.0"])
 MENUS["2.5.0"].extend(["variant", "crystal_freq", "lwip", "lwip2_latest", "vtables", "exceptions"])
+
+
+MENUS["2.5.1"] = list(MENUS["2.5.0"])
+MENUS["2.5.1"].extend(["sdk"])
 
 
 EXTRA_FLAGS = [
@@ -326,6 +341,7 @@ def generate(versions, directory, sub=VersionedSubstitution(SUBSTITUTIONS, ["2.3
             result.extend(("{}{}={}".format(BOARD, k,v)) for k, v in EXTRA_FLAGS)
 
         f_path = os.path.join(directory, version, "boards.local.txt")
+        os.makedirs(os.path.join(directory, version), exist_ok=True)
 
         with open(f_path, "w") as f:
             for part in result:
