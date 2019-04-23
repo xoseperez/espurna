@@ -2,7 +2,6 @@ import os
 import argparse
 import logging
 from collections import defaultdict
-from string import Formatter  # vformat / no format_map in py2.7
 from math import trunc
 
 FORMAT = "%(asctime)-15s %(message)s"
