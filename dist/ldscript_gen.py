@@ -5,7 +5,7 @@ from collections import defaultdict
 from string import Formatter  # vformat / no format_map in py2.7
 from math import trunc
 
-FORMAT = '%(asctime)-15s %(message)s'
+FORMAT = "%(asctime)-15s %(message)s"
 log = logging.getLogger("ldscript-get")
 logging.basicConfig(format=FORMAT)
 
@@ -17,13 +17,7 @@ IROM0_SPI_FLASH_START = 0x40200000
 IROM0_RESERVED_SKETCH_SIZE = 0x1010
 IROM0_RESERVED_SDK_SIZE = 0x4000
 
-SIZE = {
-    512: 0x80000,
-    1024: 0x100000,
-    2048: 0x200000,
-    3072: 0x300000,
-    4096: 0x400000
-}
+SIZE = {512: 0x80000, 1024: 0x100000, 2048: 0x200000, 3072: 0x300000, 4096: 0x400000}
 
 # supported sizes
 # flash (bytes), spiffs (bytes), eeprom (sectors)
@@ -32,8 +26,9 @@ VARIANTS = [
     [SIZE[1024], 0, 2],
     [SIZE[2048], SIZE[1024], 4],
     [SIZE[4096], SIZE[1024], 4],
-    [SIZE[4096], SIZE[3072], 4]
+    [SIZE[4096], SIZE[3072], 4],
 ]
+
 
 def variant_name(variant):
     tmpl = "{}m{}m{}s"
@@ -41,7 +36,7 @@ def variant_name(variant):
     size, spiffs, sectors = variant
 
     size = trunc(size / SIZE[1024])
-    spiffs = trunc(spiffs/ SIZE[1024])
+    spiffs = trunc(spiffs / SIZE[1024])
 
     return tmpl.format(size, spiffs, sectors)
 
@@ -68,10 +63,11 @@ PROVIDE ( _SPIFFS_block = {spiffs_block:#x} );
 INCLUDE \"{include}\"
 """
 
+
 def flash_map(flashsize, spiffs, sectors):
     reserved = IROM0_RESERVED_SKETCH_SIZE
     sdk_reserved = IROM0_RESERVED_SDK_SIZE
-    eeprom_size = (0x1000 * sectors)
+    eeprom_size = 0x1000 * sectors
 
     spiffs_end = IROM0_SPI_FLASH_START + (flashsize - sdk_reserved - eeprom_size)
     spiffs_page = 0x100
@@ -93,17 +89,18 @@ def flash_map(flashsize, spiffs, sectors):
         spiffs_start = spiffs_end
 
     result = {
-        'size': max_upload_size,
-        'size_kb': int(max_upload_size / 1024),
-        'eeprom_size_kb': int(eeprom_size / 1024),
-        'spiffs_size_kb': int(spiffs / 1024),
-        'spiffs_start': spiffs_start,
-        'spiffs_end': spiffs_end,
-        'spiffs_page': spiffs_page,
-        'spiffs_block': spiffs_block
+        "size": max_upload_size,
+        "size_kb": int(max_upload_size / 1024),
+        "eeprom_size_kb": int(eeprom_size / 1024),
+        "spiffs_size_kb": int(spiffs / 1024),
+        "spiffs_start": spiffs_start,
+        "spiffs_end": spiffs_end,
+        "spiffs_page": spiffs_page,
+        "spiffs_block": spiffs_block,
     }
 
     return result
+
 
 def render(variant, legacy):
     name = variant_name(variant)
@@ -120,10 +117,8 @@ def render(variant, legacy):
     log.info("render %s (INCLUDE %s)", name, ld_include)
 
     with open(path, "w") as f:
-        f.write(TEMPLATE.format(
-            include=ld_include,
-            **flash_map(*variant)
-        ))
+        f.write(TEMPLATE.format(include=ld_include, **flash_map(*variant)))
+
 
 def render_all():
     for variant in VARIANTS:
@@ -132,13 +127,13 @@ def render_all():
 
 
 if __name__ == "__main__":
-    variants = {variant_name(x):x for x in VARIANTS}
+    variants = {variant_name(x): x for x in VARIANTS}
     choices = ["all"]
     choices.extend(variants.keys())
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--legacy", action='store_true', default=False)
-    parser.add_argument("--verbose", action='store_true', default=False)
+    parser.add_argument("--legacy", action="store_true", default=False)
+    parser.add_argument("--verbose", action="store_true", default=False)
     parser.add_argument("variant", choices=choices)
 
     args = parser.parse_args()

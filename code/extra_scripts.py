@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import os
 import sys
-import json
 from subprocess import call
 import click
 
