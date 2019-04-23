@@ -2,15 +2,13 @@
 
 SYSTEM MODULE
 
-Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
 #include <EEPROM_Rotate.h>
 
 // -----------------------------------------------------------------------------
-
-unsigned long _loop_delay = 0;
 
 bool _system_send_heartbeat = false;
 unsigned char _heartbeat_mode = HEARTBEAT_MODE;
@@ -71,10 +69,6 @@ void systemSendHeartbeat() {
 
 bool systemGetHeartbeat() {
     return _system_send_heartbeat;
-}
-
-unsigned long systemLoopDelay() {
-    return _loop_delay;
 }
 
 unsigned long systemLoadAverage() {
@@ -153,11 +147,6 @@ void systemLoop() {
 
     }
 
-    // -------------------------------------------------------------------------
-    // Power saving delay
-    // -------------------------------------------------------------------------
-    if (_loop_delay) delay(_loop_delay);
-
 }
 
 void _systemSetupSpecificHardware() {
@@ -193,10 +182,6 @@ void systemSetup() {
 
     // Init device-specific hardware
     _systemSetupSpecificHardware();
-
-    // Cache loop delay value to speed things (recommended max 250ms)
-    _loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
-    _loop_delay = constrain(_loop_delay, 0, 300);
 
     // Register Loop
     espurnaRegisterLoop(systemLoop);

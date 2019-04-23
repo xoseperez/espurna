@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // MAX6675 Sensor
 // Uses MAX6675_Thermocouple library
-// Copyright (C) 2017-2018 by Xose Pérez <andrade dot luciano at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <andrade dot luciano at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && MAX6675_SUPPORT
@@ -25,7 +25,7 @@ class MAX6675Sensor : public BaseSensor {
 
         MAX6675Sensor(): BaseSensor() {
             _sensor_id = SENSOR_MAX6675_ID;
-
+            _count = 1;
         }
 
         ~MAX6675Sensor() {
@@ -62,11 +62,9 @@ class MAX6675Sensor : public BaseSensor {
             if (!_dirty) return;
 
             //// MAX6675
-	    int units = 1;            // Units to readout temp (0 = raw, 1 = ˚C, 2 = ˚F)
+	        int units = 1;            // Units to readout temp (0 = raw, 1 = ˚C, 2 = ˚F)
             if (_max) delete _max;
-            _max = new MAX6675(_pin_cs,_pin_so,_pin_sck,units);
-
-	    _count = 1;
+            _max = new MAX6675(_pin_cs, _pin_so, _pin_sck, units);
 
             _ready = true;
             _dirty = false;
@@ -78,24 +76,20 @@ class MAX6675Sensor : public BaseSensor {
             static unsigned long last = 0;
             if (millis() - last < MAX6675_READ_INTERVAL) return;
             last = millis();
-
             last_read = _max->read_temp();
         }
-
 
         // Descriptive name of the sensor
         String description() {
             char buffer[20];
             //snprintf(buffer, sizeof(buffer), "MAX6675 @ CS %d", _gpio);
-            snprintf(buffer, sizeof(buffer), "MAX6675 ");
+            snprintf(buffer, sizeof(buffer), "MAX6675");
             return String(buffer);
         }
 
-        String address(unsigned char index){
-		return String("@ address");
-
-	}
-
+        String address(unsigned char index) {
+		    return String("@ address");
+	    }
 
         // Address of the device
         // Descriptive name of the slot # index
@@ -128,7 +122,6 @@ class MAX6675Sensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             return last_read;
-
         }
 
     protected:
@@ -141,7 +134,7 @@ class MAX6675Sensor : public BaseSensor {
         unsigned int _pin_so = MAX6675_SO_PIN;
         unsigned int _pin_sck = MAX6675_SCK_PIN;
         bool _busy = false;
-	double last_read = 0;
+	    double last_read = 0;
         MAX6675 * _max = NULL;
 
 

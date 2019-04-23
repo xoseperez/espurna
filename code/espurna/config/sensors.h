@@ -158,9 +158,14 @@
 #define BMX280_SUPPORT                  0
 #endif
 
-#ifndef BMX280_ADDRESS
-#define BMX280_ADDRESS                  0x00    // 0x00 means auto
+#ifndef BMX280_NUMBER
+#define BMX280_NUMBER                   1       // Number of sensors present. Either 1 or 2 allowed
 #endif
+#ifndef BMX280_ADDRESS
+#define BMX280_ADDRESS                  0x00    // 0x00 means auto (0x76 or 0x77 allowed) for sensor #0
+#endif                                          // If (BMX280_NUMBER == 2) and
+                                                //   (BMX280_ADDRESS == 0x00) then sensor #1 is auto-discovered
+                                                //   (BMX280_ADDRESS != 0x00) then sensor #1 is the unnamed address
 
 #define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
 #define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
@@ -852,6 +857,22 @@
 #endif                                                             // often the sensor takes a measurement.
 
 //------------------------------------------------------------------------------
+// MAX6675
+// Enable support by passing MAX6675_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+#ifndef MAX6675_CS_PIN
+#define MAX6675_CS_PIN                               13
+#endif
+
+#ifndef MAX6675_SO_PIN
+#define MAX6675_SO_PIN                               12
+#endif
+
+#ifndef MAX6675_SCK_PIN
+#define MAX6675_SCK_PIN                              14
+#endif
+
+//------------------------------------------------------------------------------
 // EZOPH pH meter
 // Enable support by passing EZOPH_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -911,6 +932,7 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
+    MAX6675_SUPPORT || \
     EZOPH_SUPPORT \
 )
 #endif
@@ -1026,7 +1048,7 @@
 #endif
 
 #if MAX6675_SUPPORT
-    #include "../sensors/MAX6675.h"
+    #include "../sensors/MAX6675Sensor.h"
 #endif 
 
 #if MHZ19_SUPPORT

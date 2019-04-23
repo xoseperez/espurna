@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Dallas OneWire Sensor
 // Uses OneWire library
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && DALLAS_SUPPORT
@@ -191,6 +191,11 @@ class DallasSensor : public BaseSensor {
             if (index < _count) return MAGNITUDE_TEMPERATURE;
             return MAGNITUDE_NONE;
         }
+
+	// Number of decimals for a magnitude (or -1 for default)
+	signed char decimals(unsigned char type) { 
+	  return 2; // smallest increment is 0.0625 C, so 2 decimals
+	}
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {

@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Abstract sensor class (other sensor classes extend this class)
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT
@@ -56,6 +56,9 @@ class BaseSensor {
 
         // Type for slot # index
         virtual unsigned char type(unsigned char index) = 0;
+
+	    // Number of decimals for a magnitude (or -1 for default)
+	    virtual signed char decimals(unsigned char type) { return -1; }
 
         // Current value for slot # index
         virtual double value(unsigned char index) = 0;
