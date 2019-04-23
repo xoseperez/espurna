@@ -38,111 +38,11 @@ class VersionedSubstitution(collections.MutableMapping):
 
 BOARDS_LOCAL = {
     'global': collections.OrderedDict([
-        ( 'menu.variant', 'ESPurna board variant' ),
         ( 'menu.float_support', 'scanf and printf float support' )
         ]),
 
-    'defaults': collections.OrderedDict([
-        ( '.name', 'ESPurna Board' ),
-        ( '.build.board', 'ESP8266_ESPURNA' ),
-        ( '.upload.speed' ,'115200' ),
-        ( '.upload.tool', 'esptool' ),
-        ( '.upload.maximum_data_size', '81920' ),
-        ( '.upload.wait_for_upload_port', 'true' ),
-        ( '.upload.erase_cmd', ''),
-        ( '.serial.disableDTR', 'true' ),
-        ( '.serial.disableRTS', 'true' ),
-        ( '.build.mcu', 'esp8266' ),
-        ( '.build.core', 'esp8266' ),
-        ( '.build.variant', 'generic' ),
-        ( '.build.spiffs_pagesize', '256' ),
-        ( '.build.debug_port', '' ),
-        ( '.build.debug_level', '' ),
-        ( '.build.flash_mode', 'dout' ),
-        ( '.build.flash_flags', '-DFLASHMODE_DOUT' ),
-        ]),
-
-    'variant': collections.OrderedDict([
-        ( '.menu.variant.generic', 'Generic' ),
-        ( '.menu.variant.generic.build.variant', 'generic' ),
-        ( '.menu.variant.esp8285', 'ESP8285 (1M)' ),
-        ( '.menu.variant.esp8285.build.variant', 'esp8285' )
-        ]),
-
-    #######################
-
-    'cpu_freq': collections.OrderedDict([
-        ( '.menu.{xtal}.80', '80 MHz' ),
-        ( '.menu.{xtal}.80.build.f_cpu', '80000000L' ),
-        ( '.menu.{xtal}.160', '160 MHz' ),
-        ( '.menu.{xtal}.160.build.f_cpu', '160000000L' ),
-        ]),
-
-    'vtables': collections.OrderedDict([
-        ( '.menu.{vt}.flash', 'Flash'),
-        ( '.menu.{vt}.flash.build.vtable_flags', '-DVTABLES_IN_FLASH'),
-        ( '.menu.{vt}.heap', 'Heap'),
-        ( '.menu.{vt}.heap.build.vtable_flags', '-DVTABLES_IN_DRAM'),
-        ( '.menu.{vt}.iram', 'IRAM'),
-        ( '.menu.{vt}.iram.build.vtable_flags', '-DVTABLES_IN_IRAM'),
-        ]),
-
-    'exceptions': collections.OrderedDict([
-        ( '.menu.exception.disabled', 'Disabled' ),
-        ( '.menu.exception.disabled.build.exception_flags', '-fno-exceptions' ),
-        ( '.menu.exception.disabled.build.stdcpp_lib', '-lstdc++' ),
-        ( '.menu.exception.enabled', 'Enabled' ),
-        ( '.menu.exception.enabled.build.exception_flags', '-fexceptions' ),
-        ( '.menu.exception.enabled.build.stdcpp_lib', '-lstdc++-exc' ),
-        ]),
-
-    'crystal_freq': collections.OrderedDict([
-        ( '.menu.CrystalFreq.26', '26 MHz' ),
-        ( '.menu.CrystalFreq.40', '40 MHz' ),
-        ( '.menu.CrystalFreq.40.build.extra_flags', '-DF_CRYSTAL=40000000 -DESP8266' ),
-        ]),
-
-    'flash_freq': collections.OrderedDict([
-        ( '.menu.FlashFreq.40', '40MHz' ),
-        ( '.menu.FlashFreq.40.build.flash_freq', '40' ),
-        ( '.menu.FlashFreq.80', '80MHz' ),
-        ( '.menu.FlashFreq.80.build.flash_freq', '80' ),
-        ]),
-
-    ####################### menu.resetmethod
-
-    'reset_method': collections.OrderedDict([
-        ( '.menu.ResetMethod.ck', 'ck' ),
-        ( '.menu.ResetMethod.ck.upload.resetmethod', 'ck' ),
-        ( '.menu.ResetMethod.nodemcu', 'nodemcu' ),
-        ( '.menu.ResetMethod.nodemcu.upload.resetmethod', 'nodemcu' ),
-        ( '.menu.ResetMethod.none', 'none' ),
-        ( '.menu.ResetMethod.none.upload.resetmethod', 'none' ),
-        ( '.menu.ResetMethod.dtrset', 'dtrset' ),
-        ( '.menu.ResetMethod.dtrset.upload.resetmethod', 'dtrset' ),
-        ]),
-
-    ####################### menu.FlashMode
-
-    'flash_mode': collections.OrderedDict([
-        ( '.menu.FlashMode.dout', 'DOUT (compatible)' ),
-        ( '.menu.FlashMode.dout.build.flash_mode', 'dout' ),
-        ( '.menu.FlashMode.dout.build.flash_flags', '-DFLASHMODE_DOUT' ),
-        ( '.menu.FlashMode.dio', 'DIO' ),
-        ( '.menu.FlashMode.dio.build.flash_mode', 'dio' ),
-        ( '.menu.FlashMode.dio.build.flash_flags', '-DFLASHMODE_DIO' ),
-        ( '.menu.FlashMode.qout', 'QOUT' ),
-        ( '.menu.FlashMode.qout.build.flash_mode', 'qout' ),
-        ( '.menu.FlashMode.qout.build.flash_flags', '-DFLASHMODE_QOUT' ),
-        ( '.menu.FlashMode.qio', 'QIO (fast)' ),
-        ( '.menu.FlashMode.qio.build.flash_mode', 'qio' ),
-        ( '.menu.FlashMode.qio.build.flash_flags', '-DFLASHMODE_QIO' ),
-        ]),
-
-    ####################### menu.FlashSize
-
     'flash_size': collections.OrderedDict([
-        ( '.menu.{eesz}.1M', '1M1S (no SPIFFS)' ),
+        ( '.menu.{eesz}.1M', '1M (1 EEPROM Sector, no SPIFFS)' ),
         ( '.menu.{eesz}.1M.build.flash_size', '1M' ),
         ( '.menu.{eesz}.1M.build.flash_size_bytes', '0x100000' ),
         ( '.menu.{eesz}.1M.build.flash_ld', 'eagle.flash.1m0m1s.ld' ),
@@ -150,7 +50,7 @@ BOARDS_LOCAL = {
         ( '.menu.{eesz}.1M.upload.maximum_size', '1023984' ),
         ( '.menu.{eesz}.1M.build.rfcal_addr', '0xFC000' ),
 
-        ( '.menu.{eesz}.2M', '2M4S (1M SPIFFS)' ),
+        ( '.menu.{eesz}.2M', '2M (4 EEPROM Sectors, 1M SPIFFS)' ),
         ( '.menu.{eesz}.2M.build.flash_size', '2M' ),
         ( '.menu.{eesz}.2M.build.flash_size_bytes', '0x200000' ),
         ( '.menu.{eesz}.2M.build.flash_ld', 'eagle.flash.2m1m4s.ld' ),
@@ -158,7 +58,7 @@ BOARDS_LOCAL = {
         ( '.menu.{eesz}.2M.upload.maximum_size', '1044464' ),
         ( '.menu.{eesz}.2M.build.rfcal_addr', '0x1FC000' ),
 
-        ( '.menu.{eesz}.4M1M', '4M4S (1M SPIFFS)' ),
+        ( '.menu.{eesz}.4M1M', '4M (4 EEPROM Sectors, 1M SPIFFS)' ),
         ( '.menu.{eesz}.4M1M.build.flash_size', '4M' ),
         ( '.menu.{eesz}.4M1M.build.flash_size_bytes', '0x400000' ),
         ( '.menu.{eesz}.4M1M.build.flash_ld', 'eagle.flash.4m1m4s.ld' ),
@@ -166,7 +66,7 @@ BOARDS_LOCAL = {
         ( '.menu.{eesz}.4M1M.upload.maximum_size', '1044464' ),
         ( '.menu.{eesz}.4M1M.build.rfcal_addr', '0x3FC000' ),
 
-        ( '.menu.{eesz}.4M3M', '4M4S (3M SPIFFS)' ),
+        ( '.menu.{eesz}.4M3M', '4M (4 EEPROM Sectors, 3M SPIFFS)' ),
         ( '.menu.{eesz}.4M3M.build.flash_size', '4M' ),
         ( '.menu.{eesz}.4M3M.build.flash_size_bytes', '0x400000' ),
         ( '.menu.{eesz}.4M3M.build.flash_ld', 'eagle.flash.4m3m4s.ld' ),
@@ -175,131 +75,22 @@ BOARDS_LOCAL = {
         ( '.menu.{eesz}.4M3M.build.rfcal_addr', '0x3FC000' ),
         ]),
 
-    ####################### lwip
-
-    'lwip2_latest': collections.OrderedDict([
-        ( '.menu.ip.lm2f', 'v2 Lower Memory' ),
-        ( '.menu.ip.lm2f.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.ip.lm2f.build.lwip_lib', '-llwip2-536-feat' ),
-        ( '.menu.ip.lm2f.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=1 -DLWIP_IPV6=0' ),
-        ( '.menu.ip.hb2f', 'v2 Higher Bandwidth' ),
-        ( '.menu.ip.hb2f.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.ip.hb2f.build.lwip_lib', '-llwip2-1460-feat' ),
-        ( '.menu.ip.hb2f.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=1 -DLWIP_IPV6=0' ),
-        ( '.menu.ip.lm2n', 'v2 Lower Memory (no features)' ),
-        ( '.menu.ip.lm2n.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.ip.lm2n.build.lwip_lib', '-llwip2-536' ),
-        ( '.menu.ip.lm2n.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=0 -DLWIP_IPV6=0' ),
-        ( '.menu.ip.hb2n', 'v2 Higher Bandwidth (no features)' ),
-        ( '.menu.ip.hb2n.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.ip.hb2n.build.lwip_lib', '-llwip2-1460' ),
-        ( '.menu.ip.hb2n.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=0 -DLWIP_IPV6=0' ),
-        ( '.menu.ip.lm6f', 'v2 IPv6 Lower Memory' ),
-        ( '.menu.ip.lm6f.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.ip.lm6f.build.lwip_lib', '-llwip6-536-feat' ),
-        ( '.menu.ip.lm6f.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=536 -DLWIP_FEATURES=1 -DLWIP_IPV6=1' ),
-        ( '.menu.ip.hb6f', 'v2 IPv6 Higher Bandwidth' ),
-        ( '.menu.ip.hb6f.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.ip.hb6f.build.lwip_lib', '-llwip6-1460-feat' ),
-        ( '.menu.ip.hb6f.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=1460 -DLWIP_FEATURES=1 -DLWIP_IPV6=1' ),
+    'float_support': collections.OrderedDict([
+        ( '.menu.float_support.disabled', 'Disabled (Recommended)' ),
+        ( '.menu.float_support.disabled.build.float', '' ),
+        ( '.menu.float_support.enabled', 'Enabled' ),
+        ( '.menu.float_support.enabled.build.float', '-u _printf_float -u _scanf_float' ),
         ]),
 
-    'lwip2_242': collections.OrderedDict([
-        ( '.menu.LwIPVariant.v2mss536', 'v2 Lower Memory' ),
-        ( '.menu.LwIPVariant.v2mss536.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.LwIPVariant.v2mss536.build.lwip_lib', '-llwip2' ),
-        ( '.menu.LwIPVariant.v2mss536.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=536' ),
-        ( '.menu.LwIPVariant.v2mss1460', 'v2 Higher Bandwidth' ),
-        ( '.menu.LwIPVariant.v2mss1460.build.lwip_include', 'lwip2/include' ),
-        ( '.menu.LwIPVariant.v2mss1460.build.lwip_lib', '-llwip2_1460' ),
-        ( '.menu.LwIPVariant.v2mss1460.build.lwip_flags', '-DLWIP_OPEN_SRC -DTCP_MSS=1460' ),
-        ]),
-
-    'lwip': collections.OrderedDict([
-        ( '.menu.ip.hb1', 'v1.4 Higher Bandwidth' ),
-        ( '.menu.ip.hb1.build.lwip_lib', '-llwip_gcc' ),
-        ( '.menu.ip.hb1.build.lwip_flags', '-DLWIP_OPEN_SRC' ),
-        #( '.menu.ip.Espressif', 'v1.4 Espressif (xcc)' ),
-        #( '.menu.ip.Espressif.build.lwip_lib', '-llwip' ),
-        #( '.menu.ip.Espressif.build.lwip_flags', '-DLWIP_MAYBE_XCC' ),
-        ( '.menu.ip.src', 'v1.4 Compile from source' ),
-        ( '.menu.ip.src.build.lwip_lib', '-llwip_src' ),
-        ( '.menu.ip.src.build.lwip_flags', '-DLWIP_OPEN_SRC' ),
-        ( '.menu.ip.src.recipe.hooks.sketch.prebuild.1.pattern', 'make -C "{runtime.platform.path}/tools/sdk/lwip/src" install TOOLS_PATH="{runtime.tools.xtensa-lx106-elf-gcc.path}/bin/xtensa-lx106-elf-"' ),
-        ]),
-
-    ####################### serial
-
-    'upload': collections.OrderedDict([
-        ( '.menu.{baud}.115200', '115200' ),
-        ( '.menu.{baud}.115200.upload.speed', '115200' ),
-        ( '.menu.{baud}.9600', '9600' ),
-        ( '.menu.{baud}.9600.upload.speed', '9600' ),
-        ( '.menu.{baud}.57600', '57600' ),
-        ( '.menu.{baud}.57600.upload.speed', '57600' ),
-        ( '.menu.{baud}.256000.windows', '256000' ),
-        ( '.menu.{baud}.256000.upload.speed', '256000' ),
-        ( '.menu.{baud}.230400.linux', '230400' ),
-        ( '.menu.{baud}.230400.macosx', '230400' ),
-        ( '.menu.{baud}.230400.upload.speed', '230400' ),
-        ( '.menu.{baud}.460800.linux', '460800' ),
-        ( '.menu.{baud}.460800.macosx', '460800' ),
-        ( '.menu.{baud}.460800.upload.speed', '460800' ),
-        ( '.menu.{baud}.512000.windows', '512000' ),
-        ( '.menu.{baud}.512000.upload.speed', '512000' ),
-        ( '.menu.{baud}.921600', '921600' ),
-        ( '.menu.{baud}.921600.upload.speed', '921600' ),
-        ]),
-
-    ####################### flash erase
-
-    'flash_erase': collections.OrderedDict([
-        ( '.menu.{wipe}.none', 'Only Sketch' ),
-        ( '.menu.{wipe}.none.upload.erase_cmd', '' ),
-        ( '.menu.{wipe}.sdk', 'Sketch + WiFi Settings' ),
-        ( '.menu.{wipe}.sdk.upload.erase_cmd', '-ca "{build.rfcal_addr}" -cz 0x4000' ),
-        ( '.menu.{wipe}.all', 'All Flash Contents' ),
-        ( '.menu.{wipe}.all.upload.erase_cmd', '-ca 0x0 -cz "{build.flash_size_bytes}"' ),
-        ]),
-
-    ####################### sdk selection
-
-    'sdk': collections.OrderedDict([
-        ( '.menu.sdk.nonosdk221', 'nonos-sdk 2.2.1 (legacy)' ),
-        ( '.menu.sdk.nonosdk221.build.sdk', 'NONOSDK221' ),
-        ( '.menu.sdk.nonosdk222', 'nonos-sdk 2.2.2-190313 (testing)' ),
-        ( '.menu.sdk.nonosdk222.build.sdk', 'NONOSDK22x' ),
-        ( '.menu.sdk.nonosdk3v0', 'nonos-sdk pre-3 (known issues)' ),
-        ( '.menu.sdk.nonosdk3v0.build.sdk', 'NONOSDK3V0' ),
-        ]),
 
     }
 
 
-BOARD = "espurna"
+BOARD = "generic"
+MENUS = ["flash_size", "float_support"]
 
 
 CORE_VERSIONS = ["2.3.0", "2.4.2", "2.5.0", "2.5.1"]
-
-
-MENUS = {}
-MENUS["2.3.0"] = [
-    "defaults", "cpu_freq",
-    "flash_freq", "flash_mode", "flash_size", "flash_erase",
-    "reset_method", "upload"
-]
-
-
-MENUS["2.4.2"] = list(MENUS["2.3.0"])
-MENUS["2.4.2"].extend(["crystal_freq", "lwip", "lwip2_242", "vtables"])
-
-
-MENUS["2.5.0"] = list(MENUS["2.3.0"])
-MENUS["2.5.0"].extend(["variant", "crystal_freq", "lwip", "lwip2_latest", "vtables", "exceptions"])
-
-
-MENUS["2.5.1"] = list(MENUS["2.5.0"])
-MENUS["2.5.1"].extend(["sdk"])
 
 
 EXTRA_FLAGS = [
@@ -307,16 +98,14 @@ EXTRA_FLAGS = [
 ]
 
 
-SUBSTITUTIONS = dict(
-    name=BOARD,
-    xtal="CpuFrequency",
+SUBSTITUTIONS = VersionedSubstitution(dict(
     eesz="FlashSize",
     wipe="FlashErase",
     baud="UploadSpeed",
     vt="VTable"
-)
+), ["2.3.0", "2.4.2"])
 
-def generate(versions, directory, sub=VersionedSubstitution(SUBSTITUTIONS, ["2.3.0", "2.4.2"])):
+def generate(versions, directory, sub=SUBSTITUTIONS):
 
     for version in versions:
 
@@ -329,8 +118,8 @@ def generate(versions, directory, sub=VersionedSubstitution(SUBSTITUTIONS, ["2.3
         #print("{} unused:".format(version, set(BOARDS_LOCAL.keys()) - set(MENUS[version])))
         #continue
 
-        for menu in MENUS[version]:
-            section = []
+        section = []
+        for menu in MENUS:
             for k, v in BOARDS_LOCAL[menu].items():
                 k = k.format_map(sub)
                 section.append(BOARD + "=".join([k,v]))
