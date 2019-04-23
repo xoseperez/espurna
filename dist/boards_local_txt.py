@@ -117,8 +117,8 @@ def generate(versions, directory, sub=SUBSTITUTIONS):
         # print("{} unused:".format(version, set(BOARDS_LOCAL.keys()) - set(MENUS[version])))
         # continue
 
-        section = []
         for menu in MENUS:
+            section = []
             for k, v in BOARDS_LOCAL[menu].items():
                 k = k.format_map(sub)
                 section.append(BOARD + "=".join([k, v]))
