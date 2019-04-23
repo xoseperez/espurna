@@ -449,6 +449,16 @@ PROGMEM const char flow_library_json[] =
             "\"outports\":[{\"name\":\"Value\",\"type\":\"string\"}],"
             "\"properties\":[{\"name\":\"Default\",\"type\":\"string\"}]"
         "}"
+#if TERMINAL_SUPPORT
+        ",\"Terminal\": "
+        "{"
+            "\"name\":\"Terminal\","
+            "\"icon\":\"terminal\","
+            "\"inports\":[{\"name\":\"Run\",\"type\":\"any\"}, {\"name\":\"Command\",\"type\":\"string\"}],"
+            "\"outports\":[],"
+            "\"properties\":[{\"name\":\"Command\",\"type\":\"string\"}]"
+        "}"
+#endif
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         ",\"Light\": "
         "{"

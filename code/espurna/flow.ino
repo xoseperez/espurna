@@ -640,6 +640,49 @@ class FlowHysteresisComponent : public FlowComponent {
         }
 };
 
+// -----------------------------------------------------------------------------
+// Terminal component
+// -----------------------------------------------------------------------------
+
+#if TERMINAL_SUPPORT
+
+PROGMEM const char flow_run[] = "Run";
+PROGMEM const char flow_command[] = "Command";
+PROGMEM const char* const flow_terminal_inputs[] = {flow_run, flow_command};
+
+PROGMEM const FlowConnections flow_terminal_component = {
+    2, flow_terminal_inputs,
+    0, NULL,
+};
+
+class FlowTerminalComponent : public FlowComponent {
+    private:
+        String _command;
+
+    public:
+        FlowTerminalComponent(JsonObject& properties) {
+            const char * command = properties["Command"];
+            _command = String(command != NULL ? command : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) {
+                char buffer[_command.length() + 2];
+                snprintf(buffer, sizeof(buffer), "%s\n", _command.c_str());
+                terminalInject((void*) buffer, strlen(buffer));
+            } else if (inputNumber == 1) {
+                _command = toString(data);
+            }
+        }
+
+        static void reg() {
+            flowRegisterComponent("Terminal", &flow_terminal_component,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowTerminalComponent(properties); }));
+        }
+};
+
+#endif // TERMINAL_SUPPORT
+
 #if !SPIFFS_SUPPORT && MQTT_SUPPORT
 void _flowMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
@@ -686,6 +729,10 @@ void flowSetup() {
 
     flowRegisterComponent("Hysteresis", &flow_hysteresis_component,
         (flow_component_factory_f)([] (JsonObject& properties) { return new FlowHysteresisComponent(properties); }));
+
+    #if TERMINAL_SUPPORT
+        FlowTerminalComponent::reg();
+    #endif
 
     #if SPIFFS_SUPPORT
         flowStart();
