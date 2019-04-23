@@ -1,7 +1,7 @@
 
 /*
 sketch: 1019KB
-spiffs: 1024KB
+spiffs: 3072KB
 eeprom: 16KB
 /*
 MEMORY
@@ -13,7 +13,7 @@ MEMORY
 }
 
 PROVIDE ( _SPIFFS_start = 0x40300000 );
-PROVIDE ( _SPIFFS_end = 0x403f8000 );
+PROVIDE ( _SPIFFS_end = 0x405f8000 );
 PROVIDE ( _SPIFFS_page = 0x100 );
 PROVIDE ( _SPIFFS_block = 0x2000 );
 

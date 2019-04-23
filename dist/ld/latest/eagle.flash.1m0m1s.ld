@@ -1,8 +1,9 @@
-/* Flash Split for 1M chips, no SPIFFS, 1 sector for EEPROM */
-/* sketch 999KB */
-/* eeprom 4KB */
-/* reserved 16KB */
 
+/*
+sketch: 999KB
+spiffs: 0KB
+eeprom: 4KB
+/*
 MEMORY
 {
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
@@ -11,8 +12,8 @@ MEMORY
   irom0_0_seg :                         org = 0x40201010, len = 0xf9ff0
 }
 
-PROVIDE ( _SPIFFS_start = 0x402FB000 );
-PROVIDE ( _SPIFFS_end = 0x402FB000 );
+PROVIDE ( _SPIFFS_start = 0x402fb000 );
+PROVIDE ( _SPIFFS_end = 0x402fb000 );
 PROVIDE ( _SPIFFS_page = 0x0 );
 PROVIDE ( _SPIFFS_block = 0x0 );
 
