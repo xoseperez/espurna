@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import argparse
 import logging
@@ -40,7 +42,7 @@ def variant_name(variant):
     return tmpl.format(size, spiffs, sectors)
 
 
-TEMPLATE = """
+TEMPLATE = """\
 /*
 sketch: {size_kb}KB
 spiffs: {spiffs_size_kb}KB

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # adapted boards.txt.py from esp8266/Arduino
 # - single board definition, ldscripts
 # - portable boards.local.txt for 2.3.0 and up
