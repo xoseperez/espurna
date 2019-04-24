@@ -23,6 +23,7 @@ SIZE = {512: 0x80000, 1024: 0x100000, 2048: 0x200000, 3072: 0x300000, 4096: 0x40
 # supported sizes
 # flash (bytes), spiffs (bytes), eeprom (sectors)
 VARIANTS = [
+    [SIZE[512], 0, 1],
     [SIZE[1024], 0, 1],
     [SIZE[1024], 0, 2],
     [SIZE[2048], SIZE[1024], 4],
@@ -31,15 +32,32 @@ VARIANTS = [
 ]
 
 
+def size_suffix(size):
+    if size >= SIZE[1024] or not size:
+        size = trunc(size / SIZE[1024])
+        suffix = "m"
+    else:
+        size = trunc(size / 1024)
+        suffix = "k"
+
+    return size, suffix
+
+
 def variant_name(variant):
-    tmpl = "{}m{}m{}s"
+    tmpl = "{flash_size}{flash_suffix}{spiffs_size}{spiffs_suffix}{sectors}s"
 
-    size, spiffs, sectors = variant
+    flash_size, spiffs_size, sectors = variant
 
-    size = trunc(size / SIZE[1024])
-    spiffs = trunc(spiffs / SIZE[1024])
+    flash_size, flash_suffix = size_suffix(flash_size)
+    spiffs_size, spiffs_suffix = size_suffix(spiffs_size)
 
-    return tmpl.format(size, spiffs, sectors)
+    return tmpl.format(
+        flash_size=flash_size,
+        flash_suffix=flash_suffix,
+        spiffs_size=spiffs_size,
+        spiffs_suffix=spiffs_suffix,
+        sectors=sectors,
+    )
 
 
 TEMPLATE = """\
