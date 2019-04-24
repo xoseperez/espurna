@@ -7,6 +7,7 @@ import argparse
 import sys
 import collections
 
+# TODO: drop after platform.io supports python 3
 if sys.version < (3, 2):
     import string
     _format = string.Formatter().vformat
