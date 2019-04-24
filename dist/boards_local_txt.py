@@ -7,6 +7,15 @@ import argparse
 import sys
 import collections
 
+if sys.version < (3, 2):
+    import string
+    _format = string.Formatter().vformat
+    def format_map(tmpl, f_map):
+        return _format(tmpl, None, f_map)
+else:
+    def format_map(tmpl, f_map):
+        return tmpl.format_map(f_map)
+
 
 class VersionedSubstitution(collections.MutableMapping):
     def __init__(self, substitutions, targets, *args, **kwargs):
@@ -120,7 +129,7 @@ def generate(versions, directory, sub=SUBSTITUTIONS):
         for menu in MENUS:
             section = []
             for k, v in BOARDS_LOCAL[menu].items():
-                k = k.format_map(sub)
+                k = format_map(k, sub)
                 section.append(BOARD + "=".join([k, v]))
             result.append("\n".join(section))
             result.append("\n\n")
@@ -129,7 +138,9 @@ def generate(versions, directory, sub=SUBSTITUTIONS):
             result.extend(("{}{}={}".format(BOARD, k, v)) for k, v in EXTRA_FLAGS)
 
         f_path = os.path.join(directory, version, "boards.local.txt")
-        os.makedirs(os.path.join(directory, version), exist_ok=True)
+        f_dir, _ = os.path.split(f_path)
+        if not os.path.exists(f_dir):
+            os.makedirs(f_dir)
 
         with open(f_path, "w") as f:
             for part in result:
