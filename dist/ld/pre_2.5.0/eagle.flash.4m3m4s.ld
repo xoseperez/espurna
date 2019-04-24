@@ -3,7 +3,8 @@
 sketch: 1019KB
 spiffs: 3072KB
 eeprom: 16KB
-/*
+*/
+
 MEMORY
 {
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10

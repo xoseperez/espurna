@@ -45,7 +45,8 @@ TEMPLATE = """
 sketch: {size_kb}KB
 spiffs: {spiffs_size_kb}KB
 eeprom: {eeprom_size_kb}KB
-/*
+*/
+
 MEMORY
 {{
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
