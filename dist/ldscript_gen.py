@@ -94,7 +94,7 @@ def flash_map(flashsize, spiffs, sectors):
         "size": max_upload_size,
         "size_kb": int(max_upload_size / 1024),
         "eeprom_size_kb": int(eeprom_size / 1024),
-        "spiffs_size_kb": int(spiffs / 1024),
+        "spiffs_size_kb": int((spiffs_end - spiffs_start) / 1024),
         "spiffs_start": spiffs_start,
         "spiffs_end": spiffs_end,
         "spiffs_page": spiffs_page,

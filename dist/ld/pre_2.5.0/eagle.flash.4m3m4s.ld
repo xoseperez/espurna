@@ -1,6 +1,6 @@
 /*
 sketch: 1019KB
-spiffs: 3072KB
+spiffs: 3040KB
 eeprom: 16KB
 */
 
