@@ -11,6 +11,9 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include <ArduinoJson.h>
 #include <float.h>
 
+bool _thermostat_enabled = true;
+
+const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
 const char* NAME_TEMP_RANGE_MIN         = "tempRangeMin";
 const char* NAME_TEMP_RANGE_MAX         = "tempRangeMax";
 const char* NAME_REMOTE_SENSOR_NAME     = "remoteSensorName";
@@ -88,6 +91,16 @@ thermostat_t _thermostat;
 enum thermostat_cycle_type {cooling, heating};
 unsigned int _thermostat_cycle = heating;
 String thermostat_remote_sensor_topic;
+
+//------------------------------------------------------------------------------
+void thermostatEnabled(bool status) {
+    _thermostat_enabled = status;
+}
+
+//------------------------------------------------------------------------------
+bool thermostatEnabled() {
+    return _thermostat_enabled;
+}
 
 //------------------------------------------------------------------------------
 std::vector<thermostat_callback_f> _thermostat_callbacks;
@@ -223,6 +236,9 @@ void notifyRangeChanged(bool min) {
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
+  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED).toInt() == 1;
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d\n"), _thermostat_enabled);
+  
   _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN).toInt();
   _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX).toInt();
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
@@ -268,6 +284,7 @@ void _thermostatReload() {
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _thermostatWebSocketOnSend(JsonObject& root) {
+  root["thermostatVisible"] = thermostatEnabled();
   root["thermostatVisible"] = 1;
   root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
   root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
@@ -296,6 +313,7 @@ void _thermostatWebSocketOnSend(JsonObject& root) {
 
 //------------------------------------------------------------------------------
 bool _thermostatWebSocketOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
     if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
     if (strncmp(key, NAME_TEMP_RANGE_MAX,       strlen(NAME_TEMP_RANGE_MAX))       == 0) return true;
     if (strncmp(key, NAME_REMOTE_SENSOR_NAME,   strlen(NAME_REMOTE_SENSOR_NAME))   == 0) return true;
@@ -459,6 +477,9 @@ double getLocalHumidity() {
 // Loop
 //------------------------------------------------------------------------------
 void thermostatLoop(void) {
+
+  if (!thermostatEnabled())
+    return;
 
   // Update temperature range
   if (mqttConnected()) {
