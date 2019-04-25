@@ -718,14 +718,22 @@ void _sensorLoad() {
 
     #if PZEM004T_SUPPORT
     {
+        String addresses = getSetting("pzemAddr", PZEM004T_ADDRESSES);
+        if (!addresses.length()) {
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
+            return;
+        }
+
         PZEM004TSensor * sensor = pzem004t_sensor = new PZEM004TSensor();
-        #if PZEM004T_USE_SOFT
-            sensor->setRX(PZEM004T_RX_PIN);
-            sensor->setTX(PZEM004T_TX_PIN);
-        #else
+        sensor->setAddresses(addresses.c_str());
+
+        if (getSetting("pzemSoft", PZEM004T_USE_SOFT).toInt() == 1) {
+            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN).toInt());
+            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN).toInt());
+        } else {
             sensor->setSerial(& PZEM004T_HW_PORT);
-        #endif
-        sensor->setAddresses(PZEM004T_ADDRESSES);
+        }
+
         // Read saved energy offset
         unsigned char dev_count = sensor->getAddressesCount();
         for(unsigned char dev = 0; dev < dev_count; dev++) {
