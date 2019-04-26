@@ -566,11 +566,9 @@ void _relayBoot() {
             case RELAY_BOOT_LOCKED_ON:
                 status = true;
                 lock = RELAY_LOCK_ON;
-                DEBUG_MSG_P(PSTR("[RELAY] boot mode status:ON lock:ON\n"));
                 break;
             case RELAY_BOOT_LOCKED_OFF:
                 lock = RELAY_LOCK_OFF;
-                DEBUG_MSG_P(PSTR("[RELAY] boot mode status:OFF lock:OFF\n"));
                 break;
             case RELAY_BOOT_ON:
                 status = true;
