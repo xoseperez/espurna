@@ -28,6 +28,7 @@ typedef struct {
 
     bool current_status;        // Holds the current (physical) status of the relay
     bool target_status;         // Holds the target status
+    unsigned char lock;         // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
     unsigned long fw_start;     // Flood window start time
     unsigned char fw_count;     // Number of changes within the current flood window
     unsigned long change_time;  // Scheduled time to change
@@ -173,6 +174,23 @@ void _relayProcess(bool mode) {
 
         // Only process the relays we have to change to the requested mode
         if (target != mode) continue;
+
+        // Only process the relays that can be changed
+        switch (_relays[id].lock) {
+            case RELAY_LOCK_ON:
+            case RELAY_LOCK_OFF:
+                {
+                    bool lock = _relays[id].lock == 1;
+                    if (lock != _relays[id].target_status) {
+                        _relays[id].target_status = lock;
+                        continue;
+                    }
+                    break;
+                }
+            case RELAY_LOCK_DISABLED:
+            default:
+                break;
+        }
 
         // Only process if the change_time has arrived
         if (current_time < _relays[id].change_time) continue;
@@ -523,6 +541,7 @@ void _relayBoot() {
     DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
 
     // Walk the relays
+    unsigned char lock;
     bool status;
     for (unsigned int i=0; i<_relays.size(); i++) {
 
@@ -530,6 +549,7 @@ void _relayBoot() {
         DEBUG_MSG_P(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
 
         status = false;
+        lock = RELAY_LOCK_DISABLED;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
                 if (i < 8) {
@@ -542,6 +562,15 @@ void _relayBoot() {
                     mask ^= bit;
                     trigger_save = true;
                 }
+                break;
+            case RELAY_BOOT_LOCKED_ON:
+                status = true;
+                lock = RELAY_LOCK_ON;
+                DEBUG_MSG_P(PSTR("[RELAY] boot mode status:ON lock:ON\n"));
+                break;
+            case RELAY_BOOT_LOCKED_OFF:
+                lock = RELAY_LOCK_OFF;
+                DEBUG_MSG_P(PSTR("[RELAY] boot mode status:OFF lock:OFF\n"));
                 break;
             case RELAY_BOOT_ON:
                 status = true;
@@ -558,6 +587,7 @@ void _relayBoot() {
         #else
             _relays[i].change_time = millis();
         #endif
+        _relays[i].lock = lock;
         bit <<= 1;
     }
 
