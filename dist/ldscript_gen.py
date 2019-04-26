@@ -108,6 +108,11 @@ def flash_map(flashsize, spiffs, sectors):
         spiffs_page = 0
         spiffs_start = spiffs_end
 
+    # Adjust SPIFFS_end to be a multiple of the block size
+    # ref: https://github.com/esp8266/Arduino/pull/5989
+    if spiffs:
+        spiffs_end = spiffs_block * ((spiffs_end - spiffs_start) // spiffs_block) + spiffs_start
+
     result = {
         "size": max_upload_size,
         "size_kb": int(max_upload_size / 1024),
