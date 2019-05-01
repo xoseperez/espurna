@@ -354,7 +354,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             for(unsigned char dev = init; dev < limit; dev++) {
                 float offset = pzem004t_sensor->resetEnergy(dev);
-                setSetting("pzEneTotal", dev, offset);
+                setSetting("pzemEneTotal", dev, offset);
                 DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
             terminalOK();
@@ -718,18 +718,26 @@ void _sensorLoad() {
 
     #if PZEM004T_SUPPORT
     {
+        String addresses = getSetting("pzemAddr", PZEM004T_ADDRESSES);
+        if (!addresses.length()) {
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
+            return;
+        }
+
         PZEM004TSensor * sensor = pzem004t_sensor = new PZEM004TSensor();
-        #if PZEM004T_USE_SOFT
-            sensor->setRX(PZEM004T_RX_PIN);
-            sensor->setTX(PZEM004T_TX_PIN);
-        #else
+        sensor->setAddresses(addresses.c_str());
+
+        if (getSetting("pzemSoft", PZEM004T_USE_SOFT).toInt() == 1) {
+            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN).toInt());
+            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN).toInt());
+        } else {
             sensor->setSerial(& PZEM004T_HW_PORT);
-        #endif
-        sensor->setAddresses(PZEM004T_ADDRESSES);
+        }
+
         // Read saved energy offset
         unsigned char dev_count = sensor->getAddressesCount();
         for(unsigned char dev = 0; dev < dev_count; dev++) {
-            float value = getSetting("pzEneTotal", dev, 0).toFloat();
+            float value = getSetting("pzemEneTotal", dev, 0).toFloat();
             if (value > 0) sensor->resetEnergy(dev, value);
         }
         _sensors.push_back(sensor);
@@ -1188,7 +1196,7 @@ void _sensorConfigure() {
                     unsigned char dev_count = sensor->getAddressesCount();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev, 0);
-                        delSetting("pzEneTotal", dev);
+                        delSetting("pzemEneTotal", dev);
                     }
                     _sensorResetTS();
                 }
@@ -1365,6 +1373,9 @@ void sensorSetup() {
     // Backwards compatibility
     moveSetting("powerUnits", "pwrUnits");
     moveSetting("energyUnits", "eneUnits");
+
+	// Update PZEM004T energy total across multiple devices
+    moveSettings("pzEneTotal", "pzemEneTotal");
 
     // Load sensors
     _sensorLoad();
