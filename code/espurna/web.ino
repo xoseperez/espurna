@@ -359,6 +359,83 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 }
 
+#if FLOW_SUPPORT
+std::vector<uint8_t> * _webFlowBuffer;
+bool _webFlowSuccess = false;
+
+void _onGetFlowLibrary(AsyncWebServerRequest *request) {
+
+    webLog(request);
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/json", flow_library_json, flowLibraryProcessor);
+
+    response->addHeader("Content-Disposition", "inline; filename=\"library.json\"");
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+
+    request->send(response);
+}
+
+void _onGetFlowConfig(AsyncWebServerRequest *request) {
+
+    webLog(request);
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
+    AsyncWebServerResponse *response = flowGetConfigResponse(request);
+
+    response->addHeader("X-XSS-Protection", "1; mode=block");
+    response->addHeader("X-Content-Type-Options", "nosniff");
+    response->addHeader("X-Frame-Options", "deny");
+
+    request->send(response);
+}
+
+void _onPostFlowConfig(AsyncWebServerRequest *request) {
+    webLog(request);
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+    request->send(_webFlowSuccess ? 200 : 400);
+}
+
+void _onPostFlowConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    // No buffer
+    if (final && (index == 0)) {
+        data[len] = 0;
+        _webFlowSuccess = flowSaveConfig((char *) data);
+        return;
+    }
+
+    // Buffer start => reset
+    if (index == 0) if (_webFlowBuffer) delete _webFlowBuffer;
+
+    // init buffer if it doesn't exist
+    if (!_webFlowBuffer) {
+        _webFlowBuffer = new std::vector<uint8_t>();
+        _webFlowSuccess = false;
+    }
+
+    // Copy
+    if (len > 0) {
+        _webFlowBuffer->reserve(_webFlowBuffer->size() + len);
+        _webFlowBuffer->insert(_webFlowBuffer->end(), data, data + len);
+    }
+
+    // Ending
+    if (final) {
+        _webFlowBuffer->push_back(0);
+        _webFlowSuccess = flowSaveConfig((char *) _webFlowBuffer->data());
+        delete _webFlowBuffer;
+    }
+}
+#endif
+
 
 // -----------------------------------------------------------------------------
 
@@ -422,6 +499,12 @@ void webSetup() {
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
     _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
     _server->on("/discover", HTTP_GET, _onDiscover);
+
+    #if FLOW_SUPPORT
+        _server->on("/flow_library", HTTP_GET, _onGetFlowLibrary);
+        _server->on("/flow", HTTP_GET, _onGetFlowConfig);
+        _server->on("/flow", HTTP_POST | HTTP_PUT, _onPostFlowConfig, _onPostFlowConfigData);
+    #endif
 
     // Serve static files
     #if SPIFFS_SUPPORT

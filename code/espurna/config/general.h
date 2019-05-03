@@ -1543,3 +1543,15 @@
 #ifndef RFM69_IS_RFM69HW
 #define RFM69_IS_RFM69HW            0
 #endif
+
+#ifndef FLOW_SUPPORT
+#define FLOW_SUPPORT                0
+#endif
+
+#ifndef FLOW_SPIFFS_FILE
+#define FLOW_SPIFFS_FILE            "/flow.json"
+#endif
+
+#ifndef FLOW_MQTT_TOPIC
+#define FLOW_MQTT_TOPIC             "flow"
+#endif

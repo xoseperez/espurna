@@ -204,6 +204,10 @@ void setup() {
     #if THERMOSTAT_DISPLAY_SUPPORT
         displaySetup();
     #endif
+    #if FLOW_SUPPORT
+        // after all other components are set up
+        flowSetup();
+    #endif
 
 
     // 3rd party code hook

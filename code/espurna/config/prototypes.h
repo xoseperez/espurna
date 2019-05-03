@@ -224,3 +224,15 @@ bool wifiConnected();
     #define thermostat_callback_f void *
 #endif
 
+// -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+    #include "flow.h"
+    typedef std::function<FlowComponent* (JsonObject&)> flow_component_factory_f;
+    void flowRegisterComponentValues(String placeholder, std::vector<String>* values);
+#else
+    #define FlowConnections void
+    #define flow_component_factory_f void *
+#endif

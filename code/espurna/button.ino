@@ -15,10 +15,17 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <DebounceEvent.h>
 #include <vector>
 
+#if FLOW_SUPPORT
+class FlowButtonComponent; // forward declaration
+#endif
+
 typedef struct {
     DebounceEvent * button;
     unsigned long actions;
     unsigned int relayID;
+    #if FLOW_SUPPORT
+    std::vector<FlowButtonComponent *> flow_components;
+    #endif
 } button_t;
 
 std::vector<button_t> _buttons;
@@ -41,6 +48,35 @@ bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
 }
 
 #endif
+
+// -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+PROGMEM const char flow_data2[] = "Data";
+PROGMEM const char* const flow_data2_array[] = {flow_data2};
+
+PROGMEM const FlowConnections flow_button_component = {
+    0, NULL,
+    1, flow_data2_array,
+};
+
+class FlowButtonComponent : public FlowComponent {
+    public:
+        FlowButtonComponent(JsonObject& properties) {
+            int button_id = properties["Button"];
+            _buttons[button_id].flow_components.push_back(this);
+        }
+
+        void buttonEvent(unsigned char event) {
+            JsonVariant data((int)event);
+            processOutput(data, 0);
+        }
+};
+
+#endif // FLOW_SUPPORT
 
 int buttonFromRelay(unsigned int relayID) {
     for (unsigned int i=0; i < _buttons.size(); i++) {
@@ -105,6 +141,12 @@ void buttonEvent(unsigned int id, unsigned char event) {
        }
     #endif
 
+    #if FLOW_SUPPORT
+        for (FlowButtonComponent* component : _buttons[id].flow_components) {
+            component->buttonEvent(event);
+        }
+    #endif
+
     if (BUTTON_MODE_TOGGLE == action) {
         if (_buttons[id].relayID > 0) {
             relayToggle(_buttons[id].relayID - 1);
@@ -122,11 +164,11 @@ void buttonEvent(unsigned int id, unsigned char event) {
             relayStatus(_buttons[id].relayID - 1, false);
         }
     }
-    
+
     if (BUTTON_MODE_AP == action) {
         wifiStartAP();
     }
-    
+
     if (BUTTON_MODE_RESET == action) {
         deferredReset(100, CUSTOM_RESET_HARDWARE);
     }
@@ -142,13 +184,13 @@ void buttonEvent(unsigned int id, unsigned char event) {
             wifiStartWPS();
         }
     #endif // defined(JUSTWIFI_ENABLE_WPS)
-    
+
     #if defined(JUSTWIFI_ENABLE_SMARTCONFIG)
         if (BUTTON_MODE_SMART_CONFIG == action) {
             wifiStartSmartConfig();
         }
     #endif // defined(JUSTWIFI_ENABLE_SMARTCONFIG)
-    
+
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     if (BUTTON_MODE_DIM_UP == action) {
         lightBrightnessStep(1);
@@ -244,6 +286,17 @@ void buttonSetup() {
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsOnReceiveRegister(_buttonWebSocketOnReceive);
+    #endif
+
+    #if FLOW_SUPPORT
+        std::vector<String>* buttons = new std::vector<String>();
+        for (unsigned int i=0; i < _buttons.size(); i++) {
+            buttons->push_back(String(i));
+        }
+
+        flowRegisterComponent("Button", &flow_button_component,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowButtonComponent(properties); }));
+        flowRegisterComponentValues("BUTTON_VALUES", buttons);
     #endif
 
     // Register loop

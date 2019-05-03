@@ -361,6 +361,76 @@ void _mqttInitCommands() {
 #endif // TERMINAL_SUPPORT
 
 // -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+PROGMEM const FlowConnections flow_mqtt_subscribe_component = {
+    0, NULL,
+    1, flow_data_array,
+};
+
+class FlowMqttSubscribeComponent : public FlowComponent {
+    private:
+        String _topic;
+
+        void mqttCallback(unsigned int type, const char * topic, const char * payload) {
+            if (type == MQTT_CONNECT_EVENT) {
+                mqttSubscribeRaw(_topic.c_str());
+            }
+
+            if (type == MQTT_MESSAGE_EVENT) {
+                if (strcmp(topic, _topic.c_str()) == 0) {
+                    JsonVariant data(payload);
+                    processOutput(data, 0);
+                }
+            }
+        }
+
+    public:
+        FlowMqttSubscribeComponent(JsonObject& properties) {
+            const char * topic = properties["Topic"];
+            _topic = String(topic != NULL ? topic : "");
+            _mqttPlaceholders(&_topic);
+
+            mqtt_callback_f callback = [this](unsigned int type, const char * topic, const char * payload){ this->mqttCallback(type, topic, payload); };
+            mqttRegister(callback);
+
+            // emulate connect event if MQTT is connected already
+            if (mqttConnected) {
+                mqttCallback(MQTT_CONNECT_EVENT, NULL, NULL);
+            }
+        }
+};
+
+PROGMEM const FlowConnections flow_mqtt_publish_component = {
+    1, flow_data_array,
+    0, NULL,
+};
+
+class FlowMqttPublishComponent : public FlowComponent {
+    private:
+        String _topic;
+        bool _retain;
+
+    public:
+        FlowMqttPublishComponent(JsonObject& properties) {
+            const char * topic = properties["Topic"];
+            _topic = String(topic != NULL ? topic : "");
+            _mqttPlaceholders(&_topic);
+
+            _retain = properties["Retain"];
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            String s = toString(data);
+            mqttSendRaw(_topic.c_str(), s.c_str(), _retain);
+        }
+};
+#endif //FLOW_SUPPORT
+
+// -----------------------------------------------------------------------------
 // MQTT Callbacks
 // -----------------------------------------------------------------------------
 
@@ -432,7 +502,15 @@ void _mqttOnMessage(char* topic, char* payload, unsigned int len) {
     strlcpy(message, (char *) payload, len + 1);
 
     #if MQTT_SKIP_RETAINED
-        if (millis() - _mqtt_last_connection < MQTT_SKIP_TIME) {
+        bool skip = millis() - _mqtt_last_connection < MQTT_SKIP_TIME;
+
+        #if FLOW_SUPPORT
+            // workaround for persisted flow
+            if (skip && mqttMagnitude((char *) topic).equals(FLOW_MQTT_TOPIC))
+                skip = false;
+        #endif
+
+        if (skip) {
             DEBUG_MSG_P(PSTR("[MQTT] Received %s => %s - SKIPPED\n"), topic, message);
 			return;
 		}
@@ -834,6 +912,14 @@ void mqttSetup() {
 
     #if TERMINAL_SUPPORT
         _mqttInitCommands();
+    #endif
+
+    #if FLOW_SUPPORT
+        flowRegisterComponent("MQTT subscribe", &flow_mqtt_subscribe_component,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMqttSubscribeComponent(properties); }));
+
+        flowRegisterComponent("MQTT publish", &flow_mqtt_publish_component,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowMqttPublishComponent(properties); }));
     #endif
 
     // Main callbacks

@@ -61,6 +61,52 @@ void _schWebSocketOnSend(JsonObject &root){
 #endif // WEB_SUPPORT
 
 // -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+PROGMEM const FlowConnections flow_schedule_component = {
+    0, NULL,
+    1, flow_data_array,
+};
+
+class FlowScheduleComponent;
+std::vector<FlowScheduleComponent*> _schedule_components;
+
+class FlowScheduleComponent : public FlowComponent {
+    private:
+        JsonVariant *_value;
+        String _weekdays;
+        int _hour;
+        int _minute;
+
+    public:
+        FlowScheduleComponent(JsonObject& properties) {
+            JsonVariant value = properties["Value"];
+            _value = clone(value);
+
+            _weekdays = String((const char *)properties["Weekdays"]);
+            String time = String((const char *)properties["Time"]);
+            int colon = time.indexOf(":");
+            if (colon > 0) {
+                _hour = time.substring(0, colon).toInt();
+                _minute = time.substring(colon + 1).toInt();
+            }
+
+            _schedule_components.push_back(this);
+        }
+
+        void check(time_t& time) {
+            if (_schMinutesLeft(time, _hour, _minute) == 0 && (_weekdays.length() == 0 || _schIsThisWeekday(time, _weekdays))) {
+                processOutput(*_value, 0);
+            }
+        }
+};
+
+#endif // FLOW_SUPPORT
+
+// -----------------------------------------------------------------------------
 
 void _schConfigure() {
 
@@ -204,6 +250,11 @@ void _schCheck() {
 
     }
 
+    #if FLOW_SUPPORT
+        for (unsigned int i=0; i < _schedule_components.size(); i++) {
+            _schedule_components[i]->check(local_time);
+        }
+    #endif
 }
 
 void _schLoop() {
@@ -231,6 +282,11 @@ void schSetup() {
     #if WEB_SUPPORT
         wsOnSendRegister(_schWebSocketOnSend);
         wsOnReceiveRegister(_schWebSocketOnReceive);
+    #endif
+
+    #if FLOW_SUPPORT
+        flowRegisterComponent("Schedule", &flow_schedule_component,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowScheduleComponent(properties); }));
     #endif
 
     // Main callbacks

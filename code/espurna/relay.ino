@@ -1057,6 +1057,41 @@ void _relayInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+// -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+PROGMEM const char flow_toggle[] = "Toggle";
+PROGMEM const char* const flow_relay_component_inputs[] = {flow_state, flow_toggle};
+
+PROGMEM const FlowConnections flow_relay_component = {
+    2, flow_relay_component_inputs,
+    0, NULL,
+};
+
+class FlowRelayComponent : public FlowComponent {
+    private:
+        int _relay_id;
+    public:
+        FlowRelayComponent(JsonObject& properties) {
+            _relay_id = properties["Relay"];
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            if (inputNumber == 0) { // State
+                bool state = data.as<bool>();
+                relayStatus(_relay_id, state);
+            } else { // Toggle
+                relayToggle(_relay_id);
+            }
+        }
+
+};
+
+#endif // FLOW_SUPPORT
+
 //------------------------------------------------------------------------------
 // Setup
 //------------------------------------------------------------------------------
@@ -1118,6 +1153,17 @@ void relaySetup() {
     #if TERMINAL_SUPPORT
         _relayInitCommands();
     #endif
+    #if FLOW_SUPPORT
+        std::vector<String>* relays = new std::vector<String>();
+        for (unsigned int i=0; i < _relays.size(); i++) {
+            relays->push_back(String(i));
+        }
+
+        flowRegisterComponent("Relay", &flow_relay_component,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowRelayComponent(properties); }));
+        flowRegisterComponentValues("RELAY_VALUES", relays);
+    #endif
+
 
     // Main callbacks
     espurnaRegisterLoop(_relayLoop);

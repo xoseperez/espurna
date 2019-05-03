@@ -229,6 +229,79 @@ void settingsGetJson(JsonObject& root) {
 }
 
 // -----------------------------------------------------------------------------
+// FLOW
+// -----------------------------------------------------------------------------
+
+#if FLOW_SUPPORT
+
+//PROGMEM const char flow_value[] = "Value";
+PROGMEM const char* const flow_value_array[] = {flow_value};
+
+PROGMEM const FlowConnections flow_save_setting_component = {
+    1, flow_value_array,
+    0, NULL,
+};
+
+class FlowSaveSettingComponent : public FlowComponent {
+    private:
+        String _name;
+
+    public:
+        FlowSaveSettingComponent(JsonObject& properties) {
+            const char * name = properties["Name"];
+            _name = String(name != NULL ? name : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            String value = data.as<String>();
+            if (value != "") {
+                setSetting(_name, value);
+            } else {
+                delSetting(_name);
+            }
+        }
+
+        static void reg() {
+            flowRegisterComponent("Save setting", &flow_save_setting_component,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSaveSettingComponent(properties); }));
+        }
+};
+
+PROGMEM const char flow_name[] = "Name";
+PROGMEM const char* const flow_name_array[] = {flow_name};
+
+PROGMEM const FlowConnections flow_load_setting_component = {
+    1, flow_name_array,
+    1, flow_value_array,
+};
+
+class FlowLoadSettingComponent : public FlowComponent {
+    private:
+        String _default;
+
+    public:
+        FlowLoadSettingComponent(JsonObject& properties) {
+            const char * def = properties["Default"];
+            _default = String(def != NULL ? def : "");
+        }
+
+        virtual void processInput(JsonVariant& data, int inputNumber) {
+            String name = data.as<String>();
+            String value = getSetting(name, _default);
+            JsonVariant output(value.c_str());
+            processOutput(output, 0);
+        }
+
+        static void reg() {
+            flowRegisterComponent("Load setting", &flow_load_setting_component,
+                (flow_component_factory_f)([] (JsonObject& properties) { return new FlowLoadSettingComponent(properties); }));
+        }
+};
+
+
+#endif // FLOW_SUPPORT
+
+// -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
 
@@ -244,5 +317,10 @@ void settingsSetup() {
             []() {}
         #endif
     );
+
+    #if FLOW_SUPPORT
+        FlowSaveSettingComponent::reg();
+        FlowLoadSettingComponent::reg();
+    #endif
 
 }

@@ -384,6 +384,56 @@ void _sensorInitCommands() {
 
 #endif
 
+#if FLOW_SUPPORT
+
+PROGMEM const FlowConnections flow_sensor_component = {
+    0, NULL,
+    1, flow_data_array,
+};
+
+class FlowSensorComponent;
+std::vector<FlowSensorComponent*> _flow_sensors;
+
+class FlowSensorComponent : public FlowComponent {
+    private:
+        int _magnitude = -1;
+
+    public:
+        FlowSensorComponent(JsonObject& properties) {
+            String magnitude = properties["Sensor"];
+
+            int slash = magnitude.indexOf("/");
+            if (slash < 0) {
+                DEBUG_MSG_P("[FLOW] Sensor %s has incorrect name\n", magnitude.c_str());
+                return;
+            }
+            String sensor = magnitude.substring(0, slash);
+            String topic = magnitude.substring(slash + 1);
+
+            for (unsigned char i = 0; i < _magnitudes.size(); i++) {
+                sensor_magnitude_t m = _magnitudes[i];
+                if (magnitudeName(i).equals(sensor) && magnitudeTopic(m.type).equals(topic)) {
+                    _magnitude = i;
+                }
+            }
+
+            if (_magnitude >= 0) {
+                _flow_sensors.push_back(this);
+            } else {
+                DEBUG_MSG_P("[FLOW] Sensor %s not found\n", magnitude.c_str());
+            }
+        }
+
+        void sensorReport(int magnitude, double value) {
+            if (magnitude == _magnitude) {
+                JsonVariant data(value);
+                processOutput(data, 0);
+            }
+        }
+};
+
+#endif
+
 void _sensorTick() {
     for (unsigned char i=0; i<_sensors.size(); i++) {
         _sensors[i]->tick();
@@ -1283,6 +1333,12 @@ void _sensorReport(unsigned char index, double value) {
     }
     #endif // DOMOTICZ_SUPPORT
 
+    #if FLOW_SUPPORT
+        for (FlowSensorComponent* component : _flow_sensors) {
+            component->sensorReport(index, value);
+        }
+    #endif
+
 }
 
 // -----------------------------------------------------------------------------
@@ -1399,6 +1455,21 @@ void sensorSetup() {
     // Terminal
     #if TERMINAL_SUPPORT
         _sensorInitCommands();
+    #endif
+
+    // Flow
+    #if FLOW_SUPPORT
+        std::vector<String>* sensors = new std::vector<String>();
+        for (unsigned char i = 0; i < _magnitudes.size(); i++) {
+            sensor_magnitude_t magnitude = _magnitudes[i];
+            String sensor = magnitudeName(i);
+            String topic = magnitudeTopic(magnitude.type);
+            sensors->push_back(sensor + "/" + topic);
+        }
+
+        flowRegisterComponent("Sensor", &flow_sensor_component,
+            (flow_component_factory_f)([] (JsonObject& properties) { return new FlowSensorComponent(properties); }));
+        flowRegisterComponentValues("SENSOR_VALUES", sensors);
     #endif
 
     // Main callbacks
