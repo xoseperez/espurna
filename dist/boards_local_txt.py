@@ -112,11 +112,15 @@ EXTRA_FLAGS = [
 
 SUBSTITUTIONS = VersionedSubstitution(
     dict(eesz="FlashSize", wipe="FlashErase", baud="UploadSpeed", vt="VTable"),
-    ["2.3.0", "2.4.2"],
+    ["2.3.0", "latest"],
 )
 
 
-def generate(versions, directory, sub=SUBSTITUTIONS):
+def generate_boards_txt(args, sub=SUBSTITUTIONS):
+
+    versions = args.versions
+    if args.version:
+        versions = [args.version]
 
     for version in versions:
 
@@ -140,7 +144,7 @@ def generate(versions, directory, sub=SUBSTITUTIONS):
         if EXTRA_FLAGS:
             result.extend(("{}{}={}".format(BOARD, k, v)) for k, v in EXTRA_FLAGS)
 
-        f_path = os.path.join(directory, version, "boards.local.txt")
+        f_path = os.path.join(args.directory, version, "boards.local.txt")
         f_dir, _ = os.path.split(f_path)
         if not os.path.exists(f_dir):
             os.makedirs(f_dir)
@@ -151,22 +155,23 @@ def generate(versions, directory, sub=SUBSTITUTIONS):
             f.write("\n")
 
 
+def print_versions(args):
+    for version in CORE_VERSIONS:
+        print("- {}".format(version))
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--directory", default="arduino_ide")
-    parser.add_argument(
-        "--versions", action="store_true", default=False, help="supported versions"
-    )
-    parser.add_argument("--generate", nargs="*", action="append", default=CORE_VERSIONS)
+
+    subparsers = parser.add_subparsers(title="commands")
+    parser_versions = subparsers.add_parser("versions", help="list supported versions")
+    parser_versions.set_defaults(command=print_versions)
+
+    parser_generate = subparsers.add_parser("generate", help="")
+    parser_generate.add_argument("version", nargs="?")
+    parser_generate.set_defaults(command=generate_boards_txt, versions=CORE_VERSIONS)
 
     args = parser.parse_args()
-
-    if args.versions:
-        print("Supported versions:")
-        for version in CORE_VERSIONS:
-            print(version)
-        sys.exit(1)
-
-    if args.generate:
-        generate(args.generate, args.directory)
+    args.command(args)
