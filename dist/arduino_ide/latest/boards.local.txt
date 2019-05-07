@@ -1,4 +1,4 @@
-#version=2.4.2
+#version=latest
 
 menu.float_support=scanf and printf float support
 

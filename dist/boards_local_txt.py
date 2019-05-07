@@ -12,10 +12,15 @@ import collections
 # TODO: drop after platform.io supports python 3
 if sys.version < (3, 2):
     import string
+
     _format = string.Formatter().vformat
+
     def format_map(tmpl, f_map):
         return _format(tmpl, None, f_map)
+
+
 else:
+
     def format_map(tmpl, f_map):
         return tmpl.format_map(f_map)
 
@@ -102,8 +107,7 @@ BOARD = "generic"
 MENUS = ["flash_size", "float_support"]
 
 
-CORE_VERSIONS = ["2.3.0", "2.4.2", "2.5.0", "2.5.1"]
-
+CORE_VERSIONS = ["2.3.0", "latest"]
 
 EXTRA_FLAGS = [
     (".compiler.cpp.extra_flags", "-DNO_GLOBAL_EEPROM -DMQTT_MAX_PACKET_SIZE=400")
