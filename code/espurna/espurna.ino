@@ -67,6 +67,9 @@ void setup() {
         debugSetup();
     #endif
 
+    // Init RTCMEM
+    rtcmemSetup();
+
     // Init EEPROM
     eepromSetup();
 

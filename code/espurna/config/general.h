@@ -399,6 +399,11 @@
 #define RELAY_MQTT_OFF              "0"
 #endif
 
+// TODO Only single EEPROM address is used to store state, which is 1 byte
+// Relay status is stored using bitfield.
+// This means that, atm, we are only storing the status of the first 8 relays.
+#define RELAY_SAVE_MASK_MAX         8
+
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------

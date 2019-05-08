@@ -470,7 +470,47 @@ void _lightProviderUpdate() {
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
-void _lightColorSave() {
+union light_rtcmem_t {
+    struct {
+        uint8_t channels[5];
+        uint8_t brightness;
+        uint16_t mired;
+    } packed;
+    uint64_t value;
+};
+
+#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(light_rtcmem_t().packed.channels)
+
+void _lightSaveRtcmem() {
+    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+
+    light_rtcmem_t light;
+
+    for (unsigned int i=0; i < lightChannels(); i++) {
+        light.packed.channels[i] = _light_channel[i].inputValue;
+    }
+
+    light.packed.brightness = _light_brightness;
+    light.packed.mired = _light_mireds;
+
+    Rtcmem->light = light.value;
+}
+
+void _lightRestoreRtcmem() {
+    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+
+    light_rtcmem_t light;
+    light.value = Rtcmem->light;
+
+    for (unsigned int i=0; i < lightChannels(); i++) {
+        _light_channel[i].inputValue = light.packed.channels[i];
+    }
+
+    _light_brightness = light.packed.brightness;
+    _light_mireds = light.packed.mired;
+}
+
+void _lightSaveSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         setSetting("ch", i, _light_channel[i].inputValue);
     }
@@ -479,7 +519,7 @@ void _lightColorSave() {
     saveSettings();
 }
 
-void _lightColorRestore() {
+void _lightRestoreSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         _light_channel[i].inputValue = getSetting("ch", i, i==0 ? 255 : 0).toInt();
     }
@@ -699,9 +739,11 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     if (group_forward) mask += 2;
     _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
 
+    _lightSaveRtcmem();
+
     #if LIGHT_SAVE_ENABLED
         // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightColorSave);
+        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightSaveSettings);
     #endif
 
 };
@@ -712,7 +754,7 @@ void lightUpdate(bool save, bool forward) {
 
 #if LIGHT_SAVE_ENABLED == 0
 void lightSave() {
-    _lightColorSave();
+    _lightSaveSettings();
 }
 #endif
 
@@ -1166,7 +1208,11 @@ void lightSetup() {
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channel.size());
 
     _lightConfigure();
-    _lightColorRestore();
+    if (rtcmemStatus()) {
+        _lightRestoreRtcmem();
+    } else {
+        _lightRestoreSettings();
+    }
 
     #if WEB_SUPPORT
         wsOnSendRegister(_lightWebSocketOnSend);
