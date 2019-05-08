@@ -116,7 +116,7 @@ EXTRA_FLAGS = [
 
 SUBSTITUTIONS = VersionedSubstitution(
     dict(eesz="FlashSize", wipe="FlashErase", baud="UploadSpeed", vt="VTable"),
-    ["2.3.0", "latest"],
+    ["2.3.0"],
 )
 
 
