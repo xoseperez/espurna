@@ -233,7 +233,7 @@ Here is the list of supported hardware. For more information please refer to the
 ||||
 |---|---|---|
 |![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|
-|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Goosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
+|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Gosund, HomeCube, Teckin)**|**Power meters based on V9261F**|
 |![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|
 |**Itead Sonoff POW**|**Itead Sonoff POW R2**|**Itead Sonoff S31**|
 |![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|

@@ -21,7 +21,11 @@
 #endif
 
 #ifndef LOOP_DELAY_TIME
-#define LOOP_DELAY_TIME         1               // Delay for this millis in the main loop [0-250] (see https://github.com/xoseperez/espurna/issues/1541)
+#define LOOP_DELAY_TIME         10              // Delay for the main loop, in millis [0-250]
+                                                // Recommended minimum is 10, see:
+                                                // https://github.com/xoseperez/espurna/issues/1541
+                                                // https://github.com/xoseperez/espurna/issues/1631
+                                                // https://github.com/esp8266/Arduino/issues/5825
 #endif
 
 //------------------------------------------------------------------------------
