@@ -95,8 +95,7 @@ void _terminalInitCommand() {
 
     terminalRegisterCommand(F("ERASE.CONFIG"), [](Embedis* e) {
         terminalOK();
-        resetReason(CUSTOM_RESET_TERMINAL);
-        _eepromCommit();
+        customResetReason(CUSTOM_RESET_TERMINAL);
         eraseSDKConfig();
         *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
     });
@@ -180,7 +179,7 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("RESET.SAFE"), [](Embedis* e) {
-        EEPROMr.write(EEPROM_CRASH_COUNTER, SYSTEM_CHECK_MAX);
+        systemStabilityCounter(SYSTEM_CHECK_MAX);
         terminalOK();
         deferredReset(100, CUSTOM_RESET_TERMINAL);
     });

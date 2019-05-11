@@ -103,6 +103,23 @@ void moveSetting(const char * from, const char * to) {
     delSetting(from);
 }
 
+void moveSetting(const char * from, const char * to, unsigned int index) {
+    String value = getSetting(from, index, "");
+    if (value.length() > 0) setSetting(to, index, value);
+    delSetting(from, index);
+}
+
+void moveSettings(const char * from, const char * to) {
+    unsigned int index = 0;
+    while (index < 100) {
+        String value = getSetting(from, index, "");
+        if (value.length() == 0) break;
+        setSetting(to, index, value);
+        delSetting(from, index);
+        index++;
+    }
+}
+
 template<typename T> String getSetting(const String& key, T defaultValue) {
     String value;
     if (!Embedis::get(key, value)) value = String(defaultValue);
