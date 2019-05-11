@@ -331,6 +331,15 @@ void heartbeat() {
 
         if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+
+        if ((hb_cfg & Heartbeat::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+            idbSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+                    
+        if (hb_cfg & Heartbeat::Loadavg)
+            idbSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
+
+        if (hb_cfg & Heartbeat::Ssid)
+            idbSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
     #endif
 
 }
