@@ -29,7 +29,7 @@
     #endif
 #endif
 
-#if defined(ITEAD_SONOFF_RFBRIDGE)
+#if RF_SUPPORT == 1
     #ifndef WEBUI_IMAGE
         #define WEBUI_IMAGE    WEBUI_IMAGE_RFBRIDGE
     #else
