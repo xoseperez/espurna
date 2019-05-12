@@ -144,6 +144,12 @@ template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
+bool hasSetting(const String&);
+bool hasSetting(const String&, unsigned int);
+bool delSetting(const String&);
+bool delSetting(const String&, unsigned int);
+void saveSettings();
+void migrate();
 
 // -----------------------------------------------------------------------------
 // Terminal
