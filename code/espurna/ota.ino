@@ -30,8 +30,22 @@ void _otaLoop() {
 
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
-#include <ESPAsyncTCP.h>
-AsyncClient * _ota_client;
+#ifndef ARDUINO_ESP8266_RELEASE_2_5_0
+#define USING_AXTLS // do not use BearSSL
+#endif
+
+WiFiClient _ota_client;
+
+#if ASYNC_TCP_SSL_ENABLED
+    #ifdef USING_AXTLS
+        #include "WiFiClientSecureAxTLS.h"
+        axTLS::WiFiClientSecure _ota_client_secure;
+    #else
+        #include "WiFiClientSecure.h"
+        BearSSL::WiFiClientSecure _ota_client_secure;
+    #endif
+#endif
+
 char * _ota_host;
 char * _ota_url;
 unsigned int _ota_port = 80;
@@ -43,7 +57,7 @@ const char OTA_REQUEST_TEMPLATE[] PROGMEM =
     "User-Agent: ESPurna\r\n"
     "Connection: close\r\n"
     "Content-Type: application/x-www-form-urlencoded\r\n"
-    "Content-Length: 0\r\n\r\n\r\n";
+    "Content-Length: 0\r\n\r\n";
 
 
 void _otaFrom(const char * host, unsigned int port, const char * url) {
@@ -55,107 +69,123 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     _ota_port = port;
     _ota_size = 0;
 
-    if (_ota_client == NULL) {
-        _ota_client = new AsyncClient();
-    }
+    bool connected = false;
 
-    _ota_client->onDisconnect([](void *s, AsyncClient *c) {
-
-        DEBUG_MSG_P(PSTR("\n"));
-
-        if (Update.end(true)){
-            DEBUG_MSG_P(PSTR("[OTA] Success: %u bytes\n"), _ota_size);
-            deferredReset(100, CUSTOM_RESET_OTA);
-        } else {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-            eepromRotate(true);
-        }
-
-        DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
-
-        _ota_client->free();
-        delete _ota_client;
-        _ota_client = NULL;
-        free(_ota_host);
-        _ota_host = NULL;
-        free(_ota_url);
-        _ota_url = NULL;
-
-    }, 0);
-
-    _ota_client->onTimeout([](void *s, AsyncClient *c, uint32_t time) {
-        _ota_client->close(true);
-    }, 0);
-
-    _ota_client->onData([](void * arg, AsyncClient * c, void * data, size_t len) {
-
-        char * p = (char *) data;
-
-        if (_ota_size == 0) {
-
-            Update.runAsync(true);
-            if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-                #ifdef DEBUG_PORT
-                    Update.printError(DEBUG_PORT);
-                #endif
-            }
-
-            p = strstr((char *)data, "\r\n\r\n") + 4;
-            len = len - (p - (char *) data);
-
-        }
-
-        if (!Update.hasError()) {
-            if (Update.write((uint8_t *) p, len) != len) {
-                #ifdef DEBUG_PORT
-                    Update.printError(DEBUG_PORT);
-                #endif
-            }
-        }
-
-        _ota_size += len;
-        DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
-
-        delay(0);
-
-    }, NULL);
-
-    _ota_client->onConnect([](void * arg, AsyncClient * client) {
-
-        #if ASYNC_TCP_SSL_ENABLED
-            if (443 == _ota_port) {
-                uint8_t fp[20] = {0};
-                sslFingerPrintArray(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp);
-                SSL * ssl = _ota_client->getSSL();
-                if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
-                    DEBUG_MSG_P(PSTR("[OTA] Warning: certificate doesn't match\n"));
-                }
-            }
-        #endif
-
-        // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
-        eepromRotate(false);
-
-        DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_url);
-        char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(_ota_url) + strlen(_ota_host)];
-        snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_url, _ota_host);
-        client->write(buffer);
-
-    }, NULL);
+    DEBUG_MSG_P(PSTR("[OTA] Connecting to %s:%u\n"), host, port);
 
     #if ASYNC_TCP_SSL_ENABLED
-        bool connected = _ota_client->connect(host, port, 443 == port);
+        if (port == 443) {
+            WiFiClientSecure _ota_client = _ota_client_secure;
+            connected = _ota_client.connect(host, port);
+            if (connected) {
+                char fp[60] = {0};
+                if (sslFingerPrintChar(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp)) {
+                    #ifdef USING_AXTLS
+                    if (!_ota_client.verify(fp, host)) {
+                    #else
+                    if (!_ota_client.setFingerprint(fp)) {
+                    #endif
+                        DEBUG_MSG_P(PSTR("[OTA] Error: fingerprint doesn't match\n"));
+                        connected = false;
+                    }
+                } else {
+                    DEBUG_MSG_P(PSTR("[OTA] Error: wrong fingerprint\n"));
+                    connected = false;
+                }
+            }
+        } else {
+            connected = _ota_client.connect(host, port);
+        }
     #else
-        bool connected = _ota_client->connect(host, port);
+        connected = _ota_client.connect(host, port);
     #endif
 
     if (!connected) {
         DEBUG_MSG_P(PSTR("[OTA] Connection failed\n"));
-        _ota_client->close(true);
+        return;
     }
 
+    // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
+    eepromRotate(false);
+
+    DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_url);
+    char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(_ota_url) + strlen(_ota_host)];
+    snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_url, _ota_host);
+
+    _ota_client.print(buffer);
+
+    // Skip the response headers
+    char c;
+    unsigned int endlines = 0;
+    while (endlines != 4 && (_ota_client.available() || _ota_client.connected())) {
+        if (_ota_client.available()) {
+            c = _ota_client.read();
+            if ((c == '\r'  && (endlines == 0 || endlines == 2)) || (c == '\n' && (endlines == 1 || endlines == 3))) {
+                endlines++;
+            } else {
+                endlines = 0;
+            }
+        }
+    }
+
+    // Read the OTA data
+    char data[2048];
+    while (_ota_client.available() || _ota_client.connected()) {
+        if (_ota_client.available()) {
+            if (_ota_size == 0 && endlines == 4) {
+                Update.runAsync(true);
+                if (!Update.begin(info_ota_space())) {
+                    #ifdef DEBUG_PORT
+                        Update.printError(DEBUG_PORT);
+                    #endif
+                }
+            }
+
+            size_t len = _ota_client.available();
+
+            unsigned int r = _ota_client.readBytes(data, min(sizeof(data), len));
+            if (!r) {
+                DEBUG_MSG_P(PSTR("[OTA] Read timeout while retrieving file\n"));
+                break;
+            }
+
+            if (!Update.hasError()) {
+                if (Update.write((uint8_t *) data, r) != r) {
+                    #ifdef DEBUG_PORT
+                        Update.printError(DEBUG_PORT);
+                    #endif
+                    break;
+                }
+            }
+
+            _ota_size += r;
+            DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
+
+            yield();
+        }
+    }
+
+    if (_ota_size > 0) {
+        DEBUG_MSG_P(PSTR("\n")); 
+    }
+
+    if (Update.end(true)){
+        DEBUG_MSG_P(PSTR("[OTA] Success: %u bytes\n"), _ota_size);
+        deferredReset(100, CUSTOM_RESET_OTA);
+    } else {
+        #ifdef DEBUG_PORT
+            Update.printError(DEBUG_PORT);
+        #endif
+        eepromRotate(true);
+    }
+
+    DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
+
+    _ota_client.stop();
+    free(_ota_host);
+    _ota_host = NULL;
+    free(_ota_url);
+    _ota_url = NULL;
 }
 
 void _otaFrom(String url) {
@@ -166,7 +196,9 @@ void _otaFrom(String url) {
 
     // Port from protocol
     unsigned int port = 80;
+    #if ASYNC_TCP_SSL_ENABLED
     if (url.startsWith("https://")) port = 443;
+    #endif
     url = url.substring(url.indexOf("/") + 2);
 
     // Get host
