@@ -249,7 +249,7 @@ void _mqttConfigure() {
     {
         String setter = getSetting("mqttSetter", MQTT_SETTER);
         String getter = getSetting("mqttGetter", MQTT_GETTER);
-        bool forward = !setter.equals(setter) && RELAY_REPORT_STATUS;
+        bool forward = !setter.equals(getter) && RELAY_REPORT_STATUS;
 
         _mqttApplySetting(_mqtt_setter, setter);
         _mqttApplySetting(_mqtt_getter, getter);
