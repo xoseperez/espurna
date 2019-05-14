@@ -69,7 +69,7 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     _ota_port = port;
     _ota_size = 0;
 
-    bool connected = false;
+    bool connected;
 
     DEBUG_MSG_P(PSTR("[OTA] Connecting to %s:%u\n"), host, port);
 
