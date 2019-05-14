@@ -2,7 +2,7 @@
 
 TELNET MODULE
 
-Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 (https://github.com/sarfata/kbox-firmware/tree/master/src/esp)
 

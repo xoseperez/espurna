@@ -196,11 +196,11 @@ void _relayProcess(bool mode) {
 
             relayPulse(id);
 
-            // We will trigger a commit only if
+            // We will trigger a eeprom save only if
             // we care about current relay status on boot
             unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
-            bool do_commit = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
-            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, do_commit);
+            bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
             #if WEB_SUPPORT
                 wsSend(_relayWebSocketUpdate);
@@ -246,6 +246,14 @@ void setSpeed(unsigned char speed) {
 // -----------------------------------------------------------------------------
 // RELAY
 // -----------------------------------------------------------------------------
+
+void _relayMaskRtcmem(uint32_t mask) {
+    Rtcmem->relay = mask;
+}
+
+uint32_t _relayMaskRtcmem() {
+    return Rtcmem->relay;
+}
 
 void relayPulse(unsigned char id) {
 
@@ -339,7 +347,7 @@ bool relayStatus(unsigned char id, bool status, bool report, bool group_report) 
 }
 
 bool relayStatus(unsigned char id, bool status) {
-    return relayStatus(id, status, true, true);
+    return relayStatus(id, status, mqttForward(), true);
 }
 
 bool relayStatus(unsigned char id) {
@@ -372,6 +380,14 @@ void relaySync(unsigned char id) {
             if (i != id) relayStatus(i, status);
         }
 
+    // If RELAY_SYNC_FIRST all relays should have the same state as first if first changes
+    } else if (relaySync == RELAY_SYNC_FIRST) {
+        if (id == 0) {
+            for (unsigned short i=1; i<_relays.size(); i++) {
+                relayStatus(i, status);
+            }
+        }
+
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
     } else if (status) {
         if (relaySync != RELAY_SYNC_ANY) {
@@ -393,41 +409,41 @@ void relaySync(unsigned char id) {
 
 }
 
-void relaySave(bool do_commit) {
+void relaySave(bool eeprom) {
 
-    // Relay status is stored in a single byte
-    // This means that, atm,
-    // we are only storing the status of the first 8 relays.
-    unsigned char bit = 1;
-    unsigned char mask = 0;
-    unsigned char count = _relays.size();
-    if (count > 8) count = 8;
-    for (unsigned int i=0; i < count; i++) {
-        if (relayStatus(i)) mask += bit;
-        bit += bit;
+    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(0);
+
+    unsigned char count = relayCount();
+    if (count > RELAY_SAVE_MASK_MAX) count = RELAY_SAVE_MASK_MAX;
+
+    for (unsigned int i=0; i < count; ++i) {
+        mask.set(i, relayStatus(i));
     }
 
-    EEPROMr.write(EEPROM_RELAY_STATUS, mask);
-    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %d\n"), mask);
+    const uint32_t mask_value = mask.to_ulong();
 
-    // The 'do_commit' flag controls wether we are commiting this change or not.
+    DEBUG_MSG_P(PSTR("[RELAY] Setting relay mask: %u\n"), mask_value);
+
+    // Persist only to rtcmem, unless requested to save to the eeprom
+    _relayMaskRtcmem(mask_value);
+
+    // The 'eeprom' flag controls wether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
     // save involves a relay whose boot mode is independent from current mode,
     // thus storing the last relay value is not absolutely necessary.
     // Nevertheless, we store the value in the EEPROM buffer so it will be written
     // on the next commit.
-    if (do_commit) {
-
+    if (eeprom) {
+        EEPROMr.write(EEPROM_RELAY_STATUS, mask_value);
         // We are actually enqueuing the commit so it will be
-        // executed on the main loop, in case this is called from a callback
+        // executed on the main loop, in case this is called from a system context callback
         eepromCommit();
-
     }
 
 }
 
 void relaySave() {
-    relaySave(true);
+    relaySave(false);
 }
 
 void relayToggle(unsigned char id, bool report, bool group_report) {
@@ -436,7 +452,7 @@ void relayToggle(unsigned char id, bool report, bool group_report) {
 }
 
 void relayToggle(unsigned char id) {
-    relayToggle(id, true, true);
+    relayToggle(id, mqttForward(), true);
 }
 
 unsigned char relayCount() {
@@ -506,32 +522,37 @@ void _relayBackwards() {
 void _relayBoot() {
 
     _relayRecursive = true;
-
-    unsigned char bit = 1;
     bool trigger_save = false;
+    uint32_t stored_mask = 0;
 
-    // Get last statuses from EEPROM
-    unsigned char mask = EEPROMr.read(EEPROM_RELAY_STATUS);
-    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
+    if (rtcmemStatus()) {
+        stored_mask = _relayMaskRtcmem();
+    } else {
+        stored_mask = EEPROMr.read(EEPROM_RELAY_STATUS);
+    }
+
+    DEBUG_MSG_P(PSTR("[RELAY] Retrieving mask: %u\n"), stored_mask);
+
+    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(stored_mask);
 
     // Walk the relays
     bool status;
-    for (unsigned int i=0; i<_relays.size(); i++) {
+    for (unsigned char i=0; i<relayCount(); ++i) {
 
         unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-        DEBUG_MSG_P(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
+        DEBUG_MSG_P(PSTR("[RELAY] Relay #%u boot mode %u\n"), i, boot_mode);
 
         status = false;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
                 if (i < 8) {
-                    status = ((mask & bit) == bit);
+                    status = mask.test(i);
                 }
                 break;
             case RELAY_BOOT_TOGGLE:
                 if (i < 8) {
-                    status = ((mask & bit) != bit);
-                    mask ^= bit;
+                    status = !mask[i];
+                    mask.flip(i);
                     trigger_save = true;
                 }
                 break;
@@ -550,12 +571,13 @@ void _relayBoot() {
         #else
             _relays[i].change_time = millis();
         #endif
-        bit <<= 1;
     }
 
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
-        EEPROMr.write(EEPROM_RELAY_STATUS, mask);
+        _relayMaskRtcmem(mask.to_ulong());
+
+        EEPROMr.write(EEPROM_RELAY_STATUS, mask.to_ulong());
         eepromCommit();
     }
 

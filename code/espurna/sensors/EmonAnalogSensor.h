@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Energy Monitor Sensor using builtin ADC
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
@@ -119,7 +119,7 @@ class EmonAnalogSensor : public EmonSensor {
     protected:
 
         unsigned int readADC(unsigned char channel) {
-            (void) channel;
+            UNUSED(channel);
             return analogRead(0);
         }
 

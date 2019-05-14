@@ -6,7 +6,18 @@
 
 extern "C" {
     #include "user_interface.h"
+    extern struct rst_info resetInfo;
 }
+
+#define UNUSED(x) (void)(x)
+
+// -----------------------------------------------------------------------------
+// System
+// -----------------------------------------------------------------------------
+
+uint32_t systemResetReason();
+uint8_t systemStabilityCounter();
+void systemStabilityCounter(uint8_t);
 
 // -----------------------------------------------------------------------------
 // API
@@ -133,6 +144,11 @@ typedef struct {
 } packet_t;
 
 // -----------------------------------------------------------------------------
+// Relay
+// -----------------------------------------------------------------------------
+#include <bitset>
+
+// -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
 #include <Embedis.h>
@@ -211,3 +227,18 @@ void webRequestRegister(web_request_callback_f callback);
 typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
+
+// THERMOSTAT
+// -----------------------------------------------------------------------------
+#if THERMOSTAT_SUPPORT
+    typedef std::function<void(bool)> thermostat_callback_f;
+    void thermostatRegister(thermostat_callback_f callback);
+#else
+    #define thermostat_callback_f void *
+#endif
+
+// -----------------------------------------------------------------------------
+// RTC MEMORY
+// -----------------------------------------------------------------------------
+#include "rtcmem.h"
+

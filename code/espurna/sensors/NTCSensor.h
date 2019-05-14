@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // NTC Sensor (maps to a NTCSensor)
-// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && NTC_SUPPORT

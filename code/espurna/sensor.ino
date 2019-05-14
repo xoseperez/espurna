@@ -15,13 +15,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "filters/MovingAverageFilter.h"
 #include "sensors/BaseSensor.h"
 
+#include <float.h>
+
 typedef struct {
     BaseSensor * sensor;        // Sensor object
     BaseFilter * filter;        // Filter object
     unsigned char local;        // Local index in its provider
     unsigned char type;         // Type of measurement
+    unsigned char decimals;     // Number of decimals in textual representation
     unsigned char global;       // Global index in its type
-    double current;             // Current (last) value, unfiltered
+    double last;                // Last raw value from sensor (unfiltered)
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
     double max_change;          // Maximum value change to report
@@ -59,6 +62,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
     if (type == MAGNITUDE_ANALOG) return ANALOG_DECIMALS;
     if (type == MAGNITUDE_ENERGY ||
         type == MAGNITUDE_ENERGY_DELTA) {
+        _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS).toInt();
         if (_sensor_energy_units == ENERGY_KWH) return 3;
     }
     if (type == MAGNITUDE_POWER_ACTIVE ||
@@ -71,7 +75,7 @@ unsigned char _magnitudeDecimals(unsigned char type) {
 
 }
 
-double _magnitudeProcess(unsigned char type, double value) {
+double _magnitudeProcess(unsigned char type, unsigned char decimals, double value) {
 
     // Hardcoded conversions (these should be linked to the unit, instead of the magnitude)
 
@@ -94,7 +98,7 @@ double _magnitudeProcess(unsigned char type, double value) {
         if (_sensor_power_units == POWER_KILOWATTS) value = value  / 1000;
     }
 
-    return roundTo(value, _magnitudeDecimals(type));
+    return roundTo(value, decimals);
 
 }
 
@@ -159,8 +163,8 @@ void _sensorWebSocketSendData(JsonObject& root) {
         if (magnitude.type == MAGNITUDE_EVENT) continue;
         ++size;
 
-        unsigned char decimals = _magnitudeDecimals(magnitude.type);
-        dtostrf(magnitude.current, 1-sizeof(buffer), decimals, buffer);
+        double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
+        dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
 
         index.add<uint8_t>(magnitude.global);
         type.add<uint8_t>(magnitude.type);
@@ -293,9 +297,8 @@ void _sensorAPISetup() {
 
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
-            unsigned char decimals = _magnitudeDecimals(magnitude.type);
-            double value = _sensor_realtime ? magnitude.current : magnitude.reported;
-            dtostrf(value, 1-len, decimals, buffer);
+            double value = _sensor_realtime ? magnitude.last : magnitude.reported;
+            dtostrf(value, 1-len, magnitude.decimals, buffer);
         });
 
     }
@@ -351,7 +354,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             for(unsigned char dev = init; dev < limit; dev++) {
                 float offset = pzem004t_sensor->resetEnergy(dev);
-                setSetting("pzEneTotal", dev, offset);
+                setSetting("pzemEneTotal", dev, offset);
                 DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
             terminalOK();
@@ -420,6 +423,35 @@ void _sensorResetTS() {
     #endif
 }
 
+double _sensorEnergyTotal() {
+    double value = 0;
+
+    if (rtcmemStatus()) {
+        value = Rtcmem->energy;
+    } else {
+        value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+    }
+
+    return value;
+}
+
+
+void _sensorEnergyTotal(double value) {
+    static unsigned long save_count = 0;
+
+    // Save to EEPROM every '_sensor_save_every' readings
+    if (_sensor_save_every > 0) {
+        save_count = (save_count + 1) % _sensor_save_every;
+        if (0 == save_count) {
+            setSetting("eneTotal", value);
+            saveSettings();
+        }
+    }
+
+    // Always save to RTCMEM
+    Rtcmem->energy = value;
+}
+
 // -----------------------------------------------------------------------------
 // Sensor initialization
 // -----------------------------------------------------------------------------
@@ -478,9 +510,21 @@ void _sensorLoad() {
 
     #if BMX280_SUPPORT
     {
-        BMX280Sensor * sensor = new BMX280Sensor();
-        sensor->setAddress(BMX280_ADDRESS);
-        _sensors.push_back(sensor);
+        // Support up to two sensors with full auto-discovery.
+        const unsigned char number = constrain(getSetting("bmx280Number", BMX280_NUMBER).toInt(), 1, 2);
+
+        // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
+        // otherwise choose the other unnamed sensor address
+        const unsigned char first = getSetting("bmx280Address", BMX280_ADDRESS).toInt();
+        const unsigned char second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
+
+        const unsigned char address_map[2] = { first, second };
+
+        for (unsigned char n=0; n < number; ++n) {
+            BMX280Sensor * sensor = new BMX280Sensor();
+            sensor->setAddress(address_map[n]);
+            _sensors.push_back(sensor);
+        }
     }
     #endif
 
@@ -703,18 +747,26 @@ void _sensorLoad() {
 
     #if PZEM004T_SUPPORT
     {
+        String addresses = getSetting("pzemAddr", PZEM004T_ADDRESSES);
+        if (!addresses.length()) {
+            DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
+            return;
+        }
+
         PZEM004TSensor * sensor = pzem004t_sensor = new PZEM004TSensor();
-        #if PZEM004T_USE_SOFT
-            sensor->setRX(PZEM004T_RX_PIN);
-            sensor->setTX(PZEM004T_TX_PIN);
-        #else
+        sensor->setAddresses(addresses.c_str());
+
+        if (getSetting("pzemSoft", PZEM004T_USE_SOFT).toInt() == 1) {
+            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN).toInt());
+            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN).toInt());
+        } else {
             sensor->setSerial(& PZEM004T_HW_PORT);
-        #endif
-        sensor->setAddresses(PZEM004T_ADDRESSES);
+        }
+
         // Read saved energy offset
         unsigned char dev_count = sensor->getAddressesCount();
         for(unsigned char dev = 0; dev < dev_count; dev++) {
-            float value = getSetting("pzEneTotal", dev, 0).toFloat();
+            float value = getSetting("pzemEneTotal", dev, 0).toFloat();
             if (value > 0) sensor->resetEnergy(dev, value);
         }
         _sensors.push_back(sensor);
@@ -847,13 +899,16 @@ void _sensorInit() {
         for (unsigned char k=0; k<_sensors[i]->count(); k++) {
 
             unsigned char type = _sensors[i]->type(k);
+	        signed char decimals = _sensors[i]->decimals(type);
+	        if (decimals < 0) decimals = _magnitudeDecimals(type);
 
             sensor_magnitude_t new_magnitude;
             new_magnitude.sensor = _sensors[i];
             new_magnitude.local = k;
             new_magnitude.type = type;
+	        new_magnitude.decimals = (unsigned char) decimals;
             new_magnitude.global = _counts[type];
-            new_magnitude.current = 0;
+            new_magnitude.last = 0;
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
             new_magnitude.max_change = 0;
@@ -913,7 +968,9 @@ void _sensorInit() {
                 EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
                 sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
                 sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
-                double value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+
+                double value = _sensorEnergyTotal();
+
                 if (value > 0) sensor->resetEnergy(0, value);
             }
 
@@ -936,7 +993,7 @@ void _sensorInit() {
                 value = getSetting("pwrRatioP", HLW8012_POWER_RATIO).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
-                value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+                value = _sensorEnergyTotal();
                 if (value > 0) sensor->resetEnergy(value);
 
             }
@@ -960,7 +1017,7 @@ void _sensorInit() {
                 value = getSetting("pwrRatioP", 0).toFloat();
                 if (value > 0) sensor->setPowerRatio(value);
 
-                value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+                value = _sensorEnergyTotal();
                 if (value > 0) sensor->resetEnergy(value);
 
             }
@@ -1170,7 +1227,7 @@ void _sensorConfigure() {
                     unsigned char dev_count = sensor->getAddressesCount();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev, 0);
-                        delSetting("pzEneTotal", dev);
+                        delSetting("pzemEneTotal", dev);
                     }
                     _sensorResetTS();
                 }
@@ -1204,7 +1261,7 @@ void _sensorConfigure() {
 void _sensorReport(unsigned char index, double value) {
 
     sensor_magnitude_t magnitude = _magnitudes[index];
-    unsigned char decimals = _magnitudeDecimals(magnitude.type);
+    unsigned char decimals = magnitude.decimals;
 
     char buffer[10];
     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
@@ -1286,6 +1343,13 @@ unsigned char magnitudeType(unsigned char index) {
     return MAGNITUDE_NONE;
 }
 
+double magnitudeValue(unsigned char index) {
+    if (index < _magnitudes.size()) {
+        return _sensor_realtime ? _magnitudes[index].last : _magnitudes[index].reported;
+    }
+    return DBL_MIN;
+}
+
 unsigned char magnitudeIndex(unsigned char index) {
     if (index < _magnitudes.size()) {
         return int(_magnitudes[index].global);
@@ -1341,6 +1405,9 @@ void sensorSetup() {
     moveSetting("powerUnits", "pwrUnits");
     moveSetting("energyUnits", "eneUnits");
 
+	// Update PZEM004T energy total across multiple devices
+    moveSettings("pzEneTotal", "pzemEneTotal");
+
     // Load sensors
     _sensorLoad();
     _sensorInit();
@@ -1390,14 +1457,14 @@ void sensorLoop() {
     // Check if we should read new data
     static unsigned long last_update = 0;
     static unsigned long report_count = 0;
-    static unsigned long save_count = 0;
     if (millis() - last_update > _sensor_read_interval) {
 
         last_update = millis();
         report_count = (report_count + 1) % _sensor_report_every;
 
-        double current;
-        double filtered;
+        double value_raw;       // holds the raw value as the sensor returns it
+        double value_show;      // holds the processed value applying units and decimals
+        double value_filtered;  // holds the processed value applying filters, and the units and decimals
 
         // Pre-read hook
         _sensorPre();
@@ -1418,7 +1485,7 @@ void sensorLoop() {
                 // Instant value
                 // -------------------------------------------------------------
 
-                current = magnitude.sensor->value(magnitude.local);
+                value_raw = magnitude.sensor->value(magnitude.local);
 
                 // Completely remove spurious values if relay is OFF
                 #if SENSOR_POWER_CHECK_STATUS
@@ -1429,26 +1496,31 @@ void sensorLoop() {
                             magnitude.type == MAGNITUDE_CURRENT ||
                             magnitude.type == MAGNITUDE_ENERGY_DELTA
                         ) {
-                            current = 0;
+                            value_raw = 0;
                         }
                     }
                 #endif
+
+                _magnitudes[i].last = value_raw;
 
                 // -------------------------------------------------------------
                 // Processing (filters)
                 // -------------------------------------------------------------
 
-                magnitude.filter->add(current);
+                magnitude.filter->add(value_raw);
 
-                // Special case for MovingAvergaeFilter
+                // Special case for MovingAverageFilter
                 if (MAGNITUDE_COUNT == magnitude.type ||
                     MAGNITUDE_GEIGER_CPM ==magnitude. type ||
                     MAGNITUDE_GEIGER_SIEVERT == magnitude.type) {
-                    current = magnitude.filter->result();
+                    value_raw = magnitude.filter->result();
                 }
 
-                current = _magnitudeProcess(magnitude.type, current);
-                _magnitudes[i].current = current;
+                // -------------------------------------------------------------
+                // Procesing (units and decimals)
+                // -------------------------------------------------------------
+
+                value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
 
                 // -------------------------------------------------------------
                 // Debug
@@ -1457,7 +1529,7 @@ void sensorLoop() {
                 #if SENSOR_DEBUG
                 {
                     char buffer[64];
-                    dtostrf(current, 1-sizeof(buffer), _magnitudeDecimals(magnitude.type), buffer);
+                    dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
@@ -1475,39 +1547,26 @@ void sensorLoop() {
                 bool report = (0 == report_count);
                 if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0)) {
                     // for MAGNITUDE_ENERGY, filtered value is last value
-                    double value = _magnitudeProcess(magnitude.type, current);
-                    report = (fabs(value - magnitude.reported) >= magnitude.max_change);
+                    report = (fabs(value_show - magnitude.reported) >= magnitude.max_change);
                 } // if ((MAGNITUDE_ENERGY == magnitude.type) && (magnitude.max_change > 0))
 
                 if (report) {
 
-                    filtered = magnitude.filter->result();
-                    filtered = _magnitudeProcess(magnitude.type, filtered);
+                    value_filtered = magnitude.filter->result();
+                    value_filtered = _magnitudeProcess(magnitude.type, magnitude.decimals, value_filtered);
                     magnitude.filter->reset();
 
                     // Check if there is a minimum change threshold to report
-                    if (fabs(filtered - magnitude.reported) >= magnitude.min_change) {
-                        _magnitudes[i].reported = filtered;
-                        _sensorReport(i, filtered);
-                    } // if (fabs(filtered - magnitude.reported) >= magnitude.min_change)
+                    if (fabs(value_filtered - magnitude.reported) >= magnitude.min_change) {
+                        _magnitudes[i].reported = value_filtered;
+                        _sensorReport(i, value_filtered);
+                    } // if (fabs(value_filtered - magnitude.reported) >= magnitude.min_change)
 
-                    // -------------------------------------------------------------
-                    // Saving to EEPROM
-                    // (we do it every _sensor_save_every readings)
-                    // -------------------------------------------------------------
 
-                    if (_sensor_save_every > 0) {
-
-                        save_count = (save_count + 1) % _sensor_save_every;
-
-                        if (0 == save_count) {
-                            if (MAGNITUDE_ENERGY == magnitude.type) {
-                                setSetting("eneTotal", current);
-                                saveSettings();
-                            }
-                        } // if (0 == save_count)
-
-                    } // if (_sensor_save_every > 0)
+                    // Persist total energy value
+                    if (MAGNITUDE_ENERGY == magnitude.type) {
+                        _sensorEnergyTotal(value_raw);
+                    }
 
                 } // if (report_count == 0)
 

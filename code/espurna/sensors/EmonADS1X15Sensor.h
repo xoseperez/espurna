@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // ADS1X15-based Energy Monitor Sensor over I2C
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && EMON_ADS1X15_SUPPORT
@@ -325,7 +325,7 @@ class EmonADS1X15Sensor : public EmonSensor {
         }
 
         unsigned int readADC(unsigned char channel) {
-            (void) channel;
+            UNUSED(channel);
             unsigned int value = i2c_read_uint16(_address, ADS1X15_REG_POINTER_CONVERT);
             if (_type = ADS1X15_CHIP_ADS1015) value >>= ADS1015_BIT_SHIFT;
             delayMicroseconds(500);

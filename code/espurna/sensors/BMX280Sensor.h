@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // BME280/BMP280 Sensor over I2C
-// Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && BMX280_SUPPORT
@@ -98,6 +98,16 @@ class BMX280Sensor : public I2CSensor {
             #endif
             return MAGNITUDE_NONE;
         }
+	// Number of decimals for a magnitude (or -1 for default)
+	signed char decimals(unsigned char type) { 
+	    // These numbers of decimals correspond to maximum sensor resolution settings
+	    switch (type) {  
+	    case MAGNITUDE_TEMPERATURE: return 3;
+	    case MAGNITUDE_PRESSURE:    return 4;
+	    case MAGNITUDE_HUMIDITY:    return 2;
+	    }
+	    return -1;
+	}
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         virtual void pre() {
@@ -312,7 +322,7 @@ class BMX280Sensor : public I2CSensor {
 
             #if BMX280_TEMPERATURE > 0
                 int32_t adc_T = i2c_read_uint16(_address, BMX280_REGISTER_TEMPDATA);
-                if (0xFFFF == adc_T) return SENSOR_ERROR_I2C;
+                if (0xFFFF == adc_T) return SENSOR_ERROR_OUT_OF_RANGE;
                 adc_T <<= 8;
                 adc_T |= i2c_read_uint8(_address, BMX280_REGISTER_TEMPDATA+2);
                 adc_T >>= 4;
@@ -340,7 +350,7 @@ class BMX280Sensor : public I2CSensor {
                 int64_t var1, var2, p;
 
                 int32_t adc_P = i2c_read_uint16(_address, BMX280_REGISTER_PRESSUREDATA);
-                if (0xFFFF == adc_P) return SENSOR_ERROR_I2C;
+                if (0xFFFF == adc_P) return SENSOR_ERROR_OUT_OF_RANGE;
                 adc_P <<= 8;
                 adc_P |= i2c_read_uint8(_address, BMX280_REGISTER_PRESSUREDATA+2);
                 adc_P >>= 4;
@@ -352,7 +362,7 @@ class BMX280Sensor : public I2CSensor {
                 var1 = ((var1 * var1 * (int64_t)_bmx280_calib.dig_P3)>>8) +
                     ((var1 * (int64_t)_bmx280_calib.dig_P2)<<12);
                 var1 = (((((int64_t)1)<<47)+var1))*((int64_t)_bmx280_calib.dig_P1)>>33;
-                if (var1 == 0) return SENSOR_ERROR_I2C;  // avoid exception caused by division by zero
+                if (var1 == 0) return SENSOR_ERROR_OUT_OF_RANGE;  // avoid exception caused by division by zero
 
                 p = 1048576 - adc_P;
                 p = (((p<<31) - var2)*3125) / var1;
@@ -369,7 +379,7 @@ class BMX280Sensor : public I2CSensor {
             if (_chip == BMX280_CHIP_BME280) {
 
                 int32_t adc_H = i2c_read_uint16(_address, BMX280_REGISTER_HUMIDDATA);
-                if (0xFFFF == adc_H) return SENSOR_ERROR_I2C;
+                if (0xFFFF == adc_H) return SENSOR_ERROR_OUT_OF_RANGE;
 
                 int32_t v_x1_u32r;
 

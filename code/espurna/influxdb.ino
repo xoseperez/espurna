@@ -2,7 +2,7 @@
 
 INFLUXDB MODULE
 
-Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
@@ -11,10 +11,11 @@ Copyright (C) 2017-2018 by Xose Pérez <xose dot perez at gmail dot com>
 #define MAX_IDBS 5
 #endif
 #include "ESPAsyncTCP.h"
-#include "SyncClient.h"
+
+#include "libs/SyncClientWrap.h"
 
 bool _idb_enabled = false;
-SyncClient _idb_client;
+SyncClientWrap * _idb_client;
 
 // -----------------------------------------------------------------------------
 
@@ -76,8 +77,8 @@ bool idbSend(const char * topic, const char * payload) {
         DEBUG_MSG_P(PSTR("[INFLUXDB] Sending to %s:%u\n"), host, port);
 
 
-        _idb_client.setTimeout(2);
-        if (_idb_client.connect((const char *) host, port)) {
+        _idb_client->setTimeout(2);
+        if (_idb_client->connect((const char *) host, port)) {
      
             char data[128];
             snprintf(data, sizeof(data), "%s,device=%s value=%s", topic, getSetting("hostname" + String(i)).c_str(), String(payload).c_str());
@@ -89,24 +90,26 @@ bool idbSend(const char * topic, const char * payload) {
                 getSetting("idbUsername" + String(i), INFLUXDB_USERNAME).c_str(), getSetting("idbPassword" + String(i), INFLUXDB_PASSWORD).c_str(),
                 host, port, strlen(data), data);
 
-            if (_idb_client.printf(request) > 0) {
-                while (_idb_client.connected() && _idb_client.available() == 0) delay(1);
-                while (_idb_client.available()) _idb_client.read();
-                if (_idb_client.connected()) _idb_client.stop();
+            if (_idb_client->printf(request) > 0) {
+                while (_idb_client->connected() && _idb_client->available() == 0) delay(1);
+                while (_idb_client->available()) _idb_client->read();
+                if (_idb_client->connected()) _idb_client->stop();
                 success = success & true;
             } else {
                 DEBUG_MSG_P(PSTR("[INFLUXDB] Sent failed\n"));
                 success = success & false;
             }
 
-            _idb_client.stop();
-            while (_idb_client.connected()) yield();
+            _idb_client->stop();
+            while (_idb_client->connected()) yield();
+
+            free(host);
+            _idb_client->stop();
+            while (_idb_client->connected()) yield();
 
         } else {
             DEBUG_MSG_P(PSTR("[INFLUXDB] Connection failed\n"));
         }
-
-        free(host);
     }
     return success;
 }
@@ -122,6 +125,8 @@ bool idbEnabled() {
 }
 
 void idbSetup() {
+
+    _idb_client = new SyncClientWrap();
 
     _idbConfigure();
 

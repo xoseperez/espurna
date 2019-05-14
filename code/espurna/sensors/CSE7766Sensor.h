@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // CSE7766 based power monitor
-// Copyright (C) 2018 by Xose Pérez <xose dot perez at gmail dot com>
+// Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 // http://www.chipsea.com/UploadFiles/2017/08/11144342F01B5662.pdf
 // -----------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ class CSE7766Sensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         CSE7766Sensor(): BaseSensor(), _data() {
-            _count = 6;
+            _count = 7;
             _sensor_id = SENSOR_CSE7766_ID;
         }
 
@@ -161,9 +161,10 @@ class CSE7766Sensor : public BaseSensor {
             if (index == 0) return MAGNITUDE_CURRENT;
             if (index == 1) return MAGNITUDE_VOLTAGE;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_POWER_APPARENT;
-            if (index == 4) return MAGNITUDE_POWER_FACTOR;
-            if (index == 5) return MAGNITUDE_ENERGY;
+            if (index == 3) return MAGNITUDE_POWER_REACTIVE;
+            if (index == 4) return MAGNITUDE_POWER_APPARENT;
+            if (index == 5) return MAGNITUDE_POWER_FACTOR;
+            if (index == 6) return MAGNITUDE_ENERGY;
             return MAGNITUDE_NONE;
         }
 
@@ -172,9 +173,10 @@ class CSE7766Sensor : public BaseSensor {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _active;
-            if (index == 3) return _voltage * _current;
-            if (index == 4) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
-            if (index == 5) return _energy;
+            if (index == 3) return _reactive;
+            if (index == 4) return _voltage * _current;
+            if (index == 5) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
+            if (index == 6) return _energy;
             return 0;
         }
 
@@ -273,6 +275,16 @@ class CSE7766Sensor : public BaseSensor {
                 }
             }
 
+            // Calculate reactive power
+            _reactive = 0;
+            unsigned int active = _active;
+            unsigned int apparent = _voltage * _current;
+            if (apparent > active) {
+                _reactive = sqrt(apparent * apparent - active * active);
+            } else {
+                _reactive = 0;
+            }
+
             // Calculate energy
             unsigned int difference;
             static unsigned int cf_pulses_last = 0;
@@ -367,6 +379,7 @@ class CSE7766Sensor : public BaseSensor {
         SoftwareSerial * _serial = NULL;
 
         double _active = 0;
+        double _reactive = 0;
         double _voltage = 0;
         double _current = 0;
         double _energy = 0;

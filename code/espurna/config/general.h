@@ -21,7 +21,11 @@
 #endif
 
 #ifndef LOOP_DELAY_TIME
-#define LOOP_DELAY_TIME         1               // Delay for this millis in the main loop [0-250] (see https://github.com/xoseperez/espurna/issues/1541)
+#define LOOP_DELAY_TIME         10              // Delay for the main loop, in millis [0-250]
+                                                // Recommended minimum is 10, see:
+                                                // https://github.com/xoseperez/espurna/issues/1541
+                                                // https://github.com/xoseperez/espurna/issues/1631
+                                                // https://github.com/esp8266/Arduino/issues/5825
 #endif
 
 //------------------------------------------------------------------------------
@@ -163,6 +167,21 @@
 #define EEPROM_DATA_END         14              // End of custom EEPROM data block
 
 //------------------------------------------------------------------------------
+// THERMOSTAT
+//------------------------------------------------------------------------------
+
+#ifndef THERMOSTAT_SUPPORT
+#define THERMOSTAT_SUPPORT          0
+#endif
+
+#ifndef THERMOSTAT_DISPLAY_SUPPORT
+#define THERMOSTAT_DISPLAY_SUPPORT  0
+#endif
+
+#define THERMOSTAT_SERVER_LOST_INTERVAL  120000 //server means lost after 2 min from last response
+#define THERMOSTAT_REMOTE_TEMP_MAX_WAIT     120 // 2 min
+
+//------------------------------------------------------------------------------
 // HEARTBEAT
 //------------------------------------------------------------------------------
 
@@ -257,6 +276,18 @@
 
 #ifndef HEARTBEAT_REPORT_INTERVAL
 #define HEARTBEAT_REPORT_INTERVAL   0
+#endif
+
+#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_RANGE
+#define HEARTBEAT_REPORT_RANGE      1
+#else
+#define HEARTBEAT_REPORT_RANGE      0
+#endif
+
+#if THERMOSTAT_SUPPORT && ! defined HEARTBEAT_REPORT_REMOTE_TEMP
+#define HEARTBEAT_REPORT_REMOTE_TEMP 1
+#else
+#define HEARTBEAT_REPORT_REMOTE_TEMP 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -356,6 +387,10 @@
 #define RELAY_SAVE_DELAY            1000
 #endif
 
+#ifndef RELAY_REPORT_STATUS
+#define RELAY_REPORT_STATUS         1
+#endif
+
 // Configure the MQTT payload for ON/OFF
 #ifndef RELAY_MQTT_ON
 #define RELAY_MQTT_ON               "1"
@@ -363,6 +398,11 @@
 #ifndef RELAY_MQTT_OFF
 #define RELAY_MQTT_OFF              "0"
 #endif
+
+// TODO Only single EEPROM address is used to store state, which is 1 byte
+// Relay status is stored using bitfield.
+// This means that, atm, we are only storing the status of the first 8 relays.
+#define RELAY_SAVE_MASK_MAX         8
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -491,7 +531,7 @@
 // there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
 // The only requirement is that the resource must be available under this domain.
 #ifndef WEB_REMOTE_DOMAIN
-#define WEB_REMOTE_DOMAIN           "http://tinkerman.cat"
+#define WEB_REMOTE_DOMAIN           "http://espurna.io"
 #endif
 
 // -----------------------------------------------------------------------------
@@ -752,8 +792,14 @@
 #endif
 
 
-#ifndef MQTT_USE_JSON
-#define MQTT_USE_JSON               0               // Group messages in a JSON body
+#if THERMOSTAT_SUPPORT == 1
+    #ifndef MQTT_USE_JSON
+    #define MQTT_USE_JSON               1           // Group messages in a JSON body
+    #endif
+#else
+    #ifndef MQTT_USE_JSON
+    #define MQTT_USE_JSON               0           // Don't group messages in a JSON body (default)
+    #endif
 #endif
 
 #ifndef MQTT_USE_JSON_DELAY
@@ -832,6 +878,16 @@
 #define MQTT_TOPIC_MIRED            "mired"
 #define MQTT_TOPIC_KELVIN           "kelvin"
 #define MQTT_TOPIC_TRANSITION       "transition"
+
+// Thermostat module
+#define MQTT_TOPIC_HOLD_TEMP        "hold_temp"
+#define MQTT_TOPIC_HOLD_TEMP_MIN    "min"
+#define MQTT_TOPIC_HOLD_TEMP_MAX    "max"
+#define MQTT_TOPIC_REMOTE_TEMP      "remote_temp"
+#define MQTT_TOPIC_ASK_TEMP_RANGE   "ask_temp_range"
+#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MIN "notify_temp_range_min"
+#define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MAX "notify_temp_range_max"
+
 
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)
@@ -1172,9 +1228,20 @@
 #endif
 
 // -----------------------------------------------------------------------------
-// RFBRIDGE
-// This module is not compatible with RF_SUPPORT=1
+// MQTT RF BRIDGE
 // -----------------------------------------------------------------------------
+
+#ifndef RF_SUPPORT
+#define RF_SUPPORT                  0
+#endif
+
+#ifndef RF_DEBOUNCE
+#define RF_DEBOUNCE                 500
+#endif
+
+#ifndef RF_LEARN_TIMEOUT
+#define RF_LEARN_TIMEOUT            60000
+#endif
 
 #ifndef RF_SEND_TIMES
 #define RF_SEND_TIMES               4               // How many times to send the message
@@ -1188,10 +1255,21 @@
 #define RF_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid debouncing)
 #endif
 
-#ifndef RF_RAW_SUPPORT
-#define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
-                                                    // https://github.com/rhx/RF-Bridge-EFM8BB1
+// Enable RCSwitch support
+// Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
+// https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+#ifndef RFB_DIRECT
+#define RFB_DIRECT                  0
 #endif
+
+#ifndef RFB_RX_PIN
+#define RFB_RX_PIN                  GPIO_NONE
+#endif
+
+#ifndef RFB_TX_PIN
+#define RFB_TX_PIN                  GPIO_NONE
+#endif
+
 
 // -----------------------------------------------------------------------------
 // IR Bridge
@@ -1402,29 +1480,6 @@
 
 #ifndef IR_BUTTON_COUNT
 #define IR_BUTTON_COUNT 0
-#endif
-
-//--------------------------------------------------------------------------------
-// Custom RF module
-// Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
-// Enable support by passing RF_SUPPORT=1 build flag
-// This module is not compatible with RFBRIDGE or SONOFF RF
-//--------------------------------------------------------------------------------
-
-#ifndef RF_SUPPORT
-#define RF_SUPPORT                  0
-#endif
-
-#ifndef RF_PIN
-#define RF_PIN                      14
-#endif
-
-#ifndef RF_DEBOUNCE
-#define RF_DEBOUNCE                 500
-#endif
-
-#ifndef RF_LEARN_TIMEOUT
-#define RF_LEARN_TIMEOUT            60000
 #endif
 
 //--------------------------------------------------------------------------------
