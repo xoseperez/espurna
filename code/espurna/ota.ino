@@ -39,11 +39,12 @@ WiFiClient _ota_client;
 #if ASYNC_TCP_SSL_ENABLED
     #ifdef USING_AXTLS
         #include "WiFiClientSecureAxTLS.h"
-        axTLS::WiFiClientSecure _ota_client_secure;
+        using namespace axTLS;
     #else
         #include "WiFiClientSecure.h"
-        BearSSL::WiFiClientSecure _ota_client_secure;
+        using namespace BearSSL;
     #endif
+    WiFiClientSecure _ota_client_secure;
 #endif
 
 char * _ota_host;
@@ -76,22 +77,24 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     #if ASYNC_TCP_SSL_ENABLED
         if (port == 443) {
             WiFiClientSecure _ota_client = _ota_client_secure;
-            connected = _ota_client.connect(host, port);
-            if (connected) {
-                char fp[60] = {0};
-                if (sslFingerPrintChar(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp)) {
-                    #ifdef USING_AXTLS
+            char fp[60] = {0};
+
+            if (sslFingerPrintChar(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp)) {
+                #ifdef USING_AXTLS
+                connected = _ota_client.connect(host, port);
+                if (connected) {
                     if (!_ota_client.verify(fp, host)) {
-                    #else
-                    if (!_ota_client.setFingerprint(fp)) {
-                    #endif
                         DEBUG_MSG_P(PSTR("[OTA] Error: fingerprint doesn't match\n"));
                         connected = false;
                     }
-                } else {
-                    DEBUG_MSG_P(PSTR("[OTA] Error: wrong fingerprint\n"));
-                    connected = false;
                 }
+                #else
+                _ota_client.setFingerprint(fp);
+                connected = _ota_client.connect(host, port);
+                #endif
+            } else {
+                DEBUG_MSG_P(PSTR("[OTA] Error: wrong fingerprint\n"));
+                connected = false;
             }
         } else {
             connected = _ota_client.connect(host, port);
