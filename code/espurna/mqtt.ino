@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <vector>
+#include <utility>
 #include <Ticker.h>
 
 #if MQTT_USE_ASYNC // Using AsyncMqttClient
@@ -210,7 +211,7 @@ void _mqttPlaceholders(String& text) {
 template<typename T>
 void _mqttApplySetting(T& current, T& updated) {
     if (current != updated) {
-        current = updated;
+        current = std::move(updated);
         mqttDisconnect();
     }
 }
