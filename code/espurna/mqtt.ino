@@ -380,6 +380,7 @@ void _mqttOnConnect() {
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
     _mqtt_last_connection = millis();
+    _mqtt_connecting = false;
 
     // Clean subscriptions
     mqttUnsubscribeRaw("#");
