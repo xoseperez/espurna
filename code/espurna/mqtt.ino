@@ -267,6 +267,25 @@ void _mqttBackwards() {
     }
 }
 
+void _mqttInfo() {
+    DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
+        MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
+        ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
+        MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
+    );
+    DEBUG_MSG_P(PSTR("[MQTT] Client %s, %s\n"),
+        _mqtt_enabled ? "ENABLED" : "DISABLED",
+        _mqtt.connected() ? "CONNECTED" : "DISCONNECTED"
+    );
+    DEBUG_MSG_P(PSTR("[MQTT] Retry %s (Now %u, Last %u, Delay %u, Step %u)\n"),
+        _mqtt_connecting ? "CONNECTING" : "WAITING",
+        millis(),
+        _mqtt_last_connection,
+        _mqtt_reconnect_delay,
+        MQTT_RECONNECT_DELAY_STEP
+    );
+}
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
@@ -311,6 +330,11 @@ void _mqttInitCommands() {
     terminalRegisterCommand(F("MQTT.RESET"), [](Embedis* e) {
         _mqttConfigure();
         mqttDisconnect();
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("MQTT.INFO"), [](Embedis* e) {
+        _mqttInfo();
         terminalOK();
     });
 
@@ -729,12 +753,7 @@ void mqttReset() {
 void mqttSetup() {
 
     _mqttBackwards();
-
-    DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
-        MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
-        ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
-        MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
-    );
+    _mqttInfo();
 
     #if MQTT_USE_ASYNC
 
