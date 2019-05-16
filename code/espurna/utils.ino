@@ -7,9 +7,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <Ticker.h>
-Ticker _defer_reset;
-
-uint8_t _reset_reason = 0;
 
 String getIdentifier() {
     char buffer[20];
@@ -334,6 +331,15 @@ void heartbeat() {
 
         if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
+
+        if ((hb_cfg & Heartbeat::Vcc) && (ADC_MODE_VALUE == ADC_VCC))
+            idbSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
+                    
+        if (hb_cfg & Heartbeat::Loadavg)
+            idbSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
+
+        if (hb_cfg & Heartbeat::Ssid)
+            idbSend(MQTT_TOPIC_SSID, WiFi.SSID().c_str());
     #endif
 
 }
@@ -473,7 +479,7 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[MAIN] Boot version: %d\n"), ESP.getBootVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Boot mode: %d\n"), ESP.getBootMode());
-    unsigned char reason = resetReason();
+    unsigned char reason = customResetReason();
     if (reason > 0) {
         char buffer[32];
         strcpy_P(buffer, custom_reset_string[reason-1]);
@@ -571,34 +577,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // Reset
 // -----------------------------------------------------------------------------
 
-unsigned char resetReason() {
-    static unsigned char status = 255;
-    if (status == 255) {
-        status = EEPROMr.read(EEPROM_CUSTOM_RESET);
-        if (status > 0) resetReason(0);
-        if (status > CUSTOM_RESET_MAX) status = 0;
-    }
-    return status;
-}
-
-void resetReason(unsigned char reason) {
-    _reset_reason = reason;
-    EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
-    eepromCommit();
-}
-
-void reset() {
-    ESP.restart();
-}
-
-void deferredReset(unsigned long delay, unsigned char reason) {
-    _defer_reset.once_ms(delay, resetReason, reason);
-}
-
-bool checkNeedsReset() {
-    return _reset_reason > 0;
-}
-
 // Use fixed method for Core 2.3.0, because it erases only 2 out of 4 SDK-reserved sectors
 // Fixed since 2.4.0, see: esp8266/core/esp8266/Esp.cpp: ESP::eraseConfig()
 bool eraseSDKConfig() {
@@ -618,6 +596,8 @@ bool eraseSDKConfig() {
     #endif
 }
 
+// -----------------------------------------------------------------------------
+// Helper functions
 // -----------------------------------------------------------------------------
 
 char * ltrim(char * s) {
