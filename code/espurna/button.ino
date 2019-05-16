@@ -107,19 +107,19 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
     if (BUTTON_MODE_TOGGLE == action) {
         if (_buttons[id].relayID > 0) {
-            relayToggle(_buttons[id].relayID - 1);
+            relayToggle(_buttons[id].relayID);
         }
     }
 
     if (BUTTON_MODE_ON == action) {
         if (_buttons[id].relayID > 0) {
-            relayStatus(_buttons[id].relayID - 1, true);
+            relayStatus(_buttons[id].relayID, true);
         }
     }
 
     if (BUTTON_MODE_OFF == action) {
         if (_buttons[id].relayID > 0) {
-            relayStatus(_buttons[id].relayID - 1, false);
+            relayStatus(_buttons[id].relayID, false);
         }
     }
     
