@@ -791,15 +791,12 @@
 #define MQTT_SKIP_TIME              1000            // Skip messages for 1 second anter connection
 #endif
 
+#ifndef MQTT_USE_JSON
+#define MQTT_USE_JSON               0               // Group messages in a JSON body (off by default)
+#endif
 
-#if THERMOSTAT_SUPPORT == 1
-    #ifndef MQTT_USE_JSON
-    #define MQTT_USE_JSON               1           // Group messages in a JSON body
-    #endif
-#else
-    #ifndef MQTT_USE_JSON
-    #define MQTT_USE_JSON               0           // Don't group messages in a JSON body (default)
-    #endif
+#ifndef MQTT_TOPIC_JSON
+#define MQTT_TOPIC_JSON             "{root}/data"   // Default MQTT JSON topic (does not depend on MQTT_TOPIC, unless {root} is specified)
 #endif
 
 #ifndef MQTT_USE_JSON_DELAY
@@ -833,7 +830,6 @@
 #endif
 
 // These particles will be concatenated to the MQTT_TOPIC base to form the actual topic
-#define MQTT_TOPIC_JSON             "data"
 #define MQTT_TOPIC_ACTION           "action"
 #define MQTT_TOPIC_RELAY            "relay"
 #define MQTT_TOPIC_LED              "led"
