@@ -19,6 +19,7 @@ const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
 const char* NAME_TEMP_RANGE_MIN         = "tempRangeMin";
 const char* NAME_TEMP_RANGE_MAX         = "tempRangeMax";
 const char* NAME_REMOTE_SENSOR_NAME     = "remoteSensorName";
+const char* NAME_REMOTE_SENSOR_TOPIC    = "remoteSensorTopic";
 const char* NAME_REMOTE_TEMP_MAX_WAIT   = "remoteTempMaxWait";
 const char* NAME_ALONE_ON_TIME          = "aloneOnTime";
 const char* NAME_ALONE_OFF_TIME         = "aloneOffTime";
@@ -85,7 +86,7 @@ enum temperature_source_t {temp_none, temp_local, temp_remote};
 struct thermostat_t {
   unsigned long last_update = 0;
   unsigned long last_switch = 0;
-  String remote_sensor_name;
+  String topic;
   unsigned int temperature_source = temp_none;
 };
 thermostat_t _thermostat;
@@ -259,8 +260,8 @@ void commonSetup() {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d\n"), _temp_range.max);
 
-  _thermostat.remote_sensor_name = getSetting(NAME_REMOTE_SENSOR_NAME);
-  thermostat_remote_sensor_topic = _thermostat.remote_sensor_name + String("/") + String(MQTT_TOPIC_JSON);
+  _thermostat.topic = getSetting(NAME_REMOTE_SENSOR_TOPIC);
+  thermostat_remote_sensor_topic = _thermostat.topic;
 
   _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT).toInt()   * MILLIS_IN_SEC;
   _thermostat_alone_on_time   = getSetting(NAME_ALONE_ON_TIME,  THERMOSTAT_ALONE_ON_TIME).toInt()  * MILLIS_IN_MIN;
@@ -304,7 +305,7 @@ void _thermostatWebSocketOnSend(JsonObject& root) {
   root["thermostatVisible"] = 1;
   root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
   root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
-  root[NAME_REMOTE_SENSOR_NAME] = _thermostat.remote_sensor_name;
+  root[NAME_REMOTE_SENSOR_TOPIC] = _thermostat.topic;
   root[NAME_REMOTE_TEMP_MAX_WAIT]    = _thermostat_remote_temp_max_wait / MILLIS_IN_SEC;
   root[NAME_MAX_ON_TIME]     = _thermostat_max_on_time    / MILLIS_IN_MIN;
   root[NAME_MIN_OFF_TIME]    = _thermostat_min_off_time   / MILLIS_IN_MIN;
@@ -349,7 +350,17 @@ void _thermostatWebSocketOnAction(uint32_t client_id, const char * action, JsonO
 #endif
 
 //------------------------------------------------------------------------------
+void _thermostatBackwards() {
+  if (hasSetting(NAME_REMOTE_SENSOR_NAME)) {
+    String topic = getSetting(NAME_REMOTE_SENSOR_NAME) + String("/data");
+    setSetting(NAME_REMOTE_SENSOR_TOPIC, topic);
+    delSetting(NAME_REMOTE_SENSOR_NAME);
+  }
+}
+
+//------------------------------------------------------------------------------
 void thermostatSetup() {
+  _thermostatBackwards();
   thermostatConfigure();
 
   #if MQTT_SUPPORT
