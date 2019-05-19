@@ -86,7 +86,6 @@ enum temperature_source_t {temp_none, temp_local, temp_remote};
 struct thermostat_t {
   unsigned long last_update = 0;
   unsigned long last_switch = 0;
-  String topic;
   unsigned int temperature_source = temp_none;
 };
 thermostat_t _thermostat;
@@ -161,7 +160,9 @@ void updateRemoteTemp(bool remote_temp_actual) {
 void thermostatMQTTCallback(unsigned int type, const char * topic, const char * payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
-      mqttSubscribeRaw(thermostat_remote_sensor_topic.c_str());
+      if (thermostat_remote_sensor_topic.length()) {
+        mqttSubscribeRaw(thermostat_remote_sensor_topic.c_str());
+      }
       mqttSubscribe(MQTT_TOPIC_HOLD_TEMP);
       _temp_range.ask_interval = ASK_TEMP_RANGE_INTERVAL_INITIAL;
       _temp_range.ask_time = millis();
@@ -260,8 +261,7 @@ void commonSetup() {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.max = %d\n"), _temp_range.max);
 
-  _thermostat.topic = getSetting(NAME_REMOTE_SENSOR_TOPIC);
-  thermostat_remote_sensor_topic = _thermostat.topic;
+  thermostat_remote_sensor_topic = getSetting(NAME_REMOTE_SENSOR_TOPIC);
 
   _thermostat_remote_temp_max_wait = getSetting(NAME_REMOTE_TEMP_MAX_WAIT, THERMOSTAT_REMOTE_TEMP_MAX_WAIT).toInt()   * MILLIS_IN_SEC;
   _thermostat_alone_on_time   = getSetting(NAME_ALONE_ON_TIME,  THERMOSTAT_ALONE_ON_TIME).toInt()  * MILLIS_IN_MIN;
