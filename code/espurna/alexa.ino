@@ -84,9 +84,11 @@ void alexaSetup() {
     alexa.createServer(!WEB_SUPPORT);
     alexa.setPort(80);
 
-    // Uses hostname as base name for all devices
-    // TODO: use custom switch name when available
-    String hostname = getSetting("hostname");
+    // Use custom alexa hostname if defined, device hostname otherwise
+    String hostname = getSetting("alexa_name", ALEXA_HOSTNAME);
+    if (hostname.length() == 0) {
+        hostname = getSetting("hostname");
+    }
 
     // Lights
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
