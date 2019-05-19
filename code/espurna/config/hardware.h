@@ -702,11 +702,19 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
-    #define RF_SUPPORT          1
+    // RFB Direct hack thanks to @wildwiz
+    // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+    #ifndef RFB_DIRECT
+    #define RFB_DIRECT          0
+    #endif
 
-    // Only used when RFB_DIRECT=1
-    #define RFB_RX_PIN          4
-    #define RFB_TX_PIN          5
+    #ifndef RFB_RX_PIN
+    #define RFB_RX_PIN          4   // GPIO for RX when RFB_DIRECT
+    #endif
+
+    #ifndef RFB_TX_PIN
+    #define RFB_TX_PIN          5   // GPIO for TX when RFB_DIRECT
+    #endif
 
     // When using un-modified harware, ESPurna communicates with the secondary
     // MCU EFM8BB1 via UART at 19200 bps so we need to change the speed of
@@ -1168,6 +1176,26 @@
 // -----------------------------------------------------------------------------
 // LED Controller
 // -----------------------------------------------------------------------------
+#elif defined(MAGICHOME_LED_CONTROLLER_RGB)
+  // Info
+  #define MANUFACTURER        "MAGICHOME"
+  #define DEVICE              "LED_CONTROLLER_RGB"
+  #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+  #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+  #define DUMMY_RELAY_COUNT   1
+
+  // LEDs
+  #define LED1_PIN            2
+  #define LED1_PIN_INVERSE    1
+
+  // Light
+  #define LIGHT_CHANNELS      3
+  #define LIGHT_CH1_PIN       5      // RED
+  #define LIGHT_CH2_PIN       12       // GREEN
+  #define LIGHT_CH3_PIN       13      // BLUE
+  #define LIGHT_CH1_INVERSE   0
+  #define LIGHT_CH2_INVERSE   0
+  #define LIGHT_CH3_INVERSE   0
 
 #elif defined(MAGICHOME_LED_CONTROLLER)
 
@@ -1286,8 +1314,7 @@
 
     // RF
     #define RF_SUPPORT          1
-    #define RFB_DIRECT          1
-    #define RFB_RX_PIN          4
+    #define RF_PIN              4
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
@@ -2423,9 +2450,10 @@
     #endif
     #define DALLAS_PIN          2
 
+    #ifndef RF_SUPPORT
     #define RF_SUPPORT          1
-    #define RFB_DIRECT          1
-    #define RFB_RX_PIN          14
+    #endif
+    #define RF_PIN              14
 
     #ifndef DIGITAL_SUPPORT
     #define DIGITAL_SUPPORT      1
@@ -3277,9 +3305,9 @@
 
     // Relays
     #define RELAY1_PIN          15
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL 
- 
-    // Light RGBW 
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Light RGBW
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
@@ -3292,8 +3320,8 @@
     #define LIGHT_CH1_INVERSE   0
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
-    #define LIGHT_CH4_INVERSE   0	
-    
+    #define LIGHT_CH4_INVERSE   0
+
 // ----------------------------------------------------------------------------------------
 // Smart life Mini Smart Socket is similar Homecube 16A but some GPIOs differ
 // https://www.ebay.de/itm/Smart-Steckdose-WIFI-WLAN-Amazon-Alexa-Fernbedienung-Home-Socket-Zeitschaltuh-DE/123352026749?hash=item1cb85a8e7d:g:IasAAOSwk6dbj390
@@ -3501,7 +3529,7 @@
     #define LED1_PIN            4  // 4 blue led
     #define LED1_MODE           LED_MODE_WIFI
     #define LED1_PIN_INVERSE    1
-    
+
     #define LED2_PIN            5  // 5 red led
     #define LED2_MODE           LED_MODE_RELAY
     #define LED2_PIN_INVERSE    1
@@ -3666,11 +3694,7 @@
     #define NOFUSS_SUPPORT      1
     #define UART_MQTT_SUPPORT   1
     #define INFLUXDB_SUPPORT    1
-    #define IR_SUPPORT          1
-    #define RF_SUPPORT          1
-
-    #define RFB_DIRECT          1
-    #define RFB_RX_PIN          4
+    #define IR_SUPPORT    1
 
 #elif defined(TRAVIS03)
 
