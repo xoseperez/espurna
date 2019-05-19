@@ -58,12 +58,15 @@ void _nofussConfigure() {
         snprintf_P(buffer, sizeof(buffer), PSTR("%s-%s"), APP_NAME, DEVICE);
 
         NoFUSSClient.setServer(nofussServer);
-        NoFUSSClient.setDevice(buffer);
-        NoFUSSClient.setVersion(APP_VERSION);
-
         DEBUG_MSG_P(PSTR("[NOFUSS] Server : %s\n"), nofussServer.c_str());
+
+        NoFUSSClient.setDevice(buffer);
         DEBUG_MSG_P(PSTR("[NOFUSS] Dervice: %s\n"), buffer);
-        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), APP_VERSION);
+
+        snprintf_P(buffer, sizeof(buffer), PSTR("%s/%s"), APP_VERSION, buildTime().c_str());
+        NoFUSSClient.setVersion(buffer);
+        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), buffer);
+
         DEBUG_MSG_P(PSTR("[NOFUSS] Enabled\n"));
 
     }
