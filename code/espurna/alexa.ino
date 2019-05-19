@@ -30,6 +30,7 @@ bool _alexaWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _alexaWebSocketOnSend(JsonObject& root) {
     root["alexaVisible"] = 1;
     root["alexaEnabled"] = alexaEnabled();
+    root["alexaName"] = getSetting("alexaName");
 }
 
 void _alexaConfigure() {
@@ -85,7 +86,7 @@ void alexaSetup() {
     alexa.setPort(80);
 
     // Use custom alexa hostname if defined, device hostname otherwise
-    String hostname = getSetting("alexa_name", ALEXA_HOSTNAME);
+    String hostname = getSetting("alexaName", ALEXA_HOSTNAME);
     if (hostname.length() == 0) {
         hostname = getSetting("hostname");
     }
