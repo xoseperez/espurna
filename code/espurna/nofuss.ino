@@ -54,7 +54,7 @@ void _nofussConfigure() {
 
     } else {
 
-        char buffer[20];
+        char buffer[32];
         snprintf_P(buffer, sizeof(buffer), PSTR("%s-%s"), APP_NAME, DEVICE);
 
         NoFUSSClient.setServer(nofussServer);
