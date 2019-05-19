@@ -7,6 +7,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <Ticker.h>
+#include "libs/HeapStats.h"
 
 String getIdentifier() {
     char buffer[20];
@@ -220,7 +221,7 @@ void heartbeat() {
 
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
-        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+        infoHeapStats();
         #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
@@ -471,7 +472,7 @@ void info() {
     // -------------------------------------------------------------------------
 
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
-    infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+    infoHeapStats();
     infoMemory("Stack", 4096, getFreeStack());
     DEBUG_MSG_P(PSTR("\n"));
 
