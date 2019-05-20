@@ -56,7 +56,7 @@ void _haSendMagnitudes(const JsonObject& deviceConfig) {
             _haSendMagnitude(i, config);
             config["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
             config["device"] = deviceConfig;
-
+            
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -251,7 +251,7 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
 void _haGetDeviceConfig(JsonObject& config) {
     String identifier = getIdentifier();
-
+    
     config.createNestedArray("identifiers").add(identifier);
     config["name"] = getSetting("desc", getSetting("hostname"));
     config["manufacturer"] = String(MANUFACTURER);
@@ -279,7 +279,7 @@ void _haSend() {
     #if SENSOR_SUPPORT
         _haSendMagnitudes(deviceConfig);
     #endif
-
+    
     jsonBuffer.clear();
     _haSendFlag = false;
 

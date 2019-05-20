@@ -373,7 +373,7 @@ void _toHSV(char * hsv, size_t len) {
 }
 
 void _toLong(char * color, size_t len, bool target) {
-
+    
     if (!_light_has_color) return;
 
     snprintf_P(color, len, PSTR("%d,%d,%d"),
