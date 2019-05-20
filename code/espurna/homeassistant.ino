@@ -56,7 +56,7 @@ void _haSendMagnitudes(const JsonObject& deviceConfig) {
             _haSendMagnitude(i, config);
             config["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
             config["device"] = deviceConfig;
-            
+
             config.printTo(output);
             jsonBuffer.clear();
         }
@@ -98,9 +98,10 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
         if (i == 0) {
 
+            config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
+            config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
+
             if (lightHasColor()) {
-                config["brightness_state_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, false);
-                config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
                 config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
                 config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
                 config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
@@ -250,7 +251,7 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
 void _haGetDeviceConfig(JsonObject& config) {
     String identifier = getIdentifier();
-    
+
     config.createNestedArray("identifiers").add(identifier);
     config["name"] = getSetting("desc", getSetting("hostname"));
     config["manufacturer"] = String(MANUFACTURER);
@@ -278,7 +279,7 @@ void _haSend() {
     #if SENSOR_SUPPORT
         _haSendMagnitudes(deviceConfig);
     #endif
-    
+
     jsonBuffer.clear();
     _haSendFlag = false;
 
