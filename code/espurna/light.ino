@@ -88,6 +88,11 @@ void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blu
     _light_channel[2].inputValue = constrain(blue, 0, LIGHT_MAX_VALUE);;
 }
 
+void _setCCTInputValue(unsigned char warm, unsigned char cold) {
+    _light_channel[0].inputValue = constrain(warm, 0, LIGHT_MAX_VALUE);
+    _light_channel[1].inputValue = constrain(cold, 0, LIGHT_MAX_VALUE);
+}
+
 void _generateBrightness() {
 
     double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
@@ -278,7 +283,21 @@ void _fromHSV(const char * hsv) {
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin) {
 
-    if (!_light_has_color) return;
+    if (!_light_has_color) {
+
+      if(!_light_use_cct) return;
+      
+      _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
+      
+      // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
+      double factor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
+      unsigned char warm = round(factor * LIGHT_MAX_VALUE);
+      unsigned char cold = round(((double) 1.0 - factor) * LIGHT_MAX_VALUE);
+
+      _setCCTInputValue(warm, cold);
+      
+      return;
+    }
 
     _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
 
@@ -541,11 +560,14 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
         if (_light_has_color) {
             mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
-            mqttSubscribe(MQTT_TOPIC_MIRED);
-            mqttSubscribe(MQTT_TOPIC_KELVIN);
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
             mqttSubscribe(MQTT_TOPIC_TRANSITION);
+        }
+        
+        if (_light_has_color || _light_use_cct) {
+            mqttSubscribe(MQTT_TOPIC_MIRED);
+            mqttSubscribe(MQTT_TOPIC_KELVIN);
         }
 
         // Group color
@@ -868,15 +890,15 @@ bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
 
 void _lightWebSocketStatus(JsonObject& root) {
     if (_light_has_color) {
-        if (_light_use_cct) {
-            root["useCCT"] = _light_use_cct;
-            root["mireds"] = _light_mireds;
-        }
         if (getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1) {
             root["rgb"] = lightColor(true);
         } else {
             root["hsv"] = lightColor(false);
         }
+    }
+    if (_light_use_cct) {
+        root["useCCT"] = _light_use_cct;
+        root["mireds"] = _light_mireds;
     }
     JsonArray& channels = root.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channel.size(); id++) {
@@ -912,13 +934,15 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
                 lightUpdate(true, true);
             }
         }
-        if (_light_use_cct) {
-          if (strcmp(action, "mireds") == 0) {
-              _fromMireds(data["mireds"]);
-              lightUpdate(true, true);
-          }
-        }
     }
+    
+    if (_light_use_cct) {
+      if (strcmp(action, "mireds") == 0) {
+          _fromMireds(data["mireds"]);
+          lightUpdate(true, true);
+      }
+    }
+
 
     if (strcmp(action, "channel") == 0) {
         if (data.containsKey("id") && data.containsKey("value")) {
@@ -1134,13 +1158,13 @@ void _lightConfigure() {
     }
 
     _light_use_white = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
-    if (_light_use_white && (_light_channel.size() < 4)) {
+    if (_light_use_white && (_light_channel.size() < 4) && (_light_channel.size() != 2)) {
         _light_use_white = false;
         setSetting("useWhite", _light_use_white);
     }
 
     _light_use_cct = getSetting("useCCT", LIGHT_USE_CCT).toInt() == 1;
-    if (_light_use_cct && ((_light_channel.size() < 5) || !_light_use_white)) {
+    if (_light_use_cct && (((_light_channel.size() < 5) && (_light_channel.size() != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);
     }
