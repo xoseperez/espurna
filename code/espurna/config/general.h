@@ -531,7 +531,7 @@
 // there are no special requirements. Any static web server will do (NGinx, Apache, Lighttpd,...).
 // The only requirement is that the resource must be available under this domain.
 #ifndef WEB_REMOTE_DOMAIN
-#define WEB_REMOTE_DOMAIN           "http://espurna.io"
+#define WEB_REMOTE_DOMAIN           "*"
 #endif
 
 // -----------------------------------------------------------------------------
