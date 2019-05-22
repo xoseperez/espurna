@@ -721,6 +721,10 @@ bool lightHasColor() {
     return _light_has_color;
 }
 
+bool lightUseCCT() {
+    return _light_use_cct;
+}
+
 void _lightComms(unsigned char mask) {
 
     // Report color & brightness to MQTT broker

@@ -103,6 +103,8 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
                 config["brightness_command_topic"] = mqttTopic(MQTT_TOPIC_BRIGHTNESS, true);
                 config["rgb_state_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, false);
                 config["rgb_command_topic"] = mqttTopic(MQTT_TOPIC_COLOR_RGB, true);
+            }
+            if (lightUseCCT()) {
                 config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
             }
 
