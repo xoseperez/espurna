@@ -50,16 +50,7 @@ void _domoticzStatus(unsigned char id, bool status) {
 
 void _domoticzLight(unsigned int idx, const JsonObject& root) {
 
-    if (!lightHasColor())  {
-       if (!lightUseColor()) return;
-       lightChannel(0, color["ww"]);
-       lightChannel(1, color["cw"]);
-       // domoticz uses 100 as maximum value while we're using LIGHT_MAX_BRIGHTNESS
-       unsigned int brightness = (root["Level"].as<uint8_t>() / 100.0) * LIGHT_MAX_BRIGHTNESS;
-       lightBrightness(brightness);
-       lightUpdate(true, mqttForward());
-       return;
-    }
+    if (!lightHasColor()) return;
 
     JsonObject& color = root["Color"];
     if (!color.success()) return;
