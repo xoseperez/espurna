@@ -30,13 +30,7 @@ void _otaLoop() {
 
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
-#ifndef ARDUINO_ESP8266_RELEASE_2_5_0
-#define USING_AXTLS // do not use BearSSL
-#endif
-
-WiFiClient _ota_client;
-
-#if ASYNC_TCP_SSL_ENABLED
+#if SSL_ENABLED
     #ifdef USING_AXTLS
         #include "WiFiClientSecureAxTLS.h"
         using namespace axTLS;
@@ -44,13 +38,7 @@ WiFiClient _ota_client;
         #include "WiFiClientSecure.h"
         using namespace BearSSL;
     #endif
-    WiFiClientSecure _ota_client_secure;
 #endif
-
-char * _ota_host;
-char * _ota_url;
-unsigned int _ota_port = 80;
-unsigned long _ota_size = 0;
 
 const char OTA_REQUEST_TEMPLATE[] PROGMEM =
     "GET %s HTTP/1.1\r\n"
@@ -60,50 +48,54 @@ const char OTA_REQUEST_TEMPLATE[] PROGMEM =
     "Content-Type: application/x-www-form-urlencoded\r\n"
     "Content-Length: 0\r\n\r\n";
 
-
 void _otaFrom(const char * host, unsigned int port, const char * url) {
+    unsigned long _ota_size = 0;
+    bool _ota_connected;
+    WiFiClient _ota_client;
 
-    if (_ota_host) free(_ota_host);
-    if (_ota_url) free(_ota_url);
-    _ota_host = strdup(host);
-    _ota_url = strdup(url);
-    _ota_port = port;
-    _ota_size = 0;
+    DEBUG_MSG_P(PSTR("[OTA] Connecting to %s:%u to download %s\n"), host, port, url);
 
-    bool connected;
-
-    DEBUG_MSG_P(PSTR("[OTA] Connecting to %s:%u\n"), host, port);
-
-    #if ASYNC_TCP_SSL_ENABLED
+    #if SSL_ENABLED
         if (port == 443) {
-            WiFiClientSecure _ota_client = _ota_client_secure;
+            WiFiClientSecure _ota_client;
+
             char fp[60] = {0};
 
-            if (sslFingerPrintChar(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp)) {
+            if (getSetting("otafp", OTA_GITHUB_FP).equals("")) {
+                DEBUG_MSG_P(PSTR("[OTA] Using no SSL fingerprint\n"));
+
+                #ifndef USING_AXTLS
+                _ota_client.setInsecure();
+                #endif
+
+                _ota_connected = _ota_client.connect(host, port);
+            } else if (sslFingerPrintChar(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp)) {
+                DEBUG_MSG_P(PSTR("[OTA] Using fingerprint: %s\n"), fp);
+
                 #ifdef USING_AXTLS
-                connected = _ota_client.connect(host, port);
-                if (connected) {
+                _ota_connected = _ota_client.connect(host, port);
+                if (_ota_connected) {
                     if (!_ota_client.verify(fp, host)) {
                         DEBUG_MSG_P(PSTR("[OTA] Error: fingerprint doesn't match\n"));
-                        connected = false;
+                        _ota_connected = false;
                     }
                 }
                 #else
                 _ota_client.setFingerprint(fp);
-                connected = _ota_client.connect(host, port);
+                _ota_connected = _ota_client.connect(host, port);
                 #endif
             } else {
                 DEBUG_MSG_P(PSTR("[OTA] Error: wrong fingerprint\n"));
-                connected = false;
+                _ota_connected = false;
             }
-        } else {
-            connected = _ota_client.connect(host, port);
+        } else { // non-SSL connections
+            _ota_connected = _ota_client.connect(host, port);
         }
-    #else
-        connected = _ota_client.connect(host, port);
-    #endif
+    #else // not SSL_ENABLED
+        _ota_connected = _ota_client.connect(host, port);
+    #endif 
 
-    if (!connected) {
+    if (!_ota_connected) {
         DEBUG_MSG_P(PSTR("[OTA] Connection failed\n"));
         return;
     }
@@ -111,11 +103,10 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
     eepromRotate(false);
 
-    DEBUG_MSG_P(PSTR("[OTA] Downloading %s\n"), _ota_url);
-    char buffer[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(_ota_url) + strlen(_ota_host)];
-    snprintf_P(buffer, sizeof(buffer), OTA_REQUEST_TEMPLATE, _ota_url, _ota_host);
+    char _headers[strlen_P(OTA_REQUEST_TEMPLATE) + strlen(url) + strlen(host)];
+    snprintf_P(_headers, sizeof(_headers), OTA_REQUEST_TEMPLATE, url, host);
 
-    _ota_client.print(buffer);
+    _ota_client.print(_headers);
 
     // Skip the response headers
     char c;
@@ -185,10 +176,6 @@ void _otaFrom(const char * host, unsigned int port, const char * url) {
     DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
 
     _ota_client.stop();
-    free(_ota_host);
-    _ota_host = NULL;
-    free(_ota_url);
-    _ota_url = NULL;
 }
 
 void _otaFrom(String url) {
@@ -199,7 +186,7 @@ void _otaFrom(String url) {
 
     // Port from protocol
     unsigned int port = 80;
-    #if ASYNC_TCP_SSL_ENABLED
+    #if SSL_ENABLED
     if (url.startsWith("https://")) port = 443;
     #endif
     url = url.substring(url.indexOf("/") + 2);

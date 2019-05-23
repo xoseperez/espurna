@@ -5,6 +5,10 @@
 // Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
 
+#if !defined(ARDUINO_ESP8266_RELEASE_2_5_0) && !defined(ARDUINO_ESP8266_RELEASE_2_5_1) && !defined(ARDUINO_ESP8266_RELEASE_2_5_2)
+#define USING_AXTLS // do not use BearSSL on core < 2.5.0
+#endif
+
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
 #define TELNET_SUPPORT              1
