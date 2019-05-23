@@ -216,6 +216,23 @@ void _mqttApplySetting(T& current, T& updated) {
     }
 }
 
+template<typename T>
+void _mqttApplySetting(T& current, const T& updated) {
+    if (current != updated) {
+        current = updated;
+        mqttDisconnect();
+    }
+}
+
+template<typename T>
+void _mqttApplyTopic(T& current, const char* magnitude) {
+    String updated = mqttTopic(magnitude, false);
+    if (current != updated) {
+        mqttFlush();
+        current = std::move(updated);
+    }
+}
+
 void _mqttConfigure() {
 
     // Enable only when server is set
@@ -244,6 +261,8 @@ void _mqttConfigure() {
 
         if (topic.indexOf("#") == -1) topic.concat("/#");
         _mqttApplySetting(_mqtt_topic, topic);
+
+        _mqttApplyTopic(_mqtt_will, MQTT_TOPIC_STATUS);
     }
 
     // Getter and setter
@@ -281,18 +300,10 @@ void _mqttConfigure() {
 
     // MQTT JSON
     {
-        // No need to reconnect. Immediatly use new topic
-        String json_topic = mqttTopic(MQTT_TOPIC_JSON, false);
-        if (!json_topic.equals(_mqtt_topic_json)) {
-            mqttFlush();
-            _mqtt_topic_json = json_topic;
-        }
-
-        bool json = getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1;
-        _mqttApplySetting(_mqtt_use_json, json);
+        _mqttApplySetting(_mqtt_use_json, getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
+        _mqttApplyTopic(_mqtt_topic_json, MQTT_TOPIC_JSON);
     }
 
-    _mqtt_will = mqttTopic(MQTT_TOPIC_STATUS, false);
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
 }
@@ -529,9 +540,6 @@ void mqttSend(const char * topic, const char * message, bool force, bool retain)
     // Equeue message
     if (useJson) {
 
-        // Set default queue topic
-        mqttQueueTopic(MQTT_TOPIC_JSON);
-
         // Enqueue new message
         mqttEnqueue(topic, message);
 
@@ -644,14 +652,6 @@ void mqttFlush() {
     }
     _mqtt_queue.clear();
 
-}
-
-void mqttQueueTopic(const char * topic) {
-    String t = mqttTopic(topic, false);
-    if (!t.equals(_mqtt_topic_json)) {
-        mqttFlush();
-        _mqtt_topic_json = t;
-    }
 }
 
 int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent) {
