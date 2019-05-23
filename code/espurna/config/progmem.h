@@ -193,6 +193,9 @@ PROGMEM const char espurna_sensors[] =
     #if HLW8012_SUPPORT
         "HLW8012 "
     #endif
+    #if LDR_SUPPORT
+        "LDR "
+    #endif
     #if MHZ19_SUPPORT
         "MHZ19 "
     #endif

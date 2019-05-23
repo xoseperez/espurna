@@ -191,6 +191,7 @@
 //#define GEIGER_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
+//#define LDR_SUPPORT            1
 //#define MAX6675_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define MICS2710_SUPPORT       1
