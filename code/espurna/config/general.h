@@ -843,6 +843,7 @@
 #define MQTT_TOPIC_VERSION          "version"
 #define MQTT_TOPIC_UPTIME           "uptime"
 #define MQTT_TOPIC_DATETIME         "datetime"
+#define MQTT_TOPIC_TIMESTAMP        "timestamp"
 #define MQTT_TOPIC_FREEHEAP         "freeheap"
 #define MQTT_TOPIC_VCC              "vcc"
 #define MQTT_TOPIC_STATUS           "status"
@@ -1165,6 +1166,18 @@
 
 #ifndef SCHEDULER_MAX_SCHEDULES
 #define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
+#endif
+
+// -----------------------------------------------------------------------------
+// RPN RULES
+// -----------------------------------------------------------------------------
+
+#ifndef RPN_RULES_SUPPORT
+#define RPN_RULES_SUPPORT           1           // Enable RPN Rules (?Kb)
+#endif
+
+#ifndef RPN_BUFFER_DELAY
+#define RPN_BUFFER_DELAY            100         // Execute rules after 100ms without messages
 #endif
 
 // -----------------------------------------------------------------------------

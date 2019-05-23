@@ -135,6 +135,7 @@ void inline _ntpBroker() {
     if (ntpSynced() && (minute() != last_minute)) {
         last_minute = minute();
         brokerPublish(BROKER_MSG_TYPE_DATETIME, MQTT_TOPIC_DATETIME, ntpDateTime().c_str());
+        brokerPublish(BROKER_MSG_TYPE_DATETIME, MQTT_TOPIC_TIMESTAMP, String(now()).c_str());
     }
 }
 
