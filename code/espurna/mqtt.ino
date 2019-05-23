@@ -13,6 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <vector>
+#include <utility>
 #include <Ticker.h>
 
 #if MQTT_USE_ASYNC // Using AsyncMqttClient
@@ -215,8 +216,10 @@ void _mqttConnect() {
 }
 
 void _mqttPlaceholders(String *text) {
-    
-    text->replace("{hostname}", getSetting("hostname"));
+
+    text->replace("{root}", getSetting("mqttTopic", MQTT_TOPIC));
+
+    text->replace("{hostname}", getSetting("hostname", getIdentifier()));
     text->replace("{magnitude}", "#");
     
     String mac = WiFi.macAddress();
@@ -228,11 +231,20 @@ void _mqttPlaceholders(String *text) {
 void _mqttConfigure() {
 
     // Get base topic
-    _mqtt_topic = getSetting("mqttTopic", MQTT_TOPIC);
-    if (_mqtt_topic.endsWith("/")) _mqtt_topic.remove(_mqtt_topic.length()-1);
+    String topic = getSetting("mqttTopic", MQTT_TOPIC);
+
+    // Fix trailing slash (adds empty topic level) and {root} placeholder self-reference
+    if (topic.endsWith("/")) topic.remove(_mqtt_topic.length()-1);
+    if (topic.indexOf("{root}") >= 0) topic.replace("{root}", "");
+    if (!_mqtt_topic.equals(topic)) {
+        _mqtt_topic = std::move(topic);
+        setSetting("mqttTopic", _mqtt_topic);
+    }
 
     // Placeholders
     _mqttPlaceholders(&_mqtt_topic);
+
+    // If not specified, put {magnitude} at the end
     if (_mqtt_topic.indexOf("#") == -1) _mqtt_topic = _mqtt_topic + "/#";
 
     // Getters and setters
@@ -252,8 +264,16 @@ void _mqttConfigure() {
     } else {
         _mqtt_enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
     }
+
+    // MQTT JSON
     _mqtt_use_json = (getSetting("mqttUseJson", MQTT_USE_JSON).toInt() == 1);
-    mqttQueueTopic(MQTT_TOPIC_JSON);
+    String topic_json = getSetting("mqttTopicJson", MQTT_TOPIC_JSON);
+    if (topic_json.length()) {
+        _mqttPlaceholders(&topic_json);
+        _mqtt_topic_json = std::move(topic_json);
+    } else {
+        _mqtt_use_json = false;
+    }
 
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
@@ -491,9 +511,6 @@ void mqttSend(const char * topic, const char * message, bool force, bool retain)
     // Equeue message
     if (useJson) {
 
-        // Set default queue topic
-        mqttQueueTopic(MQTT_TOPIC_JSON);
-
         // Enqueue new message
         mqttEnqueue(topic, message);
 
@@ -606,14 +623,6 @@ void mqttFlush() {
     }
     _mqtt_queue.clear();
 
-}
-
-void mqttQueueTopic(const char * topic) {
-    String t = mqttTopic(topic, false);
-    if (!t.equals(_mqtt_topic_json)) {
-        mqttFlush();
-        _mqtt_topic_json = t;
-    }
 }
 
 int8_t mqttEnqueue(const char * topic, const char * message, unsigned char parent) {

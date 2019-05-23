@@ -71,3 +71,8 @@
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
+
+#if THERMOSTAT_SUPPORT
+#undef MQTT_USE_JSON
+#define MQTT_USE_JSON               1           // Group messages in a JSON body
+#endif
