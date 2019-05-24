@@ -16,9 +16,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 rpn_context _rpn_ctxt;
 bool _rpn_run = false;
-bool _rpn_inject = true;
 unsigned long _rpn_delay = RPN_DELAY;
-float _rpn_value = 0;
 unsigned long _rpn_last = 0;
 
 // -----------------------------------------------------------------------------
@@ -33,8 +31,6 @@ void _rpnWebSocketOnSend(JsonObject& root) {
     root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
     root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY).toInt();
     JsonArray& rules = root.createNestedArray("rpnRules");
-    JsonArray& topics = root.createNestedArray("rpnTopics");
-    JsonArray& names = root.createNestedArray("rpnNames");
     
     unsigned char i = 0;
     String rule = getSetting("rpnRule", i, "");
@@ -45,13 +41,14 @@ void _rpnWebSocketOnSend(JsonObject& root) {
 
     #if MQTT_SUPPORT
         i=0;
+        JsonArray& topics = root.createNestedArray("rpnTopics");
+        JsonArray& names = root.createNestedArray("rpnNames");
         String rpn_topic = getSetting("rpnTopic", i, "");
-        String rpn_name = getSetting("rpnName", i, "");
         while (rpn_topic.length() > 0) {
+            String rpn_name = getSetting("rpnName", i, "");
             topics.add(rpn_topic);
             names.add(rpn_name);
             rpn_topic = getSetting("rpnTopic", ++i, "");
-            rpn_name = getSetting("rpnName", i, "");
         }
     #endif
 
@@ -82,13 +79,10 @@ void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payloa
                 String rpn_name = getSetting("rpnName", i, "");
                 if (rpn_name.length()) {
                     rpn_variable_set(_rpn_ctxt, rpn_name.c_str(), atof(payload));
-                } else {
-                    _rpn_value = atof(payload);
-                    _rpn_inject = true;
+                    _rpn_last = millis();
+                    _rpn_run = true;
+                    break;
                 }
-                _rpn_last = millis();
-                _rpn_run = true;
-                break;
             }
             rpn_topic = getSetting("rpnTopic", ++i, "");
         }
@@ -127,14 +121,14 @@ void _rpnInit() {
     // Init context
     rpn_init(_rpn_ctxt);
 
-    char name[10] = {0};
-
     // Time functions
     rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
+        if (!ntpSynced()) return false;
         rpn_stack_push(ctxt, now());
         return true;
     });
     rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
+        if (!ntpSynced()) return false;
         rpn_stack_push(ctxt, ntpLocal2UTC(now()));
         return true;
     });
@@ -266,7 +260,6 @@ void _rpnRun() {
     String rule = getSetting("rpnRule", i, "");
     while (rule.length()) {
         //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
-        if (_rpn_inject) rpn_stack_push(_rpn_ctxt, _rpn_value);
         rpn_process(_rpn_ctxt, rule.c_str(), true);
         //_rpnDump();
         rule = getSetting("rpnRule", ++i, "");
@@ -276,8 +269,6 @@ void _rpnRun() {
     if (getSetting("rpnSticky", 1).toInt() == 0) {
         rpn_variables_clear(_rpn_ctxt);
     }
-
-    _rpn_inject = false;
 
 }
 

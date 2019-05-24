@@ -1,3 +1,4 @@
+var debug = false;
 var websock;
 var password = false;
 var maxNetworks;
@@ -428,12 +429,17 @@ function initSelectGPIO(select) {
 // Actions
 // -----------------------------------------------------------------------------
 
+function send(json) {
+    if (debug) console.log(json);
+    websock.send(json);
+}
+
 function sendAction(action, data) {
-    websock.send(JSON.stringify({action: action, data: data}));
+    send(JSON.stringify({action: action, data: data}));
 }
 
 function sendConfig(data) {
-    websock.send(JSON.stringify({config: data}));
+    send(JSON.stringify({config: data}));
 }
 
 function setOriginalsFromValues(force) {
@@ -1312,6 +1318,8 @@ function initLightfox(data, relayCount) {
 
 function processData(data) {
 
+    if (debug) console.log(data);
+
     // title
     if ("app_name" in data) {
         var title = data.app_name;
@@ -1587,7 +1595,7 @@ function processData(data) {
         // -----------------------------------------------------------------------------
 
         if ("haConfig" === key) {
-            websock.send("{}");
+            send("{}");
             $("#haConfig")
                 .append(new Text(value))
                 .height($("#haConfig")[0].scrollHeight);
@@ -1697,7 +1705,7 @@ function processData(data) {
 
         // Web log
         if ("weblog" === key) {
-            websock.send("{}");
+            send("{}");
 
             if (value.prefix) {
                 $("#weblog").append(new Text(value.prefix));

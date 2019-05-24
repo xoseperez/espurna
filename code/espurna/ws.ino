@@ -403,26 +403,28 @@ void wsSend(uint32_t client_id, JsonObject& root) {
 }
 
 void _wsStart(uint32_t client_id) {
+
     #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
         bool changePassword = getAdminPass().equals(ADMIN_PASS);
     #else
         bool changePassword = false;
     #endif
 
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-
     if (changePassword) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
         root["webMode"] = WEB_MODE_PASSWORD;
-        wsSend(root);
+        wsSend(client_id, root);
         return;
     }
 
     for (auto& callback : _ws_on_send_callbacks) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
         callback(root);
+        wsSend(client_id, root);
     }
-
-    wsSend(client_id, root);
+    
 }
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
