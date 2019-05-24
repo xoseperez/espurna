@@ -691,6 +691,7 @@ void _relayWebSocketSendRelays() {
     JsonArray& type = relays.createNestedArray("type");
     JsonArray& reset = relays.createNestedArray("reset");
     JsonArray& boot = relays.createNestedArray("boot");
+    JsonArray& lock = relays.createNestedArray("lock");
     JsonArray& pulse = relays.createNestedArray("pulse");
     JsonArray& pulse_time = relays.createNestedArray("pulse_time");
 
@@ -706,6 +707,7 @@ void _relayWebSocketSendRelays() {
         type.add(_relays[i].type);
         reset.add(_relays[i].reset_pin);
         boot.add(getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt());
+        lock.add(_relays[i].lock);
 
         pulse.add(_relays[i].pulse);
         pulse_time.add(_relays[i].pulse_ms / 1000.0);

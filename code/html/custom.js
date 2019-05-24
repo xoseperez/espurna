@@ -1014,6 +1014,8 @@ function initRelayConfig(data) {
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
 
+        $("input[name='relay'][data='" + i + "']").attr("disabled", Boolean(value[i]);
+
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
         }
