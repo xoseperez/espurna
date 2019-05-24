@@ -40,6 +40,7 @@ typedef struct {
 } channel_t;
 std::vector<channel_t> _light_channel;
 
+bool _light_dirty = false;
 bool _light_state = false;
 bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
@@ -82,14 +83,29 @@ const unsigned char _light_gamma_table[] = {
 // UTILS
 // -----------------------------------------------------------------------------
 
+void _setValue(unsigned char id, unsigned int value) {
+    if (_light_channel[id].value != value) {
+        _light_channel[id].value = value;
+        _light_dirty = true;
+    }
+}
+
+void _setInputValue(unsigned char id, unsigned int value) {
+    if (_light_channel[id].inputValue != value) {
+        _light_channel[id].inputValue = value;
+        //_light_dirty = true;
+    }
+}
+
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
-    _light_channel[0].inputValue = constrain(red, 0, LIGHT_MAX_VALUE);
-    _light_channel[1].inputValue = constrain(green, 0, LIGHT_MAX_VALUE);;
-    _light_channel[2].inputValue = constrain(blue, 0, LIGHT_MAX_VALUE);;
+    _setInputValue(0, constrain(red, 0, LIGHT_MAX_VALUE));
+    _setInputValue(1, constrain(green, 0, LIGHT_MAX_VALUE));
+    _setInputValue(2, constrain(blue, 0, LIGHT_MAX_VALUE));
 }
 
 void _generateBrightness() {
 
+    unsigned char value;
     double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
 
     // Convert RGB to RGBW(W)
@@ -98,7 +114,7 @@ void _generateBrightness() {
         // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
         unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
         for (unsigned int i=0; i < 3; i++) {
-            _light_channel[i].value = _light_channel[i].inputValue - white;
+            _setValue(i, _light_channel[i].inputValue - white);
         }
 
         // Split the White Value across 2 White LED Strips.
@@ -109,14 +125,14 @@ void _generateBrightness() {
 
           // set cold white
           _light_channel[3].inputValue = 0;
-          _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
+          _setValue(3, round(((double) 1.0 - miredFactor) * white));
 
           // set warm white
           _light_channel[4].inputValue = 0;
-          _light_channel[4].value = round(miredFactor * white);
+          _setValue(4, round(miredFactor * white));
         } else {
           _light_channel[3].inputValue = 0;
-          _light_channel[3].value = white;
+          _setValue(3, white);
         }
 
         // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
@@ -130,25 +146,25 @@ void _generateBrightness() {
 
         double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
         for (unsigned char i=0; i < channelSize; i++) {
-            _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
+            _setValue(i, round((double) _light_channel[i].value * factor * brightness));
         }
 
         // Scale white channel to match brightness
         for (unsigned char i=3; i < channelSize; i++) {
-            _light_channel[i].value = constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS);
+            _setValue(i, constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS));
         }
 
         // For the rest of channels, don't apply brightness, it is already in the inputValue
         // i should be 4 when RGBW and 5 when RGBWW
         for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
-            _light_channel[i].value = _light_channel[i].inputValue;
+            _setValue(i, _light_channel[i].inputValue);
         }
 
     } else {
 
         // Apply brightness equally to all channels
         for (unsigned char i=0; i < _light_channel.size(); i++) {
-            _light_channel[i].value = _light_channel[i].inputValue * brightness;
+            _setValue(i, _light_channel[i].inputValue * brightness);
         }
 
     }
@@ -194,7 +210,7 @@ void _fromRGB(const char * rgb) {
 
         tok = strtok(p, ",");
         while (tok != NULL) {
-            _light_channel[count].inputValue = atoi(tok);
+            _setInputValue(count, atoi(tok));
             if (++count == channels) break;
             tok = strtok(NULL, ",");
         }
@@ -204,7 +220,7 @@ void _fromRGB(const char * rgb) {
           // check channel 1 and 2:
           for (int i = 1; i <= 2; i++) {
             if (count < (i+1)) {
-              _light_channel[i].inputValue = 0;
+                _setInputValue(i, 0);
             }
           }
         }
@@ -721,7 +737,12 @@ void _lightComms(unsigned char mask) {
 
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
+    // Calculate values based on inputs and brightness
     _generateBrightness();
+
+    // Only update if a channel has changed
+    if (!_light_dirty) return;
+    _light_dirty = false;
 
     // Update channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
@@ -759,7 +780,10 @@ void lightSave() {
 #endif
 
 void lightState(unsigned char i, bool state) {
-    _light_channel[i].state = state;
+    if (_light_channel[i].state != state) {
+        _light_channel[i].state = state;
+        _light_dirty = true;
+    }
 }
 
 bool lightState(unsigned char i) {
@@ -767,7 +791,10 @@ bool lightState(unsigned char i) {
 }
 
 void lightState(bool state) {
-    _light_state = state;
+    if (_light_state != state) {
+        _light_state = state;
+        _light_dirty = true;
+    }
 }
 
 bool lightState() {
