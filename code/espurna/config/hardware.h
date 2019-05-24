@@ -46,6 +46,7 @@
     #define I2C_SUPPORT             0
     #define MQTT_SUPPORT            0
     #define NTP_SUPPORT             0
+    #define RPN_RULES_SUPPORT       0
     #define SCHEDULER_SUPPORT       0
     #define SENSOR_SUPPORT          0
     #define THINGSPEAK_SUPPORT      0

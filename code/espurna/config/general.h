@@ -1165,11 +1165,11 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT           1           // Enable scheduler (1.77Kb)
+#define SCHEDULER_SUPPORT           1               // Enable scheduler (2.45Kb)
 #endif
 
 #ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES     10          // Max schedules alowed
+#define SCHEDULER_MAX_SCHEDULES     10              // Max schedules alowed
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1177,11 +1177,11 @@
 // -----------------------------------------------------------------------------
 
 #ifndef RPN_RULES_SUPPORT
-#define RPN_RULES_SUPPORT           1           // Enable RPN Rules (?Kb)
+#define RPN_RULES_SUPPORT           1               // Enable RPN Rules (8.13Kb)
 #endif
 
-#ifndef RPN_BUFFER_DELAY
-#define RPN_BUFFER_DELAY            100         // Execute rules after 100ms without messages
+#ifndef RPN_DELAY
+#define RPN_DELAY                   100             // Execute rules after 100ms without messages
 #endif
 
 // -----------------------------------------------------------------------------

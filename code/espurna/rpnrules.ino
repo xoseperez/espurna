@@ -17,7 +17,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 rpn_context _rpn_ctxt;
 bool _rpn_run = false;
 bool _rpn_inject = true;
-unsigned long _rpn_delay = RPN_BUFFER_DELAY;
+unsigned long _rpn_delay = RPN_DELAY;
 float _rpn_value = 0;
 unsigned long _rpn_last = 0;
 
@@ -31,7 +31,7 @@ void _rpnWebSocketOnSend(JsonObject& root) {
     
     root["rpnVisible"] = 1;
     root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
-    root["rpnDelay"] = getSetting("rpnDelay", RPN_BUFFER_DELAY).toInt();
+    root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY).toInt();
     JsonArray& rules = root.createNestedArray("rpnRules");
     JsonArray& topics = root.createNestedArray("rpnTopics");
     JsonArray& names = root.createNestedArray("rpnNames");
@@ -101,7 +101,7 @@ void _rpnConfigure() {
     #if MQTT_SUPPORT
         if (mqttConnected()) _rpnMQTTSubscribe();
     #endif
-    _rpn_delay = getSetting("rpnDelay", RPN_BUFFER_DELAY).toInt();
+    _rpn_delay = getSetting("rpnDelay", RPN_DELAY).toInt();
 }
 
 void _rpnBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
@@ -132,6 +132,10 @@ void _rpnInit() {
     // Time functions
     rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
         rpn_stack_push(ctxt, now());
+        return true;
+    });
+    rpn_operator_set(_rpn_ctxt, "utc", 0, [](rpn_context & ctxt) {
+        rpn_stack_push(ctxt, ntpLocal2UTC(now()));
         return true;
     });
     rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
@@ -182,7 +186,7 @@ void _rpnInit() {
         });
 
         rpn_operator_set(_rpn_ctxt, "black", 0, [](rpn_context & ctxt) {
-            lightColor(0);
+            lightColor((unsigned long) 0);
             return true;
         });
 
@@ -212,8 +216,17 @@ void _rpnInitCommands() {
                 char * name = rpn_variable_name(_rpn_ctxt, i);
                 float value;
                 rpn_variable_get(_rpn_ctxt, name, value);
-                DEBUG_MSG_P(PSTR("     %s: %s\n"), name, String(value).c_str());
+                DEBUG_MSG_P(PSTR("   %s: %s\n"), name, String(value).c_str());
             }
+        }
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("RPN.OPS"), [](Embedis* e) {
+        unsigned char num = _rpn_ctxt.operators.size();
+        DEBUG_MSG_P(PSTR("[RPN] Operators:\n"));
+        for (unsigned char i=0; i<num; i++) {
+            DEBUG_MSG_P(PSTR("   %s (%d)\n"), _rpn_ctxt.operators[i].name, _rpn_ctxt.operators[i].argc);
         }
         terminalOK();
     });
