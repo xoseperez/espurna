@@ -559,9 +559,7 @@ void wsSetup() {
     // CORS
     #ifdef WEB_REMOTE_DOMAIN
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", WEB_REMOTE_DOMAIN);
-        if (strcmp(WEB_REMOTE_DOMAIN, "*")) {
-            DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
-        }
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
     #endif
 
     webServer()->on("/auth", HTTP_GET, _onAuth);
