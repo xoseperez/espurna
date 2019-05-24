@@ -251,7 +251,8 @@ function addValue(data, name, value) {
         "tspkRelay", "tspkMagnitude",
         "ledMode", "ledRelay",
         "adminPass",
-        "node", "key", "topic"
+        "node", "key", "topic",
+        "rpnRule", "rpnTopic", "rpnName"
     ];
 
 
@@ -787,6 +788,11 @@ function doClearFilters() {
 
 <!-- endRemoveIf(!rfm69)-->
 
+function delParent() {
+    var parent = $(this).parent().parent();
+    $(parent).remove();
+}
+
 // -----------------------------------------------------------------------------
 // Visualization
 // -----------------------------------------------------------------------------
@@ -843,10 +849,37 @@ function createMagnitudeList(data, container, template_name) {
 <!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
+// RPN Rules
+// -----------------------------------------------------------------------------
+
+function addRPNRule() {
+    var template = $("#rpnRuleTemplate .pure-g")[0];
+    var line = $(template).clone();
+    var tabindex = $("#rpnRules > div").length + 100;
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find("button").on('click', delParent);
+    line.appendTo("#rpnRules");
+}
+
+function addRPNTopic() {
+    var template = $("#rpnTopicTemplate .pure-g")[0];
+    var line = $(template).clone();
+    var tabindex = $("#rpnTopics > div").length + 120;
+    $(line).find("input").each(function() {
+        $(this).attr("tabindex", tabindex++);
+    });
+    $(line).find("button").on('click', delParent);
+    line.appendTo("#rpnTopics");
+}
+
+// -----------------------------------------------------------------------------
 // RFM69
 // -----------------------------------------------------------------------------
 
 <!-- removeIf(!rfm69)-->
+
 function addMapping() {
     var template = $("#nodeTemplate .pure-g")[0];
     var line = $(template).clone();
@@ -854,14 +887,10 @@ function addMapping() {
     $(line).find("input").each(function() {
         $(this).attr("tabindex", tabindex++);
     });
-    $(line).find("button").on('click', delMapping);
+    $(line).find("button").on('click', delParent);
     line.appendTo("#mapping");
 }
 
-function delMapping() {
-    var parent = $(this).parent().parent();
-    $(parent).remove();
-}
 <!-- endRemoveIf(!rfm69)-->
 
 // -----------------------------------------------------------------------------
@@ -1408,6 +1437,48 @@ function processData(data) {
         <!-- endRemoveIf(!rfm69)-->
 
         // ---------------------------------------------------------------------
+        // RPN Rules
+        // ---------------------------------------------------------------------
+
+        if (key == "rpnRules") {
+			for (var i in data.rpnRules) {
+
+				// add a new row
+				addRPNRule();
+
+				// get group
+				var line = $("#rpnRules .pure-g")[i];
+
+				// fill in the blanks
+				var rule = data.rpnRules[i];
+                $("input", line).val(rule).attr("original", rule);
+
+            }
+			return;
+		}
+
+        if (key == "rpnTopics") {
+			for (var i in data.rpnTopics) {
+
+				// add a new row
+				addRPNTopic();
+
+				// get group
+				var line = $("#rpnTopics .pure-g")[i];
+
+				// fill in the blanks
+				var topic = data.rpnTopics[i];
+				var name = data.rpnNames[i];
+                $("input[name='rpnTopic']", line).val(topic).attr("original", topic);
+                $("input[name='rpnName']", line).val(name).attr("original", name);
+
+            }
+			return;
+        }
+        
+        if (key == "rpnNames") return;
+
+        // ---------------------------------------------------------------------
         // Lights
         // ---------------------------------------------------------------------
 
@@ -1876,9 +1947,13 @@ $(function() {
     $(".button-add-light-schedule").on("click", { schType: 2 }, addSchedule);
     <!-- endRemoveIf(!light)-->
 
+    $(".button-add-rpnrule").on('click', addRPNRule);
+    $(".button-add-rpntopic").on('click', addRPNTopic);
+
+    $(".button-del-parent").on('click', delParent);
+
     <!-- removeIf(!rfm69)-->
     $(".button-add-mapping").on('click', addMapping);
-    $(".button-del-mapping").on('click', delMapping);
     $(".button-clear-counts").on('click', doClearCounts);
     $(".button-clear-messages").on('click', doClearMessages);
     $(".button-clear-filters").on('click', doClearFilters);

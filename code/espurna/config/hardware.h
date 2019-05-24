@@ -139,6 +139,13 @@
     #define MANUFACTURER        "WEMOS"
     #define DEVICE              "D1_TARPUNA_SHIELD"
 
+    // Relays
+    #define RELAY1_PIN          5
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define DHT_SUPPORT         1
+    #define DHT_PIN             12
+
 // -----------------------------------------------------------------------------
 // ESPurna
 // -----------------------------------------------------------------------------

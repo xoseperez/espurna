@@ -195,6 +195,9 @@ void setup() {
     #if SCHEDULER_SUPPORT
         schSetup();
     #endif
+    #if RPN_RULES_SUPPORT
+        rpnSetup();
+    #endif
     #if UART_MQTT_SUPPORT
         uartmqttSetup();
     #endif

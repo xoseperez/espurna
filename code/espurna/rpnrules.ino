@@ -1,15 +1,14 @@
 /*
 
-NTP MODULE
-
-Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+RPN RULES MODULE
+Use RPNLib library (https://github.com/xoseperez/rpnlib)
+Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
 #if RPN_RULES_SUPPORT
 
 #include "rpnlib.h"
-#include <Ticker.h>
 
 // -----------------------------------------------------------------------------
 // Custom commands
@@ -17,6 +16,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 rpn_context _rpn_ctxt;
 bool _rpn_run = false;
+bool _rpn_inject = true;
+unsigned long _rpn_delay = RPN_BUFFER_DELAY;
+float _rpn_value = 0;
 unsigned long _rpn_last = 0;
 
 // -----------------------------------------------------------------------------
@@ -28,17 +30,78 @@ bool _rpnWebSocketOnReceive(const char * key, JsonVariant& value) {
 void _rpnWebSocketOnSend(JsonObject& root) {
     
     root["rpnVisible"] = 1;
+    root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
+    root["rpnDelay"] = getSetting("rpnDelay", RPN_BUFFER_DELAY).toInt();
     JsonArray& rules = root.createNestedArray("rpnRules");
+    JsonArray& topics = root.createNestedArray("rpnTopics");
+    JsonArray& names = root.createNestedArray("rpnNames");
     
     unsigned char i = 0;
-    while (String rule = getSetting("rule", i, NULL)) {
+    String rule = getSetting("rpnRule", i, "");
+    while (rule.length()) {
         rules.add(rule);
+        rule = getSetting("rpnRule", ++i, "");
     }
+
+    #if MQTT_SUPPORT
+        i=0;
+        String rpn_topic = getSetting("rpnTopic", i, "");
+        String rpn_name = getSetting("rpnName", i, "");
+        while (rpn_topic.length() > 0) {
+            topics.add(rpn_topic);
+            names.add(rpn_name);
+            rpn_topic = getSetting("rpnTopic", ++i, "");
+            rpn_name = getSetting("rpnName", i, "");
+        }
+    #endif
 
 }
 
-void _rpnConfigure() {
+#if MQTT_SUPPORT
 
+void _rpnMQTTSubscribe() {
+    unsigned char i = 0;
+    String rpn_topic = getSetting("rpnTopic", i, "");
+    while (rpn_topic.length()) {
+        mqttSubscribeRaw(rpn_topic.c_str());
+        rpn_topic = getSetting("rpnTopic", ++i, "");
+    }
+}
+
+void _rpnMQTTCallback(unsigned int type, const char * topic, const char * payload) {
+
+    if (type == MQTT_CONNECT_EVENT) {
+        _rpnMQTTSubscribe();
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        unsigned char i = 0;
+        String rpn_topic = getSetting("rpnTopic", i, "");
+        while (rpn_topic.length()) {
+            if (rpn_topic.equals(topic)) {
+                String rpn_name = getSetting("rpnName", i, "");
+                if (rpn_name.length()) {
+                    rpn_variable_set(_rpn_ctxt, rpn_name.c_str(), atof(payload));
+                } else {
+                    _rpn_value = atof(payload);
+                    _rpn_inject = true;
+                }
+                _rpn_last = millis();
+                _rpn_run = true;
+                break;
+            }
+            rpn_topic = getSetting("rpnTopic", ++i, "");
+        }
+    }
+
+}
+#endif // MQTT_SUPPORT
+
+void _rpnConfigure() {
+    #if MQTT_SUPPORT
+        if (mqttConnected()) _rpnMQTTSubscribe();
+    #endif
+    _rpn_delay = getSetting("rpnDelay", RPN_BUFFER_DELAY).toInt();
 }
 
 void _rpnBrokerCallback(const unsigned char type, const char * topic, unsigned char id, const char * payload) {
@@ -47,13 +110,13 @@ void _rpnBrokerCallback(const unsigned char type, const char * topic, unsigned c
 
     if (BROKER_MSG_TYPE_STATUS == type || BROKER_MSG_TYPE_SENSOR == type) {
         snprintf(name, sizeof(name), "%s%d", topic, id);
+        rpn_variable_set(_rpn_ctxt, name, atof(payload));
     } else if (BROKER_MSG_TYPE_DATETIME == type) {
-        strncpy(name, topic, sizeof(name));
+        // Timestamp is always available via de "now" operator
     } else {
         return;
     }
 
-    rpn_variable_set(_rpn_ctxt, name, atof(payload));
     _rpn_last = millis();
     _rpn_run = true;
 
@@ -64,30 +127,150 @@ void _rpnInit() {
     // Init context
     rpn_init(_rpn_ctxt);
 
-    // Add relay operator
-    rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
-        float a, b;
-        rpn_stack_pop(ctxt, b); // new status
-        rpn_stack_pop(ctxt, a); // relay number
-        relayStatus(int(a), int(b));
+    char name[10] = {0};
+
+    // Time functions
+    rpn_operator_set(_rpn_ctxt, "now", 0, [](rpn_context & ctxt) {
+        rpn_stack_push(ctxt, now());
+        return true;
+    });
+    rpn_operator_set(_rpn_ctxt, "dow", 1, [](rpn_context & ctxt) {
+        float a;
+        rpn_stack_pop(ctxt, a);
+        unsigned char dow = (weekday(int(a)) + 5) % 7;
+        rpn_stack_push(ctxt, dow);
+        return true;
+    });
+    rpn_operator_set(_rpn_ctxt, "hour", 1, [](rpn_context & ctxt) {
+        float a;
+        rpn_stack_pop(ctxt, a);
+        rpn_stack_push(ctxt, hour(int(a)));
+        return true;
+    });
+    rpn_operator_set(_rpn_ctxt, "minute", 1, [](rpn_context & ctxt) {
+        float a;
+        rpn_stack_pop(ctxt, a);
+        rpn_stack_push(ctxt, minute(int(a)));
+        return true;
+    });
+
+    // Debug
+    rpn_operator_set(_rpn_ctxt, "debug", 0, [](rpn_context & ctxt) {
+        _rpnDump();
         return true;
     });    
 
+    // Relay operators
+    rpn_operator_set(_rpn_ctxt, "relay", 2, [](rpn_context & ctxt) {
+        float a, b;
+        rpn_stack_pop(ctxt, b); // relay number
+        rpn_stack_pop(ctxt, a); // new status
+        if (int(a) == 2) {
+            relayToggle(int(b));
+        } else {
+            relayStatus(int(b), int(a) == 1);
+        }
+        return true;
+    });    
+
+    // Channel operators
+    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
+        
+        rpn_operator_set(_rpn_ctxt, "update", 0, [](rpn_context & ctxt) {
+            lightUpdate(true, true);
+            return true;
+        });
+
+        rpn_operator_set(_rpn_ctxt, "black", 0, [](rpn_context & ctxt) {
+            lightColor(0);
+            return true;
+        });
+
+        rpn_operator_set(_rpn_ctxt, "channel", 2, [](rpn_context & ctxt) {
+            float a, b;
+            rpn_stack_pop(ctxt, b); // channel number
+            rpn_stack_pop(ctxt, a); // new value
+            lightChannel(int(b), int(a));
+            return true;
+        });    
+
+    #endif
+
+}
+
+#if TERMINAL_SUPPORT
+
+void _rpnInitCommands() {
+
+    terminalRegisterCommand(F("RPN.VARS"), [](Embedis* e) {
+        unsigned char num = rpn_variables_size(_rpn_ctxt);
+        if (0 == num) {
+            DEBUG_MSG_P(PSTR("[RPN] No variables\n"));
+        } else {
+            DEBUG_MSG_P(PSTR("[RPN] Variables:\n"));
+            for (unsigned char i=0; i<num; i++) {
+                char * name = rpn_variable_name(_rpn_ctxt, i);
+                float value;
+                rpn_variable_get(_rpn_ctxt, name, value);
+                DEBUG_MSG_P(PSTR("     %s: %s\n"), name, String(value).c_str());
+            }
+        }
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("RPN.TEST"), [](Embedis* e) {
+        if (e->argc == 2) {
+            DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), e->argv[1]);
+            rpn_process(_rpn_ctxt, e->argv[1], true);
+            _rpnDump();
+            rpn_stack_clear(_rpn_ctxt);
+            terminalOK();
+        } else {
+            terminalError(F("Wrong arguments"));
+        }
+    });
+
+}
+#endif
+
+void _rpnDump() {
+    float value;
+    DEBUG_MSG_P(PSTR("[RPN] Stack:\n"));
+    unsigned char num = rpn_stack_size(_rpn_ctxt);
+    if (0 == num) {
+        DEBUG_MSG_P(PSTR("      (empty)\n"));
+    } else {
+        unsigned char index = num - 1;
+        while (rpn_stack_get(_rpn_ctxt, index, value)) {
+            DEBUG_MSG_P(PSTR("      %02d: %s\n"), index--, String(value).c_str());
+        }
+    }
 }
 
 void _rpnRun() {
 
     unsigned char i = 0;
-    while (String rule = getSetting("rule", i, NULL)) {
+    String rule = getSetting("rpnRule", i, "");
+    while (rule.length()) {
+        //DEBUG_MSG_P(PSTR("[RPN] Running \"%s\"\n"), rule.c_str());
+        if (_rpn_inject) rpn_stack_push(_rpn_ctxt, _rpn_value);
+        rpn_process(_rpn_ctxt, rule.c_str(), true);
+        //_rpnDump();
+        rule = getSetting("rpnRule", ++i, "");
         rpn_stack_clear(_rpn_ctxt);
-        rpn_process(_rpn_ctxt, rule.c_str());
     }
+
+    if (getSetting("rpnSticky", 1).toInt() == 0) {
+        rpn_variables_clear(_rpn_ctxt);
+    }
+
+    _rpn_inject = false;
 
 }
 
 void _rpnLoop() {
     
-    if (_rpn_run && (millis() - _rpn_last > RPN_BUFFER_DELAY)) {
+    if (_rpn_run && (millis() - _rpn_last > _rpn_delay)) {
         _rpnRun();
         _rpn_run = false;
     }
@@ -101,11 +284,17 @@ void rpnSetup() {
 
     // Load & cache settings
     _rpnConfigure();
+    _rpnInitCommands();
 
     // Websockets
     #if WEB_SUPPORT
         wsOnSendRegister(_rpnWebSocketOnSend);
         wsOnReceiveRegister(_rpnWebSocketOnReceive);
+    #endif
+
+    // MQTT
+    #if MQTT_SUPPORT
+        mqttRegister(_rpnMQTTCallback);
     #endif
 
     brokerRegister(_rpnBrokerCallback);
