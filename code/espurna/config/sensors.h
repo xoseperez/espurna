@@ -492,6 +492,47 @@
 #endif
 
 //------------------------------------------------------------------------------
+// LDR sensor
+// Enable support by passing LDR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+ 
+#ifndef SENSOR_LUX_CORRECTION
+#define SENSOR_LUX_CORRECTION           0.0     // Offset correction
+#endif
+
+#ifndef LDR_SUPPORT
+#define LDR_SUPPORT                     0
+#endif
+ 
+#ifndef LDR_SAMPLES
+#define LDR_SAMPLES                     10      // Number of samples
+#endif
+ 
+#ifndef LDR_DELAY
+#define LDR_DELAY                       0       // Delay between samples in micros
+#endif
+ 
+#ifndef LDR_TYPE
+#define LDR_TYPE                        LDR_GL5528
+#endif
+ 
+#ifndef LDR_ON_GROUND
+#define LDR_ON_GROUND                   true
+#endif
+ 
+#ifndef LDR_RESISTOR
+#define LDR_RESISTOR                    10000   // Resistance
+#endif
+ 
+#ifndef LDR_MULTIPLICATION
+#define LDR_MULTIPLICATION              32017200
+#endif
+ 
+#ifndef LDR_POWER
+#define LDR_POWER                       1.5832
+#endif
+ 
+//------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
 // Enable support by passing MHZ19_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -916,6 +957,7 @@
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
     HLW8012_SUPPORT || \
+    LDR_SUPPORT || \
     MICS2710_SUPPORT || \
     MICS5525_SUPPORT || \
     MHZ19_SUPPORT || \
@@ -1045,6 +1087,10 @@
 
 #if HLW8012_SUPPORT
     #include "../sensors/HLW8012Sensor.h"
+#endif
+
+#if LDR_SUPPORT
+    #include "../sensors/LDRSensor.h"
 #endif
 
 #if MAX6675_SUPPORT

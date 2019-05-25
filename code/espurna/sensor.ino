@@ -44,6 +44,7 @@ unsigned char _sensor_energy_units = SENSOR_ENERGY_UNITS;
 unsigned char _sensor_temperature_units = SENSOR_TEMPERATURE_UNITS;
 double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
+double _sensor_lux_correction = SENSOR_LUX_CORRECTION;
 
 #if PZEM004T_SUPPORT
 PZEM004TSensor *pzem004t_sensor;
@@ -86,6 +87,10 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 
     if (type == MAGNITUDE_HUMIDITY) {
         value = constrain(value + _sensor_humidity_correction, 0, 100);
+    }
+
+    if (type == MAGNITUDE_LUX) {
+        value = value + _sensor_lux_correction;
     }
 
     if (type == MAGNITUDE_ENERGY ||
@@ -137,6 +142,7 @@ bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
     if (strncmp(key, "tmp", 3) == 0) return true;
     if (strncmp(key, "hum", 3) == 0) return true;
     if (strncmp(key, "ene", 3) == 0) return true;
+    if (strncmp(key, "lux", 3) == 0) return true;
     return false;
 }
 
@@ -677,6 +683,19 @@ void _sensorLoad() {
     }
     #endif
 
+    #if LDR_SUPPORT
+    {
+        LDRSensor * sensor = new LDRSensor();
+        sensor->setSamples(LDR_SAMPLES);
+        sensor->setDelay(LDR_DELAY);
+        sensor->setType(LDR_TYPE);
+        sensor->setPhotocellPositionOnGround(LDR_ON_GROUND);
+        sensor->setResistor(LDR_RESISTOR);
+        sensor->setPhotocellParameters(LDR_MULTIPLICATION, LDR_POWER);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
     #if MHZ19_SUPPORT
     {
         MHZ19Sensor * sensor = new MHZ19Sensor();
@@ -1048,6 +1067,7 @@ void _sensorConfigure() {
     _sensor_temperature_correction = getSetting("tmpCorrection", SENSOR_TEMPERATURE_CORRECTION).toFloat();
     _sensor_humidity_correction = getSetting("humCorrection", SENSOR_HUMIDITY_CORRECTION).toFloat();
     _sensor_energy_reset_ts = getSetting("snsResetTS", "");
+    _sensor_lux_correction = getSetting("luxCorrection", SENSOR_LUX_CORRECTION).toFloat();
 
     // Specific sensor settings
     for (unsigned char i=0; i<_sensors.size(); i++) {

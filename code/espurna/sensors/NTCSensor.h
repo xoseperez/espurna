@@ -67,7 +67,7 @@ class NTCSensor : public AnalogSensor {
         // Descriptive name of the slot # index
         String slot(unsigned char index) {
             return description();
-        };
+        }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) {

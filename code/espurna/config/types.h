@@ -302,6 +302,7 @@
 #define SENSOR_EZOPH_ID             33
 #define SENSOR_BMP180_ID            34
 #define SENSOR_MAX6675_ID           35
+#define SENSOR_LDR_ID               36
 
 //--------------------------------------------------------------------------------
 // Magnitudes
