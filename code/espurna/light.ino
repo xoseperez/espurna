@@ -105,7 +105,6 @@ void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blu
 
 void _generateBrightness() {
 
-    unsigned char value;
     double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
 
     // Convert RGB to RGBW(W)

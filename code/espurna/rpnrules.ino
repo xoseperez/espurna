@@ -288,7 +288,11 @@ void rpnSetup() {
 
     // Load & cache settings
     _rpnConfigure();
-    _rpnInitCommands();
+
+    // Terminal commands
+    #if TERMINAL_SUPPORT
+        _rpnInitCommands();
+    #endif
 
     // Websockets
     #if WEB_SUPPORT
@@ -307,4 +311,4 @@ void rpnSetup() {
 
 }
 
-#endif
+#endif // RPN_RULES_SUPPORT
