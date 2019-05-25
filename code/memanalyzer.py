@@ -279,6 +279,7 @@ if __name__ == '__main__':
                 total['data'],
                 total['rodata'],
                 total['bss'],
+                total['free'],
                 total['irom0_text'],
                 total['size'],
         ))
