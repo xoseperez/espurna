@@ -1561,7 +1561,7 @@ function processData(data) {
         // ---------------------------------------------------------------------
 
         if ("relayState" === key) {
-            initRelays(value.state);
+            initRelays(value.status);
             updateRelays(value);
             return;
         }
