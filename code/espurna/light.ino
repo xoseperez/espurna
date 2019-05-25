@@ -539,8 +539,9 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
     if (type == MQTT_CONNECT_EVENT) {
 
+        mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
+
         if (_light_has_color) {
-            mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
             mqttSubscribe(MQTT_TOPIC_MIRED);
             mqttSubscribe(MQTT_TOPIC_KELVIN);
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);

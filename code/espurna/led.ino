@@ -187,9 +187,9 @@ void ledSetup() {
     #endif
 
     for (unsigned int i=0; i < _leds.size(); i++) {
+        if (!hasSetting("ledMode", i)) setSetting("ledMode", i, _leds[i].mode);
+        if (!hasSetting("ledRelay", i)) setSetting("ledRelay", i, _leds[i].relay);
         pinMode(_leds[i].pin, OUTPUT);
-        setSetting("ledMode", i, _leds[i].mode);
-        setSetting("ledRelay", i, _leds[i].relay);
         _ledStatus(i, false);
     }
 
