@@ -91,7 +91,7 @@ def list_devices():
             "SDK_SIZE",
             "FREE_SPACE"
     ))
-    print("-" * 139)
+    print("-" * 164)
 
     index = 0
     for device in devices:
