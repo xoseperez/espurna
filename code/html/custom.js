@@ -983,6 +983,15 @@ function initRelays(data) {
 
 }
 
+function updateRelays(data) {
+    var size = data.size;
+    for (var i=0; i<size; ++i) {
+        var elem = $("input[name='relay'][data='" + i + "']");
+        elem.prop("checked", data.status[i]);
+        elem.prop("disabled", data.lock[i] < 2); // RELAY_LOCK_DISABLED=2
+    }
+}
+
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
@@ -1013,8 +1022,6 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
-
-        $("input[name='relay'][data='" + i + "']").attr("disabled", Boolean(value[i]));
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
@@ -1553,11 +1560,9 @@ function processData(data) {
         // Relays
         // ---------------------------------------------------------------------
 
-        if ("relayStatus" === key) {
-            initRelays(value);
-            for (i in value) {
-                $("input[name='relay'][data='" + i + "']").prop("checked", value[i]);
-            }
+        if ("relayState" === key) {
+            initRelays(value.state);
+            updateRelays(value);
             return;
         }
 
