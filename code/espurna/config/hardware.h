@@ -3507,6 +3507,65 @@
     #define LED2_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// PSH
+// -----------------------------------------------------------------------------
+
+#elif defined(PSH_WIFI_PLUG)
+ 
+    // Info
+    #define MANUFACTURER        "PSH"
+    #define DEVICE              "WIFI_PLUG"
+ 
+    // Relays
+    #define RELAY1_PIN          2
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+ 
+    // LEDs
+    #define LED1_PIN            0
+    #define LED1_PIN_INVERSE    0
+ 
+#elif defined(PSH_RGBW_CONTROLLER)
+ 
+    // Info
+    #define MANUFACTURER        "PSH"
+    #define DEVICE              "RGBW_CONTROLLER"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+ 
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+ 
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       5      // RED
+    #define LIGHT_CH2_PIN       4      // GREEN
+    #define LIGHT_CH3_PIN       12     // BLUE
+    #define LIGHT_CH4_PIN       14     // WHITE1
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+ 
+#elif defined(PSH_WIFI_SENSOR)
+ 
+    // Info
+    #define MANUFACTURER        "PSH"
+    #define DEVICE              "WIFI_SENSOR"
+
+    // DHT12 Sensor
+    #define DHT_SUPPORT         1
+    #define DHT_PIN             14
+    #define DHT_TYPE            DHT_CHIP_DHT12
+
+    // LDR Sensor
+    #define LDR_SUPPORT         1
+    #define LDR_TYPE            LDR_GL5528
+    #define LDR_ON_GROUND       false
+    #define LDR_RESISTOR        10000
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
@@ -3695,10 +3754,12 @@
     #define MY92XX_COMMAND      MY92XX_COMMAND_DEFAULT
     #define MY92XX_MAPPING      4, 3, 5, 0, 1
 
-    // A bit of Analog EMON (analog)
-    #ifndef EMON_ANALOG_SUPPORT
+    // A bit of analog, 
+    // will not work on real life since they all share GPIO
+    // but it's OK to test build
     #define EMON_ANALOG_SUPPORT 1
-    #endif
+    #define NTC_SENSOR          1
+    #define LDR_SENSOR          1
 
     #define PULSEMETER_SUPPORT  1
 
