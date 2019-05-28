@@ -8,35 +8,51 @@ Show extended heap stats when EspClass::getHeapStats() is available
 
 #include <type_traits>
 
-template<typename T> struct has_getHeapStats {
-private:
-    static int detect(...);
-    template<typename U> static decltype(std::declval<U>().getHeapStats()) detect(const U&);
-public:
-    static constexpr bool value = std::is_same<void, decltype(detect(std::declval<T>()))>::value;
-};
+namespace has_getHeapStats {
+    struct detector {
+        template<typename T, typename = decltype(declval<T&>().getHeapStats())>
+          static std::true_type detect(int);
 
-template <typename T, T& instance>
-typename std::enable_if<has_getHeapStats<T>::value, void>::type
-getHeapStats(uint32_t* free, uint16_t* max, uint8_t* frag) {
+        template<typename>
+          static std::false_type detect(...);
+    };
+
+    template <typename T>
+    struct trait : public detector {
+        using type = decltype(detect<T>(0));
+    };
+
+    template <typename T>
+    struct typed_check : public trait<T>::type {
+    };
+
+    using type = decltype(typed_check<EspClass>());
+    constexpr bool value = std::is_same<std::true_type, decltype(typed_check<EspClass>())>::value;
+}
+
+template <typename T>
+void _getHeapStats(std::true_type, T& instance, uint32_t* free, uint16_t* max, uint8_t* frag) {
     instance.getHeapStats(free, max, frag);
 }
 
-template <typename T, T& instance>
-typename std::enable_if<not has_getHeapStats<EspClass>::value, void>::type
-getHeapStats(uint32_t* free, uint16_t* max, uint8_t* frag) {
-    *free = getFreeHeap();
+template <typename T>
+void _getHeapStats(std::false_type, T& instance, uint32_t* free, uint16_t* max, uint8_t* frag) {
+    *free = instance.getFreeHeap();
     *max = 0;
     *frag = 0;
+}
+
+inline void getHeapStats(uint32_t* free, uint16_t* max, uint8_t* frag) {
+    _getHeapStats(has_getHeapStats::type{}, ESP, &free, &max, &frag);
 }
 
 void infoHeapStats() {
     uint32_t free;
     uint16_t max;
     uint8_t frag;
-    getHeapStats<EspClass, ESP>(&free, &max, &frag);
+    getHeapStats(&free, &max, &frag);
     infoMemory("Heap", getInitialFreeHeap(), free);
-    if ((max > 0) || (frag > 0)) {
+    if (has_getHeapStats::value) {
         DEBUG_MSG_P(PSTR("[MAIN] %-6s: %5u bytes usable, %2u%% fragmentation\n"), "Heap", max, frag);
     }
 }
