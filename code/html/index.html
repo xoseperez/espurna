@@ -1365,47 +1365,51 @@
                                 Configure the connection to your InfluxDB server. Leave the host field empty to disable InfluxDB connection.
                             </h2>
                         </div>
-
-                        <div class="page">
-
-                            <fieldset>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Enable InfluxDB</label>
-                                    <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="idbEnabled" tabindex="40" /></div>
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Host</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbHost" type="text" tabindex="41" />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Port</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbPort" type="text" tabindex="42" />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Database</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbDatabase" type="text" tabindex="43" />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Username</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbUsername" type="text" tabindex="44" autocomplete="off" />
-                                </div>
-
-                                <div class="pure-g">
-                                    <label class="pure-u-1 pure-u-lg-1-4">Password</label>
-                                    <input class="pure-u-1 pure-u-lg-3-4" name="idbPassword" type="password" tabindex="45" autocomplete="new-password" spellcheck="false" />
-                                    <span class="no-select password-reveal"></span>
-                                </div>
-
-                            </fieldset>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4">Enable InfluxDB</label>
+                            <div class="pure-u-1 pure-u-lg-1-4"><input type="checkbox" name="idbEnabled" tabindex="40" /></div>
                         </div>
-
+                        <div id="panel-idb-list"></div>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4"></label>
+                            <div class="pure-u-1 pure-u-lg-1-4">
+                                <button type="button" class="pure-button button-add-influxdb">Add new server</button>
+                            </div>
+                        </div>
                     </div>
                 </form>
+
+                <div class="template" id="idbTemplate" >
+                    <fieldset class="p-g">               
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4">Host</label>
+                            <input class="pure-u-1 pure-u-lg-3-4" name="idbHost" type="text" />
+                        </div>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4">Port</label>
+                            <input class="pure-u-1 pure-u-lg-3-4" name="idbPort" type="text"  />
+                        </div>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4">Database</label>
+                            <input class="pure-u-1 pure-u-lg-3-4" name="idbDatabase" type="text" />
+                        </div>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4">Username</label>
+                            <input class="pure-u-1 pure-u-lg-3-4" name="idbUsername" type="text" autocomplete="off" />
+                        </div>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4">Password</label>
+                            <input class="pure-u-1 pure-u-lg-3-4" name="idbPassword" type="password" autocomplete="new-password" spellcheck="false" />
+                            <span class="no-select password-reveal"></span>
+                        </div>
+                        <div class="pure-g">
+                            <label class="pure-u-1 pure-u-lg-1-4"></label>
+                            <div class="pure-u-1 pure-u-lg-1-4">
+                                <button type="button" class="pure-button button-del-influxdb">Remove Server</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>                    
 
                 <form id="form-dbg" class="pure-form">
                     <div class="panel" id="panel-dbg">

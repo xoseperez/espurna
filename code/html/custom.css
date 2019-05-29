@@ -9,6 +9,10 @@
     text-transform: initial;
 }
 
+#panel-idb-list > fieldset > div:last-child {
+    border-bottom: 1px solid #eee;
+}
+
 .pure-g {
     margin-bottom: 0;
 }
@@ -154,6 +158,13 @@ div.state {
     margin-top: 15px;
 }
 
+.button-del-influxdb{
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color:  #eee;
+}
+
+.button-del-influxdb,
 .button-reboot,
 .button-reconnect,
 .button-ha-del,
@@ -171,6 +182,7 @@ div.state {
     background: rgb(192, 0, 0); /* redish */
 }
 
+.button-add-influxdb,
 .button-update,
 .button-update-password,
 .button-add-network,
