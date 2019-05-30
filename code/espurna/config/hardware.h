@@ -3758,8 +3758,8 @@
     // will not work on real life since they all share GPIO
     // but it's OK to test build
     #define EMON_ANALOG_SUPPORT 1
-    #define NTC_SENSOR          1
-    #define LDR_SENSOR          1
+    #define NTC_SUPPORT         1
+    #define LDR_SUPPORT         1
 
     #define PULSEMETER_SUPPORT  1
 
