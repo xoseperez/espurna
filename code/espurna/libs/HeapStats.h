@@ -27,8 +27,8 @@ namespace has_getHeapStats {
     };
 
     using type = decltype(typed_check<EspClass>());
-    constexpr bool value = std::is_same<std::true_type, decltype(typed_check<EspClass>())>::value;
-}
+    constexpr bool value = type::value;
+};
 
 template <typename T>
 void _getHeapStats(std::true_type, T& instance, uint32_t* free, uint16_t* max, uint8_t* frag) {
