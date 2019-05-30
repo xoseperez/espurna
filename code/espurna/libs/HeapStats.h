@@ -43,7 +43,7 @@ void _getHeapStats(std::false_type, T& instance, uint32_t* free, uint16_t* max, 
 }
 
 inline void getHeapStats(uint32_t* free, uint16_t* max, uint8_t* frag) {
-    _getHeapStats(has_getHeapStats::type{}, ESP, &free, &max, &frag);
+    _getHeapStats(has_getHeapStats::type{}, ESP, free, max, frag);
 }
 
 void infoHeapStats() {
