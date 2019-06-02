@@ -9,7 +9,7 @@ Two volumes can be used.
 ## Build
 
 ```bash
-docker build -t espruna-build .
+docker build -t espurna-build .
 ```
 
 ## Examples
@@ -17,12 +17,12 @@ docker build -t espruna-build .
 The simples example will build all firmware files from dev branch to /tmp/firmware.
 
 ```bash
-docker run --rm -it -v /tmp/firmware/:/firmware espruna-build
+docker run --rm -it -v /tmp/firmware/:/firmware espurna-build
 ```
 
 
 This example will only build firmware for environment `intermittech-quinled` from local files in `/home/user/espurna`
 
 ```bash
-docker run --rm -it -v /tmp/firmware/:/firmware -v /home/user/espurna/:/espurna espruna-build intermittech-quinled
+docker run --rm -it -v /tmp/firmware/:/firmware -v /home/user/espurna/:/espurna espurna-build intermittech-quinled
 ```
