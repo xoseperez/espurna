@@ -343,3 +343,19 @@
 #define MAGNITUDE_PH                31
 
 #define MAGNITUDE_MAX               32
+
+// OTA Client (not related to the Web OTA support)
+
+#define OTA_CLIENT_NONE             0
+#define OTA_CLIENT_ASYNCTCP         1
+#define OTA_CLIENT_HTTPUPDATE       2
+
+// SSL Client
+
+#define SSL_CLIENT_NONE                0
+#define SSL_CLIENT_AXTLS               1
+#define SSL_CLIENT_BEARSSL             2
+
+#define SSL_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
+#define SSL_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
+#define SSL_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate

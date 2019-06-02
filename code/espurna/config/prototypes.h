@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <memory>
 #include <pgmspace.h>
 #include <core_version.h>
 
@@ -128,7 +129,33 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
-#include "ESPAsyncTCP.h"
+
+#if OTA_ARDUINOOTA_SUPPORT
+    #include <ArduinoOTA.h>
+#endif
+
+#if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
+    #include <ESPAsyncTCP.h>
+#endif
+
+#if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
+    #include <ESP8266HTTPClient.h>
+    #include <ESP8266httpUpdate.h>
+#endif
+
+#if SSL_CLIENT != SSL_CLIENT_NONE
+
+    #include <WiFiClientSecure.h>
+
+    // TODO: add DigiCert CA for github?
+    #if SSL_CLIENT_BEARSSL && OTA_SSL_CLIENT_INCLUDE_CA
+    #include "static/ota_ssl_client_ca.h"
+    #else
+    #include "static/letsencrypt_isrgrootx1_pem.h"
+    #define _ota_client_http_update_ca _ssl_letsencrypt_isrg_x1_ca
+    #endif
+
+#endif // SSL_CLIENT_SUPPORT
 
 // -----------------------------------------------------------------------------
 // RFM69
@@ -242,3 +269,14 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
 
+// -----------------------------------------------------------------------------
+// std::make_unique backport for C++11
+// -----------------------------------------------------------------------------
+#if 201103L >= __cplusplus
+namespace std {
+    template<typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+}
+#endif

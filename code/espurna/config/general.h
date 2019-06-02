@@ -626,14 +626,48 @@
 // -----------------------------------------------------------------------------
 
 #ifndef OTA_PORT
-#define OTA_PORT                    8266        // OTA port
+#define OTA_PORT                    8266        // Port for ArduinoOTA
 #endif
 
 #ifndef OTA_MQTT_SUPPORT
-#define OTA_MQTT_SUPPORT           0            // No support by default
+#define OTA_MQTT_SUPPORT            0           // Listen for HTTP(s) URLs at '<root topic>/ota'. Depends on OTA_CLIENT
+#endif
+
+#ifndef OTA_ARDUINOOTA_SUPPORT
+#define OTA_ARDUINOOTA_SUPPORT      1            // Support ArduinoOTA by default
+                                                 // Implicitly depends on ESP8266mDNS library, thus increasing firmware size
+#endif
+
+#ifndef OTA_CLIENT
+#define OTA_CLIENT                  OTA_CLIENT_ASYNCTCP     // Terminal / MQTT OTA support
+                                                            // OTA_CLIENT_ASYNCTCP   (ESPAsyncTCP library)
+                                                            // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
 #endif
 
 #define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
+
+#ifndef OTA_FINGERPRINT
+#define OTA_FINGERPRINT             OTA_GITHUB_FP
+#endif
+
+#ifndef OTA_SSL_CLIENT_INCLUDE_CA
+#define OTA_SSL_CLIENT_INCLUDE_CA        0               // Use user-provided CA (only PROGMEM option is supported):
+                                                         // const char _ota_client_http_update_ca[] PROGMEM = "...";
+                                                         // By default, use Letsencrypt ISRG Root X1
+#endif
+
+// -----------------------------------------------------------------------------
+// SSL Client
+// -----------------------------------------------------------------------------
+
+#ifndef SSL_CLIENT
+#define SSL_CLIENT                          SSL_CLIENT_NONE     // What variant of WiFiClient to use (no SSL support by default)
+#endif
+
+// ref: https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
+#ifndef SSL_CLIENT_MFLN
+#define SSL_CLIENT_MFLN                     0
+#endif
 
 // -----------------------------------------------------------------------------
 // NOFUSS

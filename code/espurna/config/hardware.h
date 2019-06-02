@@ -3727,6 +3727,7 @@
     #define INFLUXDB_SUPPORT    1
     #define IR_SUPPORT          1
     #define RF_SUPPORT          1
+    #define OTA_MQTT_SUPPORT    1
 
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4
