@@ -4,24 +4,22 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    python2-minimal \
-    python-pip \
-    python-setuptools \
-    ca-certificates \
-    nodejs \
-    npm \
-    git \
-    libc-bin \
-    bash \
+    python2-minimal=2.7.16-1 \
+    python-pip=18.1-5 \
+    python-setuptools=40.8.0-1 \
+    ca-certificates=20190110 \
+    nodejs=10.15.2~dfsg-2 \
+    npm=5.8.0+ds6-4 \
+    git=1:2.20.1-2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g npm \
-    && pip install platformio
+    && pip install platformio==3.6.7
 
 RUN groupadd --gid 1000 worker && \
     useradd \
     --uid 1000 \
-    --gid worker \
+    --gid worker \	
     --shell /bin/bash \
     --create-home worker
 
