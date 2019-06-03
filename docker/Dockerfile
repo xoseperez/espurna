@@ -27,9 +27,9 @@ RUN mkdir -p /espurna && \
     chown -R worker:worker /espurna && \
     chown -R worker:worker /firmware
 
-USER worker
+COPY --chown=worker:worker . /espurna
 
-RUN git clone -b dev https://github.com/xoseperez/espurna.git /espurna
+USER worker
 
 WORKDIR /espurna/code
 
