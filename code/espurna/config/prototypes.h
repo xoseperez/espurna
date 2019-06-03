@@ -66,6 +66,10 @@ extern "C" {
 #endif
 }
 
+void infoMemory(const char* , unsigned int, unsigned int);
+unsigned int getFreeHeap();
+unsigned int getInitialFreeHeap();
+
 // -----------------------------------------------------------------------------
 // Domoticz
 // -----------------------------------------------------------------------------
