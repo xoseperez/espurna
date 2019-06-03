@@ -451,10 +451,14 @@ void info() {
 
     // -------------------------------------------------------------------------
 
+    static bool show_frag_stats = false;
+
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
-    infoHeapStats();
+    infoHeapStats(show_frag_stats);
     infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
     DEBUG_MSG_P(PSTR("\n"));
+
+    show_frag_stats = true;
 
     // -------------------------------------------------------------------------
 

@@ -130,7 +130,7 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("STACK"), [](Embedis* e) {
-        infoMemory("Stack", 4096, getFreeStack());
+        infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
         terminalOK();
     });
 
