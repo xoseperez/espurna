@@ -64,26 +64,6 @@ unsigned char getHeartbeatInterval() {
     return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
 }
 
-// WTF
-// Calling ESP.getFreeHeap() is making the system crash on a specific
-// AiLight bulb, but anywhere else...
-unsigned int getFreeHeap() {
-    if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
-    return ESP.getFreeHeap();
-}
-
-unsigned int getInitialFreeHeap() {
-    static unsigned int _heap = 0;
-    if (0 == _heap) {
-        _heap = getFreeHeap();
-    }
-    return _heap;
-}
-
-unsigned int getUsedHeap() {
-    return getInitialFreeHeap() - getFreeHeap();
-}
-
 String getEspurnaModules() {
     return FPSTR(espurna_modules);
 }
@@ -203,10 +183,10 @@ namespace Heartbeat {
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
-    unsigned int free_heap = getFreeHeap();
-    
+    heap_stats_t heap_stats = getHeapStats();
+
     UNUSED(uptime_seconds);
-    UNUSED(free_heap);
+    UNUSED(heap_stats);
 
     #if MQTT_SUPPORT
         unsigned char _heartbeat_mode = getHeartbeatMode();
@@ -281,7 +261,7 @@ void heartbeat() {
             #endif
 
             if (hb_cfg & Heartbeat::Freeheap)
-                mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+                mqttSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
             if (hb_cfg & Heartbeat::Relay)
                 relayMQTT();
@@ -328,7 +308,7 @@ void heartbeat() {
             idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
 
         if (hb_cfg & Heartbeat::Freeheap)
-            idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+            idbSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
         if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
@@ -473,7 +453,7 @@ void info() {
 
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
     infoHeapStats();
-    infoMemory("Stack", 4096, getFreeStack());
+    infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------

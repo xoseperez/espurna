@@ -8,7 +8,13 @@ Show extended heap stats when EspClass::getHeapStats() is available
 
 #include <type_traits>
 
-namespace has_getHeapStats {
+struct heap_stats_t {
+    uint32_t available;
+    uint16_t usable;
+    uint8_t frag_pct;
+};
+
+namespace EspClass_has_getHeapStats {
     struct _detector {
         template<typename T, typename = decltype(
                 std::declval<T>().getHeapStats(0,0,0))>
@@ -32,28 +38,79 @@ namespace has_getHeapStats {
 };
 
 template <typename T>
-void _getHeapStats(std::true_type&, T& instance, uint32_t* free, uint16_t* max, uint8_t* frag) {
-    instance.getHeapStats(free, max, frag);
+void _getHeapStats(std::true_type&, T& instance, heap_stats_t& stats) {
+    instance.getHeapStats(&stats.available, &stats.usable, &stats.frag_pct);
 }
 
 template <typename T>
-void _getHeapStats(std::false_type&, T& instance, uint32_t* free, uint16_t* max, uint8_t* frag) {
-    *free = instance.getFreeHeap();
-    *max = 0;
-    *frag = 0;
+void _getHeapStats(std::false_type&, T& instance, heap_stats_t& stats) {
+    stats.available = instance.getFreeHeap();
+    stats.usable = 0;
+    stats.frag_pct = 0;
 }
 
-inline void getHeapStats(uint32_t* free, uint16_t* max, uint8_t* frag) {
-    _getHeapStats(has_getHeapStats::check, ESP, free, max, frag);
+void getHeapStats(heap_stats_t& stats) {
+    _getHeapStats(EspClass_has_getHeapStats::check, ESP, stats);
+}
+
+// WTF
+// Calling ESP.getFreeHeap() is making the system crash on a specific
+// AiLight bulb, but anywhere else it should work as expected
+static bool _heap_value_wtf = false;
+
+heap_stats_t getHeapStats() {
+    heap_stats_t stats;
+    if (_heap_value_wtf) {
+        stats.available = 9999;
+        stats.usable = 9999;
+        stats.frag_pct = 0;
+        return stats;
+    }
+    getHeapStats(stats);
+    return stats;
+}
+
+void wtfHeap(bool value) {
+    _heap_value_wtf = value;
+}
+
+unsigned int getFreeHeap() {
+    return getHeapStats().available;
+}
+
+static unsigned int _initial_heap_value = 0;
+void setInitialFreeHeap() {
+    _initial_heap_value = getFreeHeap();
+}
+
+unsigned int getInitialFreeHeap() {
+    if (0 == _initial_heap_value) {
+        setInitialFreeHeap();
+    }
+    return _initial_heap_value;
+}
+
+void infoMemory(const char* name, const heap_stats_t& stats) {
+    infoMemory(name, getInitialFreeHeap(), stats.available);
+}
+
+void infoHeapStats(const char* name, const heap_stats_t& stats) {
+    DEBUG_MSG_P(
+        PSTR("[MAIN] %-6s: %5u bytes available | %5u bytes lost (%2u%%) | %5u bytes free (%2u%%)\n"),
+        name,
+        stats.available,
+        (stats.available - stats.usable),
+        stats.frag_pct,
+        stats.usable,
+        (100 - stats.frag_pct)
+    );
 }
 
 void infoHeapStats() {
-    uint32_t free;
-    uint16_t max;
-    uint8_t frag;
-    getHeapStats(&free, &max, &frag);
-    infoMemory("Heap", getInitialFreeHeap(), free);
-    if (has_getHeapStats::check) {
-        DEBUG_MSG_P(PSTR("[MAIN] %-6s: %5u bytes usable, %2u%% fragmentation\n"), "Heap", max, frag);
+    static bool initial = true;
+    infoMemory("Heap", getHeapStats());
+    if (!initial && EspClass_has_getHeapStats::check) {
+        infoHeapStats("Heap", getHeapStats());
     }
+    initial = false;
 }
