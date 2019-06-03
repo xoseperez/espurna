@@ -254,7 +254,7 @@ void _mqttConfigure() {
     // Get base topic and apply placeholders
     {
         String topic = getSetting("mqttTopic", MQTT_TOPIC);
-        if (topic.endsWith("/")) topic.remove(_mqtt_topic.length()-1);
+        if (topic.endsWith("/")) topic.remove(topic.length()-1);
 
         // Replace things inside curly braces (like {hostname}, {mac} etc.)
         _mqttPlaceholders(topic);
