@@ -9,7 +9,7 @@ Two volumes can be used.
 ## Build
 
 ```bash
-docker build -t espurna-build .
+docker build -t espurna-build -f Dockerfile ..
 ```
 
 ## Examples
