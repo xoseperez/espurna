@@ -117,7 +117,7 @@ build_webui() {
 build_environments() {
     echo "--------------------------------------------------------------"
     echo "Building firmware images..."
-    mkdir -p ../firmware/espurna-$version
+    mkdir -p $destination/espurna-$version
 
     for environment in $environments; do
         echo -n "* espurna-$version-$environment.bin --- "
