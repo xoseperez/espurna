@@ -14,7 +14,7 @@ docker build -t espurna-build -f Dockerfile ..
 
 ## Examples
 
-The simples example will build all firmware files from dev branch to /tmp/firmware.
+This simple example will build all firmware files from dev branch to /tmp/firmware.
 
 ```bash
 docker run --rm -it -v /tmp/firmware/:/firmware espurna-build
