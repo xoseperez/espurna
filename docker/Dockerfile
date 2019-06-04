@@ -15,9 +15,12 @@ RUN apt-get update \
     && npm install -g npm \
     && pip install "platformio>=3.6,<3.7"
 
-RUN groupadd --gid 1000 worker && \
+ARG UID=1000
+ARG GID=1000
+
+RUN groupadd --gid $GID worker && \
     useradd \
-    --uid 1000 \
+    --uid $UID \
     --gid worker \	
     --shell /bin/bash \
     --create-home worker

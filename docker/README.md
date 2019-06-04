@@ -9,7 +9,7 @@ Two volumes can be used.
 ## Build
 
 ```bash
-docker build -t espurna-build -f Dockerfile ..
+docker build -t espurna-build --build-arg UID=$(id -u) --build-arg GID=$(id -g) -f Dockerfile ..
 ```
 
 ## Examples
