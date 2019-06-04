@@ -665,10 +665,14 @@ void lightMQTT() {
         _toHSV(buffer, sizeof(buffer), true);
         mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
 
-        // Mireds
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
-        mqttSend(MQTT_TOPIC_MIRED, buffer);
-
+    }
+    
+    if (_light_has_color || _light_use_cct) {
+      
+      // Mireds
+      snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
+      mqttSend(MQTT_TOPIC_MIRED, buffer);
+    
     }
 
     // Channels
