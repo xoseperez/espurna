@@ -12,12 +12,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoOTA.h>
 
 void _arduinoOtaConfigure() {
+
     ArduinoOTA.setPort(OTA_PORT);
     ArduinoOTA.setHostname(getSetting("hostname").c_str());
     #if USE_PASSWORD
         ArduinoOTA.setPassword(getAdminPass().c_str());
     #endif
     ArduinoOTA.begin();
+
 }
 
 void _arduinoOtaLoop() {
@@ -50,6 +52,12 @@ void _arduinoOtaOnEnd() {
 
 void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
 
+    // Removed to avoid websocket ping back during upgrade (see #1574)
+    // TODO: implement as separate from debugging message
+    #if WEB_SUPPORT
+        if (wsConnected()) return;
+    #endif
+
     static unsigned int _progOld;
 
     unsigned int _prog = (progress / (total / 100));
@@ -61,6 +69,7 @@ void _arduinoOtaOnProgress(unsigned int progress, unsigned int total) {
 }
 
 void _arduinoOtaOnError(ota_error_t error) {
+
     #if DEBUG_SUPPORT
         DEBUG_MSG_P(PSTR("\n[OTA] Error #%u: "), error);
         if (error == OTA_AUTH_ERROR) DEBUG_MSG_P(PSTR("Auth Failed\n"));
@@ -70,6 +79,7 @@ void _arduinoOtaOnError(ota_error_t error) {
         else if (error == OTA_END_ERROR) DEBUG_MSG_P(PSTR("End Failed\n"));
     #endif
     eepromRotate(true);
+
 }
 
 void arduinoOtaSetup() {

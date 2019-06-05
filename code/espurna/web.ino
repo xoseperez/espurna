@@ -331,8 +331,10 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     } else {
-        //Removed to avoid websocket ping back during upgrade (see #1574)
-        //DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        // Removed to avoid websocket ping back during upgrade (see #1574)
+        // TODO: implement as separate from debugging message
+        if (wsConnected()) return;
+        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
 
