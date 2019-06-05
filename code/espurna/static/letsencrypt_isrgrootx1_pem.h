@@ -1,7 +1,11 @@
 // ISRG Root X1 (self-signed)
-// : https://letsencrypt.org/certs/isrgrootx1.pem.txt
-// : notBefore = Jun  4 11:04:38 2015 GMT
-// : notAfter  = Jun  4 11:04:38 2035 GMT
+// from https://letsencrypt.org/certs/isrgrootx1.pem.txt
+
+// Issuer: C = US, O = Internet Security Research Group, CN = ISRG Root X1
+// Validity
+//     Not Before: Jun  4 11:04:38 2015 GMT
+//     Not After : Jun  4 11:04:38 2035 GMT
+// Subject: C = US, O = Internet Security Research Group, CN = ISRG Root X1
 
 #pragma once
 

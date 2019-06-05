@@ -151,8 +151,8 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
     #if SSL_CLIENT_BEARSSL && OTA_SSL_CLIENT_INCLUDE_CA
     #include "static/ota_ssl_client_ca.h"
     #else
-    #include "static/letsencrypt_isrgrootx1_pem.h"
-    #define _ota_client_http_update_ca _ssl_letsencrypt_isrg_x1_ca
+    #include "static/digicert_evroot_pem.h"
+    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
     #endif
 
 #endif // SSL_CLIENT_SUPPORT
