@@ -97,7 +97,7 @@ void _otaClientOnData(void * arg, AsyncClient * c, void * data, size_t len) {
 void _otaClientOnConnect(void *arg, AsyncClient *client) {
 
     #if ASYNC_TCP_SSL_ENABLED
-        if (443 == _ota_url->_port) {
+        if (443 == _ota_url->port) {
             uint8_t fp[20] = {0};
             sslFingerPrintArray(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp);
             SSL * ssl = _ota_client->getSSL();
