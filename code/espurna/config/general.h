@@ -644,7 +644,7 @@
                                                             // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
 #endif
 
-#define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
+#define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
 
 #ifndef OTA_FINGERPRINT
 #define OTA_FINGERPRINT             OTA_GITHUB_FP
