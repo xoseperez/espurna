@@ -147,8 +147,7 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 
     #include <WiFiClientSecure.h>
 
-    // TODO: add DigiCert CA for github?
-    #if SSL_CLIENT_BEARSSL && OTA_SSL_CLIENT_INCLUDE_CA
+    #if OTA_SSL_CLIENT_INCLUDE_CA
     #include "static/ota_ssl_client_ca.h"
     #else
     #include "static/digicert_evroot_pem.h"

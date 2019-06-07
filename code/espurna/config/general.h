@@ -653,7 +653,7 @@
 #ifndef OTA_SSL_CLIENT_INCLUDE_CA
 #define OTA_SSL_CLIENT_INCLUDE_CA        0               // Use user-provided CA (only PROGMEM option is supported):
                                                          // const char _ota_client_http_update_ca[] PROGMEM = "...";
-                                                         // By default, use Letsencrypt ISRG Root X1
+                                                         // By default, use DigiCert root (for https://github.com)
 #endif
 
 // -----------------------------------------------------------------------------
@@ -661,7 +661,13 @@
 // -----------------------------------------------------------------------------
 
 #ifndef SSL_CLIENT
-#define SSL_CLIENT                          SSL_CLIENT_NONE     // What variant of WiFiClient to use (no SSL support by default)
+#define SSL_CLIENT                          SSL_CLIENT_NONE     // What variant of WiFiClient to use (no SSL support by default):
+                                                                // SSL_CLIENT_AXTLS
+                                                                // - Core 2.3.0 - 2.4.1
+                                                                //   marked for derecation since 2.4.2
+                                                                //   **Will** be removed in the future
+                                                                // SSL_CLIENT_BEARSSL
+                                                                // - Core 2.4.2 and later
 #endif
 
 // ref: https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
