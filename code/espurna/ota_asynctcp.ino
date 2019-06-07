@@ -189,18 +189,19 @@ void _otaClientInitCommands() {
 #if OTA_MQTT_SUPPORT
 
 void _otaClientMqttCallback(unsigned int type, const char * topic, const char * payload) {
+
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_OTA);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        // Match topic
         String t = mqttMagnitude((char *) topic);
         if (t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Initiating from URL: %s\n"), payload);
             _otaClientFrom(payload);
         }
     }
+
 }
 
 #endif // OTA_MQTT_SUPPORT

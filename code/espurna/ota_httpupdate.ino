@@ -188,12 +188,49 @@ void _otaClientInitCommands() {
 
 #endif // TERMINAL_SUPPORT
 
+#if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
+
+bool _ota_do_update = false;
+String _ota_url;
+
+void _otaClientLoop() {
+    if (_ota_do_update) {
+        _otaClientFrom(_ota_url);
+        _ota_do_update = false;
+        _ota_url = "";
+    }
+}
+
+void _otaClientMqttCallback(unsigned int type, const char * topic, const char * payload) {
+
+    if (type == MQTT_CONNECT_EVENT) {
+        mqttSubscribe(MQTT_TOPIC_OTA);
+    }
+
+    if (type == MQTT_MESSAGE_EVENT) {
+        String t = mqttMagnitude((char *) topic);
+        if (t.equals(MQTT_TOPIC_OTA)) {
+            DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
+            _ota_do_update = true;
+            _ota_url = payload;
+        }
+    }
+
+}
+
+#endif // MQTT_SUPPORT
+
 // -----------------------------------------------------------------------------
 
 void otaClientSetup() {
 
     #if TERMINAL_SUPPORT
         _otaClientInitCommands();
+    #endif
+
+    #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
+        mqttRegister(_otaClientMqttCallback);
+        espurnaRegisterLoop(_otaClientLoop);
     #endif
 
 }
