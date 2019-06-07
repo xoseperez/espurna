@@ -2,6 +2,8 @@
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
 
+#include <StreamString.h>
+
 #include "tuya_states.h"
 #include "tuya_serialbuffer.h"
 #include "tuya_dataframe.h"
@@ -78,10 +80,10 @@ namespace TuyaDimmer {
 
         if ((frame & Command::QueryProduct) && frame.length) {
             // XXX: add debug writer(data, length)
-            char* buffer = new char[frame.length + 1];
-            os_memset(buffer, 0, frame.length + 1);
-            os_memcpy(buffer, frame.data, frame.length);
-            DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), buffer);
+            StreamString buffer;
+            buffer.reserve(frame.length + 1);
+            frame.printTo(buffer);
+            DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), buffer.c_str());
             state = State::QUERY_MODE;
             return;
         }

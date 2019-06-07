@@ -56,7 +56,7 @@ namespace TuyaDimmer {
             return result;
         }
 
-        void printTo(Print& stream) {
+        void printTo(Print& stream) const {
 
             uint8_t buffer[6] = {
                 0x55, 0xaa,
@@ -83,7 +83,7 @@ namespace TuyaDimmer {
 
         }
 
-        const uint8_t* data;
+        const uint8_t* data = nullptr;
         uint8_t command = 0;
         uint8_t version = 0;
         uint16_t length = 0;
