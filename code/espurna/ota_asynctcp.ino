@@ -99,7 +99,7 @@ void _otaClientOnConnect(void *arg, AsyncClient *client) {
     #if ASYNC_TCP_SSL_ENABLED
         if (443 == _ota_url->port) {
             uint8_t fp[20] = {0};
-            sslFingerPrintArray(getSetting("otafp", OTA_GITHUB_FP).c_str(), fp);
+            sslFingerPrintArray(getSetting("otafp", OTA_FINGERPRINT).c_str(), fp);
             SSL * ssl = _ota_client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
                 DEBUG_MSG_P(PSTR("[OTA] Warning: certificate fingerpint doesn't match\n"));

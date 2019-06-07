@@ -85,7 +85,7 @@ void _otaClientFromHttps(const String& url) {
     }
 
     if (check == SSL_CLIENT_CHECK_FINGERPRINT) {
-        String fp_string = getSetting("otafp", OTA_GITHUB_FP);
+        String fp_string = getSetting("otafp", OTA_FINGERPRINT);
         if (!fp_string.length()) {
             DEBUG_MSG_P(PSTR("[OTA] Requested fingerprint auth, but 'otafp' is not set\n"));
             return;
@@ -140,7 +140,7 @@ void _otaClientFromHttps(const String& url) {
 
     String fp_string = "";
     if (check == SSL_CLIENT_CHECK_FINGERPRINT) {
-        fp_string = getSetting("otafp", OTA_GITHUB_FP);
+        fp_string = getSetting("otafp", OTA_FINGERPRINT);
         if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
             DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint\n"));
             return;
