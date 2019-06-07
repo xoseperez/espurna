@@ -956,10 +956,10 @@
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #define LIGHT_MAX_PWM           255
-#endif
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
+#else
+#define LIGHT_MAX_PWM           0
 #endif
 
 #endif // LIGHT_MAX_PWM
