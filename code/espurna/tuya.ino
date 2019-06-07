@@ -102,6 +102,7 @@ namespace TuyaDimmer {
 
         if ((frame & Command::WiFiStatus) && !frame.length) {
             state = State::QUERY_DP;
+            return;
         }
 
         // 2 known Data Protocols:
@@ -123,6 +124,7 @@ namespace TuyaDimmer {
                     DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.data[0], frame.data[1]);
             }
             state = State::IDLE;
+            return;
         }
 
     }
@@ -175,6 +177,13 @@ namespace TuyaDimmer {
             case State::QUERY_MODE:
             {
                 DataFrame frame(Command::QueryMode);
+                frame.printTo(Serial);
+                break;
+            }
+            case State::UPDATE_WIFI:
+            {
+                uint8_t buffer[1] = {getWiFiState()};
+                DataFrame frame(Command::WiFiStatus, buffer, 1);
                 frame.printTo(Serial);
                 break;
             }
