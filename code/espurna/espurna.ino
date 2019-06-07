@@ -212,6 +212,9 @@ void setup() {
     #if THERMOSTAT_DISPLAY_SUPPORT
         displaySetup();
     #endif
+    #if TUYA_DIMMER_SUPPORT
+        tuyaSetup();
+    #endif
 
 
     // 3rd party code hook

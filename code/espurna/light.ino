@@ -483,6 +483,10 @@ void _lightProviderUpdate() {
 
     #endif
 
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        tuyaSendBrightness(lightBrightness());
+    #endif
+
 }
 
 // -----------------------------------------------------------------------------

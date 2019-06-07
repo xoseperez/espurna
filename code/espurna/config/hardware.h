@@ -3731,6 +3731,9 @@
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4
 
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
+    #define LIGHT_CHANNELS      1
+
 #elif defined(TRAVIS03)
 
     // Relay provider light/my92XX
