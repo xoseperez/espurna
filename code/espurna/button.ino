@@ -67,17 +67,6 @@ unsigned char buttonAction(unsigned char id, unsigned char event) {
     return BUTTON_MODE_NONE;
 }
 
-unsigned long buttonStore(unsigned long pressed, unsigned long click, unsigned long dblclick, unsigned long lngclick, unsigned long lnglngclick, unsigned long tripleclick) {
-    unsigned int value;
-    value  = pressed;
-    value += click << 4;
-    value += dblclick << 8;
-    value += lngclick << 12;
-    value += lnglngclick << 16;
-    value += tripleclick << 20;
-    return value;
-}
-
 uint8_t mapEvent(uint8_t event, uint8_t count, uint16_t length) {
     if (event == EVENT_PRESSED) return BUTTON_EVENT_PRESSED;
     if (event == EVENT_CHANGED) return BUTTON_EVENT_CLICK;

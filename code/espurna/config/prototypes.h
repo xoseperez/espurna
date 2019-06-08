@@ -39,6 +39,18 @@ void systemStabilityCounter(uint8_t);
 #endif
 
 // -----------------------------------------------------------------------------
+// Buttons
+// -----------------------------------------------------------------------------
+
+#define buttonStore(pressed, click, dblclick, lngclick, lnglngclick, tripleclick) \
+            ((tripleclick << 20) | \
+            (lnglngclick << 16) | \
+            (lngclick << 12) | \
+            (dblclick << 8) | \
+            (click << 4) | \
+            (pressed))
+
+// -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
 void debugSend(const char * format, ...);
