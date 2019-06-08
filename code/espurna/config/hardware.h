@@ -2082,6 +2082,9 @@
     #define HLW8012_CURRENT_R               0.002            // Current resistor
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
 
+    // LED1 on RX pin
+    #define DEBUG_SERIAL_SUPPORT 0
+
 // -----------------------------------------------------------------------------
 // Maxcio W-DE004
 // -----------------------------------------------------------------------------
@@ -2810,6 +2813,9 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+    // BUTTON1 and LED1 are using Serial pins
+    #define DEBUG_SERIAL_SUPPORT        0
+
 // -----------------------------------------------------------------------------
 // Teckin SP22 v1.4 - v1.6
 // -----------------------------------------------------------------------------
@@ -2850,6 +2856,9 @@
     #define HLW8012_VOLTAGE_RATIO       264935
     #define HLW8012_POWER_RATIO         2533110
     #define HLW8012_INTERRUPT_ON        FALLING
+
+    // BUTTON1 and LED1 are using Serial pins
+    #define DEBUG_SERIAL_SUPPORt        0
 
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01

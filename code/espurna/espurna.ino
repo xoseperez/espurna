@@ -83,7 +83,7 @@ void setup() {
     setBoardName();
 
     // Prepare configuration for version 2.0
-    migrate();
+    migrateSetup();
 
     // Init Serial, SPIFFS and system check
     systemSetup();
