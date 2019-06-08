@@ -3632,6 +3632,7 @@
     #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       5
     #define LIGHT_CH1_INVERSE   0
+    #define ENCODER_SUPPORT     1
 
     // A bit of HLW8012 - pins 6,7,8
     #ifndef HLW8012_SUPPORT
