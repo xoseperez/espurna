@@ -18,7 +18,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 typedef struct {
     DebounceEvent * button;
     unsigned long actions;
-    unsigned int relayID;
+    unsigned char relayID;
 } button_t;
 
 std::vector<button_t> _buttons;
@@ -42,7 +42,8 @@ bool _buttonWebSocketOnReceive(const char * key, JsonVariant& value) {
 
 #endif
 
-int buttonFromRelay(unsigned int relayID) {
+int buttonFromRelay(unsigned char relayID) {
+    if (relayID == RELAY_NONE) return -1;
     for (unsigned int i=0; i < _buttons.size(); i++) {
         if (_buttons[i].relayID == relayID) return i;
     }
@@ -106,19 +107,19 @@ void buttonEvent(unsigned int id, unsigned char event) {
     #endif
 
     if (BUTTON_MODE_TOGGLE == action) {
-        if (_buttons[id].relayID > 0) {
+        if (_buttons[id].relayID != RELAY_NONE) {
             relayToggle(_buttons[id].relayID);
         }
     }
 
     if (BUTTON_MODE_ON == action) {
-        if (_buttons[id].relayID > 0) {
+        if (_buttons[id].relayID != RELAY_NONE) {
             relayStatus(_buttons[id].relayID, true);
         }
     }
 
     if (BUTTON_MODE_OFF == action) {
-        if (_buttons[id].relayID > 0) {
+        if (_buttons[id].relayID != RELAY_NONE) {
             relayStatus(_buttons[id].relayID, false);
         }
     }
