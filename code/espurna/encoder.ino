@@ -86,7 +86,7 @@ void _encoderConfigure() {
         }
     }
 
-    _encoder_min_delta = getSetting("encMinDelta", 1).toInt();
+    _encoder_min_delta = getSetting("encMinDelta", ENCODER_MINIMUM_DELTA).toInt();
     if (!_encoder_min_delta) _encoder_min_delta = 1;
 
 }
