@@ -1,7 +1,22 @@
+/*
+
+RTMEM MODULE
+
+*/
+
 bool _rtcmem_status = false;
 
+void _rtcmemErase() {
+    auto ptr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+    const auto end = ptr + RTCMEM_BLOCKS;
+    DEBUG_MSG_P(PSTR("[RTCMEM] Erasing start=%p end=%p\n"), ptr, end);
+    do {
+        *ptr = 0;
+    } while (++ptr != end);
+}
+
 void _rtcmemInit() {
-    memset((uint32_t*)RTCMEM_ADDR, 0, sizeof(uint32_t) * RTCMEM_BLOCKS);
+    _rtcmemErase();
     Rtcmem->magic = RTCMEM_MAGIC;
 }
 
@@ -31,7 +46,8 @@ void _rtcmemInitCommands() {
         _rtcmemInit();
     });
 
-    terminalRegisterCommand(F("RTCMEM.TEST"), [](Embedis* e) {
+    terminalRegisterCommand(F("RTCMEM.ERASE"), [](Embedis* e) {
+        _rtcmemErase();
     });
 
     terminalRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
