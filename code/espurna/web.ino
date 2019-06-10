@@ -344,8 +344,12 @@ void _onRequest(AsyncWebServerRequest *request){
         if (response) return;
     }
 
-    // No subscriber handled the request, return a 404
+    // No subscriber handled the request, return a 404 with implicit "Connection: close"
     request->send(404);
+
+    // And immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+    // Not doing so will cause memory exhaustion, because the connection will linger
+    request->client()->close();
 
 }
 
@@ -356,6 +360,10 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
         bool response = (_web_body_callbacks[i])(request, data, len, index, total);
         if (response) return;
     }
+
+    // Same as _onRequest(...)
+    request->send(404);
+    request->client()->close();
 
 }
 
