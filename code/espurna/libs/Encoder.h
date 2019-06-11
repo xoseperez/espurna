@@ -102,6 +102,17 @@ private:
 
     encoder_values_t values;
 
+    // 2 pins per encoder, 1 isr per encoder
+    static void isr0() ICACHE_RAM_ATTR { update(EncoderValues[0]); }
+    static void isr1() ICACHE_RAM_ATTR { update(EncoderValues[1]); }
+    static void isr2() ICACHE_RAM_ATTR { update(EncoderValues[2]); }
+    static void isr3() ICACHE_RAM_ATTR { update(EncoderValues[3]); }
+    static void isr4() ICACHE_RAM_ATTR { update(EncoderValues[4]); }
+
+    constexpr static void (*_isr_funcs[5])() = {
+        isr0, isr1, isr2, isr3, isr4
+    };
+
 public:
 
     Encoder(uint8_t pin1, uint8_t pin2) {
@@ -135,6 +146,8 @@ public:
         }
 
         values.state = current;
+
+        attach();
 
     }
 
@@ -206,17 +219,7 @@ public:
         interrupts();
     }
 
-    // 2 pins per encoder, 1 isr per encoder
-
-    static void isr0() ICACHE_RAM_ATTR { update(EncoderValues[0]); }
-    static void isr1() ICACHE_RAM_ATTR { update(EncoderValues[1]); }
-    static void isr2() ICACHE_RAM_ATTR { update(EncoderValues[2]); }
-    static void isr3() ICACHE_RAM_ATTR { update(EncoderValues[3]); }
-    static void isr4() ICACHE_RAM_ATTR { update(EncoderValues[4]); }
-
-    constexpr static void (*_isr_funcs[5])() = {
-        isr0, isr1, isr2, isr3, isr4
-    };
 
 };
 
+constexpr void (*Encoder::_isr_funcs[])();
