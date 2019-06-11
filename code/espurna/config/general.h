@@ -322,9 +322,12 @@
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
-#ifndef BUTTON_MQTT_SEND_ALL_EVENTS
-#define BUTTON_MQTT_SEND_ALL_EVENTS 0           // 0 - to send only events the are bound to actions
-                                                // 1 - to send all button events to MQTT
+// BUTTON_MQTT_SEND_ACTION_EVENTS - to send only events the are bound to actions
+// BUTTON_MQTT_SEND_ALL_EVENTS    - to send all button events to MQTT
+// BUTTON_MQTT_SEND_PRESSED       - instead of event, send button status (pressed or not).
+// EVENTS modes do not set retain flag. PRESSED mode sets retain flag based on MQTT_RETAIN setting
+#ifndef BUTTON_MQTT_MODE
+#define BUTTON_MQTT_MODE BUTTON_MQTT_SEND_ACTION_EVENTS
 #endif
 
 //------------------------------------------------------------------------------

@@ -25,11 +25,11 @@ std::vector<button_t> _buttons;
 
 #if MQTT_SUPPORT
 
-void buttonMQTT(unsigned char id, uint8_t event) {
+void buttonMQTT(unsigned char id, uint8_t event, bool optional_retain = false) {
     if (id >= _buttons.size()) return;
     char payload[2];
     itoa(event, payload, 10);
-    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, false); // 1st bool = force, 2nd = retain
+    mqttSend(MQTT_TOPIC_BUTTON, id, payload, false, optional_retain ? mqttRetain() : false); // 1st bool = force, 2nd = retain
 }
 
 #endif
@@ -98,11 +98,20 @@ void buttonEvent(unsigned int id, unsigned char event) {
     if (event == 0) return;
 
     unsigned char action = buttonAction(id, event);
+    bool send_event = false;
 
     #if MQTT_SUPPORT
-       if (action != BUTTON_MODE_NONE || BUTTON_MQTT_SEND_ALL_EVENTS) {
-           buttonMQTT(id, event);
-       }
+        switch (BUTTON_MQTT_MODE) {
+            case BUTTON_MQTT_SEND_ALL_EVENTS:
+                send_event = true;
+            case BUTTON_MQTT_SEND_ACTION_EVENTS:
+                send_event = (BUTTON_MODE_NONE != action);
+            case BUTTON_MQTT_SEND_PRESSED:
+                buttonMQTT(id, _buttons[id].button->pressed(), true);
+                return;
+        }
+
+        if (send_event) buttonMQTT(id, event);
     #endif
 
     if (BUTTON_MODE_TOGGLE == action) {

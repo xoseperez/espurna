@@ -51,6 +51,9 @@
 #define BUTTON_MODE_DIM_UP          10
 #define BUTTON_MODE_DIM_DOWN        11
 
+#define BUTTON_MQTT_SEND_ACTION_EVENTS   0
+#define BUTTON_MQTT_SEND_ALL_EVENTS      1
+#define BUTTON_MQTT_SEND_PRESSED         2
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON
