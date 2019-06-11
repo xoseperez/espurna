@@ -10,7 +10,7 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#include <stack>
+#include <queue>
 
 // we are bound by usable GPIOs
 #define EVENTS_SENSORS_MAX 10
@@ -94,7 +94,7 @@ class EventSensor : public BaseSensor {
             if (_events.empty()) return;
 
             if (_callback) {
-                _callback(MAGNITUDE_EVENT, _events.top());
+                _callback(MAGNITUDE_EVENT, _events.front());
                 _events.pop();
             }
         }
@@ -156,12 +156,10 @@ class EventSensor : public BaseSensor {
             if (cycles - _last > _debounce) {
                 _last = cycles;
                 _counter += 1;
+                _value = digitalRead(gpio);
 
                 // we are handling callbacks in tick()
-                if (_trigger) {
-                    _value = digitalRead(gpio);
-                    _events.push(_value);
-                }
+                if (_trigger) _events.push(_value);
             }
         }
 
@@ -190,7 +188,7 @@ class EventSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         volatile unsigned long _counter = 0;
-        std::stack<unsigned char> _events;
+        std::queue<unsigned char> _events;
         unsigned char _value = 0;
         unsigned long _last = 0;
         unsigned long _debounce = microsecondsToClockCycles(EVENTS_DEBOUNCE * 1000);
