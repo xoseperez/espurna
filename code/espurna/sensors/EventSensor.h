@@ -158,10 +158,12 @@ class EventSensor : public BaseSensor {
             if (cycles - _last > _debounce) {
                 _last = cycles;
                 _counter += 1;
-                _value = digitalRead(gpio);
 
                 // we are handling callbacks in tick()
-                if (_trigger) _events.push(_value);
+                if (_trigger) {
+                    _value = digitalRead(gpio);
+                    _events.push(_value);
+                }
             }
         }
 
