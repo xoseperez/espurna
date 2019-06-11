@@ -94,8 +94,10 @@ class EventSensor : public BaseSensor {
             if (_events.empty()) return;
 
             if (_callback) {
+                noInterrupts();
                 _callback(MAGNITUDE_EVENT, _events.front());
                 _events.pop();
+                interrupts();
             }
         }
 
