@@ -25,6 +25,9 @@ std::vector<button_t> _buttons;
 
 #if MQTT_SUPPORT
 
+auto _button_mqtt_mask_events = BUTTON_MQTT_MASK_EVENTS;
+auto _button_mqtt_mask_pressed = BUTTON_MQTT_MASK_PRESSED;
+
 void buttonMQTT(unsigned char id, uint8_t event, bool optional_retain = false) {
     if (id >= _buttons.size()) return;
     char payload[2];
@@ -101,14 +104,14 @@ void buttonEvent(unsigned int id, unsigned char event) {
     bool send_event = false;
 
     #if MQTT_SUPPORT
-        switch (BUTTON_MQTT_MODE) {
-            case BUTTON_MQTT_SEND_ALL_EVENTS:
-                send_event = true;
-            case BUTTON_MQTT_SEND_ACTION_EVENTS:
-                send_event = (BUTTON_MODE_NONE != action);
-            case BUTTON_MQTT_SEND_PRESSED:
-                buttonMQTT(id, _buttons[id].button->pressed(), true);
-                return;
+        if (_button_mqtt_mask_pressed & (1 << id)) {
+            buttonMQTT(id, buttonState(id), true);
+            return;
+        }
+
+        bool send_event = (BUTTON_MODE_NONE != action);
+        if (_button_mqtt_mask_events & (1 << id)) {
+            send_event = true;
         }
 
         if (send_event) buttonMQTT(id, event);
@@ -253,6 +256,22 @@ void buttonSetup() {
     // Websocket Callbacks
     #if WEB_SUPPORT
         wsOnReceiveRegister(_buttonWebSocketOnReceive);
+    #endif
+
+    #if MQTT_SUPPORT
+        _button_mqtt_mask_events = getSetting("btnMaskEvents", BUTTON_MQTT_MASK_EVENTS).toInt();
+        if (_button_mqtt_event_mask > 0) {
+            char buffer[16];
+            itoa(_button_mqtt_mask_events, buffer, 2);
+            DEBUG_MSG_P(PSTR("[BUTTON] MQTT Events mask: %s\n"), buffer);
+        }
+
+        _button_mqtt_mask_pressed = getSetting("btnMaskPressed", BUTTON_MQTT_MASK_PRESSED).toInt();
+        if (_button_mqtt_pressed_mask > 0) {
+            char buffer[16];
+            itoa(_button_mqtt_mask_pressed, buffer, 2);
+            DEBUG_MSG_P(PSTR("[BUTTON] MQTT pressed mask: %s\n"), buffer);
+        }
     #endif
 
     // Register loop
