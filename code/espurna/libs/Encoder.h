@@ -59,121 +59,48 @@
 // 1    1    1    0    +1
 // 1    1    1    1    no movement
 
-typedef struct {
-    uint8_t             pin1;
-    uint8_t             pin2;
-    volatile uint32_t * pin1_register;
-    volatile uint32_t * pin2_register;
-    uint32_t            pin1_bitmask;
-    uint32_t            pin2_bitmask;
-    uint8_t             state;
-    int32_t             position;
-} encoder_values_t;
+namespace EncoderLibrary {
+
+    typedef struct {
+        uint8_t             pin1;
+        uint8_t             pin2;
+        volatile uint32_t * pin1_register;
+        volatile uint32_t * pin2_register;
+        uint32_t            pin1_bitmask;
+        uint32_t            pin2_bitmask;
+        uint8_t             state;
+        int32_t             position;
+    } encoder_values_t;
 
 #define PIN_TO_BASEREG(pin)             ((volatile uint32_t *)(0x60000000+(0x318)))
 #define DIRECT_PIN_READ(base, mask)     (((*(base)) & (mask)) ? 1 : 0)
 
 #define ENCODERS_MAXIMUM 5
 
-static encoder_values_t * EncoderValues[ENCODERS_MAXIMUM] = {nullptr};
+    encoder_values_t * EncoderValues[ENCODERS_MAXIMUM] = {nullptr};
 
-uint8_t _encoderFindStorage() {
-    for (uint8_t i = 0; i < ENCODERS_MAXIMUM; i++) {
-        if (EncoderValues[i] == nullptr) {
-            return i;
+    uint8_t _encoderFindStorage() {
+        for (uint8_t i = 0; i < ENCODERS_MAXIMUM; i++) {
+            if (EncoderValues[i] == nullptr) {
+                return i;
+            }
         }
+        return ENCODERS_MAXIMUM;
     }
-    return ENCODERS_MAXIMUM;
-}
 
-void _encoderCleanStorage(uint8_t pin1, uint8_t pin2) {
-    for (uint8_t i = 0; i < ENCODERS_MAXIMUM; i++) {
-        if (EncoderValues[i] == nullptr) continue;
-        if (((EncoderValues[i])->pin1 == pin1) && ((EncoderValues[i])->pin2 == pin2)) {
-            EncoderValues[i] = nullptr;
-            break;
+    void _encoderCleanStorage(uint8_t pin1, uint8_t pin2) {
+        for (uint8_t i = 0; i < ENCODERS_MAXIMUM; i++) {
+            if (EncoderValues[i] == nullptr) continue;
+            if (((EncoderValues[i])->pin1 == pin1) && ((EncoderValues[i])->pin2 == pin2)) {
+                EncoderValues[i] = nullptr;
+                break;
+            }
         }
-    }
-}
-
-class Encoder {
-
-private:
-
-    encoder_values_t values;
-
-    // 2 pins per encoder, 1 isr per encoder
-    static void isr0() ICACHE_RAM_ATTR { update(EncoderValues[0]); }
-    static void isr1() ICACHE_RAM_ATTR { update(EncoderValues[1]); }
-    static void isr2() ICACHE_RAM_ATTR { update(EncoderValues[2]); }
-    static void isr3() ICACHE_RAM_ATTR { update(EncoderValues[3]); }
-    static void isr4() ICACHE_RAM_ATTR { update(EncoderValues[4]); }
-
-    constexpr static void (*_isr_funcs[5])() = {
-        isr0, isr1, isr2, isr3, isr4
-    };
-
-public:
-
-    Encoder(uint8_t pin1, uint8_t pin2) {
-
-        values.pin1 = pin1;
-        values.pin2 = pin2;
-
-        pinMode(values.pin1, INPUT_PULLUP);
-        pinMode(values.pin2, INPUT_PULLUP);
-
-        values.pin1_register = PIN_TO_BASEREG(values.pin1);
-        values.pin2_register = PIN_TO_BASEREG(values.pin2);
-
-        values.pin1_bitmask = digitalPinToBitMask(values.pin1);
-        values.pin2_bitmask = digitalPinToBitMask(values.pin2);
-
-        values.position = 0;
-
-        // allow time for a passive R-C filter to charge
-        // through the pullup resistors, before reading
-        // the initial state
-        delayMicroseconds(2000);
-
-        uint8_t current = 0;
-        if (DIRECT_PIN_READ(values.pin1_register, values.pin1_bitmask)) {
-            current |= 1;
-        }
-
-        if (DIRECT_PIN_READ(values.pin2_register, values.pin2_bitmask)) {
-            current |= 2;
-        }
-
-        values.state = current;
-
-        attach();
-
-    }
-
-    ~Encoder() {
-        detach();
-    }
-
-    int32_t read() {
-        noInterrupts();
-
-        update(&values);
-        int32_t ret = values.position;
-
-        interrupts();
-        return ret;
-    }
-
-    void write(int32_t position) {
-        noInterrupts();
-        values.position = position;
-        interrupts();
     }
 
     // update() is not meant to be called from outside Encoder,
     // but it is public to allow static interrupt routines.
-    static void update(encoder_values_t *target) ICACHE_RAM_ATTR {
+    void ICACHE_RAM_ATTR update(encoder_values_t *target) {
         uint8_t p1val = DIRECT_PIN_READ(target->pin1_register, target->pin1_bitmask);
         uint8_t p2val = DIRECT_PIN_READ(target->pin2_register, target->pin2_bitmask);
         uint8_t state = target->state & 3;
@@ -196,30 +123,107 @@ public:
         }
     }
 
-    bool attach() {
-        uint8_t index = _encoderFindStorage();
-        if (index >= ENCODERS_MAXIMUM) return false;
+    // 2 pins per encoder, 1 isr per encoder
+    void ICACHE_RAM_ATTR isr0() { update(EncoderValues[0]); }
+    void ICACHE_RAM_ATTR isr1() { update(EncoderValues[1]); }
+    void ICACHE_RAM_ATTR isr2() { update(EncoderValues[2]); }
+    void ICACHE_RAM_ATTR isr3() { update(EncoderValues[3]); }
+    void ICACHE_RAM_ATTR isr4() { update(EncoderValues[4]); }
 
-        EncoderValues[index] = &values;
+    constexpr void (*_isr_funcs[5])() = {
+        isr0, isr1, isr2, isr3, isr4
+    };
 
-        attachInterrupt(values.pin1, _isr_funcs[index], CHANGE);
-        attachInterrupt(values.pin2, _isr_funcs[index], CHANGE);
+    class Encoder {
 
-        return true;
-    }
+    private:
 
-    void detach() {
-        noInterrupts();
+        encoder_values_t values;
 
-        _encoderCleanStorage(values.pin1, values.pin2);
+    public:
 
-        detachInterrupt(values.pin1);
-        detachInterrupt(values.pin2);
+        Encoder(uint8_t pin1, uint8_t pin2) {
 
-        interrupts();
-    }
+            values.pin1 = pin1;
+            values.pin2 = pin2;
+
+            pinMode(values.pin1, INPUT_PULLUP);
+            pinMode(values.pin2, INPUT_PULLUP);
+
+            values.pin1_register = PIN_TO_BASEREG(values.pin1);
+            values.pin2_register = PIN_TO_BASEREG(values.pin2);
+
+            values.pin1_bitmask = digitalPinToBitMask(values.pin1);
+            values.pin2_bitmask = digitalPinToBitMask(values.pin2);
+
+            values.position = 0;
+
+            // allow time for a passive R-C filter to charge
+            // through the pullup resistors, before reading
+            // the initial state
+            delayMicroseconds(2000);
+
+            uint8_t current = 0;
+            if (DIRECT_PIN_READ(values.pin1_register, values.pin1_bitmask)) {
+                current |= 1;
+            }
+
+            if (DIRECT_PIN_READ(values.pin2_register, values.pin2_bitmask)) {
+                current |= 2;
+            }
+
+            values.state = current;
+
+            attach();
+
+        }
+
+        ~Encoder() {
+            detach();
+        }
+
+        int32_t read() {
+            noInterrupts();
+
+            update(&values);
+            int32_t ret = values.position;
+
+            interrupts();
+            return ret;
+        }
+
+        void write(int32_t position) {
+            noInterrupts();
+            values.position = position;
+            interrupts();
+        }
+
+        bool attach() {
+            uint8_t index = _encoderFindStorage();
+            if (index >= ENCODERS_MAXIMUM) return false;
+
+            EncoderValues[index] = &values;
+
+            attachInterrupt(values.pin1, _isr_funcs[index], CHANGE);
+            attachInterrupt(values.pin2, _isr_funcs[index], CHANGE);
+
+            return true;
+        }
+
+        void detach() {
+            noInterrupts();
+
+            _encoderCleanStorage(values.pin1, values.pin2);
+
+            detachInterrupt(values.pin1);
+            detachInterrupt(values.pin2);
+
+            interrupts();
+        }
 
 
-};
+    };
 
-constexpr void (*Encoder::_isr_funcs[])();
+}
+
+using EncoderLibrary::Encoder;
