@@ -130,6 +130,9 @@ class EventSensor : public BaseSensor {
                 _counter = 0;
                 return value;
             };
+            if (index == 1) {
+                return _value;
+            }
             return 0;
         }
 
@@ -155,7 +158,10 @@ class EventSensor : public BaseSensor {
                 _counter += 1;
 
                 // we are handling callbacks in tick()
-                if (_trigger) _events.push(digitalRead(gpio));
+                if (_trigger) {
+                    _value = digitalRead(gpio);
+                    _events.push(_value);
+                }
             }
         }
 
@@ -185,6 +191,7 @@ class EventSensor : public BaseSensor {
 
         volatile unsigned long _counter = 0;
         std::stack<unsigned char> _events;
+        unsigned char _value = 0;
         unsigned long _last = 0;
         unsigned long _debounce = microsecondsToClockCycles(EVENTS_DEBOUNCE * 1000);
         unsigned char _gpio = GPIO_NONE;
