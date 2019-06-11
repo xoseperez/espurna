@@ -155,7 +155,7 @@ class EventSensor : public BaseSensor {
                 _counter += 1;
 
                 // we are handling callbacks in tick()
-                _events.push(digitalRead(gpio));
+                if (_trigger) _events.push(digitalRead(gpio));
             }
         }
 
