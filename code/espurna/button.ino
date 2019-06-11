@@ -101,7 +101,6 @@ void buttonEvent(unsigned int id, unsigned char event) {
     if (event == 0) return;
 
     unsigned char action = buttonAction(id, event);
-    bool send_event = false;
 
     #if MQTT_SUPPORT
         if (_button_mqtt_mask_pressed & (1 << id)) {
@@ -260,14 +259,14 @@ void buttonSetup() {
 
     #if MQTT_SUPPORT
         _button_mqtt_mask_events = getSetting("btnMaskEvents", BUTTON_MQTT_MASK_EVENTS).toInt();
-        if (_button_mqtt_event_mask > 0) {
+        if (_button_mqtt_mask_events > 0) {
             char buffer[16];
             itoa(_button_mqtt_mask_events, buffer, 2);
             DEBUG_MSG_P(PSTR("[BUTTON] MQTT Events mask: %s\n"), buffer);
         }
 
         _button_mqtt_mask_pressed = getSetting("btnMaskPressed", BUTTON_MQTT_MASK_PRESSED).toInt();
-        if (_button_mqtt_pressed_mask > 0) {
+        if (_button_mqtt_mask_pressed > 0) {
             char buffer[16];
             itoa(_button_mqtt_mask_pressed, buffer, 2);
             DEBUG_MSG_P(PSTR("[BUTTON] MQTT pressed mask: %s\n"), buffer);
