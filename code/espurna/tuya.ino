@@ -215,8 +215,8 @@ namespace TuyaDimmer {
     } 
 
     void tuyaSetup() {
-        TUYA_SERIAL.begin(TuyaDimmer::SERIAL_SPEED);
-        espurnaRegisterLoop(TuyaDimmer::tuyaLoop);
+        TUYA_SERIAL.begin(SERIAL_SPEED);
+        espurnaRegisterLoop(tuyaLoop);
     }
 
 }
