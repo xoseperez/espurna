@@ -71,3 +71,10 @@
 #undef NTP_SUPPORT
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
+
+#if LIGHT_DIMMER == LIGHT_DIMMER_TUYA
+#undef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT        0           // TODO: can it be sw serial connection?
+#undef LIGHT_USE_TRANSITIONS
+#define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
+#endif

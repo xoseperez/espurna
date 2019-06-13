@@ -9,6 +9,24 @@ namespace TuyaDimmer {
         std::vector<uint8_t> data;
     };
 
+    void _printRaw(Print& stream, uint8_t data) {
+        stream.write(data);
+    }
+
+    void _printRawArray(Print& stream, uint8_t* data, size_t size) {
+        stream.write(data, size);
+    }
+
+    void _printHex(Print& stream, uint8_t data) {
+        stream.print(data, HEX);
+    }
+
+    void _printHexArray(Print& stream, uint8_t* data, size_t size) {
+        for (size_t n=0; n<size; ++n) {
+            stream.print(data[n], HEX);
+        }
+    }
+
     class DataFrame {
 
     private:
@@ -69,7 +87,14 @@ namespace TuyaDimmer {
             return result;
         }
 
-        void printTo(Print& stream) const {
+        void printTo(Print& stream, bool pretty=false) const {
+
+            auto write_byte_func = _printRaw;
+            auto write_array_func = _printRawArray;
+            if (pretty) {
+                write_byte_func = _printHex;
+                write_array_func = _printHexArray;
+            }
 
             uint8_t buffer[6] = {
                 0x55, 0xaa,
@@ -81,20 +106,20 @@ namespace TuyaDimmer {
             checksum += command;
             checksum += length;
 
-            stream.write(buffer, 6);
+            write_array_func(stream, buffer, 6);
 
             if (this->data && this->length) {
 
                 size_t index = 0;
                 while (index < this->length) {
                     checksum += this->data[index];
-                    stream.write(this->data[index]);
+                    write_byte_func(stream, this->data[index]);
                     ++index;
                 }
 
             }
 
-            stream.write(checksum);
+            write_byte_func(stream, checksum);
 
         }
 

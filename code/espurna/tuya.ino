@@ -49,10 +49,10 @@ namespace TuyaDimmer {
 
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
         if (!transportDebug) return;
-        StreamString buffer;
-        buffer.reserve(frame.length + 1);
-        frame.printTo(buffer);
-        DEBUG_MSG("[TYUA] %s: %s\n", tag, buffer.c_str());
+        StreamString out;
+        out.reserve((frame.length * 2) + 1);
+        frame.printTo(out, true);
+        DEBUG_MSG("[TYUA] %s: %s\n", tag, out.c_str());
     }
 
     void sendHeartbeat(Heartbeat hb, State state) {
@@ -226,13 +226,14 @@ namespace TuyaDimmer {
             // initial config is done, only doing heartbeat periodically
             case State::IDLE:
                 sendHeartbeat(Heartbeat::SLOW, state);
-                if (!outputData.empty()) {
-                    DataFrame frame(outputData.front());
-                    dataframeDebugSend("OUT", frame);
-                    frame.printTo(TUYA_SERIAL);
-                    outputData.pop();
-                }
                 break;
+        }
+
+        if (!outputData.empty()) {
+            DataFrame frame(outputData.front());
+            dataframeDebugSend("OUT", frame);
+            frame.printTo(TUYA_SERIAL);
+            outputData.pop();
         }
 
     }
