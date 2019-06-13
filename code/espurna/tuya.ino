@@ -42,8 +42,8 @@ namespace TuyaDimmer {
     SerialBuffer serialBuffer(TUYA_SERIAL);
     std::queue<payload_t> outputData;
 
-    uint8_t switchDP = 0x01u;
-    uint8_t dimmerDP = 0x03u;
+    uint8_t switchDP = TUYA_SWITCH_DP;
+    uint8_t dimmerDP = TUYA_DIMMER_DP;
 
     void sendHeartbeat(Heartbeat hb, State state) {
 
@@ -159,7 +159,7 @@ namespace TuyaDimmer {
         }});
     }
 
-    void tuyaSendBrightness(uint8_t value) {
+    void tuyaSendBrightness(unsigned char value) {
         outputData.emplace(payload_t{Command::SetDP, {
             dimmerDP, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00, value
         }});
@@ -215,8 +215,8 @@ namespace TuyaDimmer {
             case State::IDLE:
                 sendHeartbeat(Heartbeat::SLOW, state);
                 if (!outputData.empty()) {
-                    const payload_t& payload = outputData.front();
-                    DataFrame frame(payload);
+                    //const payload_t& payload = outputData.front();
+                    DataFrame frame(outputData.front());
                     frame.printTo(TUYA_SERIAL);
                     outputData.pop();
                 }
@@ -228,16 +228,12 @@ namespace TuyaDimmer {
     void tuyaSetup() {
         TUYA_SERIAL.begin(SERIAL_SPEED);
 
+        switchDP = getSetting("tuyaSwitchDP", TUYA_SWITCH_DP).toInt();
         dimmerDP = getSetting("tuyaDimmerDP", TUYA_DIMMER_DP).toInt();
 
-        espurnaRegisterLoop(tuyaLoop);
+        ::espurnaRegisterLoop(tuyaLoop);
     }
 
 }
-
-using TuyaDimmer::tuyaSendSwitch;
-using TuyaDimmer::tuyaSendBrightness;
-using TuyaDimmer::tuyaSetup;
-
 
 #endif // LIGHT_PROVIDER_TUYA

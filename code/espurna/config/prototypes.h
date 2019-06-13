@@ -228,6 +228,7 @@ typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_cal
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
 
+// -----------------------------------------------------------------------------
 // THERMOSTAT
 // -----------------------------------------------------------------------------
 #if THERMOSTAT_SUPPORT
@@ -242,3 +243,15 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
 
+// -----------------------------------------------------------------------------
+// TUYA
+// -----------------------------------------------------------------------------
+namespace TuyaDimmer {
+    void tuyaSendBrightness(unsigned char);
+    void tuyaSendSwitch(bool);
+    void tuyaSetup();
+}
+
+using TuyaDimmer::tuyaSendSwitch;
+using TuyaDimmer::tuyaSendBrightness;
+using TuyaDimmer::tuyaSetup;
