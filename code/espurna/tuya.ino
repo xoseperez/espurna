@@ -45,6 +45,16 @@ namespace TuyaDimmer {
     uint8_t switchDP = TUYA_SWITCH_DP;
     uint8_t dimmerDP = TUYA_DIMMER_DP;
 
+    bool transportDebug = false;
+
+    inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
+        if (!transportDebug) return;
+        StreamString buffer;
+        buffer.reserve(frame.length + 1);
+        frame.printTo(buffer);
+        DEBUG_MSG("[TYUA] %s: %s\n", tag, buffer.c_str());
+    }
+
     void sendHeartbeat(Heartbeat hb, State state) {
 
         static uint32_t last = 0;
@@ -76,6 +86,8 @@ namespace TuyaDimmer {
     void processFrame(State& state, const SerialBuffer& buffer) {
 
         const DataFrame frame(buffer);
+
+        dataframeDebugSend("IN", frame);
 
         // initial packet has 0
         if ((frame & Command::Heartbeat) && (frame.length == 1) && (frame.data[0] == 0)) {
@@ -215,8 +227,8 @@ namespace TuyaDimmer {
             case State::IDLE:
                 sendHeartbeat(Heartbeat::SLOW, state);
                 if (!outputData.empty()) {
-                    //const payload_t& payload = outputData.front();
                     DataFrame frame(outputData.front());
+                    dataframeDebugSend("OUT", frame);
                     frame.printTo(TUYA_SERIAL);
                     outputData.pop();
                 }
@@ -228,6 +240,7 @@ namespace TuyaDimmer {
     void tuyaSetup() {
         TUYA_SERIAL.begin(SERIAL_SPEED);
 
+        transportDebug = getSetting("tuyaDebug", 1).toInt() == 1;
         switchDP = getSetting("tuyaSwitchDP", TUYA_SWITCH_DP).toInt();
         dimmerDP = getSetting("tuyaDimmerDP", TUYA_DIMMER_DP).toInt();
 
