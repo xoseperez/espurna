@@ -8,7 +8,7 @@ namespace TuyaDimmer {
 
     public:
 
-        SerialBuffer(const Stream& stream) :
+        SerialBuffer(Stream& stream) :
             _stream(stream)
         {
             _data.reserve(LIMIT);
@@ -44,7 +44,7 @@ namespace TuyaDimmer {
             return _data.data();
         }
 
-        bool available() {
+        int available() {
             return _stream.available();
         }
 
@@ -109,7 +109,7 @@ namespace TuyaDimmer {
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0xff;
         std::vector<uint8_t> _data;
-        const Stream& _stream;
+        Stream& _stream;
 
     };
 
