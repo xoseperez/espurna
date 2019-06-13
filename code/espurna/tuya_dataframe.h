@@ -44,7 +44,7 @@ namespace TuyaDimmer {
         {}
 
         DataFrame(const payload_t& payload) :
-            command(payload.command),
+            command(static_cast<uint8_t>(payload.command)),
             length(payload.data.size()),
             data(payload.data.data())
         {}
