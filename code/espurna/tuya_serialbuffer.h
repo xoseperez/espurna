@@ -58,6 +58,7 @@ namespace TuyaDimmer {
             if (full()) return;
 
             int byte = _stream.read();
+            if (!byte) return;
 
             // check that header value is 0x55aa
             if (0 == _index) {
@@ -76,22 +77,26 @@ namespace TuyaDimmer {
             }
 
             // verify that the checksum byte is the same that we got so far
-            if (_index >= _read_until) {
+            if ((_index > 5) && (_index >= _read_until)) {
                 if (_checksum != byte) {
                     reset();
                     return;
                 }
 
                 _done = true;
+                return;
             }
 
-            _data[_index++] = byte;
-            if (_index > 1) _checksum += byte;
+            _data[_index] = byte;
+            _checksum += byte;
+
+            ++_index;
 
         }
 
         void reset() {
             std::fill(_data.begin(), _data.end(), 0);
+            _read_until = LIMIT;
             _checksum = 0;
             _index = 0;
             _done = false;
