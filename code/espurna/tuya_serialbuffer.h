@@ -109,7 +109,7 @@ namespace TuyaDimmer {
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0xff;
         std::vector<uint8_t> _data;
-        const Stream _stream&;
+        const Stream& _stream;
 
     };
 
