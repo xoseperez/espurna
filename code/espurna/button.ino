@@ -105,17 +105,18 @@ void buttonEvent(unsigned int id, unsigned char event) {
     unsigned char action = buttonAction(id, event);
 
     #if MQTT_SUPPORT
-        if (_button_mqtt_mask_pressed & (1 << (BUTTONS_MAX - id))) {
+    {
+        uint8_t id_bit = (1 << ((BUTTONS_MAX - 1) - id));
+
+        if (_button_mqtt_mask_pressed & id_bit) {
             buttonMQTT(id, buttonState(id), true);
             return;
         }
 
-        bool send_event = (BUTTON_MODE_NONE != action);
-        if (_button_mqtt_mask_events & (1 << (BUTTONS_MAX - id))) {
-            send_event = true;
+        if ((BUTTON_MODE_NONE != action) || (_button_mqtt_mask_events & id_bit)) {
+            buttonMQTT(id, event);
         }
-
-        if (send_event) buttonMQTT(id, event);
+    }
     #endif
 
     if (BUTTON_MODE_TOGGLE == action) {
