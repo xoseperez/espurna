@@ -3781,6 +3781,32 @@
     #define SSDP_SUPPORT        1
     #define RF_SUPPORT          1
 
+#elif defined(JINVOO_VALVE_SM_PW713)
+
+    // Info
+    #define MANUFACTURER        "JINVOO"
+    #define DEVICE              "VALVE_SM_AW713"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LED
+    #define LED1_PIN            5  // 5 red led
+    #define LED1_PIN_INVERSE    0
+    #define LED1_RELAY          1
+    #define LED1_MODE           LED_MODE_RELAY
+
+    #define LED2_PIN            4  // 4 blue led
+    #define LED2_PIN_INVERSE    0
+    #define LED2_RELAY          1
+    #define LED2_MODE           LED_MODE_FINDME_WIFI
+
 #endif
 
 // -----------------------------------------------------------------------------
