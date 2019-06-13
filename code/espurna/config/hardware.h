@@ -3783,6 +3783,10 @@
 
 #elif defined(JINVOO_VALVE_SM_AW713)
 
+    // Reflashing from oryginal Tuya firmware 
+    // to thirdparty firmware like espurna by:
+    // https://github.com/ct-Open-Source/tuya-convert
+
     // Info
     #define MANUFACTURER        "JINVOO"
     #define DEVICE              "VALVE_SM_AW713"
