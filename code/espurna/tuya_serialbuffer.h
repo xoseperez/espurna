@@ -8,7 +8,11 @@ namespace TuyaDimmer {
 
     public:
 
-        SerialBuffer() { _data.reserve(LIMIT); }
+        SerialBuffer(const Stream& stream) :
+            _stream(stream)
+        {
+            _data.reserve(LIMIT);
+        }
 
         bool full() { return (_index >= SerialBuffer::LIMIT); }
         bool done() { return _done; }
@@ -40,10 +44,20 @@ namespace TuyaDimmer {
             return _data.data();
         }
 
-        void read(uint8_t byte) {
+        bool available() {
+            return _stream.available();
+        }
+
+        void rewind() {
+            while(_stream.read() != -1);
+        }
+
+        void read() {
 
             if (_done) return;
             if (full()) return;
+
+            int byte = _stream.read();
 
             // check that header value is 0x55aa
             if (0 == _index) {
@@ -90,6 +104,7 @@ namespace TuyaDimmer {
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0xff;
         std::vector<uint8_t> _data;
+        const Stream _stream&;
 
     };
 

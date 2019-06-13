@@ -39,16 +39,14 @@ namespace TuyaDimmer {
 
     // --------------------------------------------
 
-    // TODO: attach to Serial object, remove other Serial use in code
-    // TODO: attach to arbitrary stream object, allow to mock or use SoftwareSerial
-    SerialBuffer serialBuffer;
+    SerialBuffer serialBuffer(TUYA_SERIAL);
 
     void sendHeartbeat(Heartbeat hb, State state) {
 
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
             DataFrame frame(Command::Heartbeat);
-            frame.printTo(Serial);
+            frame.printTo(TUYA_SERIAL);
             last = millis();
         }
 
@@ -133,9 +131,9 @@ namespace TuyaDimmer {
 
     void processSerial(State& state) {
 
-        while (Serial.available()) {
+        while (serialBuffer.available()) {
 
-            serialBuffer.read(Serial.read());
+            serialBuffer.read();
 
             if (serialBuffer.done()) {
                 processFrame(state, serialBuffer);
@@ -143,7 +141,7 @@ namespace TuyaDimmer {
             }
 
             if (serialBuffer.full()) {
-                while(Serial.read() != -1);
+                serialBuffer.rewind();
                 serialBuffer.reset();
             }
         }
@@ -165,35 +163,35 @@ namespace TuyaDimmer {
             // send fast heartbeat until mcu responds with something
             case State::INIT:
                 // flush serial buffer before transmitting anything
-                while (Serial.read() != -1);
+                serialBuffer.rewind();
             case State::HEARTBEAT:
                 sendHeartbeat(Heartbeat::FAST, state);
                 break;
             case State::QUERY_PRODUCT:
             {
                 DataFrame frame(Command::QueryProduct);
-                frame.printTo(Serial);
+                frame.printTo(TUYA_SERIAL);
                 break;
             }
             // whether we control the led&button or not
             case State::QUERY_MODE:
             {
                 DataFrame frame(Command::QueryMode);
-                frame.printTo(Serial);
+                frame.printTo(TUYA_SERIAL);
                 break;
             }
             case State::UPDATE_WIFI:
             {
                 uint8_t buffer[1] = {getWiFiState()};
                 DataFrame frame(Command::WiFiStatus, buffer, 1);
-                frame.printTo(Serial);
+                frame.printTo(TUYA_SERIAL);
                 break;
             }
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
                 DataFrame frame(Command::QueryDP);
-                frame.printTo(Serial);
+                frame.printTo(TUYA_SERIAL);
                 break;
             }
             // initial config is done, only doing heartbeat periodically
@@ -207,20 +205,20 @@ namespace TuyaDimmer {
 }
 
 void tuyaSetup() {
-    Serial.begin(TuyaDimmer::SERIAL_SPEED);
+    TUYA_SERIAL.begin(TuyaDimmer::SERIAL_SPEED);
     espurnaRegisterLoop(TuyaDimmer::tuyaLoop);
 }
 
 void tuyaSendSwitch(bool state) {
     uint8_t data[] = {0x01,0x01,0x00,0x01, state ? uint8_t(1) : uint8_t(0)};
     TuyaDimmer::DataFrame frame(TuyaDimmer::Command::SetDP, data, 5);
-    frame.printTo(Serial);
+    frame.printTo(TUYA_SERIAL);
 }
 
 void tuyaSendBrightness(uint8_t value) {
     uint8_t data[] = {0x02,0x02,0x00,0x04,0x00,0x00,0x00,value};
     TuyaDimmer::DataFrame frame(TuyaDimmer::Command::SetDP, data, 8);
-    frame.printTo(Serial);
+    frame.printTo(TUYA_SERIAL);
 } 
 
 #endif // LIGHT_PROVIDER_TUYA
