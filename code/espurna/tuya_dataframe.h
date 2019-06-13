@@ -76,7 +76,9 @@ namespace TuyaDimmer {
                 while (index < this->length) {
                     checksum += this->data[index];
                     stream.write(this->data[index]);
+                    ++index;
                 }
+
             }
 
             stream.write(checksum);
