@@ -1241,6 +1241,10 @@ void lightSetup() {
 
     #endif
 
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        tuyaSetup();
+    #endif
+
     DEBUG_MSG_P(PSTR("[LIGHT] LIGHT_PROVIDER = %d\n"), LIGHT_PROVIDER);
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channel.size());
 
