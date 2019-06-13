@@ -1,6 +1,13 @@
 #pragma once
 
+#include "tuya_states.h"
+
 namespace TuyaDimmer {
+
+    struct payload_t {
+        Command command;
+        std::vector<uint8_t> data;
+    };
 
     class DataFrame {
 
@@ -34,6 +41,12 @@ namespace TuyaDimmer {
 
         DataFrame(const SerialBuffer& buffer) :
             DataFrame(buffer.command(), buffer.dataPtr(), buffer.length())
+        {}
+
+        DataFrame(const payload_t& payload) :
+            command(payload.command),
+            length(payload.data.size()),
+            data(payload.data.data)
         {}
 
         bool operator &(Command command) const {

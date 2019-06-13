@@ -2,6 +2,7 @@
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
 
+#include <queue>
 #include <StreamString.h>
 
 #include "tuya_states.h"
@@ -9,7 +10,6 @@
 #include "tuya_dataframe.h"
 
 namespace TuyaDimmer {
-
 
     constexpr size_t SERIAL_SPEED = 9600;
 
@@ -40,13 +40,13 @@ namespace TuyaDimmer {
     // --------------------------------------------
 
     SerialBuffer serialBuffer(TUYA_SERIAL);
+    std::queue<payload_t> outputData;
 
     void sendHeartbeat(Heartbeat hb, State state) {
 
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
-            DataFrame frame(Command::Heartbeat);
-            frame.printTo(TUYA_SERIAL);
+            outputData.emplace({Command::Heartbeat});
             last = millis();
         }
 
@@ -160,65 +160,70 @@ namespace TuyaDimmer {
         // go through the initial setup step-by-step, as described in
         // https://docs.tuya.com/en/mcu/mcu-protocol.html#21-basic-protocol
         switch (state) {
+            // flush serial buffer before transmitting anything
             // send fast heartbeat until mcu responds with something
             case State::INIT:
-                // flush serial buffer before transmitting anything
                 serialBuffer.rewind();
+                state = State::HEARTBEAT;
             case State::HEARTBEAT:
                 sendHeartbeat(Heartbeat::FAST, state);
                 break;
+            // general info about the device
             case State::QUERY_PRODUCT:
             {
-                DataFrame frame(Command::QueryProduct);
-                frame.printTo(TUYA_SERIAL);
+                outputData.emplace({Command::QueryProduct});
                 break;
             }
             // whether we control the led&button or not
             case State::QUERY_MODE:
             {
-                DataFrame frame(Command::QueryMode);
-                frame.printTo(TUYA_SERIAL);
+                outputData.emplace({Command::QueryMode});
                 break;
             }
+            // if we don't, send out current wifi status
             case State::UPDATE_WIFI:
             {
-                uint8_t buffer[1] = {getWiFiState()};
-                DataFrame frame(Command::WiFiStatus, buffer, 1);
-                frame.printTo(TUYA_SERIAL);
+                outputData.emplace({Command::WiFiStatus, {getWiFiState()}});
                 break;
             }
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
-                DataFrame frame(Command::QueryDP);
-                frame.printTo(TUYA_SERIAL);
+                outputData.emplace({Command::QueryDP});
                 break;
             }
             // initial config is done, only doing heartbeat periodically
             case State::IDLE:
                 sendHeartbeat(Heartbeat::SLOW, state);
+                if (!outputData.empty()) {
+                    const data_t& data = outputData.front();
+                    DataFrame frame(data.command, data.payload.data, data.payload.size());
+                    frame.printTo(TUYA_SERIAL);
+                    outputData.pop();
+                }
                 break;
         }
 
     }
 
+    void tuyaSendSwitch(bool state) {
+        outputData.emplace({Command::SetDP, {0x01,0x01,0x00,0x01, state ? uint8_t(1) : uint8_t(0)}, 5)
+    }
+
+    void tuyaSendBrightness(uint8_t value) {
+        outputData.emplace({Command::SetDP, {0x02,0x02,0x00,0x04,0x00,0x00,0x00,value}, 8});
+    } 
+
+    void tuyaSetup() {
+        TUYA_SERIAL.begin(TuyaDimmer::SERIAL_SPEED);
+        espurnaRegisterLoop(TuyaDimmer::tuyaLoop);
+    }
+
 }
 
-void tuyaSetup() {
-    TUYA_SERIAL.begin(TuyaDimmer::SERIAL_SPEED);
-    espurnaRegisterLoop(TuyaDimmer::tuyaLoop);
-}
+using TuyaDimmer::tuyaSendSwitch;
+using TuyaDimmer::tuyaSendBrightness;
+using TuyaDimmer::tuyaSetup;
 
-void tuyaSendSwitch(bool state) {
-    uint8_t data[] = {0x01,0x01,0x00,0x01, state ? uint8_t(1) : uint8_t(0)};
-    TuyaDimmer::DataFrame frame(TuyaDimmer::Command::SetDP, data, 5);
-    frame.printTo(TUYA_SERIAL);
-}
-
-void tuyaSendBrightness(uint8_t value) {
-    uint8_t data[] = {0x02,0x02,0x00,0x04,0x00,0x00,0x00,value};
-    TuyaDimmer::DataFrame frame(TuyaDimmer::Command::SetDP, data, 8);
-    frame.printTo(TUYA_SERIAL);
-} 
 
 #endif // LIGHT_PROVIDER_TUYA
