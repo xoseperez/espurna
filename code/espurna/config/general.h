@@ -1557,3 +1557,7 @@
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
 #endif
+
+#ifndef TUYA_DIMMER_DP
+#define TUYA_DIMMER_DP              0x03u
+#endif
