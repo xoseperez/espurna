@@ -51,7 +51,7 @@ namespace TuyaDimmer {
         if (!transportDebug) return;
         StreamString out;
         out.reserve((frame.length * 2) + 1);
-        frame.printTo(out, true);
+        frame.printTo<PrintHex>(out);
         DEBUG_MSG("[TYUA] %s: %s\n", tag, out.c_str());
     }
 

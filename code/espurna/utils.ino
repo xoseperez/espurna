@@ -627,3 +627,27 @@ bool isNumber(const char * s) {
     }
     return digit;
 }
+
+class PrintRaw {
+    public:
+        static void write(Print& printer, uint8_t data) {
+            printer.write(data);
+        }
+
+        static void write(Print& printer, uint8_t* data, size_t size) {
+            printer.write(data, size);
+        }
+};
+
+class PrintHex {
+    public:
+        static void write(Print& printer, uint8_t data) {
+            printer.print(data, HEX);
+        }
+
+        static void write(Print& printer, uint8_t* data, size_t size) {
+            for (size_t n=0; n<size; ++n) {
+                printer.print(data[n], HEX);
+            }
+        }
+};
