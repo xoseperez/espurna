@@ -23,10 +23,12 @@ typedef struct {
 
 std::vector<button_t> _buttons;
 
+#define BUTTONS_MAX 8u
+
 #if MQTT_SUPPORT
 
-auto _button_mqtt_mask_events = BUTTON_MQTT_MASK_EVENTS;
-auto _button_mqtt_mask_pressed = BUTTON_MQTT_MASK_PRESSED;
+uint8_t _button_mqtt_mask_events {BUTTON_MQTT_MASK_EVENTS};
+uint8_t _button_mqtt_mask_pressed {BUTTON_MQTT_MASK_PRESSED};
 
 void buttonMQTT(unsigned char id, uint8_t event, bool optional_retain = false) {
     if (id >= _buttons.size()) return;
@@ -103,13 +105,13 @@ void buttonEvent(unsigned int id, unsigned char event) {
     unsigned char action = buttonAction(id, event);
 
     #if MQTT_SUPPORT
-        if (_button_mqtt_mask_pressed & (1 << id)) {
+        if (_button_mqtt_mask_pressed & (1 << (BUTTONS_MAX - id))) {
             buttonMQTT(id, buttonState(id), true);
             return;
         }
 
         bool send_event = (BUTTON_MODE_NONE != action);
-        if (_button_mqtt_mask_events & (1 << id)) {
+        if (_button_mqtt_mask_events & (1 << (BUTTONS_MAX - id))) {
             send_event = true;
         }
 
