@@ -3781,7 +3781,7 @@
     #define SSDP_SUPPORT        1
     #define RF_SUPPORT          1
 
-#elif defined(JINVOO_VALVE_SM_PW713)
+#elif defined(JINVOO_VALVE_SM_AW713)
 
     // Info
     #define MANUFACTURER        "JINVOO"
