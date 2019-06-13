@@ -42,14 +42,35 @@ namespace TuyaDimmer {
     SerialBuffer serialBuffer(TUYA_SERIAL);
     std::queue<payload_t> outputData;
 
+    uint8_t switchDP = 0x01u;
+    uint8_t dimmerDP = 0x03u;
+
     void sendHeartbeat(Heartbeat hb, State state) {
 
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
-            outputData.emplace({Command::Heartbeat});
+            outputData.emplace(payload_t{Command::Heartbeat});
             last = millis();
         }
 
+    }
+
+    // 2 known Data Protocols:
+    // - 5 bytes, switch - 0x01(switch) 0x01(bool) 0x00 0x01(8 bits) 0x00/0x01(bool value)
+    // - 8 bytes, dimmer - 0x??(percent) 0x02(int) 0x00 0x04(32 bits) 0x00 0x00 0x00 0x00
+    void processDP(const DataFrame& frame) {
+        if (switchDP == frame.data[0]) {
+            if (frame.length != 5) return;
+            if ((frame.data[1] != 0x01) || (frame.data[3] == 0x01)) return;
+            relayStatus(0, frame.data[4]);
+        } else if (dimmerDP == frame.data[0]) {
+            if (frame.length != 8) return;
+            if ((frame.data[1] != 0x02) || (frame.data[3] == 0x02)) return;
+            lightBrightness(frame.data[7]);
+            lightUpdate(true, true);
+        } else {
+            DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.data[0], frame.data[1]);
+        }
     }
 
     void processFrame(State& state, const SerialBuffer& buffer) {
@@ -105,24 +126,8 @@ namespace TuyaDimmer {
             return;
         }
 
-        // 2 known Data Protocols:
-        // - 5 bytes, switch - 0x01(switch) 0x01(bool) 0x00 0x01(8 bits) 0x00/0x01(bool value)
-        // - 8 bytes, dimmer - 0x02(percent) 0x02(int) 0x00 0x04(32 bits) 0x00 0x00 0x00 0x00
         if ((frame & Command::ReportDP) && frame.length) {
-            switch (frame.data[0]) {
-                case 0x01:
-                    if (frame.length != 5) break;
-                    if ((frame.data[1] != 0x01) || (frame.data[3] == 0x01)) break;
-                    relayStatus(0, frame.data[4]);
-                    break;
-                case 0x02:
-                    if (frame.length != 8) break;
-                    if ((frame.data[1] != 0x02) || (frame.data[3] == 0x02)) break;
-                    lightBrightness(frame.data[7]);
-                    break;
-                default:
-                    DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.data[0], frame.data[1]);
-            }
+            processDP(frame);
             state = State::IDLE;
             return;
         }
@@ -148,6 +153,18 @@ namespace TuyaDimmer {
 
     }
 
+    void tuyaSendSwitch(bool state) {
+        outputData.emplace(payload_t{Command::SetDP, {
+            switchDP, 0x01, 0x00, 0x01, state ? uint8_t(1) : uint8_t(0)
+        }});
+    }
+
+    void tuyaSendBrightness(uint8_t value) {
+        outputData.emplace(payload_t{Command::SetDP, {
+            dimmerDP, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00, value
+        }});
+    } 
+
     void tuyaLoop() {
 
         // TODO: switch heartbeat to polledTimeout
@@ -171,33 +188,35 @@ namespace TuyaDimmer {
             // general info about the device
             case State::QUERY_PRODUCT:
             {
-                outputData.emplace({Command::QueryProduct});
+                outputData.emplace(payload_t{Command::QueryProduct});
                 break;
             }
             // whether we control the led&button or not
             case State::QUERY_MODE:
             {
-                outputData.emplace({Command::QueryMode});
+                outputData.emplace(payload_t{Command::QueryMode});
                 break;
             }
             // if we don't, send out current wifi status
             case State::UPDATE_WIFI:
             {
-                outputData.emplace({Command::WiFiStatus, {getWiFiState()}});
+                outputData.emplace(payload_t{
+                    Command::WiFiStatus, {getWiFiState()}
+                });
                 break;
             }
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
-                outputData.emplace({Command::QueryDP});
+                outputData.emplace(payload_t{Command::QueryDP});
                 break;
             }
             // initial config is done, only doing heartbeat periodically
             case State::IDLE:
                 sendHeartbeat(Heartbeat::SLOW, state);
                 if (!outputData.empty()) {
-                    const data_t& data = outputData.front();
-                    DataFrame frame(data.command, data.payload.data, data.payload.size());
+                    const payload_t& payload = outputData.front();
+                    DataFrame frame(payload);
                     frame.printTo(TUYA_SERIAL);
                     outputData.pop();
                 }
@@ -206,16 +225,11 @@ namespace TuyaDimmer {
 
     }
 
-    void tuyaSendSwitch(bool state) {
-        outputData.emplace({Command::SetDP, {0x01,0x01,0x00,0x01, state ? uint8_t(1) : uint8_t(0)}, 5)
-    }
-
-    void tuyaSendBrightness(uint8_t value) {
-        outputData.emplace({Command::SetDP, {0x02,0x02,0x00,0x04,0x00,0x00,0x00,value}, 8});
-    } 
-
     void tuyaSetup() {
         TUYA_SERIAL.begin(SERIAL_SPEED);
+
+        dimmerDP = getSetting("tuyaDimmerDP", TUYA_DIMMER_DP).toInt();
+
         espurnaRegisterLoop(tuyaLoop);
     }
 
