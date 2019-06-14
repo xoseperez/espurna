@@ -177,6 +177,12 @@ namespace TuyaDimmer {
         }});
     } 
 
+    void tuyaSendWiFiStatus() {
+        outputData.emplace(payload_t{
+            Command::WiFiStatus, {getWiFiState()}
+        });
+    }
+
     void tuyaLoop() {
 
         // TODO: switch heartbeat to polledTimeout
@@ -201,26 +207,28 @@ namespace TuyaDimmer {
             case State::QUERY_PRODUCT:
             {
                 outputData.emplace(payload_t{Command::QueryProduct});
+                state = State::IDLE;
                 break;
             }
             // whether we control the led&button or not
             case State::QUERY_MODE:
             {
                 outputData.emplace(payload_t{Command::QueryMode});
+                state = State::IDLE;
                 break;
             }
             // if we don't, send out current wifi status
             case State::UPDATE_WIFI:
             {
-                outputData.emplace(payload_t{
-                    Command::WiFiStatus, {getWiFiState()}
-                });
+                tuyaSendWiFiStatus();
+                state = State::QUERY_DP;
                 break;
             }
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
                 outputData.emplace(payload_t{Command::QueryDP});
+                state = State::IDLE;
                 break;
             }
             // initial config is done, only doing heartbeat periodically
@@ -246,6 +254,11 @@ namespace TuyaDimmer {
         dimmerDP = getSetting("tuyaDimmerDP", TUYA_DIMMER_DP).toInt();
 
         ::espurnaRegisterLoop(tuyaLoop);
+        ::wifiRegister([](justwifi_messages_t code, char * parameter) {
+            if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
+                tuyaSendWiFiStatus();
+            }
+        });
     }
 
 }
