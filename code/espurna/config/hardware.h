@@ -3565,6 +3565,14 @@
     #define LDR_ON_GROUND       false
     #define LDR_RESISTOR        10000
 
+#elif defined(TUYA_GENERIC_DIMMER)
+
+    #define MANUFACTURER        "TUYA"
+    #define DEVICE              "GENERIC_DIMMER"
+
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
+    #define LIGHT_CHANNELS      1
+
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
