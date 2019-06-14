@@ -15,9 +15,13 @@ namespace TuyaDimmer {
 
     size_t getHeartbeatInterval(Heartbeat hb) {
         switch (hb) {
-            case Heartbeat::NONE: return 0;
-            case Heartbeat::FAST: return 3000;
-            case Heartbeat::SLOW: return 9000;
+            case Heartbeat::FAST:
+                return 3000;
+            case Heartbeat::SLOW:
+                return 9000;
+            case Heartbeat::NONE:
+            default:
+                return 0;
         }
     }
 

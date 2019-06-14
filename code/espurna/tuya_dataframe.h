@@ -30,8 +30,8 @@ namespace TuyaDimmer {
         {}
 
         DataFrame(uint8_t command, const uint8_t* data, uint16_t length) :
-            command(command),
             data(data),
+            command(command),
             length(length)
         {}
 
@@ -44,9 +44,9 @@ namespace TuyaDimmer {
         {}
 
         DataFrame(const payload_t& payload) :
+            data(payload.data.data()),
             command(static_cast<uint8_t>(payload.command)),
-            length(payload.data.size()),
-            data(payload.data.data())
+            length(payload.data.size())
         {}
 
         bool operator &(Command command) const {
