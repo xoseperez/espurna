@@ -57,6 +57,10 @@ namespace TuyaDimmer {
             if (_done) return;
             if (full()) return;
 
+            // 9600 baud ~= 1.04 bytes per second
+            if (_last && (millis() - _last > LIMIT)) reset();
+            _last = millis();
+
             int byte = _stream.read();
             if (!byte) return;
 
@@ -100,6 +104,7 @@ namespace TuyaDimmer {
             _checksum = 0;
             _index = 0;
             _done = false;
+            _last = 0;
         }
 
     private:
@@ -110,6 +115,7 @@ namespace TuyaDimmer {
         uint8_t _checksum = 0xff;
         std::vector<uint8_t> _data;
         Stream& _stream;
+        unsigned long _last = 0;
 
     };
 
