@@ -21,6 +21,7 @@ namespace TuyaDimmer {
         ~DataFrame() { }
 
         DataFrame(uint8_t command) :
+            data(nullptr),
             command(command),
             length(0)
         {}
@@ -36,11 +37,16 @@ namespace TuyaDimmer {
         {}
 
         DataFrame(Command command, const uint8_t* data, uint16_t length) :
-            DataFrame(static_cast<uint8_t>(command), data, length)
+            data(data),
+            command(static_cast<uint8_t>(command)),
+            length(length)
         {}
 
         DataFrame(const SerialBuffer& buffer) :
-            DataFrame(buffer.command(), buffer.dataPtr(), buffer.length())
+            data(buffer.dataPtr()),
+            command(buffer.command()),
+            version(buffer.version()),
+            length(buffer.length())
         {}
 
         DataFrame(const payload_t& payload) :
