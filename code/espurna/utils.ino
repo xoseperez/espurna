@@ -642,12 +642,16 @@ class PrintRaw {
 class PrintHex {
     public:
         static void write(Print& printer, uint8_t data) {
-            printer.print(data, HEX);
+            char buffer[3] = {0};
+            snprintf(buffer, sizeof(buffer), "%02x", data);
+            printer.write(buffer, 2);
         }
 
         static void write(Print& printer, uint8_t* data, size_t size) {
             for (size_t n=0; n<size; ++n) {
-                printer.print(data[n], HEX);
+                char buffer[3] = {0};
+                snprintf(buffer, sizeof(buffer), "%02x", data[n]);
+                printer.write(buffer, 2);
             }
         }
 };
