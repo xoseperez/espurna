@@ -62,7 +62,7 @@ namespace TuyaDimmer {
             _last = millis();
 
             int byte = _stream.read();
-            if (!byte) return;
+            if (byte < 0) return;
 
             // check that header value is 0x55aa
             if (0 == _index) {
@@ -112,7 +112,7 @@ namespace TuyaDimmer {
         bool _done = false;
         size_t _index = 0;
         size_t _read_until = LIMIT;
-        uint8_t _checksum = 0xff;
+        uint8_t _checksum = 0;
         std::vector<uint8_t> _data;
         Stream& _stream;
         unsigned long _last = 0;
