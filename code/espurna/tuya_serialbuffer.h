@@ -41,7 +41,7 @@ namespace TuyaDimmer {
 
         const uint8_t* dataPtr() const {
             if (!length()) return nullptr;
-            return _data.data();
+            return _data.data() + 6;
         }
 
         int available() {
