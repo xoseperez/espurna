@@ -4,7 +4,12 @@ namespace TuyaDimmer {
 
     class SerialBuffer {
 
-        constexpr static size_t LIMIT = 255;
+        // TODO: half of this?
+        constexpr static size_t LIMIT = 256;
+
+        // 9600 baud ~= 1.04 bytes per second
+        // 256 * 1.04 = 266.24
+        constexpr static size_t TIME_LIMIT = 267;
 
     public:
 
@@ -57,8 +62,7 @@ namespace TuyaDimmer {
             if (_done) return;
             if (full()) return;
 
-            // 9600 baud ~= 1.04 bytes per second
-            if (_last && (millis() - _last > LIMIT)) reset();
+            if (_last && (millis() - _last > TIME_LIMIT)) reset();
             _last = millis();
 
             int byte = _stream.read();
