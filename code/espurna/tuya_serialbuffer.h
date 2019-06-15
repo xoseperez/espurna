@@ -16,7 +16,7 @@ namespace TuyaDimmer {
         SerialBuffer(Stream& stream) :
             _stream(stream)
         {
-            _data.reserve(LIMIT);
+            _buffer.reserve(LIMIT);
         }
 
         bool full() { return (_index >= SerialBuffer::LIMIT); }
@@ -25,28 +25,28 @@ namespace TuyaDimmer {
 
         uint8_t operator[](size_t i) {
             if (i > LIMIT) return 0;
-            return _data[i];
+            return _buffer[i];
         }
 
         uint8_t version() const {
-            return _data[2];
+            return _buffer[2];
         }
 
         uint8_t command() const {
-            return _data[3];
+            return _buffer[3];
         }
 
         uint16_t length() const {
-            return (_data[4] << 8) + _data[5];
+            return (_buffer[4] << 8) + _buffer[5];
         }
 
         uint8_t checksum() const {
-            return _data[_index];
+            return _buffer[_index];
         }
 
         const uint8_t* dataPtr() const {
             if (!length()) return nullptr;
-            return _data.data() + 6;
+            return _buffer.data() + 6;
         }
 
         int available() {
@@ -101,7 +101,7 @@ namespace TuyaDimmer {
                 return;
             }
 
-            _data[_index] = byte;
+            _buffer[_index] = byte;
             _checksum += byte;
 
             ++_index;
@@ -109,7 +109,7 @@ namespace TuyaDimmer {
         }
 
         void reset() {
-            std::fill(_data.begin(), _data.end(), 0);
+            std::fill(_buffer.begin(), _buffer.end(), 0);
             _read_until = LIMIT;
             _checksum = 0;
             _index = 0;
@@ -123,7 +123,7 @@ namespace TuyaDimmer {
         size_t _index = 0;
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0;
-        std::vector<uint8_t> _data;
+        std::vector<uint8_t> _buffer;
         Stream& _stream;
         unsigned long _last = 0;
 
