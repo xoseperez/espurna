@@ -64,6 +64,9 @@ namespace TuyaDimmer {
             int byte = _stream.read();
             if (byte < 0) return;
 
+            //DEBUG_MSG("i=%u byte=%u chk=%u:%u\n",
+            //  _index, byte, _checksum, uint8_t(_checksum + byte));
+
             // check that header value is 0x55aa
             if (0 == _index) {
                 if (0x55 != byte) return;
@@ -77,16 +80,19 @@ namespace TuyaDimmer {
             }
 
             if (5 == _index) {
-                _read_until += byte;
+                _read_until += byte + _index + 1;
+                //DEBUG_MSG("read_until=%u\n", _read_until);
             }
 
             // verify that the checksum byte is the same that we got so far
             if ((_index > 5) && (_index >= _read_until)) {
                 if (_checksum != byte) {
+                    //DEBUG_MSG("chk err, recv=%u calc=%u\n", byte, _checksum);
                     reset();
                     return;
                 }
 
+                //DEBUG_MSG("chk ok\n");
                 _done = true;
                 return;
             }
