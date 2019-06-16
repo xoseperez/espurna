@@ -125,8 +125,16 @@ namespace TuyaDimmer {
             return;
         }
 
-        if ((frame & Command::WiFiStatus) && !frame.length) {
-            state = State::QUERY_DP;
+        if ((frame & Command::WiFiResetCfg) && !frame.length) {
+            DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
+            outputData.emplace(payload_t{Command::WiFiResetCfg});
+            return;
+        }
+
+        if ((frame & Command::WiFiResetSelect) && (frame.length == 1)) {
+            DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
+                (frame.data[0] == 0) ? "Smart Config" : "AP");
+            outputData.emplace(payload_t{Command::WiFiResetSelect});
             return;
         }
 
