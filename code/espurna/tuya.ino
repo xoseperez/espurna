@@ -106,11 +106,7 @@ namespace TuyaDimmer {
         }
 
         if ((frame & Command::QueryProduct) && frame.length) {
-            // XXX: add debug writer(data, length)
-            StreamString buffer;
-            buffer.reserve(frame.length + 1);
-            frame.printTo<PrintHex>(buffer);
-            DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), buffer.c_str());
+            dataframeDebugSend("Product", frame);
             state = State::QUERY_MODE;
             return;
         }
