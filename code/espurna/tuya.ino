@@ -116,12 +116,12 @@ namespace TuyaDimmer {
             if (frame.length == 2) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u\n"), frame.data[0], frame.data[1]);
                 updatePins(frame.data[0], frame.data[1]);
-                state = State::QUERY_DP;
             // ... or nothing. we need to report wifi status to the mcu via Command::WiFiStatus
             } else if (!frame.length) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU\n"));
-                state = State::UPDATE_WIFI;
+                tuyaSendWiFiStatus();
             }
+            state = State::QUERY_DP;
             return;
         }
 
