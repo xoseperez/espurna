@@ -117,7 +117,7 @@ namespace TuyaDimmer {
             // XXX: add debug writer(data, length)
             StreamString buffer;
             buffer.reserve(frame.length + 1);
-            frame.printTo(buffer);
+            frame.printTo<PrintHex>(buffer);
             DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), buffer.c_str());
             state = State::QUERY_MODE;
             return;
