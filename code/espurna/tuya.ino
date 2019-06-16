@@ -70,6 +70,12 @@ namespace TuyaDimmer {
 
     }
 
+    void sendWiFiStatus() {
+        outputData.emplace(payload_t{
+            Command::WiFiStatus, {getWiFiState()}
+        });
+    }
+
     // 2 known Data Protocols:
     // - 5 bytes, switch - 0x01(switch) 0x01(bool) 0x00 0x01(8 bits) 0x00/0x01(bool value)
     // - 8 bytes, dimmer - 0x??(percent) 0x02(int) 0x00 0x04(32 bits) 0x00 0x00 0x00 0x00
@@ -101,7 +107,7 @@ namespace TuyaDimmer {
                 state = State::QUERY_PRODUCT;
                 return;
             }
-            tuyaSendWiFiStatus();
+            sendWiFiStatus();
             return;
         }
 
@@ -119,7 +125,7 @@ namespace TuyaDimmer {
             // ... or nothing. we need to report wifi status to the mcu via Command::WiFiStatus
             } else if (!frame.length) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU\n"));
-                tuyaSendWiFiStatus();
+                sendWiFiStatus();
             }
             state = State::QUERY_DP;
             return;
@@ -177,12 +183,6 @@ namespace TuyaDimmer {
             dimmerDP, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00, value
         }});
     } 
-
-    void tuyaSendWiFiStatus() {
-        outputData.emplace(payload_t{
-            Command::WiFiStatus, {getWiFiState()}
-        });
-    }
 
     void tuyaLoop() {
 
@@ -250,7 +250,7 @@ namespace TuyaDimmer {
         ::espurnaRegisterLoop(tuyaLoop);
         ::wifiRegister([](justwifi_messages_t code, char * parameter) {
             if ((MESSAGE_CONNECTED == code) || (MESSAGE_DISCONNECTED == code)) {
-                tuyaSendWiFiStatus();
+                sendWiFiStatus();
             }
         });
     }
