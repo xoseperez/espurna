@@ -50,6 +50,7 @@ namespace TuyaDimmer {
     uint8_t dimmerDP = TUYA_DIMMER_DP;
 
     bool transportDebug = false;
+    bool configDone = false;
 
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
         if (!transportDebug) return;
@@ -93,23 +94,14 @@ namespace TuyaDimmer {
 
         dataframeDebugSend("IN", frame);
 
-        // initial packet has 0
-        if ((frame & Command::Heartbeat) && (frame.length == 1) && (frame.data[0] == 0)) {
-            if (state == State::HEARTBEAT) {
-                state = State::UPDATE_WIFI;
-            } else {
-                state = State::QUERY_PRODUCT;
-            }
-            return;
-        }
-
+        // initial packet has 0, do the initial setup
         // all after that have 1. might be a good idea to re-do the setup when that happens on boot
-        if ((frame & Command::Heartbeat) && (frame.length == 1) && (frame.data[0] == 1)) {
-            if (state == State::HEARTBEAT) {
+        if ((frame & Command::Heartbeat) && (frame.length == 1)) {
+            if ((frame.data[0] == 0) || (!configDone)) {
                 state = State::QUERY_PRODUCT;
-            } else {
-                state = State::UPDATE_WIFI;
+                return;
             }
+            tuyaSendWiFiStatus();
             return;
         }
 
@@ -145,6 +137,7 @@ namespace TuyaDimmer {
         if ((frame & Command::ReportDP) && frame.length) {
             processDP(frame);
             state = State::IDLE;
+            configDone = true;
             return;
         }
 
@@ -219,13 +212,6 @@ namespace TuyaDimmer {
             {
                 outputData.emplace(payload_t{Command::QueryMode});
                 state = State::IDLE;
-                break;
-            }
-            // if we don't, send out current wifi status
-            case State::UPDATE_WIFI:
-            {
-                tuyaSendWiFiStatus();
-                state = State::QUERY_DP;
                 break;
             }
             // full read-out of the data protocol values

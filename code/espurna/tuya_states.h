@@ -24,7 +24,6 @@ namespace TuyaDimmer {
         QUERY_PRODUCT,
         QUERY_MODE,
         QUERY_DP,
-        UPDATE_WIFI,
         IDLE
     };
 
