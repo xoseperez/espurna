@@ -975,7 +975,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 #elif defined(YJZK_SWITCH_2CH)
 
@@ -1013,7 +1013,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 // YJZK 3CH switch
 // Also Lixin Touch Wifi 3M
@@ -1065,7 +1065,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    0
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
