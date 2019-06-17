@@ -3572,6 +3572,8 @@
 
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
     #define LIGHT_CHANNELS      1
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define DUMMY_RELAY_COUNT   1
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
