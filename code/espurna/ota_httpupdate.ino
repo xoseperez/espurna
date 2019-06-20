@@ -113,7 +113,7 @@ void _otaClientFromHttps(const String& url) {
 
     // TODO: provide terminal command for probing?
     // TODO: RX and TX buffer sizes must be equal?
-    uint16_t requested_mfln = getSetting("otaSslMFLN", SSL_CLIENT_MFLN).toInt();
+    uint16_t requested_mfln = getSetting("otaSslMFLN", OTA_SSL_CLIENT_MFLN).toInt();
     if (requested_mfln) {
         URL _url(url);
         bool supported = client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln);

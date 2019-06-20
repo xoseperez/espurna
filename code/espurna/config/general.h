@@ -678,6 +678,10 @@
 #define SSL_CLIENT_MFLN                     0
 #endif
 
+#ifndef OTA_SSL_CLIENT_MFLN
+#define OTA_SSL_CLIENT_MFLN                 SSL_CLIENT_MFLN
+#endif
+
 // -----------------------------------------------------------------------------
 // NOFUSS
 // -----------------------------------------------------------------------------
