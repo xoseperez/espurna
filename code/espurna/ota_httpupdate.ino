@@ -58,7 +58,7 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 }
 
 void _otaClientFromHttp(const String& url) {
-    _otaClientRunUpdater(nullptr, url.c_str(), "");
+    _otaClientRunUpdater(nullptr, url, "");
 }
 
 #if SSL_CLIENT == SSL_CLIENT_BEARSSL
@@ -125,7 +125,7 @@ void _otaClientFromHttps(const String& url) {
         }
     }
 
-    _otaClientRunUpdater(client.get(), url.c_str());
+    _otaClientRunUpdater(client.get(), url);
 
 }
 
@@ -138,7 +138,7 @@ void _otaClientFromHttps(const String& url) {
 
     const int check = getSetting("otaSslCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
 
-    String fp_string = "";
+    String fp_string;
     if (check == SSL_CLIENT_CHECK_FINGERPRINT) {
         fp_string = getSetting("otafp", OTA_FINGERPRINT);
         if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
