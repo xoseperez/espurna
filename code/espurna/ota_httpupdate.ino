@@ -65,7 +65,7 @@ void _otaClientFromHttp(const String& url) {
 
 void _otaClientFromHttps(const String& url) {
 
-    int check = getSetting("sslClientCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
+    int check = getSetting("otaSslCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
     bool settime = (check == SSL_CLIENT_CHECK_CA);
 
     if (!ntpSynced() && settime) {
@@ -115,7 +115,7 @@ void _otaClientFromHttps(const String& url) {
 
     // TODO: provide terminal command for probing?
     // TODO: RX and TX buffer sizes must be equal?
-    uint16_t requested_mfln = getSetting("sslMFLN", SSL_CLIENT_MFLN).toInt();
+    uint16_t requested_mfln = getSetting("otaSslMFLN", SSL_CLIENT_MFLN).toInt();
     if (requested_mfln) {
         URL _url(url);
         bool supported = client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln);
@@ -136,7 +136,7 @@ void _otaClientFromHttps(const String& url) {
 
 void _otaClientFromHttps(const String& url) {
 
-    int check = getSetting("sslClientCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
+    const int check = getSetting("otaSslCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
 
     String fp_string = "";
     if (check == SSL_CLIENT_CHECK_FINGERPRINT) {
