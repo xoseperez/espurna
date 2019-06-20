@@ -130,9 +130,7 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // OTA
 // -----------------------------------------------------------------------------
 
-#if OTA_ARDUINOOTA_SUPPORT
-    #include <ArduinoOTA.h>
-#endif
+#include <ArduinoOTA.h>
 
 #if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
     #include <ESPAsyncTCP.h>

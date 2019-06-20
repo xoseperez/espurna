@@ -6,10 +6,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#ifdef OTA_ARDUINOOTA_SUPPORT
+#if OTA_ARDUINOOTA_SUPPORT
 
 // TODO: allocate ArduinoOTAClass on-demand, stop using global instance
-#include <ArduinoOTA.h>
 
 void _arduinoOtaConfigure() {
 
