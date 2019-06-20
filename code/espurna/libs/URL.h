@@ -45,8 +45,12 @@ void URL::init(String url) {
     _host = url.substring(0, index);
 
     // store the remaining part as path
-    url.remove(0, index);
-    this->path = url;
+    if (index >= 0) {
+        url.remove(0, index);
+        this->path = url;
+    } else {
+        this->path = "/";
+    }
 
     // separate host from port, when present
     index = _host.indexOf(':');
