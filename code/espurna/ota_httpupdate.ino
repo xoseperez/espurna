@@ -117,10 +117,9 @@ void _otaClientFromHttps(const String& url) {
     if (requested_mfln) {
         URL _url(url);
         bool supported = client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln);
-        DEBUG_MSG_P(PSTR("[OTA] MFLN buffer size %u supported: %s\n"), requested_mfln, supported ? "yes" : "no");
-        if (supported) {
-            client->setBufferSizes(requested_mfln, requested_mfln);
-        }
+        DEBUG_MSG_P(PSTR("[OTA] MFLN buffer size %u supported: %s\n"), requested_mfln, supported ? "YES" : "NO");
+        if (!supported) return;
+        client->setBufferSizes(requested_mfln, requested_mfln);
     }
 
     _otaClientRunUpdater(client.get(), url);
