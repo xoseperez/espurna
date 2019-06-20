@@ -48,8 +48,6 @@ void _otaClientOnDisconnect(void *s, AsyncClient *c) {
 
     _ota_connected = false;
     _ota_url = nullptr;
-
-    _ota_client->free();
     _ota_client = nullptr;
 
 }
