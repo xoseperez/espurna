@@ -75,10 +75,8 @@ void _otaClientFromHttps(const String& url) {
 
     // unique_ptr self-destructs after exiting function scope
     // create WiFiClient on heap to use less stack space
-    std::unique_ptr<BearSSL::WiFiClientSecure> client(
-        new BearSSL::WiFiClientSecure
-    );
-    
+    auto client = std::make_unique<BearSSL::WiFiClientSecure>();
+
     if (check == SSL_CLIENT_CHECK_NONE) {
         DEBUG_MSG_P(PSTR("[OTA] !!! Connection will not be validated !!!\n"));
         client->setInsecure();

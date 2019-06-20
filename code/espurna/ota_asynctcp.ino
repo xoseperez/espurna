@@ -17,7 +17,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include "libs/URL.h"
 
-AsyncClient * _ota_client = nullptr;
+std::unique_ptr<AsyncClient> _ota_client = nullptr;
 unsigned long _ota_size = 0;
 bool _ota_connected = false;
 std::unique_ptr<URL> _ota_url = nullptr;
@@ -50,7 +50,6 @@ void _otaClientOnDisconnect(void *s, AsyncClient *c) {
     _ota_url = nullptr;
 
     _ota_client->free();
-    delete _ota_client;
     _ota_client = nullptr;
 
 }
@@ -144,7 +143,7 @@ void _otaClientFrom(const String& url) {
     }
 
     if (!_ota_client) {
-        _ota_client = new AsyncClient();
+        _ota_client = std::make_unique<AsyncClient>();
     }
 
     _ota_client->onDisconnect(_otaClientOnDisconnect, nullptr);
