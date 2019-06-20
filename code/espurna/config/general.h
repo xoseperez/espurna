@@ -634,8 +634,8 @@
 #endif
 
 #ifndef OTA_ARDUINOOTA_SUPPORT
-#define OTA_ARDUINOOTA_SUPPORT      1            // Support ArduinoOTA by default
-                                                 // Implicitly depends on ESP8266mDNS library, thus increasing firmware size
+#define OTA_ARDUINOOTA_SUPPORT      1           // Support ArduinoOTA by default (4.2Kb)
+                                                // Implicitly depends on ESP8266mDNS library, thus increasing firmware size
 #endif
 
 #ifndef OTA_CLIENT
@@ -651,7 +651,9 @@
 #endif
 
 #ifndef OTA_SSL_CLIENT_INCLUDE_CA
-#define OTA_SSL_CLIENT_INCLUDE_CA        0               // Use user-provided CA (only PROGMEM option is supported):
+#define OTA_SSL_CLIENT_INCLUDE_CA        0               // Use user-provided CA. Only PROGMEM PEM option is supported.
+                                                         // TODO: eventually should be replaced with pre-parsed structs, read directly from flash
+                                                         // (ref: https://github.com/earlephilhower/bearssl-esp8266/pull/14)
                                                          // const char _ota_client_http_update_ca[] PROGMEM = "...";
                                                          // By default, use DigiCert root (for https://github.com)
 #endif
@@ -662,15 +664,16 @@
 
 #ifndef SSL_CLIENT
 #define SSL_CLIENT                          SSL_CLIENT_NONE     // What variant of WiFiClient to use (no SSL support by default):
-                                                                // SSL_CLIENT_AXTLS
-                                                                // - Core 2.3.0 - 2.4.1
-                                                                //   marked for derecation since 2.4.2
-                                                                //   **Will** be removed in the future
-                                                                // SSL_CLIENT_BEARSSL
-                                                                // - Core 2.4.2 and later
+                                                                // SSL_CLIENT_NONE    - Disable SSL client
+                                                                // SSL_CLIENT_AXTLS   - Core 2.3.0 - 2.4.1
+                                                                // marked for derecation since 2.4.2 and **Will** be removed in the future
+                                                                // SSL_CLIENT_BEARSSL - Core 2.4.2 and later
 #endif
 
-// ref: https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
+// Support Maximum Fragment Length Negotiation TLS extension
+// "...negotiate a smaller maximum fragment length due to memory limitations or bandwidth limitations."
+// - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
+// - https://tools.ietf.org/html/rfc6066#section-4
 #ifndef SSL_CLIENT_MFLN
 #define SSL_CLIENT_MFLN                     0
 #endif
@@ -1301,6 +1304,8 @@
 #endif
 
 // Enable RCSwitch support
+// Originally implemented for SONOFF BASIC
+// https://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
 // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
 #ifndef RFB_DIRECT
