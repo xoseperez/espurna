@@ -622,6 +622,26 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// SSL Client                                                 ** EXPERIMENTAL **
+// -----------------------------------------------------------------------------
+
+#ifndef SSL_CLIENT
+#define SSL_CLIENT                          SSL_CLIENT_NONE     // What variant of WiFiClient to use (no SSL support by default):
+                                                                // SSL_CLIENT_NONE    - Disable SSL client
+                                                                // SSL_CLIENT_AXTLS   - Core 2.3.0 - 2.4.1
+                                                                // marked for derecation since 2.4.2 and **Will** be removed in the future
+                                                                // SSL_CLIENT_BEARSSL - Core 2.4.2 and later
+#endif
+
+// Support Maximum Fragment Length Negotiation TLS extension
+// "...negotiate a smaller maximum fragment length due to memory limitations or bandwidth limitations."
+// - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
+// - https://tools.ietf.org/html/rfc6066#section-4
+#ifndef SSL_CLIENT_MFLN
+#define SSL_CLIENT_MFLN                     0
+#endif
+
+// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
@@ -650,6 +670,10 @@
 #define OTA_FINGERPRINT             OTA_GITHUB_FP
 #endif
 
+#ifndef OTA_SSL_CLIENT_MFLN
+#define OTA_SSL_CLIENT_MFLN                 SSL_CLIENT_MFLN
+#endif
+
 #ifndef OTA_SSL_CLIENT_INCLUDE_CA
 #define OTA_SSL_CLIENT_INCLUDE_CA        0               // Use user-provided CA. Only PROGMEM PEM option is supported.
                                                          // TODO: eventually should be replaced with pre-parsed structs, read directly from flash
@@ -658,29 +682,6 @@
                                                          // By default, use DigiCert root (for https://github.com)
 #endif
 
-// -----------------------------------------------------------------------------
-// SSL Client                                                 ** EXPERIMENTAL **
-// -----------------------------------------------------------------------------
-
-#ifndef SSL_CLIENT
-#define SSL_CLIENT                          SSL_CLIENT_NONE     // What variant of WiFiClient to use (no SSL support by default):
-                                                                // SSL_CLIENT_NONE    - Disable SSL client
-                                                                // SSL_CLIENT_AXTLS   - Core 2.3.0 - 2.4.1
-                                                                // marked for derecation since 2.4.2 and **Will** be removed in the future
-                                                                // SSL_CLIENT_BEARSSL - Core 2.4.2 and later
-#endif
-
-// Support Maximum Fragment Length Negotiation TLS extension
-// "...negotiate a smaller maximum fragment length due to memory limitations or bandwidth limitations."
-// - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
-// - https://tools.ietf.org/html/rfc6066#section-4
-#ifndef SSL_CLIENT_MFLN
-#define SSL_CLIENT_MFLN                     0
-#endif
-
-#ifndef OTA_SSL_CLIENT_MFLN
-#define OTA_SSL_CLIENT_MFLN                 SSL_CLIENT_MFLN
-#endif
 
 // -----------------------------------------------------------------------------
 // NOFUSS
