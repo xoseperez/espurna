@@ -49,7 +49,7 @@ String getCoreVersion() {
 
 String getCoreRevision() {
     #ifdef ARDUINO_ESP8266_GIT_VER
-        return String(ARDUINO_ESP8266_GIT_VER);
+        return String(ARDUINO_ESP8266_GIT_VER, 16);
     #else
         return String("");
     #endif
