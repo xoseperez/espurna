@@ -112,12 +112,18 @@ build_webui() {
     echo "--------------------------------------------------------------"
     echo "Building web interface..."
     node node_modules/gulp/bin/gulp.js || exit
+
+    # TODO: do something if webui files are different
+    # for now, just print in travis log
+    if ${TRAVIS:-false}; then
+        git --no-pager diff --stat
+    fi
 }
 
 build_environments() {
     echo "--------------------------------------------------------------"
     echo "Building firmware images..."
-    mkdir -p ../firmware/espurna-$version
+    mkdir -p $destination/espurna-$version
 
     for environment in $environments; do
         echo -n "* espurna-$version-$environment.bin --- "

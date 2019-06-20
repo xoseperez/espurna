@@ -98,34 +98,18 @@ String getEspurnaWebUI() {
 }
 
 String buildTime() {
-
-    const char time_now[] = __TIME__;   // hh:mm:ss
-    unsigned int hour = atoi(&time_now[0]);
-    unsigned int minute = atoi(&time_now[3]);
-    unsigned int second = atoi(&time_now[6]);
-
-    const char date_now[] = __DATE__;   // Mmm dd yyyy
-    const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-    unsigned int month = 0;
-    for ( int i = 0; i < 12; i++ ) {
-        if (strncmp(date_now, months[i], 3) == 0 ) {
-            month = i + 1;
-            break;
-        }
-    }
-    unsigned int day = atoi(&date_now[3]);
-    unsigned int year = atoi(&date_now[7]);
-
-    char buffer[20];
-    snprintf_P(
-        buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        year, month, day, hour, minute, second
-    );
-
-    return String(buffer);
-
+    #if NTP_SUPPORT
+        return ntpDateTime(__UNIX_TIMESTAMP__);
+    #else
+        char buffer[20];
+        snprintf_P(
+            buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
+            __TIME_YEAR__, __TIME_MONTH__, __TIME_DAY__,
+            __TIME_HOUR__, __TIME_MINUTE__, __TIME_SECOND__
+        );
+        return String(buffer);
+    #endif
 }
-
 
 unsigned long getUptime() {
 
@@ -422,6 +406,7 @@ void info() {
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu\n"), __UNIX_TIMESTAMP__);
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------

@@ -2071,6 +2071,9 @@
     #define HLW8012_CURRENT_R               0.002            // Current resistor
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
 
+    // LED1 on RX pin
+    #define DEBUG_SERIAL_SUPPORT            1
+
 // -----------------------------------------------------------------------------
 // Maxcio W-DE004
 // -----------------------------------------------------------------------------
@@ -2489,11 +2492,11 @@
     #define LED1_PIN                1
     #define LED1_PIN_INVERSE        1
 
-    // -----------------------------------------------------------------------------
-    // Allnet 4duino ESP8266-UP-Relais
-    // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
-    // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
-    // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Allnet 4duino ESP8266-UP-Relais
+// http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+// https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
+// -----------------------------------------------------------------------------
 
 #elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
 
@@ -2799,6 +2802,9 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+    // BUTTON1 and LED1 are using Serial pins
+    #define DEBUG_SERIAL_SUPPORT        0
+
 // -----------------------------------------------------------------------------
 // Teckin SP22 v1.4 - v1.6
 // -----------------------------------------------------------------------------
@@ -2840,6 +2846,9 @@
     #define HLW8012_POWER_RATIO         2533110
     #define HLW8012_INTERRUPT_ON        FALLING
 
+    // BUTTON1 and LED1 are using Serial pins
+    #define DEBUG_SERIAL_SUPPORT        0
+
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
 // Also model number KS-602S
@@ -2863,6 +2872,9 @@
     // LEDs
     #define LED1_PIN            1
     #define LED1_PIN_INVERSE    1
+
+    // LED1 is using TX pin
+    #define DEBUG_SERIAL_SUPPORT 0
 
 // ----------------------------------------------------------------------------------------
 //  Homecube 16A is similar but some pins differ and it also has RGB LEDs
@@ -3441,7 +3453,7 @@
 // Teckin SP20
 // -----------------------------------------------------------------------------
 
- #elif defined(TECKIN_SP20)
+#elif defined(TECKIN_SP20)
 
      // Info
     #define MANUFACTURER                "TECKIN"
@@ -3759,8 +3771,8 @@
     // will not work on real life since they all share GPIO
     // but it's OK to test build
     #define EMON_ANALOG_SUPPORT 1
-    #define NTC_SENSOR          1
-    #define LDR_SENSOR          1
+    #define NTC_SUPPORT         1
+    #define LDR_SUPPORT         1
 
     #define PULSEMETER_SUPPORT  1
 
