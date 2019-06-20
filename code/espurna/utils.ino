@@ -87,6 +87,10 @@ String getEspurnaModules() {
     return FPSTR(espurna_modules);
 }
 
+String getEspurnaOTAModules() {
+    return FPSTR(espurna_ota_modules);
+}
+
 #if SENSOR_SUPPORT
 String getEspurnaSensors() {
     return FPSTR(espurna_sensors);
@@ -479,6 +483,7 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] OTA: %s\n"), getEspurnaOTAModules().c_str());
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
