@@ -21,6 +21,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& fp = "") {
 
+    UNUSED(client);
     UNUSED(fp);
 
     // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
@@ -30,14 +31,15 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
     // TODO: axTLS does not care about ours WiFiClient instance, it will try to create one internally
     //       we *can* use the same API with BearSSL, but only with fingerprinting
-    // TODO: support currentVersion (arg after 'url')
+    // TODO: support currentVersion (string arg after 'url')
 
-    // XXX: remove 2.4.2 check when travis is testing against >=2.5.0
     ESPhttpUpdate.rebootOnUpdate(false);
-    #if (SSL_CLIENT == SSL_CLIENT_AXTLS) || defined(ARDUINO_ESP8266_RELEASE_2_4_2)
+    #if (SSL_CLIENT == SSL_CLIENT_BEARSSL)
+        t_httpUpdate_return result = ESPhttpUpdate.update(*client, url);
+    #elif (SSL_CLIENT == SSL_CLIENT_AXTLS)
         t_httpUpdate_return result = ESPhttpUpdate.update(url, "", fp);
     #else
-        t_httpUpdate_return result = ESPhttpUpdate.update(*client, url);
+        t_httpUpdate_return result = ESPhttpUpdate.update(url);
     #endif
 
     switch (result) {
