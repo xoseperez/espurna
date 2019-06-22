@@ -29,17 +29,24 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
     DEBUG_MSG_P(PSTR("[OTA] Downloading %s ...\n"), url.c_str());
 
-    // TODO: axTLS does not care about ours WiFiClient instance, it will try to create one internally
-    //       we *can* use the same API with BearSSL, but only with fingerprinting
     // TODO: support currentVersion (string arg after 'url')
+    // NOTE: ESPhttpUpdate.update(..., fp) will **always** fail with empty fingerprint
+    // NOTE: It is possible to support BearSSL with 2.4.2 by using uint8_t[20] instead of String for fingerprint argument
 
     ESPhttpUpdate.rebootOnUpdate(false);
-    #if (SECURE_CLIENT == SECURE_CLIENT_BEARSSL)
-        t_httpUpdate_return result = ESPhttpUpdate.update(*client, url);
-    #elif (SECURE_CLIENT == SECURE_CLIENT_AXTLS)
-        t_httpUpdate_return result = ESPhttpUpdate.update(url, "", fp);
+    t_httpUpdate_return result = HTTP_UPDATE_NO_UPDATES;
+
+    // We expect both .update(url, "", String_fp) and .update(url) to survice until axTLS is removed from the Core
+    #if (SECURE_CLIENT == SECURE_CLIENT_AXTLS)
+        if (url.startsWith("https://")) {
+            result = ESPhttpUpdate.update(url, "", fp);
+        } else {
+            result = ESPhttpUpdate.update(url);
+        }
+    #elif OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
+        result = ESPhttpUpdate.update(url);
     #else
-        t_httpUpdate_return result = ESPhttpUpdate.update(url);
+        result = ESPhttpUpdate.update(*client, url);
     #endif
 
     switch (result) {
@@ -59,9 +66,16 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
 
 }
 
+#if OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
 void _otaClientFromHttp(const String& url) {
     _otaClientRunUpdater(nullptr, url, "");
 }
+#else
+void _otaClientFromHttp(const String& url) {
+    auto client = std::make_unique<WiFiClient>();
+    _otaClientRunUpdater(client.get(), url, "");
+}
+#endif
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 
@@ -97,16 +111,9 @@ void _otaClientFromHttps(const String& url) {
         client->setFingerprint(fp_bytes);
     }
 
-    // XXX: only for travis. remove when testing against >=2.5.0
-    #if defined(ARDUINO_ESP8266_RELEASE_2_4_2)
-        #define BEARSSL_X509LIST BearSSLX509List
-    #else
-        #define BEARSSL_X509LIST BearSSL::X509List
-    #endif
-
-    BEARSSL_X509LIST *ca = nullptr;
+    BearSSL::X509List *ca = nullptr;
     if (check == SECURE_CLIENT_CHECK_CA) {
-        ca = new BEARSSL_X509LIST(_ota_client_http_update_ca);
+        ca = new BearSSL::X509List(_ota_client_http_update_ca);
         // because we do not support libc methods of getting time, force client to use ntpclientlib's current time
         // XXX: local2utc method use is detrimental when DST happening. now() should be utc
         client->setX509Time(ntpLocal2UTC(now()));
