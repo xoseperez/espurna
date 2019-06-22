@@ -34,9 +34,9 @@ void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& f
     // TODO: support currentVersion (string arg after 'url')
 
     ESPhttpUpdate.rebootOnUpdate(false);
-    #if (SSL_CLIENT == SSL_CLIENT_BEARSSL)
+    #if (SECURE_CLIENT == SECURE_CLIENT_BEARSSL)
         t_httpUpdate_return result = ESPhttpUpdate.update(*client, url);
-    #elif (SSL_CLIENT == SSL_CLIENT_AXTLS)
+    #elif (SECURE_CLIENT == SECURE_CLIENT_AXTLS)
         t_httpUpdate_return result = ESPhttpUpdate.update(url, "", fp);
     #else
         t_httpUpdate_return result = ESPhttpUpdate.update(url);
@@ -63,12 +63,12 @@ void _otaClientFromHttp(const String& url) {
     _otaClientRunUpdater(nullptr, url, "");
 }
 
-#if SSL_CLIENT == SSL_CLIENT_BEARSSL
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 
 void _otaClientFromHttps(const String& url) {
 
-    int check = getSetting("otaSslCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
-    bool settime = (check == SSL_CLIENT_CHECK_CA);
+    int check = getSetting("otaScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+    bool settime = (check == SECURE_CLIENT_CHECK_CA);
 
     if (!ntpSynced() && settime) {
         DEBUG_MSG_P(PSTR("[OTA] Time not synced!\n"));
@@ -79,12 +79,12 @@ void _otaClientFromHttps(const String& url) {
     // create WiFiClient on heap to use less stack space
     auto client = std::make_unique<BearSSL::WiFiClientSecure>();
 
-    if (check == SSL_CLIENT_CHECK_NONE) {
+    if (check == SECURE_CLIENT_CHECK_NONE) {
         DEBUG_MSG_P(PSTR("[OTA] !!! Connection will not be validated !!!\n"));
         client->setInsecure();
     }
 
-    if (check == SSL_CLIENT_CHECK_FINGERPRINT) {
+    if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
         String fp_string = getSetting("otafp", OTA_FINGERPRINT);
         if (!fp_string.length()) {
             DEBUG_MSG_P(PSTR("[OTA] Requested fingerprint auth, but 'otafp' is not set\n"));
@@ -105,7 +105,7 @@ void _otaClientFromHttps(const String& url) {
     #endif
 
     BEARSSL_X509LIST *ca = nullptr;
-    if (check == SSL_CLIENT_CHECK_CA) {
+    if (check == SECURE_CLIENT_CHECK_CA) {
         ca = new BEARSSL_X509LIST(_ota_client_http_update_ca);
         // because we do not support libc methods of getting time, force client to use ntpclientlib's current time
         // XXX: local2utc method use is detrimental when DST happening. now() should be utc
@@ -115,7 +115,7 @@ void _otaClientFromHttps(const String& url) {
 
     // TODO: provide terminal command for probing?
     // TODO: RX and TX buffer sizes must be equal?
-    uint16_t requested_mfln = getSetting("otaSslMFLN", OTA_SSL_CLIENT_MFLN).toInt();
+    uint16_t requested_mfln = getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
     if (requested_mfln) {
         URL _url(url);
         bool supported = client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln);
@@ -128,17 +128,17 @@ void _otaClientFromHttps(const String& url) {
 
 }
 
-#endif // SSL_CLIENT_BEARSSL
+#endif // SECURE_CLIENT_BEARSSL
 
 
-#if SSL_CLIENT == SSL_CLIENT_AXTLS
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS
 
 void _otaClientFromHttps(const String& url) {
 
-    const int check = getSetting("otaSslCheck", SSL_CLIENT_CHECK_FINGERPRINT).toInt();
+    const int check = getSetting("otaScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
 
     String fp_string;
-    if (check == SSL_CLIENT_CHECK_FINGERPRINT) {
+    if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
         fp_string = getSetting("otafp", OTA_FINGERPRINT);
         if (!fp_string.length() || !sslCheckFingerPrint(fp_string.c_str())) {
             DEBUG_MSG_P(PSTR("[OTA] Wrong fingerprint\n"));
@@ -150,7 +150,7 @@ void _otaClientFromHttps(const String& url) {
 
 }
 
-#endif // SSL_CLIENT_AXTLS
+#endif // SECURE_CLIENT_AXTLS
 
 void _otaClientFrom(const String& url) {
 
@@ -159,7 +159,7 @@ void _otaClientFrom(const String& url) {
         return;
     }
 
-    #if SSL_CLIENT_SUPPORT
+    #if SECURE_CLIENT_SUPPORT
         if (url.startsWith("https://")) {
             _otaClientFromHttps(url);
             return;

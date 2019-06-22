@@ -350,12 +350,12 @@
 #define OTA_CLIENT_ASYNCTCP         1
 #define OTA_CLIENT_HTTPUPDATE       2
 
-// SSL Client
+// Secure Client
 
-#define SSL_CLIENT_NONE                0
-#define SSL_CLIENT_AXTLS               1
-#define SSL_CLIENT_BEARSSL             2
+#define SECURE_CLIENT_NONE                0
+#define SECURE_CLIENT_AXTLS               1
+#define SECURE_CLIENT_BEARSSL             2
 
-#define SSL_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
-#define SSL_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
-#define SSL_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
+#define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
+#define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
+#define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate

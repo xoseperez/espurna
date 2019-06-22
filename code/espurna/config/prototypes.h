@@ -141,18 +141,18 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
     #include <ESP8266httpUpdate.h>
 #endif
 
-#if SSL_CLIENT != SSL_CLIENT_NONE
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
 
     #include <WiFiClientSecure.h>
 
-    #if OTA_SSL_CLIENT_INCLUDE_CA
-    #include "static/ota_ssl_client_ca.h"
+    #if OTA_SECURE_CLIENT_INCLUDE_CA
+    #include "static/ota_secure_client_ca.h"
     #else
     #include "static/digicert_evroot_pem.h"
     #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
     #endif
 
-#endif // SSL_CLIENT_SUPPORT
+#endif // SECURE_CLIENT_SUPPORT
 
 // -----------------------------------------------------------------------------
 // RFM69
