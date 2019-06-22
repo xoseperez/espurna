@@ -230,7 +230,6 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
     if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
-        jw.enableAP(true);
     }
 
     if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
@@ -254,7 +253,6 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
 
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
-        jw.enableAP(true);
 
     }
 
