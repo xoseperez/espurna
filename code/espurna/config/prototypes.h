@@ -41,8 +41,10 @@ void systemStabilityCounter(uint8_t);
 // -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
-template <typename ...Args> void debugSend(const char *, Args...);
-template <typename ...Args> void debugSend_P(PGM_P, Args...);
+
+#include "../libs/debugsend.h"
+
+void debugSendImpl(const char*);
 extern "C" {
      void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
 }
