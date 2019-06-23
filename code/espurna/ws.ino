@@ -545,7 +545,7 @@ void wsSetup() {
     // CORS
     const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", webDomain);
-    if (!webDomain.equals("*") {
+    if (!webDomain.equals("*")) {
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
     }
 
