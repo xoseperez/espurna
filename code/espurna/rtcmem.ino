@@ -1,7 +1,22 @@
+/*
+
+RTMEM MODULE
+
+*/
+
 bool _rtcmem_status = false;
 
+void _rtcmemErase() {
+    auto ptr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+    const auto end = ptr + RTCMEM_BLOCKS;
+    DEBUG_MSG_P(PSTR("[RTCMEM] Erasing start=%p end=%p\n"), ptr, end);
+    do {
+        *ptr = 0;
+    } while (++ptr != end);
+}
+
 void _rtcmemInit() {
-    memset((uint32_t*)RTCMEM_ADDR, 0, sizeof(uint32_t) * RTCMEM_BLOCKS);
+    _rtcmemErase();
     Rtcmem->magic = RTCMEM_MAGIC;
 }
 
@@ -31,17 +46,38 @@ void _rtcmemInitCommands() {
         _rtcmemInit();
     });
 
-    terminalRegisterCommand(F("RTCMEM.TEST"), [](Embedis* e) {
-    });
-
     terminalRegisterCommand(F("RTCMEM.DUMP"), [](Embedis* e) {
-        DEBUG_MSG_P(PSTR("[RTCMEM] status:%u blocks:%u addr:0x%p\n"),
-            _rtcmemStatus(), RtcmemSize, Rtcmem);
 
-        for (uint8_t block=0; block<RtcmemSize; ++block) {
-            DEBUG_MSG_P(PSTR("[RTCMEM] %02u: %u\n"),
-                block, reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR)[block]);
-        }
+        DEBUG_MSG_P(PSTR("[RTCMEM] boot_status=%u status=%u blocks_used=%u\n"),
+            _rtcmem_status, _rtcmemStatus(), RtcmemSize);
+
+        String line;
+        line.reserve(96);
+        char buffer[16] = {0};
+
+        auto addr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+
+        uint8_t block = 1;
+        uint8_t offset = 0;
+        uint8_t start = 0;
+
+        do {
+
+            offset = block - 1;
+
+            snprintf(buffer, sizeof(buffer), "%08x ", *(addr + offset));
+            line += buffer;
+
+            if ((block % 8) == 0) {
+                DEBUG_MSG_P(PSTR("%02u %p: %s\n"), start, addr+start, line.c_str());
+                start = block;
+                line = "";
+            }
+
+            ++block;
+
+        } while (block<(RTCMEM_BLOCKS+1));
+
     });
 }
 
