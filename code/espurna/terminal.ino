@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/EmbedisWrap.h"
 #include <Stream.h>
 #include "libs/StreamInjector.h"
+#include "libs/HeapStats.h"
 
 StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
 EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
@@ -124,12 +125,12 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("HEAP"), [](Embedis* e) {
-        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+        infoHeapStats();
         terminalOK();
     });
 
     terminalRegisterCommand(F("STACK"), [](Embedis* e) {
-        infoMemory("Stack", 4096, getFreeStack());
+        infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
         terminalOK();
     });
 

@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 #include <vector>
 
+#include "libs/HeapStats.h"
+
 std::vector<void (*)()> _loop_callbacks;
 std::vector<void (*)()> _reload_callbacks;
 
@@ -65,7 +67,7 @@ void setup() {
     // -------------------------------------------------------------------------
 
     // Cache initial free heap value
-    getInitialFreeHeap();
+    setInitialFreeHeap();
 
     // Serial debug
     #if DEBUG_SUPPORT
@@ -81,6 +83,9 @@ void setup() {
     // Init persistance
     settingsSetup();
 
+    // Return bogus free heap value for broken devices
+    // XXX: device is likely to trigger other bugs! tread carefuly
+    wtfHeap(getSetting("wtfHeap", 0).toInt());
     // Init Serial, SPIFFS and system check
     systemSetup();
 
