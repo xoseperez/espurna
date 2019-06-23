@@ -94,7 +94,7 @@ void debugSend(const char * format, Args... args) {
     int len = snprintf(temp, sizeof(temp), format, args...);
     if (len < 64) { _debugSend(temp); return; }
 
-    auto buffer = new char[len + 1]);
+    auto buffer = new char[len + 1];
     if (!buffer) return;
 
     snprintf(buffer, len + 1, format, args...);
@@ -107,7 +107,7 @@ void debugSend(const char * format, Args... args) {
 template <typename ...Args>
 void debugSend_P(PGM_P format_P, Args... args) {
 
-    char format[strlen_P(format_P)+1];
+    char format[strlen_P(format_P) + 1];
     memcpy_P(format, format_P, sizeof(format));
 
     debugSend(format, args...);
