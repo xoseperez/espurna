@@ -87,38 +87,30 @@ void _debugSend(const char * message) {
 
 // -----------------------------------------------------------------------------
 
-void debugSend(const char * format, ...) {
+template <typename ...Args>
+void debugSend(const char * format, Args... args) {
 
-    va_list args;
-    va_start(args, format);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
+    char temp[64];
+    int len = snprintf(temp, sizeof(temp), format, args...);
+    if (len < 64) { _debugSend(temp); return; }
 
+    auto buffer = new char[len + 1]);
+    if (!buffer) return;
+
+    snprintf(buffer, len + 1, format, args...);
     _debugSend(buffer);
 
     delete[] buffer;
 
 }
 
-void debugSend_P(PGM_P format_P, ...) {
+template <typename ...Args>
+void debugSend_P(PGM_P format_P, Args... args) {
 
     char format[strlen_P(format_P)+1];
     memcpy_P(format, format_P, sizeof(format));
 
-    va_list args;
-    va_start(args, format_P);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
+    debugSend(format, args...);
 
 }
 
