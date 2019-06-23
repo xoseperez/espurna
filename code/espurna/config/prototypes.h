@@ -42,7 +42,7 @@ void systemStabilityCounter(uint8_t);
 // Debug
 // -----------------------------------------------------------------------------
 
-#include "../libs/debugsend.h"
+#include "../libs/DebugSend.h"
 
 void debugSendImpl(const char*);
 extern "C" {
