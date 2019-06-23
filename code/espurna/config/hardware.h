@@ -1289,6 +1289,32 @@
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4
 
+#elif defined(MAGICHOME_ZJ_ESPM_5CH_B_13)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_ESPM_5CH_B_13"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       5       // COLD WHITE
+    #define LIGHT_CH5_PIN       15      // WARM WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
