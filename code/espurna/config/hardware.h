@@ -1301,6 +1301,7 @@
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // LEDs
     #define LED1_PIN            2
