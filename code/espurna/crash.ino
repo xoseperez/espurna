@@ -29,7 +29,8 @@ extern "C" {
  *  8. depc
  *  9. adress of stack start
  * 10. adress of stack end
- * 11. stack trace bytes
+ * 11. stack trace size
+ * 12. stack trace bytes
  *     ...
  */
 #define SAVE_CRASH_CRASH_TIME       0x00  // 4 bytes
@@ -182,11 +183,11 @@ void crashSetup() {
     #endif
 
     // Minumum of 16 and align for column formatter in crashDump()
-    _save_crash_stack_trace_max = getSetting("sysScTraceMax", SAVE_CRASH_STACK_TRACE_MAX).toInt();
+    _save_crash_stack_trace_max = getSetting("sysTraceMax", SAVE_CRASH_STACK_TRACE_MAX).toInt();
     _save_crash_stack_trace_max = (_save_crash_stack_trace_max + 15) & -16;
     setSetting("sysScTraceMax", _save_crash_stack_trace_max);
 
-    _save_crash_enabled = getSetting("sysScEnabled", 1).toInt() == 1;
+    _save_crash_enabled = getSetting("sysCrashSave", 1).toInt() == 1;
 
 }
 
