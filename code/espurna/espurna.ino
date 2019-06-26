@@ -83,9 +83,13 @@ void setup() {
     // Init persistance
     settingsSetup();
 
+    // Init crash recorder
+    crashSetup();
+
     // Return bogus free heap value for broken devices
     // XXX: device is likely to trigger other bugs! tread carefuly
     wtfHeap(getSetting("wtfHeap", 0).toInt());
+
     // Init Serial, SPIFFS and system check
     systemSetup();
 
