@@ -64,18 +64,11 @@ namespace EncoderLibrary {
     typedef struct {
         uint8_t             pin1;
         uint8_t             pin2;
-        volatile uint32_t * pin1_register;
-        volatile uint32_t * pin2_register;
-        uint32_t            pin1_bitmask;
-        uint32_t            pin2_bitmask;
         uint8_t             state;
         int32_t             position;
     } encoder_values_t;
 
-#define PIN_TO_BASEREG(pin)             ((volatile uint32_t *)(0x60000000+(0x318)))
-#define DIRECT_PIN_READ(base, mask)     (((*(base)) & (mask)) ? 1 : 0)
-
-#define ENCODERS_MAXIMUM 5
+    constexpr const unsigned char ENCODERS_MAXIMUM {5u};
 
     encoder_values_t * EncoderValues[ENCODERS_MAXIMUM] = {nullptr};
 
@@ -101,8 +94,8 @@ namespace EncoderLibrary {
     // update() is not meant to be called from outside Encoder,
     // but it is public to allow static interrupt routines.
     void ICACHE_RAM_ATTR update(encoder_values_t *target) {
-        uint8_t p1val = DIRECT_PIN_READ(target->pin1_register, target->pin1_bitmask);
-        uint8_t p2val = DIRECT_PIN_READ(target->pin2_register, target->pin2_bitmask);
+        uint8_t p1val = GPIP(target->pin1);
+        uint8_t p2val = GPIP(target->pin2);
         uint8_t state = target->state & 3;
         if (p1val) state |= 4;
         if (p2val) state |= 8;
@@ -150,12 +143,6 @@ namespace EncoderLibrary {
             pinMode(values.pin1, INPUT_PULLUP);
             pinMode(values.pin2, INPUT_PULLUP);
 
-            values.pin1_register = PIN_TO_BASEREG(values.pin1);
-            values.pin2_register = PIN_TO_BASEREG(values.pin2);
-
-            values.pin1_bitmask = digitalPinToBitMask(values.pin1);
-            values.pin2_bitmask = digitalPinToBitMask(values.pin2);
-
             values.position = 0;
 
             // allow time for a passive R-C filter to charge
@@ -164,11 +151,11 @@ namespace EncoderLibrary {
             delayMicroseconds(2000);
 
             uint8_t current = 0;
-            if (DIRECT_PIN_READ(values.pin1_register, values.pin1_bitmask)) {
+            if (GPIP(values.pin1)) {
                 current |= 1;
             }
 
-            if (DIRECT_PIN_READ(values.pin2_register, values.pin2_bitmask)) {
+            if (GPIP(values.pin2)) {
                 current |= 2;
             }
 
@@ -180,6 +167,14 @@ namespace EncoderLibrary {
 
         ~Encoder() {
             detach();
+        }
+
+        uint8_t pin1() {
+            return values.pin1;
+        }
+
+        uint8_t pin2() {
+            return values.pin2;
         }
 
         int32_t read() {
