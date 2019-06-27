@@ -72,7 +72,7 @@
 #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
-#if LIGHT_DIMMER == LIGHT_DIMMER_TUYA
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
 #undef LIGHT_USE_TRANSITIONS
 #define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
 #endif
