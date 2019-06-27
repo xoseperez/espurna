@@ -42,6 +42,7 @@ typedef struct {
 std::vector<relay_t> _relays;
 bool _relayRecursive = false;
 Ticker _relaySaveTicker;
+uint8_t _relayDummy = DUMMY_RELAY_COUNT;
 
 // -----------------------------------------------------------------------------
 // RELAY PROVIDERS
@@ -96,7 +97,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
     #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
 
         // Real relays
-        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+        uint8_t physical = _relays.size() - _relayDummy;
 
         // Support for a mixed of dummy and real relays
         // Reference: https://github.com/xoseperez/espurna/issues/1305
@@ -108,10 +109,10 @@ void _relayProviderStatus(unsigned char id, bool status) {
             // assume the first one controls all the channels and
             // the rest one channel each.
             // Otherwise every dummy relay controls all channels.
-            if (DUMMY_RELAY_COUNT == lightChannels()) {
+            if (_relayDummy == lightChannels()) {
                 lightState(id-physical, status);
                 lightState(true);
-            } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+            } else if (_relayDummy == (lightChannels() + 1u)) {
                 if (id == physical) {
                     lightState(status);
                 } else {
@@ -625,11 +626,11 @@ String _relayFriendlyName(unsigned char i) {
 
     if (GPIO_NONE == _relays[i].pin) {
         #if (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-            uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
+            uint8_t physical = _relays.size() - _relayDummy;
             if (i >= physical) {
-                if (DUMMY_RELAY_COUNT == lightChannels()) {
+                if (_relayDummy == lightChannels()) {
                     res = String("CH") + String(i-physical);
-                } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
+                } else if (_relayDummy == (lightChannels() + 1u)) {
                     if (physical == i) {
                         res = String("Light");
                     } else {
@@ -1080,6 +1081,21 @@ void _relayLoop() {
     _relayProcess(true);
 }
 
+// Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
+// No delay_on or off for these devices to easily allow having more than
+// 8 channels. This behaviour will be recovered with v2.
+void relaySetupDummy(unsigned char size) {
+
+    _relayDummy = constrain(size, 0, 8);
+    _relays.clear();
+
+    for (unsigned char i=0; i < _relayDummy; ++i) {
+        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+    }
+
+}
+
+
 void relaySetup() {
 
     // Ad-hoc relays
@@ -1108,12 +1124,7 @@ void relaySetup() {
         _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
     #endif
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
-    // No delay_on or off for these devices to easily allow having more than
-    // 8 channels. This behaviour will be recovered with v2.
-    for (unsigned char i=0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
-    }
+    relaySetupDummy(DUMMY_RELAY_COUNT);
 
     _relayBackwards();
     _relayConfigure();

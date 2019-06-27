@@ -50,6 +50,7 @@ bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
 unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
+unsigned char _light_channels = LIGHT_CHANNELS;
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
@@ -1188,6 +1189,18 @@ void _lightConfigure() {
 
 }
 
+// Dummy channel setup for light providers without real GPIO
+void lightSetupChannels(unsigned char size) {
+
+    _light_channels = size;
+    _light_channel.clear();
+
+    for (unsigned char i=0; i<_light_channels; ++i) {
+        _light_channel.push_back((channel_t) {GPIO_NONE, false, true, 0, 0, 0});
+    }
+
+}
+
 void lightSetup() {
 
     #ifdef LIGHT_ENABLE_PIN
@@ -1198,9 +1211,7 @@ void lightSetup() {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
         _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND);
-        for (unsigned char i=0; i<LIGHT_CHANNELS; i++) {
-            _light_channel.push_back((channel_t) {0, false, true, 0, 0, 0});
-        }
+        lightSetupChannels(LIGHT_CHANNELS);
 
     #endif
 
