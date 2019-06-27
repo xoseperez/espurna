@@ -28,7 +28,7 @@
  *
  * -----------------------------------------------------------------------------
  *
- * Core Encoder.h, updated for ESP8266 use in ESPurna. Other hardware is not supported.
+ * Encoder.h, updated for ESP8266 use in ESPurna. Other hardware is not supported.
  *
  * - Added ESP-specific attributes to ISR handlers to place them in IRAM.
  * - Reduced per-encoder structure sizes - only 5 Encoders can be used on ESP8266,
