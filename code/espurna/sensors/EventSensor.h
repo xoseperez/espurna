@@ -10,8 +10,6 @@
 #include "Arduino.h"
 #include "BaseSensor.h"
 
-#include <queue>
-
 // we are bound by usable GPIOs
 #define EVENTS_SENSORS_MAX 10
 
@@ -90,15 +88,13 @@ class EventSensor : public BaseSensor {
         }
 
         void tick() {
-            if (!_trigger) return;
-            if (_events.empty()) return;
+            if (!_trigger || !_callback) return;
+            if (!_trigger_flag) return;
 
-            if (_callback) {
-                noInterrupts();
-                _callback(MAGNITUDE_EVENT, _events.front());
-                _events.pop();
-                interrupts();
-            }
+            noInterrupts();
+            _callback(MAGNITUDE_EVENT, _trigger_value);
+            _trigger_flag = false;
+            interrupts();
         }
 
         // Descriptive name of the sensor
@@ -161,8 +157,8 @@ class EventSensor : public BaseSensor {
 
                 // we are handling callbacks in tick()
                 if (_trigger) {
-                    _value = digitalRead(gpio);
-                    _events.push(_value);
+                    _trigger_value = digitalRead(gpio);
+                    _trigger_flag = true;
                 }
             }
         }
@@ -192,12 +188,15 @@ class EventSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         volatile unsigned long _counter = 0;
-        std::queue<unsigned char> _events;
         unsigned char _value = 0;
         unsigned long _last = 0;
         unsigned long _debounce = microsecondsToClockCycles(EVENTS_DEBOUNCE * 1000);
-        unsigned char _gpio = GPIO_NONE;
+
         bool _trigger = false;
+        bool _trigger_flag = false;
+        unsigned char _trigger_value = false;
+
+        unsigned char _gpio = GPIO_NONE;
         unsigned char _pin_mode = INPUT;
         unsigned char _interrupt_mode = RISING;
 
