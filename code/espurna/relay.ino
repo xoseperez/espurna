@@ -502,21 +502,6 @@ void _relayBackwards() {
         delSetting("mqttGroupInv", i);
     }
 
-    byte relayMode = getSetting("relayMode", RELAY_BOOT_MODE).toInt();
-    byte relayPulseMode = getSetting("relayPulseMode", RELAY_PULSE_MODE).toInt();
-    float relayPulseTime = getSetting("relayPulseTime", RELAY_PULSE_TIME).toFloat();
-    if (relayPulseMode == RELAY_PULSE_NONE) relayPulseTime = 0;
-
-    for (unsigned int i=0; i<_relays.size(); i++) {
-        if (!hasSetting("relayBoot", i)) setSetting("relayBoot", i, relayMode);
-        if (!hasSetting("relayPulse", i)) setSetting("relayPulse", i, relayPulseMode);
-        if (!hasSetting("relayTime", i)) setSetting("relayTime", i, relayPulseTime);
-    }
-
-    delSetting("relayMode");
-    delSetting("relayPulseMode");
-    delSetting("relayPulseTime");
-
 }
 
 void _relayBoot() {
