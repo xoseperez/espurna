@@ -81,14 +81,6 @@ void _terminalKeysCommand() {
 
 void _terminalInitCommand() {
 
-    #if DEBUG_SUPPORT
-        terminalRegisterCommand(F("CRASH"), [](Embedis* e) {
-            crashDump();
-            crashClear();
-            terminalOK();
-        });
-    #endif
-
     terminalRegisterCommand(F("COMMANDS"), [](Embedis* e) {
         _terminalHelpCommand();
         terminalOK();
