@@ -107,20 +107,29 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("GPIO"), [](Embedis* e) {
+        int pin = -1;
+
         if (e->argc < 2) {
-            terminalError(F("Wrong arguments"));
-            return;
+            DEBUG_MSG("Printing all GPIO pins:\n");
+        } else {
+            pin = String(e->argv[1]).toInt();
+            if (!gpioValid(pin)) {
+                terminalError(F("Invalid GPIO pin"));
+                return;
+            }
+
+            if (e->argc > 2) {
+                bool state = String(e->argv[2]).toInt() == 1;
+                digitalWrite(pin, state);
+            }
         }
-        int pin = String(e->argv[1]).toInt();
-        //if (!gpioValid(pin)) {
-        //    terminalError(F("Invalid GPIO"));
-        //    return;
-        //}
-        if (e->argc > 2) {
-            bool state = String(e->argv[2]).toInt() == 1;
-            digitalWrite(pin, state);
+
+        for (int i = 0; i <= 15; i++) {
+            if (gpioValid(i) && (pin == -1 || pin == i)) {
+                DEBUG_MSG_P(PSTR("GPIO %s pin %d is %s\n"), GPEP(i) ? "output" : "input", i, digitalRead(i) == HIGH ? "HIGH" : "LOW");
+            }
         }
-        DEBUG_MSG_P(PSTR("GPIO %d is %s\n"), pin, digitalRead(pin) == HIGH ? "HIGH" : "LOW");
+
         terminalOK();
     });
 
