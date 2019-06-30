@@ -126,7 +126,7 @@ void _tspkInitClient() {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
 
         _tspk_last_flush = millis();
-        if ((0 == code) && (--_tspk_tries > 0)) {
+        if ((0 == code) && _tspk_tries) {
             _tspk_flush = true;
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
         } else {
@@ -227,7 +227,7 @@ void _tspkPost() {
         _tspk_client.stop();
 
         _tspk_last_flush = millis();
-        if ((0 == code) && (--_tspk_tries > 0)) {
+        if ((0 == code) && _tspk_tries) {
             _tspk_flush = true;
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
         } else {
@@ -252,6 +252,7 @@ void _tspkEnqueue(unsigned char index, char * payload) {
 }
 
 void _tspkClearQueue() {
+    _tspk_tries = THINGSPEAK_TRIES;
     if (_tspk_clear) {
         for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
             if (_tspk_queue[id] != NULL) {
@@ -266,6 +267,10 @@ void _tspkFlush() {
 
     _tspk_flush = false;
     _tspk_data.reserve(THINGSPEAK_DATA_BUFFER_SIZE);
+    if (!_tspk_tries) {
+        _tspk_data = "";
+        return;
+    }
 
     // Walk the fields
     for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
@@ -281,7 +286,7 @@ void _tspkFlush() {
     if (_tspk_data.length()) {
         _tspk_data.concat("&api_key=");
         _tspk_data.concat(getSetting("tspkKey"));
-        _tspk_tries = THINGSPEAK_TRIES;
+        --_tspk_tries;
         _tspkPost();
     }
 
