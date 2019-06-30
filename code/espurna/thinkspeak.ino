@@ -10,10 +10,11 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
-AsyncClient * _tspk_client;
 #else
 #include <ESP8266WiFi.h>
 #endif
+
+#define THINGSPEAK_DATA_BUFFER_SIZE 256
 
 const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "POST %s HTTP/1.1\r\n"
@@ -28,10 +29,17 @@ bool _tspk_enabled = false;
 bool _tspk_clear = false;
 
 char * _tspk_queue[THINGSPEAK_FIELDS] = {NULL};
+String _tspk_data;
 
 bool _tspk_flush = false;
 unsigned long _tspk_last_flush = 0;
 unsigned char _tspk_tries = 0;
+
+#if THINGSPEAK_USE_ASYNC
+AsyncClient * _tspk_client;
+bool _tspk_connecting = false;
+bool _tspk_connected = false;
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -92,33 +100,30 @@ void _tspkConfigure() {
         _tspk_enabled = false;
         setSetting("tspkEnabled", 0);
     }
+    if (_tspk_enabled && !_tspk_client) _tspkInitClient();
 }
 
 #if THINGSPEAK_USE_ASYNC
+void _tspkInitClient() {
 
-void _tspkPost(String data) {
+    _tspk_client = new AsyncClient();
 
-    if (_tspk_client == NULL) {
-        _tspk_client = new AsyncClient();
-    }
-
-    _tspk_client->onDisconnect([](void *s, AsyncClient *c) {
+    _tspk_client->onDisconnect([](void * s, AsyncClient * client) {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected\n"));
-        _tspk_client->free();
-        delete _tspk_client;
-        _tspk_client = NULL;
+        _tspk_data = "";
+        _tspk_connected = false;
+        _tspk_connecting = false;
     }, 0);
 
-    _tspk_client->onTimeout([](void *s, AsyncClient *c, uint32_t time) {
-        _tspk_client->close(true);
+    _tspk_client->onTimeout([](void * s, AsyncClient * client, uint32_t time) {
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] No response after %ums\n"), time);
+        client->close(true);
     }, 0);
 
-    _tspk_client->onData([](void * arg, AsyncClient * c, void * response, size_t len) {
+    _tspk_client->onData([](void * arg, AsyncClient * client, void * response, size_t len) {
 
-        char * b = (char *) response;
-        b[len] = 0;
-        char * p = strstr((char *)response, "\r\n\r\n");
-        unsigned int code = (p != NULL) ? atoi(&p[4]) : 0;
+        const char * p = strnstr(reinterpret_cast<const char *>(response), "\r\n\r\n", len);
+        unsigned int code = (p) ? atoi(&p[4]) : 0;
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
 
         _tspk_last_flush = millis();
@@ -129,11 +134,14 @@ void _tspkPost(String data) {
             _tspkClearQueue();
         }
 
-        _tspk_client->close(true);
+        client->close(true);
 
     }, NULL);
 
-    _tspk_client->onConnect([data](void * arg, AsyncClient * client) {
+    _tspk_client->onConnect([](void * arg, AsyncClient * client) {
+
+        _tspk_connected = true;
+        _tspk_connecting = false;
 
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%d\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
 
@@ -146,26 +154,33 @@ void _tspkPost(String data) {
             }
         #endif
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, data.c_str());
-
-        char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
-        snprintf_P(buffer, sizeof(buffer),
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + 1];
+        snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
             THINGSPEAK_URL,
             THINGSPEAK_HOST,
-            data.length(),
-            data.c_str()
+            _tspk_data.length()
         );
 
-        client->write(buffer);
+        client->write(headers);
+        client->write(_tspk_data.c_str());
 
     }, NULL);
+
+}
+
+void _tspkPost() {
+
+    if (_tspk_connected || _tspk_connecting) return;
 
     #if ASYNC_TCP_SSL_ENABLED
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
     #else
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT);
     #endif
+
+    _tspk_connecting = connected;
 
     if (!connected) {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Connection failed\n"));
@@ -176,7 +191,7 @@ void _tspkPost(String data) {
 
 #else // THINGSPEAK_USE_ASYNC
 
-void _tspkPost(String data) {
+void _tspkPost() {
 
     #if THINGSPEAK_USE_SSL
         WiFiClientSecure _tspk_client;
@@ -192,16 +207,17 @@ void _tspkPost(String data) {
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
         }
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, data.c_str());
-        char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
-        snprintf_P(buffer, sizeof(buffer),
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, _tspk_data.c_str());
+        char headers[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + 1];
+        snprintf_P(headers, sizeof(headers),
             THINGSPEAK_REQUEST_TEMPLATE,
             THINGSPEAK_URL,
             THINGSPEAK_HOST,
-            data.length(),
-            data.c_str()
+            _tspk_data.length()
         );
-        _tspk_client.print(buffer);
+
+        _tspk_client.print(headers);
+        _tspk_client.print(_tspk_data);
 
         nice_delay(100);
 
@@ -250,21 +266,24 @@ void _tspkClearQueue() {
 void _tspkFlush() {
 
     _tspk_flush = false;
+    _tspk_data.reserve(THINGSPEAK_DATA_BUFFER_SIZE);
 
     // Walk the fields
-    String data;
     for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
         if (_tspk_queue[id] != NULL) {
-            if (data.length() > 0) data = data + String("&");
-            data = data + String("field") + String(id+1) + String("=") + String(_tspk_queue[id]);
+            if (_tspk_data.length() > 0) _tspk_data.concat("&");
+            char buf[32] = {0};
+            snprintf_P(buf, sizeof(buf), PSTR("field%u=%s"), (id + 1), _tspk_queue[id]);
+            _tspk_data.concat(buf);
         }
     }
 
     // POST data if any
-    if (data.length() > 0) {
-        data = data + String("&api_key=") + getSetting("tspkKey");
+    if (_tspk_data.length()) {
+        _tspk_data.concat("&api_key=");
+        _tspk_data.concat(getSetting("tspkKey"));
         _tspk_tries = THINGSPEAK_TRIES;
-        _tspkPost(data);
+        _tspkPost();
     }
 
 }

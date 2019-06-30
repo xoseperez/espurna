@@ -183,6 +183,9 @@ bool inline eraseSDKConfig();
 
 #define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
 
+size_t strnlen(const char*, size_t);
+char* strnstr(const char*, const char*, size_t);
+
 // -----------------------------------------------------------------------------
 // WebServer
 // -----------------------------------------------------------------------------
