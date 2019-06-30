@@ -7,9 +7,9 @@ cache:
   directories:
   - "~/.npm"
   - "~/.platformio"
-  - "$TRAVIS_BUILD_DIR/code/.piolibdeps"
+  - "$TRAVIS_BUILD_DIR/code/libraries"
 install:
-- pip install -U git+https://https://github.com/platformio/platformio-core@8d459d86d33992129726ef177ed24fe8a00e9b75
+- pip install -U git+https://github.com/platformio/platformio-core@8d459d86d33992129726ef177ed24fe8a00e9b75
 - npm install -g npm@latest
 - cd code && npm ci && cd ..
 env:
