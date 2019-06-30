@@ -84,7 +84,9 @@ void setup() {
     settingsSetup();
 
     // Init crash recorder
-    crashSetup();
+    #if DEBUG_SUPPORT
+        crashSetup();
+    #endif
 
     // Return bogus free heap value for broken devices
     // XXX: device is likely to trigger other bugs! tread carefuly
