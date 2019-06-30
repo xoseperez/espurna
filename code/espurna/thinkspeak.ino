@@ -103,6 +103,17 @@ void _tspkConfigure() {
 }
 
 #if THINGSPEAK_USE_ASYNC
+
+enum class tspk_state_t : uint8_t {
+    NONE,
+    HEADERS,
+    BODY
+};
+
+tspk_state_t _tspk_client_state = tspk_state_t::NONE;
+unsigned long _tspk_client_ts = 0;
+constexpr const unsigned long THINGSPEAK_CLIENT_TIMEOUT = 5000;
+
 void _tspkInitClient() {
 
     _tspk_client = new AsyncClient();
@@ -112,28 +123,72 @@ void _tspkInitClient() {
         _tspk_data = "";
         _tspk_connected = false;
         _tspk_connecting = false;
-    }, 0);
+        _tspk_client_state = tspk_state_t::NONE;
+    }, nullptr);
 
     _tspk_client->onTimeout([](void * s, AsyncClient * client, uint32_t time) {
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] No response after %ums\n"), time);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Network timeout after %ums\n"), time);
         client->close(true);
-    }, 0);
+    }, nullptr);
+
+    _tspk_client->onPoll([](void * s, AsyncClient * client) {
+        uint32_t ts = millis() - _tspk_client_ts;
+        if (ts > THINGSPEAK_CLIENT_TIMEOUT) {
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] No response after %ums\n"), ts);
+            client->close(true);
+        }
+    }, nullptr);
 
     _tspk_client->onData([](void * arg, AsyncClient * client, void * response, size_t len) {
 
-        const char * p = strnstr(reinterpret_cast<const char *>(response), "\r\n\r\n", len);
-        unsigned int code = (p) ? atoi(&p[4]) : 0;
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
+        char * p = nullptr;
 
-        _tspk_last_flush = millis();
-        if ((0 == code) && _tspk_tries) {
-            _tspk_flush = true;
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
-        } else {
-            _tspkClearQueue();
-        }
+        do {
 
-        client->close(true);
+            p = nullptr;
+
+            switch (_tspk_client_state) {
+                case tspk_state_t::NONE:
+                {
+                    p = strnstr(reinterpret_cast<const char *>(response), "HTTP/1.1 200 OK", len);
+                    if (!p) {
+                        client->close(true);
+                        return;
+                    }
+                    _tspk_client_state = tspk_state_t::HEADERS;
+                    continue;
+                }
+                case tspk_state_t::HEADERS:
+                {
+                    p = strnstr(reinterpret_cast<const char *>(response), "\r\n\r\n", len);
+                    if (!p) return;
+                    _tspk_client_state = tspk_state_t::BODY;
+                }
+                case tspk_state_t::BODY:
+                {
+                    if (!p) {
+                        p = strnstr(reinterpret_cast<const char *>(response), "\r\n\r\n", len);
+                        if (!p) return;
+                    }
+
+                    unsigned int code = (p) ? atoi(&p[4]) : 0;
+                    DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
+                    _tspk_last_flush = millis();
+
+                    if ((0 == code) && _tspk_tries) {
+                        _tspk_flush = true;
+                        DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
+                    } else {
+                        _tspkClearQueue();
+                    }
+
+                    client->close(true);
+
+                    _tspk_client_state = tspk_state_t::NONE;
+                }
+            }
+
+        } while (_tspk_client_state != tspk_state_t::NONE);
 
     }, NULL);
 
