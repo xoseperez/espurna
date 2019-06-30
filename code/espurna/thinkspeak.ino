@@ -32,7 +32,7 @@ String _tspk_data;
 
 bool _tspk_flush = false;
 unsigned long _tspk_last_flush = 0;
-unsigned char _tspk_tries = 0;
+unsigned char _tspk_tries = THINGSPEAK_TRIES;
 
 #if THINGSPEAK_USE_ASYNC
 AsyncClient * _tspk_client;
@@ -272,7 +272,7 @@ void _tspkFlush() {
         return;
     }
 
-    // Walk the fields
+    // Walk the fields, numbered 1...THINGSPEAK_FIELDS
     for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
         if (_tspk_queue[id] != NULL) {
             if (_tspk_data.length() > 0) _tspk_data.concat("&");
