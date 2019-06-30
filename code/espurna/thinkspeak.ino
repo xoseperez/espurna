@@ -22,8 +22,7 @@ const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "User-Agent: ESPurna\r\n"
     "Connection: close\r\n"
     "Content-Type: application/x-www-form-urlencoded\r\n"
-    "Content-Length: %d\r\n\r\n"
-    "%s\r\n";
+    "Content-Length: %d\r\n\r\n";
 
 bool _tspk_enabled = false;
 bool _tspk_clear = false;
@@ -124,12 +123,12 @@ void _tspkInitClient() {
 
         const char * p = strnstr(reinterpret_cast<const char *>(response), "\r\n\r\n", len);
         unsigned int code = (p) ? atoi(&p[4]) : 0;
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
 
         _tspk_last_flush = millis();
         if ((0 == code) && (--_tspk_tries > 0)) {
             _tspk_flush = true;
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing\n"));
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
         } else {
             _tspkClearQueue();
         }
@@ -143,7 +142,7 @@ void _tspkInitClient() {
         _tspk_connected = true;
         _tspk_connecting = false;
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%d\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
 
         #if THINGSPEAK_USE_SSL
             uint8_t fp[20] = {0};
@@ -201,7 +200,7 @@ void _tspkPost() {
 
     if (_tspk_client.connect(THINGSPEAK_HOST, THINGSPEAK_PORT)) {
 
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%d\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Connected to %s:%u\n"), THINGSPEAK_HOST, THINGSPEAK_PORT);
 
         if (!_tspk_client.verify(THINGSPEAK_FINGERPRINT, THINGSPEAK_HOST)) {
             DEBUG_MSG_P(PSTR("[THINGSPEAK] Warning: certificate doesn't match\n"));
@@ -224,13 +223,13 @@ void _tspkPost() {
         String response = _tspk_client.readString();
         int pos = response.indexOf("\r\n\r\n");
         unsigned int code = (pos > 0) ? response.substring(pos + 4).toInt() : 0;
-        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
         _tspk_client.stop();
 
         _tspk_last_flush = millis();
         if ((0 == code) && (--_tspk_tries > 0)) {
             _tspk_flush = true;
-            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing\n"));
+            DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_tries);
         } else {
             _tspkClearQueue();
         }
@@ -246,7 +245,7 @@ void _tspkPost() {
 #endif // THINGSPEAK_USE_ASYNC
 
 void _tspkEnqueue(unsigned char index, char * payload) {
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%d with value %s\n"), index, payload);
+    DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%u with value %s\n"), index, payload);
     --index;
     if (_tspk_queue[index] != NULL) free(_tspk_queue[index]);
     _tspk_queue[index] = strdup(payload);
