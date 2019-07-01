@@ -250,11 +250,11 @@ bool wifiConnected();
 // TUYA
 // -----------------------------------------------------------------------------
 namespace TuyaDimmer {
-    void tuyaSendBrightness(unsigned char);
-    void tuyaSendSwitch(bool);
+    void tuyaSendChannel(unsigned char, unsigned int);
+    void tuyaSendSwitch(unsigned char, bool);
     void tuyaSetup();
 }
 
 using TuyaDimmer::tuyaSendSwitch;
-using TuyaDimmer::tuyaSendBrightness;
+using TuyaDimmer::tuyaSendChannel;
 using TuyaDimmer::tuyaSetup;

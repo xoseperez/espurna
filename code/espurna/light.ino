@@ -485,7 +485,9 @@ void _lightProviderUpdate() {
     #endif
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-        tuyaSendBrightness(lightBrightness());
+        for (unsigned char i=0; i<_light_channel.size(); i++) {
+            tuyaSendChannel(i, lightChannel(i));
+        }
     #endif
 
 }

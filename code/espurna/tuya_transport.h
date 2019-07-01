@@ -1,8 +1,10 @@
 #pragma once
 
+#include "tuya_dataframe.h"
+
 namespace TuyaDimmer {
 
-    class SerialBuffer {
+    class BufferedTransport {
 
         // TODO: half of this?
         constexpr static size_t LIMIT = 256;
@@ -13,13 +15,13 @@ namespace TuyaDimmer {
 
     public:
 
-        SerialBuffer(Stream& stream) :
+        BufferedTransport(Stream& stream) :
             _stream(stream)
         {
             _buffer.reserve(LIMIT);
         }
 
-        bool full() { return (_index >= SerialBuffer::LIMIT); }
+        bool full() { return (_index >= BufferedTransport::LIMIT); }
         bool done() { return _done; }
         size_t size() { return _index; }
 
@@ -105,6 +107,37 @@ namespace TuyaDimmer {
             _checksum += byte;
 
             ++_index;
+
+        }
+
+        template <typename T = PrintRaw>
+        void write(const DataFrame& frame) const {
+
+            uint8_t buffer[6] = {
+                0x55, 0xaa,
+                frame.version, frame.command,
+                uint8_t(frame.length >> 8),
+                uint8_t(frame.length & 0xff)
+            };
+
+            uint8_t checksum = (0xff + frame.version);
+            checksum += frame.command;
+            checksum += frame.length;
+
+            T::write(_stream, buffer, 6);
+
+            if (frame.data && frame.length) {
+
+                size_t index = 0;
+                while (index < frame.length) {
+                    checksum += frame.data[index];
+                    T::write(_stream, frame.data[index]);
+                    ++index;
+                }
+
+            }
+
+            T::write(_stream, checksum);
 
         }
 

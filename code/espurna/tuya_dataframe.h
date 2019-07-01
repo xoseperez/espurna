@@ -1,24 +1,25 @@
 #pragma once
 
-#include "tuya_states.h"
+#include "tuya_types.h"
 
 namespace TuyaDimmer {
-
-    struct payload_t {
-        Command command;
-        std::vector<uint8_t> data;
-    };
 
     class DataFrame {
 
     private:
 
         DataFrame(DataFrame& rhs) { }
-        DataFrame(DataFrame&& rhs) { }
 
     public:
 
         ~DataFrame() { }
+
+        DataFrame(DataFrame&& rhs) :
+            data(rhs.data),
+            command(rhs.command),
+            version(rhs.version),
+            length(rhs.length)
+        {}
 
         DataFrame(uint8_t command) :
             data(nullptr),
@@ -30,29 +31,17 @@ namespace TuyaDimmer {
             DataFrame(static_cast<uint8_t>(command))
         {}
 
-        DataFrame(uint8_t command, const uint8_t* data, uint16_t length) :
+        DataFrame(uint8_t command, const uint8_t* data, uint16_t length, uint8_t version = 0) :
             data(data),
             command(command),
+            version(version),
             length(length)
         {}
 
-        DataFrame(Command command, const uint8_t* data, uint16_t length) :
+        DataFrame(Command command, const uint8_t* data, uint16_t length, uint8_t version = 0) :
             data(data),
             command(static_cast<uint8_t>(command)),
             length(length)
-        {}
-
-        DataFrame(const SerialBuffer& buffer) :
-            data(buffer.dataPtr()),
-            command(buffer.command()),
-            version(buffer.version()),
-            length(buffer.length())
-        {}
-
-        DataFrame(const payload_t& payload) :
-            data(payload.data.data()),
-            command(static_cast<uint8_t>(payload.command)),
-            length(payload.data.size())
         {}
 
         bool operator &(Command command) const {
@@ -73,36 +62,6 @@ namespace TuyaDimmer {
             }
 
             return result;
-        }
-
-        template <typename T = PrintRaw>
-        void printTo(Print& stream) const {
-
-            uint8_t buffer[6] = {
-                0x55, 0xaa,
-                version, command,
-                uint8_t(length >> 8), uint8_t(length & 0xff)
-            };
-
-            uint8_t checksum = (0xff + version);
-            checksum += command;
-            checksum += length;
-
-            T::write(stream, buffer, 6);
-
-            if (this->data && this->length) {
-
-                size_t index = 0;
-                while (index < this->length) {
-                    checksum += this->data[index];
-                    T::write(stream, this->data[index]);
-                    ++index;
-                }
-
-            }
-
-            T::write(stream, checksum);
-
         }
 
         const uint8_t* data = nullptr;
