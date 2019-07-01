@@ -121,6 +121,7 @@ void _tspkInitClient() {
     _tspk_client->onDisconnect([](void * s, AsyncClient * client) {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected\n"));
         _tspk_data = "";
+        _tspk_client_ts = millis();
         _tspk_connected = false;
         _tspk_connecting = false;
         _tspk_client_state = tspk_state_t::NONE;
@@ -190,7 +191,7 @@ void _tspkInitClient() {
 
         } while (_tspk_client_state != tspk_state_t::NONE);
 
-    }, NULL);
+    }, nullptr);
 
     _tspk_client->onConnect([](void * arg, AsyncClient * client) {
 
@@ -220,13 +221,15 @@ void _tspkInitClient() {
         client->write(headers);
         client->write(_tspk_data.c_str());
 
-    }, NULL);
+    }, nullptr);
 
 }
 
 void _tspkPost() {
 
     if (_tspk_connected || _tspk_connecting) return;
+
+    _tspk_client_ts = millis();
 
     #if ASYNC_TCP_SSL_ENABLED
         bool connected = _tspk_client->connect(THINGSPEAK_HOST, THINGSPEAK_PORT, THINGSPEAK_USE_SSL);
