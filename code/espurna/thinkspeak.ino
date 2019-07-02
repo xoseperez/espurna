@@ -121,7 +121,8 @@ void _tspkInitClient() {
     _tspk_client->onDisconnect([](void * s, AsyncClient * client) {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected\n"));
         _tspk_data = "";
-        _tspk_client_ts = millis();
+        _tspk_client_ts = 0;
+        _tspk_last_flush = millis();
         _tspk_connected = false;
         _tspk_connecting = false;
         _tspk_client_state = tspk_state_t::NONE;
@@ -174,7 +175,6 @@ void _tspkInitClient() {
 
                     unsigned int code = (p) ? atoi(&p[4]) : 0;
                     DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
-                    _tspk_last_flush = millis();
 
                     if ((0 == code) && _tspk_tries) {
                         _tspk_flush = true;
@@ -323,12 +323,13 @@ void _tspkClearQueue() {
 
 void _tspkFlush() {
 
+    if (!_tspk_flush) return;
+    if (millis() - _tspk_last_flush < THINGSPEAK_MIN_INTERVAL) return;
+    if (_tspk_connected || _tspk_connecting) return;
+
+    _tspk_last_flush = millis();
     _tspk_flush = false;
     _tspk_data.reserve(THINGSPEAK_DATA_BUFFER_SIZE);
-    if (!_tspk_tries) {
-        _tspk_data = "";
-        return;
-    }
 
     // Walk the fields, numbered 1...THINGSPEAK_FIELDS
     for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
@@ -407,9 +408,7 @@ void tspkSetup() {
 void tspkLoop() {
     if (!_tspk_enabled) return;
     if (!wifiConnected() || (WiFi.getMode() != WIFI_STA)) return;
-    if (_tspk_flush && (millis() - _tspk_last_flush > THINGSPEAK_MIN_INTERVAL)) {
-        _tspkFlush();
-    }
+    _tspkFlush();
 }
 
 #endif
