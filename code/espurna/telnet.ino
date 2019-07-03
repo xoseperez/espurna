@@ -52,8 +52,6 @@ void _telnetDisconnect(unsigned char clientId) {
     #else
         _telnetClients[clientId].free();
     #endif
-    //delete _telnetClients[clientId];
-    //_telnetClients[clientId] = NULL;
     wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
 }
@@ -140,26 +138,6 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     #if TERMINAL_SUPPORT
         terminalInject(data, len);
     #endif
-}
-
-// -----------------------------------------------------------------------------
-// Public API
-// -----------------------------------------------------------------------------
-
-bool telnetConnected() {
-    for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
-        if (_telnetClients[i].connected()) return true;
-    }
-    return false;
-}
-
-unsigned char telnetWrite(unsigned char ch) {
-    char data[1] = {ch};
-    return _telnetWrite(data, 1);
-}
-
-void _telnetConfigure() {
-    _telnetAuth = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
 
 #if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
@@ -321,6 +299,26 @@ void _telnetNewClient(void *cl) {
     client->close(true);
 }
 #endif
+
+// -----------------------------------------------------------------------------
+// Public API
+// -----------------------------------------------------------------------------
+
+bool telnetConnected() {
+    for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
+        if (_telnetClients[i].connected()) return true;
+    }
+    return false;
+}
+
+unsigned char telnetWrite(unsigned char ch) {
+    char data[1] = {ch};
+    return _telnetWrite(data, 1);
+}
+
+void _telnetConfigure() {
+    _telnetAuth = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
+}
 
 void telnetSetup() {
     #if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
