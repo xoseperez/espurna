@@ -122,7 +122,7 @@
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
 
 #ifndef TELNET_SERVER
-#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFICLIENT (using WiFiClient)
+#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
 #endif
 
 //------------------------------------------------------------------------------

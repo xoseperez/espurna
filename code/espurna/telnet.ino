@@ -8,12 +8,9 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
 */
 
-#define TELNET_SERVER_ASYNC        0
-#define TELNET_SERVER_WIFICLIENT   1
-
 #if TELNET_SUPPORT
 
-#if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
+#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
     #include <ESP8266WiFi.h>
     WiFiServer _telnetServer = WiFiServer(TELNET_PORT);
     WiFiClient _telnetClients[TELNET_MAX_CLIENTS];
@@ -47,10 +44,10 @@ void _telnetWebSocketOnSend(JsonObject& root) {
 #endif
 
 void _telnetDisconnect(unsigned char clientId) {
-    #if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
+    #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
         _telnetClients[clientId].stop();
     #else
-        _telnetClients[clientId].free();
+        _telnetClients[clientId].close(true);
     #endif
     wifiReconnectCheck();
     DEBUG_MSG_P(PSTR("[TELNET] Client #%d disconnected\n"), clientId);
@@ -97,7 +94,7 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     // C-d is sent as two bytes (sometimes repeating)
     if (len >= 2) {
         if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
-            #if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
+            #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
                 _telnetClients[clientId].stop();
             #else
                 _telnetClients[clientId].close(true);
@@ -107,7 +104,7 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     }
 
     if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {
-            #if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
+            #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
                 _telnetClients[clientId].stop();
             #else
                 _telnetClients[clientId].close(true);
@@ -140,7 +137,7 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     #endif
 }
 
-#if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
+#if TELNET_SERVER == TELNET_SERVER_WIFISERVER
 void _telnetLoop() {
     if (_telnetServer.hasClient()) {
         int i;
@@ -180,7 +177,7 @@ void _telnetLoop() {
                 #else
                     _telnetClientsAuth[i] = !_telnetAuth;
                     if (_telnetAuth) {
-                        if (getAdminPass().length() != 0) {
+                        if (getAdminPass().length()) {
                             _telnetWrite(i, "Password: ");
                         } else {
                             _telnetClientsAuth[i] = true;
@@ -226,7 +223,6 @@ void _telnetNewClient(void *cl) {
         if (!telnetSTA) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
             client->onDisconnect([](void *s, AsyncClient *c) {
-                c->free();
                 delete c;
             });
             client->close(true);
@@ -293,7 +289,6 @@ void _telnetNewClient(void *cl) {
 
     DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections\n"));
     client->onDisconnect([](void *s, AsyncClient *c) {
-        c->free();
         delete c;
     });
     client->close(true);
@@ -321,7 +316,7 @@ void _telnetConfigure() {
 }
 
 void telnetSetup() {
-    #if TELNET_SERVER == TELNET_SERVER_WIFICLIENT
+    #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
         espurnaRegisterLoop(_telnetLoop);
         _telnetServer.setNoDelay(true);
         _telnetServer.begin();
