@@ -145,6 +145,7 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
+            eepromBackup(0);
             nice_delay(100);
         }
 
