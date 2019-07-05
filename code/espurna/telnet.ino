@@ -55,7 +55,7 @@ void _telnetDisconnect(unsigned char clientId) {
 }
 
 bool _telnetWrite(unsigned char clientId, const char *data, size_t len) {
-    if (_telnetClients[clientId]->connected()) {
+    if (_telnetClients[clientId] && _telnetClients[clientId]->connected()) {
         return (_telnetClients[clientId]->write(data, len) > 0);
     }
     return false;
@@ -136,7 +136,7 @@ void _telnetLoop() {
         int i;
 
         for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
-            if (!_telnetClients[i]->connected()) {
+            if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
                 _telnetClients[i] = std::unique_ptr<WiFiClient>(new WiFiClient(_telnetServer.available()));
 
                 if (_telnetClients[i]->localIP() != WiFi.softAPIP()) {
@@ -192,7 +192,7 @@ void _telnetLoop() {
 
     // Read data from clients
     for (int i = 0; i < TELNET_MAX_CLIENTS; i++) {
-        while (_telnetClients[i]->available()) {
+        while (_telnetClients[i] && _telnetClients[i]->available()) {
             char data[512];
             size_t len = _telnetClients[i]->available();
             unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
@@ -203,7 +203,6 @@ void _telnetLoop() {
 }
 #else
 void _telnetNewClient(void *cl) {
-    DEBUG_MSG_P(PSTR("[TELNET] Got new client\n"));
     AsyncClient *client = (AsyncClient *)cl; // in order to avoid using AsyncClient in function signature
 
     if (client->localIP() != WiFi.softAPIP()) {
@@ -295,7 +294,7 @@ void _telnetNewClient(void *cl) {
 
 bool telnetConnected() {
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
-        if (_telnetClients[i]->connected()) return true;
+        if (_telnetClients[i] && _telnetClients[i]->connected()) return true;
     }
     return false;
 }
