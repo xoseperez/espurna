@@ -3571,9 +3571,9 @@
     #define DEVICE              "GENERIC_DIMMER"
 
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_TUYA
-    #define LIGHT_CHANNELS      1
+    #define LIGHT_CHANNELS      0
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
-    #define DUMMY_RELAY_COUNT   1
+    #define DUMMY_RELAY_COUNT   0
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

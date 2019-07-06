@@ -16,10 +16,10 @@ namespace TuyaDimmer {
         ~DataFrame() { }
 
         DataFrame(DataFrame&& rhs) :
-            _begin(rhs.cbegin()),
-            _end(rhs.cend()),
             command(rhs.command),
-            length(rhs.length)
+            length(rhs.length),
+            _begin(rhs.cbegin()),
+            _end(rhs.cend())
         {}
 
         DataFrame(uint8_t command) :

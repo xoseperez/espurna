@@ -18,14 +18,19 @@ namespace TuyaDimmer {
     constexpr const unsigned char SWITCH_MAX {8u};
     constexpr const unsigned char DIMMER_MAX {5u};
 
+    constexpr const uint32_t DISCOVERY_TIMEOUT = 1500;
+
+    constexpr const uint32_t HEARTBEAT_SLOW = 9000;
+    constexpr const uint32_t HEARTBEAT_FAST = 3000;
+
     // --------------------------------------------
 
     size_t getHeartbeatInterval(Heartbeat hb) {
         switch (hb) {
             case Heartbeat::FAST:
-                return 3000;
+                return HEARTBEAT_FAST;
             case Heartbeat::SLOW:
-                return 9000;
+                return HEARTBEAT_FAST;
             case Heartbeat::NONE:
             default:
                 return 0;
@@ -152,6 +157,10 @@ namespace TuyaDimmer {
                 _timeout(timeout)
             {}
 
+            DiscoveryTimeout(uint32_t timeout) :
+                DiscoveryTimeout(millis(), timeout)
+            {}
+
             operator bool() {
                 return (millis() - _start > _timeout);
             }
@@ -170,7 +179,7 @@ namespace TuyaDimmer {
     Transport tuyaSerial(TUYA_SERIAL);
     std::queue<StaticDataFrame> outputFrames;
 
-    DiscoveryTimeout discoveryTimeout(0, 1500);
+    DiscoveryTimeout discoveryTimeout(DISCOVERY_TIMEOUT);
     bool transportDebug = false;
     bool configDone = false;
     String product;

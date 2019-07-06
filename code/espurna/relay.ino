@@ -1087,6 +1087,8 @@ void _relayLoop() {
 void relaySetupDummy(unsigned char size) {
 
     _relayDummy = constrain(size, 0, 8);
+    if (!_relayDummy || (_relayDummy == _relays.size())) return;
+
     _relays.clear();
 
     for (unsigned char i=0; i < _relayDummy; ++i) {
