@@ -13,7 +13,12 @@
 
 namespace TuyaDimmer {
 
-    constexpr size_t SERIAL_SPEED = 9600;
+    constexpr const size_t SERIAL_SPEED = 9600;
+
+    constexpr const unsigned char SWITCH_MAX {8u};
+    constexpr const unsigned char DIMMER_MAX {5u};
+
+    // --------------------------------------------
 
     size_t getHeartbeatInterval(Heartbeat hb) {
         switch (hb) {
@@ -45,30 +50,30 @@ namespace TuyaDimmer {
 
     // --------------------------------------------
 
-    BufferedTransport tuyaSerial(TUYA_SERIAL);
-    std::queue<payload_t> outputData;
-
-    constexpr const unsigned char SWITCH_MAX {8u};
-    constexpr const unsigned char DIMMER_MAX {5u};
-
-    template <typename DT>
+    template <typename T>
     class States {
 
         public:
 
-            States(size_t size) {
-                _size = size;
-                _states.reserve(size);
-            }
+            struct Container {
+                uint8_t dp;
+                T value;
+            };
 
-            bool update(const DT& data) {
-                auto found = std::find_if(_states.begin(), _states.end(), [&data](const DT& internal) {
-                    return data.dp == internal.dp;
+
+            States(size_t size) :
+                _size(size),
+                _states(size)
+            {}
+
+            bool update(const uint8_t dp, const T value) {
+                auto found = std::find_if(_states.begin(), _states.end(), [dp](const Container& internal) {
+                    return dp == internal.dp;
                 });
 
                 if (found != _states.end()) {
-                    if (found->value != data.value) {
-                        found->value = data.value;
+                    if (found->value != value) {
+                        found->value = value;
                         _changed = true;
                         return true;
                     }
@@ -77,13 +82,13 @@ namespace TuyaDimmer {
                 return false;
             }
 
-            void pushOrUpdate(const DT& data) {
+            void pushOrUpdate(const uint8_t dp, const T value) {
                 if (_states.size() == _size) return;
-                if (!update(data)) {
+                if (!update(dp, value)) {
                     _changed = true;
-                    _states.push_back(data);
+                    _states.emplace_back(States::Container{dp, value});
                 }
-            } 
+            }
 
             bool changed() {
                 bool res = _changed;
@@ -91,7 +96,7 @@ namespace TuyaDimmer {
                 return res;
             }
 
-            DT& operator[] (const size_t n) {
+            Container& operator[] (const size_t n) {
                 return _states[n];
             }
 
@@ -102,20 +107,30 @@ namespace TuyaDimmer {
         private:
             bool _changed = false;
             size_t _size = 0;
-            std::vector<DT> _states;
+            std::vector<Container> _states;
     };
 
-    States<switch_t> switchStates(SWITCH_MAX);
-    States<dimmer_t> dimmerStates(DIMMER_MAX);
+    States<bool> switchStates(SWITCH_MAX);
+    States<uint32_t> channelStates(DIMMER_MAX);
 
     void pushOrUpdateState(const Type type, const DataFrame& frame) {
-        if (Type::BOOL == type) switchStates.pushOrUpdate(dataParse<switch_t>(frame));
-        if (Type::INT == type) dimmerStates.pushOrUpdate(dataParse<dimmer_t>(frame));
+        if (Type::BOOL == type) {
+            const DataProtocol<bool> proto(frame);
+            switchStates.pushOrUpdate(proto.id(), proto.value());
+        } else if (Type::INT == type) {
+            const DataProtocol<uint32_t> proto(frame);
+            channelStates.pushOrUpdate(proto.id(), proto.value());
+        }
     }
 
     void updateState(const Type type, const DataFrame& frame) {
-        if (Type::BOOL == type) switchStates.update(dataParse<switch_t>(frame));
-        if (Type::INT == type) dimmerStates.update(dataParse<dimmer_t>(frame));
+        if (Type::BOOL == type) {
+            const DataProtocol<bool> proto(frame);
+            switchStates.update(proto.id(), proto.value());
+        } else if (Type::INT == type) {
+            const DataProtocol<uint32_t> proto(frame);
+            channelStates.update(proto.id(), proto.value());
+        }
     }
 
     void applySwitch() {
@@ -125,8 +140,8 @@ namespace TuyaDimmer {
     }
 
     void applyDimmer() {
-        for (unsigned char id=0; id < dimmerStates.size(); ++id) {
-            lightChannel(id, dimmerStates[id].value);
+        for (unsigned char id=0; id < channelStates.size(); ++id) {
+            lightChannel(id, channelStates[id].value);
         }
     }
 
@@ -150,6 +165,11 @@ namespace TuyaDimmer {
             const uint32_t _timeout;
     };
 
+    // --------------------------------------------
+
+    Transport tuyaSerial(TUYA_SERIAL);
+    std::queue<StaticDataFrame> outputFrames;
+
     DiscoveryTimeout discoveryTimeout(0, 1500);
     bool transportDebug = false;
     bool configDone = false;
@@ -158,9 +178,8 @@ namespace TuyaDimmer {
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
         if (!transportDebug) return;
         StreamString out;
-        out.reserve((frame.length * 2) + 1);
-        BufferedTransport writer(out);
-        writer.write<PrintHex>(frame);
+        Output writer(out, frame.length);
+        writer.writeHex(frame.serialize());
         DEBUG_MSG("[TUYA] %s: %s\n", tag, out.c_str());
     }
 
@@ -168,14 +187,14 @@ namespace TuyaDimmer {
 
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
-            outputData.emplace(payload_t{Command::Heartbeat});
+            outputFrames.emplace(StaticDataFrame{Command::Heartbeat});
             last = millis();
         }
 
     }
 
     void sendWiFiStatus() {
-        outputData.emplace(payload_t{
+        outputFrames.emplace(StaticDataFrame{
             Command::WiFiStatus, {getWiFiState()}
         });
     }
@@ -187,9 +206,9 @@ namespace TuyaDimmer {
             return;
         }
 
-        const Type type{dataType(frame)};
-        if (Type::UNKNOWN == type) {
-            DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.data[0], frame.data[1]);
+        const Type type {dataType(frame)};
+        if ((Type::UNKNOWN == type) && frame.length >= 2) {
+            DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.cbegin()[0], frame.cbegin()[1]);
             return;
         }
 
@@ -202,7 +221,7 @@ namespace TuyaDimmer {
 
     }
 
-    void processFrame(State& state, const BufferedTransport& buffer) {
+    void processFrame(State& state, const Transport& buffer) {
 
         const DataFrame frame {fromTransport(buffer)};
 
@@ -210,8 +229,8 @@ namespace TuyaDimmer {
 
         // initial packet has 0, do the initial setup
         // all after that have 1. might be a good idea to re-do the setup when that happens on boot
-        if ((frame & Command::Heartbeat) && (frame.length == 1)) {
-            if ((frame.data[0] == 0) && (!configDone)) {
+        if (frame.commandEquals(Command::Heartbeat) && (frame.length == 1)) {
+            if ((frame[0] == 0) && (!configDone)) {
                 state = State::QUERY_PRODUCT;
                 return;
             }
@@ -219,17 +238,17 @@ namespace TuyaDimmer {
             return;
         }
 
-        if ((frame & Command::QueryProduct) && frame.length) {
+        if (frame.commandEquals(Command::QueryProduct) && frame.length) {
             dataframeDebugSend("Product", frame);
             state = State::QUERY_MODE;
             return;
         }
 
-        if (frame & Command::QueryMode) {
+        if (frame.commandEquals(Command::QueryMode)) {
             // first and second byte are GPIO pin for WiFi status and RST respectively
             if (frame.length == 2) {
-                DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u\n"), frame.data[0], frame.data[1]);
-                updatePins(frame.data[0], frame.data[1]);
+                DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP only, led=GPIO%02u rst=GPIO%02u\n"), frame[0], frame[1]);
+                updatePins(frame[0], frame[1]);
             // ... or nothing. we need to report wifi status to the mcu via Command::WiFiStatus
             } else if (!frame.length) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU\n"));
@@ -239,20 +258,20 @@ namespace TuyaDimmer {
             return;
         }
 
-        if ((frame & Command::WiFiResetCfg) && !frame.length) {
+        if (frame.commandEquals(Command::WiFiResetCfg) && !frame.length) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
-            outputData.emplace(payload_t{Command::WiFiResetCfg});
+            outputFrames.emplace(StaticDataFrame{Command::WiFiResetCfg});
             return;
         }
 
-        if ((frame & Command::WiFiResetSelect) && (frame.length == 1)) {
+        if (frame.commandEquals(Command::WiFiResetSelect) && (frame.length == 1)) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
-                (frame.data[0] == 0) ? "Smart Config" : "AP");
-            outputData.emplace(payload_t{Command::WiFiResetSelect});
+                (frame[0] == 0) ? "Smart Config" : "AP");
+            outputFrames.emplace(StaticDataFrame{Command::WiFiResetSelect});
             return;
         }
 
-        if ((frame & Command::ReportDP) && frame.length) {
+        if (frame.commandEquals(Command::ReportDP) && frame.length) {
             processDP(state, frame);
             state = State::IDLE;
             return;
@@ -280,24 +299,28 @@ namespace TuyaDimmer {
     }
 
     void tuyaSendSwitch(unsigned char id) {
-        outputData.emplace(setDP(switchStates[id]));
+        outputFrames.emplace(StaticDataFrame{
+            Command::SetDP, DataProtocol<bool>(switchStates[id].dp, switchStates[id].value).serialize()
+        });
     }
 
     void tuyaSendChannel(unsigned char id) {
-        outputData.emplace(setDP(dimmerStates[id]));
-    } 
+        outputFrames.emplace(StaticDataFrame{
+            Command::SetDP, DataProtocol<uint32_t>(channelStates[id].dp, channelStates[id].value).serialize()
+        });
+    }
 
     void tuyaSendSwitch(unsigned char id, bool value) {
         if (value == switchStates[id].value) return;
         switchStates[id].value = value;
-        outputData.emplace(setDP(switchStates[id]));
-    } 
+        tuyaSendSwitch(id);
+    }
 
     void tuyaSendChannel(unsigned char id, unsigned int value) {
-        if (value == dimmerStates[id].value) return;
-        dimmerStates[id].value = value;
-        outputData.emplace(setDP(dimmerStates[id]));
-    } 
+        if (value == channelStates[id].value) return;
+        channelStates[id].value = value;
+        tuyaSendChannel(id);
+    }
 
     void tuyaLoop() {
 
@@ -322,31 +345,31 @@ namespace TuyaDimmer {
             // general info about the device
             case State::QUERY_PRODUCT:
             {
-                outputData.emplace(payload_t{Command::QueryProduct});
+                outputFrames.emplace(StaticDataFrame{Command::QueryProduct});
                 state = State::IDLE;
                 break;
             }
             // whether we control the led&button or not
             case State::QUERY_MODE:
             {
-                outputData.emplace(payload_t{Command::QueryMode});
+                outputFrames.emplace(StaticDataFrame{Command::QueryMode});
                 state = State::IDLE;
                 break;
             }
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
-                outputData.emplace(payload_t{Command::QueryDP});
+                outputFrames.emplace(StaticDataFrame{Command::QueryDP});
                 discoveryTimeout.feed();
                 state = State::DISCOVERY;
                 break;
             }
-            // parse known data protocols until 
+            // parse known data protocols until
             case State::DISCOVERY:
             {
                 if (discoveryTimeout) {
                     relaySetupDummy(switchStates.size());
-                    lightSetupChannels(dimmerStates.size());
+                    lightSetupChannels(channelStates.size());
                     state = State::IDLE;
                 }
                 break;
@@ -355,17 +378,17 @@ namespace TuyaDimmer {
             case State::IDLE:
             {
                 if (switchStates.changed()) applySwitch();
-                if (dimmerStates.changed()) applyDimmer();
+                if (channelStates.changed()) applyDimmer();
                 sendHeartbeat(Heartbeat::SLOW, state);
                 break;
             }
         }
 
-        if (!outputData.empty()) {
-            const DataFrame frame = fromPayload(outputData.front());
+        if (!outputFrames.empty()) {
+            const DataFrame frame = std::move(outputFrames.front());
+            outputFrames.pop();
             dataframeDebugSend("OUT", frame);
             tuyaSerial.write(frame);
-            outputData.pop();
         }
 
     }
@@ -385,7 +408,7 @@ namespace TuyaDimmer {
             if (switchStates.size()) {
                 DEBUG_MSG_P(PSTR("[TUYA] INT: %s\n"));
                 for (unsigned char n=0; n < switchStates.size(); ++n) {
-                    DEBUG_MSG_P(PSTR("[TUYA] %u: %u\n"), dimmerStates[n].dp, dimmerStates[n].value);
+                    DEBUG_MSG_P(PSTR("[TUYA] %u: %u\n"), channelStates[n].dp, channelStates[n].value);
 
                 }
             }

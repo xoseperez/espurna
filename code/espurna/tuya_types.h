@@ -24,6 +24,7 @@ namespace TuyaDimmer {
         QUERY_PRODUCT,
         QUERY_MODE,
         QUERY_DP,
+        DISCOVERY,
         IDLE
     };
 
@@ -31,6 +32,12 @@ namespace TuyaDimmer {
         NONE,
         SLOW,
         FAST
+    };
+
+    enum class Type : uint8_t {
+        UNKNOWN = 0x00,
+        BOOL = 0x01,
+        INT = 0x02
     };
 
 }

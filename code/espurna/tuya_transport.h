@@ -1,10 +1,42 @@
 #pragma once
 
-#include "tuya_dataframe.h"
+#include <iterator>
+#include <vector>
+//#include <Stream.h>
 
 namespace TuyaDimmer {
 
-    class BufferedTransport {
+    class PrintRaw {
+        public:
+            static void write(Print& printer, uint8_t data) {
+                printer.write(data);
+            }
+
+            static void write(Print& printer, const uint8_t* data, size_t size) {
+                printer.write(data, size);
+            }
+    };
+
+    class PrintHex {
+        public:
+            static void write(Print& printer, uint8_t data) {
+                char buffer[3] = {0};
+                snprintf(buffer, sizeof(buffer), "%02x", data);
+                printer.write(buffer, 2);
+            }
+
+            static void write(Print& printer, const uint8_t* data, size_t size) {
+                for (size_t n=0; n<size; ++n) {
+                    char buffer[3] = {0};
+                    snprintf(buffer, sizeof(buffer), "%02x", data[n]);
+                    printer.write(buffer, 2);
+                }
+            }
+    };
+
+    class StreamWrapper {
+
+    protected:
 
         // TODO: half of this?
         constexpr static size_t LIMIT = 256;
@@ -13,15 +45,80 @@ namespace TuyaDimmer {
         // 256 * 1.04 = 266.24
         constexpr static size_t TIME_LIMIT = 267;
 
+        Stream& _stream;
+
     public:
 
-        BufferedTransport(Stream& stream) :
+        StreamWrapper(Stream& stream) :
             _stream(stream)
+        {}
+
+        int available() {
+            return _stream.available();
+        }
+
+        void rewind() {
+            while(_stream.read() != -1);
+        }
+
+    };
+
+    class Output : public virtual StreamWrapper {
+
+    public:
+
+
+        Output(Stream& stream) :
+            StreamWrapper(stream) 
+        {}
+
+        Output(StreamString& stream, size_t length) : 
+            Output(stream)
+        {
+            stream.reserve((length * 2) + 1);
+        }
+
+        template <typename T, typename PrintType>
+        void _write(T& data) {
+
+            const uint8_t header[2] = {0x55, 0xaa};
+            uint8_t checksum = 0xff;
+
+            PrintType::write(_stream, header, 2);
+
+            for (auto it = data.cbegin(); it != data.cend(); ++it) {
+                checksum += *it;
+                PrintType::write(_stream, *it);
+            }
+
+            PrintType::write(_stream, checksum);
+
+        }
+
+        template <typename T>
+        void write(T& data) {
+            _write<T, PrintRaw>(data);
+        }
+
+        template <typename T>
+        void writeHex(T& data) {
+            _write<T, PrintHex>(data);
+        }
+
+
+    };
+
+    class Input : public virtual StreamWrapper {
+
+    public:
+
+        Input(Stream& stream) :
+            StreamWrapper(stream)
         {
             _buffer.reserve(LIMIT);
         }
 
-        bool full() { return (_index >= BufferedTransport::LIMIT); }
+        bool full() { return (_index >= StreamWrapper::LIMIT); }
         bool done() { return _done; }
         size_t size() { return _index; }
 
@@ -46,17 +143,12 @@ namespace TuyaDimmer {
             return _buffer[_index];
         }
 
-        const uint8_t* dataPtr() const {
-            if (!length()) return nullptr;
-            return _buffer.data() + 6;
+        std::vector<uint8_t>::const_iterator dataStart() const {
+            return _buffer.begin() + 6;
         }
 
-        int available() {
-            return _stream.available();
-        }
-
-        void rewind() {
-            while(_stream.read() != -1);
+        std::vector<uint8_t>::const_iterator dataEnd() const {
+            return dataStart() + length();
         }
 
         void read() {
@@ -110,37 +202,6 @@ namespace TuyaDimmer {
 
         }
 
-        template <typename T = PrintRaw>
-        void write(const DataFrame& frame) const {
-
-            uint8_t buffer[6] = {
-                0x55, 0xaa,
-                frame.version, frame.command,
-                uint8_t(frame.length >> 8),
-                uint8_t(frame.length & 0xff)
-            };
-
-            uint8_t checksum = (0xff + frame.version);
-            checksum += frame.command;
-            checksum += frame.length;
-
-            T::write(_stream, buffer, 6);
-
-            if (frame.data && frame.length) {
-
-                size_t index = 0;
-                while (index < frame.length) {
-                    checksum += frame.data[index];
-                    T::write(_stream, frame.data[index]);
-                    ++index;
-                }
-
-            }
-
-            T::write(_stream, checksum);
-
-        }
-
         void reset() {
             std::fill(_buffer.begin(), _buffer.end(), 0);
             _read_until = LIMIT;
@@ -157,9 +218,15 @@ namespace TuyaDimmer {
         size_t _read_until = LIMIT;
         uint8_t _checksum = 0;
         std::vector<uint8_t> _buffer;
-        Stream& _stream;
         unsigned long _last = 0;
 
+    };
+
+    class Transport : public Input, public Output, public virtual StreamWrapper {
+    public:
+        Transport(Stream& stream) :
+            StreamWrapper(stream), Input(stream), Output(stream)
+        {}
     };
 
 }
