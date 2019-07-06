@@ -210,14 +210,19 @@ namespace TuyaDimmer {
 
     void processDP(State state, const DataFrame& frame) {
 
+        // TODO: do not log protocol errors without transport debug enabled
         if (!frame.length) {
             DEBUG_MSG_P(PSTR("[TUYA] DP frame must have data\n"));
             return;
         }
 
         const Type type {dataType(frame)};
-        if ((Type::UNKNOWN == type) && frame.length >= 2) {
-            DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.cbegin()[0], frame.cbegin()[1]);
+        if (Type::UNKNOWN == type) {
+            if (frame.length >= 2) {
+                DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.cbegin()[0], frame.cbegin()[1]);
+            } else {
+                DEBUG_MSG_P(PSTR("[TUYA] Invalid DP frame\n"));
+            }
             return;
         }
 
@@ -307,6 +312,8 @@ namespace TuyaDimmer {
 
     }
 
+    // Queue data when sending local state
+
     void tuyaSendSwitch(unsigned char id) {
         outputFrames.emplace(StaticDataFrame{
             Command::SetDP, DataProtocol<bool>(switchStates[id].dp, switchStates[id].value).serialize()
@@ -331,9 +338,9 @@ namespace TuyaDimmer {
         tuyaSendChannel(id);
     }
 
-    void tuyaLoop() {
+    // Main loop state machine. Process input data and manage output queue
 
-        // TODO: switch heartbeat to polledTimeout
+    void tuyaLoop() {
 
         static State state = State::INIT;
 
@@ -403,27 +410,50 @@ namespace TuyaDimmer {
     }
 
     void tuyaSetup() {
-        TUYA_SERIAL.begin(SERIAL_SPEED);
 
-        terminalRegisterCommand(F("TUYA.INFO"), [](Embedis* e) {
-            DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
-            if (switchStates.size()) {
-                DEBUG_MSG_P(PSTR("[TUYA] BOOL: %s\n"));
-                for (unsigned char n=0; n < switchStates.size(); ++n) {
-                    DEBUG_MSG_P(PSTR("[TUYA] %u: %s\n"), switchStates[n].dp, switchStates[n].value ? "ON" : "OFF");
+        // Print all known DP associations
 
+        #if TERMINAL_SUPPORT
+            terminalRegisterCommand(F("TUYA.INFO"), [](Embedis* e) {
+                DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
+                if (switchStates.size()) {
+                    DEBUG_MSG_P(PSTR("[TUYA] BOOL: %s\n"));
+                    for (unsigned char n=0; n < switchStates.size(); ++n) {
+                        DEBUG_MSG_P(PSTR("[TUYA] %u: %s\n"), switchStates[n].dp, switchStates[n].value ? "ON" : "OFF");
+
+                    }
                 }
-            }
-            if (switchStates.size()) {
-                DEBUG_MSG_P(PSTR("[TUYA] INT: %s\n"));
-                for (unsigned char n=0; n < switchStates.size(); ++n) {
-                    DEBUG_MSG_P(PSTR("[TUYA] %u: %u\n"), channelStates[n].dp, channelStates[n].value);
+                if (switchStates.size()) {
+                    DEBUG_MSG_P(PSTR("[TUYA] INT: %s\n"));
+                    for (unsigned char n=0; n < switchStates.size(); ++n) {
+                        DEBUG_MSG_P(PSTR("[TUYA] %u: %u\n"), channelStates[n].dp, channelStates[n].value);
 
+                    }
                 }
-            }
-        });
+            });
+        #endif
+
+        // Print all IN and OUT messages
 
         transportDebug = getSetting("tuyaDebug", 1).toInt() == 1;
+
+        // Predefined DP<->SWITCH, DP<->CHANNEL associations
+
+        for (unsigned char n=0; n<relayCount(); ++n) {
+            if (!hasSetting("tuyaSwitch", n)) break;
+            uint8_t dp = getSetting("tuyaSwitch", n).toInt();
+            switchStates.pushOrUpdateState(dp, relayStatus(n))
+        }
+
+        for (unsigned char n=0; n<channelCount(); ++n) {
+            if (!hasSetting("tuyaChannel", n)) break;
+            uint8_t dp = getSetting("tuyaChannel", n).toInt();
+            channelStates.pushOrUpdateState(dp, lightChannel(n))
+        }
+
+        // Install main loop method and WiFiStatus ping (only works with specific mode)
+
+        TUYA_SERIAL.begin(SERIAL_SPEED);
 
         ::espurnaRegisterLoop(tuyaLoop);
         ::wifiRegister([](justwifi_messages_t code, char * parameter) {
