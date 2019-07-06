@@ -442,13 +442,13 @@ namespace TuyaDimmer {
         for (unsigned char n=0; n<relayCount(); ++n) {
             if (!hasSetting("tuyaSwitch", n)) break;
             uint8_t dp = getSetting("tuyaSwitch", n).toInt();
-            switchStates.pushOrUpdate(dp, relayStatus(n))
+            switchStates.pushOrUpdate(dp, relayStatus(n));
         }
 
-        for (unsigned char n=0; n<channelCount(); ++n) {
+        for (unsigned char n=0; n<lightChannels(); ++n) {
             if (!hasSetting("tuyaChannel", n)) break;
             uint8_t dp = getSetting("tuyaChannel", n).toInt();
-            channelStates.pushOrUpdate(dp, lightChannel(n))
+            channelStates.pushOrUpdate(dp, lightChannel(n));
         }
 
         // Install main loop method and WiFiStatus ping (only works with specific mode)
