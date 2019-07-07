@@ -19,19 +19,17 @@ namespace TuyaDimmer {
     Type dataType(const DataFrame& frame) {
 
         if (!frame.length) return Type::UNKNOWN;
-        if (frame.command == static_cast<uint8_t>(Command::ReportDP)) return Type::UNKNOWN;
 
-        auto data = frame.cbegin();
-        const Type type = static_cast<Type>(data[1]);
+        const Type type = static_cast<Type>(frame[1]);
 
         switch (type) {
             case Type::BOOL:
                 if (frame.length != 5) break;
-                if (data[3] != 0x01) break;
+                if (frame[3] != 0x01) break;
                 return type;
             case Type::INT:
                 if (frame.length != 8) break;
-                if (data[3] != 0x04) break;
+                if (frame[3] != 0x04) break;
                 return type;
             default:
                 return Type::UNKNOWN;
