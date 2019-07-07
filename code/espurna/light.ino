@@ -844,16 +844,15 @@ String lightColor() {
 }
 
 unsigned int lightChannel(unsigned char id) {
-    if (id <= _light_channel.size()) {
-        return _light_channel[id].inputValue;
-    }
-    return 0;
+    if (!_light_channel.size()) return 0;
+    if (id >= _light_channel.size()) return 0;
+    return _light_channel[id].inputValue;
 }
 
 void lightChannel(unsigned char id, int value) {
-    if (id <= _light_channel.size()) {
-        _light_channel[id].inputValue = constrain(value, 0, LIGHT_MAX_VALUE);
-    }
+    if (!_light_channel.size()) return;
+    if (id >= _light_channel.size()) return;
+    _light_channel[id].inputValue = constrain(value, 0, LIGHT_MAX_VALUE);
 }
 
 void lightChannelStep(unsigned char id, int steps) {
