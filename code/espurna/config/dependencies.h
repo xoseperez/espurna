@@ -78,3 +78,8 @@
 #undef LIGHT_USE_TRANSITIONS
 #define LIGHT_USE_TRANSITIONS       0           // TODO: temporary, maybe slower step instead?
 #endif
+
+#if TUYA_SUPPORT
+#undef BROKER_SUPPORT
+#define BROKER_SUPPORT              1           // Broker is required to process relay & lights events
+#endif
