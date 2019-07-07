@@ -129,6 +129,36 @@ void _telnetData(unsigned char clientId, void *data, size_t len) {
     #endif
 }
 
+void _telnetNotifyConnected(unsigned char i) {
+
+    DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+
+    // If there is no terminal support automatically dump info and crash data
+    #if TERMINAL_SUPPORT == 0
+        info();
+        wifiDebug();
+        crashDump();
+        crashClear();
+    #endif
+
+    #ifdef ESPURNA_CORE
+        _telnetClientsAuth[i] = true;
+    #else
+        _telnetClientsAuth[i] = !_telnetAuth;
+        if (_telnetAuth) {
+            if (getAdminPass().length()) {
+                _telnetWrite(i, "Password: ");
+            } else {
+                _telnetClientsAuth[i] = true;
+            }
+        }
+    #endif
+
+    _telnetFirst = true;
+    wifiReconnectCheck();
+
+}
+
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
 void _telnetLoop() {
     if (_telnetServer.hasClient()) {
@@ -136,6 +166,7 @@ void _telnetLoop() {
 
         for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
             if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
+
                 _telnetClients[i] = std::unique_ptr<WiFiClient>(new WiFiClient(_telnetServer.available()));
 
                 if (_telnetClients[i]->localIP() != WiFi.softAPIP()) {
@@ -148,37 +179,13 @@ void _telnetLoop() {
 
                     if (!telnetSTA) {
                         DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
-                        _telnetServer.available().println("Only local connections allowed");
                         _telnetDisconnect(i);
                         return;
                     }
                 }
 
-                DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+                _telnetNotifyConnected(i);
 
-                // If there is no terminal support automatically dump info and crash data
-                #if TERMINAL_SUPPORT == 0
-                    info();
-                    wifiDebug();
-                    crashDump();
-                    crashClear();
-                #endif
-
-                #ifdef ESPURNA_CORE
-                    _telnetClientsAuth[i] = true;
-                #else
-                    _telnetClientsAuth[i] = !_telnetAuth;
-                    if (_telnetAuth) {
-                        if (getAdminPass().length()) {
-                            _telnetWrite(i, "Password: ");
-                        } else {
-                            _telnetClientsAuth[i] = true;
-                        }
-                    }
-                #endif
-
-                _telnetFirst = true;
-                wifiReconnectCheck();
                 break;
             }
         }
@@ -201,8 +208,7 @@ void _telnetLoop() {
     }
 }
 #else
-void _telnetNewClient(void *cl) {
-    AsyncClient *client = (AsyncClient *)cl; // in order to avoid using AsyncClient in function signature
+void _telnetNewClient(AsyncClient *cl) {
 
     if (client->localIP() != WiFi.softAPIP()) {
         // Telnet is always available for the ESPurna Core image
@@ -248,32 +254,7 @@ void _telnetNewClient(void *cl) {
                 c->close();
             }, 0);
 
-            DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
-
-            // If there is no terminal support automatically dump info and crash data
-            #if TERMINAL_SUPPORT == 0
-                info();
-                wifiDebug();
-                crashDump();
-                crashClear();
-            #endif
-
-            #ifdef ESPURNA_CORE
-                _telnetClientsAuth[i] = true;
-            #else
-                _telnetClientsAuth[i] = !_telnetAuth;
-                if (_telnetAuth) {
-                    if (getAdminPass().length() != 0) {
-                        _telnetWrite(i, "Password: ");
-                    } else {
-                        _telnetClientsAuth[i] = true;
-                    }
-                }
-            #endif
-
-            _telnetFirst = true;
-            wifiReconnectCheck();
-
+            _telnetNotifyConnected(i);
             return;
         }
 
@@ -327,7 +308,9 @@ void telnetSetup() {
     espurnaRegisterReload(_telnetConfigure);
     _telnetConfigure();
 
-    DEBUG_MSG_P(PSTR("[TELNET] Listening on port %d\n"), TELNET_PORT);
+    DEBUG_MSG_P(PSTR("[TELNET] %s server, Listening on port %d\n"),
+        (TELNET_SERVER == TELNET_SERVER_WIFISERVER) ? "Sync" : "Async",
+        TELNET_PORT);
 
 }
 
