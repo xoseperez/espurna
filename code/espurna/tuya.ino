@@ -156,7 +156,7 @@ namespace Tuya {
             return;
         }
 
-        if (state == State::DISCOVERY) {
+        if (State::DISCOVERY == state) {
             discoveryTimeout.feed();
             pushOrUpdateState(type, frame);
         } else {
@@ -222,7 +222,7 @@ namespace Tuya {
 
         if (frame.commandEquals(Command::ReportDP) && frame.length) {
             processDP(state, frame);
-            state = State::IDLE;
+            if (state != State::DISCOVERY) state = State::IDLE;
             return;
         }
 
@@ -353,6 +353,7 @@ namespace Tuya {
             // full read-out of the data protocol values
             case State::QUERY_DP:
             {
+                DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
                 outputFrames.emplace(StaticDataFrame{Command::QueryDP});
                 discoveryTimeout.feed();
                 state = State::DISCOVERY;
@@ -362,6 +363,7 @@ namespace Tuya {
             case State::DISCOVERY:
             {
                 if (discoveryTimeout) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Discovery finished\n"));
                     relaySetupDummy(switchStates.size());
                     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                         lightSetupChannels(channelStates.size());
