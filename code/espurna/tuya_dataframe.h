@@ -9,11 +9,17 @@ namespace TuyaDimmer {
 
     private:
 
-        DataFrame(DataFrame& rhs) { }
-
     public:
 
         ~DataFrame() { }
+
+        DataFrame(DataFrame& rhs) :
+            version(rhs.version),
+            command(rhs.command),
+            length(rhs.length),
+            _begin(rhs._begin),
+            _end(rhs._end)
+        {}
 
         DataFrame(DataFrame&& rhs) :
             command(rhs.command),
@@ -24,9 +30,7 @@ namespace TuyaDimmer {
 
         DataFrame(uint8_t command) :
             command(command),
-            length(0),
-            _begin(nullptr),
-            _end(nullptr)
+            length(0)
         {}
 
         DataFrame(Command command) :
@@ -69,15 +73,15 @@ namespace TuyaDimmer {
             return _begin[i];
         }
 
-        const std::vector<uint8_t> serialize() const {
+        std::vector<uint8_t> serialize() const {
             std::vector<uint8_t> result = {
                 version, command,
                 uint8_t(length >> 8),
                 uint8_t(length & 0xff)
             };
 
-            result.reserve(result.size() + length);
             if (length && (_begin != _end)) {
+                result.reserve(result.size() + length);
                 result.insert(result.end(), _begin, _end);
             }
 
@@ -96,35 +100,44 @@ namespace TuyaDimmer {
     };
 
     class StaticDataFrame : public DataFrame {
+        private:
+            void data_update() {
+                _begin = _data.cbegin();
+                _end = _data.cend();
+                length = _data.size();
+                if (!length) _begin = _end;
+            }
         public:
 
         // Note: Class constructor is called before member regardless of member list order
-
         StaticDataFrame(Command command, std::initializer_list<uint8_t> data = {}) :
             DataFrame(command),
             _data(data)
         {
-            _begin = _data.cbegin();
-            _end = _data.cend();
-            length = std::distance(_begin, _end);
+            data_update();
         }
 
         StaticDataFrame(Command command, std::vector<uint8_t>&& data) :
             DataFrame(command),
-            _data(data)
+            _data(std::move(data))
         {
-            _begin = _data.cbegin();
-            _end = _data.cend();
-            length = std::distance(_begin, _end);
+            data_update();
         }
 
-        std::vector<uint8_t>::const_iterator dumb_begin() const {
-            return _data.cbegin();
-        };
+        StaticDataFrame(StaticDataFrame& frame) :
+            DataFrame(frame),
+            _data(frame._data)
+        {
+            data_update();
+        }
 
-        std::vector<uint8_t>::const_iterator dumb_end() const {
-            return _data.cend();
-        };
+        StaticDataFrame(StaticDataFrame&& frame) :
+            DataFrame(std::move(frame))
+        {
+            _data = std::move(frame._data);
+            data_update();
+        }
+
 
         protected:
             std::vector<uint8_t> _data;
