@@ -975,7 +975,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
 
 #elif defined(YJZK_SWITCH_2CH)
 
@@ -1013,7 +1013,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
 
 // YJZK 3CH switch
 // Also Lixin Touch Wifi 3M
@@ -1065,7 +1065,7 @@
 
     // LEDs
     #define LED1_PIN            13
-    #define LED1_PIN_INVERSE    1
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // Electrodragon boards
@@ -1288,6 +1288,37 @@
     #define RF_SUPPORT          1
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4
+
+#elif defined(MAGICHOME_ZJ_ESPM_5CH_B_13)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_ESPM_5CH_B_13"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       5       // COLD WHITE
+    #define LIGHT_CH5_PIN       15      // WARM WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
@@ -1680,6 +1711,11 @@
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // Light
     #define LIGHT_CHANNELS      5
@@ -3662,6 +3698,7 @@
     #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       5
     #define LIGHT_CH1_INVERSE   0
+    #define ENCODER_SUPPORT     1
 
     // A bit of HLW8012 - pins 6,7,8
     #ifndef HLW8012_SUPPORT
