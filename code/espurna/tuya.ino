@@ -174,13 +174,15 @@ namespace Tuya {
         // initial packet has 0, do the initial setup
         // all after that have 1. might be a good idea to re-do the setup when that happens on boot
         if (frame.commandEquals(Command::Heartbeat) && (frame.length == 1)) {
-            if ((frame[0] == 0) || !configDone) {
-                DEBUG_MSG_P(PSTR("[TUYA] Starting configuration ...\n"));
-                state = State::QUERY_PRODUCT;
-                return;
-            } else if (state == State::HEARTBEAT) {
-                DEBUG_MSG_P(PSTR("[TUYA] Already configured\n"));
-                state = State::IDLE;
+            if (state == STATE::HEARTBEAT) {
+                if ((frame[0] == 0) || !configDone) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Starting configuration ...\n"));
+                    state = State::QUERY_PRODUCT;
+                    return;
+                } else if (state == State::HEARTBEAT) {
+                    DEBUG_MSG_P(PSTR("[TUYA] Already configured\n"));
+                    state = State::IDLE;
+                }
             }
             sendWiFiStatus();
             return;
