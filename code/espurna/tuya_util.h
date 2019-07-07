@@ -1,3 +1,6 @@
+#pragma once
+#include <algorithm>
+
 namespace Tuya {
 
     template <typename T>
