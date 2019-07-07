@@ -1556,14 +1556,10 @@
 //--------------------------------------------------------------------------------
 // TUYA switch & dimmer support
 //--------------------------------------------------------------------------------
+#ifndef TUYA_SUPPORT
+#define TUYA_SUPPORT                0
+#endif
+
 #ifndef TUYA_SERIAL
 #define TUYA_SERIAL                 Serial
-#endif
-
-#ifndef TUYA_DIMMER_DP
-#define TUYA_DIMMER_DP              0x03u
-#endif
-
-#ifndef TUYA_SWITCH_DP
-#define TUYA_SWITCH_DP              0x01u
 #endif
