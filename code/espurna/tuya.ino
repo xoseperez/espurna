@@ -31,7 +31,7 @@ namespace Tuya {
             case Heartbeat::FAST:
                 return HEARTBEAT_FAST;
             case Heartbeat::SLOW:
-                return HEARTBEAT_FAST;
+                return HEARTBEAT_SLOW;
             case Heartbeat::NONE:
             default:
                 return 0;
