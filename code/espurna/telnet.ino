@@ -44,10 +44,9 @@ void _telnetWebSocketOnSend(JsonObject& root) {
 #endif
 
 void _telnetDisconnect(unsigned char clientId) {
+    // ref: we are called from onDisconnect, async is already stopped
     #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
         _telnetClients[clientId]->stop();
-    #else
-        _telnetClients[clientId]->close(true);
     #endif
     _telnetClients[clientId] = nullptr;
     wifiReconnectCheck();
