@@ -222,7 +222,9 @@ namespace Tuya {
 
         if (frame.commandEquals(Command::ReportDP) && frame.length) {
             processDP(state, frame);
-            if (state != State::DISCOVERY) state = State::IDLE;
+            if (state == State::DISCOVERY) return;
+            if (state == State::HEARTBEAT) return;
+            state = State::IDLE;
             return;
         }
 
