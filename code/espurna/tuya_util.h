@@ -1,4 +1,4 @@
-namespace TuyaDimmer {
+namespace Tuya {
 
     template <typename T>
     class States {

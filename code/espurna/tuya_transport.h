@@ -4,7 +4,7 @@
 #include <vector>
 //#include <Stream.h>
 
-namespace TuyaDimmer {
+namespace Tuya {
 
     class PrintRaw {
         public:

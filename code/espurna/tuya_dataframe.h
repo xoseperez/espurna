@@ -3,7 +3,7 @@
 #include "tuya_types.h"
 #include "tuya_transport.h"
 
-namespace TuyaDimmer {
+namespace Tuya {
 
     class DataFrame {
 

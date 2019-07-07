@@ -1,6 +1,6 @@
 #pragma once
 
-namespace TuyaDimmer {
+namespace Tuya {
 
     enum class Command : uint8_t {
         Heartbeat = 0x00,

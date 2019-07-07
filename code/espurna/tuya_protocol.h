@@ -4,7 +4,7 @@
 #include "tuya_types.h"
 #include "tuya_transport.h"
 
-namespace TuyaDimmer {
+namespace Tuya {
 
     // 2 known Data Protocols:
     //
