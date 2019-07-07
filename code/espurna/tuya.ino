@@ -428,26 +428,41 @@ namespace Tuya {
         // Print all known DP associations
 
         #if TERMINAL_SUPPORT
-            terminalRegisterCommand(F("TUYA.TEST"), [](Embedis* e) {
-                sendWiFiStatus();
-            });
-            terminalRegisterCommand(F("TUYA.INFO"), [](Embedis* e) {
-                DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
+
+            terminalRegisterCommand(F("TUYA.SHOW"), [](Embedis* e) {
+                if (product.length()) DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
                 if (switchStates.size()) {
-                    DEBUG_MSG_P(PSTR("[TUYA] BOOL: \n"));
-                    for (unsigned char n=0; n < switchStates.size(); ++n) {
-                        DEBUG_MSG_P(PSTR("[TUYA] %02u=%u\n"), switchStates[n].dp, switchStates[n].value);
+                    DEBUG_MSG_P(PSTR("[TUYA] BOOL\n"));
+                    for (unsigned char id=0; id < switchStates.size(); ++id) {
+                        DEBUG_MSG_P(PSTR("tuyaSwitch%u=%u value=%s\n"),
+                            id, switchStates[id].dp, switchStates[id].value ? "ON" : "OFF");
 
                     }
                 }
-                if (switchStates.size()) {
-                    DEBUG_MSG_P(PSTR("[TUYA] INT: \n"));
+                #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                    if (channelStates.size()) {
+                        DEBUG_MSG_P(PSTR("[TUYA] INT\n"));
+                        for (unsigned char id=0; id < channelStates.size(); ++id) {
+                            DEBUG_MSG_P(PSTR("tuyaChannel%u=%u value=%u\n"),
+                                id, channelStates[id].dp, channelStates[id].value);
+
+                        }
+                    }
+                #endif
+            });
+
+            terminalRegisterCommand(F("TUYA.SAVE"), [](Embedis* e) {
+                DEBUG_MSG_P(PSTR("[TUYA] Saving current configuration ...\n"));
+                for (unsigned char n=0; n < switchStates.size(); ++n) {
+                    setSetting("tuyaSwitch", n, switchStates[n].dp);
+                }
+                #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                     for (unsigned char n=0; n < channelStates.size(); ++n) {
-                        DEBUG_MSG_P(PSTR("[TUYA] %02u=%03u\n"), channelStates[n].dp, channelStates[n].value);
-
+                        setSetting("tuyaChannel", n, channelStates[n].dp);
                     }
-                }
+                #endif
             });
+
         #endif
 
         // Print all IN and OUT messages
