@@ -149,7 +149,7 @@ namespace Tuya {
         const Type type {dataType(frame)};
         if (Type::UNKNOWN == type) {
             if (frame.length >= 2) {
-                DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame.cbegin()[0], frame.cbegin()[1]);
+                DEBUG_MSG_P(PSTR("[TUYA] Unknown DP id=%u type=%u\n"), frame[0], frame[1]);
             } else {
                 DEBUG_MSG_P(PSTR("[TUYA] Invalid DP frame\n"));
             }
