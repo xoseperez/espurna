@@ -372,6 +372,7 @@ namespace Tuya {
                     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
                         lightSetupChannels(channelStates.size());
                     #endif
+                    configDone = true;
                     state = State::IDLE;
                 }
                 break;
