@@ -160,6 +160,7 @@ void _telnetNotifyConnected(unsigned char i) {
 }
 
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
 void _telnetLoop() {
     if (_telnetServer.hasClient()) {
         int i;
@@ -207,8 +208,10 @@ void _telnetLoop() {
         }
     }
 }
-#else
-void _telnetNewClient(AsyncClient *cl) {
+
+#else // TELNET_SERVER_ASYNC
+
+void _telnetNewClient(AsyncClient* client) {
 
     if (client->localIP() != WiFi.softAPIP()) {
         // Telnet is always available for the ESPurna Core image
@@ -266,7 +269,8 @@ void _telnetNewClient(AsyncClient *cl) {
     });
     client->close(true);
 }
-#endif
+
+#endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
 
 // -----------------------------------------------------------------------------
 // Public API
