@@ -41,8 +41,10 @@ void systemStabilityCounter(uint8_t);
 // -----------------------------------------------------------------------------
 // Debug
 // -----------------------------------------------------------------------------
-void debugSend(const char * format, ...);
-void debugSend_P(PGM_P format, ...);
+
+#include "../libs/DebugSend.h"
+
+void debugSendImpl(const char*);
 extern "C" {
      void custom_crash_callback(struct rst_info*, uint32_t, uint32_t);
 }
@@ -68,6 +70,10 @@ extern "C" {
     #define getFreeStack() ESP.getFreeContStack()
 #endif
 }
+
+void infoMemory(const char* , unsigned int, unsigned int);
+unsigned int getFreeHeap();
+unsigned int getInitialFreeHeap();
 
 // -----------------------------------------------------------------------------
 // Domoticz
@@ -179,6 +185,9 @@ void nice_delay(unsigned long ms);
 bool inline eraseSDKConfig();
 
 #define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
+
+size_t strnlen(const char*, size_t);
+char* strnstr(const char*, const char*, size_t);
 
 // -----------------------------------------------------------------------------
 // WebServer

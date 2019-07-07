@@ -7,6 +7,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <Ticker.h>
+#include "libs/HeapStats.h"
 
 String getIdentifier() {
     char buffer[20];
@@ -49,7 +50,7 @@ String getCoreVersion() {
 
 String getCoreRevision() {
     #ifdef ARDUINO_ESP8266_GIT_VER
-        return String(ARDUINO_ESP8266_GIT_VER);
+        return String(ARDUINO_ESP8266_GIT_VER, 16);
     #else
         return String("");
     #endif
@@ -61,26 +62,6 @@ unsigned char getHeartbeatMode() {
 
 unsigned char getHeartbeatInterval() {
     return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
-}
-
-// WTF
-// Calling ESP.getFreeHeap() is making the system crash on a specific
-// AiLight bulb, but anywhere else...
-unsigned int getFreeHeap() {
-    if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
-    return ESP.getFreeHeap();
-}
-
-unsigned int getInitialFreeHeap() {
-    static unsigned int _heap = 0;
-    if (0 == _heap) {
-        _heap = getFreeHeap();
-    }
-    return _heap;
-}
-
-unsigned int getUsedHeap() {
-    return getInitialFreeHeap() - getFreeHeap();
 }
 
 String getEspurnaModules() {
@@ -186,10 +167,10 @@ namespace Heartbeat {
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
-    unsigned int free_heap = getFreeHeap();
-    
+    heap_stats_t heap_stats = getHeapStats();
+
     UNUSED(uptime_seconds);
-    UNUSED(free_heap);
+    UNUSED(heap_stats);
 
     #if MQTT_SUPPORT
         unsigned char _heartbeat_mode = getHeartbeatMode();
@@ -204,7 +185,7 @@ void heartbeat() {
 
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
-        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+        infoHeapStats();
         #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
@@ -264,7 +245,7 @@ void heartbeat() {
             #endif
 
             if (hb_cfg & Heartbeat::Freeheap)
-                mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+                mqttSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
             if (hb_cfg & Heartbeat::Relay)
                 relayMQTT();
@@ -311,7 +292,7 @@ void heartbeat() {
             idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
 
         if (hb_cfg & Heartbeat::Freeheap)
-            idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+            idbSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
         if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
@@ -455,10 +436,14 @@ void info() {
 
     // -------------------------------------------------------------------------
 
+    static bool show_frag_stats = false;
+
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
-    infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
-    infoMemory("Stack", 4096, getFreeStack());
+    infoHeapStats(show_frag_stats);
+    infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
     DEBUG_MSG_P(PSTR("\n"));
+
+    show_frag_stats = true;
 
     // -------------------------------------------------------------------------
 
@@ -626,4 +611,20 @@ bool isNumber(const char * s) {
         }
     }
     return digit;
+}
+
+// ref: lwip2 lwip_strnstr with strnlen
+char* strnstr(const char* buffer, const char* token, size_t n) {
+  size_t token_len = strnlen(token, n);
+  if (token_len == 0) {
+    return const_cast<char*>(buffer);
+  }
+
+  for (const char* p = buffer; *p && (p + token_len <= buffer + n); p++) {
+    if ((*p == *token) && (strncmp(p, token, token_len) == 0)) {
+      return const_cast<char*>(p);
+    }
+  }
+
+  return nullptr;
 }

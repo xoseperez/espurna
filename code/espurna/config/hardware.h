@@ -1289,6 +1289,37 @@
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4
 
+#elif defined(MAGICHOME_ZJ_ESPM_5CH_B_13)
+
+    // Info
+    #define MANUFACTURER        "MAGICHOME"
+    #define DEVICE              "ZJ_ESPM_5CH_B_13"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // LEDs
+    #define LED1_PIN            2
+    #define LED1_PIN_INVERSE    1
+
+    // Light
+    #define LIGHT_CHANNELS      5
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       5       // COLD WHITE
+    #define LIGHT_CH5_PIN       15      // WARM WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+    #define LIGHT_CH5_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
 // -----------------------------------------------------------------------------
@@ -1681,6 +1712,11 @@
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
 
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
     // Light
     #define LIGHT_CHANNELS      5
     #define LIGHT_CH1_PIN       14      // RED
@@ -2070,6 +2106,9 @@
 
     #define HLW8012_CURRENT_R               0.002            // Current resistor
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
+
+    // LED1 on RX pin
+    #define DEBUG_SERIAL_SUPPORT            1
 
 // -----------------------------------------------------------------------------
 // Maxcio W-DE004
@@ -2489,11 +2528,11 @@
     #define LED1_PIN                1
     #define LED1_PIN_INVERSE        1
 
-    // -----------------------------------------------------------------------------
-    // Allnet 4duino ESP8266-UP-Relais
-    // http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
-    // https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
-    // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Allnet 4duino ESP8266-UP-Relais
+// http://www.allnet.de/de/allnet-brand/produkte/neuheiten/p/allnet-4duino-iot-wlan-relais-unterputz-esp8266-up-relais/
+// https://shop.allnet.de/fileadmin/transfer/products/148814.pdf
+// -----------------------------------------------------------------------------
 
 #elif defined(ALLNET_4DUINO_IOT_WLAN_RELAIS)
 
@@ -2799,6 +2838,9 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
+    // BUTTON1 and LED1 are using Serial pins
+    #define DEBUG_SERIAL_SUPPORT        0
+
 // -----------------------------------------------------------------------------
 // Teckin SP22 v1.4 - v1.6
 // -----------------------------------------------------------------------------
@@ -2840,6 +2882,9 @@
     #define HLW8012_POWER_RATIO         2533110
     #define HLW8012_INTERRUPT_ON        FALLING
 
+    // BUTTON1 and LED1 are using Serial pins
+    #define DEBUG_SERIAL_SUPPORT        0
+
 // -----------------------------------------------------------------------------
 // Several boards under different names uing a power chip labelled BL0937 or HJL-01
 // Also model number KS-602S
@@ -2863,6 +2908,9 @@
     // LEDs
     #define LED1_PIN            1
     #define LED1_PIN_INVERSE    1
+
+    // LED1 is using TX pin
+    #define DEBUG_SERIAL_SUPPORT 0
 
 // ----------------------------------------------------------------------------------------
 //  Homecube 16A is similar but some pins differ and it also has RGB LEDs
@@ -3441,7 +3489,7 @@
 // Teckin SP20
 // -----------------------------------------------------------------------------
 
- #elif defined(TECKIN_SP20)
+#elif defined(TECKIN_SP20)
 
      // Info
     #define MANUFACTURER                "TECKIN"
@@ -3565,6 +3613,36 @@
     #define LDR_ON_GROUND       false
     #define LDR_RESISTOR        10000
 
+#elif defined(JINVOO_VALVE_SM_AW713)
+
+    // Reflashing from original Tuya firmware
+    // to thirdparty firmware like espurna by:
+    // https://github.com/ct-Open-Source/tuya-convert
+
+    // Info
+    #define MANUFACTURER        "JINVOO"
+    #define DEVICE              "VALVE_SM_AW713"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LED
+    #define LED1_PIN            5  // 5 red led
+    #define LED1_PIN_INVERSE    0
+    #define LED1_RELAY          1
+    #define LED1_MODE           LED_MODE_RELAY
+
+    #define LED2_PIN            4  // 4 blue led
+    #define LED2_PIN_INVERSE    0
+    #define LED2_RELAY          1
+    #define LED2_MODE           LED_MODE_FINDME_WIFI
+
 #elif defined(TUYA_GENERIC_DIMMER)
 
     #define MANUFACTURER        "TUYA"
@@ -3630,6 +3708,7 @@
     #define LIGHT_CHANNELS      1
     #define LIGHT_CH1_PIN       5
     #define LIGHT_CH1_INVERSE   0
+    #define ENCODER_SUPPORT     1
 
     // A bit of HLW8012 - pins 6,7,8
     #ifndef HLW8012_SUPPORT

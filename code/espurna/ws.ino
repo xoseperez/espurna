@@ -543,10 +543,11 @@ void wsSetup() {
     webServer()->addHandler(&_ws);
 
     // CORS
-    #ifdef WEB_REMOTE_DOMAIN
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", WEB_REMOTE_DOMAIN);
+    const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", webDomain);
+    if (!webDomain.equals("*")) {
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
-    #endif
+    }
 
     webServer()->on("/auth", HTTP_GET, _onAuth);
 

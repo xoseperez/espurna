@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 uint32_t _wifi_scan_client_id = 0;
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
+bool _wifi_smartconfig_initial = false;
 uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 
 // -----------------------------------------------------------------------------
@@ -73,6 +74,10 @@ void _wifiConfigure() {
         }
     }
 
+    #if JUSTWIFI_ENABLE_SMARTCONFIG
+        if (i == 0) _wifi_smartconfig_initial = true;
+    #endif
+  
     jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
 
     unsigned char sleep_mode = getSetting("wifiSleep", WIFI_SLEEP_MODE).toInt();
@@ -230,7 +235,6 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
     if (MESSAGE_WPS_ERROR == code || MESSAGE_SMARTCONFIG_ERROR == code) {
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
-        jw.enableAP(true);
     }
 
     if (MESSAGE_WPS_SUCCESS == code || MESSAGE_SMARTCONFIG_SUCCESS == code) {
@@ -254,7 +258,6 @@ void _wifiCallback(justwifi_messages_t code, char * parameter) {
 
         _wifi_wps_running = false;
         _wifi_smartconfig_running = false;
-        jw.enableAP(true);
 
     }
 
@@ -610,6 +613,10 @@ void wifiSetup() {
     _wifiInject();
     _wifiConfigure();
 
+    #if JUSTWIFI_ENABLE_SMARTCONFIG
+        if (_wifi_smartconfig_initial) jw.startSmartConfig();
+    #endif
+   
     // Message callbacks
     wifiRegister(_wifiCallback);
     #if WIFI_AP_CAPTIVE
