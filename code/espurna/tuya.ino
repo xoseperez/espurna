@@ -290,16 +290,16 @@ namespace Tuya {
             if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
                 if (lightState(id) != switchStates[id].value) {
                     tuyaSendSwitch(id, value > 0);
-                    tuyaSendChannel(id, value);
                 }
+                if (lightState(id)) tuyaSendChannel(id, value);
                 return;
             }
 
             if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
                 if (lightState(id) != switchStates[id].value) {
                     tuyaSendSwitch(id, bool(value));
-                    tuyaSendChannel(id);
                 }
+                if (lightState(id)) tuyaSendChannel(id, value);
                 return;
             }
         #else
