@@ -79,7 +79,7 @@ namespace Tuya {
         }
 
         template <typename T, typename PrintType>
-        void _write(T& data) {
+        void _write(const T& data) {
 
             const uint8_t header[2] = {0x55, 0xaa};
             uint8_t checksum = 0xff;
@@ -96,12 +96,12 @@ namespace Tuya {
         }
 
         template <typename T>
-        void write(T& data) {
+        void write(const T& data) {
             _write<T, PrintRaw>(data);
         }
 
         template <typename T>
-        void writeHex(T& data) {
+        void writeHex(const T& data) {
             _write<T, PrintHex>(data);
         }
 
