@@ -1032,6 +1032,12 @@ void relaySetupMQTT() {
 
 #endif
 
+void _relaySetupProvider() {
+    #if TUYA_SUPPORT
+        tuyaSetupSwitch();
+    #endif
+}
+
 //------------------------------------------------------------------------------
 // Settings
 //------------------------------------------------------------------------------
@@ -1128,6 +1134,7 @@ void relaySetup() {
 
     relaySetupDummy(DUMMY_RELAY_COUNT);
 
+    _relaySetupProvider();
     _relayBackwards();
     _relayConfigure();
     _relayBoot();

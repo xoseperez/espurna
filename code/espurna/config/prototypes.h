@@ -249,12 +249,19 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 // TUYA
 // -----------------------------------------------------------------------------
-namespace TuyaDimmer {
+namespace Tuya {
     void tuyaSendChannel(unsigned char, unsigned int);
     void tuyaSendSwitch(unsigned char, bool);
     void tuyaSetup();
+    void tuyaSetupLight();
+    void tuyaSetupSwitch();
 }
 
-using TuyaDimmer::tuyaSendSwitch;
-using TuyaDimmer::tuyaSendChannel;
-using TuyaDimmer::tuyaSetup;
+using Tuya::tuyaSetup;
+using Tuya::tuyaSetupSwitch;
+using Tuya::tuyaSendSwitch;
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+    using Tuya::tuyaSetupLight;
+    using Tuya::tuyaSendChannel;
+#endif

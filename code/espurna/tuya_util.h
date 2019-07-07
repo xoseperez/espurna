@@ -11,10 +11,11 @@ namespace TuyaDimmer {
             };
 
 
-            States(size_t size) :
-                _size(size),
-                _states(size)
-            {}
+            States(size_t capacity) :
+                _capacity(capacity)
+            {
+                _states.reserve(capacity);
+            }
 
             bool update(const uint8_t dp, const T value) {
                 auto found = std::find_if(_states.begin(), _states.end(), [dp](const Container& internal) {
@@ -33,7 +34,7 @@ namespace TuyaDimmer {
             }
 
             void pushOrUpdate(const uint8_t dp, const T value) {
-                if (_states.size() == _size) return;
+                if (_states.size() >= _capacity) return;
                 if (!update(dp, value)) {
                     _changed = true;
                     _states.emplace_back(States::Container{dp, value});
@@ -54,9 +55,13 @@ namespace TuyaDimmer {
                 return _states.size();
             }
 
+            size_t capacity() {
+                return _capacity;
+            }
+
         private:
             bool _changed = false;
-            size_t _size = 0;
+            size_t _capacity = 0;
             std::vector<Container> _states;
     };
 

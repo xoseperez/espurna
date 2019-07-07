@@ -1,6 +1,6 @@
 // ref: https://docs.tuya.com/en/mcu/mcu-protocol.html
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+#if TUYA_SUPPORT
 
 #include <functional>
 #include <queue>
@@ -12,7 +12,7 @@
 #include "tuya_protocol.h"
 #include "tuya_util.h"
 
-namespace TuyaDimmer {
+namespace Tuya {
 
     constexpr const size_t SERIAL_SPEED = 9600;
 
@@ -57,15 +57,21 @@ namespace TuyaDimmer {
     // --------------------------------------------
 
     States<bool> switchStates(SWITCH_MAX);
-    States<uint32_t> channelStates(DIMMER_MAX);
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        States<uint32_t> channelStates(DIMMER_MAX);
+    #endif
 
     void pushOrUpdateState(const Type type, const DataFrame& frame) {
         if (Type::BOOL == type) {
             const DataProtocol<bool> proto(frame);
             switchStates.pushOrUpdate(proto.id(), proto.value());
+            DEBUG_MSG_P(PSTR("[TUYA] apply BOOL id=%02u value=%s\n"), proto.id(), proto.value() ? "true" : "false");
         } else if (Type::INT == type) {
-            const DataProtocol<uint32_t> proto(frame);
-            channelStates.pushOrUpdate(proto.id(), proto.value());
+            #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                const DataProtocol<uint32_t> proto(frame);
+                channelStates.pushOrUpdate(proto.id(), proto.value());
+                DEBUG_MSG_P(PSTR("[TUYA] apply  INT id=%02u value=%u\n"), proto.id(), proto.value());
+            #endif
         }
     }
 
@@ -74,8 +80,10 @@ namespace TuyaDimmer {
             const DataProtocol<bool> proto(frame);
             switchStates.update(proto.id(), proto.value());
         } else if (Type::INT == type) {
-            const DataProtocol<uint32_t> proto(frame);
-            channelStates.update(proto.id(), proto.value());
+            #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                const DataProtocol<uint32_t> proto(frame);
+                channelStates.update(proto.id(), proto.value());
+            #endif
         }
     }
 
@@ -85,11 +93,14 @@ namespace TuyaDimmer {
         }
     }
 
-    void applyDimmer() {
-        for (unsigned char id=0; id < channelStates.size(); ++id) {
-            lightChannel(id, channelStates[id].value);
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        void applyDimmer() {
+            for (unsigned char id=0; id < channelStates.size(); ++id) {
+                lightChannel(id, channelStates[id].value);
+            }
+            lightUpdate(true, true);
         }
-    }
+    #endif
 
     // --------------------------------------------
 
@@ -237,23 +248,25 @@ namespace TuyaDimmer {
         });
     }
 
-    void tuyaSendChannel(unsigned char id) {
-        outputFrames.emplace(StaticDataFrame{
-            Command::SetDP, DataProtocol<uint32_t>(channelStates[id].dp, channelStates[id].value).serialize()
-        });
-    }
-
     void tuyaSendSwitch(unsigned char id, bool value) {
         if (value == switchStates[id].value) return;
         switchStates[id].value = value;
         tuyaSendSwitch(id);
     }
 
-    void tuyaSendChannel(unsigned char id, unsigned int value) {
-        if (value == channelStates[id].value) return;
-        channelStates[id].value = value;
-        tuyaSendChannel(id);
-    }
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        void tuyaSendChannel(unsigned char id) {
+            outputFrames.emplace(StaticDataFrame{
+                Command::SetDP, DataProtocol<uint32_t>(channelStates[id].dp, channelStates[id].value).serialize()
+            });
+        }
+
+        void tuyaSendChannel(unsigned char id, unsigned int value) {
+            if (value == channelStates[id].value) return;
+            channelStates[id].value = value;
+            tuyaSendChannel(id);
+        }
+    #endif
 
     // Main loop state machine. Process input data and manage output queue
 
@@ -302,7 +315,9 @@ namespace TuyaDimmer {
             {
                 if (discoveryTimeout) {
                     relaySetupDummy(switchStates.size());
-                    lightSetupChannels(channelStates.size());
+                    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                        lightSetupChannels(channelStates.size());
+                    #endif
                     state = State::IDLE;
                 }
                 break;
@@ -311,7 +326,9 @@ namespace TuyaDimmer {
             case State::IDLE:
             {
                 if (switchStates.changed()) applySwitch();
-                if (channelStates.changed()) applyDimmer();
+                #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                    if (channelStates.changed()) applyDimmer();
+                #endif
                 sendHeartbeat(Heartbeat::SLOW, state);
                 break;
             }
@@ -319,31 +336,62 @@ namespace TuyaDimmer {
 
         if (!outputFrames.empty()) {
             const DataFrame frame = std::move(outputFrames.front());
-            outputFrames.pop();
             dataframeDebugSend("OUT", frame);
-            tuyaSerial.write(frame);
+            tuyaSerial.write(frame.serialize());
+            outputFrames.pop();
         }
 
     }
+
+    // Predefined DP<->SWITCH, DP<->CHANNEL associations
+    // Respective provider setup should be called before state restore,
+    // so we can use dummy values
+
+    void tuyaSetupSwitch() {
+
+        for (unsigned char n = 0; n < switchStates.capacity(); ++n) {
+            if (!hasSetting("tuyaSwitch", n)) break;
+            uint8_t dp = getSetting("tuyaSwitch", n, 0).toInt();
+            switchStates.pushOrUpdate(dp, false);
+        }
+        relaySetupDummy(switchStates.size());
+
+    }
+
+    #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+        void tuyaSetupLight() {
+
+            for (unsigned char n = 0; n < channelStates.capacity(); ++n) {
+                if (!hasSetting("tuyaChannel", n)) break;
+                uint8_t dp = getSetting("tuyaChannel", n, 0).toInt();
+                channelStates.pushOrUpdate(dp, 0);
+            }
+            lightSetupChannels(channelStates.size());
+
+        }
+    #endif
 
     void tuyaSetup() {
 
         // Print all known DP associations
 
         #if TERMINAL_SUPPORT
+            terminalRegisterCommand(F("TUYA.TEST"), [](Embedis* e) {
+                sendWiFiStatus();
+            });
             terminalRegisterCommand(F("TUYA.INFO"), [](Embedis* e) {
                 DEBUG_MSG_P(PSTR("[TUYA] Product: %s\n"), product.c_str());
                 if (switchStates.size()) {
-                    DEBUG_MSG_P(PSTR("[TUYA] BOOL: %s\n"));
+                    DEBUG_MSG_P(PSTR("[TUYA] BOOL: \n"));
                     for (unsigned char n=0; n < switchStates.size(); ++n) {
-                        DEBUG_MSG_P(PSTR("[TUYA] %u: %s\n"), switchStates[n].dp, switchStates[n].value ? "ON" : "OFF");
+                        DEBUG_MSG_P(PSTR("[TUYA] %02u=%u\n"), switchStates[n].dp, switchStates[n].value);
 
                     }
                 }
                 if (switchStates.size()) {
-                    DEBUG_MSG_P(PSTR("[TUYA] INT: %s\n"));
-                    for (unsigned char n=0; n < switchStates.size(); ++n) {
-                        DEBUG_MSG_P(PSTR("[TUYA] %u: %u\n"), channelStates[n].dp, channelStates[n].value);
+                    DEBUG_MSG_P(PSTR("[TUYA] INT: \n"));
+                    for (unsigned char n=0; n < channelStates.size(); ++n) {
+                        DEBUG_MSG_P(PSTR("[TUYA] %02u=%03u\n"), channelStates[n].dp, channelStates[n].value);
 
                     }
                 }
@@ -353,20 +401,6 @@ namespace TuyaDimmer {
         // Print all IN and OUT messages
 
         transportDebug = getSetting("tuyaDebug", 1).toInt() == 1;
-
-        // Predefined DP<->SWITCH, DP<->CHANNEL associations
-
-        for (unsigned char n=0; n<relayCount(); ++n) {
-            if (!hasSetting("tuyaSwitch", n)) break;
-            uint8_t dp = getSetting("tuyaSwitch", n).toInt();
-            switchStates.pushOrUpdate(dp, relayStatus(n));
-        }
-
-        for (unsigned char n=0; n<lightChannels(); ++n) {
-            if (!hasSetting("tuyaChannel", n)) break;
-            uint8_t dp = getSetting("tuyaChannel", n).toInt();
-            channelStates.pushOrUpdate(dp, lightChannel(n));
-        }
 
         // Install main loop method and WiFiStatus ping (only works with specific mode)
 
@@ -382,4 +416,4 @@ namespace TuyaDimmer {
 
 }
 
-#endif // LIGHT_PROVIDER_TUYA
+#endif // TUYA_SUPPORT
