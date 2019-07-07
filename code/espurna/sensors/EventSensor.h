@@ -48,8 +48,8 @@ class EventSensor : public BaseSensor {
             _interrupt_mode = interrupt_mode;
         }
 
-        void setDebounceTime(unsigned long debounce) {
-            _debounce = debounce;
+        void setDebounceTime(unsigned long ms) {
+            _debounce = microsecondsToClockCycles(ms * 1000);
         }
 
         // ---------------------------------------------------------------------
@@ -87,6 +87,16 @@ class EventSensor : public BaseSensor {
             _ready = true;
         }
 
+        void tick() {
+            if (!_trigger || !_callback) return;
+            if (!_trigger_flag) return;
+
+            noInterrupts();
+            _callback(MAGNITUDE_EVENT, _trigger_value);
+            _trigger_flag = false;
+            interrupts();
+        }
+
         // Descriptive name of the sensor
         String description() {
             char buffer[20];
@@ -114,33 +124,42 @@ class EventSensor : public BaseSensor {
         // Current value for slot # index
         double value(unsigned char index) {
             if (index == 0) {
-                double value = _events;
-                _events = 0;
+                double value = _counter;
+                _counter = 0;
                 return value;
             };
+            if (index == 1) {
+                return _value;
+            }
             return 0;
         }
 
-        // Handle interrupt calls
+        // Handle interrupt calls from isr[GPIO] functions
         void ICACHE_RAM_ATTR handleInterrupt(unsigned char gpio) {
             UNUSED(gpio);
-            static unsigned long last = 0;
 
             // clock count in 32bit value, overflowing:
             // ~53s when F_CPU is 80MHz
             // ~26s when F_CPU is 160MHz
             // see: cores/esp8266/Arduino.h definitions
-            unsigned long ms = clockCyclesToMicroseconds(ESP.getCycleCount()) / 1000u;
+            //
+            // Note:
+            // To convert to / from normal time values, use:
+            // - microsecondsToClockCycles(microseconds)
+            // - clockCyclesToMicroseconds(cycles)
+            // Since the division operation on this chip is pretty slow,
+            // avoid doing the conversion here
+            unsigned long cycles = ESP.getCycleCount();
 
-            if (ms - last > _debounce) {
+            if (cycles - _last > _debounce) {
+                _last = cycles;
+                _counter += 1;
 
-                last = ms;
-                _events = _events + 1;
-
+                // we are handling callbacks in tick()
                 if (_trigger) {
-                    if (_callback) _callback(MAGNITUDE_EVENT, digitalRead(gpio));
+                    _trigger_value = digitalRead(gpio);
+                    _trigger_flag = true;
                 }
-
             }
         }
 
@@ -168,10 +187,16 @@ class EventSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        volatile unsigned long _events = 0;
-        unsigned long _debounce = EVENTS_DEBOUNCE;
-        unsigned char _gpio = GPIO_NONE;
+        volatile unsigned long _counter = 0;
+        unsigned char _value = 0;
+        unsigned long _last = 0;
+        unsigned long _debounce = microsecondsToClockCycles(EVENTS_DEBOUNCE * 1000);
+
         bool _trigger = false;
+        bool _trigger_flag = false;
+        unsigned char _trigger_value = false;
+
+        unsigned char _gpio = GPIO_NONE;
         unsigned char _pin_mode = INPUT;
         unsigned char _interrupt_mode = RISING;
 

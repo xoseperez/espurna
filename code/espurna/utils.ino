@@ -7,6 +7,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 */
 
 #include <Ticker.h>
+#include "libs/HeapStats.h"
 
 String getIdentifier() {
     char buffer[20];
@@ -49,7 +50,7 @@ String getCoreVersion() {
 
 String getCoreRevision() {
     #ifdef ARDUINO_ESP8266_GIT_VER
-        return String(ARDUINO_ESP8266_GIT_VER);
+        return String(ARDUINO_ESP8266_GIT_VER, 16);
     #else
         return String("");
     #endif
@@ -61,26 +62,6 @@ unsigned char getHeartbeatMode() {
 
 unsigned char getHeartbeatInterval() {
     return getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
-}
-
-// WTF
-// Calling ESP.getFreeHeap() is making the system crash on a specific
-// AiLight bulb, but anywhere else...
-unsigned int getFreeHeap() {
-    if (getSetting("wtfHeap", 0).toInt() == 1) return 9999;
-    return ESP.getFreeHeap();
-}
-
-unsigned int getInitialFreeHeap() {
-    static unsigned int _heap = 0;
-    if (0 == _heap) {
-        _heap = getFreeHeap();
-    }
-    return _heap;
-}
-
-unsigned int getUsedHeap() {
-    return getInitialFreeHeap() - getFreeHeap();
 }
 
 String getEspurnaModules() {
@@ -98,34 +79,18 @@ String getEspurnaWebUI() {
 }
 
 String buildTime() {
-
-    const char time_now[] = __TIME__;   // hh:mm:ss
-    unsigned int hour = atoi(&time_now[0]);
-    unsigned int minute = atoi(&time_now[3]);
-    unsigned int second = atoi(&time_now[6]);
-
-    const char date_now[] = __DATE__;   // Mmm dd yyyy
-    const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-    unsigned int month = 0;
-    for ( int i = 0; i < 12; i++ ) {
-        if (strncmp(date_now, months[i], 3) == 0 ) {
-            month = i + 1;
-            break;
-        }
-    }
-    unsigned int day = atoi(&date_now[3]);
-    unsigned int year = atoi(&date_now[7]);
-
-    char buffer[20];
-    snprintf_P(
-        buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        year, month, day, hour, minute, second
-    );
-
-    return String(buffer);
-
+    #if NTP_SUPPORT
+        return ntpDateTime(__UNIX_TIMESTAMP__);
+    #else
+        char buffer[20];
+        snprintf_P(
+            buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
+            __TIME_YEAR__, __TIME_MONTH__, __TIME_DAY__,
+            __TIME_HOUR__, __TIME_MINUTE__, __TIME_SECOND__
+        );
+        return String(buffer);
+    #endif
 }
-
 
 unsigned long getUptime() {
 
@@ -202,10 +167,10 @@ namespace Heartbeat {
 void heartbeat() {
 
     unsigned long uptime_seconds = getUptime();
-    unsigned int free_heap = getFreeHeap();
-    
+    heap_stats_t heap_stats = getHeapStats();
+
     UNUSED(uptime_seconds);
-    UNUSED(free_heap);
+    UNUSED(heap_stats);
 
     #if MQTT_SUPPORT
         unsigned char _heartbeat_mode = getHeartbeatMode();
@@ -220,7 +185,7 @@ void heartbeat() {
 
     if (serial) {
         DEBUG_MSG_P(PSTR("[MAIN] Uptime: %lu seconds\n"), uptime_seconds);
-        infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
+        infoHeapStats();
         #if ADC_MODE_VALUE == ADC_VCC
             DEBUG_MSG_P(PSTR("[MAIN] Power: %lu mV\n"), ESP.getVcc());
         #endif
@@ -280,7 +245,7 @@ void heartbeat() {
             #endif
 
             if (hb_cfg & Heartbeat::Freeheap)
-                mqttSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+                mqttSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
             if (hb_cfg & Heartbeat::Relay)
                 relayMQTT();
@@ -327,7 +292,7 @@ void heartbeat() {
             idbSend(MQTT_TOPIC_UPTIME, String(uptime_seconds).c_str());
 
         if (hb_cfg & Heartbeat::Freeheap)
-            idbSend(MQTT_TOPIC_FREEHEAP, String(free_heap).c_str());
+            idbSend(MQTT_TOPIC_FREEHEAP, String(heap_stats.available).c_str());
 
         if (hb_cfg & Heartbeat::Rssi)
             idbSend(MQTT_TOPIC_RSSI, String(WiFi.RSSI()).c_str());
@@ -422,6 +387,7 @@ void info() {
     DEBUG_MSG_P(PSTR("[MAIN] SDK version: %s\n"), ESP.getSdkVersion());
     DEBUG_MSG_P(PSTR("[MAIN] Core version: %s\n"), getCoreVersion().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] Build time: %lu\n"), __UNIX_TIMESTAMP__);
     DEBUG_MSG_P(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -470,10 +436,14 @@ void info() {
 
     // -------------------------------------------------------------------------
 
+    static bool show_frag_stats = false;
+
     infoMemory("EEPROM", SPI_FLASH_SEC_SIZE, SPI_FLASH_SEC_SIZE - settingsSize());
-    infoMemory("Heap", getInitialFreeHeap(), getFreeHeap());
-    infoMemory("Stack", 4096, getFreeStack());
+    infoHeapStats(show_frag_stats);
+    infoMemory("Stack", CONT_STACKSIZE, getFreeStack());
     DEBUG_MSG_P(PSTR("\n"));
+
+    show_frag_stats = true;
 
     // -------------------------------------------------------------------------
 
@@ -641,4 +611,20 @@ bool isNumber(const char * s) {
         }
     }
     return digit;
+}
+
+// ref: lwip2 lwip_strnstr with strnlen
+char* strnstr(const char* buffer, const char* token, size_t n) {
+  size_t token_len = strnlen(token, n);
+  if (token_len == 0) {
+    return const_cast<char*>(buffer);
+  }
+
+  for (const char* p = buffer; *p && (p + token_len <= buffer + n); p++) {
+    if ((*p == *token) && (strncmp(p, token, token_len) == 0)) {
+      return const_cast<char*>(p);
+    }
+  }
+
+  return nullptr;
 }

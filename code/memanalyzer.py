@@ -261,6 +261,17 @@ if __name__ == '__main__':
         total['size'] = file_size(".pioenvs/{}/firmware.bin".format(env))
         calc_free(total)
 
+        print(output_format.format(
+                "-" * 20,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15
+        ))
+        
         if len(test_modules) > 1:
             print(output_format.format(
                     "ALL MODULES",
@@ -279,6 +290,7 @@ if __name__ == '__main__':
                 total['data'],
                 total['rodata'],
                 total['bss'],
+                total['free'],
                 total['irom0_text'],
                 total['size'],
         ))
