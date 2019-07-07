@@ -110,6 +110,7 @@ namespace Tuya {
     DiscoveryTimeout discoveryTimeout(DISCOVERY_TIMEOUT);
     bool transportDebug = false;
     bool configDone = false;
+    bool reportWiFi = false;
     String product;
 
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
@@ -131,6 +132,7 @@ namespace Tuya {
     }
 
     void sendWiFiStatus() {
+        if (!reportWiFi) return;
         outputFrames.emplace(StaticDataFrame{
             Command::WiFiStatus, {getWiFiState()}
         });
@@ -196,6 +198,7 @@ namespace Tuya {
             // ... or nothing. we need to report wifi status to the mcu via Command::WiFiStatus
             } else if (!frame.length) {
                 DEBUG_MSG_P(PSTR("[TUYA] Mode: ESP & MCU\n"));
+                reportWiFi = true;
                 sendWiFiStatus();
             }
             state = State::QUERY_DP;
