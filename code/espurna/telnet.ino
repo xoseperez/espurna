@@ -230,7 +230,7 @@ void _telnetNewClient(AsyncClient *cl) {
 
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
 
-        if (!_telnetClients[i]) {
+        if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
 
             _telnetClients[i] = std::unique_ptr<AsyncClient>(client);
 
