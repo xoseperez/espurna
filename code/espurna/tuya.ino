@@ -94,7 +94,7 @@ namespace Tuya {
     }
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-        void applyDimmer() {
+        void applyChannel() {
             for (unsigned char id=0; id < channelStates.size(); ++id) {
                 lightChannel(id, channelStates[id].value);
             }
@@ -382,7 +382,7 @@ namespace Tuya {
             {
                 if (switchStates.changed()) applySwitch();
                 #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-                    if (channelStates.changed()) applyDimmer();
+                    if (channelStates.changed()) applyChannel();
                 #endif
                 sendHeartbeat(Heartbeat::SLOW, state);
                 break;
