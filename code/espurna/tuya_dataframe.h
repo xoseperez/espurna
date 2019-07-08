@@ -144,7 +144,7 @@ namespace Tuya {
     };
 
     inline DataFrame fromTransport(const Transport& input) {
-        return DataFrame(input.version(), input.command(), input.length(), input.dataStart(), input.dataEnd());
+        return DataFrame(input.version(), input.command(), input.length(), input.dataBegin(), input.dataEnd());
     }
 
 }

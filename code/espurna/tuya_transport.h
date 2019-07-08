@@ -143,12 +143,12 @@ namespace Tuya {
             return _buffer[_index];
         }
 
-        std::vector<uint8_t>::const_iterator dataStart() const {
+        std::vector<uint8_t>::const_iterator dataBegin() const {
             return _buffer.begin() + 6;
         }
 
         std::vector<uint8_t>::const_iterator dataEnd() const {
-            return dataStart() + length();
+            return dataBegin() + length();
         }
 
         void read() {
