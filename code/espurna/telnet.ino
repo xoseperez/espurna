@@ -194,24 +194,34 @@ void _telnetLoop() {
         //no free/disconnected spot so reject
         if (i == TELNET_MAX_CLIENTS) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Too many connections\n"));
+            _telnetServer.available().stop();
+            return;
         }
     }
 
-    // Read data from clients
     for (int i = 0; i < TELNET_MAX_CLIENTS; i++) {
-        while (_telnetClients[i] && _telnetClients[i]->available()) {
-            char data[512];
-            size_t len = _telnetClients[i]->available();
-            unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
+        if (_telnetClients[i]) {
+            // Handle client timeouts
+            if (!_telnetClients[i]->connected()) {
+                _telnetDisconnect(i);
+            } else {
+                // Read data from clients
+                while (_telnetClients[i] && _telnetClients[i]->available()) {
+                    char data[512];
+                    size_t len = _telnetClients[i]->available();
+                    unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
 
-            _telnetData(i, data, r);
+                    _telnetData(i, data, r);
+                }
+            }
         }
     }
 }
 
 #else // TELNET_SERVER_ASYNC
 
-void _telnetNewClient(AsyncClient* client) {
+void _telnetNewClient(void* client) {
+    AsyncClient *client = (AsyncClient *)cl; // in order to avoid using AsyncClient in function signature
 
     if (client->localIP() != WiFi.softAPIP()) {
         // Telnet is always available for the ESPurna Core image
