@@ -220,9 +220,7 @@ void _telnetLoop() {
 
 #else // TELNET_SERVER_ASYNC
 
-void _telnetNewClient(void* client) {
-    AsyncClient *client = (AsyncClient *)cl; // in order to avoid using AsyncClient in function signature
-
+void _telnetNewClient(AsyncClient* client) {
     if (client->localIP() != WiFi.softAPIP()) {
         // Telnet is always available for the ESPurna Core image
         #ifdef ESPURNA_CORE
