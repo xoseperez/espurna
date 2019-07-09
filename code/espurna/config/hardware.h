@@ -3237,6 +3237,32 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
+
+// -----------------------------------------------------------------------------
+// Generic Nexete A19
+// https://www.ebay.com/itm/Wifi-Smart-LED-light-Bulb-9W-60W-A19-850LM-RGBW-Dimmable-for-Alexa-Google-Home/283514779201
+// -----------------------------------------------------------------------------
+
+#elif defined(GENERIC_NEXETE_A19)
+
+    // Info
+    #define MANUFACTURER        "GENERIC NEXETE"
+    #define DEVICE              "A19"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       14      // RED
+    #define LIGHT_CH2_PIN       12      // GREEN
+    #define LIGHT_CH3_PIN       13      // BLUE
+    #define LIGHT_CH4_PIN       5       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // Lombex Lux Nova 2 Tunable White
 // https://www.amazon.com/Lombex-Compatible-Equivalent-Dimmable-2700K-6500K/dp/B07B8K72PR
