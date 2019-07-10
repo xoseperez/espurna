@@ -8,7 +8,7 @@ cache:
   - "~/.npm"
   - "~/.platformio"
 install:
-- pip install -U git+https://github.com/platformio/platformio-core@8d459d86d33992129726ef177ed24fe8a00e9b75
+- pip install -U platformio
 - npm install -g npm@latest
 - cd code && npm ci && cd ..
 env:
