@@ -5,28 +5,69 @@ Import("env")
 import os
 import sys
 
-def subprocess_libdeps(storage, lib_deps):
+
+TRAVIS = os.environ.get("TRAVIS")
+
+
+class ExtraScriptError(Exception):
+    pass
+
+
+# Most portable way, without depending on platformio internals
+def subprocess_libdeps(lib_deps, storage=None, silent=True):
     import subprocess
-    args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib", "-d", storage, "install"]
+
+    args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib"]
+    if not storage:
+        args.append("-g")
+    else:
+        args.extend(["-d", storage])
+    args.append("install")
+    if silent:
+        args.append("-s")
+
     args.extend(lib_deps)
 
     subprocess.check_call(args)
 
-def library_manager_libdeps(storage, lib_deps):
+
+# Avoid spawning pio lib every time, hook into the LibraryManager API (sort-of internal)
+def library_manager_libdeps(lib_deps, storage=None):
     from platformio.managers.lib import LibraryManager
-    manager = LibraryManager(storage)
+    from platformio.project.helpers import get_project_global_lib_dir
+
+    if not storage:
+        manager = LigraryManager(get_project_global_lib_dir())
+    else:
+        manager = LibraryManager(storage)
+
     for lib in lib_deps:
         if manager.get_package_dir(*manager.parse_pkg_uri(lib)):
             continue
-        print("installing", lib, file=sys.stderr)
+        print("installing: {}".format(lib), file=sys.stderr)
         manager.install(lib)
 
-if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
+
+def get_shared_libdeps_dir(section, name):
     cfg = env.GetProjectConfig()
 
-    lib_deps = env.GetProjectOption("lib_deps")
-    storage = os.path.join(env["PROJECT_DIR"], cfg.get("common", "shared_libdeps_dir"))
+    if not cfg.has_option(section, name):
+        raise ExtraScriptError("{}.{} is required to be set".format(section, name))
 
-    print("using shared library storage: ", storage, file=sys.stderr)
-    #library_manager_libdeps(STORAGE, LIB_DEPS)
-    subprocess_libdeps(storage, lib_deps)
+    opt = cfg.get(section, name)
+
+    if not opt in env.GetProjectOption("lib_extra_dirs"):
+        raise ExtraScriptError("lib_extra_dirs must contain {}.{}".format(section, name))
+
+    return os.path.join(env["PROJECT_DIR"], opt)
+
+
+if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
+    if TRAVIS:
+        print("using global library storage", file=sys.stderr)
+        storage = None
+    else:
+        storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
+        print("using shared library storage: ", storage, file=sys.stderr)
+
+    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage)
