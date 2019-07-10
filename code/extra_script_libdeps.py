@@ -37,7 +37,7 @@ def library_manager_libdeps(lib_deps, storage=None):
     from platformio.project.helpers import get_project_global_lib_dir
 
     if not storage:
-        manager = LigraryManager(get_project_global_lib_dir())
+        manager = LibraryManager(get_project_global_lib_dir())
     else:
         manager = LibraryManager(storage)
 
@@ -64,8 +64,8 @@ def get_shared_libdeps_dir(section, name):
 
 if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
     if TRAVIS:
-        print("using global library storage", file=sys.stderr)
         storage = None
+        print("using global library storage", file=sys.stderr)
     else:
         storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
         print("using shared library storage: ", storage, file=sys.stderr)
