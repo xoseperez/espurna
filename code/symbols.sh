@@ -47,7 +47,7 @@ if [ $ENVIRONMENT == "" ]; then
     help
     exit 1
 fi
-ELF=.pioenvs/$ENVIRONMENT/firmware.elf
+ELF=.pio/build/$ENVIRONMENT/firmware.elf
 if [ ! -f $ELF ]; then
     echo "Could not find ELF file for the selected environment: $ELF"
     exit 2
