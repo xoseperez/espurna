@@ -3852,7 +3852,7 @@
     #define SSDP_SUPPORT        1
     #define RF_SUPPORT          1
 
-#elif
+#else
 
     #error "UNSUPPORTED HARDWARE!!"
 
