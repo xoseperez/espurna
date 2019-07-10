@@ -97,9 +97,8 @@ def patch_lwip():
     if "lwip_gcc" not in env["LIBS"]:
         return
 
-    framework_dir = env["FRAMEWORK_ARDUINOESP8266_DIR"]
-
     platform = env.PioPlatform()
+    framework_dir = platform.get_package_dir("framework-arduinoespressif8266")
     toolchain_prefix = os.path.join(platform.get_package_dir("toolchain-xtensa"), "bin", "xtensa-lx106-elf-")
 
     patch_action = env.VerboseAction(" ".join([
