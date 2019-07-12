@@ -118,8 +118,17 @@
 #define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
+#ifndef TELNET_PORT
 #define TELNET_PORT             23              // Port to listen to telnet clients
+#endif
+
+#ifndef TELNET_MAX_CLIENTS
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+#endif
+
+#ifndef TELNET_SERVER
+#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
+#endif
 
 //------------------------------------------------------------------------------
 // TERMINAL
