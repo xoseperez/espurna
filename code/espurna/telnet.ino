@@ -207,9 +207,9 @@ void _telnetLoop() {
             } else {
                 // Read data from clients
                 while (_telnetClients[i] && _telnetClients[i]->available()) {
-                    char data[512];
                     size_t len = _telnetClients[i]->available();
-                    unsigned int r = _telnetClients[i]->readBytes(data, min(sizeof(data), len));
+                    char data[len];
+                    unsigned int r = _telnetClients[i]->readBytes(data, len);
 
                     _telnetData(i, data, r);
                 }
