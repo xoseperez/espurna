@@ -240,8 +240,8 @@ def boardname(board):
 
 
 def store(device, env):
-    source = ".pioenvs/{}/firmware.elf".format(env)
-    destination = ".pioenvs/elfs/{}.elf".format(boardname(device).lower())
+    source = ".pio/build/{}/firmware.elf".format(env)
+    destination = ".pio/build/elfs/{}.elf".format(boardname(device).lower())
 
     dst_dir = os.path.dirname(destination)
     if not os.path.exists(dst_dir):
@@ -257,6 +257,7 @@ def run(device, env):
     environ["ESPURNA_BOARD"] = device["board"]
     environ["ESPURNA_AUTH"] = device["auth"]
     environ["ESPURNA_FLAGS"] = device["flags"]
+    environ["ESPURNA_PIO_SHARED_LIBRARIES"] = "y"
 
     command = ("platformio", "run", "--silent", "--environment", env, "-t", "upload")
     subprocess.check_call(command, env=environ)
