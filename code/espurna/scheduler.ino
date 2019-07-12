@@ -138,8 +138,7 @@ void _schCheck() {
     time_t local_time = now();
     time_t utc_time = ntpLocal2UTC(local_time);
     
-    if (getSetting("schAll").toInt() == 0)
-    {
+    if (getSetting("schAll").toInt() == 0) {
         return;
     }
     

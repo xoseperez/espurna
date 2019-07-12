@@ -916,41 +916,33 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
-function fixSchedule()
-{
+function fixSchedule() {
     var forms = $(".form-settings");
     switches = $("select[name='schSwitch']",forms);
     nicks =$("input[name='relayNickname']",forms);
-    for (var i=0;i<switches.length;i++)
-    {
+    for (var i=0;i<switches.length;i++) {
         tmp_switch = $(switches[i]).find("option");
-        for(var j=0;j<nicks.length;j++)
-        {
+        for(var j=0;j<nicks.length;j++) {
             tmp_switch[j].text="Switch #" + j + " - " + nicks[j].value;
         }
     }
     FixLeadingZeros();
 }
 
-function FixLeadingZeros() //Does not work on Firefox
-{
+function FixLeadingZeros() {
     var a=[...$("input[type='number'][name='schMinute']"), ...$("input[type='number'][name='schHour']")];
-    for (var i=0;i<a.length;i++)
-    {
-        if(!isNaN(a[i].value)&&a[i].value.length === 1)
-        {
+    for (var i=0;i<a.length;i++) {
+        if(!isNaN(a[i].value)&&a[i].value.length === 1) {
             a[i].value = '0'+a[i].value;
         }
     }
-}
+}//Does not work in Firefox
 
-function leadingZeros(input) //Does not work on Firefox
-{
-    if(!isNaN(input.value) && input.value.toString().length === 1) 
-    {
+function leadingZeros(input) {
+    if(!isNaN(input.value) && input.value.toString().length === 1) {
         input.value = '0' + input.value.toString();
     }
-}
+} //Does not work in Firefox
 
 function addSchedule(event) {
 
