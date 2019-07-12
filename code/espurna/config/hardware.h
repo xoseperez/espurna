@@ -3239,14 +3239,14 @@
 
 
 // -----------------------------------------------------------------------------
-// Generic Nexete A19
+// Nexete A19
 // https://www.ebay.com/itm/Wifi-Smart-LED-light-Bulb-9W-60W-A19-850LM-RGBW-Dimmable-for-Alexa-Google-Home/283514779201
 // -----------------------------------------------------------------------------
 
-#elif defined(GENERIC_NEXETE_A19)
+#elif defined(NEXETE_A19)
 
     // Info
-    #define MANUFACTURER        "GENERIC NEXETE"
+    #define MANUFACTURER        "NEXETE"
     #define DEVICE              "A19"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
