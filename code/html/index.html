@@ -159,7 +159,7 @@
                         <!-- endRemoveIf(!rfbridge) -->
 
                         <li class="pure-menu-item module module-sch">
-                            <a href="#" class="pure-menu-link" data="panel-schedule">SCHEDULE</a>
+                            <a href="#" onclick="fixSchedule()" class="pure-menu-link" data="panel-schedule">SCHEDULE</a>
                         </li>
 
                         <!-- removeIf(!sensor) -->
@@ -582,7 +582,14 @@
                                     <div class="pure-u-1-3 pure-u-lg-1-4"><button type="button" class="pure-button button-settings-restore pure-u-23-24">Restore</button></div>
                                     <div class="pure-u-1-3 pure-u-lg-1-4"><button type="button" class="pure-button button-settings-factory pure-u-1">Factory Reset</button></div>
                                 </div>
-
+                                
+                                <div class="pure-g">
+                                    <label class="pure-u-1 pure-u-lg-1-4">Admin Username</label>
+                                    <input name="adminUser" class="adminUser pure-u-1 pure-u-lg-1-4" type="text" tabindex="16" />
+                                    <div class="pure-u-0 pure-u-lg-1-2"></div>
+                                    <div class="pure-u-0 pure-u-lg-1-4"></div>
+                                </div>
+                                
                                 <div class="pure-g">
                                     <label class="pure-u-1 pure-u-lg-1-4">Admin password</label>
                                     <input name="adminPass1" class="pure-u-1 pure-u-lg-3-4" placeholder="New password" minlength="8" maxlength="63" type="password" action="reboot" tabindex="11" autocomplete="false" spellcheck="false" />
@@ -769,7 +776,14 @@
                         <div class="page">
 
                             <fieldset>
-
+                                
+                                <div name="scheduleAll" class="scheduleToggle">
+                                    <label class="p-u-1 p-u-lg-1-4">Enable Scheduling</label>
+                                    <div class="p-u-1 p-u-lg-3-4 toggleWrapper">
+                                        <input type="checkbox" name="schAll" id="schAll" original="on" tabindex="202" value="0">
+                                    </div>
+                                </div>
+                                
                                 <div id="schedules"></div>
 
                                 <button type="button" class="pure-button button-add-switch-schedule module module-relay">Add switch schedule</button>
@@ -1804,11 +1818,11 @@
 
                 <label class="pure-u-1 pure-u-lg-1-4">When time is</label>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schHour" type="number" min="0" step="1" max="23" value="0" />
+                    <input class="pure-u-2-3" onchange="leadingZeros(this)" name="schHour" type="number" min="0" step="1" max="23" value="0" />
                     <div class="pure-u-1-4 hint center">&nbsp;h</div>
                 </div>
                 <div class="pure-u-1-4 pure-u-lg-1-5">
-                    <input class="pure-u-2-3" name="schMinute" type="number" min="0" step="1" max="59" value="0" />
+                    <input class="pure-u-2-3" onchange="leadingZeros(this)" name="schMinute" type="number" min="0" step="1" max="59" value="0" />
                     <div class="pure-u-1-4 hint center">&nbsp;m</div>
                 </div>
                 <div class="pure-u-0 pure-u-lg-1-3"></div>
@@ -1860,7 +1874,7 @@
 
         <div id="relayTemplate" class="template">
             <div class="pure-g">
-                <label class="pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span></label>
+                <label class="statusRelay pure-u-1 pure-u-lg-1-4">Switch #<span class="id"></span><span class="nickname"></span></label>
                 <div><input name="relay" type="checkbox" on="ON" off="OFF" /></div>
             </div>
         </div>
@@ -1887,6 +1901,10 @@
             <div class="pure-g">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>Pulse time (s)</label></div>
                 <div class="pure-u-1 pure-u-lg-1-4"><input name="relayTime" class="pure-u-1" type="number" min="0" step="0.1" max="3600" /></div>
+            </div>
+            <div class="p-g">
+                <div class="p-u-1 p-u-lg-1-4"><label>Nickname</label></div>
+                <div class="p-u-1 p-u-lg-1-4"><input name="relayNickname" class="p-u-1" type="text" original="" /></div>
             </div>
             <div class="pure-g module module-mqtt">
                 <div class="pure-u-1 pure-u-lg-1-4"><label>MQTT group</label></div>

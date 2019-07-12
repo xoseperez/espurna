@@ -33,6 +33,7 @@ typedef struct {
     unsigned long change_time;  // Scheduled time to change
     bool report;                // Whether to report to own topic
     bool group_report;          // Whether to report to group topic
+    String nickname;            // nickname for each relay
 
     // Helping objects
 
@@ -585,6 +586,7 @@ void _relayConfigure() {
             //set to high to block short opening of relay
             digitalWrite(_relays[i].pin, HIGH);
         }
+        _relays[i].nickname = getSetting("relayNickname", i, "");
     }
 }
 
@@ -634,6 +636,10 @@ String _relayFriendlyName(unsigned char i) {
     return res;
 }
 
+String _relayNickname(unsigned char i) {
+    return _relays[i].nickname;
+}
+
 void _relayWebSocketSendRelays() {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
@@ -648,7 +654,8 @@ void _relayWebSocketSendRelays() {
     JsonArray& boot = relays.createNestedArray("boot");
     JsonArray& pulse = relays.createNestedArray("pulse");
     JsonArray& pulse_time = relays.createNestedArray("pulse_time");
-
+    JsonArray& nickname = relays.createNestedArray("nickname");
+    
     #if MQTT_SUPPORT
         JsonArray& group = relays.createNestedArray("group");
         JsonArray& group_sync = relays.createNestedArray("group_sync");
@@ -664,7 +671,8 @@ void _relayWebSocketSendRelays() {
 
         pulse.add(_relays[i].pulse);
         pulse_time.add(_relays[i].pulse_ms / 1000.0);
-
+        nickname.add(_relayNickname(i));
+        
         #if MQTT_SUPPORT
             group.add(getSetting("mqttGroup", i, ""));
             group_sync.add(getSetting("mqttGroupSync", i, 0).toInt());
@@ -754,7 +762,7 @@ void relaySetupAPI() {
         snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_RELAY, relayID);
         apiRegister(key,
             [relayID](char * buffer, size_t len) {
-				snprintf_P(buffer, len, PSTR("%d"), _relays[relayID].target_status ? 1 : 0);
+                snprintf_P(buffer, len, PSTR("%d"), _relays[relayID].target_status ? 1 : 0);
             },
             [relayID](const char * payload) {
 

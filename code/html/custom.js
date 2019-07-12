@@ -245,7 +245,7 @@ function addValue(data, name, value) {
     var is_group = [
         "ssid", "pass", "gw", "mask", "ip", "dns",
         "schEnabled", "schSwitch","schAction","schType","schHour","schMinute","schWDs","schUTC",
-        "relayBoot", "relayPulse", "relayTime",
+        "relayBoot", "relayPulse", "relayTime", "relayNickname",
         "mqttGroup", "mqttGroupSync", "relayOnDisc",
         "dczRelayIdx", "dczMagnitude",
         "tspkRelay", "tspkMagnitude",
@@ -916,6 +916,42 @@ function moreSchedule() {
     $("div.more", parent).toggle();
 }
 
+function fixSchedule()
+{
+    var forms = $(".form-settings");
+    switches = $("select[name='schSwitch']",forms);
+    nicks =$("input[name='relayNickname']",forms);
+    for (var i=0;i<switches.length;i++)
+    {
+        tmp_switch = $(switches[i]).find("option");
+        for(var j=0;j<nicks.length;j++)
+        {
+            tmp_switch[j].text="Switch #" + j + " - " + nicks[j].value;
+        }
+    }
+    FixLeadingZeros();
+}
+
+function FixLeadingZeros() //Does not work on Firefox
+{
+    var a=[...$("input[type='number'][name='schMinute']"), ...$("input[type='number'][name='schHour']")];
+    for (var i=0;i<a.length;i++)
+    {
+        if(!isNaN(a[i].value)&&a[i].value.length === 1)
+        {
+            a[i].value = '0'+a[i].value;
+        }
+    }
+}
+
+function leadingZeros(input) //Does not work on Firefox
+{
+    if(!isNaN(input.value) && input.value.toString().length === 1) 
+    {
+        input.value = '0' + input.value.toString();
+    }
+}
+
 function addSchedule(event) {
 
     var numSchedules = $("#schedules > div").length;
@@ -956,6 +992,8 @@ function addSchedule(event) {
 
 function initRelays(data) {
 
+    var forms = $(".form-settings");
+    var nicknames = $("input[name='relayNickname']", forms);
     var current = $("#relays > div").length;
     if (current > 0) { return; }
 
@@ -965,6 +1003,7 @@ function initRelays(data) {
         // Add relay fields
         var line = $(template).clone();
         $(".id", line).html(i);
+        $(".nickname", line).html(" - " + nicknames[i].value);
         $(":checkbox", line).prop('checked', data[i]).attr("data", i)
             .prop("id", "relay" + i)
             .on("change", function (event) {
@@ -1013,6 +1052,7 @@ function initRelayConfig(data) {
         $("select[name='relayBoot']", line).val(data.boot[i]);
         $("select[name='relayPulse']", line).val(data.pulse[i]);
         $("input[name='relayTime']", line).val(data.pulse_time[i]);
+        $("input[name='relayNickname']", line).val(data.nickname[i]);
 
         if ("group" in data) {
             $("input[name='mqttGroup']", line).val(data.group[i]);
@@ -1286,9 +1326,9 @@ function processData(data) {
     // title
     if ("app_name" in data) {
         var title = data.app_name;
-		if ("app_version" in data) {
-			title = title + " " + data.app_version;
-		}
+        if ("app_version" in data) {
+            title = title + " " + data.app_version;
+        }
         $("span[name=title]").html(title);
         if ("hostname" in data) {
             title = data.hostname + " - " + title;
@@ -1387,23 +1427,23 @@ function processData(data) {
         }
 
         if (key == "mapping") {
-			for (var i in data.mapping) {
+            for (var i in data.mapping) {
 
-				// add a new row
-				addMapping();
+                // add a new row
+                addMapping();
 
-				// get group
-				var line = $("#mapping .pure-g")[i];
+                // get group
+                var line = $("#mapping .pure-g")[i];
 
-				// fill in the blanks
-				var mapping = data.mapping[i];
-				Object.keys(mapping).forEach(function(key) {
-				    var id = "input[name=" + key + "]";
-				    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
-				});
-			}
-			return;
-		}
+                // fill in the blanks
+                var mapping = data.mapping[i];
+                Object.keys(mapping).forEach(function(key) {
+                    var id = "input[name=" + key + "]";
+                    if ($(id, line).length) $(id, line).val(mapping[key]).attr("original", mapping[key]);
+                });
+            }
+            return;
+        }
 
         <!-- endRemoveIf(!rfm69)-->
 

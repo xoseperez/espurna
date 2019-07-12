@@ -399,10 +399,13 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     #if USE_PASSWORD
+        String username = getAdminUser();
         String password = getAdminPass();
         char httpPassword[password.length() + 1];
+        char httpUsername[username.length() + 1];
         password.toCharArray(httpPassword, password.length() + 1);
-        return request->authenticate(WEB_USERNAME, httpPassword);
+        username.toCharArray(httpUsername, username.length() + 1);
+        return request->authenticate(httpUsername, httpPassword);
     #else
         return true;
     #endif

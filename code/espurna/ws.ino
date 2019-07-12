@@ -362,7 +362,8 @@ void _wsOnStart(JsonObject& root) {
     #endif
     root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
     root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
-
+    root["adminUser"] = getSetting("adminUser", WEB_USERNAME);
+    
     _wsDoUpdate(true);
 
 }

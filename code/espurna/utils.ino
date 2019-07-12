@@ -37,6 +37,10 @@ String getAdminPass() {
     return getSetting("adminPass", ADMIN_PASS);
 }
 
+String getAdminUser() {
+    return getSetting("adminUser", WEB_USERNAME);
+}
+
 String getCoreVersion() {
     String version = ESP.getCoreVersion();
     #ifdef ARDUINO_ESP8266_RELEASE
