@@ -21,12 +21,16 @@
 // Besides, other hardware specific information should be stated here
 
 // -----------------------------------------------------------------------------
-// ESPurna Core
+// Custom hardware
 // -----------------------------------------------------------------------------
 
 #if defined(MANUFACTURER) and defined(DEVICE)
 
     // user has defined custom hardware, no need to check anything else
+
+// -----------------------------------------------------------------------------
+// ESPurna Core
+// -----------------------------------------------------------------------------
 
 #elif defined(ESPURNA_CORE)
 
