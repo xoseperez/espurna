@@ -217,8 +217,29 @@ void _wifiInject() {
                 setSetting("mask", 1, WIFI2_MASK);
                 setSetting("dns", 1, WIFI2_DNS);
             }
-        }
 
+            if (strlen(WIFI3_SSID)) {
+                if (!hasSetting("ssid", 2)) {
+                    setSetting("ssid", 2, WIFI3_SSID);
+                    setSetting("pass", 2, WIFI3_PASS);
+                    setSetting("ip", 2, WIFI3_IP);
+                    setSetting("gw", 2, WIFI3_GW);
+                    setSetting("mask", 2, WIFI3_MASK);
+                    setSetting("dns", 2, WIFI3_DNS);
+                }
+
+                if (strlen(WIFI4_SSID)) {
+                    if (!hasSetting("ssid", 3)) {
+                        setSetting("ssid", 3, WIFI4_SSID);
+                        setSetting("pass", 3, WIFI4_PASS);
+                        setSetting("ip", 3, WIFI4_IP);
+                        setSetting("gw", 3, WIFI4_GW);
+                        setSetting("mask", 3, WIFI4_MASK);
+                        setSetting("dns", 3, WIFI4_DNS);
+                    }
+                }
+            }
+        }
     }
 }
 
