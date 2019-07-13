@@ -125,6 +125,10 @@ void _onPostConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
     // No buffer
     if (final && (index == 0)) {
         DynamicJsonBuffer jsonBuffer;
@@ -297,7 +301,11 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
 }
 
-void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (!index) {
 
@@ -455,7 +463,7 @@ void webSetup() {
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
-    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files
