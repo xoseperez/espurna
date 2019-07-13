@@ -303,7 +303,6 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
 
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
-        eepromBackup(0);
 
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
         Update.runAsync(true);
