@@ -612,3 +612,19 @@ bool isNumber(const char * s) {
     }
     return digit;
 }
+
+// ref: lwip2 lwip_strnstr with strnlen
+char* strnstr(const char* buffer, const char* token, size_t n) {
+  size_t token_len = strnlen(token, n);
+  if (token_len == 0) {
+    return const_cast<char*>(buffer);
+  }
+
+  for (const char* p = buffer; *p && (p + token_len <= buffer + n); p++) {
+    if ((*p == *token) && (strncmp(p, token, token_len) == 0)) {
+      return const_cast<char*>(p);
+    }
+  }
+
+  return nullptr;
+}
