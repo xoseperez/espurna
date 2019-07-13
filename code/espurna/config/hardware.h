@@ -3117,6 +3117,11 @@
     #define RELAY1_PIN          15
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+    // Light
+    #define LED1_PIN            0
+    #define LED1_PIN_INVERSE    1
+    #define LED1_MODE           LED_MODE_ON
+
     // HJL01 / BL0937
     #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT             1
@@ -3131,18 +3136,13 @@
     #define HLW8012_POWER_RATIO         3414290
     #define HLW8012_INTERRUPT_ON        FALLING
 
-    // Light
-    #define LED1_PIN            0
-    #define LED1_PIN_INVERSE    1
-    #define LED1_MODE           LED_MODE_RELAY_WIFI
-
     //Temperature
      #define NTC_SUPPORT        1
      #define SENSOR_SUPPORT     1
-     #define NTC_BETA                        3350    
-     #define NTC_R_UP                        10000   
-     #define NTC_R_DOWN                      0       
-     #define NTC_R0                          8000 
+     #define NTC_BETA           3350    
+     #define NTC_R_UP           10000   
+     #define NTC_R_DOWN         0       
+     #define NTC_R0             8000 
  
 // -----------------------------------------------------------------------------
 
