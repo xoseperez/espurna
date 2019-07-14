@@ -3113,6 +3113,11 @@
     #define BUTTON1_MODE        BUTTON_SWITCH
     #define BUTTON1_RELAY       1
 
+    #define BUTTON2_PIN         2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_RESET
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_FACTORY
+
     // Relays
     #define RELAY1_PIN          15
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
@@ -3120,7 +3125,6 @@
     // Light
     #define LED1_PIN            0
     #define LED1_PIN_INVERSE    1
-    #define LED1_MODE           LED_MODE_ON
 
     // HJL01 / BL0937
     #ifndef HLW8012_SUPPORT
@@ -3142,7 +3146,7 @@
      #define NTC_BETA           3350    
      #define NTC_R_UP           10000   
      #define NTC_R_DOWN         0       
-     #define NTC_R0             8000 
+     #define NTC_R0             10000 
  
 // -----------------------------------------------------------------------------
 
