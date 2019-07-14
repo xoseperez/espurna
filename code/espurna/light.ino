@@ -70,8 +70,7 @@ const char _light_channel_desc[5][5] PROGMEM = {
 };
 
 // Gamma Correction lookup table (8 bit)
-// TODO: move to PROGMEM
-const unsigned char _light_gamma_table[] = {
+const unsigned char _light_gamma_table[] PROGMEM = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
     1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
     3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
@@ -454,7 +453,7 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 
 unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
-    if (gamma) value = _light_gamma_table[value];
+    if (gamma) value = pgm_read_byte(_light_gamma_table + value);
     if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
     if (reverse) value = LIGHT_LIMIT_PWM - value;
     return value;
