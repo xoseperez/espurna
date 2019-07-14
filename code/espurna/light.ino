@@ -51,6 +51,9 @@ unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
 unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
 
+using light_brightness_func_t = void();
+light_brightness_func_t* _light_brightness_func = nullptr;
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 my92xx * _my92xx;
@@ -102,68 +105,70 @@ void _setCCTInputValue(unsigned char warm, unsigned char cold) {
     _light_channel[1].inputValue = constrain(cold, 0, LIGHT_MAX_VALUE);
 }
 
-void _generateBrightness() {
+void _lightApplyBrightness(unsigned char channels = lightChannels()) {
 
     double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
 
-    // Convert RGB to RGBW(W)
-    if (_light_has_color && _light_use_white) {
+    for (unsigned char i=0; i < channels; i++) {
+        _light_channel[i].value = _light_channel[i].inputValue * brightness;
+    }
 
-        // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
-        unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
-        for (unsigned int i=0; i < 3; i++) {
-            _light_channel[i].value = _light_channel[i].inputValue - white;
-        }
+}
 
-        // Split the White Value across 2 White LED Strips.
-        if (_light_use_cct) {
+void _lightApplyBrightnessColor() {
 
-          // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-          double miredFactor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
+    double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
 
-          // set cold white
-          _light_channel[3].inputValue = 0;
-          _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
+    // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
+    unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
+    for (unsigned int i=0; i < 3; i++) {
+        _light_channel[i].value = _light_channel[i].inputValue - white;
+    }
 
-          // set warm white
-          _light_channel[4].inputValue = 0;
-          _light_channel[4].value = round(miredFactor * white);
-        } else {
-          _light_channel[3].inputValue = 0;
-          _light_channel[3].value = white;
-        }
+    // Split the White Value across 2 White LED Strips.
+    if (_light_use_cct) {
 
-        // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
-        unsigned char max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
-        unsigned char max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
-        unsigned char channelSize = _light_use_cct ? 5 : 4;
+        // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
+        double miredFactor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
 
-        if (_light_use_cct) {
-          max_out = std::max(max_out, _light_channel[4].value);
-        }
+        // set cold white
+        _light_channel[3].inputValue = 0;
+        _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
 
-        double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
-        for (unsigned char i=0; i < channelSize; i++) {
-            _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
-        }
-
-        // Scale white channel to match brightness
-        for (unsigned char i=3; i < channelSize; i++) {
-            _light_channel[i].value = constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS);
-        }
-
-        // For the rest of channels, don't apply brightness, it is already in the inputValue
-        // i should be 4 when RGBW and 5 when RGBWW
-        for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
-            _light_channel[i].value = _light_channel[i].inputValue;
-        }
-
+        // set warm white
+        _light_channel[4].inputValue = 0;
+        _light_channel[4].value = round(miredFactor * white);
     } else {
+        _light_channel[3].inputValue = 0;
+        _light_channel[3].value = white;
+    }
 
-        // Apply brightness equally to all channels
-        for (unsigned char i=0; i < _light_channel.size(); i++) {
-            _light_channel[i].value = _light_channel[i].inputValue * brightness;
-        }
+    // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
+    unsigned char max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
+    unsigned char max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
+    unsigned char channelSize = _light_use_cct ? 5 : 4;
+
+    if (_light_use_cct) {
+        max_out = std::max(max_out, _light_channel[4].value);
+    }
+
+    double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
+    for (unsigned char i=0; i < channelSize; i++) {
+        _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
+    }
+
+    // Scale white channel to match brightness
+    for (unsigned char i=3; i < channelSize; i++) {
+        _light_channel[i].value = constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS);
+    }
+
+    // For the rest of channels, don't apply brightness, it is already in the inputValue
+    // i should be 4 when RGBW and 5 when RGBWW
+    for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
+        _light_channel[i].value = _light_channel[i].inputValue;
+    }
+
+}
 
 String lightDesc(unsigned char id) {
     if (id >= _light_channel.size()) return F("UNKNOWN");
@@ -773,7 +778,7 @@ void _lightComms(unsigned char mask) {
 
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
-    _generateBrightness();
+    _light_brightness_func();
 
     // Update channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
@@ -1193,6 +1198,16 @@ void _lightConfigure() {
         setSetting("useWhite", _light_use_white);
     }
 
+    if (_light_has_color) {
+        if (_light_use_white) {
+            _light_brightness_func = _lightApplyBrightnessColor;
+        } else {
+            _light_brightness_func = []() { _lightApplyBrightness(3); };
+        }
+    } else {
+        _light_brightness_func = []() { _lightApplyBrightness(); };
+    }
+
     _light_use_cct = getSetting("useCCT", LIGHT_USE_CCT).toInt() == 1;
     if (_light_use_cct && (((_light_channel.size() < 5) && (_light_channel.size() != 2)) || !_light_use_white)) {
         _light_use_cct = false;
@@ -1211,6 +1226,8 @@ void lightSetup() {
         pinMode(LIGHT_ENABLE_PIN, OUTPUT);
         digitalWrite(LIGHT_ENABLE_PIN, HIGH);
     #endif
+
+    _light_channel.reserve(LIGHT_CHANNELS);
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
