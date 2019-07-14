@@ -3142,7 +3142,7 @@
      #define NTC_R0             10000 
 
     //Current
-    #define I2C_SUPPORT         1
+    #define ADE7953_SUPPORT     1
     #define I2C_SDA_PIN         12
     #define I2C_SCL_PIN         14
  

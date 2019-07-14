@@ -213,3 +213,4 @@
 //#define V9261F_SUPPORT         1
 //#define VEML6075_SUPPORT       1
 //#define VL53L1X_SUPPORT        1
+//#define ADE7953_SUPPORT        1

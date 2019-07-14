@@ -1011,6 +1011,19 @@
 #define I2C_CLEAR_BUS                   0       // Clear I2C bus on boot
 #define I2C_PERFORM_SCAN                1       // Perform a bus scan on boot
 
+// -----------------------------------------------------------------------------
+// ADE7953 Shelly Sensor
+// Enable support by passing ADE7953_SUPPORT=1 build flag
+// -----------------------------------------------------------------------------
+
+#ifndef ADE7953_SUPPORT
+#define ADE7953_SUPPORT                  0
+#endif
+
+#ifndef ADE7953_ADDRESS
+#define ADE7953_ADDRESS                  0x38
+#endif
+
 //--------------------------------------------------------------------------------
 // Class loading
 //--------------------------------------------------------------------------------
@@ -1159,6 +1172,10 @@
 
 #if VL53L1X_SUPPORT
     #include "../sensors/VL53L1XSensor.h"
+#endif
+
+#if ADE7953_SUPPORT
+    #include "../sensors/ADE7953Sensor.h"
 #endif
 
 #endif // SENSOR_SUPPORT

@@ -12,6 +12,7 @@
 
 #include "Arduino.h"
 #include "I2CSensor.h"
+#include <Wire.h>
 
 // -----------------------------------------------------------------------------
 // ADE7953 - Energy (Shelly 2.5)
@@ -26,8 +27,9 @@
 #define ADE7953_UREF            26000
 #define ADE7953_IREF            10000
 
-#define RELAY1_OFFSET           100
-#define RELAY2_OFFSET           200
+#define ADE7953_RELAY_ALL       0
+#define ADE7953_RELAY_1         1
+#define ADE7953_RELAY_2         2
 
 class ADE7953Sensor : public I2CSensor {
     
@@ -36,8 +38,12 @@ class ADE7953Sensor : public I2CSensor {
         // Public
         // ---------------------------------------------------------------------
         ADE7953Sensor(): I2CSensor() {
-            _count = 9;
+            _count = 4;
             _sensor_id = SENSOR_ADE7953_ID;            
+        }
+
+        void setRelay(int relay) {
+            _relay = relay;   
         }
 
         // ---------------------------------------------------------------------
@@ -65,15 +71,10 @@ class ADE7953Sensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {            
-            if (index == 1) return MAGNITUDE_VOLTAGE;
+            if (index == 1) return MAGNITUDE_VOLTAGE;                        
             if (index == 2) return MAGNITUDE_CURRENT;
-            if (index == 3) return MAGNITUDE_ENERGY;            
-            if (index == 4) return MAGNITUDE_CURRENT * RELAY1_OFFSET;
-            if (index == 5) return MAGNITUDE_POWER_ACTIVE * RELAY1_OFFSET;
-            if (index == 6) return MAGNITUDE_ENERGY * RELAY1_OFFSET;
-            if (index == 7) return MAGNITUDE_CURRENT * RELAY2_OFFSET;
-            if (index == 8) return MAGNITUDE_POWER_ACTIVE * RELAY2_OFFSET;
-            if (index == 9) return MAGNITUDE_ENERGY * RELAY2_OFFSET;
+            if (index == 3) return MAGNITUDE_POWER_ACTIVE;
+            if (index == 4) return MAGNITUDE_ENERGY;            
             return MAGNITUDE_NONE;
         }
 
@@ -104,17 +105,20 @@ class ADE7953Sensor : public I2CSensor {
                 active_power = (int32_t)Ade7953Read(0x312);  // Relay 2
                 active_power2 = (active_power > 0) ? active_power : 0;
             }
-            // First phase only supports accumulated Current and Power
-            _current = current_rms1 + current_rms2;
-            _power = active_power1 + active_power2;
-
             _voltage = (float) voltage_rms / ADE7953_UREF;
-            _current = (float)_current / (ADE7953_IREF * 10);
-            _power = (float)_power / (ADE7953_PREF / 10);
-            _current1 = (float) current_rms1 / (ADE7953_IREF * 10);
-            _power1 = (float) active_power1 / (ADE7953_PREF / 10);
-            _current2 = (float)current_rms2 / (ADE7953_IREF * 10);
-            _power2 = (float)active_power2 / (ADE7953_PREF / 10);
+
+            if (_relay == ADE7953_RELAY_ALL) {             // No load threshold (20mA)
+                _current = current_rms1 + current_rms2;
+                _power = active_power1 + active_power2;                
+                _current = (float)_current / (ADE7953_IREF * 10);
+                _power = (float)_power / (ADE7953_PREF / 10);
+            } else if (_relay == ADE7953_RELAY_1) {
+                _current = (float) current_rms1 / (ADE7953_IREF * 10);
+                _power = (float) active_power1 / (ADE7953_PREF / 10);
+            } else if (_relay == ADE7953_RELAY_2) {
+                _current = (float)current_rms2 / (ADE7953_IREF * 10);
+                _power = (float)active_power2 / (ADE7953_PREF / 10);
+            }
         }
 
         // Current value for slot # index
@@ -122,12 +126,7 @@ class ADE7953Sensor : public I2CSensor {
             if (index == 1) return _voltage;
             if (index == 2) return _current;
             if (index == 3) return _power;            
-            if (index == 4) return _current1;
-            if (index == 5) return _power1;
-            if (index == 6) return 0;
-            if (index == 7) return _current2;
-            if (index == 8) return _power2;
-            if (index == 9) return 0;
+            if (index == 4) return 0;
             return 0;
         }
 
@@ -188,16 +187,13 @@ class ADE7953Sensor : public I2CSensor {
                 }
                 }
             }
-                return response;
+            return response;
         }
 
     float _voltage = 0;
-    float _current = 0;
-    float _current1 = 0;
-    float _current2 = 0;
-    float _power = 0;
-    float _power1 = 0;
-    float _power2 = 0;     
+    float _current = 0;    
+    float _power = 0;      
+    int _relay = 0;
 }
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT

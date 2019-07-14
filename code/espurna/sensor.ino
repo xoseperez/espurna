@@ -880,6 +880,26 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+
+     #if ADE7953_SUPPORT
+    {
+        ADE7953Sensor * sensor = new ADE7953Sensor(); //Relay 1 + Relay 2
+        sensor->setAddress(ADE7953_ADDRESS);
+        sensor->setRelay(ADE7953_RELAY_ALL);
+        _sensors.push_back(sensor);
+/* 
+        ADE7953Sensor * sensor1 = new ADE7953Sensor();
+        sensor1->setAddress(ADE7953_ADDRESS);
+        sensor1->setRelay(ADE7953_RELAY_1);
+        _sensors.push_back(sensor1);
+
+        ADE7953Sensor * sensor2 = new ADE7953Sensor();
+        sensor2->setAddress(ADE7953_ADDRESS);
+        sensor2->setRelay(ADE7953_RELAY_2);
+        _sensors.push_back(sensor2);
+*/
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
