@@ -887,7 +887,7 @@ void _sensorLoad() {
         sensor->setAddress(ADE7953_ADDRESS);
         sensor->setRelay(ADE7953_RELAY_ALL);
         _sensors.push_back(sensor);
-/* 
+
         ADE7953Sensor * sensor1 = new ADE7953Sensor();
         sensor1->setAddress(ADE7953_ADDRESS);
         sensor1->setRelay(ADE7953_RELAY_1);
@@ -897,7 +897,7 @@ void _sensorLoad() {
         sensor2->setAddress(ADE7953_ADDRESS);
         sensor2->setRelay(ADE7953_RELAY_2);
         _sensors.push_back(sensor2);
-*/
+
     }
     #endif
 }

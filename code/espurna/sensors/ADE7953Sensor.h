@@ -71,10 +71,10 @@ class ADE7953Sensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {            
-            if (index == 1) return MAGNITUDE_VOLTAGE;                        
-            if (index == 2) return MAGNITUDE_CURRENT;
-            if (index == 3) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 4) return MAGNITUDE_ENERGY;            
+            if (index == 0) return MAGNITUDE_VOLTAGE;                        
+            if (index == 1) return MAGNITUDE_CURRENT;
+            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
+            if (index == 3) return MAGNITUDE_ENERGY;            
             return MAGNITUDE_NONE;
         }
 
@@ -123,10 +123,10 @@ class ADE7953Sensor : public I2CSensor {
 
         // Current value for slot # index
         double value(unsigned char index) {
-            if (index == 1) return _voltage;
-            if (index == 2) return _current;
-            if (index == 3) return _power;            
-            if (index == 4) return 0;
+            if (index == 0) return _voltage;
+            if (index == 1) return _current;
+            if (index == 2) return _power;            
+            if (index == 3) return 0;
             return 0;
         }
 
@@ -194,6 +194,7 @@ class ADE7953Sensor : public I2CSensor {
     float _current = 0;    
     float _power = 0;      
     int _relay = 0;
-}
+
+};
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT
