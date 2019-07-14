@@ -29,15 +29,15 @@ Ticker _light_comms_ticker;
 Ticker _light_save_ticker;
 Ticker _light_transition_ticker;
 
-typedef struct {
-    unsigned char pin;
-    bool reverse;
-    bool state;
-    unsigned char inputValue;   // value that has been inputted
-    unsigned char value;        // normalized value including brightness
+struct channel_t {
+    unsigned char pin;          // real GPIO pin
+    bool reverse;               // wether we should invert the value before using it
+    bool state;                 // is the channel ON
+    unsigned char inputValue;   // raw value, without the brightness
+    unsigned char value;        // normalized value, including brightness
     unsigned char target;       // target value
     double current;             // transition value
-} channel_t;
+};
 std::vector<channel_t> _light_channel;
 
 bool _light_state = false;
@@ -56,6 +56,15 @@ unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)
 my92xx * _my92xx;
 ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
 #endif
+
+// UI hint about channel distribution
+const char _light_channel_desc[5][5] PROGMEM = {
+    {'W',   0,   0,   0,   0},
+    {'W', 'C',   0,   0,   0},
+    {'R', 'G', 'B',   0,   0},
+    {'R', 'G', 'B', 'W',   0},
+    {'R', 'G', 'B', 'W', 'C'}
+};
 
 // Gamma Correction lookup table (8 bit)
 // TODO: move to PROGMEM
@@ -156,8 +165,20 @@ void _generateBrightness() {
             _light_channel[i].value = _light_channel[i].inputValue * brightness;
         }
 
+String lightDesc(unsigned char id) {
+    if (id >= _light_channel.size()) return F("UNKNOWN");
+
+    const char tag = pgm_read_byte(&_light_channel_desc[_light_channel.size() - 1][id]);
+    switch (tag) {
+        case 'W': return F("WARM WHITE");
+        case 'C': return F("COLD WHITE");
+        case 'R': return F("RED");
+        case 'G': return F("GREEN");
+        case 'B': return F("BLUE");
+        default: break;
     }
 
+    return F("UNKNOWN");
 }
 
 // -----------------------------------------------------------------------------
@@ -1088,7 +1109,7 @@ void _lightInitCommands() {
             lightChannel(id, value);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
+        DEBUG_MSG_P(PSTR("Channel #%d (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
         terminalOK();
     });
 
