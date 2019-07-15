@@ -11,22 +11,10 @@ namespace Tuya {
 
     public:
 
-        ~DataFrame() { }
+        ~DataFrame() = default;
 
-        DataFrame(DataFrame& rhs) :
-            version(rhs.version),
-            command(rhs.command),
-            length(rhs.length),
-            _begin(rhs._begin),
-            _end(rhs._end)
-        {}
-
-        DataFrame(DataFrame&& rhs) :
-            command(rhs.command),
-            length(rhs.length),
-            _begin(rhs.cbegin()),
-            _end(rhs.cend())
-        {}
+        DataFrame(DataFrame& rhs) = default;
+        DataFrame(DataFrame&& rhs) = default;
 
         DataFrame(uint8_t command) :
             command(command),
