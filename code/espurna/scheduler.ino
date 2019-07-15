@@ -25,7 +25,7 @@ void _schWebSocketOnSend(JsonObject &root){
 
     root["schVisible"] = 1;
     root["maxSchedules"] = SCHEDULER_MAX_SCHEDULES;
-    root["schAll"] = getSetting("schAll").toInt();
+    root["schEnabled"] = getSetting("schEnabled").toInt();
     
     JsonObject &schedules = root.createNestedObject("schedules");
     uint8_t size = 0;
@@ -138,7 +138,7 @@ void _schCheck() {
     time_t local_time = now();
     time_t utc_time = ntpLocal2UTC(local_time);
     
-    if (getSetting("schAll").toInt() == 0) {
+    if (getSetting("schEnabled").toInt() == 0) {
         return;
     }
     
