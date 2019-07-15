@@ -34,8 +34,7 @@ void _schWebSocketOnSend(JsonObject &root){
     JsonArray& switch_ = schedules.createNestedArray("schSwitch");
     JsonArray& action = schedules.createNestedArray("schAction");
     JsonArray& type = schedules.createNestedArray("schType");
-    JsonArray& hour = schedules.createNestedArray("schHour");
-    JsonArray& minute = schedules.createNestedArray("schMinute");
+    JsonArray& time = schedules.createNestedArray("schtime");
     JsonArray& utc = schedules.createNestedArray("schUTC");
     JsonArray& weekdays = schedules.createNestedArray("schWDs");
 
@@ -49,8 +48,7 @@ void _schWebSocketOnSend(JsonObject &root){
         switch_.add(getSetting("schSwitch", i, 0).toInt());
         action.add(getSetting("schAction", i, 0).toInt());
         type.add(getSetting("schType", i, 0).toInt());
-        hour.add(getSetting("schHour", i, 0).toInt());
-        minute.add(getSetting("schMinute", i, 0).toInt());
+        time.add(getSetting("schTime", i, "00:00"));
         weekdays.add(getSetting("schWDs", i, ""));
     }
 
@@ -77,8 +75,7 @@ void _schConfigure() {
             delSetting("schEnabled", i);
             delSetting("schSwitch", i);
             delSetting("schAction", i);
-            delSetting("schHour", i);
-            delSetting("schMinute", i);
+            delSetting("schTime", i);
             delSetting("schWDs", i);
             delSetting("schType", i);
             delSetting("schUTC", i);
@@ -89,8 +86,9 @@ void _schConfigure() {
 
                 bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
                 int sch_action = getSetting("schAction", i, 0).toInt();
-                int sch_hour = getSetting("schHour", i, 0).toInt();
-                int sch_minute = getSetting("schMinute", i, 0).toInt();
+                String sch_time = getSetting("schTime", i, "00:00");
+                int sch_hour = sch_time.substring(0,2).toInt();
+                int sch_minute = sch_time.substring(3,5).toInt();
                 bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
                 String sch_weekdays = getSetting("schWDs", i, "");
                 unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
@@ -158,8 +156,9 @@ void _schCheck() {
         String sch_weekdays = getSetting("schWDs", i, "");
         if (_schIsThisWeekday(t, sch_weekdays)) {
 
-            int sch_hour = getSetting("schHour", i, 0).toInt();
-            int sch_minute = getSetting("schMinute", i, 0).toInt();
+            String sch_time = getSetting("schTime", i, "00:00");
+            int sch_hour = sch_time.substring(0,2).toInt();
+            int sch_minute = sch_time.substring(3,5).toInt();
             int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
 
             if (minutes_to_trigger == 0) {

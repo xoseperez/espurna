@@ -508,6 +508,10 @@ input[type="text"] + .password-reveal {
     width: 75%;
 }
 
+.schTime {
+	width: 80%;
+}
+
 input::-ms-clear,
 input::-ms-reveal {
     display: none;

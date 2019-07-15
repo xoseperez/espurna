@@ -926,23 +926,7 @@ function fixSchedule() {
             tmp_switch[j].text="Switch #" + j + " - " + nicks[j].value;
         }
     }
-    FixLeadingZeros();
 }
-
-function FixLeadingZeros() {
-    var a=[...$("input[type='number'][name='schMinute']"), ...$("input[type='number'][name='schHour']")];
-    for (var i=0;i<a.length;i++) {
-        if(!isNaN(a[i].value)&&a[i].value.length === 1) {
-            a[i].value = '0'+a[i].value;
-        }
-    }
-}//Does not work in Firefox
-
-function leadingZeros(input) {
-    if(!isNaN(input.value) && input.value.toString().length === 1) {
-        input.value = '0' + input.value.toString();
-    }
-} //Does not work in Firefox
 
 function addSchedule(event) {
 
