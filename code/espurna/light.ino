@@ -68,6 +68,7 @@ const char _light_channel_desc[5][5] PROGMEM = {
     {'R', 'G', 'B', 'W',   0},
     {'R', 'G', 'B', 'W', 'C'}
 };
+static_assert((LIGHT_CHANNELS * LIGHT_CHANNELS) == (sizeof(_light_channel_desc)), "Out-of-bounds array access");
 
 // Gamma Correction lookup table (8 bit)
 const unsigned char _light_gamma_table[] PROGMEM = {
@@ -88,6 +89,7 @@ const unsigned char _light_gamma_table[] PROGMEM = {
     191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
     223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
 };
+static_assert(LIGHT_MAX_VALUE <= sizeof(_light_gamma_table), "Out-of-bounds array access");
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -106,9 +108,12 @@ void _setCCTInputValue(unsigned char warm, unsigned char cold) {
 
 void _lightApplyBrightness(unsigned char channels = lightChannels()) {
 
-    double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
+    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(LIGHT_MAX_BRIGHTNESS);
 
-    for (unsigned char i=0; i < channels; i++) {
+    channels = std::min(channels, lightChannels());
+
+    for (unsigned char i=0; i < lightChannels(); i++) {
+        if (i >= channels) brightness = 1;
         _light_channel[i].value = _light_channel[i].inputValue * brightness;
     }
 
