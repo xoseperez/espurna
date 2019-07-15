@@ -973,7 +973,7 @@ function addSchedule(event) {
         .next().prop("for", "schEnabled" + (numSchedules + 1));
     line.appendTo("#schedules");
     $(line).find("input[type='checkbox']").prop("checked", false);
-
+    fixSchedule();
     return line;
 
 }
