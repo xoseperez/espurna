@@ -20,7 +20,7 @@ namespace Tuya {
                 _states.reserve(capacity);
             }
 
-            bool update(const uint8_t dp, const T value) {
+            bool update(const uint8_t dp, const T value, bool create=false) {
                 auto found = std::find_if(_states.begin(), _states.end(), [dp](const Container& internal) {
                     return dp == internal.dp;
                 });
@@ -31,17 +31,18 @@ namespace Tuya {
                         _changed = true;
                         return true;
                     }
+                } else if (create) {
+                    _changed = true;
+                    _states.emplace_back(States::Container{dp, value});
+                    return true;
                 }
 
                 return false;
             }
 
-            void pushOrUpdate(const uint8_t dp, const T value) {
-                if (_states.size() >= _capacity) return;
-                if (!update(dp, value)) {
-                    _changed = true;
-                    _states.emplace_back(States::Container{dp, value});
-                }
+            bool pushOrUpdate(const uint8_t dp, const T value) {
+                if (_states.size() >= _capacity) return false;
+                return update(dp, value, true);
             }
 
             bool changed() {
