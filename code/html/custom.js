@@ -928,6 +928,10 @@ function fixSchedule() {
     }
 }
 
+function fixTimeClear(time) {
+    isNaN(time.value) || time.value.length !== 0 || (time.value="00:00");
+}
+
 function addSchedule(event) {
 
     var numSchedules = $("#schedules > div").length;
