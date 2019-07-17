@@ -251,6 +251,9 @@ void otaSetup() {
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
 
+        // Because ArduinoOTA is synchronous, force backup right now instead of waiting for the next loop()
+        eepromBackup(0);
+
         DEBUG_MSG_P(PSTR("[OTA] Start\n"));
 
         #if WEB_SUPPORT
