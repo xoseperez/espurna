@@ -98,6 +98,9 @@ void _ntpConfigure() {
         _ntp_report = true;
     }
 
+    // Configure internal clock (RTC) with same timezone and daylight settings
+    configTime((tz_hours * 3600) + (tz_minutes * 60), (daylight * 3600), "");
+
     String server = getSetting("ntpServer", NTP_SERVER);
     if (!NTPw.getNtpServerName().equals(server)) {
         NTPw.setNtpServerName(server);
