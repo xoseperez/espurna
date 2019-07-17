@@ -567,7 +567,7 @@
 #endif
 
 // This is not working at the moment!!
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
+// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core 2.4.0
 #ifndef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED             0           // Use HTTPS web interface
 #endif
@@ -683,6 +683,19 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// SSL Client                                                 ** EXPERIMENTAL **
+// -----------------------------------------------------------------------------
+
+#ifndef SECURE_CLIENT
+#define SECURE_CLIENT                          SECURE_CLIENT_NONE     // What variant of WiFiClient to use
+                                                                      // SECURE_CLIENT_NONE    - No secure client support (default)
+                                                                      // SECURE_CLIENT_AXTLS   - axTLS client secure support (All Core versions, ONLY TLS 1.1)
+                                                                      // SECURE_CLIENT_BEARSSL - BearSSL client secure support (starting with 2.5.0, TLS 1.2)
+                                                                      //
+                                                                      // axTLS marked for derecation since 2.4.2 and **will** be removed in the future
+#endif
+
+// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
@@ -694,7 +707,7 @@
 #define OTA_MQTT_SUPPORT           0            // No support by default
 #endif
 
-#define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
+#define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
 
 // -----------------------------------------------------------------------------
 // NOFUSS
@@ -759,26 +772,28 @@
 #endif
 
 
-#ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC              1           // Use AysncMQTTClient (1) or PubSubClient (0)
+#ifndef MQTT_LIBRARY
+#define MQTT_LIBRARY                MQTT_ASYNC       // Choose between: MQTT_ASYNC (AysncMQTTClient), MQTT_PUBSUB (PubSubClient), MQTT_ARDUINO (Arduino-MQTT)
 #endif
 
 // MQTT OVER SSL
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL and ESP8266 Arduino Core >= 2.4.0.
 //
-// You can use SSL with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
+// You can use SSL with MQTT_LIBRARY=ASYNC (AsyncMqttClient library)
 // but you might experience hiccups on the web interface, so my recommendation is:
 // WEB_SUPPORT=0
 //
-// If you use SSL with MQTT_USE_ASYNC=0 (PubSubClient library)
+// If you use SSL with MQTT_LIBRARY=PUBSUB (PubSubClient library) or MQTT_LIBRARY=ARDUINO (Arduino-MQTT library)
 // you will have to disable all the modules that use ESPAsyncTCP, that is:
-// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0 and WEB_SUPPORT=0
+// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
 //
-// You will need the fingerprint for your MQTT server, example for CloudMQTT:
-// $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
-// $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
+// You will need the fingerprint of your MQTT server, in order to prevent MITS attacks.
+// To get a certificate fingerprint, run the following command:
+// $ echo -n | openssl s_client -connect mqtt.googleapis.com:8883 2>&1 | openssl x509 -noout -fingerprint -sha1 | cut -d\= -f2
+// Note that this fingerprint changes with e.g. LetsEncrypt renewals or when the CSR changes.
+// It's also possible to leave the fingerprint empty, the certificate is then always trusted.
 
 #ifndef MQTT_SSL_ENABLED
 #define MQTT_SSL_ENABLED            0               // By default MQTT over SSL will not be enabled
@@ -788,6 +803,9 @@
 #define MQTT_SSL_FINGERPRINT        ""              // SSL fingerprint of the server
 #endif
 
+#ifndef MQTT_SECURE_CLIENT_MFLN
+#define MQTT_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN // Use MFLN 
+#endif
 
 #ifndef MQTT_ENABLED
 #define MQTT_ENABLED                0               // Do not enable MQTT connection by default
@@ -906,7 +924,9 @@
 #define MQTT_TOPIC_DATETIME         "datetime"
 #define MQTT_TOPIC_FREEHEAP         "freeheap"
 #define MQTT_TOPIC_VCC              "vcc"
+#ifndef MQTT_TOPIC_STATUS
 #define MQTT_TOPIC_STATUS           "status"
+#endif
 #define MQTT_TOPIC_MAC              "mac"
 #define MQTT_TOPIC_RSSI             "rssi"
 #define MQTT_TOPIC_MESSAGE_ID       "id"
@@ -951,7 +971,9 @@
 
 
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
+#ifndef MQTT_STATUS_OFFLINE
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)
+#endif
 
 #define MQTT_ACTION_RESET           "reboot"    // RESET MQTT topic particle
 
@@ -1195,7 +1217,7 @@
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
-// When THINGSPEAK_USE_ASYNC is 1, requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+// When THINGSPEAK_USE_ASYNC is 1, requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core >= 2.4.0.
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"

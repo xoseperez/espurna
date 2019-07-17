@@ -15,24 +15,36 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <vector>
 #include <utility>
 #include <Ticker.h>
+#include <TimeLib.h>
 
-#if MQTT_USE_ASYNC // Using AsyncMqttClient
+#if MQTT_LIBRARY == MQTT_ASYNC // AsyncMqttClient
+    #include <AsyncMqttClient.h>
+    AsyncMqttClient _mqtt;
+#else // Arduino-MQTT or PubSubClient
+    WiFiClient _mqtt_client;
+    bool _mqtt_connected = false;
 
-#include <AsyncMqttClient.h>
-AsyncMqttClient _mqtt;
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+    #include "WiFiClientSecureAxTLS.h" // TODO: doesn't work in core 2.3.0
+    axTLS::WiFiClientSecure _mqtt_client_secure;
+    #elif SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+    #include "WiFiClientSecure.h"
+    BearSSL::WiFiClientSecure _mqtt_client_secure;
+    BearSSL::X509List *_ca_list = nullptr;
+    #endif
 
-#else // Using PubSubClient
-
-#include <PubSubClient.h>
-PubSubClient _mqtt;
-bool _mqtt_connected = false;
-
-WiFiClient _mqtt_client;
-#if ASYNC_TCP_SSL_ENABLED
-WiFiClientSecure _mqtt_client_secure;
-#endif // ASYNC_TCP_SSL_ENABLED
-
-#endif // MQTT_USE_ASYNC
+    #if MQTT_LIBRARY == MQTT_ARDUINO // Using Arduino-MQTT
+        #include <MQTTClient.h>
+        #ifdef MQTT_MAX_PACKET_SIZE
+        MQTTClient _mqtt(MQTT_MAX_PACKET_SIZE);
+        #else
+        MQTTClient _mqtt();
+        #endif
+    #else // Using PubSubClient
+        #include <PubSubClient.h>
+        PubSubClient _mqtt;
+    #endif
+#endif
 
 bool _mqtt_enabled = MQTT_ENABLED;
 bool _mqtt_use_json = false;
@@ -91,34 +103,47 @@ void _mqttConnect() {
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%u\n"), _mqtt_server.c_str(), _mqtt_port);
 
-    #if MQTT_USE_ASYNC
+    #if MQTT_LIBRARY == MQTT_ASYNC
         _mqtt_connecting = true;
 
         _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
         _mqtt.setClientId(_mqtt_clientid.c_str());
         _mqtt.setKeepAlive(_mqtt_keepalive);
         _mqtt.setCleanSession(false);
-        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
+        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, MQTT_STATUS_OFFLINE);
         if (_mqtt_user.length() && _mqtt_pass.length()) {
             DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user.c_str());
             _mqtt.setCredentials(_mqtt_user.c_str(), _mqtt_pass.c_str());
         }
 
-        #if ASYNC_TCP_SSL_ENABLED
+        #if SECURE_CLIENT != SECURE_CLIENT_NONE
 
             bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
             _mqtt.setSecure(secure);
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
-                unsigned char fp[20] = {0};
-                if (sslFingerPrintArray(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
-                    _mqtt.addServerFingerprint(fp);
+                int check = getSetting("mqttScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+                if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
+                    DEBUG_MSG("[MQTT] Using fingerprint verification, trying to connect\n");
+
+                    unsigned char fp[20] = {0};
+                    if (sslFingerPrintArray(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
+                        _mqtt.addServerFingerprint(fp);
+                    } else {
+                        DEBUG_MSG("[MQTT] Wrong fingerprint, cannot connect\n");
+                        _mqtt_last_connection = millis();
+                        return;
+                    }
+                } else if (check == SECURE_CLIENT_CHECK_CA) {
+                    DEBUG_MSG("[MQTT] CA verification is not supported with AsyncMqttClient, cannot connect\n");
+                    _mqtt_last_connection = millis();
+                    return;
                 } else {
-                    DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
+                    DEBUG_MSG("[MQTT] !!! SSL connection will not be validated !!!\n");
                 }
             }
 
-        #endif // ASYNC_TCP_SSL_ENABLED
+        #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
         DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
         DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
@@ -128,55 +153,142 @@ void _mqttConnect() {
 
         _mqtt.connect();
 
-    #else // not MQTT_USE_ASYNC
+    #else // Using PubSubClient or Arduino-MQTT
 
         bool response = true;
 
-        #if ASYNC_TCP_SSL_ENABLED
+        #if SECURE_CLIENT != SECURE_CLIENT_NONE
 
             bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
             if (secure) {
                 DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
-                if (_mqtt_client_secure.connect(_mqtt_server.c_str(), _mqtt_port)) {
+                #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+                uint16_t requested_mfln = getSetting("mqttScMFLN", MQTT_SECURE_CLIENT_MFLN).toInt();
+                if (requested_mfln) {
+                    bool supported = _mqtt_client_secure.probeMaxFragmentLength(_mqtt_server.c_str(), _mqtt_port, requested_mfln);
+                    DEBUG_MSG_P(PSTR("[MQTT] MFLN buffer size %u supported: %s\n"), requested_mfln, supported ? "YES" : "NO");
+                    if (supported) {
+                        _mqtt_client_secure.setBufferSizes(requested_mfln, requested_mfln);
+                    }
+                }
+                #endif
+
+                int check = getSetting("mqttScCheck", SECURE_CLIENT == SECURE_CLIENT_BEARSSL ? SECURE_CLIENT_CHECK_CA : SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+
+                if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
+                    DEBUG_MSG("[MQTT] Using fingerprint verification, trying to connect\n");
                     char fp[60] = {0};
                     if (sslFingerPrintChar(getSetting("mqttFP", MQTT_SSL_FINGERPRINT).c_str(), fp)) {
-                        if (_mqtt_client_secure.verify(fp, _mqtt_server.c_str())) {
+                        #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+                        _mqtt_client_secure.setFingerprint(fp); // Always returns true
+                        #endif
+
+                        if (_mqtt_client_secure.connect(_mqtt_server.c_str(), _mqtt_port)) {
+                            #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+                            if (!_mqtt_client_secure.verify(fp, _mqtt_server.c_str())) {
+                                DEBUG_MSG("[MQTT] Fingerprint did not match\n");
+                                response = false;
+                                _mqtt_client_secure.stop();
+                            }
+                            #endif
+
+                            #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+                            _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqtt_client_secure);
+                            #else // PubSubClient
                             _mqtt.setClient(_mqtt_client_secure);
+                            #endif
                         } else {
-                            DEBUG_MSG_P(PSTR("[MQTT] Invalid fingerprint\n"));
+                            DEBUG_MSG("[MQTT] Client connection failed, incorrect fingerprint?\n");
                             response = false;
                         }
-                        _mqtt_client_secure.stop();
-                        yield();
                     } else {
-                        DEBUG_MSG_P(PSTR("[MQTT] Wrong fingerprint\n"));
+                        DEBUG_MSG("[MQTT] Invalid fingerprint, cannot connect\n");
                         response = false;
                     }
-                } else {
-                    DEBUG_MSG_P(PSTR("[MQTT] Client connection failed\n"));
-                    response = false;
-                }
+                } else if (check == SECURE_CLIENT_CHECK_CA) {
+                    #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 
+                        #ifndef _mqtt_client_ca
+                        DEBUG_MSG("[MQTT] No CA certificate defined, cannot connect\n");
+                        response = false;
+                        #else
+
+                        DEBUG_MSG("[MQTT] Using CA verification, trying to connect\n");
+
+                        // We need to allocate using new in order to keep the list in memory
+                        _ca_list = new BearSSL::X509List(_mqtt_client_ca);
+
+                        // Try to use NTP synced time if possible. If not, use system time in order to speed up initial connect
+                        // Worst case = connect() fails and we reconnect after MQTT_RECONNECT_DELAY_MIN
+                        _mqtt_client_secure.setX509Time(ntpSynced() ? ntpLocal2UTC(now()) : time(nullptr));
+                        _mqtt_client_secure.setTrustAnchors(_ca_list);
+
+                        if (_mqtt_client_secure.connect(_mqtt_server.c_str(), _mqtt_port)) {
+                            #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+                            _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqtt_client_secure);
+                            #else // PubSubClient
+                                _mqtt.setClient(_mqtt_client_secure);
+                            #endif
+                        } else {
+                            DEBUG_MSG("[MQTT] CA verification failed - possible reasons are an incorrect certificate or unsynced clock\n");
+                            response = false;
+                        }
+                        #endif
+
+                    #else
+                        DEBUG_MSG("[MQTT] CA verification is not supported with AxTLS client, cannot connect\n");
+                        response = false;
+                    #endif
+                } else {
+                    DEBUG_MSG("[MQTT] !!! SSL connection will not be validated !!!\n");
+
+                    #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+                        _mqtt_client_secure.setInsecure();
+                    #endif
+
+                    #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+                        _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqtt_client_secure);
+                    #else // PubSubClient
+                        _mqtt.setClient(_mqtt_client_secure);
+                    #endif
+                }
             } else {
+                #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+                _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqtt_client);
+                #else // PubSubClient
                 _mqtt.setClient(_mqtt_client);
+                #endif
             }
 
-        #else // not ASYNC_TCP_SSL_ENABLED
+        #else // SECURE_CLIENT == SECURE_CLIENT_NONE
 
+            #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+            _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, _mqtt_client);
+            #else // PubSubClient
             _mqtt.setClient(_mqtt_client);
+            #endif
 
-        #endif // ASYNC_TCP_SSL_ENABLED
+        #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
         if (response) {
+
+            #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+
+            _mqtt.setWill(_mqtt_will.c_str(), MQTT_STATUS_OFFLINE, _mqtt_qos, _mqtt_retain);
+            response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str());
+
+            #else // PubSubClient
 
             _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
 
             if (_mqtt_user.length() && _mqtt_pass.length()) {
                 DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user.c_str());
-                response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
+                response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, MQTT_STATUS_OFFLINE);
             } else {
-				response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, "0");
+				response = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, MQTT_STATUS_OFFLINE);
             }
+
+            #endif
 
             DEBUG_MSG_P(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid.c_str());
             DEBUG_MSG_P(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
@@ -190,10 +302,11 @@ void _mqttConnect() {
             _mqttOnConnect();
         } else {
             DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
-	    _mqtt_last_connection = millis();
+            mqttDisconnect(); // Clean up
+            _mqtt_last_connection = millis();
         }
 
-    #endif // MQTT_USE_ASYNC
+    #endif // MQTT_LIBRARY == MQTT_ASYNC
 
 }
 
@@ -317,9 +430,9 @@ void _mqttBackwards() {
 }
 
 void _mqttInfo() {
-    DEBUG_MSG_P(PSTR("[MQTT] Async %s, SSL %s, Autoconnect %s\n"),
-        MQTT_USE_ASYNC ? "ENABLED" : "DISABLED",
-        ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
+    DEBUG_MSG_P(PSTR("[MQTT] Library %s, SSL %s, Autoconnect %s\n"),
+        (MQTT_LIBRARY == MQTT_ASYNC ? "AsyncMqttClient" : (MQTT_LIBRARY == MQTT_ARDUINO ? "Arduino-MQTT" : "PubSubClient")),
+        SECURE_CLIENT == SECURE_CLIENT_NONE ? "DISABLED" : "ENABLED",
         MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
     );
     DEBUG_MSG_P(PSTR("[MQTT] Client %s, %s\n"),
@@ -357,7 +470,7 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttKeep"] = _mqtt_keepalive;
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
-    #if ASYNC_TCP_SSL_ENABLED
+    #if SECURE_CLIENT != SECURE_CLIENT_NONE
         root["mqttsslVisible"] = 1;
         root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
         root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
@@ -543,10 +656,13 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
 void mqttSendRaw(const char * topic, const char * message, bool retain) {
 
     if (_mqtt.connected()) {
-        #if MQTT_USE_ASYNC
+        #if MQTT_LIBRARY == MQTT_ASYNC // AsyncMqttClient
             unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, retain, message);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
-        #else
+        #elif MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+            _mqtt.publish(topic, message, retain, _mqtt_qos);
+            DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
+        #else // PubSubClient
             _mqtt.publish(topic, message, retain);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
@@ -711,10 +827,10 @@ int8_t mqttEnqueue(const char * topic, const char * message) {
 
 void mqttSubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_USE_ASYNC
+        #if MQTT_LIBRARY == MQTT_ASYNC // AsyncMqttClient
             unsigned int packetId = _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
-        #else
+        #else // Arduino-MQTT or PubSubClient
             _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s\n"), topic);
         #endif
@@ -727,10 +843,10 @@ void mqttSubscribe(const char * topic) {
 
 void mqttUnsubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_USE_ASYNC
+        #if MQTT_LIBRARY == MQTT_ASYNC // AsyncMqttClient
             unsigned int packetId = _mqtt.unsubscribe(topic);
             DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s (PID %d)\n"), topic, packetId);
-        #else
+        #else // Arduino-MQTT or PubSubClient
             _mqtt.unsubscribe(topic);
             DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s\n"), topic);
         #endif
@@ -760,6 +876,9 @@ void mqttDisconnect() {
         DEBUG_MSG_P(PSTR("[MQTT] Disconnecting\n"));
         _mqtt.disconnect();
     }
+    #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+    delete _ca_list;
+    #endif
 }
 
 bool mqttForward() {
@@ -793,7 +912,7 @@ void mqttSetup() {
     _mqttBackwards();
     _mqttInfo();
 
-    #if MQTT_USE_ASYNC
+    #if MQTT_LIBRARY == MQTT_ASYNC // AsyncMqttClient
 
         _mqtt.onConnect([](bool sessionPresent) {
             _mqttOnConnect();
@@ -814,7 +933,7 @@ void mqttSetup() {
             if (reason == AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED) {
                 DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
             }
-            #if ASYNC_TCP_SSL_ENABLED
+            #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
             if (reason == AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT) {
                 DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
             }
@@ -831,13 +950,19 @@ void mqttSetup() {
             DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %d\n"), packetId);
         });
 
-    #else // not MQTT_USE_ASYNC
+    #elif MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
+
+        _mqtt.onMessageAdvanced([](MQTTClient *client, char topic[], char payload[], int length) {
+            _mqttOnMessage(topic, payload, length);
+        });
+
+    #else // PubSubClient
 
         _mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {
             _mqttOnMessage(topic, (char *) payload, length);
         });
 
-    #endif // MQTT_USE_ASYNC
+    #endif // MQTT_LIBRARY == MQTT_ASYNC
 
     _mqttConfigure();
     mqttRegister(_mqttCallback);
@@ -861,11 +986,11 @@ void mqttLoop() {
 
     if (WiFi.status() != WL_CONNECTED) return;
 
-    #if MQTT_USE_ASYNC
+    #if MQTT_LIBRARY == MQTT_ASYNC
 
         _mqttConnect();
 
-    #else // not MQTT_USE_ASYNC
+    #else // MQTT_LIBRARY != MQTT_ASYNC
 
         if (_mqtt.connected()) {
 
@@ -882,7 +1007,7 @@ void mqttLoop() {
 
         }
 
-    #endif
+    #endif // MQTT_LIBRARY == MQTT_ASYNC
 
 }
 

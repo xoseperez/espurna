@@ -504,7 +504,7 @@ void info() {
 // SSL
 // -----------------------------------------------------------------------------
 
-#if ASYNC_TCP_SSL_ENABLED
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
 
 bool sslCheckFingerPrint(const char * fingerprint) {
     return (strlen(fingerprint) == 59);

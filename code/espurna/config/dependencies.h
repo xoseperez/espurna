@@ -5,6 +5,11 @@
 // Configuration settings are in the general.h file
 //------------------------------------------------------------------------------
 
+#if defined(ASYNC_TCP_SSL_ENABLED) && SECURE_CLIENT == SECURE_CLIENT_NONE
+#undef SECURE_CLIENT
+#define SECURE_CLIENT               SECURE_CLIENT_AXTLS
+#endif
+
 #if DEBUG_TELNET_SUPPORT
 #undef TELNET_SUPPORT
 #define TELNET_SUPPORT              1
@@ -55,10 +60,10 @@
 #define MQTT_SUPPORT                1               // If Home Assistant enabled enable MQTT
 #endif
 
-#ifndef ASYNC_TCP_SSL_ENABLED
+#if SECURE_CLIENT != SECURE_CLIENT_AXTLS
 #if THINGSPEAK_USE_SSL && THINGSPEAK_USE_ASYNC
 #undef THINGSPEAK_SUPPORT                       
-#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires ASYNC_TCP_SSL_ENABLED
+#define THINGSPEAK_SUPPORT          0               // Thingspeak in ASYNC mode requires SECURE_CLIENT_AXTLS
 #endif
 #endif
 
