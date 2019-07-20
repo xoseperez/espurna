@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------
-//ADE7853 Sensor over I2C
+// ADE7853 Sensor over I2C
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
+// Implemented by Antonio López <tonilopezmr at gmail dot com>
 // -----------------------------------------------------------------------------
 
 #if SENSOR_SUPPORT && ADE7953_SUPPORT
@@ -27,9 +28,12 @@
 #define ADE7953_UREF            26000
 #define ADE7953_IREF            10000
 
-#define ADE7953_RELAY_ALL       0
-#define ADE7953_RELAY_1         1
-#define ADE7953_RELAY_2         2
+#define ADE7953_ALL_RELAYS              0
+#define ADE7953_RELAY_1                 1
+#define ADE7953_RELAY_2                 2
+
+#define ADE7953_VOLTAGE                 1
+#define ADE7953_TOTAL_DEVICES           3
 
 class ADE7953Sensor : public I2CSensor {
     
@@ -37,13 +41,8 @@ class ADE7953Sensor : public I2CSensor {
         // ---------------------------------------------------------------------
         // Public
         // ---------------------------------------------------------------------
-        ADE7953Sensor(): I2CSensor() {
-            _count = 4;
+        ADE7953Sensor(): I2CSensor() {            
             _sensor_id = SENSOR_ADE7953_ID;            
-        }
-
-        void setRelay(int relay) {
-            _relay = relay;   
         }
 
         // ---------------------------------------------------------------------
@@ -71,6 +70,8 @@ class ADE7953Sensor : public I2CSensor {
 
         // Type for slot # index
         unsigned char type(unsigned char index) {            
+            int relay = index / ADE7953_TOTAL_DEVICES;
+            index = index - (relay * ADE7953_TOTAL_DEVICES);
             if (index == 0) return MAGNITUDE_VOLTAGE;                        
             if (index == 1) return MAGNITUDE_CURRENT;
             if (index == 2) return MAGNITUDE_POWER_ACTIVE;
@@ -80,53 +81,42 @@ class ADE7953Sensor : public I2CSensor {
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() {            
-            uint32_t active_power = 0;
-            uint32_t active_power1 = 0;
-            uint32_t active_power2 = 0;
-            uint32_t current_rms = 0;
-            uint32_t current_rms1 = 0;
-            uint32_t current_rms2 = 0;
+            uint32_t current_rms = 0; 
+            uint32_t active_power = 0;                                   
             uint32_t voltage_rms = 0;
+            float current = 0;
+            float power = 0;                     
 
-            voltage_rms = Ade7953Read(0x31C);      // Both relays
-            current_rms1 = Ade7953Read(0x31B);     // Relay 1
-            if (current_rms1 < 2000) {             // No load threshold (20mA)
-                current_rms1 = 0;
-                active_power1 = 0;
-            } else {
-                active_power = (int32_t)Ade7953Read(0x313) * -1;  // Relay 1
-                active_power1 = (active_power > 0) ? active_power : 0;
+            for (unsigned int i = 0; i < (ADE7953_TOTAL_DEVICES - 1); i++) {        
+                current_rms = Ade7953Read(_addresses[i].current);   
+                if (current_rms < 2000) {   // No load threshold (20mA)
+                    current_rms = 0;
+                    active_power = 0;
+                } else {
+                    active_power = (int32_t)Ade7953Read(_addresses[i].power) * -1;  // Power
+                    active_power = (active_power > 0) ? active_power : 0;
+                }
+
+                current = (float)current_rms / (ADE7953_IREF * 10);
+                power = (float)active_power / (ADE7953_PREF * 10);
+                
+                _readings[i+1].current = current;
+                _readings[i+1].power = power;
             }
-            current_rms2 = Ade7953Read(0x31A);     // Relay 2
-            if (current_rms2 < 2000) {             // No load threshold (20mA)
-                current_rms2 = 0;
-                active_power2 = 0;
-            } else {
-                active_power = (int32_t)Ade7953Read(0x312);  // Relay 2
-                active_power2 = (active_power > 0) ? active_power : 0;
-            }
+            
             _voltage = (float) voltage_rms / ADE7953_UREF;
-
-            if (_relay == ADE7953_RELAY_ALL) {             // No load threshold (20mA)
-                _current = current_rms1 + current_rms2;
-                _power = active_power1 + active_power2;                
-                _current = (float)_current / (ADE7953_IREF * 10);
-                _power = (float)_power / (ADE7953_PREF / 10);
-            } else if (_relay == ADE7953_RELAY_1) {
-                _current = (float) current_rms1 / (ADE7953_IREF * 10);
-                _power = (float) active_power1 / (ADE7953_PREF / 10);
-            } else if (_relay == ADE7953_RELAY_2) {
-                _current = (float)current_rms2 / (ADE7953_IREF * 10);
-                _power = (float)active_power2 / (ADE7953_PREF / 10);
-            }
+            _readings[ADE7953_ALL_RELAYS].current = _readings[ADE7953_RELAY_1].current + _readings[ADE7953_RELAY_2].current;
+            _readings[ADE7953_ALL_RELAYS].power = _readings[ADE7953_RELAY_1].power + _readings[ADE7953_RELAY_2].power;
         }
 
         // Current value for slot # index
         double value(unsigned char index) {
+            int relay = index / ADE7953_TOTAL_DEVICES;
+            index = index - (relay * ADE7953_TOTAL_DEVICES);
             if (index == 0) return _voltage;
-            if (index == 1) return _current;
-            if (index == 2) return _power;            
-            if (index == 3) return 0;
+            if (index == 1) return _readings[relay].current;
+            if (index == 2) return _readings[relay].power;     
+            if (index == 3) return _readings[relay].energy;
             return 0;
         }
 
@@ -136,7 +126,25 @@ class ADE7953Sensor : public I2CSensor {
             Ade7953Write(0x102, 0x0004);    // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
             Ade7953Write(0x0FE, 0x00AD);    // Unlock register 0x120
             Ade7953Write(0x120, 0x0030);    // Configure optimum setting
-            
+
+            adresses_t relay1_addrs;
+            relay1_addrs.current = 0x31B;                
+            relay1_addrs.power = 0x313;
+            _addresses.push_back(relay1_addrs);  
+
+            adresses_t relay2_addrs;
+            relay2_addrs.current = 0x31A;                
+            relay2_addrs.power = 0x312;            
+            _addresses.push_back(relay2_addrs);  
+        
+            for(unsigned int i = 0; i > ADE7953_TOTAL_DEVICES ; i++) {
+                reading_t reading;
+                reading.current = 0.0;                
+                reading.power = 0.0;
+                reading.energy = 0.0;
+                _readings.push_back(reading);
+            }         
+            _count = _readings.size() * ADE7953_TOTAL_DEVICES + ADE7953_VOLTAGE;            
             _ready = true;
         }
 
@@ -190,11 +198,20 @@ class ADE7953Sensor : public I2CSensor {
             return response;
         }
 
-    float _voltage = 0;
-    float _current = 0;    
-    float _power = 0;      
-    int _relay = 0;
+    typedef struct {    
+        float current;
+        float power;
+        float energy;
+    } reading_t;
+    
+    typedef struct {    
+        float current;
+        float power;    
+    } adresses_t;
 
+    std::vector<reading_t> _readings;
+    std::vector<address> _addresses;
+    float _voltage = 0;
 };
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT
