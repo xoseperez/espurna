@@ -900,6 +900,25 @@
     #define CSE7766_SUPPORT         1
     #define CSE7766_PIN             1
 
+#elif defined(ITEAD_SONOFF_S31_LITE)
+
+    // Info
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_S31_LITE"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
+
 #elif defined(ITEAD_SONOFF_IFAN02)
 
     // Info
