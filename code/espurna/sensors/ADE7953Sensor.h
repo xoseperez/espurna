@@ -43,6 +43,8 @@ class ADE7953Sensor : public I2CSensor {
         // ---------------------------------------------------------------------
         ADE7953Sensor(): I2CSensor() {            
             _sensor_id = SENSOR_ADE7953_ID;            
+            _readings.resize(ADE7953_TOTAL_DEVICES);
+            _count = _readings.size() * ADE7953_TOTAL_DEVICES + ADE7953_VOLTAGE; //10            
         }
 
         // ---------------------------------------------------------------------
@@ -69,13 +71,12 @@ class ADE7953Sensor : public I2CSensor {
         };
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {            
-            int relay = index / ADE7953_TOTAL_DEVICES;
-            index = index - (relay * ADE7953_TOTAL_DEVICES);
-            if (index == 0) return MAGNITUDE_VOLTAGE;                        
+        unsigned char type(unsigned char index) {           
+            if (index == 0) return MAGNITUDE_VOLTAGE;                         
+            index = index % ADE7953_TOTAL_DEVICES;            
+            if (index == 0) return MAGNITUDE_ENERGY;
             if (index == 1) return MAGNITUDE_CURRENT;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-            if (index == 3) return MAGNITUDE_ENERGY;            
+            if (index == 2) return MAGNITUDE_POWER_ACTIVE;            
             return MAGNITUDE_NONE;
         }
 
@@ -125,20 +126,19 @@ class ADE7953Sensor : public I2CSensor {
         }
 
         void writeFloat(unsigned int relay, float current, float power) {
-            float* current_reading = &_readings[relay].current;
-            float* power_reading = &_readings[relay].power;
-            *current_reading = current;
-            *power_reading = power;
+            auto& reading_ref = _readings.at(relay); 
+            reading_ref.current = current;
+            reading_ref.power = power;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
-            int relay = index / ADE7953_TOTAL_DEVICES;
-            index = index - (relay * ADE7953_TOTAL_DEVICES);
-            if (index == 0) return _voltage;
+        double value(unsigned char index) {        
+            if (index == 0) return _voltage;            
+            int relay = (index - 1) / ADE7953_TOTAL_DEVICES;	
+            index = index % ADE7953_TOTAL_DEVICES;
+            if (index == 0) return _readings[relay].energy;
             if (index == 1) return _readings[relay].current;
             if (index == 2) return _readings[relay].power;     
-            if (index == 3) return _readings[relay].energy;
             return 0;
         }
 
@@ -148,15 +148,7 @@ class ADE7953Sensor : public I2CSensor {
             Ade7953Write(0x102, 0x0004);    // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
             Ade7953Write(0x0FE, 0x00AD);    // Unlock register 0x120
             Ade7953Write(0x120, 0x0030);    // Configure optimum setting       
-        
-            for(unsigned int i = 0; i > ADE7953_TOTAL_DEVICES ; i++) {
-                reading_t reading;
-                reading.current = 0.0;                
-                reading.power = 0.0;
-                reading.energy = 0.0;
-                _readings.push_back(reading);
-            }         
-            _count = _readings.size() * ADE7953_TOTAL_DEVICES + ADE7953_VOLTAGE;            
+                    
             _ready = true;
         }
 
@@ -211,9 +203,9 @@ class ADE7953Sensor : public I2CSensor {
         }
 
     typedef struct {    
-        float current;
-        float power;
-        float energy;
+        float current = 0.0;
+        float power = 0.0;
+        float energy = 0.0;
     } reading_t;        
 
     std::vector<reading_t> _readings;    
