@@ -2477,8 +2477,8 @@
     #ifndef DIGITAL_SUPPORT
     #define DIGITAL_SUPPORT      1
     #endif
-    #define DIGITAL_PIN          16
-    #define DIGITAL_PIN_MODE     INPUT
+    #define DIGITAL1_PIN          16
+    #define DIGITAL1_PIN_MODE     INPUT
 
 // -----------------------------------------------------------------------------
 // Heltec Touch Relay
@@ -3853,7 +3853,7 @@
 
     // A bit of EVENTS - pin 10
     #define EVENTS_SUPPORT      1
-    #define EVENTS_PIN          6
+    #define EVENTS1_PIN          6
 
     // Sonar
     #define SONAR_SUPPORT       1
