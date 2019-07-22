@@ -160,22 +160,40 @@ class ADE7953Sensor : public I2CSensor {
             _ready = true;
         }
 
+        #if 0
         static int reg_size(uint16_t reg) {
             int size = 0;
             switch ((reg >> 8) & 0x0F) {
                 case 0x03:
-                size++;
+                    size++;
                 case 0x02:
-                size++;
+                    size++;
                 case 0x01:
-                size++;
+                    size++;
                 case 0x00:
                 case 0x07:
                 case 0x08:
-                size++;
+                    size++;
             }
             return size;
         }
+        #else
+        // Optimized version of the function above, -80 bytes of code
+        // Use the known property of register addresses to calculate their size
+        static const int reg_size(const uint16_t reg) {
+
+            const uint8_t mask = ((reg >> 8) & 0b1111);
+
+            if (!mask || (mask & 0b1100)) {
+                return 1;
+            } else if (mask & 0b0011) {
+                return mask + 1;
+            }
+
+            return 0;
+
+        }
+        #endif
             
         void write(unsigned char address, uint16_t reg, uint32_t val) {
             int size = reg_size(reg);
