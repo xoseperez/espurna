@@ -36,7 +36,15 @@
 #define ADE7953_TOTAL_DEVICES           3
 
 class ADE7953Sensor : public I2CSensor {
-    
+
+    protected:
+
+        struct reading_t {
+            float current = 0.0;
+            float power = 0.0;
+            float energy = 0.0;
+        };
+
     public:      
         // ---------------------------------------------------------------------
         // Public
@@ -200,12 +208,6 @@ class ADE7953Sensor : public I2CSensor {
             }
             return response;
         }
-
-    typedef struct {    
-        float current = 0.0;
-        float power = 0.0;
-        float energy = 0.0;
-    } reading_t;        
 
     std::vector<reading_t> _readings;    
     float _voltage = 0;
