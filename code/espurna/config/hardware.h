@@ -3122,6 +3122,10 @@
     #define RELAY1_PIN          15
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
+    // Light
+    #define LED1_PIN            0
+    #define LED1_PIN_INVERSE    1
+
     // HJL01 / BL0937
     #define HLW8012_SUPPORT             1
     #define HLW8012_SEL_PIN             12
