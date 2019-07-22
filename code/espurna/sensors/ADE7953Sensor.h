@@ -89,43 +89,43 @@ class ADE7953Sensor : public I2CSensor {
             uint32_t current_rms2 = 0;
             uint32_t voltage_rms = 0;            
 
-            voltage_rms = Ade7953Read(0x31C);      // Both relays
-            current_rms1 = Ade7953Read(0x31B);     // Relay 1
+            voltage_rms = read(_address, 0x31C);      // Both relays
+            current_rms1 = read(_address, 0x31B);     // Relay 1
             if (current_rms1 < 2000) {             // No load threshold (20mA)
                 current_rms1 = 0;
                 active_power1 = 0;
             } else {
-                active_power1 = (int32_t)Ade7953Read(0x313) * -1;  // Relay 1
+                active_power1 = (int32_t)read(_address, 0x313) * -1;  // Relay 1
                 active_power1 = (active_power1 > 0) ? active_power1 : 0;
             }
-            current_rms2 = Ade7953Read(0x31A);     // Relay 2
+            current_rms2 = read(_address, 0x31A);     // Relay 2
             if (current_rms2 < 2000) {             // No load threshold (20mA)
                 current_rms2 = 0;
                 active_power2 = 0;
             } else {
-                active_power2 = (int32_t)Ade7953Read(0x312);  // Relay 2
+                active_power2 = (int32_t)read(_address, 0x312);  // Relay 2
                 active_power2 = (active_power2 > 0) ? active_power2 : 0;
             }
             _voltage = (float) voltage_rms / ADE7953_UREF;            
             
-            writeFloat(
+            storeReading(
                 ADE7953_ALL_RELAYS, 
                 (float)(current_rms1 + current_rms2) / (ADE7953_IREF * 10), 
                 (float)(active_power1 + active_power2) / (ADE7953_PREF / 10)
             );
-            writeFloat(
+            storeReading(
                 ADE7953_RELAY_1, 
                 (float) current_rms1 / (ADE7953_IREF * 10), 
                 (float) active_power1 / (ADE7953_PREF / 10)
             );    
-            writeFloat(
+            storeReading(
                 ADE7953_RELAY_2, 
                 (float)current_rms2 / (ADE7953_IREF * 10), 
                 (float)active_power2 / (ADE7953_PREF / 10)
             );
         }
 
-        void writeFloat(unsigned int relay, float current, float power) {
+        inline void storeReading(unsigned int relay, float current, float power) {
             auto& reading_ref = _readings.at(relay); 
             reading_ref.current = current;
             reading_ref.power = power;
@@ -145,14 +145,14 @@ class ADE7953Sensor : public I2CSensor {
     protected:  
         void _init() {                     
             delay(100);                     // Need 100mS to init ADE7953
-            Ade7953Write(0x102, 0x0004);    // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
-            Ade7953Write(0x0FE, 0x00AD);    // Unlock register 0x120
-            Ade7953Write(0x120, 0x0030);    // Configure optimum setting       
+            write(_address, 0x102, 0x0004);    // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
+            write(_address, 0x0FE, 0x00AD);    // Unlock register 0x120
+            write(_address, 0x120, 0x0030);    // Configure optimum setting       
                     
             _ready = true;
         }
 
-        int Ade7953RegSize(uint16_t reg) {
+        static int reg_size(uint16_t reg) {
             int size = 0;
             switch ((reg >> 8) & 0x0F) {
                 case 0x03:
@@ -169,34 +169,33 @@ class ADE7953Sensor : public I2CSensor {
             return size;
         }
             
-        void Ade7953Write(uint16_t reg, uint32_t val) {
-            int size = Ade7953RegSize(reg);
+        void write(unsigned char address, uint16_t reg, uint32_t val) {
+            int size = reg_size(reg);
             if (size) {
-                Wire.beginTransmission(_address);
+                Wire.beginTransmission(address);
                 Wire.write((reg >> 8) & 0xFF);
                 Wire.write(reg & 0xFF);
                 while (size--) {
-                Wire.write((val >> (8 * size)) & 0xFF);  // Write data, MSB first
+                    Wire.write((val >> (8 * size)) & 0xFF);  // Write data, MSB first
                 }
                 Wire.endTransmission();
                 delayMicroseconds(5);    // Bus-free time minimum 4.7us
             }
         }
             
-        uint32_t Ade7953Read(uint16_t reg) {
-            uint32_t response = 0;
-            
-            int size = Ade7953RegSize(reg);
+        static uint32_t read(unsigned char address, uint16_t reg) {
+            uint32_t response = 0;            
+            int size = reg_size(reg);
             if (size) {
-                Wire.beginTransmission(_address);
+                Wire.beginTransmission(address);
                 Wire.write((reg >> 8) & 0xFF);
                 Wire.write(reg & 0xFF);
                 Wire.endTransmission(0);
-                Wire.requestFrom(_address, size);
+                Wire.requestFrom(address, size);
                 if (size <= Wire.available()) {
-                for (int i = 0; i < size; i++) {
-                    response = response << 8 | Wire.read();   // receive DATA (MSB first)
-                }
+                    for (int i = 0; i < size; i++) {
+                       response = response << 8 | Wire.read();   // receive DATA (MSB first)
+                    }
                 }
             }
             return response;
