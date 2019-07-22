@@ -209,9 +209,9 @@ class ADE7953Sensor : public I2CSensor {
             }
         }
             
-        static uint32_t read(unsigned char address, uint16_t reg) {
+        static uint32_t read(int address, uint16_t reg) {
             uint32_t response = 0;            
-            int size = reg_size(reg);
+            const int size = reg_size(reg);
             if (size) {
                 Wire.beginTransmission(address);
                 Wire.write((reg >> 8) & 0xFF);
