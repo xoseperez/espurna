@@ -152,7 +152,7 @@ class ADE7953Sensor : public I2CSensor {
 
     protected:  
         void _init() {                     
-            delay(100);                     // Need 100mS to init ADE7953
+            nice_delay(100);                   // Need 100mS to init ADE7953
             write(_address, 0x102, 0x0004);    // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
             write(_address, 0x0FE, 0x00AD);    // Unlock register 0x120
             write(_address, 0x120, 0x0030);    // Configure optimum setting       
