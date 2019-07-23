@@ -24,14 +24,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     WiFiClient _mqtt_client;
     bool _mqtt_connected = false;
 
-    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-    #include "WiFiClientSecureAxTLS.h" // TODO: doesn't work in core 2.3.0
-    axTLS::WiFiClientSecure _mqtt_client_secure;
-    #elif SECURE_CLIENT == SECURE_CLIENT_BEARSSL
     #include "WiFiClientSecure.h"
-    BearSSL::WiFiClientSecure _mqtt_client_secure;
-    BearSSL::X509List *_ca_list = nullptr;
+
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
+        using namespace axTLS;
+    #elif SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+        using namespace BearSSL;
+        BearSSL::X509List *_ca_list = nullptr;
     #endif
+
+    WiFiClientSecure _mqtt_client_secure;
 
     #if MQTT_LIBRARY == MQTT_ARDUINO // Using Arduino-MQTT
         #include <MQTTClient.h>
@@ -218,9 +220,14 @@ void _mqttConnect() {
                         // We need to allocate using new in order to keep the list in memory
                         _ca_list = new BearSSL::X509List(_mqtt_client_ca);
 
-                        // Try to use NTP synced time if possible. If not, use system time in order to speed up initial connect
-                        // Worst case = connect() fails and we reconnect after MQTT_RECONNECT_DELAY_MIN
-                        _mqtt_client_secure.setX509Time(ntpSynced() ? ntpLocal2UTC(now()) : time(nullptr));
+                        // If NTP is not synced yet, the connect() call may fail.
+                        // This is not an issue, MQTT will reconnect after MQTT_RECONNECT_DELAY_MIN
+                        #if NTP_SUPPORT
+                        _mqtt_client_secure.setX509Time(ntpLocal2UTC(now()));
+                        #else
+                        _mqtt_client_secure.setX509Time(now());
+                        #endif
+
                         _mqtt_client_secure.setTrustAnchors(_ca_list);
 
                         if (_mqtt_client_secure.connect(_mqtt_server.c_str(), _mqtt_port)) {
