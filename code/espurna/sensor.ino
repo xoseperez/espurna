@@ -918,94 +918,13 @@ void _sensorLoad() {
 
     #if PULSEMETER_SUPPORT
     {
-        #if (PULSEMETER1_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER1_PIN);
-            sensor->setEnergyRatio(PULSEMETER1_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER1_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER1_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
 
-        #if (PULSEMETER2_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER2_PIN);
-            sensor->setEnergyRatio(PULSEMETER2_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER2_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER2_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (PULSEMETER3_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER3_PIN);
-            sensor->setEnergyRatio(PULSEMETER3_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER3_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER3_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (PULSEMETER4_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER4_PIN);
-            sensor->setEnergyRatio(PULSEMETER4_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER4_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER4_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (PULSEMETER5_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER5_PIN);
-            sensor->setEnergyRatio(PULSEMETER5_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER5_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER5_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (PULSEMETER6_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER6_PIN);
-            sensor->setEnergyRatio(PULSEMETER6_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER6_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER6_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (PULSEMETER7_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER7_PIN);
-            sensor->setEnergyRatio(PULSEMETER7_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER7_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER7_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-
-        #if (PULSEMETER8_PIN != GPIO_NONE)
-        {
-            PulseMeterSensor * sensor = new PulseMeterSensor();
-            sensor->setGPIO(PULSEMETER8_PIN);
-            sensor->setEnergyRatio(PULSEMETER8_ENERGY_RATIO);
-            sensor->setInterruptMode(PULSEMETER8_INTERRUPT_ON);
-            sensor->setDebounceTime(PULSEMETER8_DEBOUNCE);
-            _sensors.push_back(sensor);
-        }
-        #endif
-        
+        PulseMeterSensor * sensor = new PulseMeterSensor();
+        sensor->setGPIO(PULSEMETER_PIN);
+        sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setInterruptMode(PULSEMETER_INTERRUPT_ON);
+        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
+        _sensors.push_back(sensor);
     }
     #endif
 

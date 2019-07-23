@@ -169,8 +169,8 @@ class PulseMeterSensor : public BaseSensor {
 
         unsigned char _previous = GPIO_NONE;
         unsigned char _gpio = GPIO_NONE;
-        unsigned long _ratio = PULSEMETER1_ENERGY_RATIO;
-        unsigned long _debounce = PULSEMETER1_DEBOUNCE;
+        unsigned long _ratio = PULSEMETER_ENERGY_RATIO;
+        unsigned long _debounce = PULSEMETER_DEBOUNCE;
 
         double _active = 0;
         double _energy = 0;

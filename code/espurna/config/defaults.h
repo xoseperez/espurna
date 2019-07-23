@@ -611,34 +611,6 @@
 #endif
 
 // -----------------------------------------------------------------------------
-// Pulse Meters
-// -----------------------------------------------------------------------------
-
-#ifndef PULSEMETER1_PIN
-#define PULSEMETER1_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER2_PIN
-#define PULSEMETER2_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER3_PIN
-#define PULSEMETER3_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER4_PIN
-#define PULSEMETER4_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER5_PIN
-#define PULSEMETER5_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER6_PIN
-#define PULSEMETER6_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER7_PIN
-#define PULSEMETER7_PIN         GPIO_NONE
-#endif
-#ifndef PULSEMETER8_PIN
-#define PULSEMETER8_PIN         GPIO_NONE
-#endif
-// -----------------------------------------------------------------------------
 // General
 // -----------------------------------------------------------------------------
 

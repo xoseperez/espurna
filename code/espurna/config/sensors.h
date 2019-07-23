@@ -902,133 +902,20 @@
 #ifndef PULSEMETER_SUPPORT
 #define PULSEMETER_SUPPORT              0
 #endif
-
-#ifndef PULSEMETER1_PIN
-#define PULSEMETER1_PIN                  5
+#ifndef PULSEMETER_PIN
+#define PULSEMETER_PIN                  5
 #endif
 
-#ifndef PULSEMETER1_ENERGY_RATIO
-#define PULSEMETER1_ENERGY_RATIO         4000        // In pulses/kWh
+#ifndef PULSEMETER_ENERGY_RATIO
+#define PULSEMETER_ENERGY_RATIO         4000        // In pulses/kWh
 #endif
 
-#ifndef PULSEMETER1_INTERRUPT_ON
-#define PULSEMETER1_INTERRUPT_ON         FALLING
+#ifndef PULSEMETER_INTERRUPT_ON
+#define PULSEMETER_INTERRUPT_ON         FALLING
 #endif
 
-#ifndef PULSEMETER1_DEBOUNCE
-#define PULSEMETER1_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER2_PIN
-#define PULSEMETER2_PIN                  5
-#endif
-
-#ifndef PULSEMETER2_ENERGY_RATIO
-#define PULSEMETER2_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER2_INTERRUPT_ON
-#define PULSEMETER2_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER2_DEBOUNCE
-#define PULSEMETER2_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER3_PIN
-#define PULSEMETER3_PIN                  5
-#endif
-
-#ifndef PULSEMETER3_ENERGY_RATIO
-#define PULSEMETER3_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER3_INTERRUPT_ON
-#define PULSEMETER3_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER3_DEBOUNCE
-#define PULSEMETER3_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER4_PIN
-#define PULSEMETER4_PIN                  5
-#endif
-
-#ifndef PULSEMETER4_ENERGY_RATIO
-#define PULSEMETER4_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER4_INTERRUPT_ON
-#define PULSEMETER4_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER4_DEBOUNCE
-#define PULSEMETER4_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER5_PIN
-#define PULSEMETER5_PIN                  5
-#endif
-
-#ifndef PULSEMETER5_ENERGY_RATIO
-#define PULSEMETER5_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER5_INTERRUPT_ON
-#define PULSEMETER5_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER5_DEBOUNCE
-#define PULSEMETER5_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER6_PIN
-#define PULSEMETER6_PIN                  5
-#endif
-
-#ifndef PULSEMETER6_ENERGY_RATIO
-#define PULSEMETER6_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER6_INTERRUPT_ON
-#define PULSEMETER6_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER6_DEBOUNCE
-#define PULSEMETER6_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER7_PIN
-#define PULSEMETER7_PIN                  5
-#endif
-
-#ifndef PULSEMETER7_ENERGY_RATIO
-#define PULSEMETER7_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER7_INTERRUPT_ON
-#define PULSEMETER7_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER7_DEBOUNCE
-#define PULSEMETER7_DEBOUNCE             50         // Do not register pulses within less than 50 millis
-#endif
-
-#ifndef PULSEMETER8_PIN
-#define PULSEMETER8_PIN                  5
-#endif
-
-#ifndef PULSEMETER8_ENERGY_RATIO
-#define PULSEMETER8_ENERGY_RATIO         4000        // In pulses/kWh
-#endif
-
-#ifndef PULSEMETER8_INTERRUPT_ON
-#define PULSEMETER8_INTERRUPT_ON         FALLING
-#endif
-
-#ifndef PULSEMETER8_DEBOUNCE
-#define PULSEMETER8_DEBOUNCE             50         // Do not register pulses within less than 50 millis
+#ifndef PULSEMETER_DEBOUNCE
+#define PULSEMETER_DEBOUNCE             50         // Do not register pulses within less than 50 millis
 #endif
 
 //------------------------------------------------------------------------------

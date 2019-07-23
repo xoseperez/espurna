@@ -2479,6 +2479,7 @@
     #endif
     #define DIGITAL1_PIN          16
     #define DIGITAL1_PIN_MODE     INPUT
+    #define DIGITAL1_DEFAULT_STATE 0
 
 // -----------------------------------------------------------------------------
 // Heltec Touch Relay
