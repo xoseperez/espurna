@@ -11,7 +11,7 @@ log = logging.getLogger("ldscript-get")
 logging.basicConfig(format=FORMAT)
 
 # mapping from esp8266/tools/boards.txt.py:
-# sketch | reserved | empty | spiffs | eeprom | rf-cal | sdk-wifi-settings
+# sketch | reserved | empty |   fs   | eeprom | rf-cal | sdk-wifi-settings
 # ...... |    4112B | ..... | ...... | ...... |                      16 KB
 
 IROM0_SPI_FLASH_START = 0x40200000
@@ -21,7 +21,7 @@ IROM0_RESERVED_SDK_SIZE = 0x4000
 SIZE = {512: 0x80000, 1024: 0x100000, 2048: 0x200000, 3072: 0x300000, 4096: 0x400000}
 
 # supported sizes
-# flash (bytes), spiffs (bytes), eeprom (sectors)
+# flash (bytes), fs (bytes), eeprom (sectors)
 VARIANTS = [
     [SIZE[512], 0, 1],
     [SIZE[1024], 0, 1],
@@ -44,18 +44,18 @@ def size_suffix(size):
 
 
 def variant_name(variant):
-    tmpl = "{flash_size}{flash_suffix}{spiffs_size}{spiffs_suffix}{sectors}s"
+    tmpl = "{flash_size}{flash_suffix}{fs_size}{fs_suffix}{sectors}s"
 
-    flash_size, spiffs_size, sectors = variant
+    flash_size, fs_size, sectors = variant
 
     flash_size, flash_suffix = size_suffix(flash_size)
-    spiffs_size, spiffs_suffix = size_suffix(spiffs_size)
+    fs_size, fs_suffix = size_suffix(fs_size)
 
     return tmpl.format(
         flash_size=flash_size,
         flash_suffix=flash_suffix,
-        spiffs_size=spiffs_size,
-        spiffs_suffix=spiffs_suffix,
+        fs_size=fs_size,
+        fs_suffix=fs_suffix,
         sectors=sectors,
     )
 
@@ -63,7 +63,7 @@ def variant_name(variant):
 TEMPLATE = """\
 /*
 sketch: {size_kb}KB
-spiffs: {spiffs_size_kb}KB
+fs: {fs_size_kb}KB
 eeprom: {eeprom_size_kb}KB
 */
 
@@ -75,53 +75,63 @@ MEMORY
   irom0_0_seg :                         org = 0x40201010, len = {size:#x}
 }}
 
-PROVIDE ( _SPIFFS_start = {spiffs_start:#x} );
-PROVIDE ( _SPIFFS_end = {spiffs_end:#x} );
-PROVIDE ( _SPIFFS_page = {spiffs_page:#x} );
-PROVIDE ( _SPIFFS_block = {spiffs_block:#x} );
+/*
+Provide both _SPIFFS_ and _FS_ to be compatible with 2.3.0...2.6.0+ and
+any library that is using old _SPIFFS_...
+*/
+
+PROVIDE ( _SPIFFS_start = {fs_start:#x} );
+PROVIDE ( _SPIFFS_end = {fs_end:#x} );
+PROVIDE ( _SPIFFS_page = {fs_page:#x} );
+PROVIDE ( _SPIFFS_block = {fs_block:#x} );
+
+PROVIDE ( _FS_start = _SPIFFS_start );
+PROVIDE ( _FS_end = _SPIFFS_end );
+PROVIDE ( _FS_page = _SPIFFS_page );
+PROVIDE ( _FS_block = _SPIFFS_block );
 
 INCLUDE \"{include}\"
 """
 
 
-def flash_map(flashsize, spiffs, sectors):
+def flash_map(flashsize, fs, sectors):
     reserved = IROM0_RESERVED_SKETCH_SIZE
     sdk_reserved = IROM0_RESERVED_SDK_SIZE
     eeprom_size = 0x1000 * sectors
 
-    spiffs_end = IROM0_SPI_FLASH_START + (flashsize - sdk_reserved - eeprom_size)
-    spiffs_page = 0x100
+    fs_end = IROM0_SPI_FLASH_START + (flashsize - sdk_reserved - eeprom_size)
+    fs_page = 0x100
     if flashsize <= SIZE[1024]:
-        max_upload_size = (flashsize - (spiffs + eeprom_size + sdk_reserved)) - reserved
-        spiffs_start = IROM0_SPI_FLASH_START + spiffs_end - spiffs
-        spiffs_block = 4096
+        max_upload_size = (flashsize - (fs + eeprom_size + sdk_reserved)) - reserved
+        fs_start = IROM0_SPI_FLASH_START + fs_end - fs
+        fs_block = 4096
     else:
         max_upload_size = 1024 * 1024 - reserved
-        spiffs_start = IROM0_SPI_FLASH_START + (flashsize - spiffs)
-        if spiffs < SIZE[512]:
-            spiffs_block = 4096
+        fs_start = IROM0_SPI_FLASH_START + (flashsize - fs)
+        if fs < SIZE[512]:
+            fs_block = 4096
         else:
-            spiffs_block = 8192
+            fs_block = 8192
 
-    if not spiffs:
-        spiffs_block = 0
-        spiffs_page = 0
-        spiffs_start = spiffs_end
+    if not fs:
+        fs_block = 0
+        fs_page = 0
+        fs_start = fs_end
 
-    # Adjust SPIFFS_end to be a multiple of the block size
+    # Adjust FS_end to be a multiple of the block size
     # ref: https://github.com/esp8266/Arduino/pull/5989
-    if spiffs:
-        spiffs_end = spiffs_block * ((spiffs_end - spiffs_start) // spiffs_block) + spiffs_start
+    if fs:
+        fs_end = fs_block * ((fs_end - fs_start) // fs_block) + fs_start
 
     result = {
         "size": max_upload_size,
         "size_kb": int(max_upload_size / 1024),
         "eeprom_size_kb": int(eeprom_size / 1024),
-        "spiffs_size_kb": int((spiffs_end - spiffs_start) / 1024),
-        "spiffs_start": spiffs_start,
-        "spiffs_end": spiffs_end,
-        "spiffs_page": spiffs_page,
-        "spiffs_block": spiffs_block,
+        "fs_size_kb": int((fs_end - fs_start) / 1024),
+        "fs_start": fs_start,
+        "fs_end": fs_end,
+        "fs_page": fs_page,
+        "fs_block": fs_block,
     }
 
     return result
