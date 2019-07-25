@@ -29,15 +29,15 @@ Ticker _light_comms_ticker;
 Ticker _light_save_ticker;
 Ticker _light_transition_ticker;
 
-typedef struct {
-    unsigned char pin;
-    bool reverse;
-    bool state;
-    unsigned char inputValue;   // value that has been inputted
-    unsigned char value;        // normalized value including brightness
+struct channel_t {
+    unsigned char pin;          // real GPIO pin
+    bool reverse;               // wether we should invert the value before using it
+    bool state;                 // is the channel ON
+    unsigned char inputValue;   // raw value, without the brightness
+    unsigned char value;        // normalized value, including brightness
     unsigned char target;       // target value
     double current;             // transition value
-} channel_t;
+};
 std::vector<channel_t> _light_channel;
 
 bool _light_state = false;
@@ -51,15 +51,27 @@ unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = LIGHT_MAX_BRIGHTNESS;
 unsigned int _light_mireds = round((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
 
+using light_brightness_func_t = void();
+light_brightness_func_t* _light_brightness_func = nullptr;
+
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
 my92xx * _my92xx;
 ARRAYINIT(unsigned char, _light_channel_map, MY92XX_MAPPING);
 #endif
 
+// UI hint about channel distribution
+const char _light_channel_desc[5][5] PROGMEM = {
+    {'W',   0,   0,   0,   0},
+    {'W', 'C',   0,   0,   0},
+    {'R', 'G', 'B',   0,   0},
+    {'R', 'G', 'B', 'W',   0},
+    {'R', 'G', 'B', 'W', 'C'}
+};
+static_assert((LIGHT_CHANNELS * LIGHT_CHANNELS) <= (sizeof(_light_channel_desc)), "Out-of-bounds array access");
+
 // Gamma Correction lookup table (8 bit)
-// TODO: move to PROGMEM
-const unsigned char _light_gamma_table[] = {
+const unsigned char _light_gamma_table[] PROGMEM = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
     1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
     3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
@@ -77,6 +89,7 @@ const unsigned char _light_gamma_table[] = {
     191, 193, 195, 197, 199, 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221,
     223, 225, 227, 229, 231, 233, 235, 238, 240, 242, 244, 246, 248, 251, 253, 255
 };
+static_assert(LIGHT_MAX_VALUE <= sizeof(_light_gamma_table), "Out-of-bounds array access");
 
 // -----------------------------------------------------------------------------
 // UTILS
@@ -88,71 +101,93 @@ void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blu
     _light_channel[2].inputValue = constrain(blue, 0, LIGHT_MAX_VALUE);;
 }
 
-void _generateBrightness() {
+void _setCCTInputValue(unsigned char warm, unsigned char cold) {
+    _light_channel[0].inputValue = constrain(warm, 0, LIGHT_MAX_VALUE);
+    _light_channel[1].inputValue = constrain(cold, 0, LIGHT_MAX_VALUE);
+}
+
+void _lightApplyBrightness(unsigned char channels = lightChannels()) {
+
+    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(LIGHT_MAX_BRIGHTNESS);
+
+    channels = std::min(channels, lightChannels());
+
+    for (unsigned char i=0; i < lightChannels(); i++) {
+        if (i >= channels) brightness = 1;
+        _light_channel[i].value = _light_channel[i].inputValue * brightness;
+    }
+
+}
+
+void _lightApplyBrightnessColor() {
 
     double brightness = (double) _light_brightness / LIGHT_MAX_BRIGHTNESS;
 
-    // Convert RGB to RGBW(W)
-    if (_light_has_color && _light_use_white) {
-
-        // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
-        unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
-        for (unsigned int i=0; i < 3; i++) {
-            _light_channel[i].value = _light_channel[i].inputValue - white;
-        }
-
-        // Split the White Value across 2 White LED Strips.
-        if (_light_use_cct) {
-
-          // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-          double miredFactor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
-
-          // set cold white
-          _light_channel[3].inputValue = 0;
-          _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
-
-          // set warm white
-          _light_channel[4].inputValue = 0;
-          _light_channel[4].value = round(miredFactor * white);
-        } else {
-          _light_channel[3].inputValue = 0;
-          _light_channel[3].value = white;
-        }
-
-        // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
-        unsigned char max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
-        unsigned char max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
-        unsigned char channelSize = _light_use_cct ? 5 : 4;
-
-        if (_light_use_cct) {
-          max_out = std::max(max_out, _light_channel[4].value);
-        }
-
-        double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
-        for (unsigned char i=0; i < channelSize; i++) {
-            _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
-        }
-
-        // Scale white channel to match brightness
-        for (unsigned char i=3; i < channelSize; i++) {
-            _light_channel[i].value = constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS);
-        }
-
-        // For the rest of channels, don't apply brightness, it is already in the inputValue
-        // i should be 4 when RGBW and 5 when RGBWW
-        for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
-            _light_channel[i].value = _light_channel[i].inputValue;
-        }
-
-    } else {
-
-        // Apply brightness equally to all channels
-        for (unsigned char i=0; i < _light_channel.size(); i++) {
-            _light_channel[i].value = _light_channel[i].inputValue * brightness;
-        }
-
+    // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
+    unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
+    for (unsigned int i=0; i < 3; i++) {
+        _light_channel[i].value = _light_channel[i].inputValue - white;
     }
 
+    // Split the White Value across 2 White LED Strips.
+    if (_light_use_cct) {
+
+        // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
+        double miredFactor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
+
+        // set cold white
+        _light_channel[3].inputValue = 0;
+        _light_channel[3].value = round(((double) 1.0 - miredFactor) * white);
+
+        // set warm white
+        _light_channel[4].inputValue = 0;
+        _light_channel[4].value = round(miredFactor * white);
+    } else {
+        _light_channel[3].inputValue = 0;
+        _light_channel[3].value = white;
+    }
+
+    // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
+    unsigned char max_in = std::max(_light_channel[0].inputValue, std::max(_light_channel[1].inputValue, _light_channel[2].inputValue));
+    unsigned char max_out = std::max(std::max(_light_channel[0].value, _light_channel[1].value), std::max(_light_channel[2].value, _light_channel[3].value));
+    unsigned char channelSize = _light_use_cct ? 5 : 4;
+
+    if (_light_use_cct) {
+        max_out = std::max(max_out, _light_channel[4].value);
+    }
+
+    double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
+    for (unsigned char i=0; i < channelSize; i++) {
+        _light_channel[i].value = round((double) _light_channel[i].value * factor * brightness);
+    }
+
+    // Scale white channel to match brightness
+    for (unsigned char i=3; i < channelSize; i++) {
+        _light_channel[i].value = constrain(_light_channel[i].value * LIGHT_WHITE_FACTOR, 0, LIGHT_MAX_BRIGHTNESS);
+    }
+
+    // For the rest of channels, don't apply brightness, it is already in the inputValue
+    // i should be 4 when RGBW and 5 when RGBWW
+    for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
+        _light_channel[i].value = _light_channel[i].inputValue;
+    }
+
+}
+
+String lightDesc(unsigned char id) {
+    if (id >= _light_channel.size()) return F("UNKNOWN");
+
+    const char tag = pgm_read_byte(&_light_channel_desc[_light_channel.size() - 1][id]);
+    switch (tag) {
+        case 'W': return F("WARM WHITE");
+        case 'C': return F("COLD WHITE");
+        case 'R': return F("RED");
+        case 'G': return F("GREEN");
+        case 'B': return F("BLUE");
+        default: break;
+    }
+
+    return F("UNKNOWN");
 }
 
 // -----------------------------------------------------------------------------
@@ -278,7 +313,21 @@ void _fromHSV(const char * hsv) {
 // https://github.com/stelgenhof/AiLight
 void _fromKelvin(unsigned long kelvin) {
 
-    if (!_light_has_color) return;
+    if (!_light_has_color) {
+
+      if(!_light_use_cct) return;
+      
+      _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
+      
+      // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
+      double factor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
+      unsigned char warm = round(factor * LIGHT_MAX_VALUE);
+      unsigned char cold = round(((double) 1.0 - factor) * LIGHT_MAX_VALUE);
+
+      _setCCTInputValue(warm, cold);
+      
+      return;
+    }
 
     _light_mireds = constrain(round(1000000UL / kelvin), LIGHT_MIN_MIREDS, LIGHT_MAX_MIREDS);
 
@@ -409,7 +458,7 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 
 unsigned int _toPWM(unsigned long value, bool gamma, bool reverse) {
     value = constrain(value, 0, LIGHT_MAX_VALUE);
-    if (gamma) value = _light_gamma_table[value];
+    if (gamma) value = pgm_read_byte(_light_gamma_table + value);
     if (LIGHT_MAX_VALUE != LIGHT_LIMIT_PWM) value = map(value, 0, LIGHT_MAX_VALUE, 0, LIGHT_LIMIT_PWM);
     if (reverse) value = LIGHT_LIMIT_PWM - value;
     return value;
@@ -470,7 +519,47 @@ void _lightProviderUpdate() {
 // PERSISTANCE
 // -----------------------------------------------------------------------------
 
-void _lightColorSave() {
+union light_rtcmem_t {
+    struct {
+        uint8_t channels[5];
+        uint8_t brightness;
+        uint16_t mired;
+    } packed;
+    uint64_t value;
+};
+
+#define LIGHT_RTCMEM_CHANNELS_MAX sizeof(light_rtcmem_t().packed.channels)
+
+void _lightSaveRtcmem() {
+    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+
+    light_rtcmem_t light;
+
+    for (unsigned int i=0; i < lightChannels(); i++) {
+        light.packed.channels[i] = _light_channel[i].inputValue;
+    }
+
+    light.packed.brightness = _light_brightness;
+    light.packed.mired = _light_mireds;
+
+    Rtcmem->light = light.value;
+}
+
+void _lightRestoreRtcmem() {
+    if (lightChannels() > LIGHT_RTCMEM_CHANNELS_MAX) return;
+
+    light_rtcmem_t light;
+    light.value = Rtcmem->light;
+
+    for (unsigned int i=0; i < lightChannels(); i++) {
+        _light_channel[i].inputValue = light.packed.channels[i];
+    }
+
+    _light_brightness = light.packed.brightness;
+    _light_mireds = light.packed.mired;
+}
+
+void _lightSaveSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         setSetting("ch", i, _light_channel[i].inputValue);
     }
@@ -479,7 +568,7 @@ void _lightColorSave() {
     saveSettings();
 }
 
-void _lightColorRestore() {
+void _lightRestoreSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
         _light_channel[i].inputValue = getSetting("ch", i, i==0 ? 255 : 0).toInt();
     }
@@ -499,13 +588,17 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
 
     if (type == MQTT_CONNECT_EVENT) {
 
+        mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
+
         if (_light_has_color) {
-            mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
-            mqttSubscribe(MQTT_TOPIC_MIRED);
-            mqttSubscribe(MQTT_TOPIC_KELVIN);
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
             mqttSubscribe(MQTT_TOPIC_TRANSITION);
+        }
+        
+        if (_light_has_color || _light_use_cct) {
+            mqttSubscribe(MQTT_TOPIC_MIRED);
+            mqttSubscribe(MQTT_TOPIC_KELVIN);
         }
 
         // Group color
@@ -602,10 +695,14 @@ void lightMQTT() {
         _toHSV(buffer, sizeof(buffer), true);
         mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
 
-        // Mireds
-        snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
-        mqttSend(MQTT_TOPIC_MIRED, buffer);
-
+    }
+    
+    if (_light_has_color || _light_use_cct) {
+      
+      // Mireds
+      snprintf_P(buffer, sizeof(buffer), PSTR("%d"), _light_mireds);
+      mqttSend(MQTT_TOPIC_MIRED, buffer);
+    
     }
 
     // Channels
@@ -659,6 +756,10 @@ bool lightHasColor() {
     return _light_has_color;
 }
 
+bool lightUseCCT() {
+    return _light_use_cct;
+}
+
 void _lightComms(unsigned char mask) {
 
     // Report color & brightness to MQTT broker
@@ -681,7 +782,7 @@ void _lightComms(unsigned char mask) {
 
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
-    _generateBrightness();
+    _light_brightness_func();
 
     // Update channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
@@ -699,9 +800,11 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     if (group_forward) mask += 2;
     _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
 
+    _lightSaveRtcmem();
+
     #if LIGHT_SAVE_ENABLED
         // Delay saving to EEPROM 5 seconds to avoid wearing it out unnecessarily
-        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightColorSave);
+        if (save) _light_save_ticker.once(LIGHT_SAVE_DELAY, _lightSaveSettings);
     #endif
 
 };
@@ -712,7 +815,7 @@ void lightUpdate(bool save, bool forward) {
 
 #if LIGHT_SAVE_ENABLED == 0
 void lightSave() {
-    _lightColorSave();
+    _lightSaveSettings();
 }
 #endif
 
@@ -826,15 +929,15 @@ bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
 
 void _lightWebSocketStatus(JsonObject& root) {
     if (_light_has_color) {
-        if (_light_use_cct) {
-            root["useCCT"] = _light_use_cct;
-            root["mireds"] = _light_mireds;
-        }
         if (getSetting("useRGB", LIGHT_USE_RGB).toInt() == 1) {
             root["rgb"] = lightColor(true);
         } else {
             root["hsv"] = lightColor(false);
         }
+    }
+    if (_light_use_cct) {
+        root["useCCT"] = _light_use_cct;
+        root["mireds"] = _light_mireds;
     }
     JsonArray& channels = root.createNestedArray("channels");
     for (unsigned char id=0; id < _light_channel.size(); id++) {
@@ -870,13 +973,15 @@ void _lightWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
                 lightUpdate(true, true);
             }
         }
-        if (_light_use_cct) {
-          if (strcmp(action, "mireds") == 0) {
-              _fromMireds(data["mireds"]);
-              lightUpdate(true, true);
-          }
-        }
     }
+    
+    if (_light_use_cct) {
+      if (strcmp(action, "mireds") == 0) {
+          _fromMireds(data["mireds"]);
+          lightUpdate(true, true);
+      }
+    }
+
 
     if (strcmp(action, "channel") == 0) {
         if (data.containsKey("id") && data.containsKey("value")) {
@@ -1013,7 +1118,7 @@ void _lightInitCommands() {
             lightChannel(id, value);
             lightUpdate(true, true);
         }
-        DEBUG_MSG_P(PSTR("Channel #%d: %d\n"), id, lightChannel(id));
+        DEBUG_MSG_P(PSTR("Channel #%d (%s): %d\n"), id, lightDesc(id).c_str(), lightChannel(id));
         terminalOK();
     });
 
@@ -1092,13 +1197,23 @@ void _lightConfigure() {
     }
 
     _light_use_white = getSetting("useWhite", LIGHT_USE_WHITE).toInt() == 1;
-    if (_light_use_white && (_light_channel.size() < 4)) {
+    if (_light_use_white && (_light_channel.size() < 4) && (_light_channel.size() != 2)) {
         _light_use_white = false;
         setSetting("useWhite", _light_use_white);
     }
 
+    if (_light_has_color) {
+        if (_light_use_white) {
+            _light_brightness_func = _lightApplyBrightnessColor;
+        } else {
+            _light_brightness_func = []() { _lightApplyBrightness(3); };
+        }
+    } else {
+        _light_brightness_func = []() { _lightApplyBrightness(); };
+    }
+
     _light_use_cct = getSetting("useCCT", LIGHT_USE_CCT).toInt() == 1;
-    if (_light_use_cct && ((_light_channel.size() < 5) || !_light_use_white)) {
+    if (_light_use_cct && (((_light_channel.size() < 5) && (_light_channel.size() != 2)) || !_light_use_white)) {
         _light_use_cct = false;
         setSetting("useCCT", _light_use_cct);
     }
@@ -1115,6 +1230,8 @@ void lightSetup() {
         pinMode(LIGHT_ENABLE_PIN, OUTPUT);
         digitalWrite(LIGHT_ENABLE_PIN, HIGH);
     #endif
+
+    _light_channel.reserve(LIGHT_CHANNELS);
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -1166,7 +1283,11 @@ void lightSetup() {
     DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %d\n"), _light_channel.size());
 
     _lightConfigure();
-    _lightColorRestore();
+    if (rtcmemStatus()) {
+        _lightRestoreRtcmem();
+    } else {
+        _lightRestoreSettings();
+    }
 
     #if WEB_SUPPORT
         wsOnSendRegister(_lightWebSocketOnSend);

@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_SUPPORT
 
+#include "libs/DebugSend.h"
+
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
@@ -36,7 +38,7 @@ char _udp_syslog_header[40] = {0};
     }
 #endif
 
-void _debugSend(const char * message) {
+void debugSendImpl(const char * message) {
 
     const size_t msg_len = strlen(message);
 
@@ -85,42 +87,6 @@ void _debugSend(const char * message) {
 
 }
 
-// -----------------------------------------------------------------------------
-
-void debugSend(const char * format, ...) {
-
-    va_list args;
-    va_start(args, format);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
-
-}
-
-void debugSend_P(PGM_P format_P, ...) {
-
-    char format[strlen_P(format_P)+1];
-    memcpy_P(format, format_P, sizeof(format));
-
-    va_list args;
-    va_start(args, format_P);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
-
-}
 
 #if DEBUG_WEB_SUPPORT
 

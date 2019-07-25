@@ -302,6 +302,7 @@
 #define SENSOR_EZOPH_ID             33
 #define SENSOR_BMP180_ID            34
 #define SENSOR_MAX6675_ID           35
+#define SENSOR_LDR_ID               36
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -342,3 +343,9 @@
 #define MAGNITUDE_PH                31
 
 #define MAGNITUDE_MAX               32
+
+//------------------------------------------------------------------------------
+// Telnet server
+//------------------------------------------------------------------------------
+#define TELNET_SERVER_ASYNC        0
+#define TELNET_SERVER_WIFISERVER   1

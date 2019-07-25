@@ -11,6 +11,11 @@ Copyright (C) 2017 by Dmitry Blinov <dblinov76 at gmail dot com>
 #include <ArduinoJson.h>
 #include <float.h>
 
+bool _thermostat_enabled = true;
+bool _thermostat_mode_cooler = false;
+
+const char* NAME_THERMOSTAT_ENABLED     = "thermostatEnabled";
+const char* NAME_THERMOSTAT_MODE        = "thermostatMode";
 const char* NAME_TEMP_RANGE_MIN         = "tempRangeMin";
 const char* NAME_TEMP_RANGE_MAX         = "tempRangeMax";
 const char* NAME_REMOTE_SENSOR_NAME     = "remoteSensorName";
@@ -88,6 +93,26 @@ thermostat_t _thermostat;
 enum thermostat_cycle_type {cooling, heating};
 unsigned int _thermostat_cycle = heating;
 String thermostat_remote_sensor_topic;
+
+//------------------------------------------------------------------------------
+void thermostatEnabled(bool enabled) {
+    _thermostat_enabled = enabled;
+}
+
+//------------------------------------------------------------------------------
+bool thermostatEnabled() {
+    return _thermostat_enabled;
+}
+
+//------------------------------------------------------------------------------
+void thermostatModeCooler(bool cooler) {
+    _thermostat_mode_cooler = cooler;
+}
+
+//------------------------------------------------------------------------------
+bool thermostatModeCooler() {
+    return _thermostat_mode_cooler;
+}
 
 //------------------------------------------------------------------------------
 std::vector<thermostat_callback_f> _thermostat_callbacks;
@@ -223,6 +248,12 @@ void notifyRangeChanged(bool min) {
 // Setup
 //------------------------------------------------------------------------------
 void commonSetup() {
+  _thermostat_enabled     = getSetting(NAME_THERMOSTAT_ENABLED).toInt() == 1;
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_enabled = %d\n"), _thermostat_enabled);
+
+  _thermostat_mode_cooler = getSetting(NAME_THERMOSTAT_MODE).toInt() == 1;
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] _thermostat_mode_cooler = %d\n"), _thermostat_mode_cooler);
+  
   _temp_range.min         = getSetting(NAME_TEMP_RANGE_MIN, THERMOSTAT_TEMP_RANGE_MIN).toInt();
   _temp_range.max         = getSetting(NAME_TEMP_RANGE_MAX, THERMOSTAT_TEMP_RANGE_MAX).toInt();
   DEBUG_MSG_P(PSTR("[THERMOSTAT] _temp_range.min = %d\n"), _temp_range.min);
@@ -268,6 +299,8 @@ void _thermostatReload() {
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
 void _thermostatWebSocketOnSend(JsonObject& root) {
+  root["thermostatEnabled"] = thermostatEnabled();
+  root["thermostatMode"] = thermostatModeCooler();
   root["thermostatVisible"] = 1;
   root[NAME_TEMP_RANGE_MIN] = _temp_range.min;
   root[NAME_TEMP_RANGE_MAX] = _temp_range.max;
@@ -296,6 +329,8 @@ void _thermostatWebSocketOnSend(JsonObject& root) {
 
 //------------------------------------------------------------------------------
 bool _thermostatWebSocketOnReceive(const char * key, JsonVariant& value) {
+    if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
+    if (strncmp(key, NAME_THERMOSTAT_MODE,      strlen(NAME_THERMOSTAT_MODE))      == 0) return true;
     if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
     if (strncmp(key, NAME_TEMP_RANGE_MAX,       strlen(NAME_TEMP_RANGE_MAX))       == 0) return true;
     if (strncmp(key, NAME_REMOTE_SENSOR_NAME,   strlen(NAME_REMOTE_SENSOR_NAME))   == 0) return true;
@@ -353,8 +388,8 @@ void setThermostatState(bool state) {
 void debugPrintSwitch(bool state, double temp) {
   char tmp_str[6];
   dtostrf(temp, 1-sizeof(tmp_str), 1, tmp_str);
-  DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, relay: %s, last switch %d\n"),
-   state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch);
+  DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d\n"),
+   state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER", relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch);
 }
 
 //------------------------------------------------------------------------------
@@ -372,23 +407,44 @@ inline void switchThermostat(bool state, double temp) {
 //----------- Main function that make decision ---------------------------------
 //------------------------------------------------------------------------------
 void checkTempAndAdjustRelay(double temp) {
-  // if thermostat switched ON and t > max - switch it OFF and start cooling
-  if (relayStatus(THERMOSTAT_RELAY) && temp > _temp_range.max) {
-    _thermostat_cycle = cooling;
-    switchThermostat(false, temp);
-  // if thermostat switched ON for max time - switch it OFF for rest
-  } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
-    switchThermostat(false, temp);
-  // if t < min and thermostat switched OFF for at least minimum time - switch it ON and start
-  } else if (!relayStatus(THERMOSTAT_RELAY) && temp < _temp_range.min
-      && (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
-    _thermostat_cycle = heating;
-    switchThermostat(true, temp);
-  // if heating cycle and thermostat switchaed OFF for more than min time - switch it ON
-  // continue heating cycle
-  } else if (!relayStatus(THERMOSTAT_RELAY) && _thermostat_cycle == heating
-      && lastSwitchEarlierThan(_thermostat_min_off_time)) {
-    switchThermostat(true, temp);
+  if (_thermostat_mode_cooler == false) { // Main operation mode. Thermostat is HEATER.
+    // if thermostat switched ON and t > max - switch it OFF and start cooling
+    if (relayStatus(THERMOSTAT_RELAY) && temp > _temp_range.max) {
+      _thermostat_cycle = cooling;
+      switchThermostat(false, temp);
+    // if thermostat switched ON for max time - switch it OFF for rest
+    } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
+      switchThermostat(false, temp);
+    // if t < min and thermostat switched OFF for at least minimum time - switch it ON and start
+    } else if (!relayStatus(THERMOSTAT_RELAY) && temp < _temp_range.min
+        && (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
+      _thermostat_cycle = heating;
+      switchThermostat(true, temp);
+    // if heating cycle and thermostat switchaed OFF for more than min time - switch it ON
+    // continue heating cycle
+    } else if (!relayStatus(THERMOSTAT_RELAY) && _thermostat_cycle == heating
+        && lastSwitchEarlierThan(_thermostat_min_off_time)) {
+      switchThermostat(true, temp);
+    }
+  } else { // Thermostat is COOLER. Inverse logic.
+    // if thermostat switched ON and t < min - switch it OFF and start heating
+    if (relayStatus(THERMOSTAT_RELAY) && temp < _temp_range.min) {
+      _thermostat_cycle = heating;
+      switchThermostat(false, temp);
+    // if thermostat switched ON for max time - switch it OFF for rest
+    } else if (relayStatus(THERMOSTAT_RELAY) && lastSwitchEarlierThan(_thermostat_max_on_time)) {
+      switchThermostat(false, temp);
+    // if t > max and thermostat switched OFF for at least minimum time - switch it ON and start
+    } else if (!relayStatus(THERMOSTAT_RELAY) && temp > _temp_range.max
+        && (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time))) {
+      _thermostat_cycle = cooling;
+      switchThermostat(true, temp);
+    // if cooling cycle and thermostat switchaed OFF for more than min time - switch it ON
+    // continue cooling cycle
+    } else if (!relayStatus(THERMOSTAT_RELAY) && _thermostat_cycle == cooling
+        && lastSwitchEarlierThan(_thermostat_min_off_time)) {
+      switchThermostat(true, temp);
+    }
   }
 }
 
@@ -459,6 +515,9 @@ double getLocalHumidity() {
 // Loop
 //------------------------------------------------------------------------------
 void thermostatLoop(void) {
+
+  if (!thermostatEnabled())
+    return;
 
   // Update temperature range
   if (mqttConnected()) {

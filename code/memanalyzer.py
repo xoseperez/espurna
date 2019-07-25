@@ -103,7 +103,11 @@ def run(env_, modules_):
     flags = ""
     for k, v in modules_.items():
         flags += "-D{}_SUPPORT={:d} ".format(k, v)
-    command = "ESPURNA_BOARD=\"WEMOS_D1_MINI_RELAYSHIELD\" ESPURNA_FLAGS=\"{}\" platformio run --silent --environment {} 2>/dev/null".format(flags, env_)
+    os_env = os.environ.copy()
+    os_env["ESPURNA_BOARD"] = "WEMOS_D1_MINI_RELAYSHIELD"
+    os_env["ESPURNA_FLAGS"] = flags
+    os_env["ESPURNA_PIO_SHARED_LIBRARIES"] = "y"
+    command = "platformio run --silent --environment {} 2>/dev/null".format(env_)
     subprocess.check_call(command, shell=True)
 
 
@@ -215,8 +219,8 @@ if __name__ == '__main__':
 
     # Build the core without modules to get base memory usage
     run(env, modules)
-    base = analyse_memory(".pioenvs/{}/firmware.elf".format(env))
-    base['size'] = file_size(".pioenvs/{}/firmware.bin".format(env))
+    base = analyse_memory(".pio/build/{}/firmware.elf".format(env))
+    base['size'] = file_size(".pio/build/{}/firmware.bin".format(env))
     calc_free(base)
     print(output_format.format(
             "CORE" if args.core == 1 else "DEFAULT",
@@ -235,8 +239,8 @@ if __name__ == '__main__':
 
         modules[module] = 1
         run(env, modules)
-        results[module] = analyse_memory(".pioenvs/{}/firmware.elf".format(env))
-        results[module]['size'] = file_size(".pioenvs/{}/firmware.bin".format(env))
+        results[module] = analyse_memory(".pio/build/{}/firmware.elf".format(env))
+        results[module]['size'] = file_size(".pio/build/{}/firmware.bin".format(env))
         calc_free(results[module])
         modules[module] = 0
 
@@ -257,10 +261,21 @@ if __name__ == '__main__':
         for module in test_modules:
             modules[module] = 1
         run(env, modules)
-        total = analyse_memory(".pioenvs/{}/firmware.elf".format(env))
-        total['size'] = file_size(".pioenvs/{}/firmware.bin".format(env))
+        total = analyse_memory(".pio/build/{}/firmware.elf".format(env))
+        total['size'] = file_size(".pio/build/{}/firmware.bin".format(env))
         calc_free(total)
 
+        print(output_format.format(
+                "-" * 20,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15,
+                "-" * 15
+        ))
+        
         if len(test_modules) > 1:
             print(output_format.format(
                     "ALL MODULES",
@@ -279,6 +294,7 @@ if __name__ == '__main__':
                 total['data'],
                 total['rodata'],
                 total['bss'],
+                total['free'],
                 total['irom0_text'],
                 total['size'],
         ))

@@ -118,8 +118,17 @@
 #define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
+#ifndef TELNET_PORT
 #define TELNET_PORT             23              // Port to listen to telnet clients
+#endif
+
+#ifndef TELNET_MAX_CLIENTS
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+#endif
+
+#ifndef TELNET_SERVER
+#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
+#endif
 
 //------------------------------------------------------------------------------
 // TERMINAL
@@ -335,6 +344,10 @@
 #define ENCODER_SUPPORT             0
 #endif
 
+#ifndef ENCODER_MINIMUM_DELTA
+#define ENCODER_MINIMUM_DELTA       1
+#endif
+
 //------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
@@ -398,6 +411,11 @@
 #ifndef RELAY_MQTT_OFF
 #define RELAY_MQTT_OFF              "0"
 #endif
+
+// TODO Only single EEPROM address is used to store state, which is 1 byte
+// Relay status is stored using bitfield.
+// This means that, atm, we are only storing the status of the first 8 relays.
+#define RELAY_SAVE_MASK_MAX         8
 
 // -----------------------------------------------------------------------------
 // WIFI
@@ -478,6 +496,54 @@
 
 #ifndef WIFI2_DNS
 #define WIFI2_DNS                   ""
+#endif
+
+#ifndef WIFI3_SSID
+#define WIFI3_SSID                  ""
+#endif
+
+#ifndef WIFI3_PASS
+#define WIFI3_PASS                  ""
+#endif
+
+#ifndef WIFI3_IP
+#define WIFI3_IP                    ""
+#endif
+
+#ifndef WIFI3_GW
+#define WIFI3_GW                    ""
+#endif
+
+#ifndef WIFI3_MASK
+#define WIFI3_MASK                  ""
+#endif
+
+#ifndef WIFI3_DNS
+#define WIFI3_DNS                   ""
+#endif
+
+#ifndef WIFI4_SSID
+#define WIFI4_SSID                  ""
+#endif
+
+#ifndef WIFI4_PASS
+#define WIFI4_PASS                  ""
+#endif
+
+#ifndef WIFI4_IP
+#define WIFI4_IP                    ""
+#endif
+
+#ifndef WIFI4_GW
+#define WIFI4_GW                    ""
+#endif
+
+#ifndef WIFI4_MASK
+#define WIFI4_MASK                  ""
+#endif
+
+#ifndef WIFI4_DNS
+#define WIFI4_DNS                   ""
 #endif
 
 #ifndef WIFI_RSSI_1M
@@ -1222,10 +1288,26 @@
 #define ALEXA_ENABLED               1
 #endif
 
+#ifndef ALEXA_HOSTNAME
+#define ALEXA_HOSTNAME              ""
+#endif
+
+
 // -----------------------------------------------------------------------------
-// RFBRIDGE
-// This module is not compatible with RF_SUPPORT=1
+// MQTT RF BRIDGE
 // -----------------------------------------------------------------------------
+
+#ifndef RF_SUPPORT
+#define RF_SUPPORT                  0
+#endif
+
+#ifndef RF_DEBOUNCE
+#define RF_DEBOUNCE                 500
+#endif
+
+#ifndef RF_LEARN_TIMEOUT
+#define RF_LEARN_TIMEOUT            60000
+#endif
 
 #ifndef RF_SEND_TIMES
 #define RF_SEND_TIMES               4               // How many times to send the message
@@ -1239,10 +1321,21 @@
 #define RF_RECEIVE_DELAY            500             // Interval between recieving in ms (avoid debouncing)
 #endif
 
-#ifndef RF_RAW_SUPPORT
-#define RF_RAW_SUPPORT              0               // RF raw codes require a specific firmware for the EFM8BB1
-                                                    // https://github.com/rhx/RF-Bridge-EFM8BB1
+// Enable RCSwitch support
+// Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
+// https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+#ifndef RFB_DIRECT
+#define RFB_DIRECT                  0
 #endif
+
+#ifndef RFB_RX_PIN
+#define RFB_RX_PIN                  GPIO_NONE
+#endif
+
+#ifndef RFB_TX_PIN
+#define RFB_TX_PIN                  GPIO_NONE
+#endif
+
 
 // -----------------------------------------------------------------------------
 // IR Bridge
@@ -1453,29 +1546,6 @@
 
 #ifndef IR_BUTTON_COUNT
 #define IR_BUTTON_COUNT 0
-#endif
-
-//--------------------------------------------------------------------------------
-// Custom RF module
-// Check http://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
-// Enable support by passing RF_SUPPORT=1 build flag
-// This module is not compatible with RFBRIDGE or SONOFF RF
-//--------------------------------------------------------------------------------
-
-#ifndef RF_SUPPORT
-#define RF_SUPPORT                  0
-#endif
-
-#ifndef RF_PIN
-#define RF_PIN                      14
-#endif
-
-#ifndef RF_DEBOUNCE
-#define RF_DEBOUNCE                 500
-#endif
-
-#ifndef RF_LEARN_TIMEOUT
-#define RF_LEARN_TIMEOUT            60000
 #endif
 
 //--------------------------------------------------------------------------------

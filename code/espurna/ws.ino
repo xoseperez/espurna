@@ -212,9 +212,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
         String adminPass;
         bool save = false;
-        #if MQTT_SUPPORT
-            bool changedMQTT = false;
-        #endif
 
         for (auto kv: config) {
 
@@ -263,9 +260,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
             // Update flags if value has changed
             if (changed) {
                 save = true;
-                #if MQTT_SUPPORT
-                    if (key.startsWith("mqtt")) changedMQTT = true;
-                #endif
             }
 
         }
@@ -275,12 +269,6 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
             // Callbacks
             espurnaReload();
-
-            // This should got to callback as well
-            // but first change management has to be in place
-            #if MQTT_SUPPORT
-                if (changedMQTT) mqttReset();
-            #endif
 
             // Persist settings
             saveSettings();
@@ -555,10 +543,11 @@ void wsSetup() {
     webServer()->addHandler(&_ws);
 
     // CORS
-    #ifdef WEB_REMOTE_DOMAIN
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", WEB_REMOTE_DOMAIN);
+    const String webDomain = getSetting("webDomain", WEB_REMOTE_DOMAIN);
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", webDomain);
+    if (!webDomain.equals("*")) {
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
-    #endif
+    }
 
     webServer()->on("/auth", HTTP_GET, _onAuth);
 

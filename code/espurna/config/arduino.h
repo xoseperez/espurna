@@ -11,6 +11,7 @@
 //#define ALLNET_4DUINO_IOT_WLAN_RELAIS
 //#define ALLTERCO_SHELLY1
 //#define ALLTERCO_SHELLY2
+//#define ALLTERCO_SHELLY1PM
 //#define ARILUX_AL_LC01
 //#define ARILUX_AL_LC02
 //#define ARILUX_AL_LC02_V14
@@ -81,6 +82,7 @@
 //#define IWOOLE_LED_TABLE_LAMP
 //#define JANGOE_WIFI_RELAY_NC
 //#define JANGOE_WIFI_RELAY_NO
+//#define JINVOO_VALVE_SM_AW713
 //#define JORGEGARCIA_WIFI_RELAYS
 //#define KMC_70011
 //#define LINGAN_SWA1
@@ -94,10 +96,12 @@
 //#define MAGICHOME_LED_CONTROLLER_20
 //#define MAGICHOME_ZJ_WFMN_A_11
 //#define MAGICHOME_ZJ_WFMN_B_11
+//#define MAGICHOME_ZJ_ESPM_5CH_B_13
 //#define MANCAVEMADE_ESPLIVE
 //#define MAXCIO_WDE004
 //#define MAXCIO_WUS002S
 //#define NEO_COOLCAM_NAS_WR01W
+//#define NEXETE_A19
 //#define NODEMCU_BASIC
 //#define NODEMCU_LOLIN
 //#define OPENENERGYMONITOR_MQTT_RELAY
@@ -191,6 +195,7 @@
 //#define GEIGER_SUPPORT         1
 //#define GUVAS12SD_SUPPORT      1
 //#define HLW8012_SUPPORT        1
+//#define LDR_SUPPORT            1
 //#define MAX6675_SUPPORT        1
 //#define MHZ19_SUPPORT          1
 //#define MICS2710_SUPPORT       1

@@ -7,7 +7,6 @@ cache:
   directories:
   - "~/.npm"
   - "~/.platformio"
-  - "$TRAVIS_BUILD_DIR/code/.piolibdeps"
 install:
 - pip install -U platformio
 - npm install -g npm@latest
@@ -15,6 +14,8 @@ install:
 env:
   global:
   - BUILDER_TOTAL_THREADS=4
+  - ESPURNA_PIO_PATCH_ISSUE_1610=y
+  - ESPURNA_PIO_SHARED_LIBRARIES=y
 script:
 - cd code && ./build.sh -p &&  cd ..
 stages:

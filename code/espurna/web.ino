@@ -125,6 +125,10 @@ void _onPostConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
     // No buffer
     if (final && (index == 0)) {
         DynamicJsonBuffer jsonBuffer;
@@ -297,7 +301,11 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
 }
 
-void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (!index) {
 
@@ -336,7 +344,32 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
     }
 }
 
+bool _onAPModeRequest(AsyncWebServerRequest *request) {
+
+    if ((WiFi.getMode() & WIFI_AP) > 0) {
+        const String domain = getSetting("hostname") + ".";
+        const String host = request->header("Host");
+        const String ip = WiFi.softAPIP().toString();
+
+        // Only allow requests that use our hostname or ip
+        if (host.equals(ip)) return true;
+        if (host.startsWith(domain)) return true;
+
+        // Immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+        // Not doing so will cause memory exhaustion, because the connection will linger
+        request->send(404);
+        request->client()->close();
+
+        return false;
+    }
+
+    return true;
+
+}
+
 void _onRequest(AsyncWebServerRequest *request){
+
+    if (!_onAPModeRequest(request)) return;
 
     // Send request to subscribers
     for (unsigned char i = 0; i < _web_request_callbacks.size(); i++) {
@@ -344,18 +377,28 @@ void _onRequest(AsyncWebServerRequest *request){
         if (response) return;
     }
 
-    // No subscriber handled the request, return a 404
+    // No subscriber handled the request, return a 404 with implicit "Connection: close"
     request->send(404);
+
+    // And immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+    // Not doing so will cause memory exhaustion, because the connection will linger
+    request->client()->close();
 
 }
 
 void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+
+    if (!_onAPModeRequest(request)) return;
 
     // Send request to subscribers
     for (unsigned char i = 0; i < _web_body_callbacks.size(); i++) {
         bool response = (_web_body_callbacks[i])(request, data, len, index, total);
         if (response) return;
     }
+
+    // Same as _onAPModeRequest(...)
+    request->send(404);
+    request->client()->close();
 
 }
 
@@ -420,7 +463,7 @@ void webSetup() {
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
-    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files

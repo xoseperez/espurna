@@ -8,7 +8,7 @@ Copyright (C) 2018-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
 
-#include <Encoder.h>
+#include "libs/Encoder.h"
 #include <vector>
 
 typedef struct {
@@ -22,6 +22,7 @@ typedef struct {
 } encoder_t;
 
 std::vector<encoder_t> _encoders;
+unsigned long _encoder_min_delta = 1;
 
 void _encoderConfigure() {
 
@@ -85,24 +86,22 @@ void _encoderConfigure() {
         }
     }
 
+    _encoder_min_delta = getSetting("encMinDelta", ENCODER_MINIMUM_DELTA).toInt();
+    if (!_encoder_min_delta) _encoder_min_delta = 1;
+
 }
 
 void _encoderLoop() {
 
-    // for each encoder
+    // for each encoder, read delta (read()) and map button action
     for (unsigned char i=0; i<_encoders.size(); i++) {
 
-        // get encoder
         encoder_t encoder = _encoders[i];
 
-        // read encoder
         long delta = encoder.encoder->read();
         encoder.encoder->write(0);
-        if (0 == delta) continue;
+        if ((0 == delta) || (_encoder_min_delta > abs(delta))) continue;
 
-        DEBUG_MSG_P(PSTR("[ENCODER] Delta: %d\n"), delta);
-
-        // action
         if (encoder.button_pin == GPIO_NONE) {
 
             // if there is no button, the encoder drives CHANNEL1
@@ -110,7 +109,7 @@ void _encoderLoop() {
 
         } else {
 
-            // check if button is pressed
+            // otherwise, use button based on encoder mode
             bool pressed = (digitalRead(encoder.button_pin) != encoder.button_logic);
 
             if (ENCODER_MODE_CHANNEL == encoder.mode) {
