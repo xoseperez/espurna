@@ -9,6 +9,7 @@ cache:
   - "~/.platformio"
 install:
 - pip install -U platformio
+- pio platform update -p
 - npm install -g npm@latest
 - cd code && npm ci && cd ..
 env:
