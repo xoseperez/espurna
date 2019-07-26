@@ -7,6 +7,7 @@ import sys
 
 
 TRAVIS = os.environ.get("TRAVIS")
+PIO_PLATFORM = env.PioPlatform()
 
 
 class ExtraScriptError(Exception):
@@ -57,11 +58,24 @@ def get_shared_libdeps_dir(section, name):
     opt = cfg.get(section, name)
 
     if not opt in env.GetProjectOption("lib_extra_dirs"):
-        raise ExtraScriptError("lib_extra_dirs must contain {}.{}".format(section, name))
+        raise ExtraScriptError(
+            "lib_extra_dirs must contain {}.{}".format(section, name)
+        )
 
     return os.path.join(env["PROJECT_DIR"], opt)
 
 
+def ensure_platform_updated():
+    if PIO_PLATFORM.are_outdated_packages():
+        print("updating platform packages", file=sys.stderr)
+        PIO_PLATFORM.update_packages()
+
+
+# latest toolchain is still optional with PIO (TODO: recheck after 2.6.0!)
+ensure_platform_updated()
+
+
+# to speed-up build process, install libraries in either global or local shared storage
 if os.environ.get("ESPURNA_PIO_SHARED_LIBRARIES"):
     if TRAVIS:
         storage = None
