@@ -251,3 +251,13 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
 
+// -----------------------------------------------------------------------------
+// Warn about broken Arduino functions
+// -----------------------------------------------------------------------------
+
+// Warn about division by zero bug
+// https://github.com/esp8266/Arduino/pull/2397
+// https://github.com/esp8266/Arduino/pull/2408
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+long  __attribute__((deprecated("Please avoid using map() with Core 2.3.0"))) map(long x, long in_min, long in_max, long out_min, long out_max);
+#endif
