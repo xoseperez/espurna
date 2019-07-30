@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <vector>
 
 namespace Tuya {
 
@@ -55,12 +56,25 @@ namespace Tuya {
                 return _states[n];
             }
 
-            size_t size() {
+            size_t size() const {
                 return _states.size();
             }
 
-            size_t capacity() {
+            size_t capacity() const {
                 return _capacity;
+            }
+
+            auto begin() {
+                return _states.begin();
+            }
+            auto end() {
+                return _states.end();
+            }
+            auto begin() const {
+                return _states.begin();
+            }
+            auto end() const {
+                return _states.end();
             }
 
         private:
