@@ -159,7 +159,9 @@ namespace Tuya {
         if (State::DISCOVERY == state) {
             discoveryTimeout.feed();
             pushOrUpdateState(type, frame);
-        } else {
+        // XXX: handle dimmer locally. ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
+        // should probably try to filter values instead, with min delta setting
+        } else if (Type::BOOL == type) {
             updateState(type, frame);
         }
 
@@ -169,7 +171,7 @@ namespace Tuya {
 
         const DataFrame frame {fromTransport(buffer)};
 
-        dataframeDebugSend("IN", frame);
+        dataframeDebugSend("<=", frame);
 
         // initial packet has 0, do the initial setup
         // all after that have 1. might be a good idea to re-do the setup when that happens on boot
@@ -391,7 +393,7 @@ namespace Tuya {
 
         if (TUYA_SERIAL && !outputFrames.empty()) {
             const DataFrame frame = std::move(outputFrames.front());
-            dataframeDebugSend("OUT", frame);
+            dataframeDebugSend("=>", frame);
             tuyaSerial.write(frame.serialize());
             outputFrames.pop();
         }
