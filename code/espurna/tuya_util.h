@@ -64,19 +64,6 @@ namespace Tuya {
                 return _capacity;
             }
 
-            auto begin() {
-                return _states.begin();
-            }
-            auto end() {
-                return _states.end();
-            }
-            auto begin() const {
-                return _states.begin();
-            }
-            auto end() const {
-                return _states.end();
-            }
-
         private:
             bool _changed = false;
             size_t _capacity = 0;
