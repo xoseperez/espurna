@@ -344,3 +344,9 @@
 #define MAGNITUDE_PH                31
 
 #define MAGNITUDE_MAX               32
+
+//------------------------------------------------------------------------------
+// Telnet server
+//------------------------------------------------------------------------------
+#define TELNET_SERVER_ASYNC        0
+#define TELNET_SERVER_WIFISERVER   1

@@ -128,9 +128,9 @@ build_environments() {
     for environment in $environments; do
         echo -n "* espurna-$version-$environment.bin --- "
         platformio run --silent --environment $environment || exit 1
-        stat_bytes .pioenvs/$environment/firmware.bin
+        stat_bytes .pio/build/$environment/firmware.bin
         [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
-            mv .pioenvs/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
+            mv .pio/build/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
     done
     echo "--------------------------------------------------------------"
 }

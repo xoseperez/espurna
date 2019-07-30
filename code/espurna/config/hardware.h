@@ -21,10 +21,18 @@
 // Besides, other hardware specific information should be stated here
 
 // -----------------------------------------------------------------------------
+// Custom hardware
+// -----------------------------------------------------------------------------
+
+#if defined(MANUFACTURER) and defined(DEVICE)
+
+    // user has defined custom hardware, no need to check anything else
+
+// -----------------------------------------------------------------------------
 // ESPurna Core
 // -----------------------------------------------------------------------------
 
-#if defined(ESPURNA_CORE)
+#elif defined(ESPURNA_CORE)
 
     // This is a special device targeted to generate a light-weight binary image
     // meant to be able to do two-step-updates:
@@ -3095,6 +3103,51 @@
     #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
+#elif defined(ALLTERCO_SHELLY1PM)
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY1PM"
+
+    // Buttons
+    #define BUTTON1_PIN         4
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+
+    #define BUTTON2_PIN         2
+    #define BUTTON2_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_LNGCLICK    BUTTON_MODE_RESET
+    #define BUTTON2_LNGLNGCLICK BUTTON_MODE_FACTORY
+
+    // Relays
+    #define RELAY1_PIN          15
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // Light
+    #define LED1_PIN            0
+    #define LED1_PIN_INVERSE    1
+
+    // HJL01 / BL0937
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif    
+    #define HLW8012_SEL_PIN             12
+    #define HLW8012_CF1_PIN             13
+    #define HLW8012_CF_PIN              5
+
+    #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_CURRENT_RATIO       25740
+    #define HLW8012_VOLTAGE_RATIO       313400
+    #define HLW8012_POWER_RATIO         3414290
+    #define HLW8012_INTERRUPT_ON        FALLING
+
+    //Temperature
+     #define NTC_SUPPORT        1
+     #define SENSOR_SUPPORT     1
+     #define NTC_BETA           3350    
+     #define NTC_R_UP           10000   
+     #define NTC_R_DOWN         0       
+     #define NTC_R0             10000 
+ 
 // -----------------------------------------------------------------------------
 
 #elif defined(LOHAS_9W)
@@ -3237,6 +3290,32 @@
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
 
+
+// -----------------------------------------------------------------------------
+// Nexete A19
+// https://www.ebay.com/itm/Wifi-Smart-LED-light-Bulb-9W-60W-A19-850LM-RGBW-Dimmable-for-Alexa-Google-Home/283514779201
+// -----------------------------------------------------------------------------
+
+#elif defined(NEXETE_A19)
+
+    // Info
+    #define MANUFACTURER        "NEXETE"
+    #define DEVICE              "A19"
+    #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
+    #define DUMMY_RELAY_COUNT   1
+
+    // Light
+    #define LIGHT_CHANNELS      4
+    #define LIGHT_CH1_PIN       12      // RED
+    #define LIGHT_CH2_PIN       15      // GREEN
+    #define LIGHT_CH3_PIN       14      // BLUE
+    #define LIGHT_CH4_PIN       5       // WHITE
+    #define LIGHT_CH1_INVERSE   0
+    #define LIGHT_CH2_INVERSE   0
+    #define LIGHT_CH3_INVERSE   0
+    #define LIGHT_CH4_INVERSE   0
+
 // -----------------------------------------------------------------------------
 // Lombex Lux Nova 2 Tunable White
 // https://www.amazon.com/Lombex-Compatible-Equivalent-Dimmable-2700K-6500K/dp/B07B8K72PR
@@ -3326,7 +3405,7 @@
     // Relays
     #define RELAY1_PIN          15
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL 
- 
+
     // Light RGBW 
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
@@ -3491,20 +3570,20 @@
 
 #elif defined(TECKIN_SP20)
 
-     // Info
+    // Info
     #define MANUFACTURER                "TECKIN"
     #define DEVICE                      "SP20"
 
-     // Buttons
+    // Buttons
     #define BUTTON1_PIN                 13
     #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY               1
 
-     // Relays
+    // Relays
     #define RELAY1_PIN                  4
     #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
 
-     // LEDs
+    // LEDs
     #define LED1_PIN                    2
     #define LED1_PIN_INVERSE            1
     #define LED2_PIN                    0
@@ -3512,7 +3591,7 @@
     #define LED2_MODE                   LED_MODE_FINDME
     #define LED2_RELAY                  0
 
-     // HJL01 / BL0937
+    // HJL01 / BL0937
     #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT             1
     #endif
@@ -3520,7 +3599,7 @@
     #define HLW8012_CF1_PIN             14
     #define HLW8012_CF_PIN              5
 
-     #define HLW8012_SEL_CURRENT         LOW
+    #define HLW8012_SEL_CURRENT         LOW
     #define HLW8012_CURRENT_RATIO       25740
     #define HLW8012_VOLTAGE_RATIO       313400
     #define HLW8012_POWER_RATIO         3414290
@@ -3559,32 +3638,32 @@
 // -----------------------------------------------------------------------------
 
 #elif defined(PSH_WIFI_PLUG)
- 
+
     // Info
     #define MANUFACTURER        "PSH"
     #define DEVICE              "WIFI_PLUG"
- 
+
     // Relays
     #define RELAY1_PIN          2
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
- 
+
     // LEDs
     #define LED1_PIN            0
     #define LED1_PIN_INVERSE    0
- 
+
 #elif defined(PSH_RGBW_CONTROLLER)
- 
+
     // Info
     #define MANUFACTURER        "PSH"
     #define DEVICE              "RGBW_CONTROLLER"
     #define RELAY_PROVIDER      RELAY_PROVIDER_LIGHT
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define DUMMY_RELAY_COUNT   1
- 
+
     // LEDs
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
- 
+
     // Light
     #define LIGHT_CHANNELS      4
     #define LIGHT_CH1_PIN       5      // RED
@@ -3595,9 +3674,9 @@
     #define LIGHT_CH2_INVERSE   0
     #define LIGHT_CH3_INVERSE   0
     #define LIGHT_CH4_INVERSE   0
- 
+
 #elif defined(PSH_WIFI_SENSOR)
- 
+
     // Info
     #define MANUFACTURER        "PSH"
     #define DEVICE              "WIFI_SENSOR"
@@ -3736,13 +3815,13 @@
     #define MICS2710_SUPPORT    1
     #define MICS5525_SUPPORT    1
 
-   // MAX6675  14 11 10
-   #ifndef MAX6675_SUPPORT
-   #define MAX6675_SUPPORT 1
-   #endif
-   #define MAX6675_CS_PIN 	14
-   #define MAX6675_SO_PIN	11
-   #define MAX6675_SCK_PIN	10
+// MAX6675  14 11 10
+#ifndef MAX6675_SUPPORT
+#define MAX6675_SUPPORT 1
+#endif
+#define MAX6675_CS_PIN 	14
+#define MAX6675_SO_PIN	11
+#define MAX6675_SCK_PIN	10
 
 #elif defined(TRAVIS02)
 
@@ -3861,12 +3940,9 @@
     #define SSDP_SUPPORT        1
     #define RF_SUPPORT          1
 
-#endif
+#else
 
-// -----------------------------------------------------------------------------
-// Check definitions
-// -----------------------------------------------------------------------------
-
-#if not defined(MANUFACTURER) || not defined(DEVICE)
     #error "UNSUPPORTED HARDWARE!!"
+
 #endif
+

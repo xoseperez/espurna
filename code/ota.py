@@ -55,6 +55,7 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
                 'mac': '',
                 'app_name': '',
                 'app_version': '',
+                'build_date': '',
                 'target_board': '',
                 'mem_size': 0,
                 'sdk_size': 0,
@@ -76,7 +77,7 @@ def list_devices():
     """
     Shows the list of discovered devices
     """
-    output_format = "{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<12}  {:<25}  {:<8}  {:<8}  {:<10}"
+    output_format = "{:>3}  {:<14}  {:<15}  {:<17}  {:<12}  {:<12}  {:<20}  {:<25}  {:<8}  {:<8}  {:<10}"
     print(output_format.format(
             "#",
             "HOSTNAME",
@@ -84,12 +85,13 @@ def list_devices():
             "MAC",
             "APP",
             "VERSION",
+            "BUILD_DATE",
             "DEVICE",
             "MEM_SIZE",
             "SDK_SIZE",
             "FREE_SPACE"
     ))
-    print("-" * 139)
+    print("-" * 164)
 
     index = 0
     for device in devices:
@@ -101,6 +103,7 @@ def list_devices():
                 device.get('mac', ''),
                 device.get('app_name', ''),
                 device.get('app_version', ''),
+                device.get('build_date', ''),
                 device.get('target_board', ''),
                 device.get('mem_size', 0),
                 device.get('sdk_size', 0),
@@ -240,8 +243,8 @@ def boardname(board):
 
 
 def store(device, env):
-    source = ".pioenvs/{}/firmware.elf".format(env)
-    destination = ".pioenvs/elfs/{}.elf".format(boardname(device).lower())
+    source = ".pio/build/{}/firmware.elf".format(env)
+    destination = ".pio/build/elfs/{}.elf".format(boardname(device).lower())
 
     dst_dir = os.path.dirname(destination)
     if not os.path.exists(dst_dir):
@@ -257,6 +260,7 @@ def run(device, env):
     environ["ESPURNA_BOARD"] = device["board"]
     environ["ESPURNA_AUTH"] = device["auth"]
     environ["ESPURNA_FLAGS"] = device["flags"]
+    environ["ESPURNA_PIO_SHARED_LIBRARIES"] = "y"
 
     command = ("platformio", "run", "--silent", "--environment", env, "-t", "upload")
     subprocess.check_call(command, env=environ)

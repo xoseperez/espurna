@@ -118,8 +118,17 @@
 #define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
+#ifndef TELNET_PORT
 #define TELNET_PORT             23              // Port to listen to telnet clients
+#endif
+
+#ifndef TELNET_MAX_CLIENTS
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+#endif
+
+#ifndef TELNET_SERVER
+#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
+#endif
 
 //------------------------------------------------------------------------------
 // TERMINAL
@@ -487,6 +496,54 @@
 
 #ifndef WIFI2_DNS
 #define WIFI2_DNS                   ""
+#endif
+
+#ifndef WIFI3_SSID
+#define WIFI3_SSID                  ""
+#endif
+
+#ifndef WIFI3_PASS
+#define WIFI3_PASS                  ""
+#endif
+
+#ifndef WIFI3_IP
+#define WIFI3_IP                    ""
+#endif
+
+#ifndef WIFI3_GW
+#define WIFI3_GW                    ""
+#endif
+
+#ifndef WIFI3_MASK
+#define WIFI3_MASK                  ""
+#endif
+
+#ifndef WIFI3_DNS
+#define WIFI3_DNS                   ""
+#endif
+
+#ifndef WIFI4_SSID
+#define WIFI4_SSID                  ""
+#endif
+
+#ifndef WIFI4_PASS
+#define WIFI4_PASS                  ""
+#endif
+
+#ifndef WIFI4_IP
+#define WIFI4_IP                    ""
+#endif
+
+#ifndef WIFI4_GW
+#define WIFI4_GW                    ""
+#endif
+
+#ifndef WIFI4_MASK
+#define WIFI4_MASK                  ""
+#endif
+
+#ifndef WIFI4_DNS
+#define WIFI4_DNS                   ""
 #endif
 
 #ifndef WIFI_RSSI_1M
