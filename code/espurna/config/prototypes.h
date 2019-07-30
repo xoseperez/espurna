@@ -124,7 +124,7 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // MQTT
 // -----------------------------------------------------------------------------
 #if MQTT_SUPPORT
-    typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
+    typedef std::function<void(unsigned int, const char *, char *)> mqtt_callback_f;
     void mqttRegister(mqtt_callback_f callback);
     String mqttMagnitude(char * topic);
 #else

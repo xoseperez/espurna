@@ -77,15 +77,15 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 bool wsDebugSend(const char* prefix, const char* message) {
     if (!wsConnected()) return false;
-    if (getFreeHeap() < (strlen(message) * 3)) return false;
+    if ((strlen(message) * 3) > getFreeHeap()) return false;
 
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
-    JsonObject &weblog = root.createNestedObject("weblog");
+    DynamicJsonBuffer jsonBuffer(256);
+    JsonObject& root = jsonBuffer.createObject();
 
-    weblog.set("message", message);
+    JsonObject& weblog = root.createNestedObject("weblog");
+    weblog["message"] = message;
     if (prefix && (prefix[0] != '\0')) {
-        weblog.set("prefix", prefix);
+        weblog["prefix"] = prefix;
     }
 
     wsSend(root);
@@ -148,10 +148,10 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     uint32_t client_id = client->id();
 
     // Parse JSON input
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer jsonBuffer(1024);
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] Error parsing data\n"));
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
         wsSend_P(client_id, PSTR("{\"message\": 3}"));
         return;
     }
@@ -368,6 +368,7 @@ void _wsOnStart(JsonObject& root) {
 }
 
 void wsSend(JsonObject& root) {
+    // TODO: avoid serializing twice?
     size_t len = root.measureLength();
     AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
 
@@ -381,6 +382,7 @@ void wsSend(uint32_t client_id, JsonObject& root) {
     AsyncWebSocketClient* client = _ws.client(client_id);
     if (client == nullptr) return;
 
+    // TODO: avoid serializing twice?
     size_t len = root.measureLength();
     AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
 
@@ -391,26 +393,26 @@ void wsSend(uint32_t client_id, JsonObject& root) {
 }
 
 void _wsStart(uint32_t client_id) {
-    #if USE_PASSWORD && WEB_FORCE_PASS_CHANGE
-        bool changePassword = getAdminPass().equals(ADMIN_PASS);
-    #else
-        bool changePassword = false;
-    #endif
 
-    DynamicJsonBuffer jsonBuffer;
+    const bool changePassword = (USE_PASSWORD && WEB_FORCE_PASS_CHANGE)
+        ? getAdminPass().equals(ADMIN_PASS)
+        : false;
+
+    // XXX: not enough!?
+    // XXX: double-check if it is possible to use const vars as much as possible
+    DynamicJsonBuffer jsonBuffer(2048);
     JsonObject& root = jsonBuffer.createObject();
 
     if (changePassword) {
         root["webMode"] = WEB_MODE_PASSWORD;
-        wsSend(root);
-        return;
-    }
-
-    for (auto& callback : _ws_on_send_callbacks) {
-        callback(root);
+    } else {
+        for (auto& callback : _ws_on_send_callbacks) {
+            callback(root);
+        }
     }
 
     wsSend(client_id, root);
+
 }
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
@@ -488,7 +490,7 @@ void wsOnActionRegister(ws_on_action_callback_f callback) {
 
 void wsSend(ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
-        DynamicJsonBuffer jsonBuffer;
+        DynamicJsonBuffer jsonBuffer(1024);
         JsonObject& root = jsonBuffer.createObject();
         callback(root);
 
@@ -514,15 +516,14 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     AsyncWebSocketClient* client = _ws.client(client_id);
     if (client == nullptr) return;
 
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer jsonBuffer(1024);
     JsonObject& root = jsonBuffer.createObject();
     callback(root);
 
-    size_t len = root.measureLength();
-    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(jsonBuffer.size() - 1);
 
     if (buffer) {
-        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        root.printTo(reinterpret_cast<char*>(buffer->get()), jsonBuffer.size() - 1);
         client->text(buffer);
     }
 }

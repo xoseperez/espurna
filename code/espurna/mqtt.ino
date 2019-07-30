@@ -56,11 +56,12 @@ String _mqtt_clientid;
 
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
-typedef struct {
-    unsigned char parent = 255;
+struct mqtt_message_t {
+    static const unsigned char END = 255;
+    unsigned char parent = END;
     char * topic;
     char * message = NULL;
-} mqtt_message_t;
+};
 std::vector<mqtt_message_t> _mqtt_queue;
 Ticker _mqtt_flush_ticker;
 
@@ -639,9 +640,9 @@ void mqttFlush() {
     if (_mqtt_queue.size() == 0) return;
 
     // Build tree recursively
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer jsonBuffer(1024);
     JsonObject& root = jsonBuffer.createObject();
-    _mqttBuildTree(root, 255);
+    _mqttBuildTree(root, mqtt_message_t::END);
 
     // Add extra propeties
     #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
@@ -704,7 +705,7 @@ int8_t mqttEnqueue(const char * topic, const char * message, unsigned char paren
 }
 
 int8_t mqttEnqueue(const char * topic, const char * message) {
-    return mqttEnqueue(topic, message, 255);
+    return mqttEnqueue(topic, message, mqtt_message_t::END);
 }
 
 // -----------------------------------------------------------------------------

@@ -100,10 +100,13 @@ void debugWebSetup() {
 
         #if TERMINAL_SUPPORT
             if (strcmp(action, "dbgcmd") == 0) {
-                const char* command = data.get<const char*>("command");
-                char buffer[strlen(command) + 2];
-                snprintf(buffer, sizeof(buffer), "%s\n", command);
-                terminalInject((void*) buffer, strlen(buffer));
+                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
+                const char* command = data["command"];
+                if (command && strlen(command)) {
+                    auto command = data.get<const char*>("command");
+                    terminalInject((void*) command, strlen(command));
+                    terminalInject('\n');
+                }
             }
         #endif
         

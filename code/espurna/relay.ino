@@ -635,7 +635,7 @@ String _relayFriendlyName(unsigned char i) {
 }
 
 void _relayWebSocketSendRelays() {
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer jsonBuffer(2048);
     JsonObject& root = jsonBuffer.createObject();
     JsonObject& relays = root.createNestedObject("relayConfig");
 

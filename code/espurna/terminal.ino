@@ -192,9 +192,10 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer;
+        DynamicJsonBuffer jsonBuffer(1024);
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
+        // XXX: replace with streaming
         String output;
         root.printTo(output);
         DEBUG_MSG(output.c_str());
@@ -242,6 +243,11 @@ void _terminalLoop() {
 void terminalInject(void *data, size_t len) {
     _serial.inject((char *) data, len);
 }
+
+void terminalInject(char ch) {
+    _serial.inject(ch);
+}
+
 
 Stream & terminalSerial() {
     return (Stream &) _serial;

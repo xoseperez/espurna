@@ -107,8 +107,9 @@ void infoHeapStats(const char* name, const heap_stats_t& stats) {
 }
 
 void infoHeapStats(bool show_frag_stats = true) {
-    infoMemory("Heap", getHeapStats());
+    const auto stats = getHeapStats();
+    infoMemory("Heap", stats);
     if (show_frag_stats && EspClass_has_getHeapStats::check) {
-        infoHeapStats("Heap", getHeapStats());
+        infoHeapStats("Heap", stats);
     }
 }

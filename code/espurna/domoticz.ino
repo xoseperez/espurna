@@ -96,7 +96,7 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
 
 #endif
 
-void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) {
+void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
 
     if (!_dcz_enabled) return;
 
@@ -118,7 +118,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
         if (dczTopicOut.equals(topic)) {
 
             // Parse response
-            DynamicJsonBuffer jsonBuffer;
+            DynamicJsonBuffer jsonBuffer(1024);
             JsonObject& root = jsonBuffer.parseObject((char *) payload);
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
