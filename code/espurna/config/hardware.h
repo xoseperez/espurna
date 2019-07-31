@@ -1802,6 +1802,31 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// ISELECTOR SM-PW702
+// -----------------------------------------------------------------------------
+
+#elif defined(ISELECTOR_SM_PW702)
+
+    // Info
+    #define MANUFACTURER        "ISELECTOR"
+    #define DEVICE              "SM_PW702"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4 //BLUE
+    #define LED1_PIN_INVERSE    0
+    #define LED2_PIN		5 //RED
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // AUTHOMETION LYT8266
 // https://authometion.com/shop/en/home/13-lyt8266.html
 // -----------------------------------------------------------------------------
