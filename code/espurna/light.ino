@@ -820,12 +820,14 @@ void lightSave() {
 }
 #endif
 
-void lightState(unsigned char i, bool state) {
-    _light_channel[i].state = state;
+void lightState(unsigned char id, bool state) {
+    if (id >= _light_channel.size()) return;
+    _light_channel[id].state = state;
 }
 
-bool lightState(unsigned char i) {
-    return _light_channel[i].state;
+bool lightState(unsigned char id) {
+    if (id >= _light_channel.size()) return false;
+    return _light_channel[id].state;
 }
 
 void lightState(bool state) {
