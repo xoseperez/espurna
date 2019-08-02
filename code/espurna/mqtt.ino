@@ -147,7 +147,7 @@ void _mqttConnect() {
                     _mqtt_last_connection = millis();
                     return;
                 } else {
-                    DEBUG_MSG_P(PSTR("[MQTT] !!! SSL connection will not be validated !!!\n");
+                    DEBUG_MSG_P(PSTR("[MQTT] !!! SSL connection will not be validated !!!\n"));
                 }
             }
 
