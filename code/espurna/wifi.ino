@@ -502,7 +502,6 @@ void wifiDebug(WiFiMode_t modes) {
 
     if (((modes & WIFI_STA) > 0) && ((WiFi.getMode() & WIFI_STA) > 0)) {
 
-        uint8_t * bssid = WiFi.BSSID();
         DEBUG_MSG_P(PSTR("[WIFI] ------------------------------------- MODE STA\n"));
         DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
@@ -511,9 +510,7 @@ void wifiDebug(WiFiMode_t modes) {
         DEBUG_MSG_P(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] HOST  http://%s.local\n"), WiFi.hostname().c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
-            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
-        );
+        DEBUG_MSG_P(PSTR("[WIFI] BSSID %s\n"), WiFi.BSSIDstr().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
         DEBUG_MSG_P(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
         footer = true;
