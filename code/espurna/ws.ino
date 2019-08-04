@@ -77,12 +77,18 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 bool wsDebugSend(const char* prefix, const char* message) {
     if (!wsConnected()) return false;
-    if ((strlen(message) * 3) > getFreeHeap()) return false;
 
-    DynamicJsonBuffer jsonBuffer(256);
+    const size_t len = strlen(message) + strlen(prefix)
+        + strlen("{\"weblog\":}")
+        + strlen("{\"message\":\"\"}")
+        + (strlen(prefix) ? strlen("\",\"prefix\":\"\"") : 0);
+
+    // via: https://arduinojson.org/v6/assistant/
+    // we use 1 object for "weblog", 2nd one for "message". "prefix", optional
+    StaticJsonBuffer<JSON_OBJECT_SIZE(3)> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
-
     JsonObject& weblog = root.createNestedObject("weblog");
+
     weblog["message"] = message;
     if (prefix && (prefix[0] != '\0')) {
         weblog["prefix"] = prefix;
