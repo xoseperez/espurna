@@ -63,11 +63,11 @@ void _tspkBrokerCallback(const unsigned char type, const char * topic, unsigned 
 
 #if WEB_SUPPORT
 
-bool _tspkWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _tspkWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "tspk", 4) == 0);
 }
 
-void _tspkWebSocketOnSend(JsonObject& root) {
+void _tspkWebSocketOnConnected(JsonObject& root) {
 
     unsigned char visible = 0;
 
@@ -386,8 +386,8 @@ void tspkSetup() {
     _tspkConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_tspkWebSocketOnSend);
-        wsOnReceiveRegister(_tspkWebSocketOnReceive);
+        wsOnConnectedRegister(_tspkWebSocketOnConnected);
+        wsOnKeyCheckRegister(_tspkWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT

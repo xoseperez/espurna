@@ -594,7 +594,7 @@ void _relayConfigure() {
 
 #if WEB_SUPPORT
 
-bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "relay", 5) == 0);
 }
 
@@ -634,9 +634,7 @@ String _relayFriendlyName(unsigned char i) {
     return res;
 }
 
-void _relayWebSocketSendRelays() {
-    DynamicJsonBuffer jsonBuffer(2048);
-    JsonObject& root = jsonBuffer.createObject();
+void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& relays = root.createNestedObject("relayConfig");
 
     relays["size"] = relayCount();
@@ -671,16 +669,14 @@ void _relayWebSocketSendRelays() {
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }
-
-    wsSend(root);
 }
 
-void _relayWebSocketOnStart(JsonObject& root) {
+void _relayWebSocketOnConnected(JsonObject& root) {
 
     if (relayCount() == 0) return;
 
     // Per-relay configuration
-    _relayWebSocketSendRelays();
+    _relayWebSocketSendRelays(root);
 
     // Statuses
     _relayWebSocketUpdate(root);
@@ -731,9 +727,9 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 }
 
 void relaySetupWS() {
-    wsOnSendRegister(_relayWebSocketOnStart);
+    wsOnConnectedRegister(_relayWebSocketOnConnected);
     wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnReceiveRegister(_relayWebSocketOnReceive);
+    wsOnKeyCheckRegister(_relayWebSocketOnKeyCheck);
 }
 
 #endif // WEB_SUPPORT

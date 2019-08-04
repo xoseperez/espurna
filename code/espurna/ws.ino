@@ -18,19 +18,21 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 AsyncWebSocket _ws("/ws");
 Ticker _web_defer;
 
-std::vector<ws_on_send_callback_f> _ws_on_send_callbacks;
+std::vector<ws_on_send_callback_f> _ws_on_connected_callbacks;
 std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
-std::vector<ws_on_receive_callback_f> _ws_on_receive_callbacks;
+std::vector<ws_on_keycheck_callback_f> _ws_on_keycheck_callbacks;
 
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
 
-typedef struct {
+struct ws_ticket_t {
     IPAddress ip;
     unsigned long timestamp = 0;
-} ws_ticket_t;
-ws_ticket_t _ticket[WS_BUFFER_SIZE];
+};
+ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
+
+std::queue<uint32_t> _ws_clients;
 
 void _onAuth(AsyncWebServerRequest *request) {
 
@@ -41,15 +43,15 @@ void _onAuth(AsyncWebServerRequest *request) {
     unsigned long now = millis();
     unsigned short index;
     for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if (_ticket[index].ip == ip) break;
-        if (_ticket[index].timestamp == 0) break;
-        if (now - _ticket[index].timestamp > WS_TIMEOUT) break;
+        if (_ws_tickets[index].ip == ip) break;
+        if (_ws_tickets[index].timestamp == 0) break;
+        if (now - _ws_tickets[index].timestamp > WS_TIMEOUT) break;
     }
     if (index == WS_BUFFER_SIZE) {
         request->send(429);
     } else {
-        _ticket[index].ip = ip;
-        _ticket[index].timestamp = now;
+        _ws_tickets[index].ip = ip;
+        _ws_tickets[index].timestamp = now;
         request->send(200, "text/plain", "OK");
     }
 
@@ -62,7 +64,7 @@ bool _wsAuth(AsyncWebSocketClient * client) {
     unsigned short index = 0;
 
     for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if ((_ticket[index].ip == ip) && (now - _ticket[index].timestamp < WS_TIMEOUT)) break;
+        if ((_ws_tickets[index].ip == ip) && (now - _ws_tickets[index].timestamp < WS_TIMEOUT)) break;
     }
 
     if (index == WS_BUFFER_SIZE) {
@@ -146,6 +148,15 @@ bool _wsStore(String key, JsonArray& value) {
 
 }
 
+bool _wsCheckKey(const String& key, JsonVariant& value) {
+    for (auto& callback : _ws_on_keycheck_callbacks) {
+        if (callback(key.c_str(), value)) return true;
+        // TODO: remove this to call all OnKeyCheckCallbacks with the
+        // current key/value
+    }
+    return false;
+}
+
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
     //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %s\n"), length ? (char*) payload : "");
@@ -190,8 +201,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
 
             // Callbacks
-            for (unsigned char i = 0; i < _ws_on_action_callbacks.size(); i++) {
-                (_ws_on_action_callbacks[i])(client_id, action, data);
+            for (auto& callback : _ws_on_action_callbacks) {
+                callback(client_id, action, data);
             }
 
             // Restore configuration via websockets
@@ -243,15 +254,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 continue;
             }
 
-            // Check if key has to be processed
-            bool found = false;
-            for (unsigned char i = 0; i < _ws_on_receive_callbacks.size(); i++) {
-                found |= (_ws_on_receive_callbacks[i])(key.c_str(), value);
-                // TODO: remove this to call all OnReceiveCallbacks with the
-                // current key/value
-                if (found) break;
-            }
-            if (!found) {
+            if (!_wsCheckKey(key, value)) {
                 delSetting(key);
                 continue;
             }
@@ -318,7 +321,7 @@ void _wsDoUpdate(bool reset = false) {
 }
 
 
-bool _wsOnReceive(const char * key, JsonVariant& value) {
+bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "ws", 2) == 0) return true;
     if (strncmp(key, "admin", 5) == 0) return true;
     if (strncmp(key, "hostname", 8) == 0) return true;
@@ -327,7 +330,7 @@ bool _wsOnReceive(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _wsOnStart(JsonObject& root) {
+void _wsOnConnected(JsonObject& root) {
     char chipid[7];
     snprintf_P(chipid, sizeof(chipid), PSTR("%06X"), ESP.getChipId());
 
@@ -392,26 +395,21 @@ void wsSend(uint32_t client_id, JsonObject& root) {
     }
 }
 
-void _wsStart(uint32_t client_id) {
+void _wsConnected(uint32_t client_id) {
 
     const bool changePassword = (USE_PASSWORD && WEB_FORCE_PASS_CHANGE)
         ? getAdminPass().equals(ADMIN_PASS)
         : false;
 
-    // XXX: not enough!?
-    // XXX: double-check if it is possible to use const vars as much as possible
-    DynamicJsonBuffer jsonBuffer(2048);
-    JsonObject& root = jsonBuffer.createObject();
-
     if (changePassword) {
+        StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
         root["webMode"] = WEB_MODE_PASSWORD;
-    } else {
-        for (auto& callback : _ws_on_send_callbacks) {
-            callback(root);
-        }
+        wsSend(client_id, root);
+        return;
     }
 
-    wsSend(client_id, root);
+    _ws_clients.push(client_id);
 
 }
 
@@ -432,8 +430,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
-        _wsStart(client->id());
-        client->_tempObject = new WebSocketIncommingBuffer(&_wsParse, true);
+        _wsConnected(client->id());
         wifiReconnectCheck();
 
     } else if(type == WS_EVT_DISCONNECT) {
@@ -451,6 +448,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
     } else if(type == WS_EVT_DATA) {
         //DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u data(%u): %s\n"), client->id(), len, len ? (char*) data : "");
+        if (!client->_tempObject) return;
         WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *)client->_tempObject;
         AwsFrameInfo * info = (AwsFrameInfo*)arg;
         buffer->data_event(client, info, data, len);
@@ -459,9 +457,44 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
 }
 
+void _wsNewClient() {
+    auto client = _ws_clients.front();
+    AsyncWebSocketClient* ws_client = _ws.client(client);
+
+    // expired (reload?)
+    if (!ws_client) {
+        DEBUG_MSG("%u no longer here\n", client);
+        _ws_clients.pop();
+        return;
+    }
+
+    // wait until we can send the next batch of messages
+    if (ws_client->queueIsFull()) {
+        return;
+    }
+
+    // TODO: v6 has memoryUsage, how to check v5?
+    DynamicJsonBuffer jsonBuffer(4096);
+    JsonObject& root = jsonBuffer.createObject();
+    for (auto& callback : _ws_on_connected_callbacks) {
+        callback(root);
+    }
+
+    wsSend(client, root);
+    jsonBuffer.clear();
+
+    _ws_clients.pop();
+    yield();
+
+    // finally, allow incoming messages
+    ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
+}
+
 void _wsLoop() {
     if (!wsConnected()) return;
     _wsDoUpdate();
+
+    if (!_ws_clients.empty()) _wsNewClient();
 }
 
 // -----------------------------------------------------------------------------
@@ -476,12 +509,12 @@ bool wsConnected(uint32_t client_id) {
     return _ws.hasClient(client_id);
 }
 
-void wsOnSendRegister(ws_on_send_callback_f callback) {
-    _ws_on_send_callbacks.push_back(callback);
+void wsOnConnectedRegister(ws_on_send_callback_f callback) {
+    _ws_on_connected_callbacks.push_back(callback);
 }
 
-void wsOnReceiveRegister(ws_on_receive_callback_f callback) {
-    _ws_on_receive_callbacks.push_back(callback);
+void wsOnKeyCheckRegister(ws_on_keycheck_callback_f callback) {
+    _ws_on_keycheck_callbacks.push_back(callback);
 }
 
 void wsOnActionRegister(ws_on_action_callback_f callback) {
@@ -490,7 +523,7 @@ void wsOnActionRegister(ws_on_action_callback_f callback) {
 
 void wsSend(ws_on_send_callback_f callback) {
     if (_ws.count() > 0) {
-        DynamicJsonBuffer jsonBuffer(1024);
+        DynamicJsonBuffer jsonBuffer(512);
         JsonObject& root = jsonBuffer.createObject();
         callback(root);
 
@@ -516,7 +549,7 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     AsyncWebSocketClient* client = _ws.client(client_id);
     if (client == nullptr) return;
 
-    DynamicJsonBuffer jsonBuffer(1024);
+    DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.createObject();
     callback(root);
 
@@ -556,8 +589,8 @@ void wsSetup() {
         mqttRegister(_wsMQTTCallback);
     #endif
 
-    wsOnSendRegister(_wsOnStart);
-    wsOnReceiveRegister(_wsOnReceive);
+    wsOnConnectedRegister(_wsOnConnected);
+    wsOnKeyCheckRegister(_wsOnKeyCheck);
     espurnaRegisterLoop(_wsLoop);
 }
 

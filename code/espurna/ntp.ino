@@ -26,11 +26,11 @@ bool _ntp_want_sync = false;
 
 #if WEB_SUPPORT
 
-bool _ntpWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ntp", 3) == 0);
 }
 
-void _ntpWebSocketOnSend(JsonObject& root) {
+void _ntpWebSocketOnConnected(JsonObject& root) {
     root["ntpVisible"] = 1;
     root["ntpStatus"] = (timeStatus() == timeSet);
     root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
@@ -117,7 +117,7 @@ void _ntpReport() {
     _ntp_report = false;
 
     #if WEB_SUPPORT
-        wsSend(_ntpWebSocketOnSend);
+        wsSend(_ntpWebSocketOnConnected);
     #endif
 
     if (ntpSynced()) {
@@ -255,8 +255,8 @@ void ntpSetup() {
     });
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_ntpWebSocketOnSend);
-        wsOnReceiveRegister(_ntpWebSocketOnReceive);
+        wsOnConnectedRegister(_ntpWebSocketOnConnected);
+        wsOnKeyCheckRegister(_ntpWebSocketOnKeyCheck);
     #endif
 
     // Main callbacks

@@ -22,11 +22,11 @@ std::vector<web_api_t> _apis;
 
 // -----------------------------------------------------------------------------
 
-bool _apiWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "api", 3) == 0);
 }
 
-void _apiWebSocketOnSend(JsonObject& root) {
+void _apiWebSocketOnConnected(JsonObject& root) {
     root["apiVisible"] = 1;
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
@@ -242,8 +242,8 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 
 void apiSetup() {
     _apiConfigure();
-    wsOnSendRegister(_apiWebSocketOnSend);
-    wsOnReceiveRegister(_apiWebSocketOnReceive);
+    wsOnConnectedRegister(_apiWebSocketOnConnected);
+    wsOnKeyCheckRegister(_apiWebSocketOnKeyCheck);
     webRequestRegister(_apiRequestCallback);
     espurnaRegisterReload(_apiConfigure);
 }

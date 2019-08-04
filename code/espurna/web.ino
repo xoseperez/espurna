@@ -72,7 +72,7 @@ void _onDiscover(AsyncWebServerRequest *request) {
     const String device = getBoardName();
     const String hostname = getSetting("hostname");
 
-    DynamicJsonBuffer jsonBuffer(JSON_OBJECT_SIZE(4));
+    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;

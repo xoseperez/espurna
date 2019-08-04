@@ -89,14 +89,11 @@ void debugSendImpl(const char * message) {
 
 
 #if DEBUG_WEB_SUPPORT
-
-void debugWebSetup() {
-
-    wsOnSendRegister([](JsonObject& root) {
+void _debugWebSocketOnConnected(JsonObject& root) {
         root["dbgVisible"] = 1;
-    });
+}
 
-    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
+void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
         #if TERMINAL_SUPPORT
             if (strcmp(action, "dbgcmd") == 0) {
@@ -109,8 +106,12 @@ void debugWebSetup() {
                 }
             }
         #endif
-        
-    });
+}
+
+void debugWebSetup() {
+
+    wsOnConnectedRegister(_debugWebSocketOnConnected);
+    wsOnActionRegister(_debugWebSocketOnAction);
 
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514

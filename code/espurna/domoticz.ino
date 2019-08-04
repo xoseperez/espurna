@@ -119,7 +119,7 @@ void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
 
             // Parse response
             DynamicJsonBuffer jsonBuffer(1024);
-            JsonObject& root = jsonBuffer.parseObject((char *) payload);
+            JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;
@@ -166,11 +166,11 @@ void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsig
 
 #if WEB_SUPPORT
 
-bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "dcz", 3) == 0);
 }
 
-void _domoticzWebSocketOnSend(JsonObject& root) {
+void _domoticzWebSocketOnConnected(JsonObject& root) {
 
     unsigned char visible = 0;
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
@@ -248,8 +248,8 @@ void domoticzSetup() {
     _domoticzConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_domoticzWebSocketOnSend);
-        wsOnReceiveRegister(_domoticzWebSocketOnReceive);
+        wsOnConnectedRegister(_domoticzWebSocketOnConnected);
+        wsOnKeyCheckRegister(_domoticzWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT

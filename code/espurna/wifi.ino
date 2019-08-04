@@ -458,7 +458,7 @@ void _wifiInitCommands() {
 
 #if WEB_SUPPORT
 
-bool _wifiWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _wifiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "wifi", 4) == 0) return true;
     if (strncmp(key, "ssid", 4) == 0) return true;
     if (strncmp(key, "pass", 4) == 0) return true;
@@ -469,7 +469,7 @@ bool _wifiWebSocketOnReceive(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _wifiWebSocketOnSend(JsonObject& root) {
+void _wifiWebSocketOnConnected(JsonObject& root) {
     root["maxNetworks"] = WIFI_MAX_NETWORKS;
     root["wifiScan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
     JsonArray& wifi = root.createNestedArray("wifi");
@@ -645,8 +645,8 @@ void wifiSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_wifiWebSocketOnSend);
-        wsOnReceiveRegister(_wifiWebSocketOnReceive);
+        wsOnConnectedRegister(_wifiWebSocketOnConnected);
+        wsOnKeyCheckRegister(_wifiWebSocketOnKeyCheck);
         wsOnActionRegister(_wifiWebSocketOnAction);
     #endif
 

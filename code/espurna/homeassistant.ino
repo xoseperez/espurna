@@ -299,11 +299,11 @@ void _haConfigure() {
 
 std::queue<uint32_t> _ha_send_config;
 
-bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _haWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
 }
 
-void _haWebSocketOnSend(JsonObject& root) {
+void _haWebSocketOnConnected(JsonObject& root) {
     root["haVisible"] = 1;
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
     root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
@@ -333,7 +333,7 @@ void _haInitCommands() {
         setSetting("haEnabled", "1");
         _haConfigure();
         #if WEB_SUPPORT
-            wsSend(_haWebSocketOnSend);
+            wsSend(_haWebSocketOnConnected);
         #endif
         terminalOK();
     });
@@ -342,7 +342,7 @@ void _haInitCommands() {
         setSetting("haEnabled", "0");
         _haConfigure();
         #if WEB_SUPPORT
-            wsSend(_haWebSocketOnSend);
+            wsSend(_haWebSocketOnConnected);
         #endif
         terminalOK();
     });
@@ -375,9 +375,9 @@ void haSetup() {
     _haConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_haWebSocketOnSend);
+        wsOnConnectedRegister(_haWebSocketOnConnected);
         wsOnActionRegister(_haWebSocketOnAction);
-        wsOnReceiveRegister(_haWebSocketOnReceive);
+        wsOnKeyCheckRegister(_haWebSocketOnKeyCheck);
         espurnaRegisterLoop(_haLoop);
     #endif
 
