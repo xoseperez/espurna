@@ -229,7 +229,7 @@ void schSetup() {
 
     // Update websocket clients
     #if WEB_SUPPORT
-        wsRegister((ws_callbacks_t) { _schWebSocketOnConnected, nullptr, _schWebSocketOnKeyCheck });
+        wsRegister({ _schWebSocketOnConnected, nullptr, _schWebSocketOnKeyCheck });
     #endif
 
     // Main callbacks

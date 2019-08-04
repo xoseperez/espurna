@@ -386,7 +386,7 @@ void tspkSetup() {
     _tspkConfigure();
 
     #if WEB_SUPPORT
-        wsRegister((ws_callbacks_t) { _tspkWebSocketOnConnected, nullptr, _tspkWebSocketOnKeyCheck });
+        wsRegister({ _tspkWebSocketOnConnected, nullptr, _tspkWebSocketOnKeyCheck });
     #endif
 
     #if BROKER_SUPPORT

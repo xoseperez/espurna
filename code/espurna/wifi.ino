@@ -645,7 +645,7 @@ void wifiSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister((ws_callbacks_t) { _wifiWebSocketOnConnected, _wifiWebSocketOnAction, _wifiWebSocketOnKeyCheck });
+        wsRegister({ _wifiWebSocketOnConnected, _wifiWebSocketOnAction, _wifiWebSocketOnKeyCheck });
     #endif
 
     #if TERMINAL_SUPPORT

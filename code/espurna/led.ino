@@ -200,8 +200,7 @@ void ledSetup() {
     #endif
 
     #if WEB_SUPPORT
-        ws_callbacks_t callbacks = { _ledWebSocketOnConnected, nullptr, _ledWebSocketOnKeyCheck };
-        wsRegister(callbacks);
+        wsRegister({ _ledWebSocketOnConnected, nullptr, _ledWebSocketOnKeyCheck });
     #endif
 
     #if BROKER_SUPPORT

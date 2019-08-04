@@ -255,7 +255,7 @@ void ntpSetup() {
     });
 
     #if WEB_SUPPORT
-        wsRegister((ws_callbacks_t) { _ntpWebSocketOnConnected, nullptr, _ntpWebSocketOnKeyCheck });
+        wsRegister({ _ntpWebSocketOnConnected, nullptr, _ntpWebSocketOnKeyCheck });
     #endif
 
     // Main callbacks

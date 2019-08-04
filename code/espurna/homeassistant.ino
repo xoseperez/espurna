@@ -375,11 +375,7 @@ void haSetup() {
     _haConfigure();
 
     #if WEB_SUPPORT
-        ws_callbacks_t callbacks;
-        callbacks.on_connected = _haWebSocketOnConnected;
-        callbacks.on_action = _haWebSocketOnAction;
-        callbacks.on_keycheck = _haWebSocketOnKeyCheck;
-        wsRegister(callbacks);
+        wsRegister({ _haWebSocketOnConnected, _haWebSocketOnAction, _haWebSocketOnKeyCheck });
         espurnaRegisterLoop(_haLoop);
     #endif
 

@@ -261,7 +261,7 @@ void systemSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister((ws_callbacks_t) { nullptr, nullptr, _systemWebSocketOnKeyCheck });
+        wsRegister({ nullptr, nullptr, _systemWebSocketOnKeyCheck });
     #endif
 
     // Init device-specific hardware
