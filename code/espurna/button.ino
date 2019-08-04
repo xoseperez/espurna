@@ -243,7 +243,7 @@ void buttonSetup() {
 
     // Websocket Callbacks
     #if WEB_SUPPORT
-        wsOnKeyCheckRegister(_buttonWebSocketOnKeyCheck);
+        wsRegister({ nullptr, nullptr, _buttonWebSocketOnKeyCheck });
     #endif
 
     // Register loop

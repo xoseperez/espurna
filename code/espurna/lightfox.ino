@@ -47,7 +47,7 @@ void lightfoxClear() {
 
 #if WEB_SUPPORT
 
-void _lightfoxWebSocketOnSend(JsonObject& root) {
+void _lightfoxWebSocketOnConnected(JsonObject& root) {
     root["lightfoxVisible"] = 1;
     uint8_t buttonsCount = _buttons.size();
     root["lightfoxRelayCount"] = relayCount();
@@ -94,7 +94,7 @@ void _lightfoxInitCommands() {
 void lightfoxSetup() {
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_lightfoxWebSocketOnSend);
+        wsOnConnectedRegister(_lightfoxWebSocketOnConnected);
         wsOnActionRegister(_lightfoxWebSocketOnAction);
     #endif
 

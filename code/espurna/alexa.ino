@@ -123,8 +123,10 @@ void alexaSetup() {
     #if WEB_SUPPORT
         webBodyRegister(_alexaBodyCallback);
         webRequestRegister(_alexaRequestCallback);
-        wsOnConnectedRegister(_alexaWebSocketOnConnected);
-        wsOnKeyCheckRegister(_alexaWebSocketOnKeyCheck);
+        ws_callbacks_t callbacks;
+        callbacks.on_connected = _alexaWebSocketOnConnected;
+        callbacks.on_keycheck = _alexaWebSocketOnKeyCheck;
+        wsRegister(callbacks);
     #endif
 
     // Register wifi callback

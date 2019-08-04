@@ -118,7 +118,7 @@ void _rfbWebSocketSendCodes() {
     _rfbWebSocketSendCodeArray(0, relayCount());
 }
 
-void _rfbWebSocketOnSend(JsonObject& root) {
+void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbVisible"] = 1;
     root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
     root["rfbCount"] = relayCount();
@@ -136,7 +136,7 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& 
     if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
 }
 
-bool _rfbWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "rfb", 3) == 0);
 }
 
@@ -768,9 +768,9 @@ void rfbSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_rfbWebSocketOnSend);
+        wsOnConnectedRegister(_rfbWebSocketOnConnected);
         wsOnActionRegister(_rfbWebSocketOnAction);
-        wsOnReceiveRegister(_rfbWebSocketOnReceive);
+        wsOnKeyCheckRegister(_rfbWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT

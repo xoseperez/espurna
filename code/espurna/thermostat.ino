@@ -298,7 +298,7 @@ void _thermostatReload() {
 
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
-void _thermostatWebSocketOnSend(JsonObject& root) {
+void _thermostatWebSocketOnConnected(JsonObject& root) {
   root["thermostatEnabled"] = thermostatEnabled();
   root["thermostatMode"] = thermostatModeCooler();
   root["thermostatVisible"] = 1;
@@ -328,7 +328,7 @@ void _thermostatWebSocketOnSend(JsonObject& root) {
 }
 
 //------------------------------------------------------------------------------
-bool _thermostatWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
     if (strncmp(key, NAME_THERMOSTAT_MODE,      strlen(NAME_THERMOSTAT_MODE))      == 0) return true;
     if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
@@ -358,8 +358,8 @@ void thermostatSetup() {
 
   // Websockets
   #if WEB_SUPPORT
-      wsOnSendRegister(_thermostatWebSocketOnSend);
-      wsOnReceiveRegister(_thermostatWebSocketOnReceive);
+      wsOnConnectedRegister(_thermostatWebSocketOnConnected);
+      wsOnKeyCheckRegister(_thermostatWebSocketOnKeyCheck);
       wsOnActionRegister(_thermostatWebSocketOnAction);
   #endif
 

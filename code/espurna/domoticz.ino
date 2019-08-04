@@ -248,8 +248,10 @@ void domoticzSetup() {
     _domoticzConfigure();
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_domoticzWebSocketOnConnected);
-        wsOnKeyCheckRegister(_domoticzWebSocketOnKeyCheck);
+        ws_callbacks_t callbacks;
+        callbacks.on_connected = _domoticzWebSocketOnConnected;
+        callbacks.on_keycheck = _domoticzWebSocketOnKeyCheck;
+        wsRegister(callbacks);
     #endif
 
     #if BROKER_SUPPORT

@@ -111,14 +111,14 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 
 #if WEB_SUPPORT
 
+//void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
 template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
 
     // ws produces flat list <prefix>Magnitudes
-    String ws_name = String(prefix);
-    ws_name.concat("Magnitudes");
+    const String ws_name = String(prefix) + "Magnitudes";
 
     // config uses <prefix>Magnitude<index> (cut 's')
-    String conf_name = ws_name.substring(0, ws_name.length() - 1);
+    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
 
     JsonObject& list = root.createNestedObject(ws_name);
     list["size"] = magnitudeCount();
@@ -136,7 +136,21 @@ template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix)
     }
 }
 
-bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
+/*
+template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+
+    // ws produces flat list <prefix>Magnitudes
+    const String ws_name = String(prefix) + "Magnitudes";
+
+    // config uses <prefix>Magnitude<index> (cut 's')
+    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
+
+    _sensorWebSocketMagnitudes(root, ws_name, conf_name);
+
+}
+*/
+
+bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "pwr", 3) == 0) return true;
     if (strncmp(key, "sns", 3) == 0) return true;
     if (strncmp(key, "tmp", 3) == 0) return true;
@@ -200,7 +214,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
 
 }
 
-void _sensorWebSocketStart(JsonObject& root) {
+void _sensorWebSocketOnConnected(JsonObject& root) {
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
@@ -1437,9 +1451,7 @@ void sensorSetup() {
 
     // Websockets
     #if WEB_SUPPORT
-        wsOnSendRegister(_sensorWebSocketStart);
-        wsOnReceiveRegister(_sensorWebSocketOnReceive);
-        wsOnSendRegister(_sensorWebSocketSendData);
+        wsRegister({ _sensorWebSocketOnConnected, nullptr, _sensorWebSocketOnKeyCheck });
     #endif
 
     // API

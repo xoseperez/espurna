@@ -18,9 +18,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 AsyncWebSocket _ws("/ws");
 Ticker _web_defer;
 
-std::vector<ws_on_send_callback_f> _ws_on_connected_callbacks;
-std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
-std::vector<ws_on_keycheck_callback_f> _ws_on_keycheck_callbacks;
+std::vector<ws_callbacks_t> _ws_callbacks;
 
 // -----------------------------------------------------------------------------
 // Private methods
@@ -29,7 +27,7 @@ std::vector<ws_on_keycheck_callback_f> _ws_on_keycheck_callbacks;
 struct ws_ticket_t {
     IPAddress ip;
     unsigned long timestamp = 0;
-};
+}; 
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
 std::queue<uint32_t> _ws_clients;
@@ -87,7 +85,7 @@ bool wsDebugSend(const char* prefix, const char* message) {
 
     // via: https://arduinojson.org/v6/assistant/
     // we use 1 object for "weblog", 2nd one for "message". "prefix", optional
-    StaticJsonBuffer<JSON_OBJECT_SIZE(3)> jsonBuffer;
+    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
     JsonObject& weblog = root.createNestedObject("weblog");
 
@@ -149,8 +147,9 @@ bool _wsStore(String key, JsonArray& value) {
 }
 
 bool _wsCheckKey(const String& key, JsonVariant& value) {
-    for (auto& callback : _ws_on_keycheck_callbacks) {
-        if (callback(key.c_str(), value)) return true;
+    for (auto& callbacks : _ws_callbacks) {
+        if (!callbacks.on_keycheck) continue;
+        if (callbacks.on_keycheck(key.c_str(), value)) return true;
         // TODO: remove this to call all OnKeyCheckCallbacks with the
         // current key/value
     }
@@ -165,7 +164,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     uint32_t client_id = client->id();
 
     // Parse JSON input
-    DynamicJsonBuffer jsonBuffer(1024);
+    DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] JSON parsing error\n"));
@@ -201,8 +200,9 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
 
             // Callbacks
-            for (auto& callback : _ws_on_action_callbacks) {
-                callback(client_id, action, data);
+            for (auto& callbacks : _ws_callbacks) {
+                if (!callbacks.on_action) continue;
+                callbacks.on_action(client_id, action, data);
             }
 
             // Restore configuration via websockets
@@ -474,20 +474,27 @@ void _wsNewClient() {
     }
 
     // TODO: v6 has memoryUsage, how to check v5?
+    //Serial.printf("BEFORE heap=%u\n", ESP.getFreeHeap());
     DynamicJsonBuffer jsonBuffer(4096);
     JsonObject& root = jsonBuffer.createObject();
-    for (auto& callback : _ws_on_connected_callbacks) {
-        callback(root);
+    //Serial.printf("MKJSON heap=%u\n", ESP.getFreeHeap());
+    for (auto& callbacks : _ws_callbacks) {
+        if (!callbacks.on_connected) continue;
+        callbacks.on_connected(root);
+        Serial.printf("CALL heap=%u ptr=%p\n", ESP.getFreeHeap(), &callbacks.on_connected);
     }
 
+    //Serial.printf("MKSEND heap=%u \n", ESP.getFreeHeap());
     wsSend(client, root);
     jsonBuffer.clear();
+    //Serial.printf("SENT heap=%u \n", ESP.getFreeHeap());
 
     _ws_clients.pop();
     yield();
 
     // finally, allow incoming messages
     ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
+    //Serial.printf("%u is now receiving\n", client);
 }
 
 void _wsLoop() {
@@ -509,16 +516,9 @@ bool wsConnected(uint32_t client_id) {
     return _ws.hasClient(client_id);
 }
 
-void wsOnConnectedRegister(ws_on_send_callback_f callback) {
-    _ws_on_connected_callbacks.push_back(callback);
-}
-
-void wsOnKeyCheckRegister(ws_on_keycheck_callback_f callback) {
-    _ws_on_keycheck_callbacks.push_back(callback);
-}
-
-void wsOnActionRegister(ws_on_action_callback_f callback) {
-    _ws_on_action_callbacks.push_back(callback);
+void wsRegister(const ws_callbacks_t& callbacks) {
+    DEBUG_MSG("register %p\n", &callbacks);
+    _ws_callbacks.push_back(callbacks);
 }
 
 void wsSend(ws_on_send_callback_f callback) {
@@ -589,8 +589,11 @@ void wsSetup() {
         mqttRegister(_wsMQTTCallback);
     #endif
 
-    wsOnConnectedRegister(_wsOnConnected);
-    wsOnKeyCheckRegister(_wsOnKeyCheck);
+    ws_callbacks_t callbacks;
+    callbacks.on_connected = _wsOnConnected;
+    callbacks.on_keycheck = _wsOnKeyCheck;
+    wsRegister(callbacks);
+
     espurnaRegisterLoop(_wsLoop);
 }
 

@@ -110,8 +110,10 @@ void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
 void debugWebSetup() {
 
-    wsOnConnectedRegister(_debugWebSocketOnConnected);
-    wsOnActionRegister(_debugWebSocketOnAction);
+    ws_callbacks_t callbacks;
+    callbacks.on_connected = _debugWebSocketOnConnected;
+    callbacks.on_action = _debugWebSocketOnAction;
+    wsRegister(callbacks);
 
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514

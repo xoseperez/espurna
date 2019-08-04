@@ -212,14 +212,17 @@ void webRequestRegister(web_request_callback_f callback);
     using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
     using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
 
-    void wsOnConnectedRegister(ws_on_send_callback_f callback);
+    struct ws_callbacks_t {
+        ws_on_send_callback_f on_connected;
+        ws_on_action_callback_f on_action;
+        ws_on_keycheck_callback_f on_keycheck;
+    };
+    void wsRegister(const ws_callbacks_t&);
+    void wsRegister(const ws_callbacks_t&);
+
     void wsSend(uint32_t, JsonObject& root);
     void wsSend(JsonObject& root);
     void wsSend(ws_on_send_callback_f sender);
-
-
-    void wsOnActionRegister(ws_on_action_callback_f callback);
-    void wsOnKeyCheckRegister(ws_on_keycheck_callback_f callback);
 
     bool wsConnected();
     bool wsConnected(uint32_t);

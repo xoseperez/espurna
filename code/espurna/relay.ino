@@ -727,9 +727,11 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 }
 
 void relaySetupWS() {
-    wsOnConnectedRegister(_relayWebSocketOnConnected);
-    wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnKeyCheckRegister(_relayWebSocketOnKeyCheck);
+    ws_callbacks_t callbacks;
+    callbacks.on_connected = _relayWebSocketOnConnected;
+    callbacks.on_action = _relayWebSocketOnAction;
+    callbacks.on_keycheck = _relayWebSocketOnKeyCheck;
+    wsRegister(callbacks);
 }
 
 #endif // WEB_SUPPORT

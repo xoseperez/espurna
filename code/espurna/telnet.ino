@@ -313,8 +313,7 @@ void telnetSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_telnetWebSocketOnConnected);
-        wsOnKeyCheckRegister(_telnetWebSocketOnKeyCheck);
+        wsRegister((ws_callbacks_t) { _telnetWebSocketOnConnected, nullptr, _telnetWebSocketOnKeyCheck });
     #endif
 
     espurnaRegisterReload(_telnetConfigure);

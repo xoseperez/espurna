@@ -921,7 +921,7 @@ void lightTransitionTime(unsigned long m) {
 
 #if WEB_SUPPORT
 
-bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "light", 5) == 0) return true;
     if (strncmp(key, "use", 3) == 0) return true;
     return false;
@@ -946,7 +946,7 @@ void _lightWebSocketStatus(JsonObject& root) {
     root["brightness"] = lightBrightness();
 }
 
-void _lightWebSocketOnSend(JsonObject& root) {
+void _lightWebSocketOnConnected(JsonObject& root) {
     root["colorVisible"] = 1;
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
@@ -1290,9 +1290,9 @@ void lightSetup() {
     }
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_lightWebSocketOnSend);
+        wsOnConnectedRegister(_lightWebSocketOnConnected);
         wsOnActionRegister(_lightWebSocketOnAction);
-        wsOnReceiveRegister(_lightWebSocketOnReceive);
+        wsOnKeyCheckRegister(_lightWebSocketOnKeyCheck);
     #endif
 
     #if API_SUPPORT
