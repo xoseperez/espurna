@@ -1100,9 +1100,17 @@
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
+#ifndef DOMOTICZ_ENABLED
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
+#endif
+
+#ifndef DOMOTICZ_IN_TOPIC
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
+#endif
+
+#ifndef DOMOTICZ_OUT_TOPIC
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
+#endif
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
