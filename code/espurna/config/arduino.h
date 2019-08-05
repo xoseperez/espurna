@@ -129,6 +129,7 @@
 //#define WION_50055
 //#define WORKCHOICE_ECOPLUG
 //#define XENON_SM_PW702U
+//#define ISELECTOR_SM_PW702
 //#define XIAOMI_SMART_DESK_LAMP
 //#define YIDIAN_XSSSA05
 //#define YJZK_SWITCH_1CH
