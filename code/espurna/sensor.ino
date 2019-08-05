@@ -574,11 +574,85 @@ void _sensorLoad() {
 
     #if DIGITAL_SUPPORT
     {
-        DigitalSensor * sensor = new DigitalSensor();
-        sensor->setGPIO(DIGITAL_PIN);
-        sensor->setMode(DIGITAL_PIN_MODE);
-        sensor->setDefault(DIGITAL_DEFAULT_STATE);
-        _sensors.push_back(sensor);
+        #if (DIGITAL1_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL1_PIN);
+            sensor->setMode(DIGITAL1_PIN_MODE);
+            sensor->setDefault(DIGITAL1_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL2_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL2_PIN);
+            sensor->setMode(DIGITAL2_PIN_MODE);
+            sensor->setDefault(DIGITAL2_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL3_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL3_PIN);
+            sensor->setMode(DIGITAL3_PIN_MODE);
+            sensor->setDefault(DIGITAL3_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL4_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL4_PIN);
+            sensor->setMode(DIGITAL4_PIN_MODE);
+            sensor->setDefault(DIGITAL4_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL5_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL5_PIN);
+            sensor->setMode(DIGITAL5_PIN_MODE);
+            sensor->setDefault(DIGITAL5_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL6_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL6_PIN);
+            sensor->setMode(DIGITAL6_PIN_MODE);
+            sensor->setDefault(DIGITAL6_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL7_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL7_PIN);
+            sensor->setMode(DIGITAL7_PIN_MODE);
+            sensor->setDefault(DIGITAL7_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL8_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL8_PIN);
+            sensor->setMode(DIGITAL8_PIN_MODE);
+            sensor->setDefault(DIGITAL8_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
     }
     #endif
 
@@ -631,13 +705,101 @@ void _sensorLoad() {
 
     #if EVENTS_SUPPORT
     {
-        EventSensor * sensor = new EventSensor();
-        sensor->setGPIO(EVENTS_PIN);
-        sensor->setTrigger(EVENTS_TRIGGER);
-        sensor->setPinMode(EVENTS_PIN_MODE);
-        sensor->setDebounceTime(EVENTS_DEBOUNCE);
-        sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
-        _sensors.push_back(sensor);
+        #if (EVENTS1_PIN != GPIO_NONE)
+    {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS1_PIN);
+            sensor->setTrigger(EVENTS1_TRIGGER);
+            sensor->setPinMode(EVENTS1_PIN_MODE);
+            sensor->setDebounceTime(EVENTS1_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS1_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS2_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS2_PIN);
+            sensor->setTrigger(EVENTS2_TRIGGER);
+            sensor->setPinMode(EVENTS2_PIN_MODE);
+            sensor->setDebounceTime(EVENTS2_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS2_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS3_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS3_PIN);
+            sensor->setTrigger(EVENTS3_TRIGGER);
+            sensor->setPinMode(EVENTS3_PIN_MODE);
+            sensor->setDebounceTime(EVENTS3_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS3_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS4_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS4_PIN);
+            sensor->setTrigger(EVENTS4_TRIGGER);
+            sensor->setPinMode(EVENTS4_PIN_MODE);
+            sensor->setDebounceTime(EVENTS4_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS4_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS5_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS5_PIN);
+            sensor->setTrigger(EVENTS5_TRIGGER);
+            sensor->setPinMode(EVENTS5_PIN_MODE);
+            sensor->setDebounceTime(EVENTS5_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS5_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS6_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS6_PIN);
+            sensor->setTrigger(EVENTS6_TRIGGER);
+            sensor->setPinMode(EVENTS6_PIN_MODE);
+            sensor->setDebounceTime(EVENTS6_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS6_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS7_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS7_PIN);
+            sensor->setTrigger(EVENTS7_TRIGGER);
+            sensor->setPinMode(EVENTS7_PIN_MODE);
+            sensor->setDebounceTime(EVENTS7_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS7_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS8_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS8_PIN);
+            sensor->setTrigger(EVENTS8_TRIGGER);
+            sensor->setPinMode(EVENTS8_PIN_MODE);
+            sensor->setDebounceTime(EVENTS8_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS8_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
     }
     #endif
 
@@ -756,9 +918,11 @@ void _sensorLoad() {
 
     #if PULSEMETER_SUPPORT
     {
+
         PulseMeterSensor * sensor = new PulseMeterSensor();
         sensor->setGPIO(PULSEMETER_PIN);
         sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setInterruptMode(PULSEMETER_INTERRUPT_ON);
         sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
         _sensors.push_back(sensor);
     }
@@ -1043,10 +1207,10 @@ void _sensorInit() {
 
         #endif // CSE7766_SUPPORT
 
-        #if PULSEMETER_SUPPORT
+        #if PULSEMETER_SUPPORT 
             if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
             }
         #endif // PULSEMETER_SUPPORT
 
@@ -1235,7 +1399,7 @@ void _sensorConfigure() {
                     _sensorResetTS();
                 }
 
-                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
             }
         #endif // PULSEMETER_SUPPORT
 

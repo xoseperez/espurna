@@ -260,16 +260,100 @@
 #define DIGITAL_SUPPORT                 0
 #endif
 
-#ifndef DIGITAL_PIN
-#define DIGITAL_PIN                     2
+#ifndef DIGITAL1_PIN
+#define DIGITAL1_PIN                     2
 #endif
 
-#ifndef DIGITAL_PIN_MODE
-#define DIGITAL_PIN_MODE                INPUT_PULLUP
+#ifndef DIGITAL1_PIN_MODE
+#define DIGITAL1_PIN_MODE                INPUT_PULLUP
 #endif
 
-#ifndef DIGITAL_DEFAULT_STATE
-#define DIGITAL_DEFAULT_STATE           1
+#ifndef DIGITAL1_DEFAULT_STATE
+#define DIGITAL1_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL2_PIN
+#define DIGITAL2_PIN                     2
+#endif
+
+#ifndef DIGITAL2_PIN_MODE
+#define DIGITAL2_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL2_DEFAULT_STATE
+#define DIGITAL2_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL3_PIN
+#define DIGITAL3_PIN                     2
+#endif
+
+#ifndef DIGITAL3_PIN_MODE
+#define DIGITAL3_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL3_DEFAULT_STATE
+#define DIGITAL3_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL4_PIN
+#define DIGITAL4_PIN                     2
+#endif
+
+#ifndef DIGITAL4_PIN_MODE
+#define DIGITAL4_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL4_DEFAULT_STATE
+#define DIGITAL4_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL5_PIN
+#define DIGITAL5_PIN                     2
+#endif
+
+#ifndef DIGITAL5_PIN_MODE
+#define DIGITAL5_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL5_DEFAULT_STATE
+#define DIGITAL5_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL6_PIN
+#define DIGITAL6_PIN                     2
+#endif
+
+#ifndef DIGITAL6_PIN_MODE
+#define DIGITAL6_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL6_DEFAULT_STATE
+#define DIGITAL6_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL7_PIN
+#define DIGITAL7_PIN                     2
+#endif
+
+#ifndef DIGITAL7_PIN_MODE
+#define DIGITAL7_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL7_DEFAULT_STATE
+#define DIGITAL7_DEFAULT_STATE           1
+#endif
+
+#ifndef DIGITAL8_PIN
+#define DIGITAL8_PIN                     2
+#endif
+
+#ifndef DIGITAL8_PIN_MODE
+#define DIGITAL8_PIN_MODE                INPUT_PULLUP
+#endif
+
+#ifndef DIGITAL8_DEFAULT_STATE
+#define DIGITAL8_DEFAULT_STATE           1
 #endif
 
 //------------------------------------------------------------------------------
@@ -366,24 +450,173 @@
 #define EVENTS_SUPPORT                  0       // Do not build with counter support by default
 #endif
 
-#ifndef EVENTS_TRIGGER
-#define EVENTS_TRIGGER                  1       // 1 to trigger callback on events,
+#ifndef EVENTS1_TRIGGER
+#define EVENTS1_TRIGGER                  1       // 1 to trigger callback on events,
                                                 // 0 to only count them and report periodically
 #endif
 
-#ifndef EVENTS_PIN
-#define EVENTS_PIN                      2       // GPIO to monitor
+#ifndef EVENTS1_PIN
+#define EVENTS1_PIN                      2       // GPIO to monitor
 #endif
 
-#ifndef EVENTS_PIN_MODE
-#define EVENTS_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#ifndef EVENTS1_PIN_MODE
+#define EVENTS1_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
 #endif
 
-#ifndef EVENTS_INTERRUPT_MODE
-#define EVENTS_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#ifndef EVENTS1_INTERRUPT_MODE
+#define EVENTS1_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
 #endif
 
-#define EVENTS_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#ifndef EVENTS1_DEBOUNCE
+#define EVENTS1_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS2_TRIGGER
+#define EVENTS2_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS2_PIN
+#define EVENTS2_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS2_PIN_MODE
+#define EVENTS2_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS2_INTERRUPT_MODE
+#define EVENTS2_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS2_DEBOUNCE
+#define EVENTS2_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS3_TRIGGER
+#define EVENTS3_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS3_PIN
+#define EVENTS3_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS3_PIN_MODE
+#define EVENTS3_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS3_INTERRUPT_MODE
+#define EVENTS3_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS3_DEBOUNCE
+#define EVENTS3_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS4_TRIGGER
+#define EVENTS4_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS4_PIN
+#define EVENTS4_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS4_PIN_MODE
+#define EVENTS4_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS4_INTERRUPT_MODE
+#define EVENTS4_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS4_DEBOUNCE
+#define EVENTS4_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS5_TRIGGER
+#define EVENTS5_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS5_PIN
+#define EVENTS5_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS5_PIN_MODE
+#define EVENTS5_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS5_INTERRUPT_MODE
+#define EVENTS5_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS5_DEBOUNCE
+#define EVENTS5_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS6_TRIGGER
+#define EVENTS6_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS6_PIN
+#define EVENTS6_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS6_PIN_MODE
+#define EVENTS6_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS6_INTERRUPT_MODE
+#define EVENTS6_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS6_DEBOUNCE
+#define EVENTS6_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS7_TRIGGER
+#define EVENTS7_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS7_PIN
+#define EVENTS7_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS7_PIN_MODE
+#define EVENTS7_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS7_INTERRUPT_MODE
+#define EVENTS7_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS7_DEBOUNCE
+#define EVENTS7_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
+
+#ifndef EVENTS8_TRIGGER
+#define EVENTS8_TRIGGER                  1       // 1 to trigger callback on events,
+                                                // 0 to only count them and report periodically
+#endif
+
+#ifndef EVENTS8_PIN
+#define EVENTS8_PIN                      2       // GPIO to monitor
+#endif
+
+#ifndef EVENTS8_PIN_MODE
+#define EVENTS8_PIN_MODE                 INPUT   // INPUT, INPUT_PULLUP
+#endif
+
+#ifndef EVENTS8_INTERRUPT_MODE
+#define EVENTS8_INTERRUPT_MODE           RISING  // RISING, FALLING, CHANGE
+#endif
+
+#ifndef EVENTS8_DEBOUNCE
+#define EVENTS8_DEBOUNCE                 50      // Do not register events within less than 50 millis
+#endif
 
 //------------------------------------------------------------------------------
 // Geiger sensor
@@ -669,7 +902,6 @@
 #ifndef PULSEMETER_SUPPORT
 #define PULSEMETER_SUPPORT              0
 #endif
-
 #ifndef PULSEMETER_PIN
 #define PULSEMETER_PIN                  5
 #endif
