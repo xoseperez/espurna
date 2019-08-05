@@ -29,9 +29,9 @@ namespace Tuya {
     struct dp_states_filter_t {
         using type = unsigned char;
         static const type NONE = 0;
-        static const type INT = 1 << 0;
-        static const type BOOL = 1 << 1;
-        static const type ALL = (INT & BOOL);
+        static const type BOOL = 1 << 0;
+        static const type INT  = 1 << 1;
+        static const type ALL = (INT | BOOL);
 
         static type clamp(type value) {
             return constrain(value, NONE, ALL);
