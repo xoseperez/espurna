@@ -27,6 +27,7 @@ except ImportError:
 
 from fileinput import FileInput
 
+# TODO: drop after platform.io supports python 3
 # https://github.com/python/cpython/commit/6cb7b659#diff-78790b53ff259619377058acd4f74672
 if sys.version_info[0] < 3:
     class FileInputCtx(FileInput):
