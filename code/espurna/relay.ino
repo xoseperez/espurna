@@ -1086,6 +1086,11 @@ void relaySetupDummy(unsigned char size) {
         _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
     }
 
+    #if BROKER_SUPPORT
+        char msg[2] = {uint8_t(_relays.size()), 0};
+        brokerPublish(BROKER_MSG_TYPE_CONFIG, MQTT_TOPIC_RELAY, 0, msg);
+    #endif
+
 }
 
 

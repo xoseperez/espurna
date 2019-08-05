@@ -11,6 +11,7 @@
 #define BROKER_MSG_TYPE_DATETIME    1
 #define BROKER_MSG_TYPE_STATUS      2
 #define BROKER_MSG_TYPE_SENSOR      3
+#define BROKER_MSG_TYPE_CONFIG      4
 
 // -----------------------------------------------------------------------------
 // WIFI
