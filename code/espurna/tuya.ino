@@ -26,6 +26,19 @@ namespace Tuya {
 
     // --------------------------------------------
 
+    struct dp_states_filter_t {
+        using type = unsigned char;
+        static const type NONE = 0;
+        static const type INT = 1 << 0;
+        static const type BOOL = 1 << 1;
+        static const type ALL = (INT & BOOL);
+
+        static type clamp(type value) {
+            return constrain(value, NONE, ALL);
+        }
+    };
+
+
     size_t getHeartbeatInterval(Heartbeat hb) {
         switch (hb) {
             case Heartbeat::FAST:
@@ -61,31 +74,7 @@ namespace Tuya {
         States<uint32_t> channelStates(DIMMER_MAX);
     #endif
 
-    void pushOrUpdateState(const Type type, const DataFrame& frame) {
-        if (Type::BOOL == type) {
-            const DataProtocol<bool> proto(frame);
-            switchStates.pushOrUpdate(proto.id(), proto.value());
-            DEBUG_MSG_P(PSTR("[TUYA] apply BOOL id=%02u value=%s\n"), proto.id(), proto.value() ? "true" : "false");
-        } else if (Type::INT == type) {
-            #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-                const DataProtocol<uint32_t> proto(frame);
-                channelStates.pushOrUpdate(proto.id(), proto.value());
-                DEBUG_MSG_P(PSTR("[TUYA] apply  INT id=%02u value=%u\n"), proto.id(), proto.value());
-            #endif
-        }
-    }
-
-    void updateState(const Type type, const DataFrame& frame) {
-        if (Type::BOOL == type) {
-            const DataProtocol<bool> proto(frame);
-            switchStates.update(proto.id(), proto.value());
-        } else if (Type::INT == type) {
-            #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
-                const DataProtocol<uint32_t> proto(frame);
-                channelStates.update(proto.id(), proto.value());
-            #endif
-        }
-    }
+    // Handle DP data from the MCU, mapping incoming DP ID to the specific relay / channel ID
 
     void applySwitch() {
         for (unsigned char id=0; id < switchStates.size(); ++id) {
@@ -111,6 +100,8 @@ namespace Tuya {
     bool transportDebug = false;
     bool configDone = false;
     bool reportWiFi = false;
+    dp_states_filter_t::type filterDP = dp_states_filter_t::NONE;
+
     String product;
 
     inline void dataframeDebugSend(const char* tag, const DataFrame& frame) {
@@ -138,6 +129,37 @@ namespace Tuya {
         });
     }
 
+    void pushOrUpdateState(const Type type, const DataFrame& frame) {
+        if (Type::BOOL == type) {
+            const DataProtocol<bool> proto(frame);
+            switchStates.pushOrUpdate(proto.id(), proto.value());
+            //DEBUG_MSG_P(PSTR("[TUYA] apply BOOL id=%02u value=%s\n"), proto.id(), proto.value() ? "true" : "false");
+        } else if (Type::INT == type) {
+            #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                const DataProtocol<uint32_t> proto(frame);
+                channelStates.pushOrUpdate(proto.id(), proto.value());
+                //DEBUG_MSG_P(PSTR("[TUYA] apply  INT id=%02u value=%u\n"), proto.id(), proto.value());
+            #endif
+        }
+    }
+
+    // XXX: sometimes we need to ignore incoming state, when not in discovery mode
+    // ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
+    void updateState(const Type type, const DataFrame& frame) {
+        if (filterDP & dp_states_filter_t::ALL) return;
+        if (Type::BOOL == type) {
+            if (filterDP & dp_states_filter_t::BOOL) return;
+            const DataProtocol<bool> proto(frame);
+            switchStates.update(proto.id(), proto.value());
+        } else if (Type::INT == type) {
+            if (filterDP & dp_states_filter_t::INT) return;
+            #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
+                const DataProtocol<uint32_t> proto(frame);
+                channelStates.update(proto.id(), proto.value());
+            #endif
+        }
+    }
+
     void processDP(State state, const DataFrame& frame) {
 
         // TODO: do not log protocol errors without transport debug enabled
@@ -159,9 +181,7 @@ namespace Tuya {
         if (State::DISCOVERY == state) {
             discoveryTimeout.feed();
             pushOrUpdateState(type, frame);
-        // XXX: handle dimmer locally. ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
-        // should probably try to filter values instead, with min delta setting
-        } else if (Type::BOOL == type) {
+        } else {
             updateState(type, frame);
         }
 
@@ -253,7 +273,7 @@ namespace Tuya {
 
     }
 
-    // Queue data when sending local state
+    // Push local state data, mapping it to the appropriate DP
 
     void tuyaSendSwitch(unsigned char id) {
         if (id >= switchStates.size()) return;
@@ -473,6 +493,10 @@ namespace Tuya {
             });
 
         #endif
+
+        // Filtering for incoming data
+        unsigned char filter_raw = getSetting("tuyaFilter", dp_states_filter_t::NONE).toInt();
+        filterDP = dp_states_filter_t::clamp(filter_raw);
 
         // Print all IN and OUT messages
 
