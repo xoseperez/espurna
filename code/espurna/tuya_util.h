@@ -14,6 +14,8 @@ namespace Tuya {
                 T value;
             };
 
+            using iterator = typename std::vector<Container>::iterator;
+            using const_iterator = typename std::vector<Container>::const_iterator;
 
             States(size_t capacity) :
                 _capacity(capacity)
@@ -63,6 +65,22 @@ namespace Tuya {
             size_t capacity() const {
                 return _capacity;
             }
+
+            iterator begin() {
+                return _states.begin();
+            }
+
+            iterator end() {
+                return _states.end();
+            }
+
+            const_iterator begin() const {
+                return _states.begin();
+            }
+            const_iterator end() const {
+                return _states.end();
+            }
+
 
         private:
             bool _changed = false;
