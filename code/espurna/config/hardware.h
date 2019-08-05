@@ -3675,6 +3675,7 @@
     #define LED2_PIN            4  // 4 blue led
     #define LED2_PIN_INVERSE    0
     #define LED2_RELAY          1
+    #define LED2_MODE           LED_MODE_FINDME_WIFI
 
 // -----------------------------------------------------------------------------
 // Etekcity ESW01-USA 
@@ -3720,7 +3721,6 @@
     #define HLW8012_VOLTAGE_R_UP        ( 4 * 470000 )  // Upstream voltage resistor
     #define HLW8012_VOLTAGE_R_DOWN      ( 1000 )        // Downstream voltage resistor
     #define HLW8012_INTERRUPT_ON        CHANGE
-    #define LED2_MODE           LED_MODE_FINDME_WIFI
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
