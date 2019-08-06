@@ -738,7 +738,7 @@ void lightMQTTGroup() {
 void lightBroker() {
     char buffer[10];
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        itoa(_light_channel[i].inputValue, buffer, 10);
+        itoa(_light_channel[i].value, buffer, 10);
         brokerPublish(BROKER_MSG_TYPE_STATUS, MQTT_TOPIC_CHANNEL, i, buffer);
     }
 }
