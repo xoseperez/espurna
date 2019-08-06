@@ -1067,6 +1067,7 @@ function initMagnitudes(data) {
     for (var i=0; i<size; ++i) {
         var magnitude = {
             "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "units": data.units[i],
             "description": data.description[i]
         };
         magnitudes.push(magnitude);
@@ -1487,7 +1488,7 @@ function processData(data) {
             for (var i=0; i<value.size; ++i) {
                 var error = value.error[i] || 0;
                 var text = (0 === error) ?
-                    value.value[i] + value.units[i] :
+                    value.value[i] + magnitudes[i].units :
                     magnitudeError(error);
                 var element = $("input[name='magnitude'][data='" + i + "']");
                 element.val(text);
