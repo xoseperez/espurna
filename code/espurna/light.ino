@@ -1294,9 +1294,9 @@ void lightSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
-            .onVisible(_lightWebSocketOnVisible);
-            .onConnected(_lightWebSocketOnConnected);
-            .onAction(_lightWebSocketOnAction);
+            .onVisible(_lightWebSocketOnVisible)
+            .onConnected(_lightWebSocketOnConnected)
+            .onAction(_lightWebSocketOnAction)
             .onKeyCheck(_lightWebSocketOnKeyCheck);
     #endif
 
