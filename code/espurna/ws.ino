@@ -592,13 +592,7 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.createObject();
     callback(root);
-
-    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(jsonBuffer.size() - 1);
-
-    if (buffer) {
-        root.printTo(reinterpret_cast<char*>(buffer->get()), jsonBuffer.size() - 1);
-        client->text(buffer);
-    }
+    wsSend(client_id, root);
 }
 
 void wsSend(uint32_t client_id, const char * payload) {
