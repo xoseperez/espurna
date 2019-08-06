@@ -129,7 +129,7 @@ template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix)
     JsonArray& idx = list.createNestedArray("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        name.add(magnitudeName(i));
+        //name.add(magnitudeName(i));
         type.add(magnitudeType(i));
         index.add(magnitudeIndex(i));
         idx.add(getSetting(conf_name, i, 0).toInt());
