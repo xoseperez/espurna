@@ -146,6 +146,16 @@
 #define MQTT_DISCONNECT_EVENT       1
 #define MQTT_MESSAGE_EVENT          2
 
+#define MQTT_ASYNC                  0
+#define MQTT_ARDUINO                1
+#define MQTT_PUBSUB                 2
+
+// Default to LetsEncrypt X3 certificate
+#if !defined(_mqtt_client_ca) && SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+    #include "static/letsencrypt_pem.h"
+    #define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
+#endif
+
 //------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
@@ -345,7 +355,20 @@
 #define MAGNITUDE_MAX               32
 
 //------------------------------------------------------------------------------
+// Secure Client
+//------------------------------------------------------------------------------
+
+#define SECURE_CLIENT_NONE                0
+#define SECURE_CLIENT_AXTLS               1
+#define SECURE_CLIENT_BEARSSL             2
+
+#define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
+#define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy (fixed) fingerprint validation
+#define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
+
+//------------------------------------------------------------------------------
 // Telnet server
 //------------------------------------------------------------------------------
+
 #define TELNET_SERVER_ASYNC        0
 #define TELNET_SERVER_WIFISERVER   1
