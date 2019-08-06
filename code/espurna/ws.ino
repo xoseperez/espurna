@@ -54,7 +54,14 @@ struct ws_ticket_t {
 }; 
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
-std::queue<uint32_t> _ws_clients;
+struct ws_client_t {
+    ws_client_t(uint32_t id, uint32_t count) :
+        id(id), cb_count(count)
+    {}
+    uint32_t id;
+    uint32_t cb_count;
+};
+std::queue<ws_client_t> _ws_clients;
 
 void _onAuth(AsyncWebServerRequest *request) {
 
@@ -444,7 +451,7 @@ void _wsConnected(uint32_t client_id) {
         return;
     }
 
-    _ws_clients.push(client_id);
+    _ws_clients.emplace(client_id, 0);
 
 }
 
@@ -493,11 +500,10 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 }
 
 void _wsNewClient() {
-    auto client = _ws_clients.front();
-    AsyncWebSocketClient* ws_client = _ws.client(client);
+    auto& client = _ws_clients.front();
+    AsyncWebSocketClient* ws_client = _ws.client(client.id);
 
-    // expired (reload?)
-    if (!ws_client) {
+    if (!ws_client || !_ws_callbacks.size()) {
         _ws_clients.pop();
         return;
     }
@@ -509,30 +515,27 @@ void _wsNewClient() {
 
     // XXX: block allocation will try to create *2 next time,
     // likely failing and causing wsSend to reference empty objects
+    // XXX: arduinojson6 will not do this, but we may need to use per-callback buffers
     constexpr const size_t BUFFER_SIZE = 3192;
-
     DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
-    for (auto& callbacks : _ws_callbacks) {
-        if (!callbacks.on_visible) continue;
-        callbacks.on_visible(root);
+
+    auto& visible = _ws_callbacks[client.cb_count].on_visible;
+    auto& connected = _ws_callbacks[client.cb_count].on_connected;
+    client.cb_count += 1;
+
+    if (visible || connected) {
+        if (visible) visible(root);
+        if (connected) connected(root);
+        wsSend(client.id, root);
+        yield();
     }
-    wsSend(client, root);
-    jsonBuffer.clear();
 
-    for (auto& callbacks : _ws_callbacks) {
-        if (!callbacks.on_connected) continue;
-        callbacks.on_connected(root);
+    if (client.cb_count >= _ws_callbacks.size()) {
+        // push the queue and finally allow incoming messages
+        _ws_clients.pop();
+        ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
     }
-
-    wsSend(client, root);
-    jsonBuffer.clear();
-
-    _ws_clients.pop();
-    yield();
-
-    // finally, allow incoming messages
-    ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 }
 
 void _wsLoop() {

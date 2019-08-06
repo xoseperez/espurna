@@ -671,6 +671,17 @@ void _relayWebSocketSendRelays(JsonObject& root) {
     }
 }
 
+void _relayWebSocketOnVisible(JsonObject& root) {
+    if (relayCount() == 0) return;
+
+    if (relayCount() > 1) {
+        root["multirelayVisible"] = 1;
+        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
+    }
+
+    root["relayVisible"] = 1;
+}
+
 void _relayWebSocketOnConnected(JsonObject& root) {
 
     if (relayCount() == 0) return;
@@ -680,14 +691,6 @@ void _relayWebSocketOnConnected(JsonObject& root) {
 
     // Statuses
     _relayWebSocketUpdate(root);
-
-    // Options
-    if (relayCount() > 1) {
-        root["multirelayVisible"] = 1;
-        root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
-    }
-
-    root["relayVisible"] = 1;
 
 }
 
@@ -728,6 +731,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
 void relaySetupWS() {
     wsRegister()
+        .onVisible(_relayWebSocketOnVisible)
         .onConnected(_relayWebSocketOnConnected)
         .onAction(_relayWebSocketOnAction)
         .onKeyCheck(_relayWebSocketOnKeyCheck);
