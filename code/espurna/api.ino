@@ -27,7 +27,6 @@ bool _apiWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _apiWebSocketOnConnected(JsonObject& root) {
-    root["apiVisible"] = 1;
     root["apiEnabled"] = getSetting("apiEnabled", API_ENABLED).toInt() == 1;
     root["apiKey"] = getSetting("apiKey");
     root["apiRealTime"] = getSetting("apiRealTime", API_REAL_TIME_VALUES).toInt() == 1;
@@ -243,6 +242,7 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 void apiSetup() {
     _apiConfigure();
     wsRegister()
+        .onVisible([](JsonObject& root) { root["apiVisible"] = 1; })
         .onConnected(_apiWebSocketOnConnected)
         .onKeyCheck(_apiWebSocketOnKeyCheck);
     webRequestRegister(_apiRequestCallback);

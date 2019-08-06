@@ -36,7 +36,6 @@ bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _telnetWebSocketOnConnected(JsonObject& root) {
-    root["telnetVisible"] = 1;
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
     root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
@@ -314,6 +313,7 @@ void telnetSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible([](JsonObject& root) { root["telnetVisible"] = 1; })
             .onConnected(_telnetWebSocketOnConnected)
             .onKeyCheck(_telnetWebSocketOnKeyCheck);
     #endif

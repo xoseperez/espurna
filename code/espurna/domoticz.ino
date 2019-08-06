@@ -170,9 +170,12 @@ bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "dcz", 3) == 0);
 }
 
+void _domoticzWebSocketOnVisible(JsonObject& root) {
+    root["dczVisible"] = static_cast<unsigned char>(relayCount() || magnitudeCount());
+}
+
 void _domoticzWebSocketOnConnected(JsonObject& root) {
 
-    unsigned char visible = 0;
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
@@ -181,14 +184,10 @@ void _domoticzWebSocketOnConnected(JsonObject& root) {
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
-    visible = (relayCount() > 0);
 
     #if SENSOR_SUPPORT
         _sensorWebSocketMagnitudes(root, "dcz");
-        visible = visible || (magnitudeCount() > 0);
     #endif
-
-    root["dczVisible"] = visible;
 
 }
 
@@ -249,6 +248,7 @@ void domoticzSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_domoticzWebSocketOnVisible)
             .onConnected(_domoticzWebSocketOnConnected)
             .onKeyCheck(_domoticzWebSocketOnKeyCheck);
     #endif

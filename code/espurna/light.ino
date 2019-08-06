@@ -946,8 +946,11 @@ void _lightWebSocketStatus(JsonObject& root) {
     root["brightness"] = lightBrightness();
 }
 
-void _lightWebSocketOnConnected(JsonObject& root) {
+void _lightWebSocketOnVisible(JsonObject& root) {
     root["colorVisible"] = 1;
+}
+
+void _lightWebSocketOnConnected(JsonObject& root) {
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
@@ -1290,9 +1293,11 @@ void lightSetup() {
     }
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_lightWebSocketOnConnected);
-        wsOnActionRegister(_lightWebSocketOnAction);
-        wsOnKeyCheckRegister(_lightWebSocketOnKeyCheck);
+        wsRegister()
+            .onVisible(_lightWebSocketOnVisible);
+            .onConnected(_lightWebSocketOnConnected);
+            .onAction(_lightWebSocketOnAction);
+            .onKeyCheck(_lightWebSocketOnKeyCheck);
     #endif
 
     #if API_SUPPORT

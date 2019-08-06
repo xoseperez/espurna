@@ -28,7 +28,6 @@ bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _alexaWebSocketOnConnected(JsonObject& root) {
-    root["alexaVisible"] = 1;
     root["alexaEnabled"] = alexaEnabled();
     root["alexaName"] = getSetting("alexaName");
 }
@@ -124,6 +123,7 @@ void alexaSetup() {
         webBodyRegister(_alexaBodyCallback);
         webRequestRegister(_alexaRequestCallback);
         wsRegister()
+            .onVisible([](JsonObject& root) { root["alexaVisible"] = 1; })
             .onConnected(_alexaWebSocketOnConnected)
             .onKeyCheck(_alexaWebSocketOnKeyCheck);
     #endif

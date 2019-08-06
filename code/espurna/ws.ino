@@ -29,6 +29,11 @@ ws_callbacks_builder_t& ws_callbacks_builder_t::onConnected(ws_on_send_callback_
     return *this;
 }
 
+ws_callbacks_builder_t& ws_callbacks_builder_t::onVisible(ws_on_send_callback_f cb) {
+    callbacks.on_visible = cb;
+    return *this;
+}
+
 ws_callbacks_builder_t& ws_callbacks_builder_t::onAction(ws_on_action_callback_f cb) {
     callbacks.on_action = cb;
     return *this;
@@ -182,7 +187,18 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     // Get client ID
     uint32_t client_id = client->id();
 
+    // Check early for empty object / nothing
+    if ((length == 0)) {
+        return;
+    }
+
+    if ((length == 2) && (strcmp((char*) payload, "{}") == 0)) {
+        return;
+    }
+
     // Parse JSON input
+    // TODO: json buffer should be pretty efficient with the non-const payload,
+    // most of the space is taken by the object key references
     DynamicJsonBuffer jsonBuffer(512);
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
     if (!root.success()) {
@@ -482,7 +498,6 @@ void _wsNewClient() {
 
     // expired (reload?)
     if (!ws_client) {
-        DEBUG_MSG("%u no longer here\n", client);
         _ws_clients.pop();
         return;
     }
@@ -492,28 +507,32 @@ void _wsNewClient() {
         return;
     }
 
-    // TODO: v6 has memoryUsage, how to check v5?
-    //Serial.printf("BEFORE heap=%u\n", ESP.getFreeHeap());
-    DynamicJsonBuffer jsonBuffer(4096);
+    // XXX: block allocation will try to create *2 next time,
+    // likely failing and causing wsSend to reference empty objects
+    constexpr const size_t BUFFER_SIZE = 3192;
+
+    DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
-    //Serial.printf("MKJSON heap=%u\n", ESP.getFreeHeap());
+    for (auto& callbacks : _ws_callbacks) {
+        if (!callbacks.on_visible) continue;
+        callbacks.on_visible(root);
+    }
+    wsSend(client, root);
+    jsonBuffer.clear();
+
     for (auto& callbacks : _ws_callbacks) {
         if (!callbacks.on_connected) continue;
         callbacks.on_connected(root);
-        Serial.printf("CALL heap=%u ptr=%p\n", ESP.getFreeHeap(), &callbacks.on_connected);
     }
 
-    //Serial.printf("MKSEND heap=%u \n", ESP.getFreeHeap());
     wsSend(client, root);
     jsonBuffer.clear();
-    //Serial.printf("SENT heap=%u \n", ESP.getFreeHeap());
 
     _ws_clients.pop();
     yield();
 
     // finally, allow incoming messages
     ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
-    //Serial.printf("%u is now receiving\n", client);
 }
 
 void _wsLoop() {

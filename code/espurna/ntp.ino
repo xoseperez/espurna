@@ -30,8 +30,11 @@ bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ntp", 3) == 0);
 }
 
-void _ntpWebSocketOnConnected(JsonObject& root) {
+void _ntpWebSocketOnVisible(JsonObject& root) {
     root["ntpVisible"] = 1;
+}
+
+void _ntpWebSocketOnConnected(JsonObject& root) {
     root["ntpStatus"] = (timeStatus() == timeSet);
     root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
@@ -252,6 +255,7 @@ void ntpSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_ntpWebSocketOnVisible)
             .onConnected(_ntpWebSocketOnConnected)
             .onKeyCheck(_ntpWebSocketOnKeyCheck);
     #endif

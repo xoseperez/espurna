@@ -89,9 +89,6 @@ void debugSendImpl(const char * message) {
 
 
 #if DEBUG_WEB_SUPPORT
-void _debugWebSocketOnConnected(JsonObject& root) {
-        root["dbgVisible"] = 1;
-}
 
 void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
@@ -111,7 +108,7 @@ void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 void debugWebSetup() {
 
     wsRegister()
-        .onConnected(_debugWebSocketOnConnected)
+        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
         .onAction(_debugWebSocketOnAction);
 
     #if DEBUG_UDP_SUPPORT

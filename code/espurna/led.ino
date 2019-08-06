@@ -75,9 +75,12 @@ bool _ledWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "led", 3) == 0);
 }
 
+void _ledWebSocketOnVisible(JsonObject& root) {
+    root["ledVisible"] = 1;
+}
+
 void _ledWebSocketOnConnected(JsonObject& root) {
     if (_ledCount() == 0) return;
-    root["ledVisible"] = 1;
     JsonArray& leds = root.createNestedArray("ledConfig");
     for (byte i=0; i<_ledCount(); i++) {
         JsonObject& led = leds.createNestedObject();
@@ -201,6 +204,7 @@ void ledSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_ledWebSocketOnVisible)
             .onConnected(_ledWebSocketOnConnected)
             .onKeyCheck(_ledWebSocketOnKeyCheck);
     #endif

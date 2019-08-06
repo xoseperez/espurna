@@ -346,8 +346,11 @@ bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "mqtt", 3) == 0);
 }
 
-void _mqttWebSocketOnConnected(JsonObject& root) {
+void _mqttWebSocketOnVisible(JsonObject& root) {
     root["mqttVisible"] = 1;
+}
+
+void _mqttWebSocketOnConnected(JsonObject& root) {
     root["mqttStatus"] = mqttConnected();
     root["mqttEnabled"] = mqttEnabled();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
@@ -845,6 +848,7 @@ void mqttSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_mqttWebSocketOnVisible)
             .onConnected(_mqttWebSocketOnConnected)
             .onKeyCheck(_mqttWebSocketOnKeyCheck);
     #endif

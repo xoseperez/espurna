@@ -67,9 +67,11 @@ bool _tspkWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "tspk", 4) == 0);
 }
 
-void _tspkWebSocketOnConnected(JsonObject& root) {
+void _tspkWebSocketOnVisible(JsonObject& root) {
+    root["tspkVisible"] = static_cast<unsigned char>(relayCount() || magnitudeCount());
+}
 
-    unsigned char visible = 0;
+void _tspkWebSocketOnConnected(JsonObject& root) {
 
     root["tspkEnabled"] = getSetting("tspkEnabled", THINGSPEAK_ENABLED).toInt() == 1;
     root["tspkKey"] = getSetting("tspkKey");
@@ -79,14 +81,10 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
     for (byte i=0; i<relayCount(); i++) {
         relays.add(getSetting("tspkRelay", i, 0).toInt());
     }
-    if (relayCount() > 0) visible = 1;
 
     #if SENSOR_SUPPORT
         _sensorWebSocketMagnitudes(root, "tspk");
-        visible = visible || (magnitudeCount() > 0);
     #endif
-
-    root["tspkVisible"] = visible;
 
 }
 
@@ -387,6 +385,7 @@ void tspkSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_tspkWebSocketOnVisible)
             .onConnected(_tspkWebSocketOnConnected)
             .onKeyCheck(_tspkWebSocketOnKeyCheck);
     #endif

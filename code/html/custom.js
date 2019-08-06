@@ -23,6 +23,8 @@ var packets;
 var filters = [];
 <!-- endRemoveIf(!rfm69)-->
 
+var magnitudes = [];
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -834,7 +836,7 @@ function createMagnitudeList(data, container, template_name) {
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
         $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(data.name[i]);
+        $("div.hint", line).html(magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         line.appendTo("#" + container);
     }
@@ -1063,9 +1065,15 @@ function initMagnitudes(data) {
     var template = $("#magnitudeTemplate").children();
 
     for (var i=0; i<size; ++i) {
+        var magnitude = {
+            "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "description": data.description[i]
+        };
+        magnitudes.push(magnitude);
+
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(data.description[i]);
+        $("label", line).html(magnitude.name);
+        $("div.hint", line).html(magnitude.description);
         $("input", line).attr("data", i);
         line.appendTo("#magnitudes");
     }
@@ -1471,8 +1479,11 @@ function processData(data) {
 
         <!-- removeIf(!sensor)-->
 
-        if ("magnitudes" === key) {
+        if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+        }
+
+        if ("magnitudes" === key) {
             for (var i=0; i<value.size; ++i) {
                 var error = value.error[i] || 0;
                 var text = (0 === error) ?

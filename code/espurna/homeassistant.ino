@@ -323,8 +323,11 @@ bool _haWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
 }
 
-void _haWebSocketOnConnected(JsonObject& root) {
+void _haWebSocketOnVisible(JsonObject& root) {
     root["haVisible"] = 1;
+}
+
+void _haWebSocketOnConnected(JsonObject& root) {
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
     root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
 }
@@ -396,6 +399,7 @@ void haSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_haWebSocketOnVisible)
             .onConnected(_haWebSocketOnConnected)
             .onAction(_haWebSocketOnAction)
             .onKeyCheck(_haWebSocketOnKeyCheck);
