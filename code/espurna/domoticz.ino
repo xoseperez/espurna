@@ -171,7 +171,7 @@ bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 }
 
 void _domoticzWebSocketOnVisible(JsonObject& root) {
-    root["dczVisible"] = static_cast<unsigned char>(relayCount() || magnitudeCount());
+    root["dczVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
 }
 
 void _domoticzWebSocketOnConnected(JsonObject& root) {
