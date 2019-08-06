@@ -31,7 +31,7 @@ Ticker _light_transition_ticker;
 
 struct channel_t {
     unsigned char pin;          // real GPIO pin
-    bool reverse;               // wether we should invert the value before using it
+    bool reverse;               // whether we should invert the value before using it
     bool state;                 // is the channel ON
     unsigned char inputValue;   // raw value, without the brightness
     unsigned char value;        // normalized value, including brightness

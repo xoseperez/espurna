@@ -146,7 +146,6 @@ namespace Tuya {
     // XXX: sometimes we need to ignore incoming state, when not in discovery mode
     // ref: https://github.com/xoseperez/espurna/issues/1729#issuecomment-509234195
     void updateState(const Type type, const DataFrame& frame) {
-        if (filterDP & dp_states_filter_t::ALL) return;
         if (Type::BOOL == type) {
             if (filterDP & dp_states_filter_t::BOOL) return;
             const DataProtocol<bool> proto(frame);
@@ -362,14 +361,15 @@ namespace Tuya {
             case State::HEARTBEAT:
                 sendHeartbeat(Heartbeat::FAST, state);
                 break;
-            // general info about the device
+            // general info about the device (which we don't care about)
             case State::QUERY_PRODUCT:
             {
                 outputFrames.emplace(StaticDataFrame{Command::QueryProduct});
                 state = State::IDLE;
                 break;
             }
-            // whether we control the led&button or not
+            // whether we control the led & button or not
+            // TODO: make updatePins() do something!
             case State::QUERY_MODE:
             {
                 outputFrames.emplace(StaticDataFrame{Command::QueryMode});

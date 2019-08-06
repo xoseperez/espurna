@@ -428,7 +428,7 @@ void relaySave(bool eeprom) {
     // Persist only to rtcmem, unless requested to save to the eeprom
     _relayMaskRtcmem(mask_value);
 
-    // The 'eeprom' flag controls wether we are commiting this change or not.
+    // The 'eeprom' flag controls whether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
     // save involves a relay whose boot mode is independent from current mode,
     // thus storing the last relay value is not absolutely necessary.
