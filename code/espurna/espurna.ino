@@ -187,6 +187,9 @@ void setup() {
     #if NOFUSS_SUPPORT
         nofussSetup();
     #endif
+    #if SENSOR_SUPPORT
+        sensorSetup();
+    #endif
     #if INFLUXDB_SUPPORT
         idbSetup();
     #endif
@@ -204,9 +207,6 @@ void setup() {
     #endif
     #if HOMEASSISTANT_SUPPORT
         haSetup();
-    #endif
-    #if SENSOR_SUPPORT
-        sensorSetup();
     #endif
     #if SCHEDULER_SUPPORT
         schSetup();
