@@ -1451,7 +1451,9 @@ void sensorSetup() {
 
     // Websockets
     #if WEB_SUPPORT
-        wsRegister({ _sensorWebSocketOnConnected, nullptr, _sensorWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_sensorWebSocketOnConnected)
+            .onKeyCheck(_sensorWebSocketOnKeyCheck);
     #endif
 
     // API

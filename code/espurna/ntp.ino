@@ -116,10 +116,6 @@ void _ntpReport() {
 
     _ntp_report = false;
 
-    #if WEB_SUPPORT
-        wsSend(_ntpWebSocketOnConnected);
-    #endif
-
     if (ntpSynced()) {
         time_t t = now();
         DEBUG_MSG_P(PSTR("[NTP] UTC Time  : %s\n"), ntpDateTime(ntpLocal2UTC(t)).c_str());
@@ -255,7 +251,9 @@ void ntpSetup() {
     });
 
     #if WEB_SUPPORT
-        wsRegister({ _ntpWebSocketOnConnected, nullptr, _ntpWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_ntpWebSocketOnConnected)
+            .onKeyCheck(_ntpWebSocketOnKeyCheck);
     #endif
 
     // Main callbacks

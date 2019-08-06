@@ -261,7 +261,7 @@ void systemSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister({ nullptr, nullptr, _systemWebSocketOnKeyCheck });
+        wsRegister().onKeyCheck(_systemWebSocketOnKeyCheck);
     #endif
 
     // Init device-specific hardware

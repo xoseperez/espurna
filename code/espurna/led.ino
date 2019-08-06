@@ -200,7 +200,9 @@ void ledSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister({ _ledWebSocketOnConnected, nullptr, _ledWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_ledWebSocketOnConnected)
+            .onKeyCheck(_ledWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT

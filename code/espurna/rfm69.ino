@@ -269,9 +269,10 @@ void rfm69Setup() {
     DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode %s\n"), RFM69_PROMISCUOUS ? "ON" : "OFF");
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_rfm69WebSocketOnConnected);
-        wsOnKeyCheckRegister(_rfm69WebSocketOnKeyCheck);
-        wsOnActionRegister(_rfm69WebSocketOnAction);
+        wsRegister()
+            .onConnected(_rfm69WebSocketOnConnected)
+            .onAction(_rfm69WebSocketOnAction)
+            .onKeyCheck(_rfm69WebSocketOnKeyCheck);
     #endif
 
     // Main callbacks

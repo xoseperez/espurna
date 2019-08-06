@@ -242,7 +242,9 @@ void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f 
 
 void apiSetup() {
     _apiConfigure();
-    wsRegister({ _apiWebSocketOnConnected, nullptr, _apiWebSocketOnKeyCheck });
+    wsRegister()
+        .onConnected(_apiWebSocketOnConnected)
+        .onKeyCheck(_apiWebSocketOnKeyCheck);
     webRequestRegister(_apiRequestCallback);
     espurnaRegisterReload(_apiConfigure);
 }

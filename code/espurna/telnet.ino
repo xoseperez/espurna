@@ -313,7 +313,9 @@ void telnetSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister({ _telnetWebSocketOnConnected, nullptr, _telnetWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_telnetWebSocketOnConnected)
+            .onKeyCheck(_telnetWebSocketOnKeyCheck);
     #endif
 
     espurnaRegisterReload(_telnetConfigure);

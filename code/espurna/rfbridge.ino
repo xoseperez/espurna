@@ -768,9 +768,10 @@ void rfbSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_rfbWebSocketOnConnected);
-        wsOnActionRegister(_rfbWebSocketOnAction);
-        wsOnKeyCheckRegister(_rfbWebSocketOnKeyCheck);
+        wsRegister
+            .onConnected(_rfbWebSocketOnConnected)
+            .onAction(_rfbWebSocketOnAction)
+            .onKeyCheckRegister(_rfbWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT

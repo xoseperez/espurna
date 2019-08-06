@@ -727,7 +727,10 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 }
 
 void relaySetupWS() {
-    wsRegister({ _relayWebSocketOnConnected, _relayWebSocketOnAction, _relayWebSocketOnKeyCheck });
+    wsRegister()
+        .onConnected(_relayWebSocketOnConnected)
+        .onAction(_relayWebSocketOnAction)
+        .onKeyCheck(_relayWebSocketOnKeyCheck);
 }
 
 #endif // WEB_SUPPORT

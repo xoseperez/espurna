@@ -222,8 +222,15 @@ void webRequestRegister(web_request_callback_f callback);
         ws_on_action_callback_f on_action;
         ws_on_keycheck_callback_f on_keycheck;
     };
-    void wsRegister(const ws_callbacks_t&);
-    void wsRegister(const ws_callbacks_t&);
+
+    struct ws_callbacks_builder_t {
+        ~ws_callbacks_builder_t();
+        ws_callbacks_builder_t& onConnected(ws_on_send_callback_f cb);
+        ws_callbacks_builder_t& onAction(ws_on_action_callback_f cb);
+        ws_callbacks_builder_t& onKeyCheck(ws_on_keycheck_callback_f cb);
+        ws_callbacks_t callbacks;
+    };
+    ws_callbacks_builder_t wsRegister();
 
     void wsSend(uint32_t, JsonObject& root);
     void wsSend(JsonObject& root);

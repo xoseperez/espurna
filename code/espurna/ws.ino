@@ -20,6 +20,25 @@ Ticker _web_defer;
 
 std::vector<ws_callbacks_t> _ws_callbacks;
 
+ws_callbacks_builder_t::~ws_callbacks_builder_t() {
+    _ws_callbacks.push_back(callbacks);
+}
+
+ws_callbacks_builder_t& ws_callbacks_builder_t::onConnected(ws_on_send_callback_f cb) {
+    callbacks.on_connected = cb;
+    return *this;
+}
+
+ws_callbacks_builder_t& ws_callbacks_builder_t::onAction(ws_on_action_callback_f cb) {
+    callbacks.on_action = cb;
+    return *this;
+}
+
+ws_callbacks_builder_t& ws_callbacks_builder_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
+    callbacks.on_keycheck = cb;
+    return *this;
+}
+
 // -----------------------------------------------------------------------------
 // Private methods
 // -----------------------------------------------------------------------------
@@ -516,9 +535,8 @@ bool wsConnected(uint32_t client_id) {
     return _ws.hasClient(client_id);
 }
 
-void wsRegister(const ws_callbacks_t& callbacks) {
-    DEBUG_MSG("register %p\n", &callbacks);
-    _ws_callbacks.push_back(callbacks);
+ws_callbacks_builder_t wsRegister() {
+    return ws_callbacks_builder_t{};
 }
 
 void wsSend(ws_on_send_callback_f callback) {
@@ -589,10 +607,9 @@ void wsSetup() {
         mqttRegister(_wsMQTTCallback);
     #endif
 
-    ws_callbacks_t callbacks;
-    callbacks.on_connected = _wsOnConnected;
-    callbacks.on_keycheck = _wsOnKeyCheck;
-    wsRegister(callbacks);
+    wsRegister()
+        .onConnected(_wsOnConnected)
+        .onKeyCheck(_wsOnKeyCheck);
 
     espurnaRegisterLoop(_wsLoop);
 }

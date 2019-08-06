@@ -395,7 +395,10 @@ void haSetup() {
     _haConfigure();
 
     #if WEB_SUPPORT
-        wsRegister({ _haWebSocketOnConnected, _haWebSocketOnAction, _haWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_haWebSocketOnConnected)
+            .onAction(_haWebSocketOnAction)
+            .onKeyCheck(_haWebSocketOnKeyCheck);
         espurnaRegisterLoop(_haLoop);
     #endif
 

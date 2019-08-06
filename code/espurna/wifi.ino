@@ -645,7 +645,9 @@ void wifiSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister({ _wifiWebSocketOnConnected, _wifiWebSocketOnAction, _wifiWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_wifiWebSocketOnConnected)
+            .onKeyCheck(_wifiWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT

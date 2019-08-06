@@ -110,7 +110,9 @@ void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
 void debugWebSetup() {
 
-    wsRegister({ _mqttWebSocketOnConnected, _debugWebSocketOnAction, nullptr });
+    wsRegister()
+        .onConnected(_debugWebSocketOnConnected)
+        .onAction(_debugWebSocketOnAction);
 
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514

@@ -844,7 +844,9 @@ void mqttSetup() {
     mqttRegister(_mqttCallback);
 
     #if WEB_SUPPORT
-        wsRegister({ _mqttWebSocketOnConnected, nullptr, _mqttWebSocketOnKeyCheck });
+        wsRegister()
+            .onConnected(_mqttWebSocketOnConnected)
+            .onKeyCheck(_mqttWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT
