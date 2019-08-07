@@ -1315,6 +1315,18 @@ void migrate() {
             setSetting("chLogic", 3, 0);
             setSetting("relays", 1);
 
+        #elif defined(ISELECTOR_SM_PW702)
+
+            setSetting("board", 98);
+            setSetting("ledGPIO", 0, 4);
+            setSetting("ledLogic", 0, 0);
+            setSetting("ledGPIO", 1, 5);
+            setSetting("ledLogic", 0, 0);
+            setSetting("btnGPIO", 0, 13);
+            setSetting("btnRelay", 0, 0);
+            setSetting("relayGPIO", 0, 12);
+            setSetting("relayType", 0, RELAY_TYPE_NORMAL);
+
         #else
 
             // Allow users to define new settings without migration config
