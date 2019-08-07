@@ -7,13 +7,14 @@ namespace Tuya {
 
     class DataFrame {
 
-    private:
-
     public:
+
+        using container = std::vector<uint8_t>;
+        using const_iterator = container::const_iterator;
 
         ~DataFrame() = default;
 
-        DataFrame(DataFrame& rhs) = default;
+        DataFrame(DataFrame& rhs) = delete;
         DataFrame(DataFrame&& rhs) = default;
 
         DataFrame(uint8_t command) :
@@ -26,8 +27,8 @@ namespace Tuya {
         {}
 
         DataFrame(Command command, uint16_t length,
-                const std::vector<uint8_t>::const_iterator begin,
-                const std::vector<uint8_t>::const_iterator end) :
+                const const_iterator begin,
+                const const_iterator end) :
             command(static_cast<uint8_t>(command)),
             length(length),
             _begin(begin),
@@ -35,8 +36,8 @@ namespace Tuya {
         {}
 
         DataFrame(uint8_t version, uint8_t command, uint16_t length,
-                const std::vector<uint8_t>::const_iterator begin,
-                const std::vector<uint8_t>::const_iterator end) :
+                const const_iterator begin,
+                const const_iterator end) :
             version(version),
             command(command),
             length(length),
@@ -44,15 +45,31 @@ namespace Tuya {
             _end(end)
         {}
 
+        DataFrame(Command command, std::initializer_list<uint8_t> data) :
+            command(static_cast<uint8_t>(command)),
+            length(data.size()),
+            _static(new container(data)),
+            _begin(_static->cbegin()),
+            _end(_static->cend())
+        {}
+
+        DataFrame(Command command, std::vector<uint8_t>&& data) :
+            command(static_cast<uint8_t>(command)),
+            length(data.size()),
+            _static(new container(data)),
+            _begin(_static->cbegin()),
+            _end(_static->cend())
+        {}
+
         bool commandEquals(Command command) const {
             return (static_cast<uint8_t>(command) == this->command);
         }
 
-        std::vector<uint8_t>::const_iterator cbegin() const {
+        const_iterator cbegin() const {
             return _begin;
         };
 
-        std::vector<uint8_t>::const_iterator cend() const {
+        const_iterator cend() const {
             return _end;
         };
 
@@ -61,8 +78,8 @@ namespace Tuya {
             return _begin[i];
         }
 
-        std::vector<uint8_t> serialize() const {
-            std::vector<uint8_t> result = {
+        container serialize() const {
+            container result {
                 version, command,
                 uint8_t(length >> 8),
                 uint8_t(length & 0xff)
@@ -76,59 +93,20 @@ namespace Tuya {
             return result;
         }
 
+        bool is_static() const {
+            return static_cast<bool>(_static);
+        }
+
         uint8_t version = 0;
         uint8_t command = 0;
         uint16_t length = 0;
 
     protected:
 
-        std::vector<uint8_t>::const_iterator _begin;
-        std::vector<uint8_t>::const_iterator _end;
+        std::unique_ptr<container> _static;
+        const_iterator _begin;
+        const_iterator _end;
 
-    };
-
-    class StaticDataFrame : public DataFrame {
-        private:
-            void data_update() {
-                _begin = _data.cbegin();
-                _end = _data.cend();
-                length = _data.size();
-                if (!length) _begin = _end;
-            }
-        public:
-
-        // Note: Class constructor is called before member regardless of member list order
-        StaticDataFrame(Command command, std::initializer_list<uint8_t> data = {}) :
-            DataFrame(command),
-            _data(data)
-        {
-            data_update();
-        }
-
-        StaticDataFrame(Command command, std::vector<uint8_t>&& data) :
-            DataFrame(command),
-            _data(std::move(data))
-        {
-            data_update();
-        }
-
-        StaticDataFrame(StaticDataFrame& frame) :
-            DataFrame(frame),
-            _data(frame._data)
-        {
-            data_update();
-        }
-
-        StaticDataFrame(StaticDataFrame&& frame) :
-            DataFrame(std::move(frame))
-        {
-            _data = std::move(frame._data);
-            data_update();
-        }
-
-
-        protected:
-            std::vector<uint8_t> _data;
     };
 
     inline DataFrame fromTransport(const Transport& input) {

@@ -94,7 +94,7 @@ namespace Tuya {
     // --------------------------------------------
 
     Transport tuyaSerial(TUYA_SERIAL);
-    std::queue<StaticDataFrame> outputFrames;
+    std::queue<DataFrame> outputFrames;
 
     DiscoveryTimeout discoveryTimeout(DISCOVERY_TIMEOUT);
     bool transportDebug = false;
@@ -116,7 +116,7 @@ namespace Tuya {
 
         static uint32_t last = 0;
         if (millis() - last > getHeartbeatInterval(hb)) {
-            outputFrames.emplace(StaticDataFrame{Command::Heartbeat});
+            outputFrames.emplace(DataFrame{Command::Heartbeat});
             last = millis();
         }
 
@@ -124,7 +124,7 @@ namespace Tuya {
 
     void sendWiFiStatus() {
         if (!reportWiFi) return;
-        outputFrames.emplace(StaticDataFrame{
+        outputFrames.emplace(DataFrame{
             Command::WiFiStatus, {getWiFiState()}
         });
     }
@@ -232,14 +232,14 @@ namespace Tuya {
 
         if (frame.commandEquals(Command::WiFiResetCfg) && !frame.length) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi reset request\n"));
-            outputFrames.emplace(StaticDataFrame{Command::WiFiResetCfg});
+            outputFrames.emplace(DataFrame{Command::WiFiResetCfg});
             return;
         }
 
         if (frame.commandEquals(Command::WiFiResetSelect) && (frame.length == 1)) {
             DEBUG_MSG_P(PSTR("[TUYA] WiFi configuration mode request: %s\n"),
                 (frame[0] == 0) ? "Smart Config" : "AP");
-            outputFrames.emplace(StaticDataFrame{Command::WiFiResetSelect});
+            outputFrames.emplace(DataFrame{Command::WiFiResetSelect});
             return;
         }
 
@@ -276,7 +276,7 @@ namespace Tuya {
 
     void tuyaSendSwitch(unsigned char id) {
         if (id >= switchStates.size()) return;
-        outputFrames.emplace(StaticDataFrame{
+        outputFrames.emplace(DataFrame{
             Command::SetDP, DataProtocol<bool>(switchStates[id].dp, switchStates[id].value).serialize()
         });
     }
@@ -291,7 +291,7 @@ namespace Tuya {
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA
         void tuyaSendChannel(unsigned char id) {
             if (id >= channelStates.size()) return;
-            outputFrames.emplace(StaticDataFrame{
+            outputFrames.emplace(DataFrame{
                 Command::SetDP, DataProtocol<uint32_t>(channelStates[id].dp, channelStates[id].value).serialize()
             });
         }
@@ -364,7 +364,7 @@ namespace Tuya {
             // general info about the device (which we don't care about)
             case State::QUERY_PRODUCT:
             {
-                outputFrames.emplace(StaticDataFrame{Command::QueryProduct});
+                outputFrames.emplace(DataFrame{Command::QueryProduct});
                 state = State::IDLE;
                 break;
             }
@@ -372,7 +372,7 @@ namespace Tuya {
             // TODO: make updatePins() do something!
             case State::QUERY_MODE:
             {
-                outputFrames.emplace(StaticDataFrame{Command::QueryMode});
+                outputFrames.emplace(DataFrame{Command::QueryMode});
                 state = State::IDLE;
                 break;
             }
@@ -380,7 +380,7 @@ namespace Tuya {
             case State::QUERY_DP:
             {
                 DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
-                outputFrames.emplace(StaticDataFrame{Command::QueryDP});
+                outputFrames.emplace(DataFrame{Command::QueryDP});
                 discoveryTimeout.feed();
                 state = State::DISCOVERY;
                 break;
