@@ -48,17 +48,17 @@ namespace Tuya {
         DataFrame(Command command, std::initializer_list<uint8_t> data) :
             command(static_cast<uint8_t>(command)),
             length(data.size()),
-            _static(new container(data)),
-            _begin(_static->cbegin()),
-            _end(_static->cend())
+            _data(new container(data)),
+            _begin(_data->cbegin()),
+            _end(_data->cend())
         {}
 
         DataFrame(Command command, std::vector<uint8_t>&& data) :
             command(static_cast<uint8_t>(command)),
             length(data.size()),
-            _static(new container(data)),
-            _begin(_static->cbegin()),
-            _end(_static->cend())
+            _data(new container(std::forward<container>(data))),
+            _begin(_data->cbegin()),
+            _end(_data->cend())
         {}
 
         bool commandEquals(Command command) const {
@@ -93,17 +93,13 @@ namespace Tuya {
             return result;
         }
 
-        bool is_static() const {
-            return static_cast<bool>(_static);
-        }
-
         uint8_t version = 0;
         uint8_t command = 0;
         uint16_t length = 0;
 
     protected:
 
-        std::unique_ptr<container> _static;
+        std::unique_ptr<container> _data;
         const_iterator _begin;
         const_iterator _end;
 
