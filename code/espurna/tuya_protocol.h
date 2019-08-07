@@ -80,7 +80,10 @@ namespace Tuya {
     DataProtocol<uint32_t>::DataProtocol(const DataFrame& frame) {
         auto data = frame.cbegin();
         _id = data[0];
-        _value = data[7];
+        _value = static_cast<uint32_t>(data[4] << 24)
+               | static_cast<uint32_t>(data[5] << 16)
+               | static_cast<uint32_t>(data[6] << 8)
+               | static_cast<uint32_t>(data[7]);
     }
 
     template <>
