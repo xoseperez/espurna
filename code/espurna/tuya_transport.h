@@ -38,13 +38,6 @@ namespace Tuya {
 
     protected:
 
-        // TODO: half of this?
-        constexpr static size_t LIMIT = 256;
-
-        // 9600 baud ~= 1.04 bytes per second
-        // 256 * 1.04 = 266.24
-        constexpr static size_t TIME_LIMIT = 267;
-
         Stream& _stream;
 
     public:
@@ -110,6 +103,14 @@ namespace Tuya {
 
     class Input : public virtual StreamWrapper {
 
+        // Buffer depth based on the SDK recommendations
+        constexpr static size_t LIMIT = 256;
+
+        // 9600 baud ~= 1.04 bytes per second
+        // 256 * 1.04 = 266.24
+        constexpr static size_t TIME_LIMIT = 267;
+
+
     public:
 
         Input(Stream& stream) :
@@ -118,7 +119,7 @@ namespace Tuya {
             _buffer.reserve(LIMIT);
         }
 
-        bool full() { return (_index >= StreamWrapper::LIMIT); }
+        bool full() { return (_index >= LIMIT); }
         bool done() { return _done; }
         size_t size() { return _index; }
 
