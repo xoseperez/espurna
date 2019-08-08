@@ -700,7 +700,8 @@
 // - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
 // - https://tools.ietf.org/html/rfc6066#section-4
 #ifndef SECURE_CLIENT_MFLN
-#define SECURE_CLIENT_MFLN                     0
+#define SECURE_CLIENT_MFLN                     0                      // The only possible values are: 512, 1024, 2048 and 4096
+                                                                      // Set to 0 to disable (default)
 #endif
 
 // -----------------------------------------------------------------------------

@@ -122,13 +122,21 @@ void _otaClientFromHttps(const String& url) {
 
     // TODO: provide terminal command for probing?
     // TODO: RX and TX buffer sizes must be equal?
-    uint16_t requested_mfln = getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
-    if (requested_mfln) {
-        URL _url(url);
-        bool supported = client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln);
-        DEBUG_MSG_P(PSTR("[OTA] MFLN buffer size %u supported: %s\n"), requested_mfln, supported ? "YES" : "NO");
-        if (!supported) return;
-        client->setBufferSizes(requested_mfln, requested_mfln);
+    const uint16_t requested_mfln = getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
+    switch (requested_mfln) {
+        // default, do nothing
+        case 0:
+            break;
+        // match valid sizes only
+        case 512:
+        case 1024:
+        case 2048:
+        case 4096:
+        {
+            client->setBufferSizes(requested_mfln, requested_mfln);
+        }
+        default:
+            DEBUG_MSG_P(PSTR("[OTA] Warning: MFLN buffer size must be one of 512, 1024, 2048 or 4096\n"));
     }
 
     _otaClientRunUpdater(client.get(), url);
