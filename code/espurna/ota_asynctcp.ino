@@ -69,6 +69,8 @@ void _otaClientOnData(void * arg, AsyncClient * c, void * data, size_t len) {
             #ifdef DEBUG_PORT
                 Update.printError(DEBUG_PORT);
             #endif
+            c->close(true);
+            return;
         }
 
         p = strstr((char *)data, "\r\n\r\n") + 4;
@@ -81,6 +83,8 @@ void _otaClientOnData(void * arg, AsyncClient * c, void * data, size_t len) {
             #ifdef DEBUG_PORT
                 Update.printError(DEBUG_PORT);
             #endif
+            c->close(true);
+            return;
         }
     }
 
