@@ -344,13 +344,23 @@
 
 #define MAGNITUDE_MAX               32
 
+//------------------------------------------------------------------------------
+// Telnet server
+//------------------------------------------------------------------------------
+#define TELNET_SERVER_ASYNC        0
+#define TELNET_SERVER_WIFISERVER   1
+
+//------------------------------------------------------------------------------
 // OTA Client (not related to the Web OTA support)
+//------------------------------------------------------------------------------
 
 #define OTA_CLIENT_NONE             0
 #define OTA_CLIENT_ASYNCTCP         1
 #define OTA_CLIENT_HTTPUPDATE       2
 
+//------------------------------------------------------------------------------
 // Secure Client
+//------------------------------------------------------------------------------
 
 #define SECURE_CLIENT_NONE                0
 #define SECURE_CLIENT_AXTLS               1
@@ -359,3 +369,4 @@
 #define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
 #define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
 #define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
+

@@ -122,6 +122,9 @@ void nofussSetup() {
 
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
             eepromRotate(false);
+
+            // Force backup right now, because NoFUSS library will immediatly reset on success
+            eepromBackup(0);
         }
 
         if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
@@ -145,6 +148,8 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
+            // TODO: NoFUSS will reset the board after this callback returns.
+            //       Maybe this should be optional
             nice_delay(100);
         }
 

@@ -43,6 +43,10 @@ class PulseMeterSensor : public BaseSensor {
             if (ratio > 0) _ratio = ratio;
         }
 
+        void setInterruptMode(unsigned char interrupt_mode) {
+            _interrupt_mode = interrupt_mode;
+        }
+
         void setDebounceTime(unsigned long debounce) {
             _debounce = debounce;
         }
@@ -55,6 +59,10 @@ class PulseMeterSensor : public BaseSensor {
 
         unsigned long getEnergyRatio() {
             return _ratio;
+        }
+
+        unsigned char getInterruptMode() {
+            return _interrupt_mode;
         }
 
         unsigned long getDebounceTime() {
@@ -144,7 +152,7 @@ class PulseMeterSensor : public BaseSensor {
 
                 if (_gpio != _previous) {
                     if (_previous != GPIO_NONE) _detach(_previous);
-                    _attach(this, _gpio, PULSEMETER_INTERRUPT_ON);
+                    _attach(this, _gpio, _interrupt_mode);
                     _previous = _gpio;
                 }
 
@@ -170,6 +178,8 @@ class PulseMeterSensor : public BaseSensor {
         volatile unsigned long _pulses = 0;
         unsigned long _previous_pulses = 0;
         unsigned long _previous_time = 0;
+
+        unsigned char _interrupt_mode = FALLING;
 
 
 };
