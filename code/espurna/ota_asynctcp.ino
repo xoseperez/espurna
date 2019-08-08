@@ -98,7 +98,7 @@ void _otaClientOnData(void * arg, AsyncClient * c, void * data, size_t len) {
 void _otaClientOnConnect(void *arg, AsyncClient *client) {
 
     #if ASYNC_TCP_SSL_ENABLED
-        int check = getSetting("otaScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+        int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
         if ((check == SECURE_CLIENT_CHECK_FINGERPRINT) && (443 == _ota_url->port)) {
             uint8_t fp[20] = {0};
             sslFingerPrintArray(getSetting("otafp", OTA_FINGERPRINT).c_str(), fp);

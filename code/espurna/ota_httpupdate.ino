@@ -81,7 +81,7 @@ void _otaClientFromHttp(const String& url) {
 
 void _otaClientFromHttps(const String& url) {
 
-    int check = getSetting("otaScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+    int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
     bool settime = (check == SECURE_CLIENT_CHECK_CA);
 
     if (!ntpSynced() && settime) {
@@ -150,7 +150,7 @@ void _otaClientFromHttps(const String& url) {
 
 void _otaClientFromHttps(const String& url) {
 
-    const int check = getSetting("otaScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+    const int check = getSetting("otaScCheck", OTA_SECURE_CLIENT_CHECK).toInt();
 
     String fp_string;
     if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {

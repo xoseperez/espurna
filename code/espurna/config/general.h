@@ -692,8 +692,30 @@
                                                                       // SECURE_CLIENT_AXTLS   - axTLS client secure support (All Core versions, ONLY TLS 1.1)
                                                                       // SECURE_CLIENT_BEARSSL - BearSSL client secure support (starting with 2.5.0, TLS 1.2)
                                                                       //
-                                                                      // axTLS marked for derecation since 2.4.2 and **will** be removed in the future
+                                                                      // axTLS marked for derecation since Arduino Core 2.4.2 and **will** be removed in the future
 #endif
+
+// Security check that is performed when the connection is established:
+// SECURE_CLIENT_CHECK_CA           - Use Trust Anchor / Root Certificate
+//                                    Supported only by the SECURE_CLIENT_BEARSSL
+//                                    (See respective ..._SECURE_CLIENT_INCLUDE_CA options per-module)
+// SECURE_CLIENT_CHECK_FINGERPRINT  - Check certificate fingerprint
+// SECURE_CLIENT_CHECK_NONE         - Allow insecure connections
+
+#ifndef SECURE_CLIENT_CHECK
+
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+#define SECURE_CLIENT_CHECK                    SECURE_CLIENT_CHECK_CA
+
+#else
+#define SECURE_CLIENT_CHECK                    SECURE_CLIENT_CHECK_FINGERPRINT
+
+#endif
+
+#endif
+
+
+#endif // SECURE_CLIENT_CHECK
 
 // Support Maximum Fragment Length Negotiation TLS extension
 // "...negotiate a smaller maximum fragment length due to memory limitations or bandwidth limitations."
@@ -735,6 +757,10 @@
 
 #ifndef OTA_FINGERPRINT
 #define OTA_FINGERPRINT             OTA_GITHUB_FP
+#endif
+
+#ifndef OTA_SECURE_CLIENT_CHECK
+#define OTA_SECURE_CLIENT_CHECK                SECURE_CLIENT_CHECK
 #endif
 
 #ifndef OTA_SECURE_CLIENT_MFLN
