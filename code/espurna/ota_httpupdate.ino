@@ -120,7 +120,6 @@ void _otaClientFromHttps(const String& url) {
         client->setTrustAnchors(ca);
     }
 
-    // TODO: provide terminal command for probing?
     // TODO: RX and TX buffer sizes must be equal?
     const uint16_t requested_mfln = getSetting("otaScMFLN", OTA_SECURE_CLIENT_MFLN).toInt();
     switch (requested_mfln) {
