@@ -42,7 +42,11 @@ void URL::init(String url) {
     String _host;
 
     index = url.indexOf('/');
-    _host = url.substring(0, index);
+    if (index >= 0) {
+        _host = url.substring(0, index);
+    } else {
+        _host = url;
+    }
 
     // store the remaining part as path
     if (index >= 0) {
