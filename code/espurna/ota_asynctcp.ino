@@ -98,12 +98,15 @@ void _otaClientOnData(void * arg, AsyncClient * c, void * data, size_t len) {
 void _otaClientOnConnect(void *arg, AsyncClient *client) {
 
     #if ASYNC_TCP_SSL_ENABLED
-        if (443 == _ota_url->port) {
+        int check = getSetting("otaScCheck", SECURE_CLIENT_CHECK_FINGERPRINT).toInt();
+        if ((check == SECURE_CLIENT_CHECK_FINGERPRINT) && (443 == _ota_url->port)) {
             uint8_t fp[20] = {0};
             sslFingerPrintArray(getSetting("otafp", OTA_FINGERPRINT).c_str(), fp);
             SSL * ssl = _ota_client->getSSL();
             if (ssl_match_fingerprint(ssl, fp) != SSL_OK) {
                 DEBUG_MSG_P(PSTR("[OTA] Warning: certificate fingerpint doesn't match\n"));
+                client->close(true);
+                return;
             }
         }
     #endif
