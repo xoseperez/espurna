@@ -133,6 +133,7 @@ void _otaClientFromHttps(const String& url) {
         case 4096:
         {
             client->setBufferSizes(requested_mfln, requested_mfln);
+            break;
         }
         default:
             DEBUG_MSG_P(PSTR("[OTA] Warning: MFLN buffer size must be one of 512, 1024, 2048 or 4096\n"));
