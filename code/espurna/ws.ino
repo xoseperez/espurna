@@ -209,11 +209,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
     uint32_t client_id = client->id();
 
     // Check early for empty object / nothing
-    if ((length == 0)) {
+    if ((length == 0) || (length == 1)) {
         return;
     }
 
-    if ((length == 2) && (strcmp((char*) payload, "{}") == 0)) {
+    if ((length == 3) && (strcmp((char*) payload, "{}") == 0)) {
         return;
     }
 
