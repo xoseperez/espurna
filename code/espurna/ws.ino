@@ -124,7 +124,7 @@ bool wsDebugSend(const char* prefix, const char* message) {
 
     // via: https://arduinojson.org/v6/assistant/
     // we use 1 object for "weblog", 2nd one for "message". "prefix", optional
-    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
+    StaticJsonBuffer<JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2)> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
     JsonObject& weblog = root.createNestedObject("weblog");
 
