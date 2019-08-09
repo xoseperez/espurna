@@ -27,6 +27,8 @@
 //#define BLITZWOLF_BWSHPX_V23
 //#define BLITZWOLF_BWSHP5
 //#define DIGOO_NX_SP202
+//#define EHOMEDIY_WT02
+//#define EHOMEDIY_WT03
 //#define ELECTRODRAGON_WIFI_IOT
 //#define ESPURNA_BASE
 //#define ESPURNA_CORE

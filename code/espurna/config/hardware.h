@@ -4142,6 +4142,40 @@
 
     #define SENSOR_ENERGY_UNITS         ENERGY_KWH
     #define SENSOR_POWER_UNITS          POWER_WATTS
+
+// -----------------------------------------------------------------------------
+// eHomeDIY WT02
+// https://github.com/eHomeDIY/WT02-hardware
+// -----------------------------------------------------------------------------
+#elif defined(EHOMEDIY_WT02)
+
+    // Info
+    #define MANUFACTURER        "EHOMEDIY"
+    #define DEVICE              "WT02"
+
+    #define I2C_SDA_PIN         0
+    #define I2C_SCL_PIN         2
+
+    #define BMX280_SUPPORT        1
+    // #define SI7021_SUPPORT        1
+
+// -----------------------------------------------------------------------------
+// eHomeDIY WT03
+// https://github.com/eHomeDIY/WT03-hardware
+// -----------------------------------------------------------------------------
+
+#elif defined(EHOMEDIY_WT03)
+
+    // Info
+    #define MANUFACTURER        "EHOMEDIY"
+    #define DEVICE              "WT03"
+
+    #define I2C_SDA_PIN         2
+    #define I2C_SCL_PIN         0
+
+    #define BMX280_SUPPORT        1
+    // #define SI7021_SUPPORT        1
+
 // -----------------------------------------------------------------------------
 
 #else
