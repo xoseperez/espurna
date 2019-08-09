@@ -18,6 +18,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 AsyncWebSocket _ws("/ws");
 Ticker _web_defer;
 
+// -----------------------------------------------------------------------------
+// WS callbacks
+// -----------------------------------------------------------------------------
+
 std::vector<ws_callbacks_t> _ws_callbacks;
 
 ws_callbacks_builder_t::~ws_callbacks_builder_t() {
@@ -45,7 +49,7 @@ ws_callbacks_builder_t& ws_callbacks_builder_t::onKeyCheck(ws_on_keycheck_callba
 }
 
 // -----------------------------------------------------------------------------
-// Private methods
+// WS authentication
 // -----------------------------------------------------------------------------
 
 struct ws_ticket_t {
@@ -104,6 +108,10 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 }
 
+// -----------------------------------------------------------------------------
+// Debug
+// -----------------------------------------------------------------------------
+
 #if DEBUG_WEB_SUPPORT
 
 bool wsDebugSend(const char* prefix, const char* message) {
@@ -132,6 +140,8 @@ bool wsDebugSend(const char* prefix, const char* message) {
 #endif
 
 // -----------------------------------------------------------------------------
+// MQTT status notification
+// -----------------------------------------------------------------------------
 
 #if MQTT_SUPPORT
 void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
@@ -157,7 +167,11 @@ bool _wsStore(String key, String value) {
 
 }
 
-bool _wsStore(String key, JsonArray& value) {
+// -----------------------------------------------------------------------------
+// Store indexed key (key0, key1, etc.) from array
+// -----------------------------------------------------------------------------
+
+bool _wsStore(const String& key, JsonArray& value) {
 
     bool changed = false;
 
