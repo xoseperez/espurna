@@ -327,12 +327,17 @@ namespace Tuya {
                 if (lightState(id)) tuyaSendChannel(id, value);
                 return;
             }
-        #else
+        #elif (LIGHT_PROVIDER == LIGHT_PROVIDER_TUYA)
             if (strcmp(MQTT_TOPIC_CHANNEL, topic) == 0) {
                 tuyaSendChannel(id, value);
                 return;
             }
 
+            if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
+                tuyaSendSwitch(id, bool(value));
+                return;
+            }
+        #else
             if (strcmp(MQTT_TOPIC_RELAY, topic) == 0) {
                 tuyaSendSwitch(id, bool(value));
                 return;
