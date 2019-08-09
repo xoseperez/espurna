@@ -38,6 +38,11 @@ ws_callbacks_builder_t& ws_callbacks_builder_t::onVisible(ws_on_send_callback_f 
     return *this;
 }
 
+ws_callbacks_builder_t& ws_callbacks_builder_t::onData(ws_on_send_callback_f cb) {
+    callbacks.on_data = cb;
+    return *this;
+}
+
 ws_callbacks_builder_t& ws_callbacks_builder_t::onAction(ws_on_action_callback_f cb) {
     callbacks.on_action = cb;
     return *this;
@@ -64,7 +69,8 @@ struct ws_client_t {
         INITIAL,
         VISIBLE,
         CONNECTED,
-        DATA
+        DATA,
+        DONE
     };
 
     ws_client_t(uint32_t id, uint32_t count) :
@@ -568,6 +574,17 @@ void _wsNewClient() {
         if (connected) {
             sending = true;
             connected(root);
+        }
+        client.cb_count += 1;
+        if (client.cb_count >= _ws_callbacks.size()) {
+            client.cb_count = 0;
+            client.state = ws_client_t::DATA;
+        }
+    } else if (client.state == ws_client_t::DATA) {
+        auto& data = _ws_callbacks[client.cb_count].on_data;
+        if (data) {
+            sending = true;
+            data(root);
         }
         client.cb_count += 1;
     }

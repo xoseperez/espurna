@@ -1636,6 +1636,7 @@ void sensorSetup() {
         wsRegister()
             .onVisible(_sensorWebSocketOnVisible)
             .onConnected(_sensorWebSocketOnConnected)
+            .onData(_sensorWebSocketSendData)
             .onKeyCheck(_sensorWebSocketOnKeyCheck);
     #endif
 

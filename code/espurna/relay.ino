@@ -689,9 +689,6 @@ void _relayWebSocketOnConnected(JsonObject& root) {
     // Per-relay configuration
     _relayWebSocketSendRelays(root);
 
-    // Statuses
-    _relayWebSocketUpdate(root);
-
 }
 
 void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -733,6 +730,7 @@ void relaySetupWS() {
     wsRegister()
         .onVisible(_relayWebSocketOnVisible)
         .onConnected(_relayWebSocketOnConnected)
+        .onData(_relayWebSocketUpdate)
         .onAction(_relayWebSocketOnAction)
         .onKeyCheck(_relayWebSocketOnKeyCheck);
 }
