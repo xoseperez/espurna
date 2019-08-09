@@ -768,7 +768,7 @@ void rfbSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsRegister
+        wsRegister()
             .onConnected(_rfbWebSocketOnConnected)
             .onAction(_rfbWebSocketOnAction)
             .onKeyCheckRegister(_rfbWebSocketOnKeyCheck);

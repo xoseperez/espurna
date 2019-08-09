@@ -161,8 +161,9 @@ void nofussSetup() {
     });
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_nofussWebSocketOnConnected);
-        wsOnKeyCheckRegister(_nofussWebSocketOnKeyCheck);
+        wsRegister()
+            .onConnected(_nofussWebSocketOnConnected)
+            .onKeyCheck(_nofussWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT
