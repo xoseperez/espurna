@@ -358,9 +358,10 @@ void thermostatSetup() {
 
   // Websockets
   #if WEB_SUPPORT
-      wsOnConnectedRegister(_thermostatWebSocketOnConnected);
-      wsOnKeyCheckRegister(_thermostatWebSocketOnKeyCheck);
-      wsOnActionRegister(_thermostatWebSocketOnAction);
+      wsRegister()
+          .onConnected(_thermostatWebSocketOnConnected)
+          .onKeyCheck(_thermostatWebSocketOnKeyCheck)
+          .onAction(_thermostatWebSocketOnAction);
   #endif
 
   espurnaRegisterLoop(thermostatLoop);

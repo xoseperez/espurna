@@ -94,8 +94,9 @@ void _lightfoxInitCommands() {
 void lightfoxSetup() {
 
     #if WEB_SUPPORT
-        wsOnConnectedRegister(_lightfoxWebSocketOnConnected);
-        wsOnActionRegister(_lightfoxWebSocketOnAction);
+        wsRegister()
+            .onConnected(_lightfoxWebSocketOnConnected)
+            .onAction(_lightfoxWebSocketOnAction);
     #endif
 
     #if TERMINAL_SUPPORT
