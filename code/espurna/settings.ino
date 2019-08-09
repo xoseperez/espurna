@@ -228,7 +228,7 @@ bool settingsRestoreJson(char* json_string, size_t json_buffer_size = 1024) {
         return false;
     }
 
-    settingsRestoreJson(root);
+    return settingsRestoreJson(root);
 
  }
 
