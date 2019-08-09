@@ -50,6 +50,8 @@ struct ha_config_t {
         deviceConfig["model"] = DEVICE;
     }
 
+    ha_config_t() : ha_config_t(DEFAULT_BUFFER_SIZE) {}
+
     size_t size() { return jsonBuffer.size(); }
 
     DynamicJsonBuffer jsonBuffer;
@@ -78,8 +80,6 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
 }
 
 void _haSendMagnitudes(ha_config_t& config) {
-
-    constexpr const size_t BUFFER_SIZE = 1024;
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
@@ -159,8 +159,6 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 }
 
 void _haSendSwitches(ha_config_t& config) {
-
-    constexpr const size_t BUFFER_SIZE = 1024;
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
@@ -296,7 +294,7 @@ void _haSend() {
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
     // Get common device config
-    ha_config_t config(ha_config_t::DEFAULT_BUFFER_SIZE);
+    ha_config_t config;
 
     // Send messages
     _haSendSwitches(config);
