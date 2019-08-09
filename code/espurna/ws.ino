@@ -55,15 +55,25 @@ ws_callbacks_builder_t& ws_callbacks_builder_t::onKeyCheck(ws_on_keycheck_callba
 struct ws_ticket_t {
     IPAddress ip;
     unsigned long timestamp = 0;
-}; 
+};
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
 
 struct ws_client_t {
+    enum state_t {
+        IDLE,
+        INITIAL,
+        VISIBLE,
+        CONNECTED,
+        DATA
+    };
+
     ws_client_t(uint32_t id, uint32_t count) :
-        id(id), cb_count(count)
+        id(id), cb_count(count), state(VISIBLE)
     {}
+
     uint32_t id;
     uint32_t cb_count;
+    state_t state;
 };
 std::queue<ws_client_t> _ws_clients;
 
@@ -534,13 +544,31 @@ void _wsNewClient() {
     DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
 
-    auto& visible = _ws_callbacks[client.cb_count].on_visible;
-    auto& connected = _ws_callbacks[client.cb_count].on_connected;
-    client.cb_count += 1;
+    bool sending = false;
 
-    if (visible || connected) {
-        if (visible) visible(root);
-        if (connected) connected(root);
+    if (client.state == ws_client_t::INITIAL) {
+        JsonObject& newClient = root.createNestedObject("newClient");
+        newClient["id"] = client.id;
+        newClient["ts"] = millis();
+        sending = true;
+        client.state = ws_client_t::VISIBLE;
+    } else if (client.state == ws_client_t::VISIBLE) {
+        for (auto& callback : _ws_callbacks) {
+            if (!callback.on_visible) continue;
+            sending = true;
+            callback.on_visible(root);
+        }
+        client.state = ws_client_t::CONNECTED;
+    } else if (client.state == ws_client_t::CONNECTED) {
+        auto& connected = _ws_callbacks[client.cb_count].on_connected;
+        if (connected) {
+            sending = true;
+            connected(root);
+        }
+        client.cb_count += 1;
+    }
+
+    if (sending) {
         wsSend(client.id, root);
         yield();
     }
