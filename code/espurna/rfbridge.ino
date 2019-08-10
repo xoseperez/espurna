@@ -89,11 +89,7 @@ static bool _rfbToChar(byte * in, char * out, int n = RF_MESSAGE_SIZE) {
 
 #if WEB_SUPPORT
 
-void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
-    
-    DynamicJsonBuffer jsonBuffer(512);
-    JsonObject& root = jsonBuffer.createObject();
-
+void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned char size) {
     JsonObject& rfb = root.createNestedObject("rfb");
     rfb["size"] = size;
     rfb["start"] = start;
@@ -105,6 +101,13 @@ void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
         on.add(rfbRetrieve(id, true));
         off.add(rfbRetrieve(id, false));
     }
+}
+void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
+    
+    DynamicJsonBuffer jsonBuffer(512);
+    JsonObject& root = jsonBuffer.createObject();
+
+    _rfbWebSocketSendCodeArray(root, start, size);
 
     wsSend(root);
     
@@ -112,10 +115,6 @@ void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
 
 void _rfbWebSocketSendCode(unsigned char id) {
     _rfbWebSocketSendCodeArray(id, 1);
-}
-
-void _rfbWebSocketSendCodes() {
-    _rfbWebSocketSendCodeArray(0, relayCount());
 }
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
@@ -127,7 +126,6 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
         root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN).toInt();
         root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN).toInt();
     #endif
-    _rfb_sendcodes.once_ms(1000, _rfbWebSocketSendCodes);
 }
 
 void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
@@ -138,6 +136,10 @@ void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& 
 
 bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "rfb", 3) == 0);
+}
+
+void _rfbWebSocketOnData(JsonObject& root) {
+    _rfbWebSocketSendCodeArray(root, 0, relayCount());    
 }
 
 #endif // WEB_SUPPORT
@@ -770,6 +772,7 @@ void rfbSetup() {
     #if WEB_SUPPORT
         wsRegister()
             .onConnected(_rfbWebSocketOnConnected)
+            .onData(_rfbWebSocketOnData)
             .onAction(_rfbWebSocketOnAction)
             .onKeyCheck(_rfbWebSocketOnKeyCheck);
     #endif
