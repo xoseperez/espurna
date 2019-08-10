@@ -50,81 +50,50 @@ struct ws_counter_t {
     uint32_t stop;
 };
 
-struct ws_client_t {
-    enum state_t {
-        INITIAL,
-        VISIBLE,
-        CONNECTED,
-        DATA,
-        DONE
+struct ws_data_feed_t {
+
+    enum mode_t {
+        SEQUENCE,
+        ALL
     };
 
-    ws_client_t(uint32_t id, const ws_callbacks_t& callbacks) :
-        id(id),
-        state(INITIAL),
+    ws_data_feed_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
+        client_id(client_id),
+        mode(mode),
         callbacks(callbacks),
-        counter(0, callbacks.on_connected.size())
+        counter(0, callbacks.size())
     {}
 
     bool done() {
-        return state == DONE;
+        return counter.done();
     }
 
-    bool send(JsonObject& root) {
-        bool result = false;
-        switch (state) {
-            case INITIAL: {
-                JsonObject& newClient = root.createNestedObject("newClient");
-                newClient["id"] = id;
-                newClient["ts"] = millis();
-                result = true;
-                state = VISIBLE;
-                break;
-            }
-            case VISIBLE: {
-                for (auto& callback : callbacks.on_visible) {
-                    result = true;
-                    callback(root);
-                }
-                state = CONNECTED;
-                break;
-            }
-            case CONNECTED: {
-                callbacks.on_connected[counter.current](root);
-                result = true;
-                counter.next();
-                if (counter.done()) {
-                    counter.reset();
-                    counter.stop = callbacks.on_data.size();
-                    state = DATA;
-                }
-                break;
-            }
-            case DATA: {
-                callbacks.on_data[counter.current](root);
-                result = true;
-                counter.next();
-                if (counter.done()) {
-                    state = DONE;
-                }
-                break;
-            }
-            case DONE:
-            default:
-                break;
+    void sendAll(JsonObject& root) {
+        while (counter.done()) counter.next();
+        for (auto& callback : callbacks) {
+            callback(root);
         }
-
-        return result;
-
     }
 
-    uint32_t id;
-    state_t state;
-    const ws_callbacks_t& callbacks;
-    ws_counter_t counter;
+    void sendCurrent(JsonObject& root) {
+        callbacks[counter.current](root);
+        counter.next();
+    }
 
+    void send(JsonObject& root) {
+        switch (mode) {
+            case SEQUENCE: sendCurrent(root); break;
+            case ALL: sendAll(root); break;
+        }
+    }
+
+    const uint32_t client_id;
+    const mode_t mode;
+    const ws_on_send_callback_list_t& callbacks;
+    ws_counter_t counter;
 };
-std::queue<ws_client_t> _ws_new_clients;
+
+std::queue<ws_data_feed_t> _ws_client_data;
 
 // -----------------------------------------------------------------------------
 // WS authentication
@@ -536,7 +505,9 @@ void _wsConnected(uint32_t client_id) {
         return;
     }
 
-    _ws_new_clients.emplace(client_id, _ws_callbacks);
+    _ws_client_data.emplace(client_id, _ws_callbacks.on_visible, ws_data_feed_t::ALL);
+    _ws_client_data.emplace(client_id, _ws_callbacks.on_connected);
+    _ws_client_data.emplace(client_id, _ws_callbacks.on_data);
 
 }
 
@@ -587,14 +558,14 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 // TODO: make this generic loop method to queue important ws messages?
 //       or, if something uses ticker / async ctx to send messages,
 //       it needs a retry mechanism built into the callback object
-void _wsNewClient() {
+void _wsHandleClientData() {
 
-    if (_ws_new_clients.empty()) return;
-    auto& client = _ws_new_clients.front();
-    AsyncWebSocketClient* ws_client = _ws.client(client.id);
+    if (_ws_client_data.empty()) return;
+    auto feed = _ws_client_data.front();
+    AsyncWebSocketClient* ws_client = _ws.client(feed.client_id);
 
     if (!ws_client) {
-        _ws_new_clients.pop();
+        _ws_client_data.pop();
         return;
     }
 
@@ -611,14 +582,13 @@ void _wsNewClient() {
     DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
 
-    if (client.send(root)) {
-        wsSend(client.id, root);
-        yield();
-    }
+    feed.send(root);
+    wsSend(feed.client_id, root);
+    yield();
 
-    if (client.done()) {
+    if (feed.done()) {
         // push the queue and finally allow incoming messages
-        _ws_new_clients.pop();
+        _ws_client_data.pop();
         ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
     }
 }
@@ -626,7 +596,7 @@ void _wsNewClient() {
 void _wsLoop() {
     if (!wsConnected()) return;
     _wsDoUpdate();
-    _wsNewClient();
+    _wsHandleClientData();
 }
 
 // -----------------------------------------------------------------------------
