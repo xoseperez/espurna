@@ -217,24 +217,46 @@ void webRequestRegister(web_request_callback_f callback);
     using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
     using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
 
+    using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
+    using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
+    using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
+
     struct ws_callbacks_t {
-        ws_on_send_callback_f on_connected;
-        ws_on_send_callback_f on_visible;
-        ws_on_send_callback_f on_data;
-        ws_on_action_callback_f on_action;
-        ws_on_keycheck_callback_f on_keycheck;
+        ws_on_send_callback_list_t on_visible;
+        ws_on_send_callback_list_t on_connected;
+        ws_on_send_callback_list_t on_data;
+
+        ws_on_action_callback_list_t on_action;
+        ws_on_keycheck_callback_list_t on_keycheck;
+
+        ws_callbacks_t& onVisible(ws_on_send_callback_f cb) {
+            on_visible.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onConnected(ws_on_send_callback_f cb) {
+            on_connected.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onData(ws_on_send_callback_f cb) {
+            on_data.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onAction(ws_on_action_callback_f cb) {
+            on_action.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f cb) {
+            on_keycheck.push_back(cb);
+            return *this;
+        }
+
     };
 
-    struct ws_callbacks_builder_t {
-        ~ws_callbacks_builder_t();
-        ws_callbacks_builder_t& onConnected(ws_on_send_callback_f cb);
-        ws_callbacks_builder_t& onAction(ws_on_action_callback_f cb);
-        ws_callbacks_builder_t& onKeyCheck(ws_on_keycheck_callback_f cb);
-        ws_callbacks_builder_t& onVisible(ws_on_send_callback_f cb);
-        ws_callbacks_builder_t& onData(ws_on_send_callback_f cb);
-        ws_callbacks_t callbacks;
-    };
-    ws_callbacks_builder_t wsRegister();
+    ws_callbacks_t& wsRegister();
 
     void wsSend(uint32_t, JsonObject& root);
     void wsSend(JsonObject& root);

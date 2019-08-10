@@ -22,40 +22,12 @@ Ticker _web_defer;
 // WS callbacks
 // -----------------------------------------------------------------------------
 
-using ws_callbacks_list_t = std::vector<ws_callbacks_t>;
-
-ws_callbacks_list_t _ws_callbacks;
-
-ws_callbacks_builder_t::~ws_callbacks_builder_t() {
-    _ws_callbacks.push_back(callbacks);
-}
-
-ws_callbacks_builder_t& ws_callbacks_builder_t::onConnected(ws_on_send_callback_f cb) {
-    callbacks.on_connected = cb;
-    return *this;
-}
-
-ws_callbacks_builder_t& ws_callbacks_builder_t::onVisible(ws_on_send_callback_f cb) {
-    callbacks.on_visible = cb;
-    return *this;
-}
-
-ws_callbacks_builder_t& ws_callbacks_builder_t::onData(ws_on_send_callback_f cb) {
-    callbacks.on_data = cb;
-    return *this;
-}
-
-ws_callbacks_builder_t& ws_callbacks_builder_t::onAction(ws_on_action_callback_f cb) {
-    callbacks.on_action = cb;
-    return *this;
-}
-
-ws_callbacks_builder_t& ws_callbacks_builder_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
-    callbacks.on_keycheck = cb;
-    return *this;
-}
+ws_callbacks_t _ws_callbacks;
 
 struct ws_counter_t {
+
+    ws_counter_t() : current(0), start(0), stop(0) {}
+
     ws_counter_t(uint32_t start, uint32_t stop) :
         current(start), start(start), stop(stop) {}
 
@@ -87,11 +59,11 @@ struct ws_client_t {
         DONE
     };
 
-    ws_client_t(uint32_t id, const ws_callbacks_list_t& callbacks) :
+    ws_client_t(uint32_t id, const ws_callbacks_t& callbacks) :
         id(id),
-        state(VISIBLE),
+        state(INITIAL),
         callbacks(callbacks),
-        counter(0, callbacks.size())
+        counter(0, callbacks.on_connected.size())
     {}
 
     bool done() {
@@ -110,32 +82,35 @@ struct ws_client_t {
                 break;
             }
             case VISIBLE: {
-                for (auto& callback : callbacks) {
-                    if (!callback.on_visible) continue;
+                for (auto& callback : callbacks.on_visible) {
                     result = true;
-                    callback.on_visible(root);
+                    callback(root);
                 }
                 state = CONNECTED;
                 break;
             }
-            case CONNECTED:
-            case DATA: {
-                auto& callback = callbacks[counter.current];
-                if (state == CONNECTED && callback.on_connected) {
-                    callback.on_connected(root);
-                    result = true;
-                } else if (state == DATA && callback.on_data) {
-                    callback.on_connected(root);
-                    result = true;
-                }
+            case CONNECTED: {
+                callbacks.on_connected[counter.current](root);
+                result = true;
                 counter.next();
                 if (counter.done()) {
                     counter.reset();
-                    state = (state == CONNECTED) ? DATA : DONE; // XXX: more states?
+                    counter.stop = callbacks.on_data.size();
+                    state = DATA;
+                }
+                break;
+            }
+            case DATA: {
+                callbacks.on_data[counter.current](root);
+                result = true;
+                counter.next();
+                if (counter.done()) {
+                    state = DONE;
                 }
                 break;
             }
             case DONE:
+            default:
                 break;
         }
 
@@ -145,7 +120,7 @@ struct ws_client_t {
 
     uint32_t id;
     state_t state;
-    const ws_callbacks_list_t& callbacks;
+    const ws_callbacks_t& callbacks;
     ws_counter_t counter;
 
 };
@@ -290,9 +265,8 @@ bool _wsStore(const String& key, JsonArray& value) {
 }
 
 bool _wsCheckKey(const String& key, JsonVariant& value) {
-    for (auto& callbacks : _ws_callbacks) {
-        if (!callbacks.on_keycheck) continue;
-        if (callbacks.on_keycheck(key.c_str(), value)) return true;
+    for (auto& callback : _ws_callbacks.on_keycheck) {
+        if (callback(key.c_str(), value)) return true;
         // TODO: remove this to call all OnKeyCheckCallbacks with the
         // current key/value
     }
@@ -354,9 +328,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
 
             // Callbacks
-            for (auto& callbacks : _ws_callbacks) {
-                if (!callbacks.on_action) continue;
-                callbacks.on_action(client_id, action, data);
+            for (auto& callback : _ws_callbacks.on_action) {
+                callback(client_id, action, data);
             }
 
             // Restore configuration via websockets
@@ -620,7 +593,7 @@ void _wsNewClient() {
     auto& client = _ws_new_clients.front();
     AsyncWebSocketClient* ws_client = _ws.client(client.id);
 
-    if (!ws_client || !client.callbacks.size()) {
+    if (!ws_client) {
         _ws_new_clients.pop();
         return;
     }
@@ -668,8 +641,8 @@ bool wsConnected(uint32_t client_id) {
     return _ws.hasClient(client_id);
 }
 
-ws_callbacks_builder_t wsRegister() {
-    return ws_callbacks_builder_t{};
+ws_callbacks_t& wsRegister() {
+    return _ws_callbacks;
 }
 
 void wsSend(ws_on_send_callback_f callback) {
