@@ -50,14 +50,14 @@ struct ws_counter_t {
     uint32_t stop;
 };
 
-struct ws_data_feed_t {
+struct ws_data_t {
 
     enum mode_t {
         SEQUENCE,
         ALL
     };
 
-    ws_data_feed_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
+    ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
         client_id(client_id),
         mode(mode),
         callbacks(callbacks),
@@ -93,7 +93,7 @@ struct ws_data_feed_t {
     ws_counter_t counter;
 };
 
-std::queue<ws_data_feed_t> _ws_client_data;
+std::queue<ws_data_t> _ws_client_data;
 
 // -----------------------------------------------------------------------------
 // WS authentication
@@ -505,7 +505,7 @@ void _wsConnected(uint32_t client_id) {
         return;
     }
 
-    _ws_client_data.emplace(client_id, _ws_callbacks.on_visible, ws_data_feed_t::ALL);
+    _ws_client_data.emplace(client_id, _ws_callbacks.on_visible, ws_data_t::ALL);
     _ws_client_data.emplace(client_id, _ws_callbacks.on_connected);
     _ws_client_data.emplace(client_id, _ws_callbacks.on_data);
 
@@ -561,8 +561,8 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 void _wsHandleClientData() {
 
     if (_ws_client_data.empty()) return;
-    auto feed = _ws_client_data.front();
-    AsyncWebSocketClient* ws_client = _ws.client(feed.client_id);
+    auto data = _ws_client_data.front();
+    AsyncWebSocketClient* ws_client = _ws.client(data.client_id);
 
     if (!ws_client) {
         _ws_client_data.pop();
@@ -582,11 +582,11 @@ void _wsHandleClientData() {
     DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
 
-    feed.send(root);
-    wsSend(feed.client_id, root);
+    data.send(root);
+    wsSend(data.client_id, root);
     yield();
 
-    if (feed.done()) {
+    if (data.done()) {
         // push the queue and finally allow incoming messages
         _ws_client_data.pop();
         ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
