@@ -22,7 +22,9 @@ Ticker _web_defer;
 // WS callbacks
 // -----------------------------------------------------------------------------
 
-std::vector<ws_callbacks_t> _ws_callbacks;
+using ws_callbacks_list_t = std::vector<ws_callbacks_t>;
+
+ws_callbacks_list_t _ws_callbacks;
 
 ws_callbacks_builder_t::~ws_callbacks_builder_t() {
     _ws_callbacks.push_back(callbacks);
@@ -53,6 +55,102 @@ ws_callbacks_builder_t& ws_callbacks_builder_t::onKeyCheck(ws_on_keycheck_callba
     return *this;
 }
 
+struct ws_counter_t {
+    ws_counter_t(uint32_t start, uint32_t stop) :
+        current(start), start(start), stop(stop) {}
+
+    void reset() {
+        current = start;
+    }
+
+    void next() {
+        if (current < stop) {
+            ++current;
+        }
+    }
+
+    bool done() {
+        return (current >= stop);
+    }
+
+    uint32_t current;
+    uint32_t start;
+    uint32_t stop;
+};
+
+struct ws_client_t {
+    enum state_t {
+        INITIAL,
+        VISIBLE,
+        CONNECTED,
+        DATA,
+        DONE
+    };
+
+    ws_client_t(uint32_t id, const ws_callbacks_list_t& callbacks) :
+        id(id),
+        state(VISIBLE),
+        callbacks(callbacks),
+        counter(0, callbacks.size())
+    {}
+
+    bool done() {
+        return state == DONE;
+    }
+
+    bool send(JsonObject& root) {
+        bool result = false;
+        switch (state) {
+            case INITIAL: {
+                JsonObject& newClient = root.createNestedObject("newClient");
+                newClient["id"] = id;
+                newClient["ts"] = millis();
+                result = true;
+                state = VISIBLE;
+                break;
+            }
+            case VISIBLE: {
+                for (auto& callback : callbacks) {
+                    if (!callback.on_visible) continue;
+                    result = true;
+                    callback.on_visible(root);
+                }
+                state = CONNECTED;
+                break;
+            }
+            case CONNECTED:
+            case DATA: {
+                auto& callback = callbacks[counter.current];
+                if (state == CONNECTED && callback.on_connected) {
+                    callback.on_connected(root);
+                    result = true;
+                } else if (state == DATA && callback.on_data) {
+                    callback.on_connected(root);
+                    result = true;
+                }
+                counter.next();
+                if (counter.done()) {
+                    counter.reset();
+                    state = (state == CONNECTED) ? DATA : DONE; // XXX: more states?
+                }
+                break;
+            }
+            case DONE:
+                break;
+        }
+
+        return result;
+
+    }
+
+    uint32_t id;
+    state_t state;
+    const ws_callbacks_list_t& callbacks;
+    ws_counter_t counter;
+
+};
+std::queue<ws_client_t> _ws_new_clients;
+
 // -----------------------------------------------------------------------------
 // WS authentication
 // -----------------------------------------------------------------------------
@@ -62,26 +160,6 @@ struct ws_ticket_t {
     unsigned long timestamp = 0;
 };
 ws_ticket_t _ws_tickets[WS_BUFFER_SIZE];
-
-struct ws_client_t {
-    enum state_t {
-        IDLE,
-        INITIAL,
-        VISIBLE,
-        CONNECTED,
-        DATA,
-        DONE
-    };
-
-    ws_client_t(uint32_t id, uint32_t count) :
-        id(id), cb_count(count), state(VISIBLE)
-    {}
-
-    uint32_t id;
-    uint32_t cb_count;
-    state_t state;
-};
-std::queue<ws_client_t> _ws_clients;
 
 void _onAuth(AsyncWebServerRequest *request) {
 
@@ -485,7 +563,7 @@ void _wsConnected(uint32_t client_id) {
         return;
     }
 
-    _ws_clients.emplace(client_id, 0);
+    _ws_new_clients.emplace(client_id, _ws_callbacks);
 
 }
 
@@ -533,16 +611,22 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
 }
 
+// TODO: make this generic loop method to queue important ws messages?
+//       or, if something uses ticker / async ctx to send messages,
+//       it needs a retry mechanism built into the callback object
 void _wsNewClient() {
-    auto& client = _ws_clients.front();
+
+    if (_ws_new_clients.empty()) return;
+    auto& client = _ws_new_clients.front();
     AsyncWebSocketClient* ws_client = _ws.client(client.id);
 
-    if (!ws_client || !_ws_callbacks.size()) {
-        _ws_clients.pop();
+    if (!ws_client || !client.callbacks.size()) {
+        _ws_new_clients.pop();
         return;
     }
 
     // wait until we can send the next batch of messages
+    // XXX: enforce that callbacks send only one message per iteration
     if (ws_client->queueIsFull()) {
         return;
     }
@@ -554,49 +638,14 @@ void _wsNewClient() {
     DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
 
-    bool sending = false;
-
-    if (client.state == ws_client_t::INITIAL) {
-        JsonObject& newClient = root.createNestedObject("newClient");
-        newClient["id"] = client.id;
-        newClient["ts"] = millis();
-        sending = true;
-        client.state = ws_client_t::VISIBLE;
-    } else if (client.state == ws_client_t::VISIBLE) {
-        for (auto& callback : _ws_callbacks) {
-            if (!callback.on_visible) continue;
-            sending = true;
-            callback.on_visible(root);
-        }
-        client.state = ws_client_t::CONNECTED;
-    } else if (client.state == ws_client_t::CONNECTED) {
-        auto& connected = _ws_callbacks[client.cb_count].on_connected;
-        if (connected) {
-            sending = true;
-            connected(root);
-        }
-        client.cb_count += 1;
-        if (client.cb_count >= _ws_callbacks.size()) {
-            client.cb_count = 0;
-            client.state = ws_client_t::DATA;
-        }
-    } else if (client.state == ws_client_t::DATA) {
-        auto& data = _ws_callbacks[client.cb_count].on_data;
-        if (data) {
-            sending = true;
-            data(root);
-        }
-        client.cb_count += 1;
-    }
-
-    if (sending) {
+    if (client.send(root)) {
         wsSend(client.id, root);
         yield();
     }
 
-    if (client.cb_count >= _ws_callbacks.size()) {
+    if (client.done()) {
         // push the queue and finally allow incoming messages
-        _ws_clients.pop();
+        _ws_new_clients.pop();
         ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
     }
 }
@@ -604,8 +653,7 @@ void _wsNewClient() {
 void _wsLoop() {
     if (!wsConnected()) return;
     _wsDoUpdate();
-
-    if (!_ws_clients.empty()) _wsNewClient();
+    _wsNewClient();
 }
 
 // -----------------------------------------------------------------------------
