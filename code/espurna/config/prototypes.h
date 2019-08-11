@@ -262,6 +262,15 @@ void webRequestRegister(web_request_callback_f callback);
     void wsSend(JsonObject& root);
     void wsSend(ws_on_send_callback_f sender);
 
+    void wsPost(const ws_on_send_callback_list_t&);
+    void wsPost(uint32_t, const ws_on_send_callback_list_t&);
+
+    void wsPostAll(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPostAll(const ws_on_send_callback_list_t&);
+
+    void wsPostSequence(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPostSequence(const ws_on_send_callback_list_t&);
+
     bool wsConnected();
     bool wsConnected(uint32_t);
     bool wsDebugSend(const char*, const char*);

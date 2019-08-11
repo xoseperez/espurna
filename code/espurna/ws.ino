@@ -57,6 +57,14 @@ struct ws_data_t {
         ALL
     };
 
+    ws_data_t(const ws_on_send_callback_f& cb) :
+        client_id(0),
+        storage(new ws_on_send_callback_list_t {cb}),
+        callbacks(*storage.get()),
+        mode(ALL),
+        counter(0, 1)
+    {}
+
     ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
         client_id(client_id),
         mode(mode),
@@ -86,6 +94,8 @@ struct ws_data_t {
             case ALL: sendAll(root); break;
         }
     }
+
+    std::unique_ptr<ws_on_send_callback_list_t> storage;
 
     const uint32_t client_id;
     const mode_t mode;
@@ -505,9 +515,9 @@ void _wsConnected(uint32_t client_id) {
         return;
     }
 
-    _ws_client_data.emplace(client_id, _ws_callbacks.on_visible, ws_data_t::ALL);
-    _ws_client_data.emplace(client_id, _ws_callbacks.on_connected);
-    _ws_client_data.emplace(client_id, _ws_callbacks.on_data);
+    wsPostAll(client_id, _ws_callbacks.on_visible);
+    wsPostSequence(client_id, _ws_callbacks.on_connected);
+    wsPostSequence(client_id, _ws_callbacks.on_data);
 
 }
 
@@ -583,7 +593,11 @@ void _wsHandleClientData() {
     JsonObject& root = jsonBuffer.createObject();
 
     data.send(root);
-    wsSend(data.client_id, root);
+    if (data.client_id) {
+        wsSend(data.client_id, root);
+    } else {
+        wsSend(root);
+    }
     yield();
 
     if (data.done()) {
@@ -657,6 +671,26 @@ void wsSend_P(uint32_t client_id, PGM_P payload) {
     char buffer[strlen_P(payload)];
     strcpy_P(buffer, payload);
     _ws.text(client_id, buffer);
+}
+
+void wsPost(const ws_on_send_callback_f& cb) {
+    _ws_client_data.emplace(cb);
+}
+
+void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(client_id, cbs, ws_data_t::ALL);
+}
+
+void wsPostAll(const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(0, cbs, ws_data_t::ALL);
+}
+
+void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(client_id, cbs, ws_data_t::SEQUENCE);
+}
+
+void wsPostSequence(const ws_on_send_callback_list_t& cbs) {
+    _ws_client_data.emplace(0, cbs, ws_data_t::SEQUENCE);
 }
 
 void wsSetup() {
