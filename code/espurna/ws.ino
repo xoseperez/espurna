@@ -561,7 +561,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 void _wsHandleClientData() {
 
     if (_ws_client_data.empty()) return;
-    auto data = _ws_client_data.front();
+    auto& data = _ws_client_data.front();
     AsyncWebSocketClient* ws_client = _ws.client(data.client_id);
 
     if (!ws_client) {
