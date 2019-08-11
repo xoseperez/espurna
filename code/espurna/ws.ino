@@ -69,7 +69,7 @@ struct ws_data_t {
     }
 
     void sendAll(JsonObject& root) {
-        while (counter.done()) counter.next();
+        while (!counter.done()) counter.next();
         for (auto& callback : callbacks) {
             callback(root);
         }
