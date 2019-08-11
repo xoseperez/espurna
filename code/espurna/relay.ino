@@ -203,7 +203,7 @@ void _relayProcess(bool mode) {
             _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
             #if WEB_SUPPORT
-                wsSend(_relayWebSocketUpdate);
+                wsPost(_relayWebSocketUpdate);
             #endif
 
         }
@@ -701,7 +701,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
         if (value == 3) {
 
-            wsSend(_relayWebSocketUpdate);
+            wsPost(_relayWebSocketUpdate);
 
         } else if (value < 3) {
 

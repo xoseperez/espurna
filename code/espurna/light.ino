@@ -770,7 +770,7 @@ void _lightComms(unsigned char mask) {
 
     // Report color to WS clients (using current brightness setting)
     #if WEB_SUPPORT
-        wsSend(_lightWebSocketStatus);
+        wsPost(_lightWebSocketStatus);
     #endif
 
     // Report channels to local broker

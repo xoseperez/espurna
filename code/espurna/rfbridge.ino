@@ -102,20 +102,6 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
         off.add(rfbRetrieve(id, false));
     }
 }
-void _rfbWebSocketSendCodeArray(unsigned char start, unsigned char size) {
-    
-    DynamicJsonBuffer jsonBuffer(512);
-    JsonObject& root = jsonBuffer.createObject();
-
-    _rfbWebSocketSendCodeArray(root, start, size);
-
-    wsSend(root);
-    
-}
-
-void _rfbWebSocketSendCode(unsigned char id) {
-    _rfbWebSocketSendCodeArray(id, 1);
-}
 
 void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbVisible"] = 1;
@@ -290,7 +276,9 @@ void _rfbDecode() {
 
         // Websocket update
         #if WEB_SUPPORT
-            _rfbWebSocketSendCode(_learnId);
+            wsPost([](JsonObject& root) {
+                _rfbWebSocketSendCodeArray(root, _learnId, 1);
+            });
         #endif
 
     }
@@ -520,18 +508,6 @@ void _rfbReceive() {
 
 #endif // RFB_DIRECT
 
-void _rfbLearn() {
-
-    _rfbLearnImpl();
-
-    #if WEB_SUPPORT
-        char buffer[100];
-        snprintf_P(buffer, sizeof(buffer), PSTR("{\"action\": \"rfbLearn\", \"data\":{\"id\": %d, \"status\": %d}}"), _learnId, _learnStatus ? 1 : 0);
-        wsSend(buffer);
-    #endif
-
-}
-
 #if MQTT_SUPPORT
 
 void _rfbMqttCallback(unsigned int type, const char * topic, const char * payload) {
@@ -566,7 +542,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, const char * payloa
                 return;
             }
             _learnStatus = (char)payload[0] != '0';
-            _rfbLearn();
+            _rfbLearnImpl();
             return;
 
         }
@@ -617,7 +593,7 @@ void _rfbAPISetup() {
             tok = strtok(NULL, ",");
             if (NULL == tok) return;
             _learnStatus = (char) tok[0] != '0';
-            _rfbLearn();
+            _rfbLearnImpl();
         }
     );
 
@@ -737,7 +713,7 @@ void rfbStatus(unsigned char id, bool status) {
 void rfbLearn(unsigned char id, bool status) {
     _learnId = id;
     _learnStatus = status;
-    _rfbLearn();
+    _rfbLearnImpl();
 }
 
 void rfbForget(unsigned char id, bool status) {
@@ -748,9 +724,9 @@ void rfbForget(unsigned char id, bool status) {
 
     // Websocket update
     #if WEB_SUPPORT
-        char wsb[100];
-        snprintf_P(wsb, sizeof(wsb), PSTR("{\"rfb\":[{\"id\": %d, \"status\": %d, \"data\": \"\"}]}"), id, status ? 1 : 0);
-        wsSend(wsb);
+        wsPost([id](JsonObject& root) {
+            _rfbWebSocketSendCodeArray(root, id, 1);
+        });
     #endif
 
 }

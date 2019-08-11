@@ -354,7 +354,7 @@ void _haInitCommands() {
         setSetting("haEnabled", "1");
         _haConfigure();
         #if WEB_SUPPORT
-            wsSend(_haWebSocketOnConnected);
+            wsPost(_haWebSocketOnConnected);
         #endif
         terminalOK();
     });
@@ -363,7 +363,7 @@ void _haInitCommands() {
         setSetting("haEnabled", "0");
         _haConfigure();
         #if WEB_SUPPORT
-            wsSend(_haWebSocketOnConnected);
+            wsPost(_haWebSocketOnConnected);
         #endif
         terminalOK();
     });

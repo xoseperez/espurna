@@ -162,6 +162,8 @@ bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _sensorWebSocketOnVisible(JsonObject& root) {
 
+    root["snsVisible"] = 1;
+
     for (auto& magnitude : _magnitudes) {
         if (magnitude.type == MAGNITUDE_TEMPERATURE) root["temperatureVisible"] = 1;
         if (magnitude.type == MAGNITUDE_HUMIDITY) root["humidityVisible"] = 1;
@@ -288,7 +290,6 @@ void _sensorWebSocketOnConnected(JsonObject& root) {
     }
 
     if (magnitudeCount()) {
-        root["snsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
         root["pwrUnits"] = _sensor_power_units;
         root["eneUnits"] = _sensor_energy_units;
@@ -1795,7 +1796,7 @@ void sensorLoop() {
         _sensorPost();
 
         #if WEB_SUPPORT
-            wsSend(_sensorWebSocketSendData);
+            wsPost(_sensorWebSocketSendData);
         #endif
 
         #if THINGSPEAK_SUPPORT
