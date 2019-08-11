@@ -255,9 +255,6 @@ void _rfbDecode() {
     if (action == RF_CODE_LEARN_KO) {
         _rfbAck();
         DEBUG_MSG_P(PSTR("[RF] Learn timeout\n"));
-        #if WEB_SUPPORT
-            wsSend_P(PSTR("{\"action\": \"rfbTimeout\"}"));
-        #endif
     }
 
     if (action == RF_CODE_LEARN_OK || action == RF_CODE_RFIN) {
