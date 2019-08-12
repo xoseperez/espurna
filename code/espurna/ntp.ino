@@ -34,8 +34,11 @@ void _ntpWebSocketOnVisible(JsonObject& root) {
     root["ntpVisible"] = 1;
 }
 
-void _ntpWebSocketOnConnected(JsonObject& root) {
+void _ntpWebSocketOnData(JsonObject& root) {
     root["ntpStatus"] = (timeStatus() == timeSet);
+}
+
+void _ntpWebSocketOnConnected(JsonObject& root) {
     root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
@@ -231,14 +234,12 @@ void ntpSetup() {
 
     NTPw.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"ntpStatus\": false}"));
-            #endif
             if (error == noResponse) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable\n"));
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
+            wsPost(_ntpWebSocketOnData);
         } else {
             _ntp_report = true;
             setTime(NTPw.getLastNTPSync());
@@ -257,6 +258,7 @@ void ntpSetup() {
         wsRegister()
             .onVisible(_ntpWebSocketOnVisible)
             .onConnected(_ntpWebSocketOnConnected)
+            .onData(_ntpWebSocketOnData)
             .onKeyCheck(_ntpWebSocketOnKeyCheck);
     #endif
 
