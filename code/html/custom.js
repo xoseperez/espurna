@@ -1642,10 +1642,15 @@ function processData(data) {
         if ("weblog" === key) {
             websock.send("{}");
 
-            if (value.prefix) {
-                $("#weblog").append(new Text(value.prefix));
+            msg = value["msg"];
+            pre = value["pre"];
+
+            for (var i=0; i < msg.length; ++i) {
+                if (pre[i]) {
+                    $("#weblog").append(new Text(pre[i]));
+                }
+                $("#weblog").append(new Text(msg[i]));
             }
-            $("#weblog").append(new Text(value.message));
 
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;
