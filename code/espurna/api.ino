@@ -91,14 +91,20 @@ void _onAPIsText(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
+constexpr const size_t API_JSON_BUFFER_SIZE = 1024;
+
 void _onAPIsJson(AsyncWebServerRequest *request) {
 
-    DynamicJsonBuffer jsonBuffer(1024);
+
+    DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
     JsonObject& root = jsonBuffer.createObject();
 
+    constexpr const int BUFFER_SIZE = 48;
+
     for (unsigned int i=0; i < _apis.size(); i++) {
-        char buffer[48] = {0};
-        if (snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key) > (sizeof(buffer) - 1)) {
+        char buffer[BUFFER_SIZE] = {0};
+        int res = snprintf(buffer, sizeof(buffer), "/api/%s", _apis[i].key);
+        if ((res < 0) || (res > (BUFFER_SIZE - 1))) {
             request->send(500);
             return;
         }
@@ -116,8 +122,6 @@ void _onAPIs(AsyncWebServerRequest *request) {
     if (!_authAPI(request)) return;
 
     bool asJson = _asJson(request);
-
-    char buffer[40];
 
     String output;
     if (asJson) {

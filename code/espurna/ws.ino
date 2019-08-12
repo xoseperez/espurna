@@ -58,10 +58,10 @@ struct ws_data_t {
     };
 
     ws_data_t(const ws_on_send_callback_f& cb) :
-        client_id(0),
         storage(new ws_on_send_callback_list_t {cb}),
-        callbacks(*storage.get()),
+        client_id(0),
         mode(ALL),
+        callbacks(*storage.get()),
         counter(0, 1)
     {}
 
