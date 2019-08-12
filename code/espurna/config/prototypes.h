@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <memory>
 #include <core_version.h>
 
 extern "C" {
@@ -168,7 +169,30 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
-#include "ESPAsyncTCP.h"
+
+#include <ArduinoOTA.h>
+
+#if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
+    #include <ESPAsyncTCP.h>
+#endif
+
+#if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
+    #include <ESP8266HTTPClient.h>
+    #include <ESP8266httpUpdate.h>
+#endif
+
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
+
+    #include <WiFiClientSecure.h>
+
+    #if OTA_SECURE_CLIENT_INCLUDE_CA
+    #include "static/ota_secure_client_ca.h"
+    #else
+    #include "static/digicert_evroot_pem.h"
+    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
+    #endif
+
+#endif // SECURE_CLIENT_SUPPORT
 
 // -----------------------------------------------------------------------------
 // RFM69
@@ -285,3 +309,14 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
 
+// -----------------------------------------------------------------------------
+// std::make_unique backport for C++11
+// -----------------------------------------------------------------------------
+#if 201103L >= __cplusplus
+namespace std {
+    template<typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+}
+#endif

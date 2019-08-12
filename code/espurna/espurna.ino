@@ -110,9 +110,14 @@ void setup() {
     info();
 
     wifiSetup();
-    otaSetup();
+    #if OTA_ARDUINOOTA_SUPPORT
+        arduinoOtaSetup();
+    #endif
     #if TELNET_SUPPORT
         telnetSetup();
+    #endif
+    #if OTA_CLIENT != OTA_CLIENT_NONE
+        otaClientSetup();
     #endif
 
     // -------------------------------------------------------------------------
