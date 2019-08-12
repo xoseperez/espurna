@@ -27,7 +27,7 @@ namespace EspClass_has_getHeapStats {
     template <typename T>
     struct detector : public _detector {
         using result = decltype(
-                std::declval<detector>().detect<T>(0));
+                std::declval<detector>().template detect<T>(0));
     };
 
     template <typename T>
