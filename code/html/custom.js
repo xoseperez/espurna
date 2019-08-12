@@ -23,7 +23,9 @@ var packets;
 var filters = [];
 <!-- endRemoveIf(!rfm69)-->
 
+<!-- removeIf(!sensor)-->
 var magnitudes = [];
+<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Messages
