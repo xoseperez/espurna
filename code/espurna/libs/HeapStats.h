@@ -96,9 +96,8 @@ void infoMemory(const char* name, const heap_stats_t& stats) {
 
 void infoHeapStats(const char* name, const heap_stats_t& stats) {
     DEBUG_MSG_P(
-        PSTR("[MAIN] %-6s: %5u bytes available | %5u bytes lost (%2u%%) | %5u bytes free (%2u%%)\n"),
+        PSTR("[MAIN] %-6s:                       | %5u bytes lost (%2u%%) | %5u bytes free (%2u%%)\n"),
         name,
-        stats.available,
         (stats.available - stats.usable),
         stats.frag_pct,
         stats.usable,
@@ -107,8 +106,9 @@ void infoHeapStats(const char* name, const heap_stats_t& stats) {
 }
 
 void infoHeapStats(bool show_frag_stats = true) {
-    infoMemory("Heap", getHeapStats());
+    auto stats = getHeapStats();
+    infoMemory("Heap", stats);
     if (show_frag_stats && EspClass_has_getHeapStats::check) {
-        infoHeapStats("Heap", getHeapStats());
+        infoHeapStats("Heap", stats);
     }
 }
