@@ -52,6 +52,8 @@ bool _webConfigSuccess = false;
 std::vector<web_request_callback_f> _web_request_callbacks;
 std::vector<web_body_callback_f> _web_body_callbacks;
 
+constexpr const size_t WEB_CONFIG_BUFFER_MAX = 4096;
+
 // -----------------------------------------------------------------------------
 // HOOKS
 // -----------------------------------------------------------------------------
@@ -65,14 +67,17 @@ void _onDiscover(AsyncWebServerRequest *request) {
 
     webLog(request);
 
-    AsyncResponseStream *response = request->beginResponseStream("text/json");
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
 
-    DynamicJsonBuffer jsonBuffer;
+    const String device = getBoardName();
+    const String hostname = getSetting("hostname");
+
+    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
-    root["hostname"] = getSetting("hostname");
-    root["device"] = getBoardName();
+    root["device"] = device.c_str();
+    root["hostname"] = hostname.c_str();
     root.printTo(*response);
 
     request->send(response);
@@ -125,11 +130,13 @@ void _onPostConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
     // No buffer
     if (final && (index == 0)) {
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject((char *) data);
-        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
+        _webConfigSuccess = settingsRestoreJson((char*) data);
         return;
     }
 
@@ -144,6 +151,12 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
 
     // Copy
     if (len > 0) {
+        if ((_webConfigBuffer->size() + len) > std::min(WEB_CONFIG_BUFFER_MAX, getFreeHeap() - sizeof(std::vector<uint8_t>))) {
+            delete _webConfigBuffer;
+            _webConfigBuffer = nullptr;
+            request->send(500);
+            return;
+        }
         _webConfigBuffer->reserve(_webConfigBuffer->size() + len);
         _webConfigBuffer->insert(_webConfigBuffer->end(), data, data + len);
     }
@@ -152,11 +165,7 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
     if (final) {
 
         _webConfigBuffer->push_back(0);
-
-        // Parse JSON
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject((char *) _webConfigBuffer->data());
-        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
+        _webConfigSuccess = settingsRestoreJson((char*) _webConfigBuffer->data());
         delete _webConfigBuffer;
 
     }
@@ -297,7 +306,11 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
 }
 
-void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (!index) {
 
@@ -331,8 +344,10 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     } else {
-        //Removed to avoid websocket ping back during upgrade (see #1574)
-        //DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        // Removed to avoid websocket ping back during upgrade (see #1574)
+        // TODO: implement as separate from debugging message
+        if (wsConnected()) return;
+        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
 
@@ -455,7 +470,7 @@ void webSetup() {
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
-    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files

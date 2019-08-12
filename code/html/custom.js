@@ -23,6 +23,10 @@ var packets;
 var filters = [];
 <!-- endRemoveIf(!rfm69)-->
 
+<!-- removeIf(!sensor)-->
+var magnitudes = [];
+<!-- endRemoveIf(!sensor)-->
+
 // -----------------------------------------------------------------------------
 // Messages
 // -----------------------------------------------------------------------------
@@ -834,7 +838,7 @@ function createMagnitudeList(data, container, template_name) {
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
         $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(data.name[i]);
+        $("div.hint", line).html(magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         line.appendTo("#" + container);
     }
@@ -1072,9 +1076,16 @@ function initMagnitudes(data) {
     var template = $("#magnitudeTemplate").children();
 
     for (var i=0; i<size; ++i) {
+        var magnitude = {
+            "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "units": data.units[i],
+            "description": data.description[i]
+        };
+        magnitudes.push(magnitude);
+
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(data.description[i]);
+        $("label", line).html(magnitude.name);
+        $("div.hint", line).html(magnitude.description);
         $("input", line).attr("data", i);
         line.appendTo("#magnitudes");
     }
@@ -1480,12 +1491,15 @@ function processData(data) {
 
         <!-- removeIf(!sensor)-->
 
-        if ("magnitudes" === key) {
+        if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+        }
+
+        if ("magnitudes" === key) {
             for (var i=0; i<value.size; ++i) {
                 var error = value.error[i] || 0;
                 var text = (0 === error) ?
-                    value.value[i] + value.units[i] :
+                    value.value[i] + magnitudes[i].units :
                     magnitudeError(error);
                 var element = $("input[name='magnitude'][data='" + i + "']");
                 element.val(text);
@@ -1635,10 +1649,15 @@ function processData(data) {
         if ("weblog" === key) {
             websock.send("{}");
 
-            if (value.prefix) {
-                $("#weblog").append(new Text(value.prefix));
+            msg = value["msg"];
+            pre = value["pre"];
+
+            for (var i=0; i < msg.length; ++i) {
+                if (pre[i]) {
+                    $("#weblog").append(new Text(pre[i]));
+                }
+                $("#weblog").append(new Text(msg[i]));
             }
-            $("#weblog").append(new Text(value.message));
 
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;

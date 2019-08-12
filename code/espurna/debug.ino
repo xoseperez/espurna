@@ -90,24 +90,26 @@ void debugSendImpl(const char * message) {
 
 #if DEBUG_WEB_SUPPORT
 
-void debugWebSetup() {
-
-    wsOnSendRegister([](JsonObject& root) {
-        root["dbgVisible"] = 1;
-    });
-
-    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
+void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
         #if TERMINAL_SUPPORT
             if (strcmp(action, "dbgcmd") == 0) {
-                const char* command = data.get<const char*>("command");
-                char buffer[strlen(command) + 2];
-                snprintf(buffer, sizeof(buffer), "%s\n", command);
-                terminalInject((void*) buffer, strlen(buffer));
+                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
+                const char* command = data["command"];
+                if (command && strlen(command)) {
+                    auto command = data.get<const char*>("command");
+                    terminalInject((void*) command, strlen(command));
+                    terminalInject('\n');
+                }
             }
         #endif
-        
-    });
+}
+
+void debugWebSetup() {
+
+    wsRegister()
+        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
+        .onAction(_debugWebSocketOnAction);
 
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514

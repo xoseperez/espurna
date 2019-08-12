@@ -118,8 +118,17 @@
 #define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
+#ifndef TELNET_PORT
 #define TELNET_PORT             23              // Port to listen to telnet clients
+#endif
+
+#ifndef TELNET_MAX_CLIENTS
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+#endif
+
+#ifndef TELNET_SERVER
+#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
+#endif
 
 //------------------------------------------------------------------------------
 // TERMINAL
@@ -489,6 +498,54 @@
 #define WIFI2_DNS                   ""
 #endif
 
+#ifndef WIFI3_SSID
+#define WIFI3_SSID                  ""
+#endif
+
+#ifndef WIFI3_PASS
+#define WIFI3_PASS                  ""
+#endif
+
+#ifndef WIFI3_IP
+#define WIFI3_IP                    ""
+#endif
+
+#ifndef WIFI3_GW
+#define WIFI3_GW                    ""
+#endif
+
+#ifndef WIFI3_MASK
+#define WIFI3_MASK                  ""
+#endif
+
+#ifndef WIFI3_DNS
+#define WIFI3_DNS                   ""
+#endif
+
+#ifndef WIFI4_SSID
+#define WIFI4_SSID                  ""
+#endif
+
+#ifndef WIFI4_PASS
+#define WIFI4_PASS                  ""
+#endif
+
+#ifndef WIFI4_IP
+#define WIFI4_IP                    ""
+#endif
+
+#ifndef WIFI4_GW
+#define WIFI4_GW                    ""
+#endif
+
+#ifndef WIFI4_MASK
+#define WIFI4_MASK                  ""
+#endif
+
+#ifndef WIFI4_DNS
+#define WIFI4_DNS                   ""
+#endif
+
 #ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M                -30         // Calibrate it with your router reading the RSSI at 1m
 #endif
@@ -626,18 +683,98 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// SSL Client                                                 ** EXPERIMENTAL **
+// -----------------------------------------------------------------------------
+
+#ifndef SECURE_CLIENT
+#define SECURE_CLIENT                          SECURE_CLIENT_NONE     // What variant of WiFiClient to use
+                                                                      // SECURE_CLIENT_NONE    - No secure client support (default)
+                                                                      // SECURE_CLIENT_AXTLS   - axTLS client secure support (All Core versions, ONLY TLS 1.1)
+                                                                      // SECURE_CLIENT_BEARSSL - BearSSL client secure support (starting with 2.5.0, TLS 1.2)
+                                                                      //
+                                                                      // axTLS marked for derecation since Arduino Core 2.4.2 and **will** be removed in the future
+#endif
+
+// Security check that is performed when the connection is established:
+// SECURE_CLIENT_CHECK_CA           - Use Trust Anchor / Root Certificate
+//                                    Supported only by the SECURE_CLIENT_BEARSSL
+//                                    (See respective ..._SECURE_CLIENT_INCLUDE_CA options per-module)
+// SECURE_CLIENT_CHECK_FINGERPRINT  - Check certificate fingerprint
+// SECURE_CLIENT_CHECK_NONE         - Allow insecure connections
+
+#ifndef SECURE_CLIENT_CHECK
+
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+#define SECURE_CLIENT_CHECK                    SECURE_CLIENT_CHECK_CA
+
+#else
+#define SECURE_CLIENT_CHECK                    SECURE_CLIENT_CHECK_FINGERPRINT
+
+#endif
+
+
+#endif // SECURE_CLIENT_CHECK
+
+// Support Maximum Fragment Length Negotiation TLS extension
+// "...negotiate a smaller maximum fragment length due to memory limitations or bandwidth limitations."
+// - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
+// - https://tools.ietf.org/html/rfc6066#section-4
+#ifndef SECURE_CLIENT_MFLN
+#define SECURE_CLIENT_MFLN                     0                      // The only possible values are: 512, 1024, 2048 and 4096
+                                                                      // Set to 0 to disable (default)
+#endif
+
+// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
 #ifndef OTA_PORT
-#define OTA_PORT                    8266        // OTA port
+#define OTA_PORT                    8266        // Port for ArduinoOTA
 #endif
 
 #ifndef OTA_MQTT_SUPPORT
-#define OTA_MQTT_SUPPORT           0            // No support by default
+#define OTA_MQTT_SUPPORT            0           // Listen for HTTP(s) URLs at '<root topic>/ota'. Depends on OTA_CLIENT
 #endif
 
-#define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
+#ifndef OTA_ARDUINOOTA_SUPPORT
+#define OTA_ARDUINOOTA_SUPPORT      1           // Support ArduinoOTA by default (4.2Kb)
+                                                // Implicitly depends on ESP8266mDNS library, thus increasing firmware size
+#endif
+
+#ifndef OTA_CLIENT
+#define OTA_CLIENT                  OTA_CLIENT_ASYNCTCP     // Terminal / MQTT OTA support
+                                                            // OTA_CLIENT_ASYNCTCP   (ESPAsyncTCP library)
+                                                            // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
+#endif
+
+#ifndef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
+#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE    1   // Use old HTTPUpdate API by default
+#endif
+
+#define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
+
+#ifndef OTA_FINGERPRINT
+#define OTA_FINGERPRINT             OTA_GITHUB_FP
+#endif
+
+#ifndef OTA_SECURE_CLIENT_CHECK
+#define OTA_SECURE_CLIENT_CHECK                SECURE_CLIENT_CHECK
+#endif
+
+#ifndef OTA_SECURE_CLIENT_MFLN
+#define OTA_SECURE_CLIENT_MFLN                 SECURE_CLIENT_MFLN
+#endif
+
+#ifndef OTA_SECURE_CLIENT_INCLUDE_CA
+#define OTA_SECURE_CLIENT_INCLUDE_CA        0            // Use user-provided CA. Only PROGMEM PEM option is supported.
+                                                         // TODO: eventually should be replaced with pre-parsed structs, read directly from flash
+                                                         // (ref: https://github.com/earlephilhower/bearssl-esp8266/pull/14)
+                                                         //
+                                                         // When enabled, current implementation includes "static/ota_secure_client_ca.h" with
+                                                         // const char _ota_client_http_update_ca[] PROGMEM = "...PEM data...";
+                                                         // By default, using DigiCert root in "static/digicert_evroot_pem.h" (for https://github.com)
+#endif
+
 
 // -----------------------------------------------------------------------------
 // NOFUSS
@@ -1043,9 +1180,17 @@
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
+#ifndef DOMOTICZ_ENABLED
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
+#endif
+
+#ifndef DOMOTICZ_IN_TOPIC
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
+#endif
+
+#ifndef DOMOTICZ_OUT_TOPIC
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
+#endif
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
@@ -1265,6 +1410,8 @@
 #endif
 
 // Enable RCSwitch support
+// Originally implemented for SONOFF BASIC
+// https://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
 // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
 #ifndef RFB_DIRECT

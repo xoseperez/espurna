@@ -20,12 +20,15 @@ bool _nofussEnabled = false;
 
 #if WEB_SUPPORT
 
-bool _nofussWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "nofuss", 6) == 0);
 }
 
-void _nofussWebSocketOnSend(JsonObject& root) {
+void _nofussWebSocketOnVisible(JsonObject& root) {
     root["nofussVisible"] = 1;
+}
+
+void _nofussWebSocketOnConnected(JsonObject& root) {
     root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
     root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
@@ -122,6 +125,9 @@ void nofussSetup() {
 
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
             eepromRotate(false);
+
+            // Force backup right now, because NoFUSS library will immediatly reset on success
+            eepromBackup(0);
         }
 
         if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
@@ -145,6 +151,8 @@ void nofussSetup() {
             #if WEB_SUPPORT
                 wsSend_P(PSTR("{\"action\": \"reload\"}"));
             #endif
+            // TODO: NoFUSS will reset the board after this callback returns.
+            //       Maybe this should be optional
             nice_delay(100);
         }
 
@@ -156,8 +164,10 @@ void nofussSetup() {
     });
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_nofussWebSocketOnSend);
-        wsOnReceiveRegister(_nofussWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_nofussWebSocketOnVisible)
+            .onConnected(_nofussWebSocketOnConnected)
+            .onKeyCheck(_nofussWebSocketOnKeyCheck);
     #endif
 
     #if TERMINAL_SUPPORT
