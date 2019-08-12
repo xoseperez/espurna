@@ -162,30 +162,75 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 #if DEBUG_WEB_SUPPORT
 
-bool wsDebugSend(const char* prefix, const char* message) {
-    if (!wsConnected()) return false;
+struct ws_debug_msg_t {
+    ws_debug_msg_t(const char* prefix, const char* message) :
+        prefix(prefix), message(message)
+    {}
+    String prefix;
+    String message;
+};
 
-    // via: https://arduinojson.org/v6/assistant/
-    // we use 1 object for "weblog", 2nd one for "message". "prefix", optional
-    StaticJsonBuffer<JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2)> jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-    JsonObject& weblog = root.createNestedObject("weblog");
+struct ws_debug_t {
 
-    weblog["message"] = message;
-    if (prefix && (prefix[0] != '\0')) {
-        weblog["prefix"] = prefix;
+    ws_debug_t(size_t capacity) :
+        flush(false),
+        current(0),
+        capacity(capacity)
+    {
+        messages.reserve(capacity);
     }
 
-    // TODO: avoid serializing twice and just measure json ourselves?
-    //const size_t len = strlen(message) + strlen(prefix)
-    //    + strlen("{\"weblog\":}")
-    //    + strlen("{\"message\":\"\"}")
-    //    + (strlen(prefix) ? strlen("\",\"prefix\":\"\"") : 0);
-    //wsSend(root, len);
-    wsSend(root);
+    void add(const char* prefix, const char* message) {
+        if (current >= capacity) {
+            flush = true;
+            send();
+        }
 
+        messages.emplace(messages.begin() + current, prefix, message);
+        flush = true;
+        ++current;
+    }
+
+    void send() {
+        if (!flush) return;
+        // ref: http://arduinojson.org/v5/assistant/
+        // {"weblog": {"msg":[...],"pre":[...]}}
+        DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
+
+        JsonObject& root = jsonBuffer.createObject();
+        JsonObject& weblog = root.createNestedObject("weblog");
+
+        JsonArray& msg = weblog.createNestedArray("msg");
+        JsonArray& pre = weblog.createNestedArray("pre");
+
+        for (auto& message : messages) {
+            pre.add(message.prefix.c_str());
+            msg.add(message.message.c_str());
+        }
+
+        wsSend(root);
+        messages.clear();
+        current = 0;
+        flush = false;
+    }
+
+    bool flush;
+    size_t current;
+    const size_t capacity;
+    std::vector<ws_debug_msg_t> messages;
+
+};
+
+// TODO: move to the headers?
+constexpr const size_t WS_DEBUG_MSG_BUFFER = 8;
+ws_debug_t _ws_debug(WS_DEBUG_MSG_BUFFER);
+
+bool wsDebugSend(const char* prefix, const char* message) {
+    if (!wsConnected()) return false;
+    _ws_debug.add(prefix, message);
     return true;
 }
+
 #endif
 
 // Check the existing setting before saving it
@@ -599,6 +644,9 @@ void _wsLoop() {
     if (!wsConnected()) return;
     _wsDoUpdate();
     _wsHandleClientData();
+    #if DEBUG_WEB_SUPPORT
+        _ws_debug.send();
+    #endif
 }
 
 // -----------------------------------------------------------------------------
