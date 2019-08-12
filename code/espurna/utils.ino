@@ -68,6 +68,10 @@ String getEspurnaModules() {
     return FPSTR(espurna_modules);
 }
 
+String getEspurnaOTAModules() {
+    return FPSTR(espurna_ota_modules);
+}
+
 #if SENSOR_SUPPORT
 String getEspurnaSensors() {
     return FPSTR(espurna_sensors);
@@ -103,6 +107,15 @@ unsigned long getUptime() {
 
     return uptime_seconds;
 
+}
+
+bool haveRelaysOrSensors() {
+    bool result = false;
+    result = (relayCount() > 0);
+    #if SENSOR_SUPPORT
+        result = result || (magnitudeCount() > 0);
+    #endif
+    return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -464,6 +477,7 @@ void info() {
 
     DEBUG_MSG_P(PSTR("[MAIN] Board: %s\n"), getBoardName().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules().c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] OTA: %s\n"), getEspurnaOTAModules().c_str());
     #if SENSOR_SUPPORT
         DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors().c_str());
     #endif // SENSOR_SUPPORT
@@ -504,8 +518,6 @@ void info() {
 // SSL
 // -----------------------------------------------------------------------------
 
-#if ASYNC_TCP_SSL_ENABLED
-
 bool sslCheckFingerPrint(const char * fingerprint) {
     return (strlen(fingerprint) == 59);
 }
@@ -540,8 +552,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
     return true;
 
 }
-
-#endif
 
 // -----------------------------------------------------------------------------
 // Reset

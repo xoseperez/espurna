@@ -110,9 +110,14 @@ void setup() {
     info();
 
     wifiSetup();
-    otaSetup();
+    #if OTA_ARDUINOOTA_SUPPORT
+        arduinoOtaSetup();
+    #endif
     #if TELNET_SUPPORT
         telnetSetup();
+    #endif
+    #if OTA_CLIENT != OTA_CLIENT_NONE
+        otaClientSetup();
     #endif
 
     // -------------------------------------------------------------------------
@@ -187,6 +192,9 @@ void setup() {
     #if NOFUSS_SUPPORT
         nofussSetup();
     #endif
+    #if SENSOR_SUPPORT
+        sensorSetup();
+    #endif
     #if INFLUXDB_SUPPORT
         idbSetup();
     #endif
@@ -204,9 +212,6 @@ void setup() {
     #endif
     #if HOMEASSISTANT_SUPPORT
         haSetup();
-    #endif
-    #if SENSOR_SUPPORT
-        sensorSetup();
     #endif
     #if SCHEDULER_SUPPORT
         schSetup();
