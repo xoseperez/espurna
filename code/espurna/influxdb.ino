@@ -17,12 +17,15 @@ SyncClientWrap * _idb_client;
 
 // -----------------------------------------------------------------------------
 
-bool _idbWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _idbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "idb", 3) == 0);
 }
 
-void _idbWebSocketOnSend(JsonObject& root) {
+void _idbWebSocketOnVisible(JsonObject& root) {
     root["idbVisible"] = 1;
+}
+
+void _idbWebSocketOnConnected(JsonObject& root) {
     root["idbEnabled"] = getSetting("idbEnabled", INFLUXDB_ENABLED).toInt() == 1;
     root["idbHost"] = getSetting("idbHost", INFLUXDB_HOST);
     root["idbPort"] = getSetting("idbPort", INFLUXDB_PORT).toInt();
@@ -118,8 +121,10 @@ void idbSetup() {
     _idbConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_idbWebSocketOnSend);
-        wsOnReceiveRegister(_idbWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_idbWebSocketOnVisible)
+            .onConnected(_idbWebSocketOnConnected)
+            .onKeyCheck(_idbWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT

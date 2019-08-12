@@ -203,7 +203,7 @@ void _relayProcess(bool mode) {
             _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
             #if WEB_SUPPORT
-                wsSend(_relayWebSocketUpdate);
+                wsPost(_relayWebSocketUpdate);
             #endif
 
         }
@@ -594,7 +594,7 @@ void _relayConfigure() {
 
 #if WEB_SUPPORT
 
-bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "relay", 5) == 0);
 }
 
@@ -634,9 +634,7 @@ String _relayFriendlyName(unsigned char i) {
     return res;
 }
 
-void _relayWebSocketSendRelays() {
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
+void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& relays = root.createNestedObject("relayConfig");
 
     relays["size"] = relayCount();
@@ -671,27 +669,25 @@ void _relayWebSocketSendRelays() {
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }
-
-    wsSend(root);
 }
 
-void _relayWebSocketOnStart(JsonObject& root) {
-
+void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
-    // Per-relay configuration
-    _relayWebSocketSendRelays();
-
-    // Statuses
-    _relayWebSocketUpdate(root);
-
-    // Options
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 
     root["relayVisible"] = 1;
+}
+
+void _relayWebSocketOnConnected(JsonObject& root) {
+
+    if (relayCount() == 0) return;
+
+    // Per-relay configuration
+    _relayWebSocketSendRelays(root);
 
 }
 
@@ -705,7 +701,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
         if (value == 3) {
 
-            wsSend(_relayWebSocketUpdate);
+            wsPost(_relayWebSocketUpdate);
 
         } else if (value < 3) {
 
@@ -731,9 +727,12 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 }
 
 void relaySetupWS() {
-    wsOnSendRegister(_relayWebSocketOnStart);
-    wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnReceiveRegister(_relayWebSocketOnReceive);
+    wsRegister()
+        .onVisible(_relayWebSocketOnVisible)
+        .onConnected(_relayWebSocketOnConnected)
+        .onData(_relayWebSocketUpdate)
+        .onAction(_relayWebSocketOnAction)
+        .onKeyCheck(_relayWebSocketOnKeyCheck);
 }
 
 #endif // WEB_SUPPORT

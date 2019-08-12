@@ -109,6 +109,15 @@ unsigned long getUptime() {
 
 }
 
+bool haveRelaysOrSensors() {
+    bool result = false;
+    result = (relayCount() > 0);
+    #if SENSOR_SUPPORT
+        result = result || (magnitudeCount() > 0);
+    #endif
+    return result;
+}
+
 // -----------------------------------------------------------------------------
 // Heartbeat helper
 // -----------------------------------------------------------------------------

@@ -131,6 +131,11 @@ bool gpioGetLock(unsigned char gpio);
 bool gpioReleaseLock(unsigned char gpio);
 
 // -----------------------------------------------------------------------------
+// Homeassistant
+// -----------------------------------------------------------------------------
+struct ha_config_t;
+
+// -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
 void i2cScan();
@@ -159,7 +164,7 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // MQTT
 // -----------------------------------------------------------------------------
 #if MQTT_SUPPORT
-    typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
+    typedef std::function<void(unsigned int, const char *, char *)> mqtt_callback_f;
     void mqttRegister(mqtt_callback_f callback);
     String mqttMagnitude(char * topic);
 #else
@@ -266,17 +271,63 @@ void webRequestRegister(web_request_callback_f callback);
 // WebSockets
 // -----------------------------------------------------------------------------
 #if WEB_SUPPORT
-    typedef std::function<void(JsonObject&)> ws_on_send_callback_f;
-    void wsOnSendRegister(ws_on_send_callback_f callback);
+    using ws_on_send_callback_f = std::function<void(JsonObject&)>;
+    using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
+    using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
+
+    using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
+    using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
+    using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
+
+    struct ws_callbacks_t {
+        ws_on_send_callback_list_t on_visible;
+        ws_on_send_callback_list_t on_connected;
+        ws_on_send_callback_list_t on_data;
+
+        ws_on_action_callback_list_t on_action;
+        ws_on_keycheck_callback_list_t on_keycheck;
+
+        ws_callbacks_t& onVisible(ws_on_send_callback_f cb) {
+            on_visible.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onConnected(ws_on_send_callback_f cb) {
+            on_connected.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onData(ws_on_send_callback_f cb) {
+            on_data.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onAction(ws_on_action_callback_f cb) {
+            on_action.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f cb) {
+            on_keycheck.push_back(cb);
+            return *this;
+        }
+
+    };
+
+    ws_callbacks_t& wsRegister();
+
     void wsSend(uint32_t, JsonObject& root);
     void wsSend(JsonObject& root);
     void wsSend(ws_on_send_callback_f sender);
 
-    typedef std::function<void(uint32_t, const char *, JsonObject&)> ws_on_action_callback_f;
-    void wsOnActionRegister(ws_on_action_callback_f callback);
+    void wsPost(const ws_on_send_callback_list_t&);
+    void wsPost(uint32_t, const ws_on_send_callback_list_t&);
 
-    typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
-    void wsOnReceiveRegister(ws_on_receive_callback_f callback);
+    void wsPostAll(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPostAll(const ws_on_send_callback_list_t&);
+
+    void wsPostSequence(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPostSequence(const ws_on_send_callback_list_t&);
 
     bool wsConnected();
     bool wsConnected(uint32_t);
