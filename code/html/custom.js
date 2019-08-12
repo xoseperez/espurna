@@ -987,6 +987,15 @@ function initRelays(data) {
 
 }
 
+function updateRelays(data) {
+    var size = data.size;
+    for (var i=0; i<size; ++i) {
+        var elem = $("input[name='relay'][data='" + i + "']");
+        elem.prop("checked", data.status[i]);
+        elem.prop("disabled", data.lock[i] < 2); // RELAY_LOCK_DISABLED=2
+    }
+}
+
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
@@ -1565,11 +1574,9 @@ function processData(data) {
         // Relays
         // ---------------------------------------------------------------------
 
-        if ("relayStatus" === key) {
-            initRelays(value);
-            for (i in value) {
-                $("input[name='relay'][data='" + i + "']").prop("checked", value[i]);
-            }
+        if ("relayState" === key) {
+            initRelays(value.status);
+            updateRelays(value);
             return;
         }
 

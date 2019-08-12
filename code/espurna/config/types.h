@@ -75,6 +75,8 @@
 #define RELAY_BOOT_ON               1
 #define RELAY_BOOT_SAME             2
 #define RELAY_BOOT_TOGGLE           3
+#define RELAY_BOOT_LOCKED_OFF       4
+#define RELAY_BOOT_LOCKED_ON        5
 
 #define RELAY_TYPE_NORMAL           0
 #define RELAY_TYPE_INVERSE          1
@@ -100,6 +102,10 @@
 #define RELAY_GROUP_SYNC_NORMAL      0
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
+
+#define RELAY_LOCK_OFF               0
+#define RELAY_LOCK_ON                1
+#define RELAY_LOCK_DISABLED          2
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG
