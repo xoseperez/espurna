@@ -712,8 +712,6 @@
 
 #endif
 
-#endif
-
 
 #endif // SECURE_CLIENT_CHECK
 
