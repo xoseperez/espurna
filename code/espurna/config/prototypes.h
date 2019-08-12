@@ -2,7 +2,6 @@
 #include <ArduinoJson.h>
 #include <functional>
 #include <memory>
-#include <pgmspace.h>
 #include <core_version.h>
 
 extern "C" {
@@ -19,6 +18,41 @@ extern "C" {
 uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
 void systemStabilityCounter(uint8_t);
+
+// -----------------------------------------------------------------------------
+// PROGMEM
+// -----------------------------------------------------------------------------
+
+#include <pgmspace.h>
+
+// ref: https://github.com/esp8266/Arduino/blob/master/tools/sdk/libc/xtensa-lx106-elf/include/sys/pgmspace.h
+// __STRINGIZE && __STRINGIZE_NX && PROGMEM definitions port
+
+// Do not replace macros unless running version older than 2.5.0
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_1) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_2)
+
+// Quoting esp8266/Arduino comments:
+// "Since __section__ is supposed to be only use for global variables,
+// there could be conflicts when a static/inlined function has them in the
+// same file as a non-static PROGMEM object.
+// Ref: https://gcc.gnu.org/onlinedocs/gcc-3.2/gcc/Variable-Attributes.html
+// Place each progmem object into its own named section, avoiding conflicts"
+
+#define __TO_STR_(A) #A
+#define __TO_STR(A) __TO_STR_(A)
+
+#undef PROGMEM
+#define PROGMEM __attribute__((section( "\".irom.text." __FILE__ "." __TO_STR(__LINE__) "."  __TO_STR(__COUNTER__) "\"")))
+
+// "PSTR() macro modified to start on a 32-bit boundary.  This adds on average
+// 1.5 bytes/string, but in return memcpy_P and strcpy_P will work 4~8x faster"
+#undef PSTR
+#define PSTR(s) (__extension__({static const char __c[] __attribute__((__aligned__(4))) PROGMEM = (s); &__c[0];}))
+
+#endif
 
 // -----------------------------------------------------------------------------
 // API
