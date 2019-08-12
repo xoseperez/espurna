@@ -188,22 +188,10 @@ bool wsDebugSend(const char* prefix, const char* message) {
 }
 #endif
 
-// -----------------------------------------------------------------------------
-// MQTT status notification
-// -----------------------------------------------------------------------------
-
-#if MQTT_SUPPORT
-void _wsMQTTCallback(unsigned int type, const char * topic, const char * payload) {
-    if (type == MQTT_CONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": true}"));
-    if (type == MQTT_DISCONNECT_EVENT) wsSend_P(PSTR("{\"mqttStatus\": false}"));
-}
-#endif
-
-// -----------------------------------------------------------------------------
-// MQTT notification
-// -----------------------------------------------------------------------------
-
-bool _wsStore(String key, String value) {
+// Check the existing setting before saving it
+// TODO: this should know of the default values, somehow?
+// TODO: move webPort handling somewhere else?
+bool _wsStore(const String& key, const String& value) {
 
     if (key == "webPort") {
         if ((value.toInt() == 0) || (value.toInt() == 80)) {
@@ -706,10 +694,6 @@ void wsSetup() {
     }
 
     webServer()->on("/auth", HTTP_GET, _onAuth);
-
-    #if MQTT_SUPPORT
-        mqttRegister(_wsMQTTCallback);
-    #endif
 
     wsRegister()
         .onConnected(_wsOnConnected)

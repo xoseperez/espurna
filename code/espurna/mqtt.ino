@@ -350,8 +350,11 @@ void _mqttWebSocketOnVisible(JsonObject& root) {
     root["mqttVisible"] = 1;
 }
 
-void _mqttWebSocketOnConnected(JsonObject& root) {
+void _mqttWebSocketOnData(JsonObject& root) {
     root["mqttStatus"] = mqttConnected();
+}
+
+void _mqttWebSocketOnConnected(JsonObject& root) {
     root["mqttEnabled"] = mqttEnabled();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
@@ -849,8 +852,13 @@ void mqttSetup() {
     #if WEB_SUPPORT
         wsRegister()
             .onVisible(_mqttWebSocketOnVisible)
+            .onData(_mqttWebSocketOnData)
             .onConnected(_mqttWebSocketOnConnected)
             .onKeyCheck(_mqttWebSocketOnKeyCheck);
+
+        mqttRegister([](unsigned int type, const char*, const char*) {
+            if ((type == MQTT_CONNECT_EVENT) || (type == MQTT_DISCONNECT_EVENT)) wsPost(_mqttWebSocketOnData);
+        });
     #endif
 
     #if TERMINAL_SUPPORT

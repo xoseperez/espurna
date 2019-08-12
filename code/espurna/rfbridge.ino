@@ -69,10 +69,6 @@ bool _rfb_receive = false;
 bool _rfb_transmit = false;
 unsigned char _rfb_repeat = RF_SEND_TIMES;
 
-#if WEB_SUPPORT
-    Ticker _rfb_sendcodes;
-#endif
-
 // -----------------------------------------------------------------------------
 // PRIVATES
 // -----------------------------------------------------------------------------
