@@ -172,10 +172,6 @@ struct ws_debug_msg_t {
 
 struct ws_debug_t {
 
-    private:
-
-    public:
-
     ws_debug_t(size_t capacity) :
         flush(false),
         current(0),
@@ -222,6 +218,7 @@ struct ws_debug_t {
     size_t current;
     const size_t capacity;
     std::vector<ws_debug_msg_t> messages;
+
 };
 
 // TODO: move to the headers?
@@ -234,10 +231,6 @@ bool wsDebugSend(const char* prefix, const char* message) {
     return true;
 }
 
-void _wsHandleDebug() {
-    if (!_ws_debug.flush) return;
-    _ws_debug.send();
-}
 #endif
 
 // Check the existing setting before saving it
