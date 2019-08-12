@@ -99,8 +99,11 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, unsigned char start, unsigned 
     }
 }
 
-void _rfbWebSocketOnConnected(JsonObject& root) {
+void _rfbWebSocketOnVisible(JsonObject& root) {
     root["rfbVisible"] = 1;
+}
+
+void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbRepeat"] = getSetting("rfbRepeat", RF_SEND_TIMES).toInt();
     root["rfbCount"] = relayCount();
     #if RFB_DIRECT
@@ -740,6 +743,7 @@ void rfbSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_rfbWebSocketOnVisible)
             .onConnected(_rfbWebSocketOnConnected)
             .onData(_rfbWebSocketOnData)
             .onAction(_rfbWebSocketOnAction)

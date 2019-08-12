@@ -24,8 +24,11 @@ bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "nofuss", 6) == 0);
 }
 
-void _nofussWebSocketOnConnected(JsonObject& root) {
+void _nofussWebSocketOnVisible(JsonObject& root) {
     root["nofussVisible"] = 1;
+}
+
+void _nofussWebSocketOnConnected(JsonObject& root) {
     root["nofussEnabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
     root["nofussServer"] = getSetting("nofussServer", NOFUSS_SERVER);
 }
@@ -162,6 +165,7 @@ void nofussSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onVisible(_nofussWebSocketOnVisible)
             .onConnected(_nofussWebSocketOnConnected)
             .onKeyCheck(_nofussWebSocketOnKeyCheck);
     #endif

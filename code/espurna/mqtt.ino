@@ -348,6 +348,9 @@ bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
 
 void _mqttWebSocketOnVisible(JsonObject& root) {
     root["mqttVisible"] = 1;
+    #if ASYNC_TCP_SSL_ENABLED
+        root["mqttsslVisible"] = 1;
+    #endif
 }
 
 void _mqttWebSocketOnData(JsonObject& root) {
@@ -365,7 +368,6 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
-        root["mqttsslVisible"] = 1;
         root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
         root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
