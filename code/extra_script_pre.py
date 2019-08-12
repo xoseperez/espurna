@@ -8,6 +8,7 @@ import sys
 
 TRAVIS = os.environ.get("TRAVIS")
 PIO_PLATFORM = env.PioPlatform()
+CONFIG = env.GetProjectConfig()
 
 
 class ExtraScriptError(Exception):
@@ -50,12 +51,11 @@ def library_manager_libdeps(lib_deps, storage=None):
 
 
 def get_shared_libdeps_dir(section, name):
-    cfg = env.GetProjectConfig()
 
-    if not cfg.has_option(section, name):
+    if not CONFIG.has_option(section, name):
         raise ExtraScriptError("{}.{} is required to be set".format(section, name))
 
-    opt = cfg.get(section, name)
+    opt = CONFIG.get(section, name)
 
     if not opt in env.GetProjectOption("lib_extra_dirs"):
         raise ExtraScriptError(
@@ -75,7 +75,7 @@ def ensure_platform_updated():
 
 # latest toolchain is still optional with PIO (TODO: recheck after 2.6.0!)
 # also updates arduino core git to the latest master commit
-if TRAVIS and (env.GetProjectOption("platform") == env.get("common", "arduino_core_git")):
+if TRAVIS and (env.GetProjectOption("platform") == CONFIG.get("common", "arduino_core_git")):
     ensure_platform_updated()
 
 # to speed-up build process, install libraries in either global or local shared storage
