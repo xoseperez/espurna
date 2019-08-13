@@ -309,10 +309,16 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 
     ws_callbacks_t& wsRegister();
 
-    void wsSend(uint32_t, JsonObject& root);
-    void wsSend(JsonObject& root);
-    void wsSend(ws_on_send_callback_f sender);
+    void wsSetup();
+    void wsSend(uint32_t, const char*);
+    void wsSend(uint32_t, JsonObject&);
+    void wsSend(JsonObject&);
+    void wsSend(ws_on_send_callback_f);
 
+    void wsSend_P(PGM_P);
+    void wsSend_P(uint32_t, PGM_P);
+
+    void wsPost(const ws_on_send_callback_f&);
     void wsPost(const ws_on_send_callback_list_t&);
     void wsPost(uint32_t, const ws_on_send_callback_list_t&);
 
