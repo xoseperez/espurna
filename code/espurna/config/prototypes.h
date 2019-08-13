@@ -58,13 +58,12 @@ void systemStabilityCounter(uint8_t);
 // -----------------------------------------------------------------------------
 // API
 // -----------------------------------------------------------------------------
+
+using api_get_callback_f = std::function<void(char *, size_t)>;
+using api_put_callback_f = std::function<void(const char *)> ;
+
 #if WEB_SUPPORT
-    typedef std::function<void(char *, size_t)> api_get_callback_f;
-    typedef std::function<void(const char *)> api_put_callback_f;
     void apiRegister(const char * key, api_get_callback_f getFn, api_put_callback_f putFn = NULL);
-#else
-    #define api_get_callback_f void *
-    #define api_put_callback_f void *
 #endif
 
 // -----------------------------------------------------------------------------
@@ -135,6 +134,7 @@ bool gpioReleaseLock(unsigned char gpio);
 // Homeassistant
 // -----------------------------------------------------------------------------
 struct ha_config_t;
+void haSetup();
 
 // -----------------------------------------------------------------------------
 // I2C
@@ -164,12 +164,12 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
+
+using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
+
 #if MQTT_SUPPORT
-    typedef std::function<void(unsigned int, const char *, char *)> mqtt_callback_f;
     void mqttRegister(mqtt_callback_f callback);
     String mqttMagnitude(char * topic);
-#else
-    #define mqtt_callback_f void *
 #endif
 
 // -----------------------------------------------------------------------------
@@ -330,18 +330,17 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 // -----------------------------------------------------------------------------
 // WIFI
 // -----------------------------------------------------------------------------
-#include "JustWifi.h"
-typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
+#include <JustWifi.h>
+using wifi_callback_f = std::function<void(justwifi_messages_t code, char * parameter)>;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
 
+// -----------------------------------------------------------------------------
 // THERMOSTAT
 // -----------------------------------------------------------------------------
+using thermostat_callback_f = std::function<void(bool)>;
 #if THERMOSTAT_SUPPORT
-    typedef std::function<void(bool)> thermostat_callback_f;
     void thermostatRegister(thermostat_callback_f callback);
-#else
-    #define thermostat_callback_f void *
 #endif
 
 // -----------------------------------------------------------------------------
