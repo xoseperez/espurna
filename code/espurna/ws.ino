@@ -22,6 +22,31 @@ Ticker _web_defer;
 // WS callbacks
 // -----------------------------------------------------------------------------
 
+ws_callbacks_t& ws_callbacks_t::onVisible(ws_on_send_callback_f cb) {
+    on_visible.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onConnected(ws_on_send_callback_f cb) {
+    on_connected.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onData(ws_on_send_callback_f cb) {
+    on_data.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onAction(ws_on_action_callback_f cb) {
+    on_action.push_back(cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_on_keycheck_callback_f cb) {
+    on_keycheck.push_back(cb);
+    return *this;
+}
+
 ws_callbacks_t _ws_callbacks;
 
 struct ws_counter_t {

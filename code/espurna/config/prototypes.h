@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
+#include <vector>
 #include <memory>
 #include <core_version.h>
 
@@ -252,33 +253,45 @@ char* strnstr(const char*, const char*, size_t);
 // -----------------------------------------------------------------------------
 // WebServer
 // -----------------------------------------------------------------------------
+
+class AsyncClient;
+class AsyncWebServer;
+
 #if WEB_SUPPORT
     #include <ESPAsyncWebServer.h>
     AsyncWebServer * webServer();
 #else
-    #define AsyncWebServerRequest void
-    #define ArRequestHandlerFunction void
-    #define AsyncWebSocketClient void
-    #define AsyncWebSocket void
-    #define AwsEventType void *
+    class AsyncWebServerRequest;
+    class ArRequestHandlerFunction;
+    class AsyncWebSocketClient;
+    class AsyncWebSocket;
+    class AwsEventType;
 #endif
-typedef std::function<bool(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)> web_body_callback_f;
-typedef std::function<bool(AsyncWebServerRequest *request)> web_request_callback_f;
-void webBodyRegister(web_body_callback_f callback);
-void webRequestRegister(web_request_callback_f callback);
+
+using web_body_callback_f = std::function<bool(AsyncWebServerRequest*, uint8_t*, size_t, size_t, size_t)>;
+using web_request_callback_f = std::function<bool(AsyncWebServerRequest*)>;
+void webBodyRegister(web_body_callback_f);
+void webRequestRegister(web_request_callback_f);
 
 // -----------------------------------------------------------------------------
 // WebSockets
 // -----------------------------------------------------------------------------
+
+// TODO: pending configuration headers refactoring... here for now
+struct ws_counter_t;
+struct ws_data_t;
+struct ws_debug_t;
+struct ws_callbacks_t;
+
+using ws_on_send_callback_f = std::function<void(JsonObject&)>;
+using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
+using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
+
+using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
+using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
+using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
+
 #if WEB_SUPPORT
-    using ws_on_send_callback_f = std::function<void(JsonObject&)>;
-    using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
-    using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
-
-    using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
-    using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
-    using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
-
     struct ws_callbacks_t {
         ws_on_send_callback_list_t on_visible;
         ws_on_send_callback_list_t on_connected;
@@ -287,31 +300,11 @@ void webRequestRegister(web_request_callback_f callback);
         ws_on_action_callback_list_t on_action;
         ws_on_keycheck_callback_list_t on_keycheck;
 
-        ws_callbacks_t& onVisible(ws_on_send_callback_f cb) {
-            on_visible.push_back(cb);
-            return *this;
-        }
-
-        ws_callbacks_t& onConnected(ws_on_send_callback_f cb) {
-            on_connected.push_back(cb);
-            return *this;
-        }
-
-        ws_callbacks_t& onData(ws_on_send_callback_f cb) {
-            on_data.push_back(cb);
-            return *this;
-        }
-
-        ws_callbacks_t& onAction(ws_on_action_callback_f cb) {
-            on_action.push_back(cb);
-            return *this;
-        }
-
-        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f cb) {
-            on_keycheck.push_back(cb);
-            return *this;
-        }
-
+        ws_callbacks_t& onVisible(ws_on_send_callback_f);
+        ws_callbacks_t& onConnected(ws_on_send_callback_f);
+        ws_callbacks_t& onData(ws_on_send_callback_f);
+        ws_callbacks_t& onAction(ws_on_action_callback_f);
+        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f);
     };
 
     ws_callbacks_t& wsRegister();
@@ -332,10 +325,6 @@ void webRequestRegister(web_request_callback_f callback);
     bool wsConnected();
     bool wsConnected(uint32_t);
     bool wsDebugSend(const char*, const char*);
-#else
-    #define ws_on_send_callback_f void *
-    #define ws_on_action_callback_f void *
-    #define ws_on_receive_callback_f void *
 #endif
 
 // -----------------------------------------------------------------------------
