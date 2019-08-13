@@ -239,7 +239,9 @@ void ntpSetup() {
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
-            wsPost(_ntpWebSocketOnData);
+            #if WEB_SUPPORT
+                wsPost(_ntpWebSocketOnData);
+            #endif
         } else {
             _ntp_report = true;
             setTime(NTPw.getLastNTPSync());
