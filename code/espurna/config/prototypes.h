@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
-#include <pgmspace.h>
+#include <memory>
 #include <core_version.h>
 
 extern "C" {
@@ -18,6 +18,41 @@ extern "C" {
 uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
 void systemStabilityCounter(uint8_t);
+
+// -----------------------------------------------------------------------------
+// PROGMEM
+// -----------------------------------------------------------------------------
+
+#include <pgmspace.h>
+
+// ref: https://github.com/esp8266/Arduino/blob/master/tools/sdk/libc/xtensa-lx106-elf/include/sys/pgmspace.h
+// __STRINGIZE && __STRINGIZE_NX && PROGMEM definitions port
+
+// Do not replace macros unless running version older than 2.5.0
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_1) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_4_2)
+
+// Quoting esp8266/Arduino comments:
+// "Since __section__ is supposed to be only use for global variables,
+// there could be conflicts when a static/inlined function has them in the
+// same file as a non-static PROGMEM object.
+// Ref: https://gcc.gnu.org/onlinedocs/gcc-3.2/gcc/Variable-Attributes.html
+// Place each progmem object into its own named section, avoiding conflicts"
+
+#define __TO_STR_(A) #A
+#define __TO_STR(A) __TO_STR_(A)
+
+#undef PROGMEM
+#define PROGMEM __attribute__((section( "\".irom.text." __FILE__ "." __TO_STR(__LINE__) "."  __TO_STR(__COUNTER__) "\"")))
+
+// "PSTR() macro modified to start on a 32-bit boundary.  This adds on average
+// 1.5 bytes/string, but in return memcpy_P and strcpy_P will work 4~8x faster"
+#undef PSTR
+#define PSTR(s) (__extension__({static const char __c[] __attribute__((__aligned__(4))) PROGMEM = (s); &__c[0];}))
+
+#endif
 
 // -----------------------------------------------------------------------------
 // API
@@ -96,6 +131,11 @@ bool gpioGetLock(unsigned char gpio);
 bool gpioReleaseLock(unsigned char gpio);
 
 // -----------------------------------------------------------------------------
+// Homeassistant
+// -----------------------------------------------------------------------------
+struct ha_config_t;
+
+// -----------------------------------------------------------------------------
 // I2C
 // -----------------------------------------------------------------------------
 void i2cScan();
@@ -124,17 +164,47 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // MQTT
 // -----------------------------------------------------------------------------
 #if MQTT_SUPPORT
-    typedef std::function<void(unsigned int, const char *, const char *)> mqtt_callback_f;
+    typedef std::function<void(unsigned int, const char *, char *)> mqtt_callback_f;
     void mqttRegister(mqtt_callback_f callback);
     String mqttMagnitude(char * topic);
 #else
     #define mqtt_callback_f void *
 #endif
 
+#if MQTT_SECURE_CLIENT_INCLUDE_CA
+#include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
+#else
+#include "static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
+#define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
+#endif // MQTT_SECURE_CLIENT_INCLUDE_CA
+
 // -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
-#include "ESPAsyncTCP.h"
+
+#include <ArduinoOTA.h>
+
+#if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
+    #include <ESPAsyncTCP.h>
+#endif
+
+#if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
+    #include <ESP8266HTTPClient.h>
+    #include <ESP8266httpUpdate.h>
+#endif
+
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
+
+    #include <WiFiClientSecure.h>
+
+    #if OTA_SECURE_CLIENT_INCLUDE_CA
+    #include "static/ota_secure_client_ca.h"
+    #else
+    #include "static/digicert_evroot_pem.h"
+    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
+    #endif
+
+#endif // SECURE_CLIENT_SUPPORT
 
 // -----------------------------------------------------------------------------
 // RFM69
@@ -208,17 +278,63 @@ void webRequestRegister(web_request_callback_f callback);
 // WebSockets
 // -----------------------------------------------------------------------------
 #if WEB_SUPPORT
-    typedef std::function<void(JsonObject&)> ws_on_send_callback_f;
-    void wsOnSendRegister(ws_on_send_callback_f callback);
+    using ws_on_send_callback_f = std::function<void(JsonObject&)>;
+    using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
+    using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
+
+    using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
+    using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
+    using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
+
+    struct ws_callbacks_t {
+        ws_on_send_callback_list_t on_visible;
+        ws_on_send_callback_list_t on_connected;
+        ws_on_send_callback_list_t on_data;
+
+        ws_on_action_callback_list_t on_action;
+        ws_on_keycheck_callback_list_t on_keycheck;
+
+        ws_callbacks_t& onVisible(ws_on_send_callback_f cb) {
+            on_visible.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onConnected(ws_on_send_callback_f cb) {
+            on_connected.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onData(ws_on_send_callback_f cb) {
+            on_data.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onAction(ws_on_action_callback_f cb) {
+            on_action.push_back(cb);
+            return *this;
+        }
+
+        ws_callbacks_t& onKeyCheck(ws_on_keycheck_callback_f cb) {
+            on_keycheck.push_back(cb);
+            return *this;
+        }
+
+    };
+
+    ws_callbacks_t& wsRegister();
+
     void wsSend(uint32_t, JsonObject& root);
     void wsSend(JsonObject& root);
     void wsSend(ws_on_send_callback_f sender);
 
-    typedef std::function<void(uint32_t, const char *, JsonObject&)> ws_on_action_callback_f;
-    void wsOnActionRegister(ws_on_action_callback_f callback);
+    void wsPost(const ws_on_send_callback_list_t&);
+    void wsPost(uint32_t, const ws_on_send_callback_list_t&);
 
-    typedef std::function<bool(const char *, JsonVariant&)> ws_on_receive_callback_f;
-    void wsOnReceiveRegister(ws_on_receive_callback_f callback);
+    void wsPostAll(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPostAll(const ws_on_send_callback_list_t&);
+
+    void wsPostSequence(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPostSequence(const ws_on_send_callback_list_t&);
 
     bool wsConnected();
     bool wsConnected(uint32_t);
@@ -251,3 +367,14 @@ bool wifiConnected();
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
 
+// -----------------------------------------------------------------------------
+// std::make_unique backport for C++11
+// -----------------------------------------------------------------------------
+#if 201103L >= __cplusplus
+namespace std {
+    template<typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+}
+#endif

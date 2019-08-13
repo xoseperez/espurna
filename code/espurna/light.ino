@@ -770,7 +770,7 @@ void _lightComms(unsigned char mask) {
 
     // Report color to WS clients (using current brightness setting)
     #if WEB_SUPPORT
-        wsSend(_lightWebSocketStatus);
+        wsPost(_lightWebSocketStatus);
     #endif
 
     // Report channels to local broker
@@ -921,7 +921,7 @@ void lightTransitionTime(unsigned long m) {
 
 #if WEB_SUPPORT
 
-bool _lightWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _lightWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "light", 5) == 0) return true;
     if (strncmp(key, "use", 3) == 0) return true;
     return false;
@@ -946,8 +946,11 @@ void _lightWebSocketStatus(JsonObject& root) {
     root["brightness"] = lightBrightness();
 }
 
-void _lightWebSocketOnSend(JsonObject& root) {
+void _lightWebSocketOnVisible(JsonObject& root) {
     root["colorVisible"] = 1;
+}
+
+void _lightWebSocketOnConnected(JsonObject& root) {
     root["mqttGroupColor"] = getSetting("mqttGroupColor");
     root["useColor"] = _light_has_color;
     root["useWhite"] = _light_use_white;
@@ -1290,9 +1293,11 @@ void lightSetup() {
     }
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_lightWebSocketOnSend);
-        wsOnActionRegister(_lightWebSocketOnAction);
-        wsOnReceiveRegister(_lightWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_lightWebSocketOnVisible)
+            .onConnected(_lightWebSocketOnConnected)
+            .onAction(_lightWebSocketOnAction)
+            .onKeyCheck(_lightWebSocketOnKeyCheck);
     #endif
 
     #if API_SUPPORT

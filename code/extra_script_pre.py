@@ -66,9 +66,12 @@ def get_shared_libdeps_dir(section, name):
 
 
 def ensure_platform_updated():
-    if PIO_PLATFORM.are_outdated_packages():
-        print("updating platform packages", file=sys.stderr)
-        PIO_PLATFORM.update_packages()
+    try:
+        if PIO_PLATFORM.are_outdated_packages():
+            print("updating platform packages", file=sys.stderr)
+            PIO_PLATFORM.update_packages()
+    except Exception:
+        print("Warning: no connection, cannot check for outdated packages", file=sys.stderr)
 
 
 # latest toolchain is still optional with PIO (TODO: recheck after 2.6.0!)

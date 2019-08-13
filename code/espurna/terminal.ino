@@ -192,9 +192,10 @@ void _terminalInitCommand() {
     });
 
     terminalRegisterCommand(F("CONFIG"), [](Embedis* e) {
-        DynamicJsonBuffer jsonBuffer;
+        DynamicJsonBuffer jsonBuffer(1024);
         JsonObject& root = jsonBuffer.createObject();
         settingsGetJson(root);
+        // XXX: replace with streaming
         String output;
         root.printTo(output);
         DEBUG_MSG(output.c_str());
@@ -204,7 +205,28 @@ void _terminalInitCommand() {
     #if not SETTINGS_AUTOSAVE
         terminalRegisterCommand(F("SAVE"), [](Embedis* e) {
             eepromCommit();
-            DEBUG_MSG_P(PSTR("\n+OK\n"));
+            terminalOK();
+        });
+    #endif
+
+    #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+        terminalRegisterCommand(F("MFLN.PROBE"), [](Embedis* e) {
+            if (e->argc != 3) {
+                terminalError(F("[url] [value]"));
+                return;
+            }
+
+            URL _url(e->argv[1]);
+            uint16_t requested_mfln = atol(e->argv[2]);
+
+            auto client = std::make_unique<BearSSL::WiFiClientSecure>();
+            client->setInsecure();
+
+            if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
+                terminalOK();
+            } else {
+                terminalError(F("Buffer size not supported"));
+            }
         });
     #endif
     
@@ -242,6 +264,11 @@ void _terminalLoop() {
 void terminalInject(void *data, size_t len) {
     _serial.inject((char *) data, len);
 }
+
+void terminalInject(char ch) {
+    _serial.inject(ch);
+}
+
 
 Stream & terminalSerial() {
     return (Stream &) _serial;

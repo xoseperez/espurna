@@ -111,32 +111,46 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 
 #if WEB_SUPPORT
 
+//void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
 template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
 
     // ws produces flat list <prefix>Magnitudes
-    String ws_name = String(prefix);
-    ws_name.concat("Magnitudes");
+    const String ws_name = String(prefix) + "Magnitudes";
 
     // config uses <prefix>Magnitude<index> (cut 's')
-    String conf_name = ws_name.substring(0, ws_name.length() - 1);
+    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
 
     JsonObject& list = root.createNestedObject(ws_name);
     list["size"] = magnitudeCount();
 
-    JsonArray& name = list.createNestedArray("name");
+    //JsonArray& name = list.createNestedArray("name");
     JsonArray& type = list.createNestedArray("type");
     JsonArray& index = list.createNestedArray("index");
     JsonArray& idx = list.createNestedArray("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        name.add(magnitudeName(i));
+        //name.add(magnitudeName(i));
         type.add(magnitudeType(i));
         index.add(magnitudeIndex(i));
         idx.add(getSetting(conf_name, i, 0).toInt());
     }
 }
 
-bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
+/*
+template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+
+    // ws produces flat list <prefix>Magnitudes
+    const String ws_name = String(prefix) + "Magnitudes";
+
+    // config uses <prefix>Magnitude<index> (cut 's')
+    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
+
+    _sensorWebSocketMagnitudes(root, ws_name, conf_name);
+
+}
+*/
+
+bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "pwr", 3) == 0) return true;
     if (strncmp(key, "sns", 3) == 0) return true;
     if (strncmp(key, "tmp", 3) == 0) return true;
@@ -146,21 +160,28 @@ bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _sensorWebSocketSendData(JsonObject& root) {
+void _sensorWebSocketOnVisible(JsonObject& root) {
 
-    char buffer[10];
-    bool hasTemperature = false;
-    bool hasHumidity = false;
-    bool hasMICS = false;
+    root["snsVisible"] = 1;
 
-    JsonObject& magnitudes = root.createNestedObject("magnitudes");
+    for (auto& magnitude : _magnitudes) {
+        if (magnitude.type == MAGNITUDE_TEMPERATURE) root["temperatureVisible"] = 1;
+        if (magnitude.type == MAGNITUDE_HUMIDITY) root["humidityVisible"] = 1;
+        #if MICS2710_SUPPORT || MICS5525_SUPPORT
+            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) root["micsVisible"] = 1;
+        #endif
+    }
+
+}
+
+void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
+
+    JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
     uint8_t size = 0;
 
     JsonArray& index = magnitudes.createNestedArray("index");
     JsonArray& type = magnitudes.createNestedArray("type");
-    JsonArray& value = magnitudes.createNestedArray("value");
     JsonArray& units = magnitudes.createNestedArray("units");
-    JsonArray& error = magnitudes.createNestedArray("error");
     JsonArray& description = magnitudes.createNestedArray("description");
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
@@ -169,14 +190,9 @@ void _sensorWebSocketSendData(JsonObject& root) {
         if (magnitude.type == MAGNITUDE_EVENT) continue;
         ++size;
 
-        double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
-        dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
-
         index.add<uint8_t>(magnitude.global);
         type.add<uint8_t>(magnitude.type);
-        value.add(buffer);
         units.add(magnitudeUnits(magnitude.type));
-        error.add(magnitude.sensor->error());
 
         if (magnitude.type == MAGNITUDE_ENERGY) {
             if (_sensor_energy_reset_ts.length() == 0) _sensorResetTS();
@@ -185,22 +201,39 @@ void _sensorWebSocketSendData(JsonObject& root) {
             description.add(magnitude.sensor->slot(magnitude.local));
         }
 
-        if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
-        if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
-        #if MICS2710_SUPPORT || MICS5525_SUPPORT
-        if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) hasMICS = true;
-        #endif
     }
 
     magnitudes["size"] = size;
 
-    if (hasTemperature) root["temperatureVisible"] = 1;
-    if (hasHumidity) root["humidityVisible"] = 1;
-    if (hasMICS) root["micsVisible"] = 1;
+}
+
+void _sensorWebSocketSendData(JsonObject& root) {
+
+    char buffer[10];
+
+    JsonObject& magnitudes = root.createNestedObject("magnitudes");
+    uint8_t size = 0;
+
+    JsonArray& value = magnitudes.createNestedArray("value");
+    JsonArray& error = magnitudes.createNestedArray("error");
+
+    for (unsigned char i=0; i<magnitudeCount(); i++) {
+        sensor_magnitude_t magnitude = _magnitudes[i];
+        if (magnitude.type == MAGNITUDE_EVENT) continue;
+        ++size;
+
+        double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
+        dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
+
+        value.add(buffer);
+        error.add(magnitude.sensor->error());
+    }
+
+    magnitudes["size"] = size;
 
 }
 
-void _sensorWebSocketStart(JsonObject& root) {
+void _sensorWebSocketOnConnected(JsonObject& root) {
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
@@ -257,7 +290,6 @@ void _sensorWebSocketStart(JsonObject& root) {
     }
 
     if (magnitudeCount()) {
-        root["snsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
         root["pwrUnits"] = _sensor_power_units;
         root["eneUnits"] = _sensor_energy_units;
@@ -267,6 +299,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
         root["snsSave"] = _sensor_save_every;
+        _sensorWebSocketMagnitudesConfig(root);
     }
 
     /*
@@ -1601,9 +1634,11 @@ void sensorSetup() {
 
     // Websockets
     #if WEB_SUPPORT
-        wsOnSendRegister(_sensorWebSocketStart);
-        wsOnReceiveRegister(_sensorWebSocketOnReceive);
-        wsOnSendRegister(_sensorWebSocketSendData);
+        wsRegister()
+            .onVisible(_sensorWebSocketOnVisible)
+            .onConnected(_sensorWebSocketOnConnected)
+            .onData(_sensorWebSocketSendData)
+            .onKeyCheck(_sensorWebSocketOnKeyCheck);
     #endif
 
     // API
@@ -1761,7 +1796,7 @@ void sensorLoop() {
         _sensorPost();
 
         #if WEB_SUPPORT
-            wsSend(_sensorWebSocketSendData);
+            wsPost(_sensorWebSocketSendData);
         #endif
 
         #if THINGSPEAK_SUPPORT
