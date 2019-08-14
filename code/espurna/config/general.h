@@ -635,7 +635,7 @@
 #endif
 
 #ifndef API_BUFFER_SIZE
-#define API_BUFFER_SIZE             15          // Size of the buffer for HTTP GET API responses
+#define API_BUFFER_SIZE             64          // Size of the buffer for HTTP GET API responses
 #endif
 
 #ifndef API_REAL_TIME_VALUES
