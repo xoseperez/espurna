@@ -16,7 +16,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "libs/WebSocketIncommingBuffer.h"
 
 AsyncWebSocket _ws("/ws");
-Ticker _web_defer;
+Ticker _ws_defer;
+uint32_t _ws_last_update = 0;
 
 // -----------------------------------------------------------------------------
 // WS callbacks
@@ -205,10 +206,16 @@ struct ws_debug_t {
         messages.reserve(capacity);
     }
 
+    void clear() {
+        messages.clear();
+        current = 0;
+        flush = false;
+    }
+
     void add(const char* prefix, const char* message) {
         if (current >= capacity) {
             flush = true;
-            send();
+            send(wsConnected());
         }
 
         messages.emplace(messages.begin() + current, prefix, message);
@@ -216,7 +223,12 @@ struct ws_debug_t {
         ++current;
     }
 
-    void send() {
+    void send(const bool connected) {
+        if (!connected && flush) {
+            clear();
+            return;
+        }
+
         if (!flush) return;
         // ref: http://arduinojson.org/v5/assistant/
         // {"weblog": {"msg":[...],"pre":[...]}}
@@ -234,9 +246,7 @@ struct ws_debug_t {
         }
 
         wsSend(root);
-        messages.clear();
-        current = 0;
-        flush = false;
+        clear();
     }
 
     bool flush;
@@ -350,7 +360,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "reconnect") == 0) {
-            _web_defer.once_ms(100, wifiDisconnect);
+            _ws_defer.once_ms(100, wifiDisconnect);
             return;
         }
 
@@ -471,19 +481,17 @@ void _wsUpdate(JsonObject& root) {
     #endif
 }
 
-void _wsDoUpdate(bool reset = false) {
-    static unsigned long last = millis();
-    if (reset) {
-        last = millis() + WS_UPDATE_INTERVAL;
-        return;
-    }
+void _wsResetUpdateTimer() {
+    _ws_last_update = millis() + WS_UPDATE_INTERVAL;
+}
 
-    if (millis() - last > WS_UPDATE_INTERVAL) {
-        last = millis();
+void _wsDoUpdate(const bool connected) {
+    if (!connected) return;
+    if (millis() - _ws_last_update > WS_UPDATE_INTERVAL) {
+        _ws_last_update = millis();
         wsSend(_wsUpdate);
     }
 }
-
 
 bool _wsOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "ws", 2) == 0) return true;
@@ -529,9 +537,6 @@ void _wsOnConnected(JsonObject& root) {
     #endif
     root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
     root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
-
-    _wsDoUpdate(true);
-
 }
 
 void wsSend(JsonObject& root) {
@@ -597,6 +602,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         IPAddress ip = client->remoteIP();
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"), client->id(), ip[0], ip[1], ip[2], ip[3], server->url());
         _wsConnected(client->id());
+        _wsResetUpdateTimer();
         wifiReconnectCheck();
 
     } else if(type == WS_EVT_DISCONNECT) {
@@ -626,7 +632,12 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 // TODO: make this generic loop method to queue important ws messages?
 //       or, if something uses ticker / async ctx to send messages,
 //       it needs a retry mechanism built into the callback object
-void _wsHandleClientData() {
+void _wsHandleClientData(const bool connected) {
+
+    if (!connected && !_ws_client_data.empty()) {
+        _ws_client_data.pop();
+        return;
+    }
 
     if (_ws_client_data.empty()) return;
     auto& data = _ws_client_data.front();
@@ -666,11 +677,11 @@ void _wsHandleClientData() {
 }
 
 void _wsLoop() {
-    if (!wsConnected()) return;
-    _wsDoUpdate();
-    _wsHandleClientData();
+    const bool connected = wsConnected();
+    _wsDoUpdate(connected);
+    _wsHandleClientData(connected);
     #if DEBUG_WEB_SUPPORT
-        _ws_debug.send();
+        _ws_debug.send(connected);
     #endif
 }
 
