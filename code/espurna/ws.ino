@@ -604,6 +604,7 @@ void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
         _wsConnected(client->id());
         _wsResetUpdateTimer();
         wifiReconnectCheck();
+        client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 
     } else if(type == WS_EVT_DISCONNECT) {
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
@@ -670,9 +671,7 @@ void _wsHandleClientData(const bool connected) {
     yield();
 
     if (data.done()) {
-        // push the queue and finally allow incoming messages
         _ws_client_data.pop();
-        ws_client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
     }
 }
 
