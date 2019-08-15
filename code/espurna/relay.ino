@@ -814,11 +814,11 @@ void relaySetupAPI() {
         snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_PULSE, relayID);
         apiRegister(key,
             [relayID](char * buffer, size_t len) {
-                dtostrf((double) _relays[relayID].pulse_ms / 1000, 1-len, 3, buffer);
+                dtostrf((double) _relays[relayID].pulse_ms / 1000, 1, 3, buffer);
             },
             [relayID](const char * payload) {
 
-                unsigned long pulse = 1000 * String(payload).toFloat();
+                unsigned long pulse = 1000 * atof(payload);
                 if (0 == pulse) return;
 
                 if (RELAY_PULSE_NONE != _relays[relayID].pulse) {
@@ -963,7 +963,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 return;
             }
 
-            unsigned long pulse = 1000 * String(payload).toFloat();
+            unsigned long pulse = 1000 * atof(payload);
             if (0 == pulse) return;
 
             if (RELAY_PULSE_NONE != _relays[id].pulse) {

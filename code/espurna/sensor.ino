@@ -209,7 +209,7 @@ void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
 
 void _sensorWebSocketSendData(JsonObject& root) {
 
-    char buffer[10];
+    char buffer[64];
 
     JsonObject& magnitudes = root.createNestedObject("magnitudes");
     uint8_t size = 0;
@@ -223,7 +223,7 @@ void _sensorWebSocketSendData(JsonObject& root) {
         ++size;
 
         double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
-        dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
+        dtostrf(value_show, 1, magnitude.decimals, buffer);
 
         value.add(buffer);
         error.add(magnitude.sensor->error());
@@ -337,7 +337,7 @@ void _sensorAPISetup() {
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
             double value = _sensor_realtime ? magnitude.last : magnitude.reported;
-            dtostrf(value, 1-len, magnitude.decimals, buffer);
+            dtostrf(value, 1, magnitude.decimals, buffer);
         });
 
     }
@@ -1480,8 +1480,11 @@ void _sensorReport(unsigned char index, double value) {
     sensor_magnitude_t magnitude = _magnitudes[index];
     unsigned char decimals = magnitude.decimals;
 
-    char buffer[10];
-    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+    // XXX: ensure that the received 'value' will fit here
+    // dtostrf 2nd arg only controls leading zeroes and the
+    // 3rd is only for the part after the dot
+    char buffer[64];
+    dtostrf(value, 1, decimals, buffer);
 
     #if BROKER_SUPPORT
         brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
@@ -1748,7 +1751,7 @@ void sensorLoop() {
                 #if SENSOR_DEBUG
                 {
                     char buffer[64];
-                    dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
+                    dtostrf(value_show, 1, magnitude.decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),

@@ -284,9 +284,9 @@ void heartbeat() {
                 }
 
                 if (hb_cfg & Heartbeat::Remote_temp) {
-                    char remote_temp[6];
-                    dtostrf(_remote_temp.temp, 1-sizeof(remote_temp), 1, remote_temp);
-                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, String(remote_temp).c_str());
+                    char remote_temp[16];
+                    dtostrf(_remote_temp.temp, 1, 1, remote_temp);
+                    mqttSend(MQTT_TOPIC_REMOTE_TEMP, remote_temp);
                 }
             #endif
 

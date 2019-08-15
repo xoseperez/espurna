@@ -138,8 +138,8 @@ double value(unsigned char index) {
                 double value = _events * 60000;
                 value = value / (_lastreport_cpm-_period_begin);
                 #if SENSOR_DEBUG
-                char data[128]; char buffer[10];
-                dtostrf(value, 1-sizeof(buffer), 4, buffer);
+                char data[128]; char buffer[32];
+                dtostrf(value, 1, 4, buffer);
                 snprintf(data, sizeof(data), "Ticks: %u | Interval: %u | CPM: %s", _ticks, (_lastreport_cpm-_period_begin), buffer);
                 DEBUG_MSG("[GEIGER] %s\n", data);
                 #endif
@@ -154,8 +154,8 @@ double value(unsigned char index) {
                 double value = _ticks * 60000 / _cpm2sievert;
                 value = value / (_lastreport_sv-_period_begin);
                 #if SENSOR_DEBUG
-                char data[128]; char buffer[10];
-                dtostrf(value, 1-sizeof(buffer), 4, buffer);
+                char data[128]; char buffer[32];
+                dtostrf(value, 1, 4, buffer);
                 snprintf(data, sizeof(data), "Ticks: %u | Interval: %u | µSievert: %s", _ticks, (_lastreport_sv-_period_begin), buffer);
                 DEBUG_MSG("[GEIGER] %s\n", data);
                 #endif
