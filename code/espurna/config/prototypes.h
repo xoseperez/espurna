@@ -276,6 +276,7 @@ void webRequestRegister(web_request_callback_f);
 // -----------------------------------------------------------------------------
 // WebSockets
 // -----------------------------------------------------------------------------
+#include <queue>
 
 // TODO: pending configuration headers refactoring... here for now
 struct ws_counter_t;
