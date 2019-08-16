@@ -11,6 +11,7 @@ var numChanged = 0;
 var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
+var conf_saved = false;
 
 var useWhite = false;
 var useCCT = false;
@@ -452,6 +453,7 @@ function setOriginalsFromValues(force) {
 function resetOriginals() {
     setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
+    conf_saved = false;
 }
 
 function doReload(milliseconds) {
@@ -613,6 +615,31 @@ function doReconnect(ask) {
 
 }
 
+function doCheckOriginals() {
+    var response;
+
+    if (numReboot > 0) {
+        response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
+        if (response) { doReboot(false); }
+    } else if (numReconnect > 0) {
+        response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
+        if (response) { doReconnect(false); }
+    } else if (numReload > 0) {
+        response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
+        if (response) { doReload(0); }
+    }
+
+    resetOriginals();
+}
+
+function waitForSave(){
+    if (conf_saved == false) {
+        setTimeout(waitForSave, 1000);
+    } else {
+        doCheckOriginals();
+    }
+}
+
 function doUpdate() {
 
     var forms = $(".form-settings");
@@ -629,24 +656,8 @@ function doUpdate() {
 
         // Change handling
         numChanged = 0;
-        setTimeout(function() {
 
-            var response;
-
-            if (numReboot > 0) {
-                response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-                if (response) { doReboot(false); }
-            } else if (numReconnect > 0) {
-                response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-                if (response) { doReconnect(false); }
-            } else if (numReload > 0) {
-                response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response) { doReload(0); }
-            }
-
-            resetOriginals();
-
-        }, 1000);
+        waitForSave();
 
     }
 
@@ -1641,6 +1652,9 @@ function processData(data) {
 
         // Messages
         if ("message" === key) {
+            if (value == 8 && (numReboot > 0 || numReload > 0 || numReconnect > 0)){
+                conf_saved = true;
+            }
             window.alert(messages[value]);
             return;
         }
