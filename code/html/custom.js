@@ -36,7 +36,7 @@ function initMessages() {
     messages[2]  = "OTA update started";
     messages[3]  = "Error parsing data!";
     messages[4]  = "The file does not look like a valid configuration backup or is corrupted";
-    messages[5]  = "Changes saved. You should reboot your board now";
+    messages[5]  = "Changes saved. Device will now reboot";
     messages[7]  = "Passwords do not match!";
     messages[8]  = "Changes saved";
     messages[9]  = "No changes detected";

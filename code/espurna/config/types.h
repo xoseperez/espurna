@@ -227,6 +227,8 @@
 #define CUSTOM_RESET_NOFUSS         8       // Reset after successful NOFUSS update
 #define CUSTOM_RESET_UPGRADE        9       // Reset after update from web interface
 #define CUSTOM_RESET_FACTORY        10      // Factory reset from terminal
+#define CUSTOM_RESET_CONFIG_UPDATE  11      // Reset after configuration update
+
 
 #define CUSTOM_RESET_MAX            10
 
