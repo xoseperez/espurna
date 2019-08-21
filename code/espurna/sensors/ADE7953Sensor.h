@@ -42,7 +42,7 @@ class ADE7953Sensor : public I2CSensor {
         struct reading_t {
             float current = 0.0;
             float power = 0.0;
-            float energy = 0.0;
+            float energy = 0.0;        
         };
 
     public:      
@@ -52,6 +52,7 @@ class ADE7953Sensor : public I2CSensor {
         ADE7953Sensor(): I2CSensor() {            
             _sensor_id = SENSOR_ADE7953_ID;            
             _readings.resize(ADE7953_TOTAL_DEVICES);
+            _energy_offsets.resize(ADE7953_TOTAL_DEVICES);
             _count = _readings.size() * ADE7953_TOTAL_DEVICES + ADE7953_VOLTAGE; //10            
         }
 
@@ -137,6 +138,7 @@ class ADE7953Sensor : public I2CSensor {
             auto& reading_ref = _readings.at(relay); 
             reading_ref.current = current;
             reading_ref.power = power;
+            reading_ref.energy = power * 3600;
         }
 
         // Current value for slot # index
@@ -144,7 +146,7 @@ class ADE7953Sensor : public I2CSensor {
             if (index == 0) return _voltage;            
             int relay = (index - 1) / ADE7953_TOTAL_DEVICES;	
             index = index % ADE7953_TOTAL_DEVICES;
-            if (index == 0) return _readings[relay].energy;
+            if (index == 0) return _energy_offsets[relay] + _readings[relay].energy;
             if (index == 1) return _readings[relay].current;
             if (index == 2) return _readings[relay].power;     
             return 0;
@@ -229,6 +231,7 @@ class ADE7953Sensor : public I2CSensor {
 
     std::vector<reading_t> _readings;    
     float _voltage = 0;
+    std::vector<double> _energy_offsets;
 };
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT
