@@ -167,11 +167,18 @@
                                                 //   (BMX280_ADDRESS == 0x00) then sensor #1 is auto-discovered
                                                 //   (BMX280_ADDRESS != 0x00) then sensor #1 is the unnamed address
 
+#ifndef BMX280_MODE
 #define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
+#endif
+#ifndef BMX280_STANDBY
 #define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
                                                 // 3 for 250ms, 4 for 500ms, 5 for 1000ms
                                                 // 6 for 10ms, 7 for 20ms
+#endif
+#ifndef BMX280_FILTER
 #define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
+#endif
+#ifndef BMX280_TEMPERATURE
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
                                                 // 0b000 = 0 = Skip measurement
                                                 // 0b001 = 1 = 1x 16bit/0.0050C resolution
@@ -179,6 +186,8 @@
                                                 // 0b011 = 3 = 4x 18bit/0.0012C
                                                 // 0b100 = 4 = 8x 19bit/0.0006C
                                                 // 0b101 = 5 = 16x 20bit/0.0003C
+#endif
+#ifndef BMX280_HUMIDITY
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
                                                 // 0b000 = 0 = Skip measurement
                                                 // 0b001 = 1 = 1x 0.07% resolution
@@ -186,6 +195,8 @@
                                                 // 0b011 = 3 = 4x 0.04%
                                                 // 0b100 = 4 = 8x 0.03%
                                                 // 0b101 = 5 = 16x 0.02%
+#endif
+#ifndef BMX280_PRESSURE
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
                                                 // 0b000 = 0 = Skipped
                                                 // 0b001 = 1 = 1x 16bit/2.62 Pa resolution
@@ -193,7 +204,8 @@
                                                 // 0b011 = 3 = 4x 18bit/0.66 Pa
                                                 // 0b100 = 4 = 8x 19bit/0.33 Pa
                                                 // 0b101 = 5 = 16x 20bit/0.16 Pa
-  
+#endif
+
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
 // Enable support by passing DALLAS_SUPPORT=1 build flag
