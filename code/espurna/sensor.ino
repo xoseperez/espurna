@@ -429,18 +429,37 @@ void _sensorResetTS() {
     #endif
 }
 
-double _sensorEnergyTotal() {
+double _sensorEnergyTotal(unsigned int index = -1) {
     double value = 0;
 
     if (rtcmemStatus()) {
         value = Rtcmem->energy;
-    } else {
-        value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+    } else {    
+        if(index != -1) {
+            value = (_sensor_save_every > 0) ? getSetting("eneTotal", index, 0).toInt() : 0;            
+        } else {
+            value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+        }
     }
 
     return value;
 }
 
+void _sensorEnergyTotal(unsigned int index, double value) {    
+    static unsigned long save_count = 0;
+
+    // Save to EEPROM every '_sensor_save_every' readings
+    if (_sensor_save_every > 0) {
+        save_count = (save_count + 1) % _sensor_save_every;
+        if (0 == save_count) {
+            setSetting("eneTotal", index, value);
+            saveSettings();
+        }
+    }
+
+    // Always save to RTCMEM
+    Rtcmem->energy = value;     
+}
 
 void _sensorEnergyTotal(double value) {
     static unsigned long save_count = 0;
@@ -1027,6 +1046,19 @@ void _sensorInit() {
 
         #endif // HLW8012_SUPPORT
 
+        #if ADE7953_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {            
+                ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
+                unsigned int dev_count = sensor->getTotalDevices();
+                for(unsigned int dev = 0; dev < dev_count; dev++) {
+                    double value = _sensorEnergyTotal(dev);
+                    if (value > 0) sensor->resetEnergy(dev, value);                   
+                }
+            }
+
+        #endif // ADE7953_SUPPORT
+
         #if CSE7766_SUPPORT
 
             if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
@@ -1262,6 +1294,22 @@ void _sensorConfigure() {
             }
 
         #endif // PZEM004T_SUPPORT
+
+        #if ADE7953_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {            
+                ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    unsigned char dev_count = sensor->getTotalDevices();
+                    for(unsigned char dev = 0; dev < dev_count; dev++) {
+                        sensor->resetEnergy(dev);
+                        delSetting("eneTotal", dev);
+                    }
+                    _sensorResetTS();
+                }
+            }
+
+        #endif // ADE7953_SUPPORT
 
     }
 

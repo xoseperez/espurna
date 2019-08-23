@@ -152,6 +152,14 @@ class ADE7953Sensor : public I2CSensor {
             return 0;
         }
 
+        unsigned int getTotalDevices() {
+            return ADE7953_TOTAL_DEVICES;
+        }
+
+        void resetEnergy(int relay, double value = 0) {
+            _energy_offsets[relay] = value;
+        }
+
     protected:  
         void _init() {                     
             nice_delay(100);                   // Need 100mS to init ADE7953
