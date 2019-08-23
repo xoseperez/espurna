@@ -28,6 +28,7 @@ typedef struct {
 
     bool current_status;        // Holds the current (physical) status of the relay
     bool target_status;         // Holds the target status
+    unsigned char lock;         // Holds the value of target status, that cannot be changed afterwards. (0 for false, 1 for true, 2 to disable)
     unsigned long fw_start;     // Flood window start time
     unsigned char fw_count;     // Number of changes within the current flood window
     unsigned long change_time;  // Scheduled time to change
@@ -174,6 +175,23 @@ void _relayProcess(bool mode) {
         // Only process the relays we have to change to the requested mode
         if (target != mode) continue;
 
+        // Only process the relays that can be changed
+        switch (_relays[id].lock) {
+            case RELAY_LOCK_ON:
+            case RELAY_LOCK_OFF:
+                {
+                    bool lock = _relays[id].lock == 1;
+                    if (lock != _relays[id].target_status) {
+                        _relays[id].target_status = lock;
+                        continue;
+                    }
+                    break;
+                }
+            case RELAY_LOCK_DISABLED:
+            default:
+                break;
+        }
+
         // Only process if the change_time has arrived
         if (current_time < _relays[id].change_time) continue;
 
@@ -203,7 +221,7 @@ void _relayProcess(bool mode) {
             _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
             #if WEB_SUPPORT
-                wsSend(_relayWebSocketUpdate);
+                wsPost(_relayWebSocketUpdate);
             #endif
 
         }
@@ -521,6 +539,7 @@ void _relayBoot() {
     auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(stored_mask);
 
     // Walk the relays
+    unsigned char lock;
     bool status;
     for (unsigned char i=0; i<relayCount(); ++i) {
 
@@ -528,6 +547,7 @@ void _relayBoot() {
         DEBUG_MSG_P(PSTR("[RELAY] Relay #%u boot mode %u\n"), i, boot_mode);
 
         status = false;
+        lock = RELAY_LOCK_DISABLED;
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
                 if (i < 8) {
@@ -540,6 +560,13 @@ void _relayBoot() {
                     mask.flip(i);
                     trigger_save = true;
                 }
+                break;
+            case RELAY_BOOT_LOCKED_ON:
+                status = true;
+                lock = RELAY_LOCK_ON;
+                break;
+            case RELAY_BOOT_LOCKED_OFF:
+                lock = RELAY_LOCK_OFF;
                 break;
             case RELAY_BOOT_ON:
                 status = true;
@@ -556,7 +583,10 @@ void _relayBoot() {
         #else
             _relays[i].change_time = millis();
         #endif
-    }
+
+        _relays[i].lock = lock;
+
+     }
 
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
@@ -594,14 +624,20 @@ void _relayConfigure() {
 
 #if WEB_SUPPORT
 
-bool _relayWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _relayWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "relay", 5) == 0);
 }
 
 void _relayWebSocketUpdate(JsonObject& root) {
-    JsonArray& relay = root.createNestedArray("relayStatus");
+    JsonObject& state = root.createNestedObject("relayState");
+    state["size"] = relayCount();
+
+    JsonArray& status = state.createNestedArray("status");
+    JsonArray& lock = state.createNestedArray("lock");
+
     for (unsigned char i=0; i<relayCount(); i++) {
-        relay.add<uint8_t>(_relays[i].target_status);
+        status.add<uint8_t>(_relays[i].target_status);
+        lock.add(_relays[i].lock);
     }
 }
 
@@ -634,9 +670,7 @@ String _relayFriendlyName(unsigned char i) {
     return res;
 }
 
-void _relayWebSocketSendRelays() {
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
+void _relayWebSocketSendRelays(JsonObject& root) {
     JsonObject& relays = root.createNestedObject("relayConfig");
 
     relays["size"] = relayCount();
@@ -671,27 +705,25 @@ void _relayWebSocketSendRelays() {
             on_disconnect.add(getSetting("relayOnDisc", i, 0).toInt());
         #endif
     }
-
-    wsSend(root);
 }
 
-void _relayWebSocketOnStart(JsonObject& root) {
-
+void _relayWebSocketOnVisible(JsonObject& root) {
     if (relayCount() == 0) return;
 
-    // Per-relay configuration
-    _relayWebSocketSendRelays();
-
-    // Statuses
-    _relayWebSocketUpdate(root);
-
-    // Options
     if (relayCount() > 1) {
         root["multirelayVisible"] = 1;
         root["relaySync"] = getSetting("relaySync", RELAY_SYNC);
     }
 
     root["relayVisible"] = 1;
+}
+
+void _relayWebSocketOnConnected(JsonObject& root) {
+
+    if (relayCount() == 0) return;
+
+    // Per-relay configuration
+    _relayWebSocketSendRelays(root);
 
 }
 
@@ -705,7 +737,7 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 
         if (value == 3) {
 
-            wsSend(_relayWebSocketUpdate);
+            wsPost(_relayWebSocketUpdate);
 
         } else if (value < 3) {
 
@@ -731,9 +763,12 @@ void _relayWebSocketOnAction(uint32_t client_id, const char * action, JsonObject
 }
 
 void relaySetupWS() {
-    wsOnSendRegister(_relayWebSocketOnStart);
-    wsOnActionRegister(_relayWebSocketOnAction);
-    wsOnReceiveRegister(_relayWebSocketOnReceive);
+    wsRegister()
+        .onVisible(_relayWebSocketOnVisible)
+        .onConnected(_relayWebSocketOnConnected)
+        .onData(_relayWebSocketUpdate)
+        .onAction(_relayWebSocketOnAction)
+        .onKeyCheck(_relayWebSocketOnKeyCheck);
 }
 
 #endif // WEB_SUPPORT
@@ -779,11 +814,11 @@ void relaySetupAPI() {
         snprintf_P(key, sizeof(key), PSTR("%s/%d"), MQTT_TOPIC_PULSE, relayID);
         apiRegister(key,
             [relayID](char * buffer, size_t len) {
-                dtostrf((double) _relays[relayID].pulse_ms / 1000, 1-len, 3, buffer);
+                dtostrf((double) _relays[relayID].pulse_ms / 1000, 1, 3, buffer);
             },
             [relayID](const char * payload) {
 
-                unsigned long pulse = 1000 * String(payload).toFloat();
+                unsigned long pulse = 1000 * atof(payload);
                 if (0 == pulse) return;
 
                 if (RELAY_PULSE_NONE != _relays[relayID].pulse) {
@@ -928,7 +963,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 return;
             }
 
-            unsigned long pulse = 1000 * String(payload).toFloat();
+            unsigned long pulse = 1000 * atof(payload);
             if (0 == pulse) return;
 
             if (RELAY_PULSE_NONE != _relays[id].pulse) {

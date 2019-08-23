@@ -56,11 +56,12 @@ String _mqtt_clientid;
 
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
-typedef struct {
-    unsigned char parent = 255;
+struct mqtt_message_t {
+    static const unsigned char END = 255;
+    unsigned char parent = END;
     char * topic;
     char * message = NULL;
-} mqtt_message_t;
+};
 std::vector<mqtt_message_t> _mqtt_queue;
 Ticker _mqtt_flush_ticker;
 
@@ -341,13 +342,22 @@ void _mqttInfo() {
 
 #if WEB_SUPPORT
 
-bool _mqttWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _mqttWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "mqtt", 3) == 0);
 }
 
-void _mqttWebSocketOnSend(JsonObject& root) {
+void _mqttWebSocketOnVisible(JsonObject& root) {
     root["mqttVisible"] = 1;
+    #if ASYNC_TCP_SSL_ENABLED
+        root["mqttsslVisible"] = 1;
+    #endif
+}
+
+void _mqttWebSocketOnData(JsonObject& root) {
     root["mqttStatus"] = mqttConnected();
+}
+
+void _mqttWebSocketOnConnected(JsonObject& root) {
     root["mqttEnabled"] = mqttEnabled();
     root["mqttServer"] = getSetting("mqttServer", MQTT_SERVER);
     root["mqttPort"] = getSetting("mqttPort", MQTT_PORT);
@@ -358,7 +368,6 @@ void _mqttWebSocketOnSend(JsonObject& root) {
     root["mqttRetain"] = _mqtt_retain;
     root["mqttQoS"] = _mqtt_qos;
     #if ASYNC_TCP_SSL_ENABLED
-        root["mqttsslVisible"] = 1;
         root["mqttUseSSL"] = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
         root["mqttFP"] = getSetting("mqttFP", MQTT_SSL_FINGERPRINT);
     #endif
@@ -639,9 +648,9 @@ void mqttFlush() {
     if (_mqtt_queue.size() == 0) return;
 
     // Build tree recursively
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer jsonBuffer(1024);
     JsonObject& root = jsonBuffer.createObject();
-    _mqttBuildTree(root, 255);
+    _mqttBuildTree(root, mqtt_message_t::END);
 
     // Add extra propeties
     #if NTP_SUPPORT && MQTT_ENQUEUE_DATETIME
@@ -704,7 +713,7 @@ int8_t mqttEnqueue(const char * topic, const char * message, unsigned char paren
 }
 
 int8_t mqttEnqueue(const char * topic, const char * message) {
-    return mqttEnqueue(topic, message, 255);
+    return mqttEnqueue(topic, message, mqtt_message_t::END);
 }
 
 // -----------------------------------------------------------------------------
@@ -843,8 +852,15 @@ void mqttSetup() {
     mqttRegister(_mqttCallback);
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_mqttWebSocketOnSend);
-        wsOnReceiveRegister(_mqttWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_mqttWebSocketOnVisible)
+            .onData(_mqttWebSocketOnData)
+            .onConnected(_mqttWebSocketOnConnected)
+            .onKeyCheck(_mqttWebSocketOnKeyCheck);
+
+        mqttRegister([](unsigned int type, const char*, const char*) {
+            if ((type == MQTT_CONNECT_EVENT) || (type == MQTT_DISCONNECT_EVENT)) wsPost(_mqttWebSocketOnData);
+        });
     #endif
 
     #if TERMINAL_SUPPORT

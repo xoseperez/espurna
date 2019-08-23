@@ -202,17 +202,17 @@ class SenseAirSensor : public BaseSensor, SenseAir {
                 return;
             }
 
-            _error = SENSOR_ERROR_OK;
-
             unsigned int co2 = readCo2();
             if (co2 >= 5000 || co2 < 100)
             {
                 _co2 = _lastCo2;
+                _error = SENSOR_ERROR_OUT_OF_RANGE;
             }
             else
             {
                 _co2 = (co2 > _lastCo2 + 2000) ? _lastCo2 : co2;
                 _lastCo2 = co2;
+                _error = SENSOR_ERROR_OK;
             }
         }
 

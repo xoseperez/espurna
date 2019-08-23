@@ -1,9 +1,8 @@
-/* Flash Split for 4M chips, ~1M for SPIFFS, 4 sectors for EEPROM */
-/* sketch 1019KB */
-/* empty/ota? 2048KB */
-/* spiffs 992KB */
-/* eeprom 16KB */
-/* reserved 16KB */
+/*
+sketch: 1019KB
+fs: 992KB
+eeprom: 16KB
+*/
 
 MEMORY
 {
@@ -13,9 +12,19 @@ MEMORY
   irom0_0_seg :                         org = 0x40201010, len = 0xfeff0
 }
 
+/*
+Provide both _SPIFFS_ and _FS_ to be compatible with 2.3.0...2.6.0+ and
+any library that is using old _SPIFFS_...
+*/
+
 PROVIDE ( _SPIFFS_start = 0x40500000 );
-PROVIDE ( _SPIFFS_end = 0x405F8000 );
+PROVIDE ( _SPIFFS_end = 0x405f8000 );
 PROVIDE ( _SPIFFS_page = 0x100 );
 PROVIDE ( _SPIFFS_block = 0x2000 );
 
-INCLUDE "../ld/eagle.app.v6.common.ld"
+PROVIDE ( _FS_start = _SPIFFS_start );
+PROVIDE ( _FS_end = _SPIFFS_end );
+PROVIDE ( _FS_page = _SPIFFS_page );
+PROVIDE ( _FS_block = _SPIFFS_block );
+
+INCLUDE "eagle.app.v6.common.ld"

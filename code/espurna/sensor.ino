@@ -111,32 +111,46 @@ double _magnitudeProcess(unsigned char type, unsigned char decimals, double valu
 
 #if WEB_SUPPORT
 
+//void _sensorWebSocketMagnitudes(JsonObject& root, const String& ws_name, const String& conf_name) {
 template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
 
     // ws produces flat list <prefix>Magnitudes
-    String ws_name = String(prefix);
-    ws_name.concat("Magnitudes");
+    const String ws_name = String(prefix) + "Magnitudes";
 
     // config uses <prefix>Magnitude<index> (cut 's')
-    String conf_name = ws_name.substring(0, ws_name.length() - 1);
+    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
 
     JsonObject& list = root.createNestedObject(ws_name);
     list["size"] = magnitudeCount();
 
-    JsonArray& name = list.createNestedArray("name");
+    //JsonArray& name = list.createNestedArray("name");
     JsonArray& type = list.createNestedArray("type");
     JsonArray& index = list.createNestedArray("index");
     JsonArray& idx = list.createNestedArray("idx");
 
     for (unsigned char i=0; i<magnitudeCount(); ++i) {
-        name.add(magnitudeName(i));
+        //name.add(magnitudeName(i));
         type.add(magnitudeType(i));
         index.add(magnitudeIndex(i));
         idx.add(getSetting(conf_name, i, 0).toInt());
     }
 }
 
-bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
+/*
+template<typename T> void _sensorWebSocketMagnitudes(JsonObject& root, T prefix) {
+
+    // ws produces flat list <prefix>Magnitudes
+    const String ws_name = String(prefix) + "Magnitudes";
+
+    // config uses <prefix>Magnitude<index> (cut 's')
+    const String conf_name = ws_name.substring(0, ws_name.length() - 1);
+
+    _sensorWebSocketMagnitudes(root, ws_name, conf_name);
+
+}
+*/
+
+bool _sensorWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, "pwr", 3) == 0) return true;
     if (strncmp(key, "sns", 3) == 0) return true;
     if (strncmp(key, "tmp", 3) == 0) return true;
@@ -146,21 +160,28 @@ bool _sensorWebSocketOnReceive(const char * key, JsonVariant& value) {
     return false;
 }
 
-void _sensorWebSocketSendData(JsonObject& root) {
+void _sensorWebSocketOnVisible(JsonObject& root) {
 
-    char buffer[10];
-    bool hasTemperature = false;
-    bool hasHumidity = false;
-    bool hasMICS = false;
+    root["snsVisible"] = 1;
 
-    JsonObject& magnitudes = root.createNestedObject("magnitudes");
+    for (auto& magnitude : _magnitudes) {
+        if (magnitude.type == MAGNITUDE_TEMPERATURE) root["temperatureVisible"] = 1;
+        if (magnitude.type == MAGNITUDE_HUMIDITY) root["humidityVisible"] = 1;
+        #if MICS2710_SUPPORT || MICS5525_SUPPORT
+            if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) root["micsVisible"] = 1;
+        #endif
+    }
+
+}
+
+void _sensorWebSocketMagnitudesConfig(JsonObject& root) {
+
+    JsonObject& magnitudes = root.createNestedObject("magnitudesConfig");
     uint8_t size = 0;
 
     JsonArray& index = magnitudes.createNestedArray("index");
     JsonArray& type = magnitudes.createNestedArray("type");
-    JsonArray& value = magnitudes.createNestedArray("value");
     JsonArray& units = magnitudes.createNestedArray("units");
-    JsonArray& error = magnitudes.createNestedArray("error");
     JsonArray& description = magnitudes.createNestedArray("description");
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
@@ -169,14 +190,9 @@ void _sensorWebSocketSendData(JsonObject& root) {
         if (magnitude.type == MAGNITUDE_EVENT) continue;
         ++size;
 
-        double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
-        dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
-
         index.add<uint8_t>(magnitude.global);
         type.add<uint8_t>(magnitude.type);
-        value.add(buffer);
         units.add(magnitudeUnits(magnitude.type));
-        error.add(magnitude.sensor->error());
 
         if (magnitude.type == MAGNITUDE_ENERGY) {
             if (_sensor_energy_reset_ts.length() == 0) _sensorResetTS();
@@ -185,22 +201,39 @@ void _sensorWebSocketSendData(JsonObject& root) {
             description.add(magnitude.sensor->slot(magnitude.local));
         }
 
-        if (magnitude.type == MAGNITUDE_TEMPERATURE) hasTemperature = true;
-        if (magnitude.type == MAGNITUDE_HUMIDITY) hasHumidity = true;
-        #if MICS2710_SUPPORT || MICS5525_SUPPORT
-        if (magnitude.type == MAGNITUDE_CO || magnitude.type == MAGNITUDE_NO2) hasMICS = true;
-        #endif
     }
 
     magnitudes["size"] = size;
 
-    if (hasTemperature) root["temperatureVisible"] = 1;
-    if (hasHumidity) root["humidityVisible"] = 1;
-    if (hasMICS) root["micsVisible"] = 1;
+}
+
+void _sensorWebSocketSendData(JsonObject& root) {
+
+    char buffer[64];
+
+    JsonObject& magnitudes = root.createNestedObject("magnitudes");
+    uint8_t size = 0;
+
+    JsonArray& value = magnitudes.createNestedArray("value");
+    JsonArray& error = magnitudes.createNestedArray("error");
+
+    for (unsigned char i=0; i<magnitudeCount(); i++) {
+        sensor_magnitude_t magnitude = _magnitudes[i];
+        if (magnitude.type == MAGNITUDE_EVENT) continue;
+        ++size;
+
+        double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
+        dtostrf(value_show, 1, magnitude.decimals, buffer);
+
+        value.add(buffer);
+        error.add(magnitude.sensor->error());
+    }
+
+    magnitudes["size"] = size;
 
 }
 
-void _sensorWebSocketStart(JsonObject& root) {
+void _sensorWebSocketOnConnected(JsonObject& root) {
 
     for (unsigned char i=0; i<_sensors.size(); i++) {
 
@@ -257,7 +290,6 @@ void _sensorWebSocketStart(JsonObject& root) {
     }
 
     if (magnitudeCount()) {
-        root["snsVisible"] = 1;
         //root["apiRealTime"] = _sensor_realtime;
         root["pwrUnits"] = _sensor_power_units;
         root["eneUnits"] = _sensor_energy_units;
@@ -267,6 +299,7 @@ void _sensorWebSocketStart(JsonObject& root) {
         root["snsRead"] = _sensor_read_interval / 1000;
         root["snsReport"] = _sensor_report_every;
         root["snsSave"] = _sensor_save_every;
+        _sensorWebSocketMagnitudesConfig(root);
     }
 
     /*
@@ -304,7 +337,7 @@ void _sensorAPISetup() {
         apiRegister(topic.c_str(), [magnitude_id](char * buffer, size_t len) {
             sensor_magnitude_t magnitude = _magnitudes[magnitude_id];
             double value = _sensor_realtime ? magnitude.last : magnitude.reported;
-            dtostrf(value, 1-len, magnitude.decimals, buffer);
+            dtostrf(value, 1, magnitude.decimals, buffer);
         });
 
     }
@@ -574,11 +607,85 @@ void _sensorLoad() {
 
     #if DIGITAL_SUPPORT
     {
-        DigitalSensor * sensor = new DigitalSensor();
-        sensor->setGPIO(DIGITAL_PIN);
-        sensor->setMode(DIGITAL_PIN_MODE);
-        sensor->setDefault(DIGITAL_DEFAULT_STATE);
-        _sensors.push_back(sensor);
+        #if (DIGITAL1_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL1_PIN);
+            sensor->setMode(DIGITAL1_PIN_MODE);
+            sensor->setDefault(DIGITAL1_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL2_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL2_PIN);
+            sensor->setMode(DIGITAL2_PIN_MODE);
+            sensor->setDefault(DIGITAL2_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL3_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL3_PIN);
+            sensor->setMode(DIGITAL3_PIN_MODE);
+            sensor->setDefault(DIGITAL3_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL4_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL4_PIN);
+            sensor->setMode(DIGITAL4_PIN_MODE);
+            sensor->setDefault(DIGITAL4_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL5_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL5_PIN);
+            sensor->setMode(DIGITAL5_PIN_MODE);
+            sensor->setDefault(DIGITAL5_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL6_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL6_PIN);
+            sensor->setMode(DIGITAL6_PIN_MODE);
+            sensor->setDefault(DIGITAL6_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL7_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL7_PIN);
+            sensor->setMode(DIGITAL7_PIN_MODE);
+            sensor->setDefault(DIGITAL7_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (DIGITAL8_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL8_PIN);
+            sensor->setMode(DIGITAL8_PIN_MODE);
+            sensor->setDefault(DIGITAL8_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
     }
     #endif
 
@@ -631,13 +738,101 @@ void _sensorLoad() {
 
     #if EVENTS_SUPPORT
     {
-        EventSensor * sensor = new EventSensor();
-        sensor->setGPIO(EVENTS_PIN);
-        sensor->setTrigger(EVENTS_TRIGGER);
-        sensor->setPinMode(EVENTS_PIN_MODE);
-        sensor->setDebounceTime(EVENTS_DEBOUNCE);
-        sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
-        _sensors.push_back(sensor);
+        #if (EVENTS1_PIN != GPIO_NONE)
+    {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS1_PIN);
+            sensor->setTrigger(EVENTS1_TRIGGER);
+            sensor->setPinMode(EVENTS1_PIN_MODE);
+            sensor->setDebounceTime(EVENTS1_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS1_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS2_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS2_PIN);
+            sensor->setTrigger(EVENTS2_TRIGGER);
+            sensor->setPinMode(EVENTS2_PIN_MODE);
+            sensor->setDebounceTime(EVENTS2_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS2_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS3_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS3_PIN);
+            sensor->setTrigger(EVENTS3_TRIGGER);
+            sensor->setPinMode(EVENTS3_PIN_MODE);
+            sensor->setDebounceTime(EVENTS3_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS3_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS4_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS4_PIN);
+            sensor->setTrigger(EVENTS4_TRIGGER);
+            sensor->setPinMode(EVENTS4_PIN_MODE);
+            sensor->setDebounceTime(EVENTS4_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS4_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS5_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS5_PIN);
+            sensor->setTrigger(EVENTS5_TRIGGER);
+            sensor->setPinMode(EVENTS5_PIN_MODE);
+            sensor->setDebounceTime(EVENTS5_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS5_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS6_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS6_PIN);
+            sensor->setTrigger(EVENTS6_TRIGGER);
+            sensor->setPinMode(EVENTS6_PIN_MODE);
+            sensor->setDebounceTime(EVENTS6_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS6_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS7_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS7_PIN);
+            sensor->setTrigger(EVENTS7_TRIGGER);
+            sensor->setPinMode(EVENTS7_PIN_MODE);
+            sensor->setDebounceTime(EVENTS7_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS7_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
+
+        #if (EVENTS8_PIN != GPIO_NONE)
+        {
+            EventSensor * sensor = new EventSensor();
+            sensor->setGPIO(EVENTS8_PIN);
+            sensor->setTrigger(EVENTS8_TRIGGER);
+            sensor->setPinMode(EVENTS8_PIN_MODE);
+            sensor->setDebounceTime(EVENTS8_DEBOUNCE);
+            sensor->setInterruptMode(EVENTS8_INTERRUPT_MODE);
+            _sensors.push_back(sensor);
+        }
+        #endif
     }
     #endif
 
@@ -756,9 +951,11 @@ void _sensorLoad() {
 
     #if PULSEMETER_SUPPORT
     {
+
         PulseMeterSensor * sensor = new PulseMeterSensor();
         sensor->setGPIO(PULSEMETER_PIN);
         sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
+        sensor->setInterruptMode(PULSEMETER_INTERRUPT_ON);
         sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
         _sensors.push_back(sensor);
     }
@@ -1051,10 +1248,10 @@ void _sensorInit() {
 
         #endif // CSE7766_SUPPORT
 
-        #if PULSEMETER_SUPPORT
+        #if PULSEMETER_SUPPORT 
             if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
             }
         #endif // PULSEMETER_SUPPORT
 
@@ -1243,7 +1440,7 @@ void _sensorConfigure() {
                     _sensorResetTS();
                 }
 
-                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
+                sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
             }
         #endif // PULSEMETER_SUPPORT
 
@@ -1291,8 +1488,11 @@ void _sensorReport(unsigned char index, double value) {
     sensor_magnitude_t magnitude = _magnitudes[index];
     unsigned char decimals = magnitude.decimals;
 
-    char buffer[10];
-    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+    // XXX: ensure that the received 'value' will fit here
+    // dtostrf 2nd arg only controls leading zeroes and the
+    // 3rd is only for the part after the dot
+    char buffer[64];
+    dtostrf(value, 1, decimals, buffer);
 
     #if BROKER_SUPPORT
         brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
@@ -1445,9 +1645,11 @@ void sensorSetup() {
 
     // Websockets
     #if WEB_SUPPORT
-        wsOnSendRegister(_sensorWebSocketStart);
-        wsOnReceiveRegister(_sensorWebSocketOnReceive);
-        wsOnSendRegister(_sensorWebSocketSendData);
+        wsRegister()
+            .onVisible(_sensorWebSocketOnVisible)
+            .onConnected(_sensorWebSocketOnConnected)
+            .onData(_sensorWebSocketSendData)
+            .onKeyCheck(_sensorWebSocketOnKeyCheck);
     #endif
 
     // API
@@ -1557,7 +1759,7 @@ void sensorLoop() {
                 #if SENSOR_DEBUG
                 {
                     char buffer[64];
-                    dtostrf(value_show, 1-sizeof(buffer), magnitude.decimals, buffer);
+                    dtostrf(value_show, 1, magnitude.decimals, buffer);
                     DEBUG_MSG_P(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         magnitudeTopic(magnitude.type).c_str(),
@@ -1605,7 +1807,7 @@ void sensorLoop() {
         _sensorPost();
 
         #if WEB_SUPPORT
-            wsSend(_sensorWebSocketSendData);
+            wsPost(_sensorWebSocketSendData);
         #endif
 
         #if THINGSPEAK_SUPPORT
