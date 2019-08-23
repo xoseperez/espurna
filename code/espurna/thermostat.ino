@@ -142,13 +142,13 @@ void updateOperationMode() {
 //------------------------------------------------------------------------------
 void updateRemoteTemp(bool remote_temp_actual) {
   #if WEB_SUPPORT
-      char tmp_str[6];
+      char tmp_str[16];
       if (remote_temp_actual) {
-        dtostrf(_remote_temp.temp, 1-sizeof(tmp_str), 1, tmp_str);
+        dtostrf(_remote_temp.temp, 1, 1, tmp_str);
       } else {
         strcpy(tmp_str, "\"?\"");
       }
-      char buffer[100];
+      char buffer[128];
       snprintf_P(buffer, sizeof(buffer), PSTR("{\"thermostatVisible\": 1, \"remoteTmp\": %s}"), tmp_str);
       wsSend(buffer);
   #endif
@@ -298,7 +298,7 @@ void _thermostatReload() {
 
 #if WEB_SUPPORT
 //------------------------------------------------------------------------------
-void _thermostatWebSocketOnSend(JsonObject& root) {
+void _thermostatWebSocketOnConnected(JsonObject& root) {
   root["thermostatEnabled"] = thermostatEnabled();
   root["thermostatMode"] = thermostatModeCooler();
   root["thermostatVisible"] = 1;
@@ -328,7 +328,7 @@ void _thermostatWebSocketOnSend(JsonObject& root) {
 }
 
 //------------------------------------------------------------------------------
-bool _thermostatWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _thermostatWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     if (strncmp(key, NAME_THERMOSTAT_ENABLED,   strlen(NAME_THERMOSTAT_ENABLED))   == 0) return true;
     if (strncmp(key, NAME_THERMOSTAT_MODE,      strlen(NAME_THERMOSTAT_MODE))      == 0) return true;
     if (strncmp(key, NAME_TEMP_RANGE_MIN,       strlen(NAME_TEMP_RANGE_MIN))       == 0) return true;
@@ -358,9 +358,10 @@ void thermostatSetup() {
 
   // Websockets
   #if WEB_SUPPORT
-      wsOnSendRegister(_thermostatWebSocketOnSend);
-      wsOnReceiveRegister(_thermostatWebSocketOnReceive);
-      wsOnActionRegister(_thermostatWebSocketOnAction);
+      wsRegister()
+          .onConnected(_thermostatWebSocketOnConnected)
+          .onKeyCheck(_thermostatWebSocketOnKeyCheck)
+          .onAction(_thermostatWebSocketOnAction);
   #endif
 
   espurnaRegisterLoop(thermostatLoop);
@@ -386,8 +387,8 @@ void setThermostatState(bool state) {
 
 //------------------------------------------------------------------------------
 void debugPrintSwitch(bool state, double temp) {
-  char tmp_str[6];
-  dtostrf(temp, 1-sizeof(tmp_str), 1, tmp_str);
+  char tmp_str[16];
+  dtostrf(temp, 1, 1, tmp_str);
   DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d\n"),
    state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER", relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch);
 }
@@ -485,8 +486,8 @@ double getLocalTemperature() {
       for (byte i=0; i<magnitudeCount(); i++) {
           if (magnitudeType(i) == MAGNITUDE_TEMPERATURE) {
               double temp = magnitudeValue(i);
-              char tmp_str[6];
-              dtostrf(temp, 1-sizeof(tmp_str), 1, tmp_str);
+              char tmp_str[16];
+              dtostrf(temp, 1, 1, tmp_str);
               DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalTemperature temp: %s\n"), tmp_str);
               return temp > -0.1 && temp < 0.1 ? DBL_MIN : temp;
           }
@@ -501,8 +502,8 @@ double getLocalHumidity() {
       for (byte i=0; i<magnitudeCount(); i++) {
           if (magnitudeType(i) == MAGNITUDE_HUMIDITY) {
               double hum = magnitudeValue(i);
-              char tmp_str[4];
-              dtostrf(hum, 1-sizeof(tmp_str), 0, tmp_str);
+              char tmp_str[16];
+              dtostrf(hum, 1, 0, tmp_str);
               DEBUG_MSG_P(PSTR("[THERMOSTAT] getLocalHumidity hum: %s\%\n"), tmp_str);
               return hum > -0.1 && hum < 0.1 ? DBL_MIN : hum;
           }

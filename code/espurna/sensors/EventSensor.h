@@ -190,7 +190,7 @@ class EventSensor : public BaseSensor {
         volatile unsigned long _counter = 0;
         unsigned char _value = 0;
         unsigned long _last = 0;
-        unsigned long _debounce = microsecondsToClockCycles(EVENTS_DEBOUNCE * 1000);
+        unsigned long _debounce = microsecondsToClockCycles(EVENTS1_DEBOUNCE * 1000);
 
         bool _trigger = false;
         bool _trigger_flag = false;

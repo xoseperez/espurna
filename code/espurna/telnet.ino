@@ -31,12 +31,11 @@ bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
 
 #if WEB_SUPPORT
 
-bool _telnetWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _telnetWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "telnet", 6) == 0);
 }
 
-void _telnetWebSocketOnSend(JsonObject& root) {
-    root["telnetVisible"] = 1;
+void _telnetWebSocketOnConnected(JsonObject& root) {
     root["telnetSTA"] = getSetting("telnetSTA", TELNET_STA).toInt() == 1;
     root["telnetAuth"] = getSetting("telnetAuth", TELNET_AUTHENTICATION).toInt() == 1;
 }
@@ -313,8 +312,10 @@ void telnetSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_telnetWebSocketOnSend);
-        wsOnReceiveRegister(_telnetWebSocketOnReceive);
+        wsRegister()
+            .onVisible([](JsonObject& root) { root["telnetVisible"] = 1; })
+            .onConnected(_telnetWebSocketOnConnected)
+            .onKeyCheck(_telnetWebSocketOnKeyCheck);
     #endif
 
     espurnaRegisterReload(_telnetConfigure);

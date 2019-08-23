@@ -23,12 +23,11 @@ static std::queue<alexa_queue_element_t> _alexa_queue;
 // ALEXA
 // -----------------------------------------------------------------------------
 
-bool _alexaWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _alexaWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "alexa", 5) == 0);
 }
 
-void _alexaWebSocketOnSend(JsonObject& root) {
-    root["alexaVisible"] = 1;
+void _alexaWebSocketOnConnected(JsonObject& root) {
     root["alexaEnabled"] = alexaEnabled();
     root["alexaName"] = getSetting("alexaName");
 }
@@ -123,8 +122,10 @@ void alexaSetup() {
     #if WEB_SUPPORT
         webBodyRegister(_alexaBodyCallback);
         webRequestRegister(_alexaRequestCallback);
-        wsOnSendRegister(_alexaWebSocketOnSend);
-        wsOnReceiveRegister(_alexaWebSocketOnReceive);
+        wsRegister()
+            .onVisible([](JsonObject& root) { root["alexaVisible"] = 1; })
+            .onConnected(_alexaWebSocketOnConnected)
+            .onKeyCheck(_alexaWebSocketOnKeyCheck);
     #endif
 
     // Register wifi callback

@@ -25,6 +25,45 @@ String _haFixName(String name) {
     return name;
 }
 
+#if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
+const String switchType("light");
+#else
+const String switchType("switch");
+#endif
+
+struct ha_config_t {
+
+    static const size_t DEFAULT_BUFFER_SIZE = 2048;
+
+    ha_config_t(size_t size) :
+        jsonBuffer(size),
+        deviceConfig(jsonBuffer.createObject()),
+        root(jsonBuffer.createObject()),
+        identifier(getIdentifier()),
+        name(getSetting("desc", getSetting("hostname"))),
+        version(String(APP_NAME " " APP_VERSION " (") + getCoreVersion() + ")")
+    {
+        deviceConfig.createNestedArray("identifiers").add(identifier.c_str());
+        deviceConfig["name"] = name.c_str();
+        deviceConfig["sw_version"] = version.c_str();
+        deviceConfig["manufacturer"] = MANUFACTURER;
+        deviceConfig["model"] = DEVICE;
+    }
+
+    ha_config_t() : ha_config_t(DEFAULT_BUFFER_SIZE) {}
+
+    size_t size() { return jsonBuffer.size(); }
+
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& deviceConfig;
+    JsonObject& root;
+
+    const String identifier;
+    const String name;
+    const String version;
+};
+
+
 // -----------------------------------------------------------------------------
 // SENSORS
 // -----------------------------------------------------------------------------
@@ -40,7 +79,7 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
     config["unit_of_measurement"] = magnitudeUnits(type);
 }
 
-void _haSendMagnitudes(const JsonObject& deviceConfig) {
+void _haSendMagnitudes(ha_config_t& config) {
 
     for (unsigned char i=0; i<magnitudeCount(); i++) {
 
@@ -51,20 +90,19 @@ void _haSendMagnitudes(const JsonObject& deviceConfig) {
 
         String output;
         if (_haEnabled) {
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& config = jsonBuffer.createObject();
-            _haSendMagnitude(i, config);
-            config["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
-            config["device"] = deviceConfig;
+            _haSendMagnitude(i, config.root);
+            config.root["uniq_id"] = getIdentifier() + "_" + magnitudeTopic(magnitudeType(i)) + "_" + String(i);
+            config.root["device"] = config.deviceConfig;
             
-            config.printTo(output);
-            jsonBuffer.clear();
+            output.reserve(config.root.measureLength());
+            config.root.printTo(output);
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
-        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
 
     }
+
+    mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
 
 }
 
@@ -120,31 +158,23 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
 
 }
 
-void _haSendSwitches(const JsonObject& deviceConfig) {
-
-    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
-        String type = String("light");
-    #else
-        String type = String("switch");
-    #endif
+void _haSendSwitches(ha_config_t& config) {
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
         String topic = getSetting("haPrefix", HOMEASSISTANT_PREFIX) +
-            "/" + type +
+            "/" + switchType +
             "/" + getSetting("hostname") + "_" + String(i) +
             "/config";
 
         String output;
         if (_haEnabled) {
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& config = jsonBuffer.createObject();
-            _haSendSwitch(i, config);
-            config["uniq_id"] = getIdentifier() + "_" + type + "_" + String(i);
-            config["device"] = deviceConfig;
+            _haSendSwitch(i, config.root);
+            config.root["uniq_id"] = getIdentifier() + "_" + switchType + "_" + String(i);
+            config.root["device"] = config.deviceConfig;
 
-            config.printTo(output);
-            jsonBuffer.clear();
+            output.reserve(config.root.measureLength());
+            config.root.printTo(output);
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
@@ -158,26 +188,22 @@ void _haSendSwitches(const JsonObject& deviceConfig) {
 
 void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
 
-    #if (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE) || (defined(ITEAD_SLAMPHER))
-        String type = String("light");
-    #else
-        String type = String("switch");
-    #endif
+    constexpr const size_t BUFFER_SIZE = 1024;
+
+    String output;
+    output.reserve(BUFFER_SIZE + 64);
+    DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
 
     for (unsigned char i=0; i<relayCount(); i++) {
 
-        DynamicJsonBuffer jsonBuffer;
         JsonObject& config = jsonBuffer.createObject();
         _haSendSwitch(i, config);
-
-        String output;
-        output.reserve(config.measureLength() + 32);
 
         if (wrapJson) {
             output += "{\"haConfig\": \"";
         }
 
-        output += "\n\n" + type + ":\n";
+        output += "\n\n" + switchType + ":\n";
         bool first = true;
 
         for (auto kv : config) {
@@ -199,8 +225,8 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
         }
 
         jsonBuffer.clear();
-
         printer(output);
+        output = "";
 
     }
 
@@ -208,12 +234,8 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
 
         for (unsigned char i=0; i<magnitudeCount(); i++) {
 
-            DynamicJsonBuffer jsonBuffer;
             JsonObject& config = jsonBuffer.createObject();
             _haSendMagnitude(i, config);
-
-            String output;
-            output.reserve(config.measureLength() + 32);
 
             if (wrapJson) {
                 output += "{\"haConfig\": \"";
@@ -243,8 +265,8 @@ void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) 
             }
 
             jsonBuffer.clear();
-
             printer(output);
+            output = "";
 
         }
 
@@ -272,17 +294,14 @@ void _haSend() {
     DEBUG_MSG_P(PSTR("[HA] Sending autodiscovery MQTT message\n"));
 
     // Get common device config
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& deviceConfig = jsonBuffer.createObject();
-    _haGetDeviceConfig(deviceConfig);
+    ha_config_t config;
 
     // Send messages
-    _haSendSwitches(deviceConfig);
+    _haSendSwitches(config);
     #if SENSOR_SUPPORT
-        _haSendMagnitudes(deviceConfig);
+        _haSendMagnitudes(config);
     #endif
     
-    jsonBuffer.clear();
     _haSendFlag = false;
 
 }
@@ -298,12 +317,15 @@ void _haConfigure() {
 
 std::queue<uint32_t> _ha_send_config;
 
-bool _haWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _haWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
 }
 
-void _haWebSocketOnSend(JsonObject& root) {
+void _haWebSocketOnVisible(JsonObject& root) {
     root["haVisible"] = 1;
+}
+
+void _haWebSocketOnConnected(JsonObject& root) {
     root["haPrefix"] = getSetting("haPrefix", HOMEASSISTANT_PREFIX);
     root["haEnabled"] = getSetting("haEnabled", HOMEASSISTANT_ENABLED).toInt() == 1;
 }
@@ -332,7 +354,7 @@ void _haInitCommands() {
         setSetting("haEnabled", "1");
         _haConfigure();
         #if WEB_SUPPORT
-            wsSend(_haWebSocketOnSend);
+            wsPost(_haWebSocketOnConnected);
         #endif
         terminalOK();
     });
@@ -341,7 +363,7 @@ void _haInitCommands() {
         setSetting("haEnabled", "0");
         _haConfigure();
         #if WEB_SUPPORT
-            wsSend(_haWebSocketOnSend);
+            wsPost(_haWebSocketOnConnected);
         #endif
         terminalOK();
     });
@@ -374,9 +396,11 @@ void haSetup() {
     _haConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_haWebSocketOnSend);
-        wsOnActionRegister(_haWebSocketOnAction);
-        wsOnReceiveRegister(_haWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_haWebSocketOnVisible)
+            .onConnected(_haWebSocketOnConnected)
+            .onAction(_haWebSocketOnAction)
+            .onKeyCheck(_haWebSocketOnKeyCheck);
         espurnaRegisterLoop(_haLoop);
     #endif
 
@@ -387,6 +411,7 @@ void haSetup() {
     // On MQTT connect check if we have something to send
     mqttRegister([](unsigned int type, const char * topic, const char * payload) {
         if (type == MQTT_CONNECT_EVENT) _haSend();
+        if (type == MQTT_DISCONNECT_EVENT) _haSendFlag = false;
     });
 
     // Main callbacks

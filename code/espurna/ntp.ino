@@ -26,13 +26,19 @@ bool _ntp_want_sync = false;
 
 #if WEB_SUPPORT
 
-bool _ntpWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _ntpWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ntp", 3) == 0);
 }
 
-void _ntpWebSocketOnSend(JsonObject& root) {
+void _ntpWebSocketOnVisible(JsonObject& root) {
     root["ntpVisible"] = 1;
+}
+
+void _ntpWebSocketOnData(JsonObject& root) {
     root["ntpStatus"] = (timeStatus() == timeSet);
+}
+
+void _ntpWebSocketOnConnected(JsonObject& root) {
     root["ntpServer"] = getSetting("ntpServer", NTP_SERVER);
     root["ntpOffset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
     root["ntpDST"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
@@ -115,10 +121,6 @@ void _ntpConfigure() {
 void _ntpReport() {
 
     _ntp_report = false;
-
-    #if WEB_SUPPORT
-        wsSend(_ntpWebSocketOnSend);
-    #endif
 
     if (ntpSynced()) {
         time_t t = now();
@@ -232,14 +234,14 @@ void ntpSetup() {
 
     NTPw.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"ntpStatus\": false}"));
-            #endif
             if (error == noResponse) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: NTP server not reachable\n"));
             } else if (error == invalidAddress) {
                 DEBUG_MSG_P(PSTR("[NTP] Error: Invalid NTP server address\n"));
             }
+            #if WEB_SUPPORT
+                wsPost(_ntpWebSocketOnData);
+            #endif
         } else {
             _ntp_report = true;
             setTime(NTPw.getLastNTPSync());
@@ -255,8 +257,11 @@ void ntpSetup() {
     });
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_ntpWebSocketOnSend);
-        wsOnReceiveRegister(_ntpWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_ntpWebSocketOnVisible)
+            .onConnected(_ntpWebSocketOnConnected)
+            .onData(_ntpWebSocketOnData)
+            .onKeyCheck(_ntpWebSocketOnKeyCheck);
     #endif
 
     // Main callbacks
