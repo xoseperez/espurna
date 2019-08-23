@@ -1842,8 +1842,17 @@ void sensorLoop() {
 
 
                     // Persist total energy value
-                    if (MAGNITUDE_ENERGY == magnitude.type) {
-                        _sensorEnergyTotal(value_raw);
+                    if (MAGNITUDE_ENERGY == magnitude.type) {                                                
+                        if (magnitude.sensor->getID() != SENSOR_ADE7953_ID) { 
+                            _sensorEnergyTotal(value_raw);
+                        } else {
+                            #if ADE7953_SUPPORT
+                                ADE7953Sensor * sensor = (ADE7953Sensor *) magnitude.sensor;
+                                unsigned int dev_count = sensor->getTotalDevices();
+                                unsigned int dev = (magnitude.local / dev_count) - 1;                                
+                                _sensorEnergyTotal(dev, value_raw);                                   
+                            #endif // ADE7953_SUPPORT                 
+                        }                    
                     }
 
                 } // if (report_count == 0)

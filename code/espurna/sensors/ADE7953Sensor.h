@@ -138,7 +138,11 @@ class ADE7953Sensor : public I2CSensor {
             auto& reading_ref = _readings.at(relay); 
             reading_ref.current = current;
             reading_ref.power = power;
-            reading_ref.energy = power * 3600;
+            static unsigned long last = 0;
+            if (last > 0) {                    
+                reading_ref.energy += (power * (millis() - last) / 1000);
+            }                        
+            last = millis();
         }
 
         // Current value for slot # index
