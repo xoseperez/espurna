@@ -17,11 +17,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Ticker.h>
 #include <TimeLib.h>
 
-#if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
     AsyncMqttClient _mqtt;
 
-#else // MQTT_ARDUINOMQTT / MQTT_PUBSUBCLIENT
+#else // MQTT_LIBRARY_ARDUINOMQTT / MQTT_LIBRARY_PUBSUBCLIENT
 
     WiFiClient _mqtt_client;
 
@@ -30,17 +30,17 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
     SecureClient* _mqtt_client_secure = nullptr;
 #endif
 
-#if MQTT_LIBRARY == MQTT_ARDUINOMQTT
+#if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
 #ifdef MQTT_MAX_PACKET_SIZE
         MQTTClient _mqtt(MQTT_MAX_PACKET_SIZE);
 #else
         MQTTClient _mqtt;
 #endif
-#elif MQTT_LIBRARY == MQTT_PUBSUBCLIENT
+#elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
         PubSubClient _mqtt;
 #endif
 
-#endif // MQTT_LIBRARY == MQTT_ASYNCMQTT_CLIENT
+#endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
 
 
 bool _mqtt_enabled = MQTT_ENABLED;
@@ -115,7 +115,7 @@ SecureClientConfig _mqtt_sc_config {
 #endif
 
 
-#if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 void _mqttSetupAsyncMqttClient(bool secure = false) {
 
@@ -149,12 +149,12 @@ void _mqttSetupAsyncMqttClient(bool secure = false) {
 
 }
 
-#endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+#endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
-#if (MQTT_LIBRARY == MQTT_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_PUBSUBCLIENT)
+#if (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
 void _mqttSetupSyncMqttClient(bool secure = false) {
 
-    if (getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1) {
+    if (secure) {
         if (!_mqtt_client_secure) _mqtt_client_secure = new SecureClient("MQTT", _mqtt_sc_config);
     }
 
@@ -163,11 +163,11 @@ void _mqttSetupSyncMqttClient(bool secure = false) {
 bool _mqttConnectSyncMqttClient(bool secure = false) {
     bool result = false;
 
-    #if MQTT_LIBRARY == MQTT_ARDUINOMQTT
+    #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
         _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, (secure ? _mqtt_client_secure->get() : _mqtt_client));
         _mqtt.setWill(_mqtt_will.c_str(), MQTT_STATUS_OFFLINE, _mqtt_qos, _mqtt_retain);
         result = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str());
-    #elif MQTT_LIBRARY == MQTT_PUBSUBCLIENT
+    #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
         _mqtt.setClient(secure ? _mqtt_client_secure->get() : _mqtt_client);
         _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
 
@@ -191,7 +191,7 @@ bool _mqttConnectSyncMqttClient(bool secure = false) {
     return result;
 }
 
-#endif // (MQTT_LIBRARY == MQTT_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_PUBSUBCLIENT)
+#endif // (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
 
 
 void _mqttConnect() {
@@ -229,22 +229,22 @@ void _mqttConnect() {
         bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
     #endif
 
-    #if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
         _mqttSetupAsyncMqttClient(secure);
-    #elif (MQTT_LIBRARY == MQTT_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_PUBSUBCLIENT)
+    #elif (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
         _mqttSetupSyncMqttClient(secure);
     #else
         #error "please check that MQTT_LIBRARY is valid"
     #endif
 
-    #if (MQTT_LIBRARY == MQTT_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_PUBSUBCLIENT)
+    #if (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
         if (_mqttConnectSyncMqttClient(secure)) {
             _mqttOnConnect();
         } else {
             DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
             _mqttOnDisconnect();
         }
-    #endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+    #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 }
 
@@ -369,7 +369,7 @@ void _mqttBackwards() {
 
 void _mqttInfo() {
     DEBUG_MSG_P(PSTR("[MQTT] %s, SSL %s, Autoconnect %s\n"),
-        (MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT ? "AsyncMqttClient" : (MQTT_LIBRARY == MQTT_ARDUINOMQTT ? "Arduino-MQTT" : "PubSubClient")),
+        (MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT ? "AsyncMqttClient" : (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT ? "Arduino-MQTT" : "PubSubClient")),
         SECURE_CLIENT == SECURE_CLIENT_NONE ? "DISABLED" : "ENABLED",
         MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
     );
@@ -602,13 +602,13 @@ String mqttTopic(const char * magnitude, unsigned int index, bool is_set) {
 void mqttSendRaw(const char * topic, const char * message, bool retain) {
 
     if (_mqtt.connected()) {
-        #if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT // AsyncMqttClient
+        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
             unsigned int packetId = _mqtt.publish(topic, _mqtt_qos, retain, message);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, packetId);
-        #elif MQTT_LIBRARY == MQTT_ARDUINOMQTT // Arduino-MQTT
+        #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
             _mqtt.publish(topic, message, retain, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
-        #else // PubSubClient
+        #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
             _mqtt.publish(topic, message, retain);
             DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s\n"), topic, message);
         #endif
@@ -773,7 +773,7 @@ int8_t mqttEnqueue(const char * topic, const char * message) {
 
 void mqttSubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT // AsyncMqttClient
+        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
             unsigned int packetId = _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
         #else // Arduino-MQTT or PubSubClient
@@ -789,7 +789,7 @@ void mqttSubscribe(const char * topic) {
 
 void mqttUnsubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT // AsyncMqttClient
+        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
             unsigned int packetId = _mqtt.unsubscribe(topic);
             DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s (PID %d)\n"), topic, packetId);
         #else // Arduino-MQTT or PubSubClient
@@ -855,7 +855,7 @@ void mqttSetup() {
     _mqttBackwards();
     _mqttInfo();
 
-    #if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT // AsyncMqttClient
+    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
 
         _mqtt.onConnect([](bool sessionPresent) {
             _mqttOnConnect();
@@ -893,19 +893,19 @@ void mqttSetup() {
             DEBUG_MSG_P(PSTR("[MQTT] Publish ACK for PID %d\n"), packetId);
         });
 
-    #elif MQTT_LIBRARY == MQTT_ARDUINOMQTT
+    #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
 
         _mqtt.onMessageAdvanced([](MQTTClient *client, char topic[], char payload[], int length) {
             _mqttOnMessage(topic, payload, length);
         });
 
-    #elif MQTT_LIBRARY == MQTT_PUBSUBCLIENT
+    #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
 
         _mqtt.setCallback([](char* topic, byte* payload, unsigned int length) {
             _mqttOnMessage(topic, (char *) payload, length);
         });
 
-    #endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+    #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
     _mqttConfigure();
     mqttRegister(_mqttCallback);
@@ -936,11 +936,11 @@ void mqttLoop() {
 
     if (WiFi.status() != WL_CONNECTED) return;
 
-    #if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
         _mqttConnect();
 
-    #else // MQTT_LIBRARY != MQTT_ASYNC
+    #else // MQTT_LIBRARY != MQTT_LIBRARY_ASYNCMQTTCLIENT
 
         if (_mqtt.connected()) {
 
@@ -957,7 +957,7 @@ void mqttLoop() {
 
         }
 
-    #endif // MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+    #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 }
 

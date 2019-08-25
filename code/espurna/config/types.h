@@ -153,9 +153,9 @@
 #define MQTT_MESSAGE_EVENT          2
 
 // MQTT_LIBRARY
-#define MQTT_ASYNCMQTTCLIENT        0
-#define MQTT_ARDUINOMQTT            1
-#define MQTT_PUBSUBCLIENT           2
+#define MQTT_LIBRARY_ASYNCMQTTCLIENT        0
+#define MQTT_LIBRARY_ARDUINOMQTT            1
+#define MQTT_LIBRARY_PUBSUBCLIENT           2
 
 
 //------------------------------------------------------------------------------

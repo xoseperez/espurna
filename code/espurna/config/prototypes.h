@@ -165,12 +165,12 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // MQTT
 // -----------------------------------------------------------------------------
 
-#if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
     #include <ESPAsyncTCP.h>
     #include <AsyncMqttClient.h>
-#elif MQTT_LIBRARY == MQTT_ARDUINOMQTT
+#elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
     #include <MQTTClient.h>
-#elif MQTT_LIBRARY == MQTT_PUBSUBCLIENT
+#elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
     #include <PubSubClient.h>
 #endif
 

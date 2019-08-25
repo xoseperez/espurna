@@ -840,9 +840,9 @@
 
 
 #ifndef MQTT_LIBRARY
-#define MQTT_LIBRARY                MQTT_ASYNCMQTTCLIENT       // MQTT_ASYNCMQTTCLIENT (default, https://github.com/marvinroger/async-mqtt-client)
-                                                     // MQTT_PUBSUBCLIENT (https://github.com/knolleary/pubsubclient)
-                                                     // MQTT_ARDUINOMQTT (https://github.com/256dpi/arduino-mqtt)
+#define MQTT_LIBRARY                MQTT_LIBRARY_ASYNCMQTTCLIENT       // MQTT_LIBRARY_ASYNCMQTTCLIENT (default, https://github.com/marvinroger/async-mqtt-client)
+                                                     // MQTT_LIBRARY_PUBSUBCLIENT (https://github.com/knolleary/pubsubclient)
+                                                     // MQTT_LIBRARY_ARDUINOMQTT (https://github.com/256dpi/arduino-mqtt)
 #endif
 
 // -----------------------------------------------------------------------------
@@ -853,10 +853,10 @@
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
 // Requires SECURE_CLIENT=SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL and ESP8266 Arduino Core >= 2.5.2
 //
-// You can use SSL with MQTT_ASYNCMQTTCLIENT, but you might experience some hiccups with the web interface.
+// You can use SSL with MQTT_LIBRARY_ASYNCMQTTCLIENT, but you might experience some hiccups with the web interface.
 // It is recommended to use WEB_SUPPORT=0
 //
-// If you use SSL with MQTT_PUBSUBCLIENT or MQTT_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
+// If you use SSL with MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
 // ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
 //
 // The simpliest way to avoid MITM attacks and verify SSL connection is to use fingerprinting.
