@@ -165,6 +165,15 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // MQTT
 // -----------------------------------------------------------------------------
 
+#if MQTT_LIBRARY == MQTT_ASYNCMQTTCLIENT
+    #include <ESPAsyncTCP.h>
+    #include <AsyncMqttClient.h>
+#elif MQTT_LIBRARY == MQTT_ARDUINOMQTT
+    #include <MQTTClient.h>
+#elif MQTT_LIBRARY == MQTT_PUBSUBCLIENT
+    #include <PubSubClient.h>
+#endif
+
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 
 #if MQTT_SUPPORT

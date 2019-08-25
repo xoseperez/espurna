@@ -152,9 +152,10 @@
 #define MQTT_DISCONNECT_EVENT       1
 #define MQTT_MESSAGE_EVENT          2
 
-#define MQTT_ASYNC                  0
-#define MQTT_ARDUINO                1
-#define MQTT_PUBSUB                 2
+// MQTT_LIBRARY
+#define MQTT_ASYNCMQTTCLIENT        0
+#define MQTT_ARDUINOMQTT            1
+#define MQTT_PUBSUBCLIENT           2
 
 
 //------------------------------------------------------------------------------
