@@ -841,8 +841,8 @@
 
 #ifndef MQTT_LIBRARY
 #define MQTT_LIBRARY                MQTT_LIBRARY_ASYNCMQTTCLIENT       // MQTT_LIBRARY_ASYNCMQTTCLIENT (default, https://github.com/marvinroger/async-mqtt-client)
-                                                     // MQTT_LIBRARY_PUBSUBCLIENT (https://github.com/knolleary/pubsubclient)
-                                                     // MQTT_LIBRARY_ARDUINOMQTT (https://github.com/256dpi/arduino-mqtt)
+                                                                       // MQTT_LIBRARY_PUBSUBCLIENT (https://github.com/knolleary/pubsubclient)
+                                                                       // MQTT_LIBRARY_ARDUINOMQTT (https://github.com/256dpi/arduino-mqtt)
 #endif
 
 // -----------------------------------------------------------------------------
@@ -858,6 +858,8 @@
 //
 // If you use SSL with MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
 // ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
+// Or, use "sync" versions instead (note that not every module has this option):
+// THINGSPEAK_USE_ASYNC=0, TELNET_SERVER=TELNET_SERVER_WIFISERVER
 //
 // The simpliest way to avoid MITM attacks and verify SSL connection is to use fingerprinting.
 // For example, to get Google's MQTT server certificate fingerprint, run the following command:
