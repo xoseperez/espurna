@@ -11,6 +11,7 @@ var numChanged = 0;
 var numReboot = 0;
 var numReconnect = 0;
 var numReload = 0;
+var conf_saved = false;
 
 var useWhite = false;
 var useCCT = false;
@@ -22,6 +23,10 @@ var ago = 0;
 var packets;
 var filters = [];
 <!-- endRemoveIf(!rfm69)-->
+
+<!-- removeIf(!sensor)-->
+var magnitudes = [];
+<!-- endRemoveIf(!sensor)-->
 
 // -----------------------------------------------------------------------------
 // Messages
@@ -448,6 +453,7 @@ function setOriginalsFromValues(force) {
 function resetOriginals() {
     setOriginalsFromValues(true);
     numReboot = numReconnect = numReload = 0;
+    conf_saved = false;
 }
 
 function doReload(milliseconds) {
@@ -609,6 +615,31 @@ function doReconnect(ask) {
 
 }
 
+function doCheckOriginals() {
+    var response;
+
+    if (numReboot > 0) {
+        response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
+        if (response) { doReboot(false); }
+    } else if (numReconnect > 0) {
+        response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
+        if (response) { doReconnect(false); }
+    } else if (numReload > 0) {
+        response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
+        if (response) { doReload(0); }
+    }
+
+    resetOriginals();
+}
+
+function waitForSave(){
+    if (conf_saved == false) {
+        setTimeout(waitForSave, 1000);
+    } else {
+        doCheckOriginals();
+    }
+}
+
 function doUpdate() {
 
     var forms = $(".form-settings");
@@ -625,24 +656,8 @@ function doUpdate() {
 
         // Change handling
         numChanged = 0;
-        setTimeout(function() {
 
-            var response;
-
-            if (numReboot > 0) {
-                response = window.confirm("You have to reboot the board for the changes to take effect, do you want to do it now?");
-                if (response) { doReboot(false); }
-            } else if (numReconnect > 0) {
-                response = window.confirm("You have to reconnect to the WiFi for the changes to take effect, do you want to do it now?");
-                if (response) { doReconnect(false); }
-            } else if (numReload > 0) {
-                response = window.confirm("You have to reload the page to see the latest changes, do you want to do it now?");
-                if (response) { doReload(0); }
-            }
-
-            resetOriginals();
-
-        }, 1000);
+        waitForSave();
 
     }
 
@@ -834,7 +849,7 @@ function createMagnitudeList(data, container, template_name) {
     for (var i=0; i<size; ++i) {
         var line = $(template).clone();
         $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(data.name[i]);
+        $("div.hint", line).html(magnitudes[i].description);
         $("input", line).attr("tabindex", 40 + i).val(data.idx[i]);
         line.appendTo("#" + container);
     }
@@ -983,6 +998,15 @@ function initRelays(data) {
 
 }
 
+function updateRelays(data) {
+    var size = data.size;
+    for (var i=0; i<size; ++i) {
+        var elem = $("input[name='relay'][data='" + i + "']");
+        elem.prop("checked", data.status[i]);
+        elem.prop("disabled", data.lock[i] < 2); // RELAY_LOCK_DISABLED=2
+    }
+}
+
 function createCheckboxes() {
 
     $("input[type='checkbox']").each(function() {
@@ -1063,9 +1087,16 @@ function initMagnitudes(data) {
     var template = $("#magnitudeTemplate").children();
 
     for (var i=0; i<size; ++i) {
+        var magnitude = {
+            "name": magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10),
+            "units": data.units[i],
+            "description": data.description[i]
+        };
+        magnitudes.push(magnitude);
+
         var line = $(template).clone();
-        $("label", line).html(magnitudeType(data.type[i]) + " #" + parseInt(data.index[i], 10));
-        $("div.hint", line).html(data.description[i]);
+        $("label", line).html(magnitude.name);
+        $("div.hint", line).html(magnitude.description);
         $("input", line).attr("data", i);
         line.appendTo("#magnitudes");
     }
@@ -1471,12 +1502,15 @@ function processData(data) {
 
         <!-- removeIf(!sensor)-->
 
-        if ("magnitudes" === key) {
+        if ("magnitudesConfig" === key) {
             initMagnitudes(value);
+        }
+
+        if ("magnitudes" === key) {
             for (var i=0; i<value.size; ++i) {
                 var error = value.error[i] || 0;
                 var text = (0 === error) ?
-                    value.value[i] + value.units[i] :
+                    value.value[i] + magnitudes[i].units :
                     magnitudeError(error);
                 var element = $("input[name='magnitude'][data='" + i + "']");
                 element.val(text);
@@ -1551,11 +1585,9 @@ function processData(data) {
         // Relays
         // ---------------------------------------------------------------------
 
-        if ("relayStatus" === key) {
-            initRelays(value);
-            for (i in value) {
-                $("input[name='relay'][data='" + i + "']").prop("checked", value[i]);
-            }
+        if ("relayState" === key) {
+            initRelays(value.status);
+            updateRelays(value);
             return;
         }
 
@@ -1620,6 +1652,9 @@ function processData(data) {
 
         // Messages
         if ("message" === key) {
+            if (value == 8 && (numReboot > 0 || numReload > 0 || numReconnect > 0)){
+                conf_saved = true;
+            }
             window.alert(messages[value]);
             return;
         }
@@ -1628,10 +1663,15 @@ function processData(data) {
         if ("weblog" === key) {
             websock.send("{}");
 
-            if (value.prefix) {
-                $("#weblog").append(new Text(value.prefix));
+            msg = value["msg"];
+            pre = value["pre"];
+
+            for (var i=0; i < msg.length; ++i) {
+                if (pre[i]) {
+                    $("#weblog").append(new Text(pre[i]));
+                }
+                $("#weblog").append(new Text(msg[i]));
             }
-            $("#weblog").append(new Text(value.message));
 
             $("#weblog").scrollTop($("#weblog")[0].scrollHeight - $("#weblog").height());
             return;

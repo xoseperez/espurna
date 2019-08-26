@@ -900,6 +900,25 @@
     #define CSE7766_SUPPORT         1
     #define CSE7766_PIN             1
 
+#elif defined(ITEAD_SONOFF_S31_LITE)
+
+    // Info
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_S31_LITE"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_MODE            BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
+
 #elif defined(ITEAD_SONOFF_IFAN02)
 
     // Info
@@ -1802,6 +1821,31 @@
     #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
+// ISELECTOR SM-PW702
+// -----------------------------------------------------------------------------
+
+#elif defined(ISELECTOR_SM_PW702)
+
+    // Info
+    #define MANUFACTURER        "ISELECTOR"
+    #define DEVICE              "SM_PW702"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            4 //BLUE
+    #define LED1_PIN_INVERSE    0
+    #define LED2_PIN		5 //RED
+    #define LED2_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
 // AUTHOMETION LYT8266
 // https://authometion.com/shop/en/home/13-lyt8266.html
 // -----------------------------------------------------------------------------
@@ -2477,8 +2521,9 @@
     #ifndef DIGITAL_SUPPORT
     #define DIGITAL_SUPPORT      1
     #endif
-    #define DIGITAL_PIN          16
-    #define DIGITAL_PIN_MODE     INPUT
+    #define DIGITAL1_PIN          16
+    #define DIGITAL1_PIN_MODE     INPUT
+    #define DIGITAL1_DEFAULT_STATE 0
 
 // -----------------------------------------------------------------------------
 // Heltec Touch Relay
@@ -3102,8 +3147,8 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
-
-#elif defined(ALLTERCO_SHELLY1PM)
+    
+ #elif defined(ALLTERCO_SHELLY1PM)
     // Info
     #define MANUFACTURER        "ALLTERCO"
     #define DEVICE              "SHELLY1PM"
@@ -3127,9 +3172,7 @@
     #define LED1_PIN_INVERSE    1
 
     // HJL01 / BL0937
-    #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT             1
-    #endif    
     #define HLW8012_SEL_PIN             12
     #define HLW8012_CF1_PIN             13
     #define HLW8012_CF_PIN              5
@@ -3146,7 +3189,50 @@
      #define NTC_BETA           3350    
      #define NTC_R_UP           10000   
      #define NTC_R_DOWN         0       
-     #define NTC_R0             10000 
+     #define NTC_R0             8000
+
+ #elif defined(ALLTERCO_SHELLY25)
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY25"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+
+    #define BUTTON2_PIN         5
+    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON2_RELAY       2
+
+    #define BUTTON3_PIN         2
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_LNGCLICK    BUTTON_MODE_RESET
+    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_FACTORY
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          15
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // Light
+    #define LED1_PIN            0
+    #define LED1_PIN_INVERSE    1
+
+    //Temperature
+     #define NTC_SUPPORT        1
+     #define SENSOR_SUPPORT     1
+     #define NTC_BETA           3350    
+     #define NTC_R_UP           10000   
+     #define NTC_R_DOWN         0       
+     #define NTC_R0             8000 
+
+    //Current
+    #define ADE7953_SUPPORT     1
+    #define I2C_SDA_PIN         12
+    #define I2C_SCL_PIN         14
  
 // -----------------------------------------------------------------------------
 
@@ -3723,6 +3809,51 @@
     #define LED2_MODE           LED_MODE_FINDME_WIFI
 
 // -----------------------------------------------------------------------------
+// Etekcity ESW01-USA 
+// https://www.amazon.com/Etekcity-Voltson-Outlet-Monitoring-Required/dp/B01M3MYIFS
+// -----------------------------------------------------------------------------
+
+#elif defined(ETEKCITY_ESW01_USA)
+
+    // Info
+    #define MANUFACTURER                "ETEKCITY"
+    #define DEVICE                      "ESW01-USA"
+
+    // Buttons
+    #define BUTTON1_PIN                 14
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY               1
+
+    // Relays
+    #define RELAY1_PIN                  4
+    #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
+
+    // LEDs
+    // Blue
+    #define LED1_PIN                    5
+    #define LED1_PIN_INVERSE            0    
+    #define LED1_MODE                   LED_MODE_WIFI
+    // Yellow
+    #define LED2_PIN                    16
+    #define LED2_PIN_INVERSE            0
+    #define LED2_MODE                   LED_MODE_FOLLOW
+    #define LED2_RELAY                  1
+
+    // HLW8012
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT             1
+    #endif
+    #define HLW8012_SEL_PIN             15
+    #define HLW8012_CF1_PIN             12
+    #define HLW8012_CF_PIN              13
+
+    #define HLW8012_SEL_CURRENT         HIGH    // SEL pin to HIGH to measure current
+    #define HLW8012_CURRENT_R           0.001   // Current resistor
+    #define HLW8012_VOLTAGE_R_UP        ( 4 * 470000 )  // Upstream voltage resistor
+    #define HLW8012_VOLTAGE_R_DOWN      ( 1000 )        // Downstream voltage resistor
+    #define HLW8012_INTERRUPT_ON        CHANGE
+
+// -----------------------------------------------------------------------------
 // TEST boards (do not use!!)
 // -----------------------------------------------------------------------------
 
@@ -3853,7 +3984,7 @@
 
     // A bit of EVENTS - pin 10
     #define EVENTS_SUPPORT      1
-    #define EVENTS_PIN          6
+    #define EVENTS1_PIN          6
 
     // Sonar
     #define SONAR_SUPPORT       1
@@ -3885,6 +4016,7 @@
     #define INFLUXDB_SUPPORT    1
     #define IR_SUPPORT          1
     #define RF_SUPPORT          1
+    #define OTA_MQTT_SUPPORT    1
 
     #define RFB_DIRECT          1
     #define RFB_RX_PIN          4

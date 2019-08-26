@@ -9,6 +9,7 @@ cache:
   - "~/.platformio"
 install:
 - pip install -U platformio
+- pio platform update -p
 - npm install -g npm@latest
 - cd code && npm ci && cd ..
 env:
@@ -28,6 +29,7 @@ jobs:
     script: cd code && ./build.sh travis01
   - script: cd code && ./build.sh travis02
   - script: cd code && ./build.sh travis03
+  - script: cd code && ./build.sh travis04
   - stage: Release
     env: BUILDER_THREAD=0
   - env: BUILDER_THREAD=1

@@ -49,7 +49,7 @@ extern "C" {
 #define SAVE_CRASH_STACK_TRACE_MAX  0x80  // limit at 128 bytes (increment/decrement by 16)
 
 uint16_t _save_crash_stack_trace_max = SAVE_CRASH_STACK_TRACE_MAX;
-uint16_t _save_crash_enabled = true;
+bool _save_crash_enabled = true;
 
 /**
  * Save crash information in EEPROM

@@ -98,7 +98,7 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
 
 #endif
 
-void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) {
+void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
 
     if (!_dcz_enabled) return;
 
@@ -120,8 +120,8 @@ void _domoticzMqtt(unsigned int type, const char * topic, const char * payload) 
         if (dczTopicOut.equals(topic)) {
 
             // Parse response
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& root = jsonBuffer.parseObject((char *) payload);
+            DynamicJsonBuffer jsonBuffer(1024);
+            JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;
@@ -168,13 +168,16 @@ void _domoticzBrokerCallback(const unsigned char type, const char * topic, unsig
 
 #if WEB_SUPPORT
 
-bool _domoticzWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "dcz", 3) == 0);
 }
 
-void _domoticzWebSocketOnSend(JsonObject& root) {
+void _domoticzWebSocketOnVisible(JsonObject& root) {
+    root["dczVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
+}
 
-    unsigned char visible = 0;
+void _domoticzWebSocketOnConnected(JsonObject& root) {
+
     root["dczEnabled"] = getSetting("dczEnabled", DOMOTICZ_ENABLED).toInt() == 1;
     root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
     root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
@@ -183,14 +186,10 @@ void _domoticzWebSocketOnSend(JsonObject& root) {
     for (unsigned char i=0; i<relayCount(); i++) {
         relays.add(domoticzIdx(i));
     }
-    visible = (relayCount() > 0);
 
     #if SENSOR_SUPPORT
         _sensorWebSocketMagnitudes(root, "dcz");
-        visible = visible || (magnitudeCount() > 0);
     #endif
-
-    root["dczVisible"] = visible;
 
 }
 
@@ -250,8 +249,10 @@ void domoticzSetup() {
     _domoticzConfigure();
 
     #if WEB_SUPPORT
-        wsOnSendRegister(_domoticzWebSocketOnSend);
-        wsOnReceiveRegister(_domoticzWebSocketOnReceive);
+        wsRegister()
+            .onVisible(_domoticzWebSocketOnVisible)
+            .onConnected(_domoticzWebSocketOnConnected)
+            .onKeyCheck(_domoticzWebSocketOnKeyCheck);
     #endif
 
     #if BROKER_SUPPORT
