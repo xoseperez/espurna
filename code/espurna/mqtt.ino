@@ -221,7 +221,9 @@ void _mqttConnect() {
     _mqtt_connecting = true;
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-        bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+        const bool secure = getSetting("mqttUseSSL", MQTT_SSL_ENABLED).toInt() == 1;
+    #else
+        const bool secure = false;
     #endif
 
     #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
@@ -848,7 +850,7 @@ void mqttSetup() {
     _mqttBackwards();
     _mqttInfo();
 
-    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
+    #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
         // XXX: should not place this in config, addServerFingerprint does not check for duplicates
         #if SECURE_CLIENT != SECURE_CLIENT_NONE
