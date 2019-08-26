@@ -117,7 +117,7 @@ SecureClientConfig _mqtt_sc_config {
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
-void _mqttSetupAsyncMqttClient(bool secure = false) {
+void _mqttSetupAsyncClient(bool secure = false) {
 
     _mqtt.setServer(_mqtt_server.c_str(), _mqtt_port);
     _mqtt.setClientId(_mqtt_clientid.c_str());
@@ -131,18 +131,10 @@ void _mqttSetupAsyncMqttClient(bool secure = false) {
     }
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
-
         if (secure) {
             DEBUG_MSG_P(PSTR("[MQTT] Using SSL\n"));
-            SecureClientChecks checks("MQTT", _mqtt_sc_config);
-            if (checks.beforeConnected(_mqtt)) {
-                _mqtt_last_connection = millis();
-                return;
-            }
+            _mqtt.setSecure(secure);
         }
-
-        _mqtt.setSecure(secure);
-
     #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
     _mqtt.connect();
@@ -152,15 +144,20 @@ void _mqttSetupAsyncMqttClient(bool secure = false) {
 #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 #if (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
-void _mqttSetupSyncMqttClient(bool secure = false) {
+bool _mqttSetupSyncClient(bool secure = false) {
 
-    if (secure) {
-        if (!_mqtt_client_secure) _mqtt_client_secure = new SecureClient("MQTT", _mqtt_sc_config);
-    }
+    #if SECURE_CLIENT != SECURE_CLIENT_NONE
+        if (secure) {
+            if (!_mqtt_client_secure) _mqtt_client_secure = new SecureClient("MQTT", _mqtt_sc_config);
+            return _mqtt_client_secure->beforeConnected();
+        }
+    #endif
+
+    return true;
 
 }
 
-bool _mqttConnectSyncMqttClient(bool secure = false) {
+bool _mqttConnectSyncClient(bool secure = false) {
     bool result = false;
 
     #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
@@ -179,12 +176,9 @@ bool _mqttConnectSyncMqttClient(bool secure = false) {
         }
     #endif
 
-    // Special condition for legacy client!
-    // Otherwise, we are required to connect twice. And it is deemed broken & deprecated anyways...
-    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-        if (result) {
-            SecureClientChecks checks("MQTT", _mqtt_sc_config);
-            result = checks.afterConnected(_mqtt_client_secure->get());
+    #if SECURE_CLIENT != SECURE_CLIENT_NONE
+        if (result && secure) {
+            result = _mqtt_client_secure->afterConnected();
         }
     #endif
 
@@ -230,21 +224,17 @@ void _mqttConnect() {
     #endif
 
     #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-        _mqttSetupAsyncMqttClient(secure);
+        _mqttSetupAsyncClient(secure);
     #elif (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
-        _mqttSetupSyncMqttClient(secure);
-    #else
-        #error "please check that MQTT_LIBRARY is valid"
-    #endif
-
-    #if (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
-        if (_mqttConnectSyncMqttClient(secure)) {
+        if (_mqttSetupSyncClient(secure) && _mqttConnectSyncClient(secure)) {
             _mqttOnConnect();
         } else {
             DEBUG_MSG_P(PSTR("[MQTT] Connection failed\n"));
             _mqttOnDisconnect();
         }
-    #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    #else
+        #error "please check that MQTT_LIBRARY is valid"
+    #endif
 
 }
 
@@ -489,6 +479,7 @@ void _mqttOnConnect() {
 
     _mqtt_last_connection = millis();
     _mqtt_connecting = false;
+    _mqtt_connected = true;
 
     // Clean subscriptions
     mqttUnsubscribeRaw("#");
@@ -505,6 +496,7 @@ void _mqttOnDisconnect() {
     // Reset reconnection delay
     _mqtt_last_connection = millis();
     _mqtt_connecting = false;
+    _mqtt_connected = false;
 
     DEBUG_MSG_P(PSTR("[MQTT] Disconnected!\n"));
 
@@ -857,6 +849,19 @@ void mqttSetup() {
 
     #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
 
+        // XXX: should not place this in config, addServerFingerprint does not check for duplicates
+        #if SECURE_CLIENT != SECURE_CLIENT_NONE
+        {
+            if (_mqtt_sc_config.on_fingerprint) {
+                const String fingerprint = _mqtt_sc_config.on_fingerprint()
+                uint8_t buffer[20] = {0};
+                if (sslFingerPrintArray(fingerprint.c_str(), buffer)) {
+                    _mqtt.addServerFingerprint(buffer);
+                }
+            }
+        }
+        #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
+
         _mqtt.onConnect([](bool sessionPresent) {
             _mqttOnConnect();
         });
@@ -950,7 +955,6 @@ void mqttLoop() {
 
             if (_mqtt_connected) {
                 _mqttOnDisconnect();
-                _mqtt_connected = false;
             }
 
             _mqttConnect();

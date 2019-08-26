@@ -41,40 +41,11 @@ struct SecureClientChecks {
     {}
 
     int getCheck() {
-        int check = (on_check) ? on_check() : (SECURE_CLIENT_CHECK);
+        return (config.on_check) ? config.on_check() : (SECURE_CLIENT_CHECK);
     }
 
-    void getFingerprint(uint8_t[20] fingerprint) {
-        char _buffer[60] = {0};
-        if (sslFingerPrintChar(on_fingerprint().c_str(), _buffer)) {
-            result = host_cb && client.verify(_buffer, host_cb());
-        }
-    }
-
-    template <typename T>
-    bool beforeConnected(T& client) {
-        bool result = false;
-
-        int check = getCheck();
-
-        if (check == SECURE_CLIENT_CHECK_NONE) {
-            if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!\n"), config.tag.c_str());
-            result = true;
-        } else if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-            unsigned char fp[20] = {0};
-            if (config.on_fingerprint && sslFingerPrintArray(on_fingerprint().c_str(), fp)) {
-                result = true;
-                client.addServerFingerprint(fp);
-            } else {
-                DEBUG_MSG_P(PSTR("[%s] Wrong fingerprint, cannot connect\n"), config.tag.c_str());
-            }
-        } else if (check == SECURE_CLIENT_CHECK_CA) {
-            if (config.debug) DEBUG_MSG_P(PSTR("[%s] CA verification is not supported with AxTLS client\n"), config.tag.c_str());
-        }
-
-        return result;
-    }
-
+    // Special condition for legacy client!
+    // Otherwise, we are required to connect twice. And it is deemed broken & deprecated anyways...
     bool afterConnected(SecureClientClass& client) {
         bool result = false;
 
@@ -84,13 +55,12 @@ struct SecureClientChecks {
             if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!\n"), config.tag.c_str());
             result = true;
         } else if (check == SECURE_CLIENT_CHECK_FINGERPRINT) {
-            if (on_fingerprint) {
+            if (config.on_fingerprint) {
                 char _buffer[60] = {0};
-                if (sslFingerPrintChar(on_fingerprint().c_str(), _buffer)) {
-                    result = host_cb && client.verify(_buffer, host_cb());
+                if (config.on_fingerprint && config.on_host && sslFingerPrintChar(config.on_fingerprint().c_str(), _buffer)) {
+                    result = client.verify(_buffer, config.on_host.c_str());
                 }
-
-                if (!result && config.debug) DEBUG_MSG_P(PSTR("[%s] Fingerprint did not match\n"), config.tag.c_str());
+                if (!result) DEBUG_MSG_P(PSTR("[%s] Wrong fingerprint, cannot connect\n"), config.tag.c_str());
             }
         } else if (check == SECURE_CLIENT_CHECK_CA) {
            if (config.debug) DEBUG_MSG_P(PSTR("[%s] CA verification is not supported with AxTLS client\n"), config.tag.c_str());
@@ -99,8 +69,8 @@ struct SecureClientChecks {
         return result;
     }
 
-    bool beforeConnected() {
-        retrun false;
+    bool beforeConnected(SecureClientClass& client) {
+        return true;
     }
 
     SecureClientConfig& config;
@@ -137,6 +107,10 @@ struct SecureClientChecks {
         config(config)
     {}
 
+    int getCheck() {
+        return (config.on_check) ? config.on_check() : (SECURE_CLIENT_CHECK);
+    }
+
     bool prepareMFLN(SecureClientClass& client) {
         const uint16_t requested_mfln = (config.on_mfln) ? config.on_mfln() : (SECURE_CLIENT_MFLN);
         bool result = false;
@@ -153,6 +127,9 @@ struct SecureClientChecks {
             {
                 client.setBufferSizes(requested_mfln, requested_mfln);
                 result = true;
+                if (config.debug) {
+                    DEBUG_MSG_P(PSTR("[%s] MFLN buffer size set to %u\n"), config.tag.c_str(), requested_mfln);
+                }
                 break;
             }
             default:
@@ -166,13 +143,13 @@ struct SecureClientChecks {
         return result;
     }
 
-    void beforeConnected(SecureClientClass& client) {
-        int check = (config.on_check) ? config.on_check() : (SECURE_CLIENT_CHECK);
+    bool beforeConnected(SecureClientClass& client) {
+        int check = getCheck();
         bool settime = (check == SECURE_CLIENT_CHECK_CA);
 
         if (!ntpSynced() && settime) {
             if (config.debug) DEBUG_MSG_P(PSTR("[%s] Time not synced! Cannot use CA validation\n"), config.tag.c_str());
-            return;
+            return false;
         }
 
         prepareMFLN(client);
@@ -192,6 +169,12 @@ struct SecureClientChecks {
             }
             client.setTrustAnchors(&certs);
         }
+
+        return true;
+    }
+
+    bool afterConnected(SecureClientClass&) {
+        return true;
     }
 
     bool debug;
@@ -214,6 +197,14 @@ class SecureClient {
         _checks(_config),
         _client(std::make_unique<SecureClientClass>())
     {}
+
+    bool afterConnected() {
+        return _checks.afterConnected(get());
+    }
+
+    bool beforeConnected() {
+        return _checks.beforeConnected(get());
+    }
 
     SecureClientClass& get() {
         return *_client.get();
