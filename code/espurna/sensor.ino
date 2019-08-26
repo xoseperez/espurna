@@ -1338,7 +1338,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1353,7 +1353,7 @@ void _sensorConfigure() {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
             }
@@ -1364,7 +1364,7 @@ void _sensorConfigure() {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
             }
@@ -1395,7 +1395,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1434,7 +1434,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1496,17 +1496,19 @@ void _sensorConfigure() {
 
     }
 
-    // Update filter sizes
-    for (unsigned char i=0; i<_magnitudes.size(); i++) {
-        _magnitudes[i].filter->resize(_sensor_report_every);
+    // Update filter sizes and reset energy if needed
+    {
+        const bool reset_saved_energy = 0 == _sensor_save_every;
+        for (unsigned char i=0; i<_magnitudes.size(); i++) {
+            _magnitudes[i].filter->resize(_sensor_report_every);
+            if ((_magnitudes[i].type == MAGNITUDE_ENERGY) && reset_saved_energy) {
+                delSetting("eneTotal", _magnitudes[i].global);
+            }
+        }
     }
 
-    // General processing
-    if (0 == _sensor_save_every) {
-        delSetting("eneTotal", _magnitudes[i].global);
-    }
-
-    // Save settings
+    // Remove calibration values
+    // TODO: do not use settings for one-shot calibration
     delSetting("snsResetCalibration");
     delSetting("pwrExpectedP");
     delSetting("pwrExpectedC");
