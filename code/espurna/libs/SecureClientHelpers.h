@@ -21,7 +21,7 @@ using cert_callback_f = std::function<const char*()>;
 using mfln_callback_f = std::function<uint16_t()>;
 
 #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
-using SecureClientClass = AxTLS::WiFiClientSecure;
+using SecureClientClass = axTLS::WiFiClientSecure;
 
 struct SecureClientConfig {
     SecureClientConfig(const char* tag, host_callback_f host_cb, check_callback_f check_cb, fp_callback_f fp_cb, bool debug = false) :
