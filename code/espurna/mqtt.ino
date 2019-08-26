@@ -91,7 +91,7 @@ SecureClientConfig _mqtt_sc_config {
         return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK).toInt();
     },
     []() -> String {
-        return getSetting("mqttfp", MQTT_SSL_FINGERPRINT).toInt();
+        return getSetting("mqttfp", MQTT_SSL_FINGERPRINT);
     },
     true
 };
