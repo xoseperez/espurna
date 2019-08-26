@@ -766,7 +766,7 @@ int8_t mqttEnqueue(const char * topic, const char * message) {
 
 void mqttSubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
+        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
             unsigned int packetId = _mqtt.subscribe(topic, _mqtt_qos);
             DEBUG_MSG_P(PSTR("[MQTT] Subscribing to %s (PID %d)\n"), topic, packetId);
         #else // Arduino-MQTT or PubSubClient
@@ -782,7 +782,7 @@ void mqttSubscribe(const char * topic) {
 
 void mqttUnsubscribeRaw(const char * topic) {
     if (_mqtt.connected() && (strlen(topic) > 0)) {
-        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT // AsyncMqttClient
+        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
             unsigned int packetId = _mqtt.unsubscribe(topic);
             DEBUG_MSG_P(PSTR("[MQTT] Unsubscribing to %s (PID %d)\n"), topic, packetId);
         #else // Arduino-MQTT or PubSubClient
