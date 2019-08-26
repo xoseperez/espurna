@@ -29,10 +29,11 @@ struct SecureClientConfig {
         on_host(host_cb),
         on_check(check_cb),
         on_fingerprint(fp_cb),
-        debug(debug);
+        debug(debug)
     {}
 
     String tag;
+    host_callback_f on_host;
     check_callback_f on_check;
     fp_callback_f on_fingerprint;
     bool debug;
@@ -40,12 +41,16 @@ struct SecureClientConfig {
 
 struct SecureClientChecks {
 
-    SecureClientChecks(SecureClientConfig& config) {
+    SecureClientChecks(SecureClientConfig& config) :
         config(config)
     {}
 
     int getCheck() {
         return (config.on_check) ? config.on_check() : (SECURE_CLIENT_CHECK);
+    }
+
+    bool beforeConnected(SecureClientClass& client) {
+        return true;
     }
 
     // Special condition for legacy client!
@@ -62,26 +67,22 @@ struct SecureClientChecks {
             if (config.on_fingerprint) {
                 char _buffer[60] = {0};
                 if (config.on_fingerprint && config.on_host && sslFingerPrintChar(config.on_fingerprint().c_str(), _buffer)) {
-                    result = client.verify(_buffer, config.on_host.c_str());
+                    result = client.verify(_buffer, config.on_host().c_str());
                 }
                 if (!result) DEBUG_MSG_P(PSTR("[%s] Wrong fingerprint, cannot connect\n"), config.tag.c_str());
             }
         } else if (check == SECURE_CLIENT_CHECK_CA) {
-           if (config.debug) DEBUG_MSG_P(PSTR("[%s] CA verification is not supported with AxTLS client\n"), config.tag.c_str());
+           if (config.debug) DEBUG_MSG_P(PSTR("[%s] CA verification is not supported with axTLS client\n"), config.tag.c_str());
         }
 
         return result;
-    }
-
-    bool beforeConnected(SecureClientClass& client) {
-        return true;
     }
 
     SecureClientConfig& config;
     bool debug;
 
 };
-#endif
+#endif // SECURE_CLIENT_AXTLS
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
 
@@ -188,8 +189,7 @@ struct SecureClientChecks {
     BearSSL::X509List certs;
 
 };
-
-#endif
+#endif // SECURE_CLIENT_BEARSSL
 
 class SecureClient {
 
