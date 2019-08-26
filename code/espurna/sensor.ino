@@ -462,18 +462,37 @@ void _sensorResetTS() {
     #endif
 }
 
-double _sensorEnergyTotal() {
+double _sensorEnergyTotal(unsigned int index = -1) {
     double value = 0;
 
     if (rtcmemStatus()) {
         value = Rtcmem->energy;
-    } else {
-        value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+    } else {    
+        if(index != -1) {
+            value = (_sensor_save_every > 0) ? getSetting("eneTotal", index, 0).toInt() : 0;            
+        } else {
+            value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+        }
     }
 
     return value;
 }
 
+void _sensorEnergyTotal(unsigned int index, double value) {    
+    static unsigned long save_count = 0;
+
+    // Save to EEPROM every '_sensor_save_every' readings
+    if (_sensor_save_every > 0) {
+        save_count = (save_count + 1) % _sensor_save_every;
+        if (0 == save_count) {
+            setSetting("eneTotal", index, value);
+            saveSettings();
+        }
+    }
+
+    // Always save to RTCMEM
+    Rtcmem->energy = value;     
+}
 
 void _sensorEnergyTotal(double value) {
     static unsigned long save_count = 0;
@@ -1077,6 +1096,14 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+
+     #if ADE7953_SUPPORT
+    {
+        ADE7953Sensor * sensor = new ADE7953Sensor();
+        sensor->setAddress(ADE7953_ADDRESS);        
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 void _sensorCallback(unsigned char i, unsigned char type, double value) {
@@ -1215,6 +1242,19 @@ void _sensorInit() {
             }
 
         #endif // HLW8012_SUPPORT
+
+        #if ADE7953_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {            
+                ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
+                unsigned int dev_count = sensor->getTotalDevices();
+                for(unsigned int dev = 0; dev < dev_count; dev++) {
+                    double value = _sensorEnergyTotal(dev);
+                    if (value > 0) sensor->resetEnergy(dev, value);                   
+                }
+            }
+
+        #endif // ADE7953_SUPPORT
 
         #if CSE7766_SUPPORT
 
@@ -1451,6 +1491,22 @@ void _sensorConfigure() {
             }
 
         #endif // PZEM004T_SUPPORT
+
+        #if ADE7953_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {            
+                ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    unsigned char dev_count = sensor->getTotalDevices();
+                    for(unsigned char dev = 0; dev < dev_count; dev++) {
+                        sensor->resetEnergy(dev);
+                        delSetting("eneTotal", dev);
+                    }
+                    _sensorResetTS();
+                }
+            }
+
+        #endif // ADE7953_SUPPORT
 
     }
 
@@ -1786,8 +1842,17 @@ void sensorLoop() {
 
 
                     // Persist total energy value
-                    if (MAGNITUDE_ENERGY == magnitude.type) {
-                        _sensorEnergyTotal(value_raw);
+                    if (MAGNITUDE_ENERGY == magnitude.type) {                                                
+                        if (magnitude.sensor->getID() != SENSOR_ADE7953_ID) { 
+                            _sensorEnergyTotal(value_raw);
+                        } else {
+                            #if ADE7953_SUPPORT
+                                ADE7953Sensor * sensor = (ADE7953Sensor *) magnitude.sensor;
+                                unsigned int dev_count = sensor->getTotalDevices();
+                                unsigned int dev = (magnitude.local / dev_count) - 1;                                
+                                _sensorEnergyTotal(dev, value_raw);                                   
+                            #endif // ADE7953_SUPPORT                 
+                        }                    
                     }
 
                 } // if (report_count == 0)
