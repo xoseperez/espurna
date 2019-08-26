@@ -3,6 +3,7 @@
 MQTT MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Updated secure client support by Niek van der Maas < mail at niekvandermaas dot nl>
 
 */
 
