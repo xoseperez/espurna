@@ -37,10 +37,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #endif // WEB_EMBEDDED
 
-#if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 #include "static/server.cer.h"
 #include "static/server.key.h"
-#endif // ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#endif // SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 
 // -----------------------------------------------------------------------------
 
@@ -192,7 +192,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
     } else {
 
-        #if ASYNC_TCP_SSL_ENABLED
+        #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
 
             // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
             // This is necessary when a TLS connection is open since it sucks too much memory
@@ -233,7 +233,7 @@ void _onHome(AsyncWebServerRequest *request) {
 }
 #endif
 
-#if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 
 int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
@@ -444,7 +444,7 @@ void webRequestRegister(web_request_callback_f callback) {
 }
 
 unsigned int webPort() {
-    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
         return 443;
     #else
         return getSetting("webPort", WEB_PORT).toInt();
@@ -495,7 +495,7 @@ void webSetup() {
     _server->onNotFound(_onRequest);
 
     // Run server
-    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
         _server->onSslFileRequest(_onCertificate, NULL);
         _server->beginSecure("server.cer", "server.key", NULL);
     #else

@@ -172,6 +172,13 @@ using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
     String mqttMagnitude(char * topic);
 #endif
 
+#if MQTT_SECURE_CLIENT_INCLUDE_CA
+#include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
+#else
+#include "static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
+#define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
+#endif // MQTT_SECURE_CLIENT_INCLUDE_CA
+
 // -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
