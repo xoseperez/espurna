@@ -33,7 +33,7 @@ struct RtcmemData {
     uint32_t relay;
     uint32_t mqtt;
     uint64_t light;
-    double energy;
+    double[4] energy;
 };
 
 static_assert(sizeof(RtcmemData) <= (RTCMEM_BLOCKS * 4u), "RTCMEM struct is too big");
