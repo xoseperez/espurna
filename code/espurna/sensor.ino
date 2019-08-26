@@ -465,10 +465,8 @@ void _sensorResetTS() {
 double _sensorEnergyTotal(unsigned int index) {
     double value = 0;
 
-    if (rtcmemStatus()) {
-        if (index < sizeof(Rtcmem->energy)) {
-            value = Rtcmem->energy[index];
-        }
+    if (rtcmemStatus() && (index < sizeof(Rtcmem->energy))) {
+        value = Rtcmem->energy[index];
     } else {
         value = (_sensor_save_every > 0) ? getSetting("eneTotal", index, 0).toInt() : 0;
     }
