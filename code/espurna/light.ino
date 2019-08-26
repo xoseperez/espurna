@@ -384,11 +384,10 @@ void _toRGB(char * rgb, size_t len) {
 
 void _toHSV(char * hsv, size_t len, bool target) {
     double h, s, v;
-    double brightness = static_cast<double>(_light_brightness) / static_cast<double>(Light::BRIGHTNESS_MAX);
 
-    double r = (double) ((target ? _light_channel[0].target : _light_channel[0].inputValue) * brightness) / 255.0;
-    double g = (double) ((target ? _light_channel[1].target : _light_channel[1].inputValue) * brightness) / 255.0;
-    double b = (double) ((target ? _light_channel[2].target : _light_channel[2].inputValue) * brightness) / 255.0;
+    double r = static_cast<double>(target ? _light_channel[0].target : _light_channel[0].value);
+    double g = static_cast<double>(target ? _light_channel[1].target : _light_channel[1].value);
+    double b = static_cast<double>(target ? _light_channel[2].target : _light_channel[2].value);
 
     double min = std::min(r, std::min(g, b));
     double max = std::max(r, std::max(g, b));
