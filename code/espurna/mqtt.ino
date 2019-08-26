@@ -18,6 +18,8 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include <Ticker.h>
 #include <TimeLib.h>
 
+#include "libs/SecureClientHelpers.h"
+
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
     AsyncMqttClient _mqtt;
@@ -27,7 +29,6 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
     WiFiClient _mqtt_client;
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
-    #include "libs/SecureClientHelpers.h"
     SecureClient* _mqtt_client_secure = nullptr;
 #endif
 
@@ -856,7 +857,7 @@ void mqttSetup() {
         #if SECURE_CLIENT != SECURE_CLIENT_NONE
         {
             if (_mqtt_sc_config.on_fingerprint) {
-                const String fingerprint = _mqtt_sc_config.on_fingerprint()
+                const String fingerprint = _mqtt_sc_config.on_fingerprint();
                 uint8_t buffer[20] = {0};
                 if (sslFingerPrintArray(fingerprint.c_str(), buffer)) {
                     _mqtt.addServerFingerprint(buffer);
