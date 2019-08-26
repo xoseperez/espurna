@@ -1671,7 +1671,7 @@ void sensorSetup() {
     moveSetting("energyUnits", "eneUnits");
 
 	// Update PZEM004T energy total across multiple devices
-    moveSettings("pzemEneTotal", "eneTotal");
+    moveSettings("pzEneTotal", "eneTotal");
 
     // Load sensors
     _sensorLoad();
