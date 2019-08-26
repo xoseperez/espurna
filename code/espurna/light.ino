@@ -416,7 +416,11 @@ void _toHSV(char * hsv, size_t len, bool target) {
     }
 
     // String
-    snprintf(hsv, len, "%ld,%ld,%ld", lround(h), lround(s), lround(v));
+    snprintf(hsv, len, "%d,%d,%d",
+        static_cast<int>(lround(h)),
+        static_cast<int>(lround(s)),
+        static_cast<int>(lround(v))
+    );
 }
 
 void _toHSV(char * hsv, size_t len) {
