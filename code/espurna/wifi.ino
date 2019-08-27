@@ -9,6 +9,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "JustWifi.h"
 #include <Ticker.h>
 
+#include <lwip/etharp.h>
+
 uint32_t _wifi_scan_client_id = 0;
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
@@ -684,5 +686,32 @@ void wifiLoop() {
         last = millis();
         _wifiCheckAP();
     }
+
+    if (!wifiConnected()) {
+        return;
+    }
+
+    // Gratuitous arp
+    static unsigned long last_arp = 0;
+    if (millis() - last_arp < 5000) {
+        return;
+    }
+
+    unsigned long start = millis();
+    netif *n = netif_list;
+    bool res = false;
+    while (n) {
+        if ((n->flags & NETIF_FLAG_LINK_UP) || (n->flags & NETIF_FLAG_UP)) {
+            DEBUG_MSG_P(PSTR("sending arp...\n"));
+            etharp_gratuitous(n);
+            res = true;
+        } else {
+            DEBUG_MSG_P(PSTR("netif not yet up...\n"));
+        }
+        n = n->next;
+    }
+
+    if (res) DEBUG_MSG_P(PSTR("Sent Gratuitous ARP : Time Took - %d\n"), millis() - start);
+    last_arp = millis();
 
 }
