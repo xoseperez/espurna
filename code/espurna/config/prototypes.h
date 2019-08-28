@@ -173,9 +173,9 @@ using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 #endif
 
 #if MQTT_SECURE_CLIENT_INCLUDE_CA
-#include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
+#include "../static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
 #else
-#include "static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
+#include "../static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
 #define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
 #endif // MQTT_SECURE_CLIENT_INCLUDE_CA
 
@@ -199,9 +199,9 @@ using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
     #include <WiFiClientSecure.h>
 
     #if OTA_SECURE_CLIENT_INCLUDE_CA
-    #include "static/ota_secure_client_ca.h"
+    #include "../static/ota_secure_client_ca.h"
     #else
-    #include "static/digicert_evroot_pem.h"
+    #include "../static/digicert_evroot_pem.h"
     #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
     #endif
 
