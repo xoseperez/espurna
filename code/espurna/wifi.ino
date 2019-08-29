@@ -95,8 +95,6 @@ void _wifiConfigure() {
         _wifi_gratuitous_arp_interval = getSetting("wifiGarpIntvl", secureRandom(
             WIFI_GRATUITOUS_ARP_INTERVAL_MIN, WIFI_GRATUITOUS_ARP_INTERVAL_MAX
         )).toInt();
-
-        DEBUG_MSG_P(PSTR("[WIFI] garp interval=%u\n"), _wifi_gratuitous_arp_interval);
     #endif
 
 }
