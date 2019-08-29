@@ -554,6 +554,26 @@
 #define WIFI_PROPAGATION_CONST      4           // This is typically something between 2.7 to 4.3 (free space is 2)
 #endif
 
+// ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
+// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546 
+//
+// Help solve compatibility issues with some routers.
+// If the ARP table of the AP is old, and the AP doesn't send ARP request to update it's ARP table,
+// this will lead to the STA sending IP packet fail. Thus we send gratuitous ARP periodically to let AP update it's ARP table.
+
+#ifndef WIFI_GRATUITOUS_ARP_SUPPORT
+#define WIFI_GRATUITOUS_ARP_SUPPORT              1
+#endif
+
+// Interval is randomized on each boot in range from ..._MIN to ..._MAX
+#ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MIN
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MIN         15
+#endif
+
+#ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MAX         30
+#endif
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------

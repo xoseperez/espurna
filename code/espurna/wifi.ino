@@ -9,13 +9,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "JustWifi.h"
 #include <Ticker.h>
 
-#include <lwip/etharp.h>
-
 uint32_t _wifi_scan_client_id = 0;
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
 bool _wifi_smartconfig_initial = false;
 uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
+
+#if WIFI_GRATUITOUS_ARP_SUPPORT
+unsigned long _wifi_gratuitous_arp_interval = 0;
+unsigned long _wifi_gratuitous_arp_last = 0;
+#endif
 
 // -----------------------------------------------------------------------------
 // PRIVATE
@@ -86,6 +89,11 @@ void _wifiConfigure() {
     sleep_mode = constrain(sleep_mode, 0, 2);
 
     WiFi.setSleepMode(static_cast<WiFiSleepType_t>(sleep_mode));
+
+    #if WIFI_GRATUITOUS_ARP_SUPPORT
+        _wifi_gratuitous_arp_last = millis();
+    #endif
+
 }
 
 void _wifiScan(uint32_t client_id = 0) {
@@ -494,6 +502,47 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 #endif
 
 // -----------------------------------------------------------------------------
+// SUPPORT
+// -----------------------------------------------------------------------------
+
+#if WIFI_GRATUITOUS_ARP_SUPPORT
+
+// ref: lwip src/core/netif.c netif_issue_reports(...)
+// ref: esp-lwip/core/ipv4/etharp.c garp_tmr()
+// TODO: only for ipv4, need (?) a different method with ipv6
+bool _wifiSendGratuitousArp() {
+
+    bool result = false;
+    for (netif* interface = netif_list; interface != nullptr; interface = interface->next) {
+        if (
+            (interface->flags & NETIF_FLAG_ETHARP)
+            && (interface->hwaddr_len == ETHARP_HWADDR_LEN)
+        #if LWIP_VERSION_MAJOR != 1
+            && (interface->flags & NETIF_FLAG_LINK_UP)
+            && (!ip4_addr_isany_val(*netif_ip4_addr(interface)))
+        #else
+            && (!ip_addr_isany(&interface->ip_addr))
+        #endif
+            && (interface->flags & NETIF_FLAG_UP)
+        ) {
+            etharp_gratuitous(interface);
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+void _wifiSendGratuitousArp(unsigned long interval) {
+    if (millis() - _wifi_gratuitous_arp_last > interval) {
+        _wifi_gratuitous_arp_last = millis();
+        _wifiSendGratuitousArp();
+    }
+}
+
+#endif // WIFI_GRATUITOUS_ARP_SUPPORT
+
+// -----------------------------------------------------------------------------
 // INFO
 // -----------------------------------------------------------------------------
 
@@ -660,6 +709,19 @@ void wifiSetup() {
     espurnaRegisterLoop(wifiLoop);
     espurnaRegisterReload(_wifiConfigure);
 
+    // Periodic gratuitous arp to keep the ip alive
+    #if WIFI_GRATUITOUS_ARP_SUPPORT
+
+        #if WIFI_GRATUITOUS_ARP_INTERVAL_MIN == WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+            _wifi_gratuitous_arp_interval = getSetting("wifiGarpMax", WIFI_GRATUITOUS_ARP_INTERVAL_MAX).toInt();
+        #else
+            _wifi_gratuitous_arp_interval = secureRandom(
+                getSetting("wifiGarpMin", WIFI_GRATUITOUS_ARP_INTERVAL_MIN).toInt(),
+                getSetting("wifiGarpMax", WIFI_GRATUITOUS_ARP_INTERVAL_MAX).toInt());
+        #endif
+
+    #endif // WIFI_GRATUITOUS_ARP_SUPPORT
+
 }
 
 void wifiLoop() {
@@ -687,31 +749,11 @@ void wifiLoop() {
         _wifiCheckAP();
     }
 
-    if (!wifiConnected()) {
-        return;
-    }
-
-    // Gratuitous arp
-    static unsigned long last_arp = 0;
-    if (millis() - last_arp < 5000) {
-        return;
-    }
-
-    unsigned long start = millis();
-    netif *n = netif_list;
-    bool res = false;
-    while (n) {
-        if ((n->flags & NETIF_FLAG_LINK_UP) || (n->flags & NETIF_FLAG_UP)) {
-            DEBUG_MSG_P(PSTR("sending arp...\n"));
-            etharp_gratuitous(n);
-            res = true;
-        } else {
-            DEBUG_MSG_P(PSTR("netif not yet up...\n"));
+    #if WIFI_GRATUITOUS_ARP_SUPPORT
+        // Only send out gra arp when in STA mode
+        if (_wifi_gratuitous_arp_interval && ((WiFi.getMode() & WIFI_AP) == 0)) {
+            _wifiSendGratuitousArp(_wifi_gratuitous_arp_interval);
         }
-        n = n->next;
-    }
-
-    if (res) DEBUG_MSG_P(PSTR("Sent Gratuitous ARP : Time Took - %d\n"), millis() - start);
-    last_arp = millis();
+    #endif
 
 }
