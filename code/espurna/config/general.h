@@ -565,13 +565,13 @@
 #define WIFI_GRATUITOUS_ARP_SUPPORT              1
 #endif
 
-// Interval is randomized on each boot in range from ..._MIN to ..._MAX
+// Interval is randomized on each boot in range from ..._MIN to ..._MAX (ms)
 #ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MIN
-#define WIFI_GRATUITOUS_ARP_INTERVAL_MIN         15
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MIN         15000
 #endif
 
 #ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MAX
-#define WIFI_GRATUITOUS_ARP_INTERVAL_MAX         30
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MAX         30000
 #endif
 
 // -----------------------------------------------------------------------------
