@@ -520,11 +520,12 @@ bool _wifiSendGratuitousArp() {
         if (
             (interface->flags & NETIF_FLAG_ETHARP)
             && (interface->hwaddr_len == ETHARP_HWADDR_LEN)
-        #if LWIP_VERSION_MAJOR != 1
+            && (interface->num == STATION_IF)
+        #if LWIP_VERSION_MAJOR == 1
+            && (!ip_addr_isany(&interface->ip_addr))
+        #else
             && (interface->flags & NETIF_FLAG_LINK_UP)
             && (!ip4_addr_isany_val(*netif_ip4_addr(interface)))
-        #else
-            && (!ip_addr_isany(&interface->ip_addr))
         #endif
             && (interface->flags & NETIF_FLAG_UP)
         ) {
@@ -741,7 +742,7 @@ void wifiLoop() {
 
     #if WIFI_GRATUITOUS_ARP_SUPPORT
         // Only send out gra arp when in STA mode
-        if (_wifi_gratuitous_arp_interval && ((WiFi.getMode() & WIFI_AP) == 0)) {
+        if (_wifi_gratuitous_arp_interval) {
             _wifiSendGratuitousArp(_wifi_gratuitous_arp_interval);
         }
     #endif
