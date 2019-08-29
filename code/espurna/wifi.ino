@@ -92,6 +92,11 @@ void _wifiConfigure() {
 
     #if WIFI_GRATUITOUS_ARP_SUPPORT
         _wifi_gratuitous_arp_last = millis();
+        _wifi_gratuitous_arp_interval = getSetting("wifiGarpIntvl", secureRandom(
+            WIFI_GRATUITOUS_ARP_INTERVAL_MIN, WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+        )).toInt();
+
+        DEBUG_MSG_P(PSTR("[WIFI] garp interval=%u\n"), _wifi_gratuitous_arp_interval);
     #endif
 
 }
@@ -708,14 +713,6 @@ void wifiSetup() {
     // Main callbacks
     espurnaRegisterLoop(wifiLoop);
     espurnaRegisterReload(_wifiConfigure);
-
-    // Periodic gratuitous arp to keep the ip alive
-    #if WIFI_GRATUITOUS_ARP_SUPPORT
-        _wifi_gratuitous_arp_interval = getSetting("wifiGarpIntvl", secureRandom(
-            WIFI_GRATUITOUS_ARP_INTERVAL_MIN, WIFI_GRATUITOUS_ARP_INTERVAL_MAX
-        )).toInt();
-        DEBUG_MSG_P(PSTR("[WIFI] garp interval=%u\n"), _wifi_gratuitous_arp_interval);
-    #endif // WIFI_GRATUITOUS_ARP_SUPPORT
 
 }
 
