@@ -557,9 +557,8 @@
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
 // ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546 
 //
-// Help solve compatibility issues with some routers.
-// If the ARP table of the AP is old, and the AP doesn't send ARP request to update it's ARP table,
-// this will lead to the STA sending IP packet fail. Thus we send gratuitous ARP periodically to let AP update it's ARP table.
+// Broadcast gratuitous ARP periodically to update ARP tables on the AP and all devices on the same network.
+// Helps to solve compatibility issues when ESP fails to timely reply to ARP requests, causing the device's ARP table entry to expire.
 
 #ifndef WIFI_GRATUITOUS_ARP_SUPPORT
 #define WIFI_GRATUITOUS_ARP_SUPPORT              1
