@@ -711,15 +711,10 @@ void wifiSetup() {
 
     // Periodic gratuitous arp to keep the ip alive
     #if WIFI_GRATUITOUS_ARP_SUPPORT
-
-        #if WIFI_GRATUITOUS_ARP_INTERVAL_MIN == WIFI_GRATUITOUS_ARP_INTERVAL_MAX
-            _wifi_gratuitous_arp_interval = getSetting("wifiGarpMax", WIFI_GRATUITOUS_ARP_INTERVAL_MAX).toInt();
-        #else
-            _wifi_gratuitous_arp_interval = secureRandom(
-                getSetting("wifiGarpMin", WIFI_GRATUITOUS_ARP_INTERVAL_MIN).toInt(),
-                getSetting("wifiGarpMax", WIFI_GRATUITOUS_ARP_INTERVAL_MAX).toInt());
-        #endif
-
+        _wifi_gratuitous_arp_interval = getSetting("wifiGarpIntvl", secureRandom(
+            WIFI_GRATUITOUS_ARP_INTERVAL_MIN, WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+        )).toInt();
+        DEBUG_MSG_P(PSTR("[WIFI] garp interval=%u\n"), _wifi_gratuitous_arp_interval);
     #endif // WIFI_GRATUITOUS_ARP_SUPPORT
 
 }
