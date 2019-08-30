@@ -3147,8 +3147,8 @@
     #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     #define RELAY2_PIN          5
     #define RELAY2_TYPE         RELAY_TYPE_NORMAL
-
-#elif defined(ALLTERCO_SHELLY1PM)
+    
+ #elif defined(ALLTERCO_SHELLY1PM)
     // Info
     #define MANUFACTURER        "ALLTERCO"
     #define DEVICE              "SHELLY1PM"
@@ -3172,9 +3172,7 @@
     #define LED1_PIN_INVERSE    1
 
     // HJL01 / BL0937
-    #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT             1
-    #endif    
     #define HLW8012_SEL_PIN             12
     #define HLW8012_CF1_PIN             13
     #define HLW8012_CF_PIN              5
@@ -3191,7 +3189,50 @@
      #define NTC_BETA           3350    
      #define NTC_R_UP           10000   
      #define NTC_R_DOWN         0       
-     #define NTC_R0             10000 
+     #define NTC_R0             8000
+
+ #elif defined(ALLTERCO_SHELLY25)
+    // Info
+    #define MANUFACTURER        "ALLTERCO"
+    #define DEVICE              "SHELLY25"
+
+    // Buttons
+    #define BUTTON1_PIN         13
+    #define BUTTON1_MODE        BUTTON_SWITCH
+    #define BUTTON1_RELAY       1
+
+    #define BUTTON2_PIN         5
+    #define BUTTON2_MODE        BUTTON_SWITCH
+    #define BUTTON2_RELAY       2
+
+    #define BUTTON3_PIN         2
+    #define BUTTON3_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_LNGCLICK    BUTTON_MODE_RESET
+    #define BUTTON3_LNGLNGCLICK BUTTON_MODE_FACTORY
+
+    // Relays
+    #define RELAY1_PIN          4
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    #define RELAY2_PIN          15
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
+
+    // Light
+    #define LED1_PIN            0
+    #define LED1_PIN_INVERSE    1
+
+    //Temperature
+     #define NTC_SUPPORT        1
+     #define SENSOR_SUPPORT     1
+     #define NTC_BETA           3350    
+     #define NTC_R_UP           10000   
+     #define NTC_R_DOWN         0       
+     #define NTC_R0             8000 
+
+    //Current
+    #define ADE7953_SUPPORT     1
+    #define I2C_SDA_PIN         12
+    #define I2C_SCL_PIN         14
  
 // -----------------------------------------------------------------------------
 

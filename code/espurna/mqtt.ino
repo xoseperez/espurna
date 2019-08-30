@@ -30,7 +30,15 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
     SecureClient* _mqtt_client_secure = nullptr;
-#endif
+
+    #if MQTT_SECURE_CLIENT_INCLUDE_CA
+    #include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
+    #else
+    #include "static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
+    #define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
+    #endif // MQTT_SECURE_CLIENT_INCLUDE_CA
+
+#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
 #ifdef MQTT_MAX_PACKET_SIZE

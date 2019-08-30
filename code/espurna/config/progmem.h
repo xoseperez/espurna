@@ -273,6 +273,9 @@ PROGMEM const char espurna_sensors[] =
     #if EZOPH_SUPPORT
         "EZOPH "
     #endif
+    #if ADE7953_SUPPORT
+        "ADE7953 "
+    #endif
     "";
 
 

@@ -1117,15 +1117,18 @@
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #endif
 
+#ifndef LIGHT_MIN_PWM
+#define LIGHT_MIN_PWM           0
+#endif
 
 #ifndef LIGHT_MAX_PWM
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #define LIGHT_MAX_PWM           255
-#endif
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
+#else
+#define LIGHT_MAX_PWM           0
 #endif
 
 #endif // LIGHT_MAX_PWM
@@ -1134,13 +1137,24 @@
 #define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
 #endif
 
+#ifndef LIGHT_MIN_VALUE
+#define LIGHT_MIN_VALUE         0           // Minimum light value
+#endif
+
 #ifndef LIGHT_MAX_VALUE
 #define LIGHT_MAX_VALUE         255         // Maximum light value
 #endif
 
-#ifndef LIGHT_MAX_BRIGHTNESS
-#define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#ifndef LIGHT_MIN_BRIGHTNESS
+#define LIGHT_MIN_BRIGHTNESS    0           // Minimum brightness value
 #endif
+
+#ifndef LIGHT_MAX_BRIGHTNESS
+#define LIGHT_MAX_BRIGHTNESS    255         // Maximum brightness value
+#endif
+
+#define LIGHT_MIN_KELVIN        1000
+#define LIGHT_MAX_KELVIN        40000
 
 #define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
 #define LIGHT_MAX_MIREDS        500      // https://developers.meethue.com/documentation/core-concepts

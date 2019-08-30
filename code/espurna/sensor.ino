@@ -17,7 +17,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <float.h>
 
-typedef struct {
+struct sensor_magnitude_t {
     BaseSensor * sensor;        // Sensor object
     BaseFilter * filter;        // Filter object
     unsigned char local;        // Local index in its provider
@@ -28,7 +28,7 @@ typedef struct {
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
     double max_change;          // Maximum value change to report
-} sensor_magnitude_t;
+};
 
 std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
@@ -393,7 +393,7 @@ void _sensorInitCommands() {
             DEBUG_MSG_P(PSTR("[SENSOR] PZEM004T\n"));
             for(unsigned char dev = init; dev < limit; dev++) {
                 float offset = pzem004t_sensor->resetEnergy(dev);
-                setSetting("pzemEneTotal", dev, offset);
+                _sensorEnergyTotal(dev, offset);
                 DEBUG_MSG_P(PSTR("Device %d/%s - Offset: %s\n"), dev, pzem004t_sensor->getAddress(dev).c_str(), String(offset).c_str());
             }
             terminalOK();
@@ -462,33 +462,38 @@ void _sensorResetTS() {
     #endif
 }
 
-double _sensorEnergyTotal() {
+double _sensorEnergyTotal(unsigned int index) {
     double value = 0;
 
-    if (rtcmemStatus()) {
-        value = Rtcmem->energy;
+    if (rtcmemStatus() && (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy)))) {
+        value = Rtcmem->energy[index];
     } else {
-        value = (_sensor_save_every > 0) ? getSetting("eneTotal", 0).toInt() : 0;
+        value = (_sensor_save_every > 0) ? getSetting("eneTotal", index, 0).toInt() : 0;
     }
 
     return value;
 }
 
+double _sensorEnergyTotal() {
+    return _sensorEnergyTotal(0);
+}
 
-void _sensorEnergyTotal(double value) {
+void _sensorEnergyTotal(unsigned int index, double value) {
     static unsigned long save_count = 0;
 
     // Save to EEPROM every '_sensor_save_every' readings
     if (_sensor_save_every > 0) {
         save_count = (save_count + 1) % _sensor_save_every;
         if (0 == save_count) {
-            setSetting("eneTotal", value);
+            setSetting("eneTotal", index, value);
             saveSettings();
         }
     }
 
     // Always save to RTCMEM
-    Rtcmem->energy = value;
+    if (index < (sizeof(Rtcmem->energy) / sizeof(*Rtcmem->energy))) {
+        Rtcmem->energy[index] = value;
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -982,7 +987,7 @@ void _sensorLoad() {
         // Read saved energy offset
         unsigned char dev_count = sensor->getAddressesCount();
         for(unsigned char dev = 0; dev < dev_count; dev++) {
-            float value = getSetting("pzemEneTotal", dev, 0).toFloat();
+            float value = _sensorEnergyTotal(dev);
             if (value > 0) sensor->resetEnergy(dev, value);
         }
         _sensors.push_back(sensor);
@@ -1074,6 +1079,14 @@ void _sensorLoad() {
         EZOPHSensor * sensor = new EZOPHSensor();
         sensor->setRX(EZOPH_RX_PIN);
         sensor->setTX(EZOPH_TX_PIN);
+        _sensors.push_back(sensor);
+    }
+    #endif
+
+     #if ADE7953_SUPPORT
+    {
+        ADE7953Sensor * sensor = new ADE7953Sensor();
+        sensor->setAddress(ADE7953_ADDRESS);
         _sensors.push_back(sensor);
     }
     #endif
@@ -1216,6 +1229,19 @@ void _sensorInit() {
 
         #endif // HLW8012_SUPPORT
 
+        #if ADE7953_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {
+                ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
+                unsigned int dev_count = sensor->getTotalDevices();
+                for(unsigned char dev = 0; dev < dev_count; dev++) {
+                    double value = _sensorEnergyTotal(dev);
+                    if (value > 0) sensor->resetEnergy(dev, value);
+                }
+            }
+
+        #endif // ADE7953_SUPPORT
+
         #if CSE7766_SUPPORT
 
             if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
@@ -1240,7 +1266,7 @@ void _sensorInit() {
 
         #endif // CSE7766_SUPPORT
 
-        #if PULSEMETER_SUPPORT 
+        #if PULSEMETER_SUPPORT
             if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
                 sensor->setEnergyRatio(getSetting("pwrRatioE", sensor->getEnergyRatio()).toInt());
@@ -1312,7 +1338,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1327,7 +1353,7 @@ void _sensorConfigure() {
                 EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
             }
@@ -1338,7 +1364,7 @@ void _sensorConfigure() {
                 EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
             }
@@ -1369,7 +1395,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1408,7 +1434,7 @@ void _sensorConfigure() {
 
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1428,7 +1454,7 @@ void _sensorConfigure() {
                 PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
                 if (getSetting("pwrResetE", 0).toInt() == 1) {
                     sensor->resetEnergy();
-                    delSetting("eneTotal");
+                    delSetting("eneTotal", 0);
                     _sensorResetTS();
                 }
 
@@ -1444,7 +1470,7 @@ void _sensorConfigure() {
                     unsigned char dev_count = sensor->getAddressesCount();
                     for(unsigned char dev = 0; dev < dev_count; dev++) {
                         sensor->resetEnergy(dev, 0);
-                        delSetting("pzemEneTotal", dev);
+                        delSetting("eneTotal", dev);
                     }
                     _sensorResetTS();
                 }
@@ -1452,19 +1478,37 @@ void _sensorConfigure() {
 
         #endif // PZEM004T_SUPPORT
 
+        #if ADE7953_SUPPORT
+
+            if (_sensors[i]->getID() == SENSOR_ADE7953_ID) {
+                ADE7953Sensor * sensor = (ADE7953Sensor *) _sensors[i];
+                if (getSetting("pwrResetE", 0).toInt() == 1) {
+                    unsigned char dev_count = sensor->getTotalDevices();
+                    for(unsigned char dev = 0; dev < dev_count; dev++) {
+                        sensor->resetEnergy(dev);
+                        delSetting("eneTotal", dev);
+                    }
+                    _sensorResetTS();
+                }
+            }
+
+        #endif // ADE7953_SUPPORT
+
     }
 
-    // Update filter sizes
-    for (unsigned char i=0; i<_magnitudes.size(); i++) {
-        _magnitudes[i].filter->resize(_sensor_report_every);
+    // Update filter sizes and reset energy if needed
+    {
+        const bool reset_saved_energy = 0 == _sensor_save_every;
+        for (unsigned char i=0; i<_magnitudes.size(); i++) {
+            _magnitudes[i].filter->resize(_sensor_report_every);
+            if ((_magnitudes[i].type == MAGNITUDE_ENERGY) && reset_saved_energy) {
+                delSetting("eneTotal", _magnitudes[i].global);
+            }
+        }
     }
 
-    // General processing
-    if (0 == _sensor_save_every) {
-        delSetting("eneTotal");
-    }
-
-    // Save settings
+    // Remove calibration values
+    // TODO: do not use settings for one-shot calibration
     delSetting("snsResetCalibration");
     delSetting("pwrExpectedP");
     delSetting("pwrExpectedC");
@@ -1622,11 +1666,12 @@ String magnitudeUnits(unsigned char type) {
 void sensorSetup() {
 
     // Backwards compatibility
+    moveSetting("eneTotal", "eneTotal0");
     moveSetting("powerUnits", "pwrUnits");
     moveSetting("energyUnits", "eneUnits");
 
 	// Update PZEM004T energy total across multiple devices
-    moveSettings("pzEneTotal", "pzemEneTotal");
+    moveSettings("pzEneTotal", "eneTotal");
 
     // Load sensors
     _sensorLoad();
@@ -1784,10 +1829,9 @@ void sensorLoop() {
                         _sensorReport(i, value_filtered);
                     } // if (fabs(value_filtered - magnitude.reported) >= magnitude.min_change)
 
-
                     // Persist total energy value
                     if (MAGNITUDE_ENERGY == magnitude.type) {
-                        _sensorEnergyTotal(value_raw);
+                        _sensorEnergyTotal(magnitude.global, value_raw);
                     }
 
                 } // if (report_count == 0)

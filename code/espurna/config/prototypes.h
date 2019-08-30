@@ -181,17 +181,6 @@ using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
     String mqttMagnitude(char * topic);
 #endif
 
-#if SECURE_CLIENT != SECURE_CLIENT_NONE
-
-    #if MQTT_SECURE_CLIENT_INCLUDE_CA
-    #include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
-    #else
-    #include "static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
-    #define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
-    #endif // MQTT_SECURE_CLIENT_INCLUDE_CA
-
-#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
-
 // -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
@@ -208,16 +197,7 @@ using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 #endif
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
-
     #include <WiFiClientSecure.h>
-
-    #if OTA_SECURE_CLIENT_INCLUDE_CA
-    #include "static/ota_secure_client_ca.h"
-    #else
-    #include "static/digicert_evroot_pem.h"
-    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
-    #endif
-
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 // -----------------------------------------------------------------------------
@@ -374,6 +354,17 @@ using thermostat_callback_f = std::function<void(bool)>;
 // RTC MEMORY
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
+
+// -----------------------------------------------------------------------------
+// Warn about broken Arduino functions
+// -----------------------------------------------------------------------------
+
+// Division by zero bug
+// https://github.com/esp8266/Arduino/pull/2397
+// https://github.com/esp8266/Arduino/pull/2408
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+long  __attribute__((deprecated("Please avoid using map() with Core 2.3.0"))) map(long x, long in_min, long in_max, long out_min, long out_max);
+#endif
 
 // -----------------------------------------------------------------------------
 // std::make_unique backport for C++11

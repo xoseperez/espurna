@@ -19,6 +19,18 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "libs/URL.h"
 
+#if SECURE_CLIENT != SECURE_CLIENT_NONE
+
+    #if OTA_SECURE_CLIENT_INCLUDE_CA
+    #include "static/ota_secure_client_ca.h"
+    #else
+    #include "static/digicert_evroot_pem.h"
+    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
+    #endif
+
+#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
+
+
 void _otaClientRunUpdater(WiFiClient* client, const String& url, const String& fp = "") {
 
     UNUSED(client);
