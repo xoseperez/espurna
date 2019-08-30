@@ -554,6 +554,25 @@
 #define WIFI_PROPAGATION_CONST      4           // This is typically something between 2.7 to 4.3 (free space is 2)
 #endif
 
+// ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
+// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546 
+//
+// Broadcast gratuitous ARP periodically to update ARP tables on the AP and all devices on the same network.
+// Helps to solve compatibility issues when ESP fails to timely reply to ARP requests, causing the device's ARP table entry to expire.
+
+#ifndef WIFI_GRATUITOUS_ARP_SUPPORT
+#define WIFI_GRATUITOUS_ARP_SUPPORT              1
+#endif
+
+// Interval is randomized on each boot in range from ..._MIN to ..._MAX (ms)
+#ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MIN
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MIN         15000
+#endif
+
+#ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MAX         30000
+#endif
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------

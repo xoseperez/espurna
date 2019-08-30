@@ -367,6 +367,12 @@ using wifi_callback_f = std::function<void(justwifi_messages_t code, char * para
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
 
+#if LWIP_VERSION_MAJOR == 1
+#include <netif/etharp.h>
+#else // LWIP_VERSION_MAJOR >= 2
+#include <lwip/etharp.h>
+#endif
+
 // -----------------------------------------------------------------------------
 // THERMOSTAT
 // -----------------------------------------------------------------------------
