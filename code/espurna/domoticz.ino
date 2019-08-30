@@ -57,10 +57,34 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
     JsonObject& color = root["Color"];
     if (!color.success()) return;
 
+    // for ColorMode... see:
+    // https://github.com/domoticz/domoticz/blob/development/hardware/ColorSwitch.h
+    // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Set_a_light_to_a_certain_color_or_color_temperature
+
+    DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u t:%u brightness:%u for IDX %u\n"),
+        color["r"].as<unsigned char>(),
+        color["g"].as<unsigned char>(),
+        color["b"].as<unsigned char>(),
+        color["ww"].as<unsigned char>(),
+        color["cw"].as<unsigned char>(),
+        color["t"].as<unsigned char>(),
+        color["Level"].as<unsigned char>(),
+        idx
+    );
+
     // m field contains information about color mode (enum ColorMode from domoticz ColorSwitch.h):
     unsigned int cmode = color["m"];
 
-    if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom - see domoticz ColorSwitch.h
+    if (cmode == 2) { // ColorModeWhite - WW,CW,temperature (t unused for now)
+
+        if (lightChannels() < 2) return;
+
+        lightChannel(0, color["ww"]);
+        lightChannel(1, color["cw"]);
+
+    } else if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom
+
+        if (lightChannels() < 3) return;
 
         lightChannel(0, color["r"]);
         lightChannel(1, color["g"]);
@@ -71,28 +95,15 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
         if (lightChannels() > 3) {
             lightChannel(3, color["ww"]);
         }
-
         if (lightChannels() > 4) {
             lightChannel(4, color["cw"]);
         }
 
-        // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (unsigned char)
-        unsigned char brightness = (root["Level"].as<uint8_t>() / 100.0) * Light::BRIGHTNESS_MAX;
-        lightBrightness(brightness);
-
-        DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u brightness:%u for IDX %u\n"),
-            color["r"].as<uint8_t>(),
-            color["g"].as<uint8_t>(),
-            color["b"].as<uint8_t>(),
-            color["ww"].as<uint8_t>(),
-            color["cw"].as<uint8_t>(),
-            brightness,
-            idx
-        );
-
-        lightUpdate(true, mqttForward());
-
     }
+
+    // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (unsigned char)
+    lightBrightness((root["Level"].as<unsigned char>() / 100.0) * Light::BRIGHTNESS_MAX);
+    lightUpdate(true, mqttForward());
 
 }
 
