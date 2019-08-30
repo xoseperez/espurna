@@ -48,6 +48,8 @@ void _domoticzStatus(unsigned char id, bool status) {
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
+#include "light.h"
+
 void _domoticzLight(unsigned int idx, const JsonObject& root) {
 
     if (!lightHasColor()) return;
@@ -74,8 +76,8 @@ void _domoticzLight(unsigned int idx, const JsonObject& root) {
             lightChannel(4, color["cw"]);
         }
 
-        // domoticz uses 100 as maximum value while we're using LIGHT_MAX_BRIGHTNESS
-        unsigned int brightness = (root["Level"].as<uint8_t>() / 100.0) * LIGHT_MAX_BRIGHTNESS;
+        // domoticz uses 100 as maximum value while we're using Light::BRIGHTNESS_MAX (unsigned char)
+        unsigned char brightness = (root["Level"].as<uint8_t>() / 100.0) * Light::BRIGHTNESS_MAX;
         lightBrightness(brightness);
 
         DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u brightness:%u for IDX %u\n"),
