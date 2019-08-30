@@ -19,23 +19,30 @@ uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 // PRIVATE
 // -----------------------------------------------------------------------------
 
+bool _wifiCanDisableAP() {
+    return ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
+            (jw.connected()) &&
+            ((WiFi.getMode() & WIFI_AP) > 0) &&
+            (WiFi.softAPgetStationNum() == 0));
+}
+
 void _wifiCheckAP() {
+    if (_wifiCanDisableAP()) jw.enableAP(false);
+}
 
-    if ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
-        (jw.connected()) &&
-        ((WiFi.getMode() & WIFI_AP) > 0) &&
-        (WiFi.softAPgetStationNum() == 0)
-    ) {
-        jw.enableAP(false);
+String _wifiGetAdminPass() {
+    static String last = getAdminPass();
+    if (_wifiCanDisableAP()) {
+        last = getAdminPass();
     }
-
+    return last.c_str();
 }
 
 void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
     #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
+        jw.setSoftAP(getSetting("hostname").c_str(), _wifiGetAdminPass().c_str());
     #else
         jw.setSoftAP(getSetting("hostname").c_str());
     #endif
