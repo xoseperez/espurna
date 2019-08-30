@@ -1148,11 +1148,27 @@
 #define LIGHT_MAX_BRIGHTNESS    255         // Maximum brightness value
 #endif
 
-#define LIGHT_MIN_KELVIN        1000
-#define LIGHT_MAX_KELVIN        40000
+// Default mireds & kelvin to the Philips Hue limits
+// https://developers.meethue.com/documentation/core-concepts
+//
+// Home Assistant also uses these, see Light::min_mireds, Light::max_mireds
+// https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/light/__init__.py
 
-#define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
-#define LIGHT_MAX_MIREDS        500      // https://developers.meethue.com/documentation/core-concepts
+#ifndef LIGHT_MIN_KELVIN
+#define LIGHT_MIN_KELVIN        2000
+#endif
+
+#ifndef LIGHT_MAX_KELVIN
+#define LIGHT_MAX_KELVIN        6536
+#endif
+
+#ifndef LIGHT_MIN_MIREDS
+#define LIGHT_MIN_MIREDS        153
+#endif
+
+#ifndef LIGHT_MAX_MIREDS
+#define LIGHT_MAX_MIREDS        500
+#endif
 
 #ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
