@@ -508,7 +508,21 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 // INFO
 // -----------------------------------------------------------------------------
 
-String _wifiSTAGetPSK() {
+// backported WiFiAPClass methods
+
+String _wifiSoftAPSSID() {
+    struct softap_config config;
+    wifi_softap_get_config(&config);
+
+    char* name = reinterpret_cast<char*>(config.ssid);
+    char ssid[sizeof(config.ssid) + 1];
+    memcpy(ssid, name, sizeof(config.ssid));
+    ssid[sizeof(config.ssid)] = '\0';
+
+    return String(ssid);
+}
+
+String _wifiSoftAPPSK() {
     struct softap_config config;
     wifi_softap_get_config(&config);
 
@@ -544,8 +558,8 @@ void wifiDebug(WiFiMode_t modes) {
 
     if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), _wifiSTAGetPSK().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), _wifiSoftAPSSID().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), _wifiSoftAPPSK().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
         footer = true;
