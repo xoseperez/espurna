@@ -520,13 +520,12 @@ bool _wifiSendGratuitousArp() {
         if (
             (interface->flags & NETIF_FLAG_ETHARP)
             && (interface->hwaddr_len == ETHARP_HWADDR_LEN)
-            && (interface->num == STATION_IF)
         #if LWIP_VERSION_MAJOR == 1
             && (!ip_addr_isany(&interface->ip_addr))
         #else
-            && (interface->flags & NETIF_FLAG_LINK_UP)
             && (!ip4_addr_isany_val(*netif_ip4_addr(interface)))
         #endif
+            && (interface->flags & NETIF_FLAG_LINK_UP)
             && (interface->flags & NETIF_FLAG_UP)
         ) {
             etharp_gratuitous(interface);
