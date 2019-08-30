@@ -19,35 +19,35 @@ uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 // PRIVATE
 // -----------------------------------------------------------------------------
 
-bool _wifiCanDisableAP() {
-    return ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
-            (jw.connected()) &&
-            ((WiFi.getMode() & WIFI_AP) > 0) &&
-            (WiFi.softAPgetStationNum() == 0));
+void _wifiUpdateSoftAP() {
+    if (WiFi.softAPgetStationNum() == 0) {
+        #if USE_PASSWORD
+            jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
+        #else
+            jw.setSoftAP(getSetting("hostname").c_str());
+        #endif
+    }
 }
 
 void _wifiCheckAP() {
-    if (_wifiCanDisableAP()) jw.enableAP(false);
-}
-
-String _wifiGetAdminPass() {
-    static String last = getAdminPass();
-    if (_wifiCanDisableAP()) {
-        last = getAdminPass();
+    if (
+        (WIFI_AP_FALLBACK == _wifi_ap_mode)
+        && ((WiFi.getMode() & WIFI_AP) > 0)
+        && jw.connected()
+        && (WiFi.softAPgetStationNum() == 0)
+    ) {
+         jw.enableAP(false);
     }
-    return last.c_str();
 }
 
 void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
-    #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), _wifiGetAdminPass().c_str());
-    #else
-        jw.setSoftAP(getSetting("hostname").c_str());
-    #endif
+    _wifiUpdateSoftAP();
+
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
+
     jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
@@ -377,6 +377,7 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
+        _wifiUpdateSoftAP();
         DEBUG_MSG_P(PSTR("[WIFI] Access point destroyed\n"));
     }
 
