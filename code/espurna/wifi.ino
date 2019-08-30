@@ -19,28 +19,35 @@ uint8_t _wifi_ap_mode = WIFI_AP_FALLBACK;
 // PRIVATE
 // -----------------------------------------------------------------------------
 
-void _wifiCheckAP() {
-
-    if ((WIFI_AP_FALLBACK == _wifi_ap_mode) &&
-        (jw.connected()) &&
-        ((WiFi.getMode() & WIFI_AP) > 0) &&
-        (WiFi.softAPgetStationNum() == 0)
-    ) {
-        jw.enableAP(false);
+void _wifiUpdateSoftAP() {
+    if (WiFi.softAPgetStationNum() == 0) {
+        #if USE_PASSWORD
+            jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
+        #else
+            jw.setSoftAP(getSetting("hostname").c_str());
+        #endif
     }
+}
 
+void _wifiCheckAP() {
+    if (
+        (WIFI_AP_FALLBACK == _wifi_ap_mode)
+        && ((WiFi.getMode() & WIFI_AP) > 0)
+        && jw.connected()
+        && (WiFi.softAPgetStationNum() == 0)
+    ) {
+         jw.enableAP(false);
+    }
 }
 
 void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
-    #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
-    #else
-        jw.setSoftAP(getSetting("hostname").c_str());
-    #endif
+    _wifiUpdateSoftAP();
+
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
     wifiReconnectCheck();
+
     jw.enableAPFallback(WIFI_FALLBACK_APMODE);
     jw.cleanNetworks();
 
@@ -370,6 +377,7 @@ void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
     }
 
     if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
+        _wifiUpdateSoftAP();
         DEBUG_MSG_P(PSTR("[WIFI] Access point destroyed\n"));
     }
 
@@ -421,6 +429,11 @@ void _wifiInitCommands() {
     terminalRegisterCommand(F("WIFI.RESET"), [](Embedis* e) {
         _wifiConfigure();
         wifiDisconnect();
+        terminalOK();
+    });
+
+    terminalRegisterCommand(F("WIFI.STA"), [](Embedis* e) {
+        wifiStartSTA();
         terminalOK();
     });
 
@@ -495,6 +508,32 @@ void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject&
 // INFO
 // -----------------------------------------------------------------------------
 
+// backported WiFiAPClass methods
+
+String _wifiSoftAPSSID() {
+    struct softap_config config;
+    wifi_softap_get_config(&config);
+
+    char* name = reinterpret_cast<char*>(config.ssid);
+    char ssid[sizeof(config.ssid) + 1];
+    memcpy(ssid, name, sizeof(config.ssid));
+    ssid[sizeof(config.ssid)] = '\0';
+
+    return String(ssid);
+}
+
+String _wifiSoftAPPSK() {
+    struct softap_config config;
+    wifi_softap_get_config(&config);
+
+    char* pass = reinterpret_cast<char*>(config.password);
+    char psk[sizeof(config.password) + 1];
+    memcpy(psk, pass, sizeof(config.password));
+    psk[sizeof(config.password)] = '\0';
+
+    return String(psk);
+}
+
 void wifiDebug(WiFiMode_t modes) {
 
     #if DEBUG_SUPPORT
@@ -519,8 +558,8 @@ void wifiDebug(WiFiMode_t modes) {
 
     if (((modes & WIFI_AP) > 0) && ((WiFi.getMode() & WIFI_AP) > 0)) {
         DEBUG_MSG_P(PSTR("[WIFI] -------------------------------------- MODE AP\n"));
-        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), getSetting("hostname").c_str());
-        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), getAdminPass().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] SSID  %s\n"), _wifiSoftAPSSID().c_str());
+        DEBUG_MSG_P(PSTR("[WIFI] PASS  %s\n"), _wifiSoftAPPSK().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
         DEBUG_MSG_P(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
         footer = true;
@@ -567,6 +606,12 @@ bool wifiConnected() {
 
 void wifiDisconnect() {
     jw.disconnect();
+}
+
+void wifiStartSTA() {
+    jw.disconnect();
+    jw.enableSTA(true);
+    jw.enableAP(false);
 }
 
 void wifiStartAP(bool only) {
