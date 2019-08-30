@@ -431,6 +431,11 @@ void _wifiInitCommands() {
         terminalOK();
     });
 
+    terminalRegisterCommand(F("WIFI.STA"), [](Embedis* e) {
+        wifiStartSTA();
+        terminalOK();
+    });
+
     terminalRegisterCommand(F("WIFI.AP"), [](Embedis* e) {
         wifiStartAP();
         terminalOK();
@@ -586,6 +591,12 @@ bool wifiConnected() {
 
 void wifiDisconnect() {
     jw.disconnect();
+}
+
+void wifiStartSTA() {
+    jw.disconnect();
+    jw.enableSTA(true);
+    jw.enableAP(false);
 }
 
 void wifiStartAP(bool only) {
