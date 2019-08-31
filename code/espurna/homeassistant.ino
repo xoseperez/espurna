@@ -9,7 +9,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if HOMEASSISTANT_SUPPORT
 
 #include <ArduinoJson.h>
-#include <queue>
 
 bool _haEnabled = false;
 bool _haSendFlag = false;
@@ -186,101 +185,79 @@ void _haSendSwitches(ha_config_t& config) {
 
 // -----------------------------------------------------------------------------
 
-void _haDumpConfig(std::function<void(String&)> printer, bool wrapJson = false) {
+constexpr const size_t HA_YAML_BUFFER_SIZE = 1024;
 
-    constexpr const size_t BUFFER_SIZE = 1024;
+void _haSwitchYaml(unsigned char index, JsonObject& root) {
 
     String output;
-    output.reserve(BUFFER_SIZE + 64);
-    DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
+    output.reserve(HA_YAML_BUFFER_SIZE);
 
-    for (unsigned char i=0; i<relayCount(); i++) {
+    JsonObject& config = root.createNestedObject("config");
+    _haSendSwitch(index, config);
 
-        JsonObject& config = jsonBuffer.createObject();
-        _haSendSwitch(i, config);
+    output += "\n\n" + switchType + ":\n";
+    bool first = true;
 
-        if (wrapJson) {
-            output += "{\"haConfig\": \"";
+    for (auto kv : config) {
+        if (first) {
+            output += "  - ";
+            first = false;
+        } else {
+            output += "    ";
         }
-
-        output += "\n\n" + switchType + ":\n";
-        bool first = true;
-
-        for (auto kv : config) {
-            if (first) {
-                output += "  - ";
-                first = false;
-            } else {
-                output += "    ";
-            }
-            output += kv.key;
-            output += ": ";
-            output += kv.value.as<String>();
-            output += "\n";
-        }
-        output += " ";
-
-        if (wrapJson) {
-            output += "\"}";
-        }
-
-        jsonBuffer.clear();
-        printer(output);
-        output = "";
-
+        output += kv.key;
+        output += ": ";
+        output += kv.value.as<String>();
+        output += "\n";
     }
+    output += " ";
 
-    #if SENSOR_SUPPORT
-
-        for (unsigned char i=0; i<magnitudeCount(); i++) {
-
-            JsonObject& config = jsonBuffer.createObject();
-            _haSendMagnitude(i, config);
-
-            if (wrapJson) {
-                output += "{\"haConfig\": \"";
-            }
-
-            output += "\n\nsensor:\n";
-            bool first = true;
-
-            for (auto kv : config) {
-                if (first) {
-                    output += "  - ";
-                    first = false;
-                } else {
-                    output += "    ";
-                }
-                String value = kv.value.as<String>();
-                value.replace("%", "'%'");
-                output += kv.key;
-                output += ": ";
-                output += value;
-                output += "\n";
-            }
-            output += " ";
-
-            if (wrapJson) {
-                output += "\"}";
-            }
-
-            jsonBuffer.clear();
-            printer(output);
-            output = "";
-
-        }
-
-    #endif
+    root.remove("config");
+    root["haConfig"] = output;
 }
 
+#if SENSOR_SUPPORT
+
+void _haSensorYaml(unsigned char index, JsonObject& root) {
+
+    String output;
+    output.reserve(HA_YAML_BUFFER_SIZE);
+
+    JsonObject& config = root.createNestedObject("config");
+    _haSendMagnitude(index, config);
+
+    output += "\n\nsensor:\n";
+    bool first = true;
+
+    for (auto kv : config) {
+        if (first) {
+            output += "  - ";
+            first = false;
+        } else {
+            output += "    ";
+        }
+        String value = kv.value.as<String>();
+        value.replace("%", "'%'");
+        output += kv.key;
+        output += ": ";
+        output += value;
+        output += "\n";
+    }
+    output += " ";
+
+    root.remove("config");
+    root["haConfig"] = output;
+
+}
+
+#endif // SENSOR_SUPPORT
+
 void _haGetDeviceConfig(JsonObject& config) {
-    String identifier = getIdentifier();
-    
-    config.createNestedArray("identifiers").add(identifier);
+    config.createNestedArray("identifiers").add(getIdentifier());
     config["name"] = getSetting("desc", getSetting("hostname"));
-    config["manufacturer"] = String(MANUFACTURER);
-    config["model"] = String(DEVICE);
-    config["sw_version"] = String(APP_NAME) + " " + String(APP_VERSION) + " (" + getCoreVersion() + ")";
+    config["manufacturer"] = MANUFACTURER;
+    config["model"] = DEVICE;
+    config["sw_version"] = String(APP_NAME) + " " + APP_VERSION + " (" + getCoreVersion() + ")";
 }
 
 void _haSend() {
@@ -311,11 +288,10 @@ void _haConfigure() {
     _haSendFlag = (enabled != _haEnabled);
     _haEnabled = enabled;
     _haSend();
+
 }
 
 #if WEB_SUPPORT
-
-std::queue<uint32_t> _ha_send_config;
 
 bool _haWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "ha", 2) == 0);
@@ -332,20 +308,53 @@ void _haWebSocketOnConnected(JsonObject& root) {
 
 void _haWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
     if (strcmp(action, "haconfig") == 0) {
-        _ha_send_config.push(client_id);
+        ws_on_send_callback_list_t callbacks;
+        #if SENSOR_SUPPORT
+            callbacks.reserve(magnitudeCount() + relayCount());
+        #else
+            callbacks.reserve(relayCount());
+        #endif // SENSOR_SUPPORT
+        {
+            for (unsigned char idx=0; idx<relayCount(); ++idx) {
+                callbacks.push_back([idx](JsonObject& root) {
+                    _haSwitchYaml(idx, root);
+                });
+            }
+        }
+        #if SENSOR_SUPPORT
+        {
+            for (unsigned char idx=0; idx<magnitudeCount(); ++idx) {
+                callbacks.push_back([idx](JsonObject& root) {
+                    _haSensorYaml(idx, root);
+                });
+            }
+        }
+        #endif // SENSOR_SUPPORT
+        if (callbacks.size()) wsPostSequence(client_id, std::move(callbacks));
     }
 }
 
-#endif
+#endif // WEB_SUPPORT
 
 #if TERMINAL_SUPPORT
 
 void _haInitCommands() {
 
     terminalRegisterCommand(F("HA.CONFIG"), [](Embedis* e) {
-        _haDumpConfig([](String& data) {
-            DEBUG_MSG(data.c_str());
-        });
+        for (unsigned char idx=0; idx<relayCount(); ++idx) {
+            DynamicJsonBuffer jsonBuffer(1024);
+            JsonObject& root = jsonBuffer.createObject();
+            _haSwitchYaml(idx, root);
+            DEBUG_MSG(root["haConfig"].as<String>().c_str());
+        }
+        #if SENSOR_SUPPORT
+            for (unsigned char idx=0; idx<magnitudeCount(); ++idx) {
+                DynamicJsonBuffer jsonBuffer(1024);
+                JsonObject& root = jsonBuffer.createObject();
+                _haSensorYaml(idx, root);
+                DEBUG_MSG(root["haConfig"].as<String>().c_str());
+            }
+        #endif // SENSOR_SUPPORT
         DEBUG_MSG("\n");
         terminalOK();
     });
@@ -374,23 +383,6 @@ void _haInitCommands() {
 
 // -----------------------------------------------------------------------------
 
-#if WEB_SUPPORT
-void _haLoop() {
-    if (_ha_send_config.empty()) return;
-
-    uint32_t client_id = _ha_send_config.front();
-    _ha_send_config.pop();
-
-    if (!wsConnected(client_id)) return;
-
-    // TODO check wsConnected after each "printer" call?
-    _haDumpConfig([client_id](String& output) {
-        wsSend(client_id, output.c_str());
-        yield();
-    }, true);
-}
-#endif
-
 void haSetup() {
 
     _haConfigure();
@@ -401,7 +393,6 @@ void haSetup() {
             .onConnected(_haWebSocketOnConnected)
             .onAction(_haWebSocketOnAction)
             .onKeyCheck(_haWebSocketOnKeyCheck);
-        espurnaRegisterLoop(_haLoop);
     #endif
 
     #if TERMINAL_SUPPORT

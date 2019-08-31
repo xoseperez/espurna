@@ -92,11 +92,11 @@ struct ws_data_t {
     {}
 
     ws_data_t(const uint32_t client_id, ws_on_send_callback_list_t&& callbacks, mode_t mode = SEQUENCE) :
-        storage(new ws_on_send_callback_list_t(std::forward<ws_on_send_callback_list_t>(callbacks))),
+        storage(new ws_on_send_callback_list_t(std::move(callbacks))),
         client_id(client_id),
         mode(mode),
         callbacks(*storage.get()),
-        counter(0, callbacks.size())
+        counter(0, (storage.get())->size())
     {}
 
     ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
