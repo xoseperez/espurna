@@ -91,6 +91,14 @@ struct ws_data_t {
         counter(0, 1)
     {}
 
+    ws_data_t(const uint32_t client_id, ws_on_send_callback_list_t&& callbacks, mode_t mode = SEQUENCE) :
+        storage(new ws_on_send_callback_list_t(std::forward<ws_on_send_callback_list_t>(callbacks))),
+        client_id(client_id),
+        mode(mode),
+        callbacks(*storage.get()),
+        counter(0, callbacks.size())
+    {}
+
     ws_data_t(const uint32_t client_id, const ws_on_send_callback_list_t& callbacks, mode_t mode = SEQUENCE) :
         client_id(client_id),
         mode(mode),
@@ -758,6 +766,10 @@ void wsPostAll(const ws_on_send_callback_list_t& cbs) {
 
 void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
     _ws_client_data.emplace(client_id, cbs, ws_data_t::SEQUENCE);
+}
+
+void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
+    _ws_client_data.emplace(client_id, std::forward<ws_on_send_callback_list_t>(cbs), ws_data_t::SEQUENCE);
 }
 
 void wsPostSequence(const ws_on_send_callback_list_t& cbs) {

@@ -334,6 +334,7 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
     void wsPostAll(const ws_on_send_callback_list_t& callbacks);
 
     void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+    void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
     void wsPostSequence(const ws_on_send_callback_list_t& callbacks);
 
     bool wsConnected();
