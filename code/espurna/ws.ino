@@ -642,17 +642,21 @@ void _wsHandleClientData(const bool connected) {
 
     if (_ws_client_data.empty()) return;
     auto& data = _ws_client_data.front();
-    AsyncWebSocketClient* ws_client = _ws.client(data.client_id);
 
-    if (!ws_client) {
-        _ws_client_data.pop();
-        return;
-    }
+    // client_id == 0 means we need to send the message to every client
+    if (data.client_id) {
+        AsyncWebSocketClient* ws_client = _ws.client(data.client_id);
 
-    // wait until we can send the next batch of messages
-    // XXX: enforce that callbacks send only one message per iteration
-    if (ws_client->queueIsFull()) {
-        return;
+        if (!ws_client) {
+            _ws_client_data.pop();
+            return;
+        }
+
+        // wait until we can send the next batch of messages
+        // XXX: enforce that callbacks send only one message per iteration
+        if (ws_client->queueIsFull()) {
+            return;
+        }
     }
 
     // XXX: block allocation will try to create *2 next time,
