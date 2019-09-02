@@ -17,7 +17,7 @@ bool _haSendFlag = false;
 // UTILS
 // -----------------------------------------------------------------------------
 
-String _haFixName(String name) {
+String& _haFixName(String& name) {
     for (unsigned char i=0; i<name.length(); i++) {
         if (!isalnum(name.charAt(i))) name.setCharAt(i, '_');
     }
