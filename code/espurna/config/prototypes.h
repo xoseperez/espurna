@@ -276,7 +276,7 @@ struct settings_cfg_t {
 };
 
 using settings_filter_t = std::function<String(String& value)>;
-using settings_cfg_list_t = std::vector<settings_cfg_t>;
+using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
 
 void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 
