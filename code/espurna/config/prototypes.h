@@ -167,10 +167,28 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 
-#if MQTT_SUPPORT
-    void mqttRegister(mqtt_callback_f callback);
-    String mqttMagnitude(char * topic);
-#endif
+void mqttRegister(mqtt_callback_f callback);
+
+String mqttTopic(const char * magnitude, bool is_set);
+String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
+
+String mqttMagnitude(char * topic);
+
+void mqttSendRaw(const char * topic, const char * message, bool retain);
+void mqttSendRaw(const char * topic, const char * message);
+
+void mqttSend(const char * topic, const char * message, bool force, bool retain);
+void mqttSend(const char * topic, const char * message, bool force);
+void mqttSend(const char * topic, const char * message);
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force);
+void mqttSend(const char * topic, unsigned int index, const char * message);
+
+const String& mqttPayloadOnline();
+const String& mqttPayloadOffline();
+const char* mqttPayloadStatus(bool status);
+
+void mqttSendStatus();
 
 #if MQTT_SECURE_CLIENT_INCLUDE_CA
 #include "../static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
@@ -225,16 +243,42 @@ typedef struct {
 // -----------------------------------------------------------------------------
 #include <bitset>
 
+bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
+bool relayStatus(unsigned char id, bool status);
+bool relayStatus(unsigned char id);
+
+void relayToggle(unsigned char id, bool report, bool group_report);
+void relayToggle(unsigned char id);
+
+unsigned char relayCount();
+unsigned char relayParsePayload(const char * payload);
+
+const String& relayPayloadOn();
+const String& relayPayloadOff();
+const char* relayPayload(bool status);
+
 // -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
 #include <Embedis.h>
+
 template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
+
+struct settings_cfg_t {
+    String& setting;
+    const char* key;
+    const char* default_value;
+};
+
+using settings_filter_t = std::function<String(String& value)>;
+using settings_cfg_list_t = std::vector<settings_cfg_t>;
+
+void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 
 // -----------------------------------------------------------------------------
 // Terminal

@@ -408,6 +408,7 @@
 #ifndef RELAY_MQTT_ON
 #define RELAY_MQTT_ON               "1"
 #endif
+
 #ifndef RELAY_MQTT_OFF
 #define RELAY_MQTT_OFF              "0"
 #endif
@@ -1048,14 +1049,15 @@
 #define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MAX "notify_temp_range_max"
 
 
+#ifndef MQTT_STATUS_ONLINE
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
+#endif
+
 #ifndef MQTT_STATUS_OFFLINE
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)
 #endif
 
 #define MQTT_ACTION_RESET           "reboot"    // RESET MQTT topic particle
-
-#define MQTT_MESSAGE_ID_SHIFT       1000        // Store MQTT message id into EEPROM every these many
 
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
@@ -1240,22 +1242,6 @@
 
 #ifndef HOMEASSISTANT_PREFIX
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_ON
-#define HOMEASSISTANT_PAYLOAD_ON    "1"         // Payload for ON and available messages
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_OFF
-#define HOMEASSISTANT_PAYLOAD_OFF   "0"         // Payload for OFF and unavailable messages
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_AVAILABLE
-#define HOMEASSISTANT_PAYLOAD_AVAILABLE     "1" // Payload for available messages
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE
-#define HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE "0" // Payload for available messages
 #endif
 
 // -----------------------------------------------------------------------------

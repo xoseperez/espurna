@@ -68,6 +68,9 @@ String _mqtt_server;
 uint16_t _mqtt_port;
 String _mqtt_clientid;
 
+String _mqtt_payload_online;
+String _mqtt_payload_offline;
+
 std::vector<mqtt_callback_f> _mqtt_callbacks;
 
 struct mqtt_message_t {
@@ -119,7 +122,7 @@ void _mqttConnect() {
         _mqtt.setClientId(_mqtt_clientid.c_str());
         _mqtt.setKeepAlive(_mqtt_keepalive);
         _mqtt.setCleanSession(false);
-        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, MQTT_STATUS_OFFLINE);
+        _mqtt.setWill(_mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, _mqtt_payload_offline.c_str());
         if (_mqtt_user.length() && _mqtt_pass.length()) {
             DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user.c_str());
             _mqtt.setCredentials(_mqtt_user.c_str(), _mqtt_pass.c_str());
@@ -252,7 +255,7 @@ void _mqttConnect() {
         if (verified) {
             #if MQTT_LIBRARY == MQTT_ARDUINO // Arduino-MQTT
                 _mqtt.begin(_mqtt_server.c_str(), _mqtt_port, (secure ? _mqtt_client_secure : _mqtt_client));
-                _mqtt.setWill(_mqtt_will.c_str(), MQTT_STATUS_OFFLINE, _mqtt_qos, _mqtt_retain);
+                _mqtt.setWill(_mqtt_will.c_str(), _mqtt_payload_offline.c_str(), _mqtt_qos, _mqtt_retain);
                 verified = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str());
             #else // PubSubClient
                 _mqtt.setClient(secure ? _mqtt_client_secure : _mqtt_client);
@@ -260,9 +263,9 @@ void _mqttConnect() {
 
                 if (_mqtt_user.length() && _mqtt_pass.length()) {
                     DEBUG_MSG_P(PSTR("[MQTT] Connecting as user %s\n"), _mqtt_user.c_str());
-                    verified = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, MQTT_STATUS_OFFLINE);
+                    verified = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_user.c_str(), _mqtt_pass.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, _mqtt_payload_offline.c_str());
                 } else {
-                    verified = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, MQTT_STATUS_OFFLINE);
+                    verified = _mqtt.connect(_mqtt_clientid.c_str(), _mqtt_will.c_str(), _mqtt_qos, _mqtt_retain, _mqtt_payload_offline.c_str());
                 }
             #endif
         }
@@ -386,6 +389,13 @@ void _mqttConfigure() {
         _mqttApplyTopic(_mqtt_topic_json, MQTT_TOPIC_JSON);
     }
 
+    // Custom payload strings
+    settingsProcessConfig({
+        {_mqtt_payload_online,  "mqttPayloadOnline",  MQTT_STATUS_ONLINE},
+        {_mqtt_payload_offline, "mqttPayloadOffline", MQTT_STATUS_OFFLINE}
+    });
+
+    // Reset reconnect delay to reconnect sooner
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
 }
@@ -878,6 +888,22 @@ void mqttSetBroker(IPAddress ip, unsigned int port) {
 
 void mqttSetBrokerIfNone(IPAddress ip, unsigned int port) {
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) mqttSetBroker(ip, port);
+}
+
+const String& mqttPayloadOnline() {
+    return _mqtt_payload_online;
+}
+
+const String& mqttPayloadOffline() {
+    return _mqtt_payload_offline;
+}
+
+const char* mqttPayloadStatus(bool status) {
+    return status ? _mqtt_payload_online.c_str() : _mqtt_payload_offline.c_str();
+}
+
+void mqttSendStatus() {
+    mqttSend(MQTT_TOPIC_STATUS, _mqtt_payload_online.c_str(), true);
 }
 
 // -----------------------------------------------------------------------------

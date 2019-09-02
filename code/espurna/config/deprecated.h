@@ -25,3 +25,20 @@
 #warning EVENTS_PIN is deprecated! Please use EVENTS1_PIN instead
 #define EVENTS1_PIN EVENTS_PIN
 #endif
+
+// 1.13.6 unifies mqtt payload options
+#ifdef HOMEASSISTANT_PAYLOAD_ON
+#warning HOMEASSISTANT_PAYLOAD_ON is deprecated! Global RELAY_MQTT_ON is used instead
+#endif
+
+#ifdef HOMEASSISTANT_PAYLOAD_OFF
+#warning HOMEASSISTANT_PAYLOAD_OFF is deprecated! Global RELAY_MQTT_OFF is used instead
+#endif
+
+#ifdef HOMEASSISTANT_PAYLOAD_AVAILABLE
+#warning HOMEASSISTANT_PAYLOAD_AVAILABLE is deprecated! Global MQTT_STATUS_ONLINE is used instead
+#endif
+
+#ifdef HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE
+#warning HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE is deprecated! Global MQTT_STATUS_OFFLINE is used instead
+#endif

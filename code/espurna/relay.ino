@@ -44,6 +44,13 @@ std::vector<relay_t> _relays;
 bool _relayRecursive = false;
 Ticker _relaySaveTicker;
 
+#if MQTT_SUPPORT
+
+String _relay_mqtt_payload_on;
+String _relay_mqtt_payload_off;
+
+#endif // MQTT_SUPPORT
+
 // -----------------------------------------------------------------------------
 // RELAY PROVIDERS
 // -----------------------------------------------------------------------------
@@ -616,6 +623,13 @@ void _relayConfigure() {
             digitalWrite(_relays[i].pin, HIGH);
         }
     }
+
+    #if MQTT_SUPPORT
+        settingsProcessConfig({
+            {_relay_mqtt_payload_on,  "relayPayloadON",  RELAY_MQTT_ON},
+            {_relay_mqtt_payload_off, "relayPayloadOFF", RELAY_MQTT_OFF}
+        });
+    #endif // MQTT_SUPPORT
 }
 
 //------------------------------------------------------------------------------
@@ -857,6 +871,18 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
+const String& relayPayloadOn() {
+    return _relay_mqtt_payload_on;
+}
+
+const String& relayPayloadOff() {
+    return _relay_mqtt_payload_off;
+}
+
+const char* relayPayload(bool status) {
+    return status ? _relay_mqtt_payload_on.c_str() : _relay_mqtt_payload_off.c_str();
+}
+
 void _relayMQTTGroup(unsigned char id) {
     String topic = getSetting("mqttGroup", id, "");
     if (!topic.length()) return;
@@ -866,7 +892,7 @@ void _relayMQTTGroup(unsigned char id) {
 
     bool status = relayStatus(id);
     if (mode == RELAY_GROUP_SYNC_INVERSE) status = !status;
-    mqttSendRaw(topic.c_str(), status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+    mqttSendRaw(topic.c_str(), relayPayload(status));
 }
 
 void relayMQTT(unsigned char id) {
@@ -876,7 +902,7 @@ void relayMQTT(unsigned char id) {
     // Send state topic
     if (_relays[id].report) {
         _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relays[id].current_status));
     }
 
     // Check group topic
@@ -896,7 +922,7 @@ void relayMQTT(unsigned char id) {
 
 void relayMQTT() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relays[id].current_status));
     }
 }
 

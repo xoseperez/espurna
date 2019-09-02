@@ -17,6 +17,28 @@ bool _haSendFlag = false;
 // UTILS
 // -----------------------------------------------------------------------------
 
+// per yaml 1.1 spec, following scalars are converted to bool. we want the string, so quoting the output
+// y|Y|yes|Yes|YES|n|N|no|No|NO |true|True|TRUE|false|False|FALSE |on|On|ON|off|Off|OFF
+String _haFixPayload(const String& value) {
+    if (value.equalsIgnoreCase("y")
+        || value.equalsIgnoreCase("n")
+        || value.equalsIgnoreCase("yes")
+        || value.equalsIgnoreCase("no")
+        || value.equalsIgnoreCase("true")
+        || value.equalsIgnoreCase("false")
+        || value.equalsIgnoreCase("on")
+        || value.equalsIgnoreCase("off")
+    ) {
+        String temp;
+        temp.reserve(value.length() + 2);
+        temp = "\"";
+        temp += value;
+        temp += "\"";
+        return temp;
+    }
+    return value;
+}
+
 String& _haFixName(String& name) {
     for (unsigned char i=0; i<name.length(); i++) {
         if (!isalnum(name.charAt(i))) name.setCharAt(i, '_');
@@ -101,7 +123,7 @@ void _haSendMagnitudes(ha_config_t& config) {
 
     }
 
-    mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+    mqttSendStatus();
 
 }
 
@@ -124,11 +146,11 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
         config["command_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, true);
-        config["payload_on"] = String(HOMEASSISTANT_PAYLOAD_ON);
-        config["payload_off"] = String(HOMEASSISTANT_PAYLOAD_OFF);
+        config["payload_on"] = relayPayload(true);
+        config["payload_off"] = relayPayload(false);
         config["availability_topic"] = mqttTopic(MQTT_TOPIC_STATUS, false);
-        config["payload_available"] = String(HOMEASSISTANT_PAYLOAD_AVAILABLE);
-        config["payload_not_available"] = String(HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE);
+        config["payload_available"] = mqttPayloadStatus(true);
+        config["payload_not_available"] = mqttPayloadStatus(false);
     }
 
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -177,9 +199,9 @@ void _haSendSwitches(ha_config_t& config) {
         }
 
         mqttSendRaw(topic.c_str(), output.c_str());
-        mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
-
     }
+
+    mqttSendStatus();
 
 }
 
@@ -195,7 +217,8 @@ void _haSwitchYaml(unsigned char index, JsonObject& root) {
     JsonObject& config = root.createNestedObject("config");
     _haSendSwitch(index, config);
 
-    output += "\n\n" + switchType + ":\n";
+    if (index == 0) output += "\n\n" + switchType + ":";
+    output += "\n";
     bool first = true;
 
     for (auto kv : config) {
@@ -207,7 +230,11 @@ void _haSwitchYaml(unsigned char index, JsonObject& root) {
         }
         output += kv.key;
         output += ": ";
-        output += kv.value.as<String>();
+        if (strncmp(kv.key, "payload_", strlen("payload_")) == 0) {
+            output += _haFixPayload(kv.value.as<String>());
+        } else {
+            output += kv.value.as<String>();
+        }
         output += "\n";
     }
     output += " ";
@@ -226,7 +253,8 @@ void _haSensorYaml(unsigned char index, JsonObject& root) {
     JsonObject& config = root.createNestedObject("config");
     _haSendMagnitude(index, config);
 
-    output += "\n\nsensor:\n";
+    if (index == 0) output += "\n\nsensor:";
+    output += "\n";
     bool first = true;
 
     for (auto kv : config) {
@@ -288,7 +316,6 @@ void _haConfigure() {
     _haSendFlag = (enabled != _haEnabled);
     _haEnabled = enabled;
     _haSend();
-
 }
 
 #if WEB_SUPPORT
