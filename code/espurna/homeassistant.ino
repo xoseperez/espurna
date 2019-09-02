@@ -95,7 +95,6 @@ void _haSendMagnitude(unsigned char i, JsonObject& config) {
 
     unsigned char type = magnitudeType(i);
     config["name"] = _haFixName(getSetting("hostname") + String(" ") + magnitudeTopic(type));
-    config.set("platform", "mqtt");
     config["state_topic"] = mqttTopic(magnitudeTopicIndex(i).c_str(), false);
     config["unit_of_measurement"] = magnitudeUnits(type);
 }
@@ -141,7 +140,6 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
     }
 
     config.set("name", _haFixName(name));
-    config.set("platform", "mqtt");
 
     if (relayCount()) {
         config["state_topic"] = mqttTopic(MQTT_TOPIC_RELAY, i, false);
