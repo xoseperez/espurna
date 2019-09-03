@@ -849,23 +849,27 @@
 // MQTT OVER SSL
 // -----------------------------------------------------------------------------
 //
-// Using MQTT over SSL works pretty well but generates problems with the web interface.
-// It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires SECURE_CLIENT=SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL and ESP8266 Arduino Core >= 2.5.2
+// Requires SECURE_CLIENT set to SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL
+// It is recommended to use MQTT_LIBRARY_ARDUINOMQTT or MQTT_LIBRARY_PUBSUBCLIENT
+// It is recommended to use SECURE_CLIENT_BEARSSL
+// It is recommended to use ESP8266 Arduino Core >= 2.5.2 with SECURE_CLIENT_BEARSSL
 //
-// You can use SSL with MQTT_LIBRARY_ASYNCMQTTCLIENT, but you might experience some hiccups with the web interface.
-// It is recommended to use WEB_SUPPORT=0
+// Current version of MQTT_LIBRARY_ASYNCMQTTCLIENT only supports SECURE_CLIENT_AXTLS
 //
-// If you use SSL with MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
+// It is recommended to use WEB_SUPPORT=0 with either SECURE_CLIENT option, as there are miscellaneous problems when using them simultaneously
+// (although, things might've improved, and I'd encourage to check whether this is true or not)
+//
+// When using MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
 // ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
 // Or, use "sync" versions instead (note that not every module has this option):
 // THINGSPEAK_USE_ASYNC=0, TELNET_SERVER=TELNET_SERVER_WIFISERVER
 //
-// The simpliest way to avoid MITM attacks and verify SSL connection is to use fingerprinting.
+// See SECURE_CLIENT_CHECK for all possible connection verification options.
+//
+// The simpliest way to verify SSL connection is to use fingerprinting.
 // For example, to get Google's MQTT server certificate fingerprint, run the following command:
 // $ echo -n | openssl s_client -connect mqtt.googleapis.com:8883 2>&1 | openssl x509 -noout -fingerprint -sha1 | cut -d\= -f2
-// Note, that this will change when certificate changes e.g. LetsEncrypt renewals or when the CSR updates
-// It's also possible to leave the fingerprint empty, so that any certificate is trusted.
+// Note that fingerprint will change when certificate changes e.g. LetsEncrypt renewals or when the CSR updates
 
 #ifndef MQTT_SSL_ENABLED
 #define MQTT_SSL_ENABLED            0               // By default MQTT over SSL will not be enabled
