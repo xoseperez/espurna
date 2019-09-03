@@ -130,13 +130,13 @@ void _ledMQTTCallback(unsigned int type, const char * topic, const char * payloa
         if (_ledMode(ledID) != LED_MODE_MQTT) return;
 
         // get value
-        unsigned char value = relayParsePayload(payload);
+        const auto value = relayParsePayload(payload);
 
         // Action to perform
-        if (value == 2) {
+        if (value == RelayStatus::TOGGLE) {
             _ledToggle(ledID);
         } else {
-            _ledStatus(ledID, value == 1);
+            _ledStatus(ledID, (value == RelayStatus::ON));
         }
 
     }

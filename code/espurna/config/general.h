@@ -404,13 +404,17 @@
 #define RELAY_REPORT_STATUS         1
 #endif
 
-// Configure the MQTT payload for ON/OFF
+// Configure the MQTT payload for ON, OFF and TOGGLE
+#ifndef RELAY_MQTT_OFF
+#define RELAY_MQTT_OFF              "0"
+#endif
+
 #ifndef RELAY_MQTT_ON
 #define RELAY_MQTT_ON               "1"
 #endif
 
-#ifndef RELAY_MQTT_OFF
-#define RELAY_MQTT_OFF              "0"
+#ifndef RELAY_MQTT_TOGGLE
+#define RELAY_MQTT_TOGGLE           "2"
 #endif
 
 // TODO Only single EEPROM address is used to store state, which is 1 byte

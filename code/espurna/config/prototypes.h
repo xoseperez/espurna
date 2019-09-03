@@ -254,6 +254,15 @@ typedef struct {
 // -----------------------------------------------------------------------------
 #include <bitset>
 
+enum class RelayStatus : unsigned char {
+    OFF = 0,
+    ON = 1,
+    TOGGLE = 2,
+    UNKNOWN = 0xFF
+};
+
+RelayStatus relayParsePayload(const char * payload);
+
 bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
 bool relayStatus(unsigned char id, bool status);
 bool relayStatus(unsigned char id);
@@ -262,11 +271,11 @@ void relayToggle(unsigned char id, bool report, bool group_report);
 void relayToggle(unsigned char id);
 
 unsigned char relayCount();
-unsigned char relayParsePayload(const char * payload);
 
 const String& relayPayloadOn();
 const String& relayPayloadOff();
-const char* relayPayload(bool status);
+const String& relayPayloadToggle();
+const char* relayPayload(RelayStatus status);
 
 // -----------------------------------------------------------------------------
 // Settings
