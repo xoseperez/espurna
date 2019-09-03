@@ -195,8 +195,7 @@ class SecureClient {
 
     public:
 
-    SecureClient(const char* tag, SecureClientConfig& config) :
-        _tag(tag),
+    SecureClient(SecureClientConfig& config) :
         _config(config),
         _checks(_config),
         _client(std::make_unique<SecureClientClass>())
@@ -216,7 +215,6 @@ class SecureClient {
 
     private:
 
-    String _tag;
     SecureClientConfig _config;
     SecureClientChecks _checks;
     std::unique_ptr<SecureClientClass> _client;

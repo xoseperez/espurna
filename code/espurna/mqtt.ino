@@ -29,7 +29,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
     WiFiClient _mqtt_client;
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
-    SecureClient* _mqtt_client_secure = nullptr;
+    std::unique_ptr<SecureClient> _mqtt_client_secure = nullptr;
 
     #if MQTT_SECURE_CLIENT_INCLUDE_CA
     #include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
@@ -158,7 +158,7 @@ bool _mqttSetupSyncClient(bool secure = false) {
 
     #if SECURE_CLIENT != SECURE_CLIENT_NONE
         if (secure) {
-            if (!_mqtt_client_secure) _mqtt_client_secure = new SecureClient("MQTT", _mqtt_sc_config);
+            if (!_mqtt_client_secure) _mqtt_client_secure = std::make_unique<SecureClient>(_mqtt_sc_config);
             return _mqtt_client_secure->beforeConnected();
         }
     #endif
