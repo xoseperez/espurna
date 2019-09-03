@@ -110,7 +110,7 @@ MENUS = ["flash_size", "float_support"]
 CORE_VERSIONS = ["2.3.0", "latest"]
 
 EXTRA_FLAGS = [
-    (".compiler.cpp.extra_flags", "-DNO_GLOBAL_EEPROM -DMQTT_MAX_PACKET_SIZE=400")
+    (".compiler.cpp.extra_flags", "-DNO_GLOBAL_EEPROM -DMQTT_MAX_PACKET_SIZE=1024")
 ]
 
 
@@ -167,7 +167,13 @@ def print_versions(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--directory", default="arduino_ide")
+    parser.add_argument(
+        "-d",
+        "--directory",
+        default=os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "arduino_ide"
+        ),
+    )
 
     subparsers = parser.add_subparsers(title="commands")
     parser_versions = subparsers.add_parser("versions", help="list supported versions")
