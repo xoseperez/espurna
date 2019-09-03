@@ -370,11 +370,29 @@ void _mqttBackwards() {
 }
 
 void _mqttInfo() {
-    DEBUG_MSG_P(PSTR("[MQTT] %s, SSL %s, Autoconnect %s\n"),
-        (MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT ? "AsyncMqttClient" : (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT ? "Arduino-MQTT" : "PubSubClient")),
-        SECURE_CLIENT == SECURE_CLIENT_NONE ? "DISABLED" : "ENABLED",
-        MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"
-    );
+    DEBUG_MSG_P(PSTR(
+        "[MQTT] "
+        #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+            "AsyncMqttClient"
+        #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
+            "Arduino-MQTT"
+        #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+            "PubSubClient"
+        #endif
+        ", SSL "
+        #if SECURE_CLIENT != SEURE_CLIENT_NONE
+            "ENABLED"
+        #else
+            "DISABLED"
+        #endif
+        ", Autoconnect "
+        #if MQTT_AUTOCONNECT
+            "ENABLED"
+        #else
+            "DISABLED"
+        #endif
+        "\n"
+    ));
     DEBUG_MSG_P(PSTR("[MQTT] Client %s, %s\n"),
         _mqtt_enabled ? "ENABLED" : "DISABLED",
         _mqtt.connected() ? "CONNECTED" : "DISCONNECTED"
