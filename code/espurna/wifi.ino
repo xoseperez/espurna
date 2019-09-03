@@ -6,7 +6,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "JustWifi.h"
+#include <JustWifi.h>
 #include <Ticker.h>
 
 uint32_t _wifi_scan_client_id = 0;
@@ -68,20 +68,20 @@ void _wifiConfigure() {
 
     int i;
     for (i = 0; i< WIFI_MAX_NETWORKS; i++) {
-        if (getSetting("ssid" + String(i)).length() == 0) break;
-        if (getSetting("ip" + String(i)).length() == 0) {
+        if (!hasSetting("ssid", i)) break;
+        if (!hasSetting("ip", i)) {
             jw.addNetwork(
-                getSetting("ssid" + String(i)).c_str(),
-                getSetting("pass" + String(i)).c_str()
+                getSetting("ssid", i, "").c_str(),
+                getSetting("pass", i, "").c_str()
             );
         } else {
             jw.addNetwork(
-                getSetting("ssid" + String(i)).c_str(),
-                getSetting("pass" + String(i)).c_str(),
-                getSetting("ip" + String(i)).c_str(),
-                getSetting("gw" + String(i)).c_str(),
-                getSetting("mask" + String(i)).c_str(),
-                getSetting("dns" + String(i)).c_str()
+                getSetting("ssid", i, "").c_str(),
+                getSetting("pass", i, "").c_str(),
+                getSetting("ip", i, "").c_str(),
+                getSetting("gw", i, "").c_str(),
+                getSetting("mask", i, "").c_str(),
+                getSetting("dns", i, "").c_str()
             );
         }
     }
@@ -131,7 +131,7 @@ void _wifiScan(uint32_t client_id = 0) {
         DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
 
         // Populate defined networks with scan data
-        for (int8_t i = 0; i < result; ++i) {
+        for (unsigned char i = 0; i < result; ++i) {
 
             String ssid_scan;
             int32_t rssi_scan;
@@ -149,7 +149,7 @@ void _wifiScan(uint32_t client_id = 0) {
                 (sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
                 rssi_scan,
                 chan_scan,
-                (char *) ssid_scan.c_str()
+                ssid_scan.c_str()
             );
 
             DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), buffer);
@@ -220,42 +220,42 @@ void _wifiInject() {
     if (strlen(WIFI1_SSID)) {
 
         if (!hasSetting("ssid", 0)) {
-            setSetting("ssid", 0, WIFI1_SSID);
-            setSetting("pass", 0, WIFI1_PASS);
-            setSetting("ip", 0, WIFI1_IP);
-            setSetting("gw", 0, WIFI1_GW);
-            setSetting("mask", 0, WIFI1_MASK);
-            setSetting("dns", 0, WIFI1_DNS);
+            setSetting("ssid", 0, F(WIFI1_SSID));
+            setSetting("pass", 0, F(WIFI1_PASS));
+            setSetting("ip", 0, F(WIFI1_IP));
+            setSetting("gw", 0, F(WIFI1_GW));
+            setSetting("mask", 0, F(WIFI1_MASK));
+            setSetting("dns", 0, F(WIFI1_DNS));
         }
 
         if (strlen(WIFI2_SSID)) {
             if (!hasSetting("ssid", 1)) {
-                setSetting("ssid", 1, WIFI2_SSID);
-                setSetting("pass", 1, WIFI2_PASS);
-                setSetting("ip", 1, WIFI2_IP);
-                setSetting("gw", 1, WIFI2_GW);
-                setSetting("mask", 1, WIFI2_MASK);
-                setSetting("dns", 1, WIFI2_DNS);
+                setSetting("ssid", 1, F(WIFI2_SSID));
+                setSetting("pass", 1, F(WIFI2_PASS));
+                setSetting("ip", 1, F(WIFI2_IP));
+                setSetting("gw", 1, F(WIFI2_GW));
+                setSetting("mask", 1, F(WIFI2_MASK));
+                setSetting("dns", 1, F(WIFI2_DNS));
             }
 
             if (strlen(WIFI3_SSID)) {
                 if (!hasSetting("ssid", 2)) {
-                    setSetting("ssid", 2, WIFI3_SSID);
-                    setSetting("pass", 2, WIFI3_PASS);
-                    setSetting("ip", 2, WIFI3_IP);
-                    setSetting("gw", 2, WIFI3_GW);
-                    setSetting("mask", 2, WIFI3_MASK);
-                    setSetting("dns", 2, WIFI3_DNS);
+                    setSetting("ssid", 2, F(WIFI3_SSID));
+                    setSetting("pass", 2, F(WIFI3_PASS));
+                    setSetting("ip", 2, F(WIFI3_IP));
+                    setSetting("gw", 2, F(WIFI3_GW));
+                    setSetting("mask", 2, F(WIFI3_MASK));
+                    setSetting("dns", 2, F(WIFI3_DNS));
                 }
 
                 if (strlen(WIFI4_SSID)) {
                     if (!hasSetting("ssid", 3)) {
-                        setSetting("ssid", 3, WIFI4_SSID);
-                        setSetting("pass", 3, WIFI4_PASS);
-                        setSetting("ip", 3, WIFI4_IP);
-                        setSetting("gw", 3, WIFI4_GW);
-                        setSetting("mask", 3, WIFI4_MASK);
-                        setSetting("dns", 3, WIFI4_DNS);
+                        setSetting("ssid", 3, F(WIFI4_SSID));
+                        setSetting("pass", 3, F(WIFI4_PASS));
+                        setSetting("ip", 3, F(WIFI4_IP));
+                        setSetting("gw", 3, F(WIFI4_GW));
+                        setSetting("mask", 3, F(WIFI4_MASK));
+                        setSetting("dns", 3, F(WIFI4_DNS));
                     }
                 }
             }
