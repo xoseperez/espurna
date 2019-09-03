@@ -662,7 +662,7 @@ void _relayConfigure() {
         settingsProcessConfig({
             {_relay_mqtt_payload_on,     "relayPayloadOn",     RELAY_MQTT_ON},
             {_relay_mqtt_payload_off,    "relayPayloadOff",    RELAY_MQTT_OFF},
-            {_relay_mqtt_payload_toggle, "relayPayloadToggle", RELAY_MQTT_OFF},
+            {_relay_mqtt_payload_toggle, "relayPayloadToggle", RELAY_MQTT_TOGGLE},
         });
     #endif // MQTT_SUPPORT
 }
@@ -892,9 +892,9 @@ const String& relayPayloadToggle() {
 
 const char* relayPayload(RelayStatus status) {
 
-    if (status == RelayStatus::ON) {
+    if (status == RelayStatus::OFF) {
         return _relay_mqtt_payload_off.c_str();
-    } else if (status == RelayStatus::OFF) {
+    } else if (status == RelayStatus::ON) {
         return _relay_mqtt_payload_on.c_str();
     } else if (status == RelayStatus::TOGGLE) {
         return _relay_mqtt_payload_toggle.c_str();
@@ -922,7 +922,7 @@ void relayMQTT(unsigned char id) {
     // Send state topic
     if (_relays[id].report) {
         _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayStatusTyped(_relays[id].current_status)));
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayStatusTyped(id)));
     }
 
     // Check group topic
@@ -942,7 +942,7 @@ void relayMQTT(unsigned char id) {
 
 void relayMQTT() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayStatusTyped(_relays[id].current_status)));
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayStatusTyped(id)));
     }
 }
 
