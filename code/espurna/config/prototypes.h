@@ -162,8 +162,35 @@ int16_t i2c_read_int16_le(uint8_t address, uint8_t reg);
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 
 // -----------------------------------------------------------------------------
+// Lights
+// -----------------------------------------------------------------------------
+
+unsigned char lightChannels();
+
+void lightState(unsigned char i, bool state);
+bool lightState(unsigned char i);
+
+void lightState(bool state);
+bool lightState();
+
+void lightBrightness(unsigned int brightness);
+unsigned int lightBrightness();
+
+unsigned int lightChannel(unsigned char id);
+void lightChannel(unsigned char id, unsigned char value);
+
+// -----------------------------------------------------------------------------
 // MQTT
 // -----------------------------------------------------------------------------
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    #include <ESPAsyncTCP.h>
+    #include <AsyncMqttClient.h>
+#elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
+    #include <MQTTClient.h>
+#elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+    #include <PubSubClient.h>
+#endif
 
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 
@@ -190,13 +217,6 @@ const char* mqttPayloadStatus(bool status);
 
 void mqttSendStatus();
 
-#if MQTT_SECURE_CLIENT_INCLUDE_CA
-#include "../static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
-#else
-#include "../static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
-#define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
-#endif // MQTT_SECURE_CLIENT_INCLUDE_CA
-
 // -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
@@ -213,17 +233,8 @@ void mqttSendStatus();
 #endif
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
-
     #include <WiFiClientSecure.h>
-
-    #if OTA_SECURE_CLIENT_INCLUDE_CA
-    #include "../static/ota_secure_client_ca.h"
-    #else
-    #include "../static/digicert_evroot_pem.h"
-    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
-    #endif
-
-#endif // SECURE_CLIENT_SUPPORT
+#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 // -----------------------------------------------------------------------------
 // RFM69
@@ -393,6 +404,12 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 using wifi_callback_f = std::function<void(justwifi_messages_t code, char * parameter)>;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
+
+#if LWIP_VERSION_MAJOR == 1
+#include <netif/etharp.h>
+#else // LWIP_VERSION_MAJOR >= 2
+#include <lwip/etharp.h>
+#endif
 
 // -----------------------------------------------------------------------------
 // THERMOSTAT
