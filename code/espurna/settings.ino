@@ -245,6 +245,17 @@ void settingsGetJson(JsonObject& root) {
 
 }
 
+void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter) {
+    for (auto& entry : config) {
+        String value = getSetting(entry.key, entry.default_value);
+        if (filter) {
+            value = filter(value);
+        }
+        if (value.equals(entry.setting)) continue;
+        entry.setting = std::move(value);
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------

@@ -272,7 +272,7 @@ void heartbeat() {
                 mqttSend(MQTT_TOPIC_VCC, String(ESP.getVcc()).c_str());
 
             if (hb_cfg & Heartbeat::Status)
-                mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+                mqttSendStatus();
 
             if (hb_cfg & Heartbeat::Loadavg)
                 mqttSend(MQTT_TOPIC_LOADAVG, String(systemLoadAverage()).c_str());
@@ -291,7 +291,7 @@ void heartbeat() {
             #endif
 
         } else if (!serial && _heartbeat_mode == HEARTBEAT_REPEAT_STATUS) {
-            mqttSend(MQTT_TOPIC_STATUS, MQTT_STATUS_ONLINE, true);
+            mqttSendStatus();
         }
 
     #endif

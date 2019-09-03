@@ -194,10 +194,28 @@ void lightChannel(unsigned char id, unsigned char value);
 
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 
-#if MQTT_SUPPORT
-    void mqttRegister(mqtt_callback_f callback);
-    String mqttMagnitude(char * topic);
-#endif
+void mqttRegister(mqtt_callback_f callback);
+
+String mqttTopic(const char * magnitude, bool is_set);
+String mqttTopic(const char * magnitude, unsigned int index, bool is_set);
+
+String mqttMagnitude(char * topic);
+
+void mqttSendRaw(const char * topic, const char * message, bool retain);
+void mqttSendRaw(const char * topic, const char * message);
+
+void mqttSend(const char * topic, const char * message, bool force, bool retain);
+void mqttSend(const char * topic, const char * message, bool force);
+void mqttSend(const char * topic, const char * message);
+
+void mqttSend(const char * topic, unsigned int index, const char * message, bool force);
+void mqttSend(const char * topic, unsigned int index, const char * message);
+
+const String& mqttPayloadOnline();
+const String& mqttPayloadOffline();
+const char* mqttPayloadStatus(bool status);
+
+void mqttSendStatus();
 
 // -----------------------------------------------------------------------------
 // OTA
@@ -236,16 +254,42 @@ typedef struct {
 // -----------------------------------------------------------------------------
 #include <bitset>
 
+bool relayStatus(unsigned char id, bool status, bool report, bool group_report);
+bool relayStatus(unsigned char id, bool status);
+bool relayStatus(unsigned char id);
+
+void relayToggle(unsigned char id, bool report, bool group_report);
+void relayToggle(unsigned char id);
+
+unsigned char relayCount();
+unsigned char relayParsePayload(const char * payload);
+
+const String& relayPayloadOn();
+const String& relayPayloadOff();
+const char* relayPayload(bool status);
+
 // -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
 #include <Embedis.h>
+
 template<typename T> bool setSetting(const String& key, T value);
 template<typename T> bool setSetting(const String& key, unsigned int index, T value);
 template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 void settingsGetJson(JsonObject& data);
 bool settingsRestoreJson(JsonObject& data);
+
+struct settings_cfg_t {
+    String& setting;
+    const char* key;
+    const char* default_value;
+};
+
+using settings_filter_t = std::function<String(String& value)>;
+using settings_cfg_list_t = std::initializer_list<settings_cfg_t>;
+
+void settingsProcessConfig(const settings_cfg_list_t& config, settings_filter_t filter = nullptr);
 
 // -----------------------------------------------------------------------------
 // Terminal
@@ -302,9 +346,9 @@ struct ws_data_t;
 struct ws_debug_t;
 struct ws_callbacks_t;
 
-using ws_on_send_callback_f = std::function<void(JsonObject&)>;
-using ws_on_action_callback_f = std::function<void(uint32_t, const char *, JsonObject&)>;
-using ws_on_keycheck_callback_f = std::function<bool(const char *, JsonVariant&)>;
+using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
+using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char * action, JsonObject& data)>;
+using ws_on_keycheck_callback_f = std::function<bool(const char * key, JsonVariant& value)>;
 
 using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
 using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
@@ -329,27 +373,28 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
     ws_callbacks_t& wsRegister();
 
     void wsSetup();
-    void wsSend(uint32_t, const char*);
-    void wsSend(uint32_t, JsonObject&);
-    void wsSend(JsonObject&);
-    void wsSend(ws_on_send_callback_f);
+    void wsSend(uint32_t client_id, const char* data);
+    void wsSend(uint32_t client_id, JsonObject& root);
+    void wsSend(JsonObject& root);
+    void wsSend(ws_on_send_callback_f callback);
 
-    void wsSend_P(PGM_P);
-    void wsSend_P(uint32_t, PGM_P);
+    void wsSend_P(PGM_P data);
+    void wsSend_P(uint32_t client_id, PGM_P data);
 
-    void wsPost(const ws_on_send_callback_f&);
-    void wsPost(const ws_on_send_callback_list_t&);
-    void wsPost(uint32_t, const ws_on_send_callback_list_t&);
+    void wsPost(const ws_on_send_callback_f& callback);
+    void wsPost(const ws_on_send_callback_list_t& callbacks);
+    void wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
 
-    void wsPostAll(uint32_t, const ws_on_send_callback_list_t&);
-    void wsPostAll(const ws_on_send_callback_list_t&);
+    void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+    void wsPostAll(const ws_on_send_callback_list_t& callbacks);
 
-    void wsPostSequence(uint32_t, const ws_on_send_callback_list_t&);
-    void wsPostSequence(const ws_on_send_callback_list_t&);
+    void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+    void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
+    void wsPostSequence(const ws_on_send_callback_list_t& callbacks);
 
     bool wsConnected();
-    bool wsConnected(uint32_t);
-    bool wsDebugSend(const char*, const char*);
+    bool wsConnected(uint32_t client_id);
+    bool wsDebugSend(const char* prefix, const char* message);
 #endif
 
 // -----------------------------------------------------------------------------
