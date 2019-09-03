@@ -910,7 +910,7 @@ void _relayMQTTGroup(unsigned char id) {
     unsigned char mode = getSetting("mqttGroupSync", id, RELAY_GROUP_SYNC_NORMAL).toInt();
     if (mode == RELAY_GROUP_SYNC_RECEIVEONLY) return;
 
-    RelayStatus status = _relayStatusTyped(id);
+    auto status = _relayStatusTyped(id);
     if (mode == RELAY_GROUP_SYNC_INVERSE) status = _relayStatusInvert(status);
     mqttSendRaw(topic.c_str(), relayPayload(status));
 }
