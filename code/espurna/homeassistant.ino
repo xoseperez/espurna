@@ -164,6 +164,7 @@ void _haSendSwitch(unsigned char i, JsonObject& config) {
             }
             if (lightUseCCT()) {
                 config["color_temp_command_topic"] = mqttTopic(MQTT_TOPIC_MIRED, true);
+                config["color_temp_state_topic"] = mqttTopic(MQTT_TOPIC_MIRED, false);
             }
 
             if (lightChannels() > 3) {
