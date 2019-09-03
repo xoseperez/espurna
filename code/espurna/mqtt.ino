@@ -32,10 +32,10 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
     std::unique_ptr<SecureClient> _mqtt_client_secure = nullptr;
 
     #if MQTT_SECURE_CLIENT_INCLUDE_CA
-    #include "static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
+    #include "static/mqtt_client_trusted_root_ca.h" // Assumes this header file defines a _mqtt_client_trusted_root_ca[] PROGMEM = "...PEM data..."
     #else
     #include "static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
-    #define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
+    #define _mqtt_client_trusted_root_ca _ssl_letsencrypt_isrg_x3_ca
     #endif // MQTT_SECURE_CLIENT_INCLUDE_CA
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
@@ -112,7 +112,7 @@ SecureClientConfig _mqtt_sc_config {
         return getSetting("mqttScCheck", MQTT_SECURE_CLIENT_CHECK).toInt();
     },
     []() -> PGM_P {
-        return _mqtt_client_ca;
+        return _mqtt_client_trusted_root_ca;
     },
     []() -> String {
         return getSetting("mqttfp", MQTT_SSL_FINGERPRINT);

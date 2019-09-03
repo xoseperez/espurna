@@ -770,8 +770,8 @@
                                                          // TODO: eventually should be replaced with pre-parsed structs, read directly from flash
                                                          // (ref: https://github.com/earlephilhower/bearssl-esp8266/pull/14)
                                                          //
-                                                         // When enabled, current implementation includes "static/ota_secure_client_ca.h" with
-                                                         // const char _ota_client_http_update_ca[] PROGMEM = "...PEM data...";
+                                                         // When enabled, current implementation includes "static/ota_client_trusted_root_ca.h" with
+                                                         // const char _ota_client_trusted_root_ca[] PROGMEM = "...PEM data...";
                                                          // By default, using DigiCert root in "static/digicert_evroot_pem.h" (for https://github.com)
 #endif
 
@@ -889,8 +889,8 @@
 
 #ifndef MQTT_SECURE_CLIENT_INCLUDE_CA
 #define MQTT_SECURE_CLIENT_INCLUDE_CA        0           // Use user-provided CA. Only PROGMEM PEM option is supported.
-                                                         // When enabled, current implementation includes "static/mqtt_secure_client_ca.h" with
-                                                         // const char _mqtt_client_ca[] PROGMEM = "...PEM data...";
+                                                         // When enabled, current implementation includes "static/mqtt_client_trusted_root_ca.h" with
+                                                         // const char _mqtt_client_trusted_root_ca[] PROGMEM = "...PEM data...";
                                                          // By default, using LetsEncrypt X3 root in "static/letsencrypt_isrgroot_pem.h"
 #endif
 

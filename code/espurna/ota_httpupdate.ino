@@ -22,10 +22,10 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
 
     #if OTA_SECURE_CLIENT_INCLUDE_CA
-    #include "static/ota_secure_client_ca.h"
+    #include "static/ota_client_trusted_root_ca.h"
     #else
     #include "static/digicert_evroot_pem.h"
-    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
+    #define _ota_client_trusted_root_ca _ssl_digicert_ev_root_ca
     #endif
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
@@ -125,7 +125,7 @@ void _otaClientFromHttps(const String& url) {
 
     BearSSL::X509List *ca = nullptr;
     if (check == SECURE_CLIENT_CHECK_CA) {
-        ca = new BearSSL::X509List(_ota_client_http_update_ca);
+        ca = new BearSSL::X509List(_ota_client_trusted_root_ca);
         // because we do not support libc methods of getting time, force client to use ntpclientlib's current time
         // XXX: local2utc method use is detrimental when DST happening. now() should be utc
         client->setX509Time(ntpLocal2UTC(now()));
