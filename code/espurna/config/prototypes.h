@@ -183,19 +183,21 @@ void lightChannel(unsigned char id, unsigned char value);
 // MQTT
 // -----------------------------------------------------------------------------
 
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    #include <ESPAsyncTCP.h>
+    #include <AsyncMqttClient.h>
+#elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
+    #include <MQTTClient.h>
+#elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
+    #include <PubSubClient.h>
+#endif
+
 using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 
 #if MQTT_SUPPORT
     void mqttRegister(mqtt_callback_f callback);
     String mqttMagnitude(char * topic);
 #endif
-
-#if MQTT_SECURE_CLIENT_INCLUDE_CA
-#include "../static/mqtt_secure_client_ca.h" // Assumes this header file defines a _mqtt_client_ca[] PROGMEM = "...PEM data..."
-#else
-#include "../static/letsencrypt_isrgroot_pem.h" // Default to LetsEncrypt X3 certificate
-#define _mqtt_client_ca _ssl_letsencrypt_isrg_x3_ca
-#endif // MQTT_SECURE_CLIENT_INCLUDE_CA
 
 // -----------------------------------------------------------------------------
 // OTA
@@ -213,17 +215,8 @@ using mqtt_callback_f = std::function<void(unsigned int, const char *, char *)>;
 #endif
 
 #if SECURE_CLIENT != SECURE_CLIENT_NONE
-
     #include <WiFiClientSecure.h>
-
-    #if OTA_SECURE_CLIENT_INCLUDE_CA
-    #include "../static/ota_secure_client_ca.h"
-    #else
-    #include "../static/digicert_evroot_pem.h"
-    #define _ota_client_http_update_ca _ssl_digicert_ev_root_ca
-    #endif
-
-#endif // SECURE_CLIENT_SUPPORT
+#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 // -----------------------------------------------------------------------------
 // RFM69

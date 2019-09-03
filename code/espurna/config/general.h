@@ -789,8 +789,8 @@
                                                          // TODO: eventually should be replaced with pre-parsed structs, read directly from flash
                                                          // (ref: https://github.com/earlephilhower/bearssl-esp8266/pull/14)
                                                          //
-                                                         // When enabled, current implementation includes "static/ota_secure_client_ca.h" with
-                                                         // const char _ota_client_http_update_ca[] PROGMEM = "...PEM data...";
+                                                         // When enabled, current implementation includes "static/ota_client_trusted_root_ca.h" with
+                                                         // const char _ota_client_trusted_root_ca[] PROGMEM = "...PEM data...";
                                                          // By default, using DigiCert root in "static/digicert_evroot_pem.h" (for https://github.com)
 #endif
 
@@ -859,27 +859,36 @@
 
 
 #ifndef MQTT_LIBRARY
-#define MQTT_LIBRARY                MQTT_ASYNC       // Choose between: MQTT_ASYNC (AysncMQTTClient), MQTT_PUBSUB (PubSubClient), MQTT_ARDUINO (Arduino-MQTT)
+#define MQTT_LIBRARY                MQTT_LIBRARY_ASYNCMQTTCLIENT       // MQTT_LIBRARY_ASYNCMQTTCLIENT (default, https://github.com/marvinroger/async-mqtt-client)
+                                                                       // MQTT_LIBRARY_PUBSUBCLIENT (https://github.com/knolleary/pubsubclient)
+                                                                       // MQTT_LIBRARY_ARDUINOMQTT (https://github.com/256dpi/arduino-mqtt)
 #endif
 
+// -----------------------------------------------------------------------------
 // MQTT OVER SSL
-// Using MQTT over SSL works pretty well but generates problems with the web interface.
-// It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL and ESP8266 Arduino Core >= 2.4.0.
+// -----------------------------------------------------------------------------
 //
-// You can use SSL with MQTT_LIBRARY=ASYNC (AsyncMqttClient library)
-// but you might experience hiccups on the web interface, so my recommendation is:
-// WEB_SUPPORT=0
+// Requires SECURE_CLIENT set to SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL
+// It is recommended to use MQTT_LIBRARY_ARDUINOMQTT or MQTT_LIBRARY_PUBSUBCLIENT
+// It is recommended to use SECURE_CLIENT_BEARSSL
+// It is recommended to use ESP8266 Arduino Core >= 2.5.2 with SECURE_CLIENT_BEARSSL
 //
-// If you use SSL with MQTT_LIBRARY=PUBSUB (PubSubClient library) or MQTT_LIBRARY=ARDUINO (Arduino-MQTT library)
-// you will have to disable all the modules that use ESPAsyncTCP, that is:
+// Current version of MQTT_LIBRARY_ASYNCMQTTCLIENT only supports SECURE_CLIENT_AXTLS
+//
+// It is recommended to use WEB_SUPPORT=0 with either SECURE_CLIENT option, as there are miscellaneous problems when using them simultaneously
+// (although, things might've improved, and I'd encourage to check whether this is true or not)
+//
+// When using MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
 // ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
+// Or, use "sync" versions instead (note that not every module has this option):
+// THINGSPEAK_USE_ASYNC=0, TELNET_SERVER=TELNET_SERVER_WIFISERVER
 //
-// You will need the fingerprint of your MQTT server, in order to prevent MITS attacks.
-// To get a certificate fingerprint, run the following command:
+// See SECURE_CLIENT_CHECK for all possible connection verification options.
+//
+// The simpliest way to verify SSL connection is to use fingerprinting.
+// For example, to get Google's MQTT server certificate fingerprint, run the following command:
 // $ echo -n | openssl s_client -connect mqtt.googleapis.com:8883 2>&1 | openssl x509 -noout -fingerprint -sha1 | cut -d\= -f2
-// Note that this fingerprint changes with e.g. LetsEncrypt renewals or when the CSR changes.
-// It's also possible to leave the fingerprint empty, the certificate is then always trusted.
+// Note that fingerprint will change when certificate changes e.g. LetsEncrypt renewals or when the CSR updates
 
 #ifndef MQTT_SSL_ENABLED
 #define MQTT_SSL_ENABLED            0               // By default MQTT over SSL will not be enabled
@@ -899,8 +908,8 @@
 
 #ifndef MQTT_SECURE_CLIENT_INCLUDE_CA
 #define MQTT_SECURE_CLIENT_INCLUDE_CA        0           // Use user-provided CA. Only PROGMEM PEM option is supported.
-                                                         // When enabled, current implementation includes "static/mqtt_secure_client_ca.h" with
-                                                         // const char _mqtt_client_ca[] PROGMEM = "...PEM data...";
+                                                         // When enabled, current implementation includes "static/mqtt_client_trusted_root_ca.h" with
+                                                         // const char _mqtt_client_trusted_root_ca[] PROGMEM = "...PEM data...";
                                                          // By default, using LetsEncrypt X3 root in "static/letsencrypt_isrgroot_pem.h"
 #endif
 
