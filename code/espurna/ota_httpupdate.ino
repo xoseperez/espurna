@@ -186,7 +186,7 @@ void _otaClientFrom(const String& url) {
         return;
     }
 
-    #if SECURE_CLIENT_SUPPORT
+    #if SECURE_CLIENT != SECURE_CLIENT_NONE
         if (url.startsWith("https://")) {
             _otaClientFromHttps(url);
             return;
