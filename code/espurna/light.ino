@@ -281,32 +281,32 @@ void _fromHSV(const char * hsv) {
     double f = (h - floor(h));
     double s = (double) value[1] / 100.0;
 
-    _light_brightness = lround((double) value[2] * 2.55); // (255/100)
-    unsigned char p = lround(255 * (1.0 - s));
-    unsigned char q = lround(255 * (1.0 - s * f));
-    unsigned char t = lround(255 * (1.0 - s * (1.0 - f)));
+    _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BRIGHTNESS_MAX) / 100.0)); // (255/100)
+    unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
+    unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
+    unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
 
     switch (int(h)) {
         case 0:
-            _setRGBInputValue(255, t, p);
+            _setRGBInputValue(Light::VALUE_MAX, t, p);
             break;
         case 1:
-            _setRGBInputValue(q, 255, p);
+            _setRGBInputValue(q, Light::VALUE_MAX, p);
             break;
         case 2:
-            _setRGBInputValue(p, 255, t);
+            _setRGBInputValue(p, Light::VALUE_MAX, t);
             break;
         case 3:
-            _setRGBInputValue(p, q, 255);
+            _setRGBInputValue(p, q, Light::VALUE_MAX);
             break;
         case 4:
-            _setRGBInputValue(t, p, 255);
+            _setRGBInputValue(t, p, Light::VALUE_MAX);
             break;
         case 5:
-            _setRGBInputValue(255, p, q);
+            _setRGBInputValue(Light::VALUE_MAX, p, q);
             break;
         default:
-            _setRGBInputValue(0, 0, 0);
+            _setRGBInputValue(Light::VALUE_MIN, Light::VALUE_MIN, Light::VALUE_MIN);
             break;
     }
 }
@@ -382,15 +382,17 @@ void _toRGB(char * rgb, size_t len) {
     _toRGB(rgb, len, false);
 }
 
-void _toHSV(char * hsv, size_t len, bool target) {
-    double h, s, v;
+void _toHSV(char * hsv, size_t len) {
+    double h {0.}, s {0.}, v {0.};
+    double r {0.}, g {0.}, b {0.};
+    double min {0.}, max {0.};
 
-    double r = static_cast<double>(target ? _light_channel[0].target : _light_channel[0].value);
-    double g = static_cast<double>(target ? _light_channel[1].target : _light_channel[1].value);
-    double b = static_cast<double>(target ? _light_channel[2].target : _light_channel[2].value);
+    r = static_cast<double>(_light_channel[0].target) / Light::VALUE_MAX;
+    g = static_cast<double>(_light_channel[1].target) / Light::VALUE_MAX;
+    b = static_cast<double>(_light_channel[2].target) / Light::VALUE_MAX;
 
-    double min = std::min(r, std::min(g, b));
-    double max = std::max(r, std::max(g, b));
+    min = std::min(r, std::min(g, b));
+    max = std::max(r, std::max(g, b));
 
     v = 100.0 * max;
     if (v == 0) {
@@ -414,16 +416,12 @@ void _toHSV(char * hsv, size_t len, bool target) {
         }
     }
 
-    // String
+    // Convert to string. Using lround, since we can't (yet) printf floats
     snprintf(hsv, len, "%d,%d,%d",
         static_cast<int>(lround(h)),
         static_cast<int>(lround(s)),
         static_cast<int>(lround(v))
     );
-}
-
-void _toHSV(char * hsv, size_t len) {
-    _toHSV(hsv, len, false);
 }
 
 void _toLong(char * color, size_t len, bool target) {
@@ -585,7 +583,7 @@ void _lightSaveSettings() {
 
 void _lightRestoreSettings() {
     for (unsigned int i=0; i < _light_channel.size(); i++) {
-        _light_channel[i].inputValue = getSetting("ch", i, i==0 ? 255 : 0).toInt();
+        _light_channel[i].inputValue = getSetting("ch", i, (i == 0) ? Light::VALUE_MAX : 0).toInt();
     }
     _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX).toInt();
     _light_mireds = getSetting("mireds", _light_mireds).toInt();
@@ -707,7 +705,7 @@ void lightMQTT() {
         }
         mqttSend(MQTT_TOPIC_COLOR_RGB, buffer);
 
-        _toHSV(buffer, sizeof(buffer), true);
+        _toHSV(buffer, sizeof(buffer));
         mqttSend(MQTT_TOPIC_COLOR_HSV, buffer);
 
     }
@@ -1041,7 +1039,7 @@ void _lightAPISetup() {
 
         apiRegister(MQTT_TOPIC_COLOR_HSV,
             [](char * buffer, size_t len) {
-                _toHSV(buffer, len, true);
+                _toHSV(buffer, len);
             },
             [](const char * payload) {
                 lightColor(payload, false);
