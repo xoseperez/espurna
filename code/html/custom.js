@@ -1861,9 +1861,11 @@ function connectToCurrentURL() {
     connectToURL(new URL(window.location));
 }
 
-function getParameterByName(name) {
-    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+function enableWSLogging() {
+    var processDataOrig = window.processData;
+    window.processData = function(data) { console.log(data); processDataOrig(data); }
+    var sendActionOrig = window.sendAction;
+    window.sendAction = function(action, data) { console.log(action,data); sendActionOrig(action, data);}
 }
 
 $(function() {
@@ -1944,7 +1946,10 @@ $(function() {
     if (window.location.protocol === "file:") { return; }
 
     // Check host param in query string
-    if (host = getParameterByName('host')) {
+    var search = new URLSearchParams(window.location.search),
+        host = search.get("host");
+
+    if (host !== null) {
         connect(host);
     } else {
         connectToCurrentURL();
