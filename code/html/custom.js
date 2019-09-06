@@ -513,47 +513,35 @@ function doUpgrade() {
         var data = new FormData();
         data.append("upgrade", file, file.name);
 
-        $.ajax({
+        var xhr = new XMLHttpRequest();
 
-            // Your server script to process the upload
-            url: urls.upgrade.href,
-            type: "POST",
+        var network_error = function() {
+            alert("There was a network error trying to upload the new image, please try again.");
+        };
+        xhr.addEventListener("error", network_error, false);
+        xhr.addEventListener("abort", network_error, false);
 
-            // Form data
-            data: data,
-
-            // Tell jQuery not to process data or worry about content-type
-            // You *must* include these options!
-            cache: false,
-            contentType: false,
-            processData: false,
-
-            success: function(data, text) {
-                $("#upgrade-progress").hide();
-                if ("OK" === data) {
-                    alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
-                    doReload(5000);
-                } else {
-                    alert("There was an error trying to upload the new image, please try again (" + data + ").");
-                }
-            },
-
-            // Custom XMLHttpRequest
-            xhr: function() {
-                $("#upgrade-progress").show();
-                var myXhr = $.ajaxSettings.xhr();
-                if (myXhr.upload) {
-                    // For handling the progress of the upload
-                    myXhr.upload.addEventListener("progress", function(e) {
-                        if (e.lengthComputable) {
-                            $("progress").attr({ value: e.loaded, max: e.total });
-                        }
-                    } , false);
-                }
-                return myXhr;
+        xhr.addEventListener("load", function(e) {
+            $("#upgrade-progress").hide();
+            if ("OK" === xhr.responseText) {
+                alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds.");
+                doReload(5000);
+            } else {
+                alert("There was an error trying to upload the new image, please try again ("
+                    + "response: " + xhr.responseText + ", "
+                    + "status: " + xhr.statusText + ")");
             }
+        }, false);
 
-        });
+        xhr.upload.addEventListener("progress", function(e) {
+            $("#upgrade-progress").show();
+            if (e.lengthComputable) {
+                $("progress").attr({ value: e.loaded, max: e.total });
+            }
+        }, false);
+
+        xhr.open("POST", urls.upgrade.href);
+        xhr.send(data);
 
     });
 
@@ -1830,12 +1818,17 @@ function connectToURL(url) {
 
     initUrls(url);
 
-    $.ajax({
+    fetch(urls.auth.href, {
         'method': 'GET',
-        'crossDomain': true,
-        'url': urls.auth.href,
-        'xhrFields': { 'withCredentials': true }
-    }).done(function(data) {
+        'cors': true,
+        'credentials': 'same-origin'
+    }).then(function(response) {
+        // Nothing to do, reload page and retry
+        if (response.status != 200) {
+            doReload(5000);
+            return;
+        }
+        // update websock object
         if (websock) { websock.close(); }
         websock = new WebSocket(urls.ws.href);
         websock.onmessage = function(evt) {
@@ -1844,8 +1837,9 @@ function connectToURL(url) {
                 processData(data);
             }
         };
-    }).fail(function() {
-        // Nothing to do, reload page and retry
+    }).catch(function(error) {
+        console.log(error);
+        doReload(5000);
     });
 
 }
