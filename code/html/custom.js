@@ -377,7 +377,7 @@ function checkTempRangeMin() {
         $("#tempRangeMinInput").val(max - 1);
     }
 }
-  
+
 function checkTempRangeMax() {
     var min = parseInt($("#tempRangeMinInput").val(), 10);
     var max = parseInt($("#tempRangeMaxInput").val(), 10);
@@ -1098,6 +1098,38 @@ function initMagnitudes(data) {
 
 <!-- removeIf(!light)-->
 
+// wheelColorPicker accepts:
+//   hsv(0...360,0...1,0...1)
+//   hsv(0...100%,0...100%,0...100%)
+// While we use:
+//   hsv(0...360,0...100%,0...100%)
+
+function _hsv_round(value) {
+    return Math.round(value * 100) / 100;
+}
+
+function getPickerRGB(picker) {
+    return $(picker).wheelColorPicker("getValue", "css");
+}
+
+// TODO: use pct values instead of doing conversion?
+function getPickerHSV(picker) {
+    var color = $(picker).wheelColorPicker("getColor");
+    return String(Math.ceil(_hsv_round(color.h) * 360))
+        + "," + String(Math.ceil(_hsv_round(color.s) * 100))
+        + "," + String(Math.ceil(_hsv_round(color.v) * 100));
+}
+
+function setPickerHSV(picker, value) {
+    if (value === getPickerHSV(picker)) return;
+    var chunks = value.split(",");
+    $(picker).wheelColorPicker("setColor", {
+        h: _hsv_round(chunks[0] / 360),
+        s: _hsv_round(chunks[1] / 100),
+        v: _hsv_round(chunks[2] / 100)
+    });
+}
+
 function initColor(rgb) {
 
     // check if already initialized
@@ -1114,12 +1146,9 @@ function initColor(rgb) {
         sliders: (rgb ? "wrgbp" : "whsvp")
     }).on("sliderup", function() {
         if (rgb) {
-            var value = $(this).wheelColorPicker("getValue", "css");
-            sendAction("color", {rgb: value});
+            sendAction("color", {rgb: getPickerRGB(this)});
         } else {
-            var color = $(this).wheelColorPicker("getColor");
-            var value = parseInt(color.h * 360, 10) + "," + parseInt(color.s * 100, 10) + "," + parseInt(color.v * 100, 10);
-            sendAction("color", {hsv: value});
+            sendAction("color", {hsv: getPickerHSV(this)});
         }
     });
 
@@ -1440,13 +1469,8 @@ function processData(data) {
 
         if ("hsv" === key) {
             initColor(false);
-            // wheelColorPicker expects HSV to be between 0 and 1 all of them
-            var chunks = value.split(",");
-            var obj = {};
-            obj.h = chunks[0] / 360;
-            obj.s = chunks[1] / 100;
-            obj.v = chunks[2] / 100;
-            $("input[name='color']").wheelColorPicker("setColor", obj);
+            $("#brightness").hide();
+            setPickerHSV(value);
             return;
         }
 
