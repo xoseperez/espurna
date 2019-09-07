@@ -51,7 +51,7 @@ bool _light_use_cct = false;
 bool _light_use_gamma = false;
 unsigned long _light_steps_left = 1;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
-unsigned int _light_mireds = lround((LIGHT_COLDWHITE_MIRED+LIGHT_WARMWHITE_MIRED)/2);
+unsigned int _light_mireds = lround((Light::MIREDS_COLDWHITE + Light::MIREDS_WARMWHITE) / 2);
 
 using light_brightness_func_t = void();
 light_brightness_func_t* _light_brightness_func = nullptr;
@@ -135,7 +135,7 @@ void _lightApplyBrightnessColor() {
     if (_light_use_cct) {
 
         // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-        double miredFactor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
+        double miredFactor = ((double) _light_mireds - (double) Light::MIREDS_COLDWHITE)/((double) Light::MIREDS_WARMWHITE - (double) Light::MIREDS_COLDWHITE);
 
         // set cold white
         _light_channel[3].inputValue = 0;
@@ -281,7 +281,7 @@ void _fromHSV(const char * hsv) {
     double f = (h - floor(h));
     double s = (double) value[1] / 100.0;
 
-    _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BRIGHTNESS_MAX) / 100.0)); // (255/100)
+    _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BRIGHTNESS_MAX) / 100.0)); // (default 255/100)
     unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
     unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
     unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
@@ -319,10 +319,10 @@ void _fromKelvin(unsigned long kelvin) {
 
       if(!_light_use_cct) return;
 
-      _light_mireds = constrain(static_cast<unsigned int>(lround(1000000UL / kelvin)), Light::MIREDS_MIN, Light::MIREDS_MAX);
+      _light_mireds = constrain(static_cast<unsigned int>(lround(1000000UL / kelvin)), Light::MIREDS_COLDWHITE, Light::MIREDS_WARMWHITE);
 
       // This change the range from 153-500 to 0-347 so we get a value between 0 and 1 in the end.
-      double factor = ((double) _light_mireds - (double) LIGHT_COLDWHITE_MIRED)/((double) LIGHT_WARMWHITE_MIRED - (double) LIGHT_COLDWHITE_MIRED);
+      double factor = ((double) _light_mireds - (double) Light::MIREDS_COLDWHITE)/((double) Light::MIREDS_WARMWHITE - (double) Light::MIREDS_COLDWHITE);
       unsigned char warm = lround(factor * Light::VALUE_MAX);
       unsigned char cold = lround(((double) 1.0 - factor) * Light::VALUE_MAX);
 
@@ -331,7 +331,7 @@ void _fromKelvin(unsigned long kelvin) {
       return;
     }
 
-    _light_mireds = constrain(static_cast<unsigned int>(lround(1000000UL / kelvin)), Light::MIREDS_MIN, Light::MIREDS_MAX);
+    _light_mireds = constrain(static_cast<unsigned int>(lround(1000000UL / kelvin)), Light::MIREDS_COLDWHITE, Light::MIREDS_WARMWHITE);
 
     if (_light_use_cct) {
       _setRGBInputValue(Light::VALUE_MAX, Light::VALUE_MAX, Light::VALUE_MAX);
@@ -358,7 +358,7 @@ void _fromKelvin(unsigned long kelvin) {
 
 // Color temperature is measured in mireds (kelvin = 1e6/mired)
 void _fromMireds(unsigned long mireds) {
-    unsigned long kelvin = constrain(static_cast<unsigned int>(1000000UL / mireds), Light::KELVIN_MIN, Light::KELVIN_MAX);
+    unsigned long kelvin = constrain(static_cast<unsigned int>(1000000UL / mireds), Light::KELVIN_WARMWHITE, Light::KELVIN_COLDWHITE);
     _fromKelvin(kelvin);
 }
 

@@ -1188,20 +1188,22 @@
 // Home Assistant also uses these, see Light::min_mireds, Light::max_mireds
 // https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/light/__init__.py
 
-#ifndef LIGHT_MIN_KELVIN
-#define LIGHT_MIN_KELVIN        2000
+// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
+// Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
+#ifndef LIGHT_COLDWHITE_MIRED
+#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
 #endif
 
-#ifndef LIGHT_MAX_KELVIN
-#define LIGHT_MAX_KELVIN        6536
+#ifndef LIGHT_WARMWHITE_MIRED
+#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 #endif
 
-#ifndef LIGHT_MIN_MIREDS
-#define LIGHT_MIN_MIREDS        153
+#ifndef LIGHT_COLDWHITE_KELVIN
+#define LIGHT_COLDWHITE_KELVIN  6536
 #endif
 
-#ifndef LIGHT_MAX_MIREDS
-#define LIGHT_MAX_MIREDS        500
+#ifndef LIGHT_WARMWHITE_KELVIN
+#define LIGHT_WARMWHITE_KELVIN  2000
 #endif
 
 #ifndef LIGHT_STEP
@@ -1219,11 +1221,6 @@
 #ifndef LIGHT_USE_CCT
 #define LIGHT_USE_CCT           0           // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
 #endif
-
-// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
-// Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
-#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
-#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
