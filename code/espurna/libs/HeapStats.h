@@ -75,7 +75,7 @@ void wtfHeap(bool value) {
 }
 
 unsigned int getFreeHeap() {
-    return getHeapStats().available;
+    return ESP.getFreeHeap();
 }
 
 static unsigned int _initial_heap_value = 0;
