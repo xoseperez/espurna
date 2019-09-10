@@ -1471,13 +1471,13 @@ function processData(data) {
 
         if ("rgb" === key) {
             initColor({rgb: true});
-            $("input[name='color']").wheelColorPicker("setValue", value, true);
+            setPickerRGB($("input[name='color']"), value);
             return;
         }
 
         if ("hsv" === key) {
             initColor({hsv: true});
-            setPickerHSV(value);
+            setPickerHSV($("input[name='color']"), value);
             return;
         }
 
