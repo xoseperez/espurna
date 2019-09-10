@@ -777,18 +777,18 @@ void wifiLoop() {
         _wifi_scan_client_id = 0;
     }
 
+    // Only send out gra arp when in STA mode
+    #if WIFI_GRATUITOUS_ARP_SUPPORT
+        if (_wifi_gratuitous_arp_interval) {
+            _wifiSendGratuitousArp(_wifi_gratuitous_arp_interval);
+        }
+    #endif
+
     // Check if we should disable AP
     static unsigned long last = 0;
     if (millis() - last > 60000) {
         last = millis();
         _wifiCheckAP();
     }
-
-    #if WIFI_GRATUITOUS_ARP_SUPPORT
-        // Only send out gra arp when in STA mode
-        if (_wifi_gratuitous_arp_interval) {
-            _wifiSendGratuitousArp(_wifi_gratuitous_arp_interval);
-        }
-    #endif
 
 }

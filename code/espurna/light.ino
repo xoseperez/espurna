@@ -11,6 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "light.h"
 
 #include <Ticker.h>
+#include <Schedule.h>
 #include <ArduinoJson.h>
 #include <vector>
 
@@ -42,14 +43,18 @@ struct channel_t {
 };
 std::vector<channel_t> _light_channel;
 
-bool _light_state = false;
-bool _light_use_transitions = false;
-unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
 bool _light_use_gamma = false;
+
+bool _light_provider_update = false;
+
+bool _light_use_transitions = false;
+unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 unsigned long _light_steps_left = 1;
+
+bool _light_state = false;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
 unsigned int _light_mireds = lround((Light::MIREDS_COLDWHITE + Light::MIREDS_WARMWHITE) / 2);
 
@@ -501,6 +506,10 @@ void _transition() {
 
 void _lightProviderUpdate() {
 
+    if (_light_provider_update) return;
+
+    _light_provider_update = true;
+
     _transition();
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
@@ -522,6 +531,12 @@ void _lightProviderUpdate() {
 
     #endif
 
+    _light_provider_update = false;
+
+}
+
+void _lightProviderDoUpdate() {
+    schedule_function(_lightProviderUpdate);
 }
 
 // -----------------------------------------------------------------------------
@@ -583,7 +598,6 @@ void _lightRestoreSettings() {
     }
     _light_brightness = getSetting("brightness", Light::BRIGHTNESS_MAX).toInt();
     _light_mireds = getSetting("mireds", _light_mireds).toInt();
-    lightUpdate(false, false);
 }
 
 // -----------------------------------------------------------------------------
@@ -801,7 +815,7 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Configure color transition
     _light_steps_left = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderUpdate);
+    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderDoUpdate);
 
     // Delay every communication 100ms to avoid jamming
     unsigned char mask = 0;
@@ -1300,6 +1314,7 @@ void lightSetup() {
     } else {
         _lightRestoreSettings();
     }
+    lightUpdate(false, false);
 
     #if WEB_SUPPORT
         wsRegister()
