@@ -458,8 +458,8 @@ void _toCSV(char * buffer, size_t len, bool applyBrightness) {
 
 // See cores/esp8266/WMath.cpp::map
 // Redefining as local method here to avoid breaking in unexpected ways in inputs like (0, 0, 0, 0, 1)
-template <typename T, typename T2> T _lightMap(T x, T in_min, T in_max, T2 out_min, T2 out_max) {
-    T divisor = (in_max - in_min);
+template <typename T, typename Tin, typename Tout> T _lightMap(T x, Tin in_min, Tin in_max, Tout out_min, Tout out_max) {
+    auto divisor = (in_max - in_min);
     if (divisor == 0){
         return -1; //AVR returns -1, SAM returns 0
     }
@@ -470,7 +470,7 @@ template <typename T, typename T2> T _lightMap(T x, T in_min, T in_max, T2 out_m
 // PROVIDER
 // -----------------------------------------------------------------------------
 
-unsigned int _toPWM(unsigned char value, bool gamma, bool reverse) {
+unsigned int _toPWM(unsigned int value, bool gamma, bool reverse) {
     value = constrain(value, Light::VALUE_MIN, Light::VALUE_MAX);
     if (gamma) value = pgm_read_byte(_light_gamma_table + value);
     if (Light::VALUE_MAX != Light::PWM_LIMIT) value = _lightMap(value, Light::VALUE_MIN, Light::VALUE_MAX, Light::PWM_MIN, Light::PWM_LIMIT);
