@@ -366,7 +366,7 @@ void _fromMireds(unsigned long mireds) {
 // Output Values
 // -----------------------------------------------------------------------------
 
-void _toRGB(char * rgb, size_t len, bool target) {
+void _toRGB(char * rgb, size_t len, bool target = false) {
     unsigned long value = 0;
 
     value += target ? _light_channel[0].target : _light_channel[0].inputValue;
@@ -376,10 +376,6 @@ void _toRGB(char * rgb, size_t len, bool target) {
     value += target ? _light_channel[2].target : _light_channel[2].inputValue;
 
     snprintf_P(rgb, len, PSTR("#%06X"), value);
-}
-
-void _toRGB(char * rgb, size_t len) {
-    _toRGB(rgb, len, false);
 }
 
 void _toHSV(char * hsv, size_t len) {
