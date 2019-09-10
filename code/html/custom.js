@@ -1151,7 +1151,7 @@ function initColor(cfg) {
 
     // init color wheel
     $("input[name='color']").wheelColorPicker({
-        sliders: (rgb ? "wrgbp" : "whsvp")
+        sliders: (rgb ? "wrgbp" : "whsp")
     }).on("sliderup", function() {
         if (rgb) {
             sendAction("color", {rgb: getPickerRGB(this)});
