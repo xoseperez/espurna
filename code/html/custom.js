@@ -1112,6 +1112,10 @@ function getPickerRGB(picker) {
     return $(picker).wheelColorPicker("getValue", "css");
 }
 
+function setPickerRGB(picker, color) {
+    $(picker).wheelColorPicker("setValue", value, true);
+}
+
 // TODO: use pct values instead of doing conversion?
 function getPickerHSV(picker) {
     var color = $(picker).wheelColorPicker("getColor");
@@ -1130,7 +1134,11 @@ function setPickerHSV(picker, value) {
     });
 }
 
-function initColor(rgb) {
+function initColor(cfg) {
+    var rgb = false;
+    if (typeof cfg === "object") {
+        rgb = cfg.rgb;
+    }
 
     // check if already initialized
     var done = $("#colors > div").length;
@@ -1462,14 +1470,13 @@ function processData(data) {
         <!-- removeIf(!light)-->
 
         if ("rgb" === key) {
-            initColor(true);
+            initColor({rgb: true});
             $("input[name='color']").wheelColorPicker("setValue", value, true);
             return;
         }
 
         if ("hsv" === key) {
-            initColor(false);
-            $("#brightness").hide();
+            initColor({hsv: true});
             setPickerHSV(value);
             return;
         }
