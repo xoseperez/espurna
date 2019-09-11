@@ -16,6 +16,21 @@ extern "C" {
 // System
 // -----------------------------------------------------------------------------
 
+#define LWIP_INTERNAL
+#include <ESP8266WiFi.h>
+#undef LWIP_INTERNAL
+
+extern "C" {
+  #include <lwip/opt.h>
+  #include <lwip/ip.h>
+  #include <lwip/tcp.h>
+  #include <lwip/inet.h> // ip_addr_t
+  #include <lwip/err.h> // ERR_x
+  #include <lwip/dns.h> // dns_gethostbyname
+  #include <lwip/ip_addr.h> // ip4/ip6 helpers
+  #include <lwip/init.h> // LWIP_VERSION_MAJOR
+}
+
 uint32_t systemResetReason();
 uint8_t systemStabilityCounter();
 void systemStabilityCounter(uint8_t);
