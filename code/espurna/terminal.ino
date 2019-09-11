@@ -408,6 +408,11 @@ void terminalSetup() {
         #endif
     });
 
+    #if WEB_SUPPORT
+        wsRegister()
+            .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
+    #endif
+
     _terminalInitCommand();
 
     #if SERIAL_RX_ENABLED

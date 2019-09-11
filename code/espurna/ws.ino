@@ -540,9 +540,6 @@ void _wsOnConnected(JsonObject& root) {
     root["btnDelay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
     root["webPort"] = getSetting("webPort", WEB_PORT).toInt();
     root["wsAuth"] = getSetting("wsAuth", WS_AUTHENTICATION).toInt() == 1;
-    #if TERMINAL_SUPPORT
-        root["cmdVisible"] = 1;
-    #endif
     root["hbMode"] = getSetting("hbMode", HEARTBEAT_MODE).toInt();
     root["hbInterval"] = getSetting("hbInterval", HEARTBEAT_INTERVAL).toInt();
 }
