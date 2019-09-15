@@ -98,6 +98,18 @@ void _relayProviderStatus(unsigned char id, bool status) {
         rfbStatus(id, status);
     #endif
 
+    #if RELAY_PROVIDER == RELAY_PROVIDER_HW655
+            DEBUG_MSG_P(PSTR("[RELAY] [HW655] Sending status: %d\n"), status);
+
+            Serial.write(0xA0);
+            Serial.write(0x01);
+            Serial.write(status);
+            Serial.write(0xA1 + status);
+            Serial.flush();
+            
+            DEBUG_MSG_P(PSTR("[RELAY] [HW655] Sending status DONE: %d\n"), status);
+    #endif
+
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
 
         // Calculate mask

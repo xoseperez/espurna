@@ -4059,6 +4059,20 @@
     #define SSDP_SUPPORT        1
     #define RF_SUPPORT          1
 
+#elif defined(GENERIC_ESP01S_HW655_RELAY)
+
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "HW655_RELAY"
+    #define RELAY_PROVIDER          RELAY_PROVIDER_HW655
+    #define SERIAL_BAUDRATE         9600
+
+    // Relays
+    #define DUMMY_RELAY_COUNT             1
+    #define RELAY1_DELAY_ON               0
+    #define RELAY1_DELAY_OFF              0
+
+     #define DEBUG_SERIAL_SUPPORT    0
+
 #else
 
     #error "UNSUPPORTED HARDWARE!!"
