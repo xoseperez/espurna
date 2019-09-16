@@ -578,6 +578,15 @@
 #define WIFI_GRATUITOUS_ARP_INTERVAL_MAX         30000
 #endif
 
+// ref: https://github.com/esp8266/Arduino/issues/6471
+// ref: https://github.com/esp8266/Arduino/issues/6366
+//
+// Issue #6366 turned out to be high tx power causing weird behavior. Lowering tx power achieved stability.
+#ifndef WIFI_OUTPUT_POWER_DBM
+#define WIFI_OUTPUT_POWER_DBM                    20.0
+#endif
+
+
 // -----------------------------------------------------------------------------
 // WEB
 // -----------------------------------------------------------------------------
