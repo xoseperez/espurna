@@ -391,6 +391,7 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
     void wsSend_P(uint32_t client_id, PGM_P data);
 
     void wsPost(const ws_on_send_callback_f& callback);
+    void wsPost(uint32_t client_id, const ws_on_send_callback_f& callback);
     void wsPost(const ws_on_send_callback_list_t& callbacks);
     void wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
 
@@ -410,6 +411,8 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 // WIFI
 // -----------------------------------------------------------------------------
 #include <JustWifi.h>
+struct wifi_scan_info_t;
+using wifi_scan_f = std::function<void(wifi_scan_info_t& info)>;
 using wifi_callback_f = std::function<void(justwifi_messages_t code, char * parameter)>;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
