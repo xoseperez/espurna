@@ -237,6 +237,7 @@ void mqttSendStatus();
 // OTA
 // -----------------------------------------------------------------------------
 
+#include <Updater.h>
 #include <ArduinoOTA.h>
 
 #if OTA_CLIENT == OTA_CLIENT_ASYNCTCP
