@@ -17,28 +17,18 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ESPAsyncTCP.h>
 #include "libs/Http.h"
 #include "libs/URL.h"
+#include "ota_base.h"
 
 std::unique_ptr<AsyncHttp> _ota_client = nullptr;
 unsigned long _ota_size = 0;
-bool _ota_connected = false;
-//std::unique_ptr<URL> _ota_url = nullptr;
 
 void _otaClientOnDisconnect(AsyncHttp* http) {
 
     DEBUG_MSG_P(PSTR("\n"));
 
-    if (Update.end(true)){
-        DEBUG_MSG_P(PSTR("[OTA] Success: %u bytes\n"), _ota_size);
-        deferredReset(100, CUSTOM_RESET_OTA);
-    } else {
-        #ifdef DEBUG_PORT
-            Update.printError(DEBUG_PORT);
-        #endif
-        eepromRotate(true);
-    }
+    otaEnd(_ota_size, CUSTOM_RESET_OTA);
 
     DEBUG_MSG_P(PSTR("[OTA] Disconnected\n"));
-    _ota_connected = false;
 
 }
 
@@ -58,29 +48,26 @@ void _otaClientOnBody(AsyncHttp* http, uint8_t* data, size_t len) {
 
     if (_ota_size == 0) {
 
-        Update.runAsync(true);
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
+        if (!otaBegin()) {
             http->client.close(true);
             return;
         }
 
     }
 
-    if (!Update.hasError()) {
-        if (Update.write(data, len) != len) {
-            #ifdef DEBUG_PORT
-                Update.printError(DEBUG_PORT);
-            #endif
-            http->client.close(true);
-            return;
-        }
+    if (!otaWrite(data, len)) {
+        http->client.close(true);
+        return;
     }
 
     _ota_size += len;
-    DEBUG_MSG_P(PSTR("[OTA] Progress: %u bytes\r"), _ota_size);
+
+    // Removed to avoid websocket ping back during upgrade (see #1574)
+    // TODO: implement as percentage progress message, separate from debug log?
+    #if WEB_SUPPORT
+        if (!wsConnected())
+    #endif
+    otaDebugProgress(_ota_size);
 
     delay(0);
 
@@ -110,7 +97,7 @@ void _otaClientOnConnect(AsyncHttp* http) {
 
 void _otaClientFrom(const String& url) {
 
-    if (_ota_connected) {
+    if (_ota_client && _ota_client->connected) {
         DEBUG_MSG_P(PSTR("[OTA] Already connected\n"));
         return;
     }
