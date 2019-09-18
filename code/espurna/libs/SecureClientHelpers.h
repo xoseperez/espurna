@@ -15,7 +15,7 @@
 namespace SecureClientHelpers {
 
 using host_callback_f = std::function<String()>;
-using check_callback_f = std::function<bool()>;
+using check_callback_f = std::function<int()>;
 using fp_callback_f = std::function<String()>;
 using cert_callback_f = std::function<const char*()>;
 using mfln_callback_f = std::function<uint16_t()>;
@@ -59,6 +59,10 @@ struct SecureClientChecks {
         bool result = false;
 
         int check = getCheck();
+
+        if(config.debug) {
+            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %d\n"), config.tag.c_str(), check);
+        }
 
         if (check == SECURE_CLIENT_CHECK_NONE) {
             if (config.debug) DEBUG_MSG_P(PSTR("[%s] !!! Secure connection will not be validated !!!\n"), config.tag.c_str());
@@ -151,6 +155,10 @@ struct SecureClientChecks {
     bool beforeConnected(SecureClientClass& client) {
         int check = getCheck();
         bool settime = (check == SECURE_CLIENT_CHECK_CA);
+
+        if(config.debug) {
+            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %d\n"), config.tag.c_str(), check);
+        }
 
         if (!ntpSynced() && settime) {
             if (config.debug) DEBUG_MSG_P(PSTR("[%s] Time not synced! Cannot use CA validation\n"), config.tag.c_str());
