@@ -8,6 +8,7 @@
 #define ASYNC_HTTP_DEBUG(...)  //DEBUG_PORT.printf(__VA_ARGS__)
 #endif
 
+// TODO: customizable headers
 // <method> <path> <host> <len>
 const char HTTP_REQUEST_TEMPLATE[] PROGMEM =
     "%s %s HTTP/1.1\r\n"
@@ -56,6 +57,11 @@ class AsyncHttp {
 
         AsyncClient client;
 
+        enum cfg_t {
+            HTTP_SEND = 1 << 0,
+            HTTP_RECV = 1 << 1
+        };
+
         enum class state_t : uint8_t {
             NONE,
             HEADERS,
@@ -66,8 +72,11 @@ class AsyncHttp {
         using on_status_f = std::function<bool(AsyncHttp*, uint16_t status)>;
         using on_disconnected_f = std::function<void(AsyncHttp*)>;
         using on_error_f = std::function<void(AsyncHttp*, const AsyncHttpError&)>;
-        using on_body_f = std::function<void(AsyncHttp*, uint8_t*, size_t)>;
 
+        using on_body_recv_f = std::function<void(AsyncHttp*, uint8_t* data, size_t len)>;
+        using on_body_send_f = std::function<int(AsyncHttp*, AsyncClient* client)>;
+
+        int cfg = HTTP_RECV;
         state_t state = state_t::NONE;
         AsyncHttpError::error_t last_error;
 
@@ -77,7 +86,8 @@ class AsyncHttp {
         on_status_f on_status;
         on_error_f on_error;
 
-        on_body_f on_body;
+        on_body_recv_f on_body_recv;
+        on_body_send_f on_body_send;
 
         String method;
         String path;
@@ -85,13 +95,23 @@ class AsyncHttp {
         String host;
         uint16_t port;
 
-        String data; // TODO: generic data source, feed chunks of (bytes, len) and call us back when done
-
         uint32_t ts;
         uint32_t timeout = 5000;
 
         bool connected = false;
         bool connecting = false;
+
+        // TODO: since we are single threaded, no need to buffer anything and we can directly use client->add with anything right in the body_send callback
+        //       buuut... this exposes asyncclient to the modules, maybe this needs a simple cbuf periodically flushing the data and this method simply filling it
+        //       (ref: AsyncTCPBuffer class in ESPAsyncTCP or ESPAsyncWebServer chuncked response callback)
+        void trySend() {
+            if (!client.canSend()) return;
+            if (!on_body_send) {
+                client.close(true);
+                return;
+            }
+            on_body_send(this, &client);
+        }
 
     protected:
 
@@ -107,7 +127,6 @@ class AsyncHttp {
         static void _onDisconnect(void* http_ptr, AsyncClient*) {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             if (http->on_disconnected) http->on_disconnected(http); 
-            http->data = "";
             http->ts = 0;
             http->connected = false;
             http->connecting = false;
@@ -120,15 +139,14 @@ class AsyncHttp {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             http->last_error = AsyncHttpError::NETWORK_TIMEOUT;
             if (http->on_error) http->on_error(http, _timeoutError(AsyncHttpError::NETWORK_TIMEOUT, F("Network timeout after"), time));
-            // TODO: close connection when acks are missing?
         }
 
-        static void _onPoll(void* http_ptr, AsyncClient*) {
+        static void _onPoll(void* http_ptr, AsyncClient* client) {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             const auto diff = millis() - http->ts;
             if (diff > http->timeout) {
                 if (http->on_error) http->on_error(http, _timeoutError(AsyncHttpError::REQUEST_TIMEOUT, F("No response after"), diff));
-                http->client.close(true);
+                client->close(true);
             }
         }
 
@@ -208,7 +226,7 @@ class AsyncHttp {
                             }
                             ASYNC_HTTP_DEBUG("ok | body len %u!\n", len);
 
-                            if (http->on_body) http->on_body(http, (uint8_t*) response, len);
+                            if (http->on_body_recv) http->on_body_recv(http, (uint8_t*) response, len);
                             return;
                         }
                 }
@@ -232,6 +250,18 @@ class AsyncHttp {
                 + http->host.length()
                 + http->path.length()
                 + 32;
+
+            int data_len = 0;
+            if (http->cfg & HTTP_SEND) {
+                if (!http->on_body_send) {
+                    ASYNC_HTTP_DEBUG("err | no send_body callback set\n");
+                    client->close(true);
+                    return;
+                }
+                // XXX: ...class instead of this multi-function?
+                data_len = http->on_body_send(http, nullptr);
+            }
+
             char* headers = (char *) malloc(headers_len + 1);
 
             if (!headers) {
@@ -245,7 +275,7 @@ class AsyncHttp {
                 http->method.c_str(),
                 http->path.c_str(),
                 http->host.c_str(),
-                http->data.length()
+                data_len
             );
             if (res >= (headers_len + 1)) {
                 ASYNC_HTTP_DEBUG("err | res>=len :: %u>=%u\n", res, headers_len + 1);
@@ -256,15 +286,19 @@ class AsyncHttp {
 
             client->write(headers);
             free(headers);
-            // TODO: streaming data source instead of using a simple String
-            // TODO: move to onPoll, ->add(data) and ->send() until it can't (returns 0), then repeat
-            client->write(http->data.c_str());
 
+            if (http->cfg & HTTP_SEND) http->trySend();
         }
 
         static void _onError(void* http_ptr, AsyncClient* client, err_t err) {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             if (http->on_error) http->on_error(http, {AsyncHttpError::CLIENT_ERROR, client->errorToString(err)});
+        }
+
+        static void _onAck(void* http_ptr, AsyncClient* client, size_t, uint32_t) {
+            AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
+            http->ts = millis();
+            if (http->cfg & HTTP_SEND) http->trySend();
         }
 
     public:
@@ -275,6 +309,7 @@ class AsyncHttp {
             client.onData(_onData, this);
             client.onConnect(_onConnect, this);
             client.onError(_onError, this);
+            client.onAck(_onAck, this);
         }
         ~AsyncHttp() = default;
 
@@ -289,6 +324,13 @@ class AsyncHttp {
             this->port = port;
             this->path = path;
             this->ts = millis();
+
+            // Treat every method as GET (receive-only), exception for POST / PUT to send data out
+            this->cfg = HTTP_RECV;
+            if (this->method.equals("POST") || this->method.equals("PUT")) {
+                if (!this->on_body_send) return false;
+                this->cfg = HTTP_SEND | HTTP_RECV;
+            }
 
             bool status = false;
 

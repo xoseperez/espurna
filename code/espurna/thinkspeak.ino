@@ -8,10 +8,9 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if THINGSPEAK_SUPPORT
 
-#include "libs/Http.h"
-
 #if THINGSPEAK_USE_ASYNC
 #include <ESPAsyncTCP.h>
+#include "libs/Http.h"
 #else
 #include <ESP8266WiFi.h>
 #endif
@@ -95,13 +94,36 @@ void _tspkWebSocketOnConnected(JsonObject& root) {
 #if THINGSPEAK_USE_ASYNC
 
 AsyncHttp* _tspk_client = nullptr;
+String _tspk_data;
 
 void _tspkFlushAgain() {
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Re-enqueuing %u more time(s)\n"), _tspk_state.tries);
     _tspk_state.flush = true;
 }
 
-void _tspkOnBody(AsyncHttp* http, uint8_t* data, size_t len) {
+// TODO: maybe http object can keep a context containing the data
+//       however, it should not be restricted to string datatype
+int _tspkOnBodySend(AsyncHttp* http, AsyncClient* client) {
+    if (!client) {
+        _tspk_data = _tspkPrepareData(_tspk_queue);
+        return _tspk_data.length();
+    }
+
+    const size_t data_len = _tspk_data.length();
+    if (!data_len || (client->space() < data_len)) {
+        return 0;
+    }
+
+    if (data_len == client->add(_tspk_data.c_str(), data_len)) {
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), http->path.c_str(), _tspk_data.c_str());
+        client->send();
+        _tspk_data = "";
+    }
+
+    return data_len;
+}
+
+void _tspkOnBodyRecv(AsyncHttp* http, uint8_t* data, size_t len) {
 
     unsigned int code = 0;
     if (len) {
@@ -154,11 +176,6 @@ void _tspkOnConnected(AsyncHttp* http) {
         }
     }
     #endif
-
-    // Note: always replacing old data in case of retry
-    http->data = _tspkPrepareData(_tspk_queue);
-
-    DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), http->path.c_str(), http->data.c_str());
 }
 
 constexpr const unsigned long THINGSPEAK_CLIENT_TIMEOUT = 5000;
@@ -174,7 +191,8 @@ void _tspkInitClient() {
     _tspk_client->on_status = _tspkOnStatus;
     _tspk_client->on_error = _tspkOnError;
 
-    _tspk_client->on_body = _tspkOnBody;
+    _tspk_client->on_body_recv = _tspkOnBodyRecv;
+    _tspk_client->on_body_send = _tspkOnBodySend;
 
 }
 

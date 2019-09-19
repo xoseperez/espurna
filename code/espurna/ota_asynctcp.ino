@@ -118,7 +118,7 @@ void _otaClientFrom(const String& url) {
         _ota_client->on_status = _otaOnStatus;
         _ota_client->on_error = _otaOnError;
 
-        _ota_client->on_body = _otaClientOnBody;
+        _ota_client->on_body_recv = _otaClientOnBody;
     }
 
     #if ASYNC_TCP_SSL_ENABLED
