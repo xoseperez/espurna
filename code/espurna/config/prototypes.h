@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #define UNUSED(x) (void)(x)
+#define INLINE inline __attribute__((always_inline))
 
 // -----------------------------------------------------------------------------
 // System
@@ -405,19 +406,20 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
     void wsSend_P(PGM_P data);
     void wsSend_P(uint32_t client_id, PGM_P data);
 
-    void wsPost(const ws_on_send_callback_f& callback);
-    void wsPost(const ws_on_send_callback_list_t& callbacks);
-    void wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+    void INLINE wsPost(const ws_on_send_callback_f& callback);
+    void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_f& callback);
+    void INLINE wsPost(const ws_on_send_callback_list_t& callbacks);
+    void INLINE wsPost(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
 
-    void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-    void wsPostAll(const ws_on_send_callback_list_t& callbacks);
+    void INLINE wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+    void INLINE wsPostAll(const ws_on_send_callback_list_t& callbacks);
 
-    void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
-    void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
-    void wsPostSequence(const ws_on_send_callback_list_t& callbacks);
+    void INLINE wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& callbacks);
+    void INLINE wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& callbacks);
+    void INLINE wsPostSequence(const ws_on_send_callback_list_t& callbacks);
 
-    bool wsConnected();
-    bool wsConnected(uint32_t client_id);
+    bool INLINE wsConnected();
+    bool INLINE wsConnected(uint32_t client_id);
     bool wsDebugSend(const char* prefix, const char* message);
 #endif
 
@@ -425,6 +427,8 @@ using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 // WIFI
 // -----------------------------------------------------------------------------
 #include <JustWifi.h>
+struct wifi_scan_info_t;
+using wifi_scan_f = std::function<void(wifi_scan_info_t& info)>;
 using wifi_callback_f = std::function<void(justwifi_messages_t code, char * parameter)>;
 void wifiRegister(wifi_callback_f callback);
 bool wifiConnected();
