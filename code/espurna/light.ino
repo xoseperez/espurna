@@ -54,6 +54,7 @@ bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 unsigned long _light_steps_left = 1;
 
+bool _light_dirty = false;
 bool _light_state = false;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
 unsigned int _light_mireds = lround((Light::MIREDS_COLDWHITE + Light::MIREDS_WARMWHITE) / 2);
@@ -102,15 +103,29 @@ static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds arr
 // UTILS
 // -----------------------------------------------------------------------------
 
+void _setValue(const unsigned char id, const unsigned int value) {
+    if (_light_channel[id].value != value) {
+        _light_channel[id].value = value;
+        _light_dirty = true;
+    }
+}
+
+void _setInputValue(const unsigned char id, const unsigned int value) {
+    if (_light_channel[id].inputValue != value) {
+        _light_channel[id].inputValue = value;
+        _light_dirty = true;
+    }
+}
+
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
-    _light_channel[0].inputValue = constrain(red, Light::VALUE_MIN, Light::VALUE_MAX);
-    _light_channel[1].inputValue = constrain(green, Light::VALUE_MIN, Light::VALUE_MAX);
-    _light_channel[2].inputValue = constrain(blue, Light::VALUE_MIN, Light::VALUE_MAX);
+    _setInputValue(0, constrain(red, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(1, constrain(green, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(2, constrain(blue, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
 void _setCCTInputValue(unsigned char warm, unsigned char cold) {
-    _light_channel[0].inputValue = constrain(warm, Light::VALUE_MIN, Light::VALUE_MAX);
-    _light_channel[1].inputValue = constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX);
+    _setInputValue(0, constrain(warm, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(1, constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
 void _lightApplyBrightness(unsigned char channels = lightChannels()) {
@@ -121,7 +136,7 @@ void _lightApplyBrightness(unsigned char channels = lightChannels()) {
 
     for (unsigned char i=0; i < lightChannels(); i++) {
         if (i >= channels) brightness = 1;
-        _light_channel[i].value = _light_channel[i].inputValue * brightness;
+        _setValue(i, _light_channel[i].inputValue * brightness);
     }
 
 }
@@ -133,7 +148,7 @@ void _lightApplyBrightnessColor() {
     // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
     unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
     for (unsigned int i=0; i < 3; i++) {
-        _light_channel[i].value = _light_channel[i].inputValue - white;
+        _setValue(i, _light_channel[i].inputValue - white);
     }
 
     // Split the White Value across 2 White LED Strips.
@@ -144,14 +159,14 @@ void _lightApplyBrightnessColor() {
 
         // set cold white
         _light_channel[3].inputValue = 0;
-        _light_channel[3].value = lround(((double) 1.0 - miredFactor) * white);
+        _setValue(3, lround(((double) 1.0 - miredFactor) * white));
 
         // set warm white
         _light_channel[4].inputValue = 0;
-        _light_channel[4].value = lround(miredFactor * white);
+        _setValue(4, lround(miredFactor * white));
     } else {
         _light_channel[3].inputValue = 0;
-        _light_channel[3].value = white;
+        _setValue(3, white);
     }
 
     // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
@@ -165,18 +180,18 @@ void _lightApplyBrightnessColor() {
 
     double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
     for (unsigned char i=0; i < channelSize; i++) {
-        _light_channel[i].value = lround((double) _light_channel[i].value * factor * brightness);
+        _setValue(i, lround((double) _light_channel[i].value * factor * brightness));
     }
 
     // Scale white channel to match brightness
     for (unsigned char i=3; i < channelSize; i++) {
-        _light_channel[i].value = constrain(static_cast<unsigned int>(_light_channel[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX);
+        _setValue(i, constrain(static_cast<unsigned int>(_light_channel[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX));
     }
 
     // For the rest of channels, don't apply brightness, it is already in the inputValue
     // i should be 4 when RGBW and 5 when RGBWW
     for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
-        _light_channel[i].value = _light_channel[i].inputValue;
+        _setValue(i, _light_channel[i].inputValue);
     }
 
 }
@@ -236,19 +251,19 @@ void _fromRGB(const char * rgb) {
 
         tok = strtok(p, ",");
         while (tok != NULL) {
-            _light_channel[count].inputValue = atoi(tok);
+            _setInputValue(count, atoi(tok));
             if (++count == channels) break;
             tok = strtok(NULL, ",");
         }
 
         // RGB but less than 3 values received, assume it is 0
         if (_light_has_color && (count < 3)) {
-          // check channel 1 and 2:
-          for (int i = 1; i <= 2; i++) {
-            if (count < (i+1)) {
-              _light_channel[i].inputValue = 0;
+            // check channel 1 and 2:
+            for (int i = 1; i <= 2; i++) {
+                if (count < (i+1)) {
+                    _setInputValue(i, 0);
+                }
             }
-          }
         }
         break;
     }
@@ -805,7 +820,12 @@ void _lightComms(unsigned char mask) {
 
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
+    // Calculate values based on inputs and brightness
     _light_brightness_func();
+
+    // Only update if a channel has changed
+    if (!_light_dirty) return;
+    _light_dirty = false;
 
     // Update channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
@@ -843,7 +863,10 @@ void lightSave() {
 #endif
 
 void lightState(unsigned char i, bool state) {
-    _light_channel[i].state = state;
+    if (_light_channel[i].state != state) {
+        _light_channel[i].state = state;
+        _light_dirty = true;
+    }
 }
 
 bool lightState(unsigned char i) {
@@ -851,7 +874,10 @@ bool lightState(unsigned char i) {
 }
 
 void lightState(bool state) {
-    _light_state = state;
+    if (_light_state != state) {
+        _light_state = state;
+        _light_dirty = true;
+    }
 }
 
 bool lightState() {
@@ -898,7 +924,7 @@ unsigned int lightChannel(unsigned char id) {
 
 void lightChannel(unsigned char id, unsigned char value) {
     if (id <= _light_channel.size()) {
-        _light_channel[id].inputValue = constrain(value, Light::VALUE_MIN, Light::VALUE_MAX);
+        _setInputValue(id, constrain(value, Light::VALUE_MIN, Light::VALUE_MAX));
     }
 }
 
