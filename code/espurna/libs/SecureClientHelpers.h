@@ -20,6 +20,15 @@ using fp_callback_f = std::function<String()>;
 using cert_callback_f = std::function<const char*()>;
 using mfln_callback_f = std::function<uint16_t()>;
 
+const char * _secureClientCheckAsString(int check) {
+    switch (check) {
+        case SECURE_CLIENT_CHECK_NONE: return "no validation";
+        case SECURE_CLIENT_CHECK_FINGERPRINT: return "fingerprint validation";
+        case SECURE_CLIENT_CHECK_CA: return "CA validation";
+        default: return "unknown";
+    }
+}
+
 #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
 using SecureClientClass = axTLS::WiFiClientSecure;
 
@@ -61,7 +70,7 @@ struct SecureClientChecks {
         int check = getCheck();
 
         if(config.debug) {
-            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %d\n"), config.tag.c_str(), check);
+            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %s\n"), config.tag.c_str(), _secureClientCheckAsString(check));
         }
 
         if (check == SECURE_CLIENT_CHECK_NONE) {
@@ -157,7 +166,7 @@ struct SecureClientChecks {
         bool settime = (check == SECURE_CLIENT_CHECK_CA);
 
         if(config.debug) {
-            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %d\n"), config.tag.c_str(), check);
+            DEBUG_MSG_P(PSTR("[%s] Using SSL check type: %s\n"), config.tag.c_str(), _secureClientCheckAsString(check));
         }
 
         if (!ntpSynced() && settime) {
