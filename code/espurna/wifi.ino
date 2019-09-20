@@ -104,6 +104,9 @@ void _wifiConfigure() {
         )).toInt();
     #endif
 
+    const auto tx_power = getSetting("wifiTxPwr", WIFI_OUTPUT_POWER_DBM).toFloat();
+    WiFi.setOutputPower(tx_power);
+
 }
 
 void _wifiScan(uint32_t client_id = 0) {
