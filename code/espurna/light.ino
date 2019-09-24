@@ -498,21 +498,15 @@ unsigned int _toPWM(unsigned char id) {
     return _toPWM(_light_channel[id].current, useGamma, _light_channel[id].reverse);
 }
 
-void _lightTransition(unsigned long steps) {
+void _lightTransition(unsigned long step) {
 
-    // Run transition function again
-    if (--steps) _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderDoUpdate, steps);
-
-    // Transitions
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-
-        if (!steps) {
-            _light_channel[i].current = _light_channel[i].target;
+    // Transitions based on current step. If step == 0, then it is the last transition
+    for (auto& channel : _light_channel) {
+        if (!step) {
+            channel.current = channel.target;
         } else {
-            double difference = (double) (_light_channel[i].target - _light_channel[i].current) / (steps + 1);
-            _light_channel[i].current = _light_channel[i].current + difference;
+            channel.current += (double) (channel.target - channel.current) / (step + 1);
         }
-
     }
 
 }
@@ -520,10 +514,9 @@ void _lightTransition(unsigned long steps) {
 void _lightProviderUpdate(unsigned long steps) {
 
     if (_light_provider_update) return;
-
     _light_provider_update = true;
 
-    _lightTransition(steps);
+    _lightTransition(--steps);
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -544,11 +537,14 @@ void _lightProviderUpdate(unsigned long steps) {
 
     #endif
 
+    // This is not the final value, update again
+    if (steps) _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+
     _light_provider_update = false;
 
 }
 
-void _lightProviderDoUpdate(unsigned long steps) {
+void _lightProviderScheduleUpdate(unsigned long steps) {
     schedule_function(std::bind(_lightProviderUpdate, steps));
 }
 
@@ -832,9 +828,9 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
     }
 
     // Channel transition will be handled by the provider function
-    // User can configure an absolute transition time, step time is a fixed value for now
+    // User can configure total transition time, step time is a fixed value
     unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderDoUpdate, steps);
+    _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
 
     // Delay every communication 100ms to avoid jamming
     unsigned char mask = 0;
