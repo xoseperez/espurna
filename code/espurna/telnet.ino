@@ -20,7 +20,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
     std::unique_ptr<AsyncClient> _telnetClients[TELNET_MAX_CLIENTS];
 #endif
 
-bool _telnetFirst = true;
+bool _telnetFirst = false;
 
 bool _telnetAuth = TELNET_AUTHENTICATION;
 bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
@@ -227,7 +227,6 @@ void _telnetNotifyConnected(unsigned char i) {
         }
     #endif
 
-    _telnetFirst = true;
     wifiReconnectCheck();
 
 }
@@ -258,6 +257,7 @@ void _telnetLoop() {
                     }
                 }
 
+                _telnetFirst = true;
                 _telnetNotifyConnected(i);
 
                 break;
@@ -317,6 +317,8 @@ void _telnetNewClient(AsyncClient* client) {
         if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
 
             _telnetClients[i] = std::unique_ptr<AsyncClient>(client);
+
+            _telnetFirst = true;
 
             _telnetNotifyConnected(i);
             return;
