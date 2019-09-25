@@ -34,6 +34,7 @@
 //#define EXS_WIFI_RELAY_V50
 //#define FORNORM_ZLD_34EU
 //#define FOXEL_LIGHTFOX_DUAL
+//#define FS_UAP1
 //#define GBLIFE_RGBW_SOCKET
 //#define GENERIC_8CH
 //#define GENERIC_AG_L4
