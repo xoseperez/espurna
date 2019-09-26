@@ -50,9 +50,9 @@ void _telnetWebSocketOnConnected(JsonObject& root) {
         for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
             if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
                 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-                    _telnetClients[i] = std::unique_ptr<WiFiClient>(new WiFiClient());
+                    _telnetClients[i] = std::make_unique<WiFiClient>();
                 #else // TELNET_SERVER_ASYNC
-                    _telnetClients[i] = std::unique_ptr<AsyncClient>(client);
+                    _telnetClients[i] = std::make_unique<AsyncClient>();
                 #endif
 
                 if (_telnetClients[i]->connect(host, port)) {
