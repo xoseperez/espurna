@@ -75,6 +75,8 @@
 #define RELAY_BOOT_ON               1
 #define RELAY_BOOT_SAME             2
 #define RELAY_BOOT_TOGGLE           3
+#define RELAY_BOOT_LOCKED_OFF       4
+#define RELAY_BOOT_LOCKED_ON        5
 
 #define RELAY_TYPE_NORMAL           0
 #define RELAY_TYPE_INVERSE          1
@@ -100,6 +102,10 @@
 #define RELAY_GROUP_SYNC_NORMAL      0
 #define RELAY_GROUP_SYNC_INVERSE     1
 #define RELAY_GROUP_SYNC_RECEIVEONLY 2
+
+#define RELAY_LOCK_OFF               0
+#define RELAY_LOCK_ON                1
+#define RELAY_LOCK_DISABLED          2
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG
@@ -145,6 +151,12 @@
 #define MQTT_CONNECT_EVENT          0
 #define MQTT_DISCONNECT_EVENT       1
 #define MQTT_MESSAGE_EVENT          2
+
+// MQTT_LIBRARY
+#define MQTT_LIBRARY_ASYNCMQTTCLIENT        0
+#define MQTT_LIBRARY_ARDUINOMQTT            1
+#define MQTT_LIBRARY_PUBSUBCLIENT           2
+
 
 //------------------------------------------------------------------------------
 // LED
@@ -303,6 +315,7 @@
 #define SENSOR_BMP180_ID            34
 #define SENSOR_MAX6675_ID           35
 #define SENSOR_LDR_ID               36
+#define SENSOR_ADE7953_ID           37
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -343,3 +356,31 @@
 #define MAGNITUDE_PH                31
 
 #define MAGNITUDE_MAX               32
+
+//------------------------------------------------------------------------------
+// Telnet server
+//------------------------------------------------------------------------------
+
+#define TELNET_SERVER_ASYNC        0
+#define TELNET_SERVER_WIFISERVER   1
+
+//------------------------------------------------------------------------------
+// OTA Client (not related to the Web OTA support)
+//------------------------------------------------------------------------------
+
+#define OTA_CLIENT_NONE             0
+#define OTA_CLIENT_ASYNCTCP         1
+#define OTA_CLIENT_HTTPUPDATE       2
+
+//------------------------------------------------------------------------------
+// Secure Client
+//------------------------------------------------------------------------------
+
+#define SECURE_CLIENT_NONE                0
+#define SECURE_CLIENT_AXTLS               1
+#define SECURE_CLIENT_BEARSSL             2
+
+#define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
+#define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
+#define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
+

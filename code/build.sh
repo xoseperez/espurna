@@ -112,19 +112,25 @@ build_webui() {
     echo "--------------------------------------------------------------"
     echo "Building web interface..."
     node node_modules/gulp/bin/gulp.js || exit
+
+    # TODO: do something if webui files are different
+    # for now, just print in travis log
+    if ${TRAVIS:-false}; then
+        git --no-pager diff --stat
+    fi
 }
 
 build_environments() {
     echo "--------------------------------------------------------------"
     echo "Building firmware images..."
-    mkdir -p ../firmware/espurna-$version
+    mkdir -p $destination/espurna-$version
 
     for environment in $environments; do
         echo -n "* espurna-$version-$environment.bin --- "
         platformio run --silent --environment $environment || exit 1
-        stat_bytes .pioenvs/$environment/firmware.bin
+        stat_bytes .pio/build/$environment/firmware.bin
         [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
-            mv .pioenvs/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
+            mv .pio/build/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
     done
     echo "--------------------------------------------------------------"
 }

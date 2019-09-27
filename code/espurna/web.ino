@@ -37,10 +37,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #endif // WEB_EMBEDDED
 
-#if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 #include "static/server.cer.h"
 #include "static/server.key.h"
-#endif // ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#endif // SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 
 // -----------------------------------------------------------------------------
 
@@ -52,11 +52,19 @@ bool _webConfigSuccess = false;
 std::vector<web_request_callback_f> _web_request_callbacks;
 std::vector<web_body_callback_f> _web_body_callbacks;
 
+constexpr const size_t WEB_CONFIG_BUFFER_MAX = 4096;
+
 // -----------------------------------------------------------------------------
 // HOOKS
 // -----------------------------------------------------------------------------
 
 void _onReset(AsyncWebServerRequest *request) {
+
+    webLog(request);
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
     deferredReset(100, CUSTOM_RESET_HTTP);
     request->send(200);
 }
@@ -65,14 +73,17 @@ void _onDiscover(AsyncWebServerRequest *request) {
 
     webLog(request);
 
-    AsyncResponseStream *response = request->beginResponseStream("text/json");
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
 
-    DynamicJsonBuffer jsonBuffer;
+    const String device = getBoardName();
+    const String hostname = getSetting("hostname");
+
+    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
     root["app"] = APP_NAME;
     root["version"] = APP_VERSION;
-    root["hostname"] = getSetting("hostname");
-    root["device"] = getBoardName();
+    root["device"] = device.c_str();
+    root["hostname"] = hostname.c_str();
     root.printTo(*response);
 
     request->send(response);
@@ -125,11 +136,13 @@ void _onPostConfig(AsyncWebServerRequest *request) {
 
 void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
+
     // No buffer
     if (final && (index == 0)) {
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject((char *) data);
-        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
+        _webConfigSuccess = settingsRestoreJson((char*) data);
         return;
     }
 
@@ -144,6 +157,12 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
 
     // Copy
     if (len > 0) {
+        if ((_webConfigBuffer->size() + len) > std::min(WEB_CONFIG_BUFFER_MAX, getFreeHeap() - sizeof(std::vector<uint8_t>))) {
+            delete _webConfigBuffer;
+            _webConfigBuffer = nullptr;
+            request->send(500);
+            return;
+        }
         _webConfigBuffer->reserve(_webConfigBuffer->size() + len);
         _webConfigBuffer->insert(_webConfigBuffer->end(), data, data + len);
     }
@@ -152,11 +171,7 @@ void _onPostConfigData(AsyncWebServerRequest *request, String filename, size_t i
     if (final) {
 
         _webConfigBuffer->push_back(0);
-
-        // Parse JSON
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject((char *) _webConfigBuffer->data());
-        if (root.success()) _webConfigSuccess = settingsRestoreJson(root);
+        _webConfigSuccess = settingsRestoreJson((char*) _webConfigBuffer->data());
         delete _webConfigBuffer;
 
     }
@@ -177,7 +192,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
     } else {
 
-        #if ASYNC_TCP_SSL_ENABLED
+        #if SECURE_CLIENT == SECURE_CLIENT_AXTLS
 
             // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
             // This is necessary when a TLS connection is open since it sucks too much memory
@@ -218,7 +233,7 @@ void _onHome(AsyncWebServerRequest *request) {
 }
 #endif
 
-#if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
 
 int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 
@@ -297,7 +312,11 @@ void _onUpgrade(AsyncWebServerRequest *request) {
 
 }
 
-void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getSetting("hostname").c_str());
+    }
 
     if (!index) {
 
@@ -331,12 +350,39 @@ void _onUpgradeData(AsyncWebServerRequest *request, String filename, size_t inde
             #endif
         }
     } else {
-        //Removed to avoid websocket ping back during upgrade (see #1574)
-        //DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        // Removed to avoid websocket ping back during upgrade (see #1574)
+        // TODO: implement as separate from debugging message
+        if (wsConnected()) return;
+        DEBUG_MSG_P(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
 
+bool _onAPModeRequest(AsyncWebServerRequest *request) {
+
+    if ((WiFi.getMode() & WIFI_AP) > 0) {
+        const String domain = getSetting("hostname") + ".";
+        const String host = request->header("Host");
+        const String ip = WiFi.softAPIP().toString();
+
+        // Only allow requests that use our hostname or ip
+        if (host.equals(ip)) return true;
+        if (host.startsWith(domain)) return true;
+
+        // Immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+        // Not doing so will cause memory exhaustion, because the connection will linger
+        request->send(404);
+        request->client()->close();
+
+        return false;
+    }
+
+    return true;
+
+}
+
 void _onRequest(AsyncWebServerRequest *request){
+
+    if (!_onAPModeRequest(request)) return;
 
     // Send request to subscribers
     for (unsigned char i = 0; i < _web_request_callbacks.size(); i++) {
@@ -344,18 +390,28 @@ void _onRequest(AsyncWebServerRequest *request){
         if (response) return;
     }
 
-    // No subscriber handled the request, return a 404
+    // No subscriber handled the request, return a 404 with implicit "Connection: close"
     request->send(404);
+
+    // And immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+    // Not doing so will cause memory exhaustion, because the connection will linger
+    request->client()->close();
 
 }
 
 void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+
+    if (!_onAPModeRequest(request)) return;
 
     // Send request to subscribers
     for (unsigned char i = 0; i < _web_body_callbacks.size(); i++) {
         bool response = (_web_body_callbacks[i])(request, data, len, index, total);
         if (response) return;
     }
+
+    // Same as _onAPModeRequest(...)
+    request->send(404);
+    request->client()->close();
 
 }
 
@@ -388,7 +444,7 @@ void webRequestRegister(web_request_callback_f callback) {
 }
 
 unsigned int webPort() {
-    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
         return 443;
     #else
         return getSetting("webPort", WEB_PORT).toInt();
@@ -420,7 +476,7 @@ void webSetup() {
     _server->on("/reset", HTTP_GET, _onReset);
     _server->on("/config", HTTP_GET, _onGetConfig);
     _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigData);
-    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
     _server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files
@@ -439,7 +495,7 @@ void webSetup() {
     _server->onNotFound(_onRequest);
 
     // Run server
-    #if ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+    #if SECURE_CLIENT == SECURE_CLIENT_AXTLS & WEB_SSL_ENABLED
         _server->onSslFileRequest(_onCertificate, NULL);
         _server->beginSecure("server.cer", "server.key", NULL);
     #else

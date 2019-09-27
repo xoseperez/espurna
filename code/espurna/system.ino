@@ -163,8 +163,10 @@ void _systemSetupHeartbeat() {
 }
 
 #if WEB_SUPPORT
-    bool _systemWebSocketOnReceive(const char * key, JsonVariant& value) {
-        return (strncmp(key, "hb", 2) == 0);
+    bool _systemWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
+        if (strncmp(key, "sys", 3) == 0) return true;
+        if (strncmp(key, "hb", 2) == 0) return true;
+        return false;
     }
 #endif
 
@@ -259,7 +261,7 @@ void systemSetup() {
     #endif
 
     #if WEB_SUPPORT
-        wsOnReceiveRegister(_systemWebSocketOnReceive);
+        wsRegister().onKeyCheck(_systemWebSocketOnKeyCheck);
     #endif
 
     // Init device-specific hardware

@@ -118,8 +118,17 @@
 #define TELNET_AUTHENTICATION   1               // Request password to start telnet session by default
 #endif
 
+#ifndef TELNET_PORT
 #define TELNET_PORT             23              // Port to listen to telnet clients
+#endif
+
+#ifndef TELNET_MAX_CLIENTS
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
+#endif
+
+#ifndef TELNET_SERVER
+#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
+#endif
 
 //------------------------------------------------------------------------------
 // TERMINAL
@@ -335,6 +344,10 @@
 #define ENCODER_SUPPORT             0
 #endif
 
+#ifndef ENCODER_MINIMUM_DELTA
+#define ENCODER_MINIMUM_DELTA       1
+#endif
+
 //------------------------------------------------------------------------------
 // LED
 //------------------------------------------------------------------------------
@@ -391,12 +404,17 @@
 #define RELAY_REPORT_STATUS         1
 #endif
 
-// Configure the MQTT payload for ON/OFF
+// Configure the MQTT payload for ON, OFF and TOGGLE
+#ifndef RELAY_MQTT_OFF
+#define RELAY_MQTT_OFF              "0"
+#endif
+
 #ifndef RELAY_MQTT_ON
 #define RELAY_MQTT_ON               "1"
 #endif
-#ifndef RELAY_MQTT_OFF
-#define RELAY_MQTT_OFF              "0"
+
+#ifndef RELAY_MQTT_TOGGLE
+#define RELAY_MQTT_TOGGLE           "2"
 #endif
 
 // TODO Only single EEPROM address is used to store state, which is 1 byte
@@ -485,6 +503,54 @@
 #define WIFI2_DNS                   ""
 #endif
 
+#ifndef WIFI3_SSID
+#define WIFI3_SSID                  ""
+#endif
+
+#ifndef WIFI3_PASS
+#define WIFI3_PASS                  ""
+#endif
+
+#ifndef WIFI3_IP
+#define WIFI3_IP                    ""
+#endif
+
+#ifndef WIFI3_GW
+#define WIFI3_GW                    ""
+#endif
+
+#ifndef WIFI3_MASK
+#define WIFI3_MASK                  ""
+#endif
+
+#ifndef WIFI3_DNS
+#define WIFI3_DNS                   ""
+#endif
+
+#ifndef WIFI4_SSID
+#define WIFI4_SSID                  ""
+#endif
+
+#ifndef WIFI4_PASS
+#define WIFI4_PASS                  ""
+#endif
+
+#ifndef WIFI4_IP
+#define WIFI4_IP                    ""
+#endif
+
+#ifndef WIFI4_GW
+#define WIFI4_GW                    ""
+#endif
+
+#ifndef WIFI4_MASK
+#define WIFI4_MASK                  ""
+#endif
+
+#ifndef WIFI4_DNS
+#define WIFI4_DNS                   ""
+#endif
+
 #ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M                -30         // Calibrate it with your router reading the RSSI at 1m
 #endif
@@ -492,6 +558,34 @@
 #ifndef WIFI_PROPAGATION_CONST
 #define WIFI_PROPAGATION_CONST      4           // This is typically something between 2.7 to 4.3 (free space is 2)
 #endif
+
+// ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
+// ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546 
+//
+// Broadcast gratuitous ARP periodically to update ARP tables on the AP and all devices on the same network.
+// Helps to solve compatibility issues when ESP fails to timely reply to ARP requests, causing the device's ARP table entry to expire.
+
+#ifndef WIFI_GRATUITOUS_ARP_SUPPORT
+#define WIFI_GRATUITOUS_ARP_SUPPORT              1
+#endif
+
+// Interval is randomized on each boot in range from ..._MIN to ..._MAX (ms)
+#ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MIN
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MIN         15000
+#endif
+
+#ifndef WIFI_GRATUITOUS_ARP_INTERVAL_MAX
+#define WIFI_GRATUITOUS_ARP_INTERVAL_MAX         30000
+#endif
+
+// ref: https://github.com/esp8266/Arduino/issues/6471
+// ref: https://github.com/esp8266/Arduino/issues/6366
+//
+// Issue #6366 turned out to be high tx power causing weird behavior. Lowering tx power achieved stability.
+#ifndef WIFI_OUTPUT_POWER_DBM
+#define WIFI_OUTPUT_POWER_DBM                    20.0
+#endif
+
 
 // -----------------------------------------------------------------------------
 // WEB
@@ -506,7 +600,7 @@
 #endif
 
 // This is not working at the moment!!
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0
+// Requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core 2.4.0
 #ifndef WEB_SSL_ENABLED
 #define WEB_SSL_ENABLED             0           // Use HTTPS web interface
 #endif
@@ -574,7 +668,7 @@
 #endif
 
 #ifndef API_BUFFER_SIZE
-#define API_BUFFER_SIZE             15          // Size of the buffer for HTTP GET API responses
+#define API_BUFFER_SIZE             64          // Size of the buffer for HTTP GET API responses
 #endif
 
 #ifndef API_REAL_TIME_VALUES
@@ -622,18 +716,98 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// SSL Client                                                 ** EXPERIMENTAL **
+// -----------------------------------------------------------------------------
+
+#ifndef SECURE_CLIENT
+#define SECURE_CLIENT                          SECURE_CLIENT_NONE     // What variant of WiFiClient to use
+                                                                      // SECURE_CLIENT_NONE    - No secure client support (default)
+                                                                      // SECURE_CLIENT_AXTLS   - axTLS client secure support (All Core versions, ONLY TLS 1.1)
+                                                                      // SECURE_CLIENT_BEARSSL - BearSSL client secure support (starting with 2.5.0, TLS 1.2)
+                                                                      //
+                                                                      // axTLS marked for derecation since Arduino Core 2.4.2 and **will** be removed in the future
+#endif
+
+// Security check that is performed when the connection is established:
+// SECURE_CLIENT_CHECK_CA           - Use Trust Anchor / Root Certificate
+//                                    Supported only by the SECURE_CLIENT_BEARSSL
+//                                    (See respective ..._SECURE_CLIENT_INCLUDE_CA options per-module)
+// SECURE_CLIENT_CHECK_FINGERPRINT  - Check certificate fingerprint
+// SECURE_CLIENT_CHECK_NONE         - Allow insecure connections
+
+#ifndef SECURE_CLIENT_CHECK
+
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+#define SECURE_CLIENT_CHECK                    SECURE_CLIENT_CHECK_CA
+
+#else
+#define SECURE_CLIENT_CHECK                    SECURE_CLIENT_CHECK_FINGERPRINT
+
+#endif
+
+
+#endif // SECURE_CLIENT_CHECK
+
+// Support Maximum Fragment Length Negotiation TLS extension
+// "...negotiate a smaller maximum fragment length due to memory limitations or bandwidth limitations."
+// - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/bearssl-client-secure-class.html#mfln-or-maximum-fragment-length-negotiation-saving-ram
+// - https://tools.ietf.org/html/rfc6066#section-4
+#ifndef SECURE_CLIENT_MFLN
+#define SECURE_CLIENT_MFLN                     0                      // The only possible values are: 512, 1024, 2048 and 4096
+                                                                      // Set to 0 to disable (default)
+#endif
+
+// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
 #ifndef OTA_PORT
-#define OTA_PORT                    8266        // OTA port
+#define OTA_PORT                    8266        // Port for ArduinoOTA
 #endif
 
 #ifndef OTA_MQTT_SUPPORT
-#define OTA_MQTT_SUPPORT           0            // No support by default
+#define OTA_MQTT_SUPPORT            0           // Listen for HTTP(s) URLs at '<root topic>/ota'. Depends on OTA_CLIENT
 #endif
 
-#define OTA_GITHUB_FP               "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
+#ifndef OTA_ARDUINOOTA_SUPPORT
+#define OTA_ARDUINOOTA_SUPPORT      1           // Support ArduinoOTA by default (4.2Kb)
+                                                // Implicitly depends on ESP8266mDNS library, thus increasing firmware size
+#endif
+
+#ifndef OTA_CLIENT
+#define OTA_CLIENT                  OTA_CLIENT_ASYNCTCP     // Terminal / MQTT OTA support
+                                                            // OTA_CLIENT_ASYNCTCP   (ESPAsyncTCP library)
+                                                            // OTA_CLIENT_HTTPUPDATE (Arduino Core library)
+#endif
+
+#ifndef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
+#define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE    1   // Use old HTTPUpdate API by default
+#endif
+
+#define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
+
+#ifndef OTA_FINGERPRINT
+#define OTA_FINGERPRINT             OTA_GITHUB_FP
+#endif
+
+#ifndef OTA_SECURE_CLIENT_CHECK
+#define OTA_SECURE_CLIENT_CHECK                SECURE_CLIENT_CHECK
+#endif
+
+#ifndef OTA_SECURE_CLIENT_MFLN
+#define OTA_SECURE_CLIENT_MFLN                 SECURE_CLIENT_MFLN
+#endif
+
+#ifndef OTA_SECURE_CLIENT_INCLUDE_CA
+#define OTA_SECURE_CLIENT_INCLUDE_CA        0            // Use user-provided CA. Only PROGMEM PEM option is supported.
+                                                         // TODO: eventually should be replaced with pre-parsed structs, read directly from flash
+                                                         // (ref: https://github.com/earlephilhower/bearssl-esp8266/pull/14)
+                                                         //
+                                                         // When enabled, current implementation includes "static/ota_client_trusted_root_ca.h" with
+                                                         // const char _ota_client_trusted_root_ca[] PROGMEM = "...PEM data...";
+                                                         // By default, using DigiCert root in "static/digicert_evroot_pem.h" (for https://github.com)
+#endif
+
 
 // -----------------------------------------------------------------------------
 // NOFUSS
@@ -698,26 +872,37 @@
 #endif
 
 
-#ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC              1           // Use AysncMQTTClient (1) or PubSubClient (0)
+#ifndef MQTT_LIBRARY
+#define MQTT_LIBRARY                MQTT_LIBRARY_ASYNCMQTTCLIENT       // MQTT_LIBRARY_ASYNCMQTTCLIENT (default, https://github.com/marvinroger/async-mqtt-client)
+                                                                       // MQTT_LIBRARY_PUBSUBCLIENT (https://github.com/knolleary/pubsubclient)
+                                                                       // MQTT_LIBRARY_ARDUINOMQTT (https://github.com/256dpi/arduino-mqtt)
 #endif
 
+// -----------------------------------------------------------------------------
 // MQTT OVER SSL
-// Using MQTT over SSL works pretty well but generates problems with the web interface.
-// It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
-// Requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+// -----------------------------------------------------------------------------
 //
-// You can use SSL with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
-// but you might experience hiccups on the web interface, so my recommendation is:
-// WEB_SUPPORT=0
+// Requires SECURE_CLIENT set to SECURE_CLIENT_AXTLS or SECURE_CLIENT_BEARSSL
+// It is recommended to use MQTT_LIBRARY_ARDUINOMQTT or MQTT_LIBRARY_PUBSUBCLIENT
+// It is recommended to use SECURE_CLIENT_BEARSSL
+// It is recommended to use ESP8266 Arduino Core >= 2.5.2 with SECURE_CLIENT_BEARSSL
 //
-// If you use SSL with MQTT_USE_ASYNC=0 (PubSubClient library)
-// you will have to disable all the modules that use ESPAsyncTCP, that is:
-// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0 and WEB_SUPPORT=0
+// Current version of MQTT_LIBRARY_ASYNCMQTTCLIENT only supports SECURE_CLIENT_AXTLS
 //
-// You will need the fingerprint for your MQTT server, example for CloudMQTT:
-// $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
-// $ openssl x509 -noout -in cloudmqtt.pem -fingerprint -sha1
+// It is recommended to use WEB_SUPPORT=0 with either SECURE_CLIENT option, as there are miscellaneous problems when using them simultaneously
+// (although, things might've improved, and I'd encourage to check whether this is true or not)
+//
+// When using MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
+// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
+// Or, use "sync" versions instead (note that not every module has this option):
+// THINGSPEAK_USE_ASYNC=0, TELNET_SERVER=TELNET_SERVER_WIFISERVER
+//
+// See SECURE_CLIENT_CHECK for all possible connection verification options.
+//
+// The simpliest way to verify SSL connection is to use fingerprinting.
+// For example, to get Google's MQTT server certificate fingerprint, run the following command:
+// $ echo -n | openssl s_client -connect mqtt.googleapis.com:8883 2>&1 | openssl x509 -noout -fingerprint -sha1 | cut -d\= -f2
+// Note that fingerprint will change when certificate changes e.g. LetsEncrypt renewals or when the CSR updates
 
 #ifndef MQTT_SSL_ENABLED
 #define MQTT_SSL_ENABLED            0               // By default MQTT over SSL will not be enabled
@@ -727,6 +912,20 @@
 #define MQTT_SSL_FINGERPRINT        ""              // SSL fingerprint of the server
 #endif
 
+#ifndef MQTT_SECURE_CLIENT_CHECK
+#define MQTT_SECURE_CLIENT_CHECK    SECURE_CLIENT_CHECK // Use global verification setting by default
+#endif
+
+#ifndef MQTT_SECURE_CLIENT_MFLN
+#define MQTT_SECURE_CLIENT_MFLN     SECURE_CLIENT_MFLN  // Use global MFLN setting by default 
+#endif
+
+#ifndef MQTT_SECURE_CLIENT_INCLUDE_CA
+#define MQTT_SECURE_CLIENT_INCLUDE_CA        0           // Use user-provided CA. Only PROGMEM PEM option is supported.
+                                                         // When enabled, current implementation includes "static/mqtt_client_trusted_root_ca.h" with
+                                                         // const char _mqtt_client_trusted_root_ca[] PROGMEM = "...PEM data...";
+                                                         // By default, using LetsEncrypt X3 root in "static/letsencrypt_isrgroot_pem.h"
+#endif
 
 #ifndef MQTT_ENABLED
 #define MQTT_ENABLED                0               // Do not enable MQTT connection by default
@@ -846,7 +1045,9 @@
 #define MQTT_TOPIC_TIMESTAMP        "timestamp"
 #define MQTT_TOPIC_FREEHEAP         "freeheap"
 #define MQTT_TOPIC_VCC              "vcc"
+#ifndef MQTT_TOPIC_STATUS
 #define MQTT_TOPIC_STATUS           "status"
+#endif
 #define MQTT_TOPIC_MAC              "mac"
 #define MQTT_TOPIC_RSSI             "rssi"
 #define MQTT_TOPIC_MESSAGE_ID       "id"
@@ -890,12 +1091,15 @@
 #define MQTT_TOPIC_NOTIFY_TEMP_RANGE_MAX "notify_temp_range_max"
 
 
+#ifndef MQTT_STATUS_ONLINE
 #define MQTT_STATUS_ONLINE          "1"         // Value for the device ON message
+#endif
+
+#ifndef MQTT_STATUS_OFFLINE
 #define MQTT_STATUS_OFFLINE         "0"         // Value for the device OFF message (will)
+#endif
 
 #define MQTT_ACTION_RESET           "reboot"    // RESET MQTT topic particle
-
-#define MQTT_MESSAGE_ID_SHIFT       1000        // Store MQTT message id into EEPROM every these many
 
 // Custom get and set postfixes
 // Use something like "/status" or "/set", with leading slash
@@ -956,15 +1160,18 @@
 #define LIGHT_SAVE_DELAY        5           // Persist color after 5 seconds to avoid wearing out
 #endif
 
+#ifndef LIGHT_MIN_PWM
+#define LIGHT_MIN_PWM           0
+#endif
 
 #ifndef LIGHT_MAX_PWM
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #define LIGHT_MAX_PWM           255
-#endif
-
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
 #define LIGHT_MAX_PWM           10000        // 10000 * 200ns => 2 kHz
+#else
+#define LIGHT_MAX_PWM           0
 #endif
 
 #endif // LIGHT_MAX_PWM
@@ -973,16 +1180,45 @@
 #define LIGHT_LIMIT_PWM         LIGHT_MAX_PWM   // Limit PWM to this value (prevent 100% power)
 #endif
 
+#ifndef LIGHT_MIN_VALUE
+#define LIGHT_MIN_VALUE         0           // Minimum light value
+#endif
+
 #ifndef LIGHT_MAX_VALUE
 #define LIGHT_MAX_VALUE         255         // Maximum light value
 #endif
 
-#ifndef LIGHT_MAX_BRIGHTNESS
-#define LIGHT_MAX_BRIGHTNESS    255         // Maximun brightness value
+#ifndef LIGHT_MIN_BRIGHTNESS
+#define LIGHT_MIN_BRIGHTNESS    0           // Minimum brightness value
 #endif
 
-#define LIGHT_MIN_MIREDS        153      // Default to the Philips Hue value that HA also use.
-#define LIGHT_MAX_MIREDS        500      // https://developers.meethue.com/documentation/core-concepts
+#ifndef LIGHT_MAX_BRIGHTNESS
+#define LIGHT_MAX_BRIGHTNESS    255         // Maximum brightness value
+#endif
+
+// Default mireds & kelvin to the Philips Hue limits
+// https://developers.meethue.com/documentation/core-concepts
+//
+// Home Assistant also uses these, see Light::min_mireds, Light::max_mireds
+// https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/light/__init__.py
+
+// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
+// Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
+#ifndef LIGHT_COLDWHITE_MIRED
+#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
+#endif
+
+#ifndef LIGHT_WARMWHITE_MIRED
+#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
+#endif
+
+#ifndef LIGHT_COLDWHITE_KELVIN
+#define LIGHT_COLDWHITE_KELVIN  6536
+#endif
+
+#ifndef LIGHT_WARMWHITE_KELVIN
+#define LIGHT_WARMWHITE_KELVIN  2000
+#endif
 
 #ifndef LIGHT_STEP
 #define LIGHT_STEP              32          // Step size
@@ -999,11 +1235,6 @@
 #ifndef LIGHT_USE_CCT
 #define LIGHT_USE_CCT           0           // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
 #endif
-
-// Used when LIGHT_USE_WHITE AND LIGHT_USE_CCT is 1 - (1000000/Kelvin = MiReds)
-// Warning! Don't change this yet, NOT FULLY IMPLEMENTED!
-#define LIGHT_COLDWHITE_MIRED   153         // Coldwhite Strip, Value must be __BELOW__ W2!! (Default: 6535 Kelvin/153 MiRed)
-#define LIGHT_WARMWHITE_MIRED   500         // Warmwhite Strip, Value must be __ABOVE__ W1!! (Default: 2000 Kelvin/500 MiRed)
 
 #ifndef LIGHT_USE_GAMMA
 #define LIGHT_USE_GAMMA         0           // Use gamma correction for color channels
@@ -1044,9 +1275,17 @@
 #define DOMOTICZ_SUPPORT        MQTT_SUPPORT    // Build with domoticz (if MQTT) support (1.72Kb)
 #endif
 
+#ifndef DOMOTICZ_ENABLED
 #define DOMOTICZ_ENABLED        0               // Disable domoticz by default
+#endif
+
+#ifndef DOMOTICZ_IN_TOPIC
 #define DOMOTICZ_IN_TOPIC       "domoticz/in"   // Default subscription topic
+#endif
+
+#ifndef DOMOTICZ_OUT_TOPIC
 #define DOMOTICZ_OUT_TOPIC      "domoticz/out"  // Default publication topic
+#endif
 
 // -----------------------------------------------------------------------------
 // HOME ASSISTANT
@@ -1062,22 +1301,6 @@
 
 #ifndef HOMEASSISTANT_PREFIX
 #define HOMEASSISTANT_PREFIX    "homeassistant" // Default MQTT prefix
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_ON
-#define HOMEASSISTANT_PAYLOAD_ON    "1"         // Payload for ON and available messages
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_OFF
-#define HOMEASSISTANT_PAYLOAD_OFF   "0"         // Payload for OFF and unavailable messages
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_AVAILABLE
-#define HOMEASSISTANT_PAYLOAD_AVAILABLE     "1" // Payload for available messages
-#endif
-
-#ifndef HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE
-#define HOMEASSISTANT_PAYLOAD_NOT_AVAILABLE "0" // Payload for available messages
 #endif
 
 // -----------------------------------------------------------------------------
@@ -1139,7 +1362,7 @@
 // THINGSPEAK OVER SSL
 // Using THINGSPEAK over SSL works well but generates problems with the web interface,
 // so you should compile it with WEB_SUPPORT to 0.
-// When THINGSPEAK_USE_ASYNC is 1, requires ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
+// When THINGSPEAK_USE_ASYNC is 1, requires SECURE_CLIENT = SECURE_CLIENT_AXTLS and ESP8266 Arduino Core >= 2.4.0.
 #define THINGSPEAK_USE_SSL          0               // Use secure connection
 
 #define THINGSPEAK_FINGERPRINT      "78 60 18 44 81 35 BF DF 77 84 D4 0A 22 0D 9B 4E 6C DC 57 2C"
@@ -1278,6 +1501,8 @@
 #endif
 
 // Enable RCSwitch support
+// Originally implemented for SONOFF BASIC
+// https://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
 // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
 #ifndef RFB_DIRECT

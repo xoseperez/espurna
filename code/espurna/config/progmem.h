@@ -135,6 +135,32 @@ PROGMEM const char espurna_modules[] =
     #endif
     "";
 
+PROGMEM const char espurna_ota_modules[] =
+    #if OTA_ARDUINOOTA_SUPPORT
+        "ARDUINO "
+    #endif
+    #if (OTA_CLIENT == OTA_CLIENT_ASYNCTCP)
+        "ASYNCTCP "
+    #endif
+    #if (OTA_CLIENT == OTA_CLIENT_HTTPUPDATE)
+    #if (SECURE_CLIENT == SECURE_CLIENT_NONE)
+        "*HTTPUPDATE "
+    #endif
+    #if (SECURE_CLIENT == SECURE_CLIENT_AXTLS)
+        "*HTTPUPDATE_AXTLS "
+    #endif
+    #if (SECURE_CLIENT == SECURE_CLIENT_BEARSSL)
+        "*HTTPUPDATE_BEARSSL "
+    #endif
+    #endif // OTA_CLIENT_HTTPUPDATE
+    #if OTA_MQTT_SUPPORT
+        "MQTT "
+    #endif
+    #if WEB_SUPPORT
+        "WEB "
+    #endif
+    "";
+
 //--------------------------------------------------------------------------------
 // Sensors
 //--------------------------------------------------------------------------------
@@ -246,6 +272,9 @@ PROGMEM const char espurna_sensors[] =
     #endif
     #if EZOPH_SUPPORT
         "EZOPH "
+    #endif
+    #if ADE7953_SUPPORT
+        "ADE7953 "
     #endif
     "";
 

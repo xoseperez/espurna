@@ -1,0 +1,39 @@
+#version=2.3.0
+
+menu.float_support=scanf and printf float support
+
+generic.menu.FlashSize.1M1S=1M (1 EEPROM Sector, no SPIFFS)
+generic.menu.FlashSize.1M1S.build.flash_size=1M
+generic.menu.FlashSize.1M1S.build.flash_size_bytes=0x100000
+generic.menu.FlashSize.1M1S.build.flash_ld=eagle.flash.1m0m1s.ld
+generic.menu.FlashSize.1M1S.build.spiffs_pagesize=256
+generic.menu.FlashSize.1M1S.upload.maximum_size=1023984
+generic.menu.FlashSize.1M1S.build.rfcal_addr=0xFC000
+generic.menu.FlashSize.2M4S=2M (4 EEPROM Sectors, 1M SPIFFS)
+generic.menu.FlashSize.2M4S.build.flash_size=2M
+generic.menu.FlashSize.2M4S.build.flash_size_bytes=0x200000
+generic.menu.FlashSize.2M4S.build.flash_ld=eagle.flash.2m1m4s.ld
+generic.menu.FlashSize.2M4S.build.spiffs_pagesize=256
+generic.menu.FlashSize.2M4S.upload.maximum_size=1044464
+generic.menu.FlashSize.2M4S.build.rfcal_addr=0x1FC000
+generic.menu.FlashSize.4M1M4S=4M (4 EEPROM Sectors, 1M SPIFFS)
+generic.menu.FlashSize.4M1M4S.build.flash_size=4M
+generic.menu.FlashSize.4M1M4S.build.flash_size_bytes=0x400000
+generic.menu.FlashSize.4M1M4S.build.flash_ld=eagle.flash.4m1m4s.ld
+generic.menu.FlashSize.4M1M4S.build.spiffs_pagesize=256
+generic.menu.FlashSize.4M1M4S.upload.maximum_size=1044464
+generic.menu.FlashSize.4M1M4S.build.rfcal_addr=0x3FC000
+generic.menu.FlashSize.4M3M4S=4M (4 EEPROM Sectors, 3M SPIFFS)
+generic.menu.FlashSize.4M3M4S.build.flash_size=4M
+generic.menu.FlashSize.4M3M4S.build.flash_size_bytes=0x400000
+generic.menu.FlashSize.4M3M4S.build.flash_ld=eagle.flash.4m3m4s.ld
+generic.menu.FlashSize.4M3M4S.build.spiffs_pagesize=256
+generic.menu.FlashSize.4M3M4S.upload.maximum_size=1044464
+generic.menu.FlashSize.4M3M4S.build.rfcal_addr=0x3FC000
+
+generic.menu.float_support.disabled=Disabled (Recommended)
+generic.menu.float_support.disabled.build.float=
+generic.menu.float_support.enabled=Enabled
+generic.menu.float_support.enabled.build.float=-u _printf_float -u _scanf_float
+
+generic.compiler.cpp.extra_flags=-DNO_GLOBAL_EEPROM -DMQTT_MAX_PACKET_SIZE=1024

@@ -8,6 +8,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_SUPPORT
 
+#include "libs/DebugSend.h"
+
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
 WiFiUDP _udp_debug;
@@ -36,7 +38,7 @@ char _udp_syslog_header[40] = {0};
     }
 #endif
 
-void _debugSend(const char * message) {
+void debugSendImpl(const char * message) {
 
     const size_t msg_len = strlen(message);
 
@@ -85,63 +87,29 @@ void _debugSend(const char * message) {
 
 }
 
-// -----------------------------------------------------------------------------
-
-void debugSend(const char * format, ...) {
-
-    va_list args;
-    va_start(args, format);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
-
-}
-
-void debugSend_P(PGM_P format_P, ...) {
-
-    char format[strlen_P(format_P)+1];
-    memcpy_P(format, format_P, sizeof(format));
-
-    va_list args;
-    va_start(args, format_P);
-    char test[1];
-    int len = ets_vsnprintf(test, 1, format, args) + 1;
-    char * buffer = new char[len];
-    ets_vsnprintf(buffer, len, format, args);
-    va_end(args);
-
-    _debugSend(buffer);
-
-    delete[] buffer;
-
-}
 
 #if DEBUG_WEB_SUPPORT
 
-void debugWebSetup() {
-
-    wsOnSendRegister([](JsonObject& root) {
-        root["dbgVisible"] = 1;
-    });
-
-    wsOnActionRegister([](uint32_t client_id, const char * action, JsonObject& data) {
+void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
 
         #if TERMINAL_SUPPORT
             if (strcmp(action, "dbgcmd") == 0) {
-                const char* command = data.get<const char*>("command");
-                char buffer[strlen(command) + 2];
-                snprintf(buffer, sizeof(buffer), "%s\n", command);
-                terminalInject((void*) buffer, strlen(buffer));
+                if (!data.containsKey("command") || !data["command"].is<const char*>()) return;
+                const char* command = data["command"];
+                if (command && strlen(command)) {
+                    auto command = data.get<const char*>("command");
+                    terminalInject((void*) command, strlen(command));
+                    terminalInject('\n');
+                }
             }
         #endif
-        
-    });
+}
+
+void debugWebSetup() {
+
+    wsRegister()
+        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; })
+        .onAction(_debugWebSocketOnAction);
 
     #if DEBUG_UDP_SUPPORT
     #if DEBUG_UDP_PORT == 514
