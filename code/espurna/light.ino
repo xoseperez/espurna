@@ -43,10 +43,6 @@ struct channel_t {
 };
 std::vector<channel_t> _light_channel;
 
-bool _light_dirty = false;
-bool _light_state = false;
-bool _light_use_transitions = false;
-unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
 bool _light_has_color = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;

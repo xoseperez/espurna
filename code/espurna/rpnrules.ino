@@ -21,13 +21,12 @@ unsigned long _rpn_last = 0;
 
 // -----------------------------------------------------------------------------
 
-bool _rpnWebSocketOnReceive(const char * key, JsonVariant& value) {
+bool _rpnWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
     return (strncmp(key, "rpn", 3) == 0);
 }
 
-void _rpnWebSocketOnSend(JsonObject& root) {
+void _rpnWebSocketOnConnected(JsonObject& root) {
     
-    root["rpnVisible"] = 1;
     root["rpnSticky"] = getSetting("rpnSticky", 1).toInt();
     root["rpnDelay"] = getSetting("rpnDelay", RPN_DELAY).toInt();
     JsonArray& rules = root.createNestedArray("rpnRules");
@@ -296,8 +295,10 @@ void rpnSetup() {
 
     // Websockets
     #if WEB_SUPPORT
-        wsOnSendRegister(_rpnWebSocketOnSend);
-        wsOnReceiveRegister(_rpnWebSocketOnReceive);
+        wsRegister()
+            .onVisible([](JsonObject& root) { root["rpnVisible"] = 1; })
+            .onConnected(_rpnWebSocketOnConnected)
+            .onKeyCheck(_rpnWebSocketOnKeyCheck);
     #endif
 
     // MQTT
