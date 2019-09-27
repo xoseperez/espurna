@@ -10,6 +10,9 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
 #if TELNET_SUPPORT
 
+#define TELNET_IAC  0xFF
+#define TELNET_XEOF 0xEC
+
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
     #include <ESP8266WiFi.h>
     WiFiServer _telnetServer = WiFiServer(TELNET_PORT);
@@ -19,8 +22,6 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
     AsyncServer _telnetServer = AsyncServer(TELNET_PORT);
     std::unique_ptr<AsyncClient> _telnetClients[TELNET_MAX_CLIENTS];
 #endif
-
-bool _telnetFirst = true;
 
 bool _telnetAuth = TELNET_AUTHENTICATION;
 bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
@@ -81,21 +82,15 @@ bool _telnetWrite(unsigned char clientId, const char * message) {
 }
 
 void _telnetData(unsigned char clientId, void *data, size_t len) {
-    // Skip first message since it's always garbage
-    if (_telnetFirst) {
-        _telnetFirst = false;
-        return;
-    }
-
     // Capture close connection
     char * p = (char *) data;
 
-    // C-d is sent as two bytes (sometimes repeating)
-    if (len >= 2) {
-        if ((p[0] == 0xFF) && (p[1] == 0xEC)) {
+    if ((len >= 2) && (p[0] == TELNET_IAC)) {
+        // C-d is sent as two bytes (sometimes repeating)
+        if (p[1] == TELNET_XEOF) {
             _telnetDisconnect(clientId);
-            return;
         }
+        return; // Ignore telnet negotiation
     }
 
     if ((strncmp(p, "close", 5) == 0) || (strncmp(p, "quit", 4) == 0)) {
@@ -153,7 +148,6 @@ void _telnetNotifyConnected(unsigned char i) {
         }
     #endif
 
-    _telnetFirst = true;
     wifiReconnectCheck();
 
 }
