@@ -24,7 +24,7 @@ std::vector<String> _tspk_queue;
 struct tspk_state_t {
     bool flush = false;
     bool sent = false;
-    unsigned long last = 0;
+    unsigned long last_flush = 0;
     unsigned char tries = THINGSPEAK_TRIES;
 } _tspk_state;
 
@@ -144,8 +144,12 @@ void _tspkOnBodyRecv(AsyncHttp* http, uint8_t* data, size_t len) {
 
 void _tspkOnDisconnected(AsyncHttp* http) {
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Disconnected\n"));
-    _tspk_state.last = millis();
-    if (!_tspk_state.sent && _tspk_state.tries) _tspkFlushAgain();
+    _tspk_state.last_flush = millis();
+    if (!_tspk_state.sent && _tspk_state.tries) {
+        _tspkFlushAgain();
+    } else {
+        _tspkClearQueue();
+    }
     if (_tspk_state.tries) --_tspk_state.tries;
 }
 
@@ -250,7 +254,7 @@ void _tspkPost() {
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %u\n"), code);
         _tspk_client.stop();
 
-        _tspk_state.last = millis();
+        _tspk_state.last_flush = millis();
         if ((0 == code) && _tspk_state.tries) {
             _tspkFlushAgain();
             --_tspk_state.tries;
@@ -281,13 +285,16 @@ void _tspkConfigure() {
 
 void _tspkEnqueue(unsigned char index, const char * payload) {
     DEBUG_MSG_P(PSTR("[THINGSPEAK] Enqueuing field #%u with value %s\n"), index, payload);
+    _tspk_state.tries = THINGSPEAK_TRIES;
+
     String elem;
     elem.reserve(8 + strlen(payload));
     elem += "field";
     elem += int(index + 1);
     elem += '=';
     elem += payload;
-    _tspk_queue[--index] = elem;
+    _tspk_queue[--index] = std::move(elem);
+
 }
 
 void _tspkClearQueue() {
@@ -302,13 +309,13 @@ void _tspkClearQueue() {
 void _tspkFlush() {
 
     if (!_tspk_state.flush) return;
-    if (millis() - _tspk_state.last < THINGSPEAK_MIN_INTERVAL) return;
+    if (millis() - _tspk_state.last_flush < THINGSPEAK_MIN_INTERVAL) return;
 
     #if THINGSPEAK_USE_ASYNC
         if (_tspk_client->busy()) return;
     #endif
 
-    _tspk_state.last = millis();
+    _tspk_state.last_flush = millis();
     _tspk_state.sent = false;
     _tspk_state.flush = false;
 
