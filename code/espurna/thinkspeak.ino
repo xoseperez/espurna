@@ -103,12 +103,14 @@ void _tspkFlushAgain() {
 
 // TODO: maybe http object can keep a context containing the data
 //       however, it should not be restricted to string datatype
-int _tspkOnBodySend(AsyncHttp* http, AsyncClient* client) {
-    if (!client) {
-        _tspk_data = _tspkPrepareData(_tspk_queue);
-        return _tspk_data.length();
-    }
 
+size_t _tspkOnBodySendPrepare(AsyncHttp* http, AsyncClient* client) {
+    http->headers.add({Headers::CONTENT_TYPE, F("application/x-www-form-urlencoded")});
+    _tspk_data = _tspkPrepareData(_tspk_queue);
+    return _tspk_data.length();
+}
+
+size_t _tspkOnBodySend(AsyncHttp* http, AsyncClient* client) {
     const size_t data_len = _tspk_data.length();
     if (!data_len || (client->space() < data_len)) {
         return 0;
@@ -196,7 +198,9 @@ void _tspkInitClient() {
     _tspk_client->on_error = _tspkOnError;
 
     _tspk_client->on_body_recv = _tspkOnBodyRecv;
-    _tspk_client->on_body_send = _tspkOnBodySend;
+
+    _tspk_client->on_body_send_prepare = _tspkOnBodySendPrepare;
+    _tspk_client->on_body_send_data = _tspkOnBodySend;
 
 }
 

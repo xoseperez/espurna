@@ -16,15 +16,17 @@ namespace Headers {
     PROGMEM const char CONTENT_LENGTH[] = "Content-Length";
 };
 
-struct AsyncHttpHeader {
+class AsyncHttpHeader {
 
-    using header_t = std::pair<const String&, const String&>;
+    public:
+
+        using key_value_t = std::pair<const String&, const String&>;
 
     private:
 
         const String _key;
         const String _value;
-        header_t _kv;
+        key_value_t _kv;
 
     public:
 
@@ -46,7 +48,7 @@ struct AsyncHttpHeader {
             _kv(_key, _value)
         {}
 
-        const header_t& get() const {
+        const key_value_t& get() const {
             return _kv;
         }
 
@@ -74,7 +76,7 @@ struct AsyncHttpHeader {
 
 };
 
-struct AsyncHttpHeaders {
+class AsyncHttpHeaders {
 
     using header_t = AsyncHttpHeader;
     using headers_t = std::vector<header_t>;
@@ -166,7 +168,9 @@ struct AsyncHttpHeaders {
 
 };
 
-struct AsyncHttpError {
+class AsyncHttpError {
+
+    public:
 
     enum error_t {
         EMPTY,
@@ -200,8 +204,8 @@ struct AsyncHttpError {
 
 class AsyncHttp {
 
-    constexpr const size_t DEFAULT_TIMEOUT = 5000;
-    constexpr const size_t DEFAULT_PATH_BUFSIZE = 256;
+    constexpr static const size_t DEFAULT_TIMEOUT = 5000;
+    constexpr static const size_t DEFAULT_PATH_BUFSIZE = 256;
 
     public:
 
@@ -224,7 +228,7 @@ class AsyncHttp {
         using on_error_f = std::function<void(AsyncHttp*, const AsyncHttpError&)>;
 
         using on_body_recv_f = std::function<void(AsyncHttp*, uint8_t* data, size_t len)>;
-        using on_body_send_f = std::function<int(AsyncHttp*, AsyncClient* client)>;
+        using on_body_send_f = std::function<size_t(AsyncHttp*, AsyncClient* client)>;
 
         int cfg = HTTP_RECV;
         state_t state = state_t::NONE;
@@ -237,7 +241,8 @@ class AsyncHttp {
         on_error_f on_error;
 
         on_body_recv_f on_body_recv;
-        on_body_send_f on_body_send;
+        on_body_send_f on_body_send_prepare;
+        on_body_send_f on_body_send_data;
 
         String method;
         String path;
@@ -261,11 +266,11 @@ class AsyncHttp {
         //       buuut... this exposes asyncclient to the modules, maybe this needs a simple cbuf periodically flushing the data and this method simply filling it
         void trySend() {
             if (!client.canSend()) return;
-            if (!on_body_send) {
+            if (!on_body_send_data) {
                 client.close(true);
                 return;
             }
-            on_body_send(this, &client);
+            on_body_send_data(this, &client);
         }
 
         bool trySendHeaders() {
@@ -425,20 +430,24 @@ class AsyncHttp {
             {
                 size_t data_len = 0;
                 if (http->cfg & HTTP_SEND) {
-                    if (!http->on_body_send) {
-                        ASYNC_HTTP_DEBUG("err | no send_body callback set\n");
+                    if (!http->on_body_send_prepare || !http->on_body_send_data) {
+                        ASYNC_HTTP_DEBUG("err | no body_send_data/_prepare callbacks set\n");
                         client->close(true);
                         return;
                     }
-                    // XXX: ...class instead of this multi-function?
-                    data_len = http->on_body_send(http, nullptr);
-                    char data_buf[22];
+                    data_len = http->on_body_send_prepare(http, client);
+                    if (!data_len) {
+                        ASYNC_HTTP_DEBUG("xxx | chunked encoding not implemented!\n");
+                        client->close(true);
+                    }
+                    char data_buf[16];
                     snprintf(data_buf, sizeof(data_buf), "%u", data_len);
                     http->headers.add({Headers::CONTENT_LENGTH, data_buf});
                 }
             }
 
             {
+                // XXX: current path limit is 256 - 16 = 240 chars (including leading slash)
                 char buf[DEFAULT_PATH_BUFSIZE] = {0};
                 int res = snprintf_P(
                     buf, sizeof(buf), PSTR("%s %s HTTP/1.1\r\n"),
@@ -495,14 +504,33 @@ class AsyncHttp {
             this->method = method;
             this->host = host;
             this->port = port;
+
+            // XXX: current path limit is 256 - 16 = 240 chars (including leading slash)
             this->path = path;
+            if (!this->path.length() || (this->path[0] != '/')) {
+                ASYNC_HTTP_DEBUG("err | empty path / no leading slash\n");
+                return false;
+            }
+
+            if (this->path.length() > (DEFAULT_PATH_BUFSIZE - 1)) {
+                ASYNC_HTTP_DEBUG("err | cannot handle path larger than %u\n", DEFAULT_PATH_BUFSIZE - 1);
+                return false;
+            }
+
             this->ts = millis();
 
             // Treat every method as GET (receive-only), exception for POST / PUT to send data out
             size_t headers_size = 3;
             this->cfg = HTTP_RECV;
             if (this->method.equals("POST") || this->method.equals("PUT")) {
-                if (!this->on_body_send) return false;
+                if (!this->on_body_send_prepare) {
+                    ASYNC_HTTP_DEBUG("err | on_body_send_prepare is required for POST / PUT requests\n");
+                    return false;
+                }
+                if (!this->on_body_send_data) {
+                    ASYNC_HTTP_DEBUG("err | on_body_send_data is required for POST / PUT requests\n");
+                    return false;
+                }
                 this->cfg = HTTP_SEND | HTTP_RECV;
                 headers_size += 2;
             }
@@ -511,11 +539,8 @@ class AsyncHttp {
             headers.clear();
 
             headers.add({Headers::HOST, this->host.c_str()});
-            headers.add({Headers::USER_AGENT, "ESPurna"});
-            headers.add({Headers::CONNECTION, "close"});
-            if (this->cfg & HTTP_SEND) {
-                headers.add({Headers::CONTENT_TYPE, "application/x-www-form-urlencoded"});
-            }
+            headers.add({Headers::USER_AGENT, F("ESPurna")});
+            headers.add({Headers::CONNECTION, F("close")});
 
             bool status = false;
             #if ASYNC_TCP_SSL_ENABLED
