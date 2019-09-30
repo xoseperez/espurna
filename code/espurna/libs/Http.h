@@ -281,34 +281,41 @@ class AsyncHttp {
         }
 
         bool trySendHeaders() {
-            if (headers.done()) return true;
+            do {
+                if (!client.canSend()) return false;
+                if (headers.done()) return true;
 
-            const auto& string = headers.current();
-            const auto len = string.length();
+                const auto& string = headers.current();
+                const auto len = string.length();
 
-            if (!len) {
-                return true;
-            }
+                if (!len) {
+                    return true;
+                }
 
-            if (client.space() >= (len + 2)) {
-                if (client.add(string.c_str(), len)) {
-                    if (!headers.next().length()) {
-                        client.add("\r\n", 2);
+                if (client.space() >= (len + 2)) {
+                    if (client.add(string.c_str(), len)) {
+                        if (!headers.next().length()) {
+                            client.add("\r\n", 2);
+                            break;
+                        }
+                        continue;
                     }
                 }
-                client.send();
-            }
 
+            } while (true);
+
+            client.send();
             return false;
+
         }
 
 
     protected:
 
-        static AsyncHttpError _timeoutError(AsyncHttpError::error_t error, const __FlashStringHelper* message, uint32_t ts) {
+        static AsyncHttpError _timeoutError(AsyncHttpError::error_t error, const char* message, uint32_t ts) {
             String data;
             data.reserve(32);
-            data += message;
+            data += FPSTR(message);
             data += ' ';
             data += String(ts);
             return {error, data};
@@ -328,14 +335,14 @@ class AsyncHttp {
 
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             http->last_error = AsyncHttpError::NETWORK_TIMEOUT;
-            if (http->on_error) http->on_error(http, _timeoutError(AsyncHttpError::NETWORK_TIMEOUT, F("Network timeout after"), time));
+            if (http->on_error) http->on_error(http, _timeoutError(AsyncHttpError::NETWORK_TIMEOUT, PSTR("Network timeout after"), time));
         }
 
         static void _onPoll(void* http_ptr, AsyncClient* client) {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             const auto diff = millis() - http->ts;
             if (diff > http->timeout) {
-                if (http->on_error) http->on_error(http, _timeoutError(AsyncHttpError::REQUEST_TIMEOUT, F("No response after"), diff));
+                if (http->on_error) http->on_error(http, _timeoutError(AsyncHttpError::REQUEST_TIMEOUT, PSTR("No response after"), diff));
                 client->close(true);
             }
         }
