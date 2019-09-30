@@ -43,15 +43,15 @@ class AsyncHttpHeader {
             _kv(_key, _value)
         {}
 
-        AsyncHttpHeader(const String& key, const String& value) :
-            _key(key),
-            _value(value),
-            _kv(_key, _value)
-        {}
-
         AsyncHttpHeader(const AsyncHttpHeader& other) :
             _key(other._key),
             _value(other._value),
+            _kv(_key, _value)
+        {}
+
+        AsyncHttpHeader(const AsyncHttpHeader&& other) :
+            _key(std::move(other._key)),
+            _value(std::move(other._value)),
             _kv(_key, _value)
         {}
 
@@ -108,8 +108,8 @@ class AsyncHttpHeaders {
         _last(std::numeric_limits<size_t>::max())
     {}
 
-    void add(const header_t& header) {
-        _headers.push_back(header);
+    void add(const char* key, const char* value) {
+        _headers.emplace_back(key, value);
     }
 
     size_t size() {
@@ -449,7 +449,7 @@ class AsyncHttp {
                     }
                     char data_buf[16];
                     snprintf(data_buf, sizeof(data_buf), "%u", data_len);
-                    http->headers.add({Headers::CONTENT_LENGTH, data_buf});
+                    http->headers.add(Headers::CONTENT_LENGTH, data_buf);
                 }
             }
 
@@ -545,9 +545,9 @@ class AsyncHttp {
             headers.reserve(headers_size);
             headers.clear();
 
-            headers.add({Headers::HOST, this->host.c_str()});
-            headers.add({Headers::USER_AGENT, F("ESPurna")});
-            headers.add({Headers::CONNECTION, F("close")});
+            headers.add(Headers::HOST, this->host.c_str());
+            headers.add(Headers::USER_AGENT, PSTR("ESPurna"));
+            headers.add(Headers::CONNECTION, PSTR("close"));
 
             bool status = false;
             #if ASYNC_TCP_SSL_ENABLED

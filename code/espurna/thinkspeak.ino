@@ -105,7 +105,7 @@ void _tspkFlushAgain() {
 //       however, it should not be restricted to string datatype
 
 size_t _tspkOnBodySendPrepare(AsyncHttp* http, AsyncClient* client) {
-    http->headers.add({Headers::CONTENT_TYPE, F("application/x-www-form-urlencoded")});
+    http->headers.add(Headers::CONTENT_TYPE, PSTR("application/x-www-form-urlencoded"));
     _tspk_data = _tspkPrepareData(_tspk_queue);
     return _tspk_data.length();
 }
