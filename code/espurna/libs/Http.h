@@ -113,7 +113,7 @@ struct AsyncHttpHeaders {
 
     bool has(const char* key) {
         for (const auto& header : _headers) {
-            if (strcmp_P(key, header.key()) == 0) return true;
+            if (strncmp(key, header.key(), header.keyLength()) == 0) return true;
         }
         return false;
     }
