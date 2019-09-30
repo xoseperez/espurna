@@ -69,6 +69,7 @@
 //#define ITEAD_SONOFF_DUAL_R2
 //#define ITEAD_SONOFF_IFAN02
 //#define ITEAD_SONOFF_LED
+//#define ITEAD_SONOFF_MINI
 //#define ITEAD_SONOFF_POW
 //#define ITEAD_SONOFF_POW_R2
 //#define ITEAD_SONOFF_RF
