@@ -1,7 +1,14 @@
 
 #pragma once
 
+#include <utility>
 #include <functional>
+#include <vector>
+#include <memory>
+#include <limits>
+#include <cstring>
+
+#include <pgmspace.h>
 #include <ESPAsyncTCP.h>
 
 #ifndef ASYNC_HTTP_DEBUG
