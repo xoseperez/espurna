@@ -8,16 +8,163 @@
 #define ASYNC_HTTP_DEBUG(...)  //DEBUG_PORT.printf(__VA_ARGS__)
 #endif
 
-// TODO: customizable headers
-// <method> <path> <host> <len>
-const char HTTP_REQUEST_TEMPLATE[] PROGMEM =
-    "%s %s HTTP/1.1\r\n"
-    "Host: %s\r\n"
-    "User-Agent: ESPurna\r\n"
-    "Connection: close\r\n"
-    "Content-Type: application/x-www-form-urlencoded\r\n"
-    "Content-Length: %u\r\n"
-    "\r\n";
+namespace Headers {
+    PROGMEM const char HOST[] = "Host";
+    PROGMEM const char USER_AGENT[] = "User-Agent";
+    PROGMEM const char CONNECTION[] = "Connection";
+    PROGMEM const char CONTENT_TYPE[] = "Content-Type";
+    PROGMEM const char CONTENT_LENGTH[] = "Content-Length";
+};
+
+struct AsyncHttpHeader {
+
+    using header_t = std::pair<const String&, const String&>;
+
+    private:
+
+        const String _key;
+        const String _value;
+        header_t _kv;
+
+    public:
+
+        AsyncHttpHeader(const char* key, const char* value) :
+            _key(FPSTR(key)),
+            _value(FPSTR(value)),
+            _kv(_key, _value)
+        {}
+
+        AsyncHttpHeader(const String& key, const String& value) :
+            _key(key),
+            _value(value),
+            _kv(_key, _value)
+        {}
+
+        AsyncHttpHeader(const AsyncHttpHeader& other) :
+            _key(other._key),
+            _value(other._value),
+            _kv(_key, _value)
+        {}
+
+        const header_t& get() const {
+            return _kv;
+        }
+
+        const char* key() const {
+            return _key.c_str();
+        }
+
+        const char* value() const {
+            return _value.c_str();
+        }
+
+        size_t keyLength() const {
+            return _key.length();
+        }
+
+        size_t valueLength() const {
+            return _value.length();
+        }
+
+        bool operator ==(const AsyncHttpHeader& header) {
+            return (
+                (header._key == _key) && (header._value == _value)
+            );
+        }
+
+};
+
+struct AsyncHttpHeaders {
+
+    using header_t = AsyncHttpHeader;
+    using headers_t = std::vector<header_t>;
+
+    private:
+
+    headers_t _headers;
+    size_t _index;
+    size_t _last;
+    String _value;
+
+    public:
+
+    AsyncHttpHeaders() :
+        _index(0),
+        _last(std::numeric_limits<size_t>::max())
+    {}
+
+    AsyncHttpHeaders(headers_t& headers) :
+        _headers(headers),
+        _index(0),
+        _last(std::numeric_limits<size_t>::max())
+    {}
+
+    void add(const header_t& header) {
+        _headers.push_back(header);
+    }
+
+    size_t size() {
+        return _headers.size();
+    }
+
+    void reserve(size_t size) {
+        _headers.reserve(size);
+    }
+
+    bool has(const char* key) {
+        for (const auto& header : _headers) {
+            if (strcmp_P(key, header.key()) == 0) return true;
+        }
+        return false;
+    }
+
+    String& current() {
+        if (_last == _index) return _value;
+        if (_headers.size() && (_index < _headers.size())) {
+            const auto& current = _headers.at(_index);
+            _value.reserve(
+                current.keyLength()
+                + current.valueLength()
+                + strlen(": \r\n")
+            );
+
+            _value = current.key();
+            _value += ": ";
+            _value += current.value();
+            _value += "\r\n";
+        } else {
+            _value = "";
+        }
+
+        _last = _index;
+
+        return _value;
+    }
+
+    String& next() {
+        ++_index;
+        return current();
+    }
+
+    bool done() {
+        return (_index >= _headers.size());
+    }
+
+    void clear() {
+        _index = 0;
+        _last = std::numeric_limits<size_t>::max();
+        _headers.clear();
+    }
+
+    headers_t::const_iterator begin() {
+        return _headers.begin();
+    }
+
+    headers_t::const_iterator end() {
+        return _headers.end();
+    }
+
+};
 
 struct AsyncHttpError {
 
@@ -52,6 +199,9 @@ struct AsyncHttpError {
 };
 
 class AsyncHttp {
+
+    constexpr const size_t DEFAULT_TIMEOUT = 5000;
+    constexpr const size_t DEFAULT_PATH_BUFSIZE = 256;
 
     public:
 
@@ -92,18 +242,23 @@ class AsyncHttp {
         String method;
         String path;
 
+        // WebRequest.cpp
+        //LinkedList<AsyncWebHeader*> headers;
+        //std::vector<AsyncHttpHeader> headers;
+        AsyncHttpHeaders headers;
+
         String host;
         uint16_t port;
 
         uint32_t ts;
-        uint32_t timeout = 5000;
+        uint32_t timeout = DEFAULT_TIMEOUT;
 
         bool connected = false;
         bool connecting = false;
 
-        // TODO: since we are single threaded, no need to buffer anything and we can directly use client->add with anything right in the body_send callback
+        // TODO ref: https://github.com/xoseperez/espurna/pull/1909#issuecomment-533319480
+        //       since LWIP_NETIF_TX_SINGLE_PBUF is enabled, no need to buffer anything and we can directly use client->add with non-persistent data
         //       buuut... this exposes asyncclient to the modules, maybe this needs a simple cbuf periodically flushing the data and this method simply filling it
-        //       (ref: AsyncTCPBuffer class in ESPAsyncTCP or ESPAsyncWebServer chuncked response callback)
         void trySend() {
             if (!client.canSend()) return;
             if (!on_body_send) {
@@ -112,6 +267,29 @@ class AsyncHttp {
             }
             on_body_send(this, &client);
         }
+
+        bool trySendHeaders() {
+            if (headers.done()) return true;
+
+            const auto& string = headers.current();
+            const auto len = string.length();
+
+            if (!len) {
+                return true;
+            }
+
+            if (client.space() >= (len + 2)) {
+                if (client.add(string.c_str(), len)) {
+                    if (!headers.next().length()) {
+                        client.add("\r\n", 2);
+                    }
+                }
+                client.send();
+            }
+
+            return false;
+        }
+
 
     protected:
 
@@ -126,7 +304,7 @@ class AsyncHttp {
 
         static void _onDisconnect(void* http_ptr, AsyncClient*) {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
-            if (http->on_disconnected) http->on_disconnected(http); 
+            if (http->on_disconnected) http->on_disconnected(http);
             http->ts = 0;
             http->connected = false;
             http->connecting = false;
@@ -244,50 +422,41 @@ class AsyncHttp {
 
             if (http->on_connected) http->on_connected(http);
 
-            const int headers_len =
-                strlen_P(HTTP_REQUEST_TEMPLATE)
-                + http->method.length()
-                + http->host.length()
-                + http->path.length()
-                + 32;
+            {
+                size_t data_len = 0;
+                if (http->cfg & HTTP_SEND) {
+                    if (!http->on_body_send) {
+                        ASYNC_HTTP_DEBUG("err | no send_body callback set\n");
+                        client->close(true);
+                        return;
+                    }
+                    // XXX: ...class instead of this multi-function?
+                    data_len = http->on_body_send(http, nullptr);
+                    char data_buf[22];
+                    snprintf(data_buf, sizeof(data_buf), "%u", data_len);
+                    http->headers.add({Headers::CONTENT_LENGTH, data_buf});
+                }
+            }
 
-            int data_len = 0;
-            if (http->cfg & HTTP_SEND) {
-                if (!http->on_body_send) {
-                    ASYNC_HTTP_DEBUG("err | no send_body callback set\n");
+            {
+                char buf[DEFAULT_PATH_BUFSIZE] = {0};
+                int res = snprintf_P(
+                    buf, sizeof(buf), PSTR("%s %s HTTP/1.1\r\n"),
+                    http->method.c_str(), http->path.c_str()
+                );
+
+                if ((res < 0) || (static_cast<size_t>(res) > sizeof(buf))) {
+                    ASYNC_HTTP_DEBUG("err | could not print initial line\n");
                     client->close(true);
                     return;
                 }
-                // XXX: ...class instead of this multi-function?
-                data_len = http->on_body_send(http, nullptr);
+
+                client->add(buf, res);
             }
 
-            char* headers = (char *) malloc(headers_len + 1);
-
-            if (!headers) {
-                ASYNC_HTTP_DEBUG("err | alloc %u fail\n", headers_len + 1);
-                client->close(true);
-                return;
+            if (http->trySendHeaders()) {
+                if (http->cfg & HTTP_SEND) http->trySend();
             }
-
-            int res = snprintf_P(headers, headers_len + 1,
-                HTTP_REQUEST_TEMPLATE,
-                http->method.c_str(),
-                http->path.c_str(),
-                http->host.c_str(),
-                data_len
-            );
-            if (res >= (headers_len + 1)) {
-                ASYNC_HTTP_DEBUG("err | res>=len :: %u>=%u\n", res, headers_len + 1);
-                free(headers);
-                client->close(true);
-                return;
-            }
-
-            client->write(headers);
-            free(headers);
-
-            if (http->cfg & HTTP_SEND) http->trySend();
         }
 
         static void _onError(void* http_ptr, AsyncClient* client, err_t err) {
@@ -298,11 +467,15 @@ class AsyncHttp {
         static void _onAck(void* http_ptr, AsyncClient* client, size_t, uint32_t) {
             AsyncHttp* http = static_cast<AsyncHttp*>(http_ptr);
             http->ts = millis();
-            if (http->cfg & HTTP_SEND) http->trySend();
+            if (http->trySendHeaders()) {
+                if (http->cfg & HTTP_SEND) http->trySend();
+            }
         }
 
+
     public:
-        AsyncHttp() {
+        AsyncHttp()
+        {
             client.onDisconnect(_onDisconnect, this);
             client.onTimeout(_onTimeout, this);
             client.onPoll(_onPoll, this);
@@ -326,14 +499,25 @@ class AsyncHttp {
             this->ts = millis();
 
             // Treat every method as GET (receive-only), exception for POST / PUT to send data out
+            size_t headers_size = 3;
             this->cfg = HTTP_RECV;
             if (this->method.equals("POST") || this->method.equals("PUT")) {
                 if (!this->on_body_send) return false;
                 this->cfg = HTTP_SEND | HTTP_RECV;
+                headers_size += 2;
+            }
+
+            headers.reserve(headers_size);
+            headers.clear();
+
+            headers.add({Headers::HOST, this->host.c_str()});
+            headers.add({Headers::USER_AGENT, "ESPurna"});
+            headers.add({Headers::CONNECTION, "close"});
+            if (this->cfg & HTTP_SEND) {
+                headers.add({Headers::CONTENT_TYPE, "application/x-www-form-urlencoded"});
             }
 
             bool status = false;
-
             #if ASYNC_TCP_SSL_ENABLED
                 status = client.connect(this->host.c_str(), this->port, use_ssl);
             #else
@@ -341,7 +525,7 @@ class AsyncHttp {
             #endif
 
             this->connecting = status;
-            
+
             if (!status) {
                 client.close(true);
             }
