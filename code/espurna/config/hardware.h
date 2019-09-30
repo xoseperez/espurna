@@ -316,7 +316,7 @@
     #define BUTTON1_PIN         0
     #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       1
-    #define BUTTON2_PIN         14
+    #define BUTTON2_PIN         4
     #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       1
 
