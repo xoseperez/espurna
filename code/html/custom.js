@@ -1765,9 +1765,16 @@ function processData(data) {
         // Look for SPANs
         var span = $("span[name='" + key + "']");
         if (span.length > 0) {
-            pre = span.attr("pre") || "";
-            post = span.attr("post") || "";
-            span.html(pre + value + post);
+            if (Array.isArray(value)) {
+                value.forEach(function(elem) {
+                    span.append(elem);
+                    span.append('</br>');
+                });
+            } else {
+                pre = span.attr("pre") || "";
+                post = span.attr("post") || "";
+                span.html(pre + value + post);
+            }
         }
 
         // Look for SELECTs

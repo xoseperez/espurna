@@ -9,7 +9,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <JustWifi.h>
 #include <Ticker.h>
 
-uint32_t _wifi_scan_client_id = 0;
 bool _wifi_wps_running = false;
 bool _wifi_smartconfig_running = false;
 bool _wifi_smartconfig_initial = false;
@@ -23,6 +22,15 @@ unsigned long _wifi_gratuitous_arp_last = 0;
 // -----------------------------------------------------------------------------
 // PRIVATE
 // -----------------------------------------------------------------------------
+struct wifi_scan_info_t {
+    String ssid_scan;
+    int32_t rssi_scan;
+    uint8_t sec_scan;
+    uint8_t* BSSID_scan;
+    int32_t chan_scan;
+    bool hidden_scan;
+    char buffer[128];
+};
 
 void _wifiUpdateSoftAP() {
     if (WiFi.softAPgetStationNum() == 0) {
@@ -104,70 +112,50 @@ void _wifiConfigure() {
         )).toInt();
     #endif
 
+    const auto tx_power = getSetting("wifiTxPwr", WIFI_OUTPUT_POWER_DBM).toFloat();
+    WiFi.setOutputPower(tx_power);
+
 }
 
-void _wifiScan(uint32_t client_id = 0) {
+void _wifiScan(wifi_scan_f callback = nullptr) {
 
     DEBUG_MSG_P(PSTR("[WIFI] Start scanning\n"));
-
-    #if WEB_SUPPORT
-        String output;
-    #endif
 
     unsigned char result = WiFi.scanNetworks();
 
     if (result == WIFI_SCAN_FAILED) {
         DEBUG_MSG_P(PSTR("[WIFI] Scan failed\n"));
-        #if WEB_SUPPORT
-            output = String("Failed scan");
-        #endif
+        return;
     } else if (result == 0) {
         DEBUG_MSG_P(PSTR("[WIFI] No networks found\n"));
-        #if WEB_SUPPORT
-            output = String("No networks found");
-        #endif
-    } else {
+        return;
+    }
 
-        DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
+    DEBUG_MSG_P(PSTR("[WIFI] %d networks found:\n"), result);
 
-        // Populate defined networks with scan data
-        for (unsigned char i = 0; i < result; ++i) {
+    // Populate defined networks with scan data
+    wifi_scan_info_t info;
 
-            String ssid_scan;
-            int32_t rssi_scan;
-            uint8_t sec_scan;
-            uint8_t* BSSID_scan;
-            int32_t chan_scan;
-            bool hidden_scan;
-            char buffer[128];
+    for (unsigned char i = 0; i < result; ++i) {
 
-            WiFi.getNetworkInfo(i, ssid_scan, sec_scan, rssi_scan, BSSID_scan, chan_scan, hidden_scan);
+        WiFi.getNetworkInfo(i, info.ssid_scan, info.sec_scan, info.rssi_scan, info.BSSID_scan, info.chan_scan, info.hidden_scan);
 
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
-                BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
-                (sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
-                rssi_scan,
-                chan_scan,
-                ssid_scan.c_str()
-            );
+        snprintf_P(info.buffer, sizeof(info.buffer),
+            PSTR("BSSID: %02X:%02X:%02X:%02X:%02X:%02X SEC: %s RSSI: %3d CH: %2d SSID: %s"),
+            info.BSSID_scan[0], info.BSSID_scan[1], info.BSSID_scan[2], info.BSSID_scan[3], info.BSSID_scan[4], info.BSSID_scan[5],
+            (info.sec_scan != ENC_TYPE_NONE ? "YES" : "NO "),
+            info.rssi_scan,
+            info.chan_scan,
+            info.ssid_scan.c_str()
+        );
 
-            DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), buffer);
-
-            #if WEB_SUPPORT
-                if (client_id > 0) output = output + String(buffer) + String("<br />");
-            #endif
-
+        if (callback) {
+            callback(info);
+        } else {
+            DEBUG_MSG_P(PSTR("[WIFI] > %s\n"), info.buffer);
         }
 
     }
-
-    #if WEB_SUPPORT
-        if (client_id > 0) {
-            output = String("{\"scanResult\": \"") + output + String("\"}");
-            wsSend(client_id, output.c_str());
-        }
-    #endif
 
     WiFi.scanDelete();
 
@@ -511,8 +499,15 @@ void _wifiWebSocketOnConnected(JsonObject& root) {
     }
 }
 
+void _wifiWebSocketScan(JsonObject& root) {
+    JsonArray& scanResult = root.createNestedArray("scanResult");
+    _wifiScan([&scanResult](wifi_scan_info_t& info) {
+        scanResult.add(info.buffer);
+    });
+}
+
 void _wifiWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "scan") == 0) _wifi_scan_client_id = client_id;
+    if (strcmp(action, "scan") == 0) wsPost(client_id, _wifiWebSocketScan);
 }
 
 #endif
@@ -745,6 +740,7 @@ void wifiSetup() {
 
     #if WEB_SUPPORT
         wsRegister()
+            .onAction(_wifiWebSocketOnAction)
             .onConnected(_wifiWebSocketOnConnected)
             .onKeyCheck(_wifiWebSocketOnKeyCheck);
     #endif
@@ -770,12 +766,6 @@ void wifiLoop() {
             _wifi_dnsServer.processNextRequest();
         }
     #endif
-
-    // Do we have a pending scan?
-    if (_wifi_scan_client_id > 0) {
-        _wifiScan(_wifi_scan_client_id);
-        _wifi_scan_client_id = 0;
-    }
 
     // Only send out gra arp when in STA mode
     #if WIFI_GRATUITOUS_ARP_SUPPORT

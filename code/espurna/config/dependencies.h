@@ -81,3 +81,8 @@
 #undef OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE
 #define OTA_CLIENT_HTTPUPDATE_2_3_0_COMPATIBLE 0   // Use new HTTPUpdate API with BearSSL
 #endif
+
+#if LWIP_VERSION_MAJOR != 1
+#undef MDNS_CLIENT_SUPPORT
+#define MDNS_CLIENT_SUPPORT         0          // default resolver already handles this
+#endif

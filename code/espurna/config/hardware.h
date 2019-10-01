@@ -306,6 +306,28 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+#elif defined(ITEAD_SONOFF_MINI)
+
+    // Info
+    #define MANUFACTURER        "ITEAD"
+    #define DEVICE              "SONOFF_MINI"
+
+    // Buttons
+    #define BUTTON1_PIN         0
+    #define BUTTON1_MODE        BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
+    #define BUTTON2_PIN         4
+    #define BUTTON2_MODE        BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_RELAY       1
+
+    // Relays
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
+
 #elif defined(ITEAD_SONOFF_TH)
 
     // Info
@@ -3852,6 +3874,40 @@
     #define HLW8012_VOLTAGE_R_UP        ( 4 * 470000 )  // Upstream voltage resistor
     #define HLW8012_VOLTAGE_R_DOWN      ( 1000 )        // Downstream voltage resistor
     #define HLW8012_INTERRUPT_ON        CHANGE
+
+// -----------------------------------------------------------------------------
+// FS UAP1
+// http://frank-schuetz.de/index.php/fhem/13-hoermann-torantrieb-mit-espeasy-in-fhem-einbinden
+
+#elif defined(FS_UAP1)
+
+    // Info
+    #define MANUFACTURER            "FS"
+    #define DEVICE                  "UAP1"
+
+    // Inputs
+    #define DIGITAL1_PIN            4
+    #define DIGITAL2_PIN            5
+
+    // Relays
+    #define RELAY1_PIN              12
+    #define RELAY2_PIN              13
+    #define RELAY3_PIN              14
+    #define RELAY4_PIN              15
+
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        0
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT    0
+
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 // TEST boards (do not use!!)

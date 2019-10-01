@@ -52,8 +52,8 @@ bool _light_provider_update = false;
 
 bool _light_use_transitions = false;
 unsigned int _light_transition_time = LIGHT_TRANSITION_TIME;
-unsigned long _light_steps_left = 1;
 
+bool _light_dirty = false;
 bool _light_state = false;
 unsigned char _light_brightness = Light::BRIGHTNESS_MAX;
 unsigned int _light_mireds = lround((Light::MIREDS_COLDWHITE + Light::MIREDS_WARMWHITE) / 2);
@@ -102,15 +102,29 @@ static_assert(Light::VALUE_MAX <= sizeof(_light_gamma_table), "Out-of-bounds arr
 // UTILS
 // -----------------------------------------------------------------------------
 
+void _setValue(const unsigned char id, const unsigned int value) {
+    if (_light_channel[id].value != value) {
+        _light_channel[id].value = value;
+        _light_dirty = true;
+    }
+}
+
+void _setInputValue(const unsigned char id, const unsigned int value) {
+    if (_light_channel[id].inputValue != value) {
+        _light_channel[id].inputValue = value;
+        _light_dirty = true;
+    }
+}
+
 void _setRGBInputValue(unsigned char red, unsigned char green, unsigned char blue) {
-    _light_channel[0].inputValue = constrain(red, Light::VALUE_MIN, Light::VALUE_MAX);
-    _light_channel[1].inputValue = constrain(green, Light::VALUE_MIN, Light::VALUE_MAX);
-    _light_channel[2].inputValue = constrain(blue, Light::VALUE_MIN, Light::VALUE_MAX);
+    _setInputValue(0, constrain(red, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(1, constrain(green, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(2, constrain(blue, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
 void _setCCTInputValue(unsigned char warm, unsigned char cold) {
-    _light_channel[0].inputValue = constrain(warm, Light::VALUE_MIN, Light::VALUE_MAX);
-    _light_channel[1].inputValue = constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX);
+    _setInputValue(0, constrain(warm, Light::VALUE_MIN, Light::VALUE_MAX));
+    _setInputValue(1, constrain(cold, Light::VALUE_MIN, Light::VALUE_MAX));
 }
 
 void _lightApplyBrightness(unsigned char channels = lightChannels()) {
@@ -121,7 +135,7 @@ void _lightApplyBrightness(unsigned char channels = lightChannels()) {
 
     for (unsigned char i=0; i < lightChannels(); i++) {
         if (i >= channels) brightness = 1;
-        _light_channel[i].value = _light_channel[i].inputValue * brightness;
+        _setValue(i, _light_channel[i].inputValue * brightness);
     }
 
 }
@@ -133,7 +147,7 @@ void _lightApplyBrightnessColor() {
     // Substract the common part from RGB channels and add it to white channel. So [250,150,50] -> [200,100,0,50]
     unsigned char white = std::min(_light_channel[0].inputValue, std::min(_light_channel[1].inputValue, _light_channel[2].inputValue));
     for (unsigned int i=0; i < 3; i++) {
-        _light_channel[i].value = _light_channel[i].inputValue - white;
+        _setValue(i, _light_channel[i].inputValue - white);
     }
 
     // Split the White Value across 2 White LED Strips.
@@ -144,14 +158,14 @@ void _lightApplyBrightnessColor() {
 
         // set cold white
         _light_channel[3].inputValue = 0;
-        _light_channel[3].value = lround(((double) 1.0 - miredFactor) * white);
+        _setValue(3, lround(((double) 1.0 - miredFactor) * white));
 
         // set warm white
         _light_channel[4].inputValue = 0;
-        _light_channel[4].value = lround(miredFactor * white);
+        _setValue(4, lround(miredFactor * white));
     } else {
         _light_channel[3].inputValue = 0;
-        _light_channel[3].value = white;
+        _setValue(3, white);
     }
 
     // Scale up to equal input values. So [250,150,50] -> [200,100,0,50] -> [250, 125, 0, 63]
@@ -165,18 +179,18 @@ void _lightApplyBrightnessColor() {
 
     double factor = (max_out > 0) ? (double) (max_in / max_out) : 0;
     for (unsigned char i=0; i < channelSize; i++) {
-        _light_channel[i].value = lround((double) _light_channel[i].value * factor * brightness);
+        _setValue(i, lround((double) _light_channel[i].value * factor * brightness));
     }
 
     // Scale white channel to match brightness
     for (unsigned char i=3; i < channelSize; i++) {
-        _light_channel[i].value = constrain(static_cast<unsigned int>(_light_channel[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX);
+        _setValue(i, constrain(static_cast<unsigned int>(_light_channel[i].value * LIGHT_WHITE_FACTOR), Light::BRIGHTNESS_MIN, Light::BRIGHTNESS_MAX));
     }
 
     // For the rest of channels, don't apply brightness, it is already in the inputValue
     // i should be 4 when RGBW and 5 when RGBWW
     for (unsigned char i=channelSize; i < _light_channel.size(); i++) {
-        _light_channel[i].value = _light_channel[i].inputValue;
+        _setValue(i, _light_channel[i].inputValue);
     }
 
 }
@@ -236,19 +250,19 @@ void _fromRGB(const char * rgb) {
 
         tok = strtok(p, ",");
         while (tok != NULL) {
-            _light_channel[count].inputValue = atoi(tok);
+            _setInputValue(count, atoi(tok));
             if (++count == channels) break;
             tok = strtok(NULL, ",");
         }
 
         // RGB but less than 3 values received, assume it is 0
         if (_light_has_color && (count < 3)) {
-          // check channel 1 and 2:
-          for (int i = 1; i <= 2; i++) {
-            if (count < (i+1)) {
-              _light_channel[i].inputValue = 0;
+            // check channel 1 and 2:
+            for (int i = 1; i <= 2; i++) {
+                if (count < (i+1)) {
+                    _setInputValue(i, 0);
+                }
             }
-          }
         }
         break;
     }
@@ -484,33 +498,25 @@ unsigned int _toPWM(unsigned char id) {
     return _toPWM(_light_channel[id].current, useGamma, _light_channel[id].reverse);
 }
 
-void _transition() {
+void _lightTransition(unsigned long step) {
 
-    // Update transition ticker
-    _light_steps_left--;
-    if (_light_steps_left == 0) _light_transition_ticker.detach();
-
-    // Transitions
-    for (unsigned int i=0; i < _light_channel.size(); i++) {
-
-        if (_light_steps_left == 0) {
-            _light_channel[i].current = _light_channel[i].target;
+    // Transitions based on current step. If step == 0, then it is the last transition
+    for (auto& channel : _light_channel) {
+        if (!step) {
+            channel.current = channel.target;
         } else {
-            double difference = (double) (_light_channel[i].target - _light_channel[i].current) / (_light_steps_left + 1);
-            _light_channel[i].current = _light_channel[i].current + difference;
+            channel.current += (double) (channel.target - channel.current) / (step + 1);
         }
-
     }
 
 }
 
-void _lightProviderUpdate() {
+void _lightProviderUpdate(unsigned long steps) {
 
     if (_light_provider_update) return;
-
     _light_provider_update = true;
 
-    _transition();
+    _lightTransition(--steps);
 
     #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 
@@ -531,12 +537,15 @@ void _lightProviderUpdate() {
 
     #endif
 
+    // This is not the final value, update again
+    if (steps) _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
+
     _light_provider_update = false;
 
 }
 
-void _lightProviderDoUpdate() {
-    schedule_function(_lightProviderUpdate);
+void _lightProviderScheduleUpdate(unsigned long steps) {
+    schedule_function(std::bind(_lightProviderUpdate, steps));
 }
 
 // -----------------------------------------------------------------------------
@@ -805,7 +814,12 @@ void _lightComms(unsigned char mask) {
 
 void lightUpdate(bool save, bool forward, bool group_forward) {
 
+    // Calculate values based on inputs and brightness
     _light_brightness_func();
+
+    // Only update if a channel has changed
+    if (!_light_dirty) return;
+    _light_dirty = false;
 
     // Update channels
     for (unsigned int i=0; i < _light_channel.size(); i++) {
@@ -813,9 +827,10 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
         //DEBUG_MSG_P("[LIGHT] Channel #%u target value: %u\n", i, _light_channel[i].target);
     }
 
-    // Configure color transition
-    _light_steps_left = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
-    _light_transition_ticker.attach_ms(LIGHT_TRANSITION_STEP, _lightProviderDoUpdate);
+    // Channel transition will be handled by the provider function
+    // User can configure total transition time, step time is a fixed value
+    unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
+    _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
 
     // Delay every communication 100ms to avoid jamming
     unsigned char mask = 0;
@@ -843,7 +858,10 @@ void lightSave() {
 #endif
 
 void lightState(unsigned char i, bool state) {
-    _light_channel[i].state = state;
+    if (_light_channel[i].state != state) {
+        _light_channel[i].state = state;
+        _light_dirty = true;
+    }
 }
 
 bool lightState(unsigned char i) {
@@ -851,7 +869,10 @@ bool lightState(unsigned char i) {
 }
 
 void lightState(bool state) {
-    _light_state = state;
+    if (_light_state != state) {
+        _light_state = state;
+        _light_dirty = true;
+    }
 }
 
 bool lightState() {
@@ -898,7 +919,7 @@ unsigned int lightChannel(unsigned char id) {
 
 void lightChannel(unsigned char id, unsigned char value) {
     if (id <= _light_channel.size()) {
-        _light_channel[id].inputValue = constrain(value, Light::VALUE_MIN, Light::VALUE_MAX);
+        _setInputValue(id, constrain(value, Light::VALUE_MIN, Light::VALUE_MAX));
     }
 }
 
@@ -1191,26 +1212,19 @@ void _lightInitCommands() {
 #endif // TERMINAL_SUPPORT
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+const unsigned long _light_iomux[16] PROGMEM = {
+    PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_U0RXD_U,
+    PERIPHS_IO_MUX_GPIO4_U, PERIPHS_IO_MUX_GPIO5_U, PERIPHS_IO_MUX_SD_CLK_U, PERIPHS_IO_MUX_SD_DATA0_U,
+    PERIPHS_IO_MUX_SD_DATA1_U, PERIPHS_IO_MUX_SD_DATA2_U, PERIPHS_IO_MUX_SD_DATA3_U, PERIPHS_IO_MUX_SD_CMD_U,
+    PERIPHS_IO_MUX_MTDI_U, PERIPHS_IO_MUX_MTCK_U, PERIPHS_IO_MUX_MTMS_U, PERIPHS_IO_MUX_MTDO_U
+};
 
-unsigned long getIOMux(unsigned long gpio) {
-    unsigned long muxes[16] = {
-        PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_U0RXD_U,
-        PERIPHS_IO_MUX_GPIO4_U, PERIPHS_IO_MUX_GPIO5_U, PERIPHS_IO_MUX_SD_CLK_U, PERIPHS_IO_MUX_SD_DATA0_U,
-        PERIPHS_IO_MUX_SD_DATA1_U, PERIPHS_IO_MUX_SD_DATA2_U, PERIPHS_IO_MUX_SD_DATA3_U, PERIPHS_IO_MUX_SD_CMD_U,
-        PERIPHS_IO_MUX_MTDI_U, PERIPHS_IO_MUX_MTCK_U, PERIPHS_IO_MUX_MTMS_U, PERIPHS_IO_MUX_MTDO_U
-    };
-    return muxes[gpio];
-}
-
-unsigned long getIOFunc(unsigned long gpio) {
-    unsigned long funcs[16] = {
-        FUNC_GPIO0, FUNC_GPIO1, FUNC_GPIO2, FUNC_GPIO3,
-        FUNC_GPIO4, FUNC_GPIO5, FUNC_GPIO6, FUNC_GPIO7,
-        FUNC_GPIO8, FUNC_GPIO9, FUNC_GPIO10, FUNC_GPIO11,
-        FUNC_GPIO12, FUNC_GPIO13, FUNC_GPIO14, FUNC_GPIO15
-    };
-    return funcs[gpio];
-}
+const unsigned long _light_iofunc[16] PROGMEM = {
+    FUNC_GPIO0, FUNC_GPIO1, FUNC_GPIO2, FUNC_GPIO3,
+    FUNC_GPIO4, FUNC_GPIO5, FUNC_GPIO6, FUNC_GPIO7,
+    FUNC_GPIO8, FUNC_GPIO9, FUNC_GPIO10, FUNC_GPIO11,
+    FUNC_GPIO12, FUNC_GPIO13, FUNC_GPIO14, FUNC_GPIO15
+};
 
 #endif
 
@@ -1293,11 +1307,12 @@ void lightSetup() {
         uint32 pwm_duty_init[PWM_CHANNEL_NUM_MAX];
         uint32 io_info[PWM_CHANNEL_NUM_MAX][3];
         for (unsigned int i=0; i < _light_channel.size(); i++) {
+            const auto pin = _light_channel.at(i).pin;
             pwm_duty_init[i] = 0;
-            io_info[i][0] = getIOMux(_light_channel[i].pin);
-            io_info[i][1] = getIOFunc(_light_channel[i].pin);
-            io_info[i][2] = _light_channel[i].pin;
-            pinMode(_light_channel[i].pin, OUTPUT);
+            io_info[i][0] = pgm_read_dword(&_light_iomux[pin]);
+            io_info[i][1] = pgm_read_dword(&_light_iofunc[pin]);
+            io_info[i][2] = pin;
+            pinMode(pin, OUTPUT);
         }
         pwm_init(LIGHT_MAX_PWM, pwm_duty_init, PWM_CHANNEL_NUM_MAX, io_info);
         pwm_start();
