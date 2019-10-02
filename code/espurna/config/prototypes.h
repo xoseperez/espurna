@@ -3,7 +3,6 @@
 #include <functional>
 #include <vector>
 #include <memory>
-#include <core_version.h>
 
 extern "C" {
     #include "user_interface.h"

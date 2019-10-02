@@ -130,6 +130,11 @@
 #define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
 #endif
 
+#ifndef TELNET_SERVER_ASYNC_BUFFERED
+#define TELNET_SERVER_ASYNC_BUFFERED         0  // Enable buffered output for telnet server (+1.4Kb)
+                                                // Helps to avoid lost data with lwip2 TCP_MSS=536 option
+#endif
+
 //------------------------------------------------------------------------------
 // TERMINAL
 //------------------------------------------------------------------------------

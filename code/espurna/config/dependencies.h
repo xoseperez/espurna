@@ -86,3 +86,8 @@
 #undef MDNS_CLIENT_SUPPORT
 #define MDNS_CLIENT_SUPPORT         0          // default resolver already handles this
 #endif
+
+#if not defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+#undef TELNET_SERVER_ASYNC_BUFFERED
+#define TELNET_SERVER_ASYNC_BUFFERED 1         // enable buffered telnet by default on latest Cores
+#endif

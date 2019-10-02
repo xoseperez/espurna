@@ -14,19 +14,21 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 #define TELNET_XEOF 0xEC
 
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-    using TServer = WiFiServer;
-    using TClient = WiFiClient;
-#else
+    using TTelnetServer = WiFiServer;
+    using TTelnetClient = WiFiClient;
+
+#elif TELNET_SERVER == TELNET_SERVER_ASYNC
     #include <ESPAsyncTCP.h>
     #include <Schedule.h>
+    using TTelnetServer = AsyncServer;
+
+#if TELNET_SERVER_ASYNC_BUFFERED
     #include <deque>
-    using TServer = AsyncServer;
 
     struct AsyncTelnetClient {
         using container_t = std::vector<uint8_t>;
 
-        AsyncTelnetClient(unsigned char id, AsyncClient* client) :
-            _id(id),
+        AsyncTelnetClient(AsyncClient* client) :
             _client(client)
         {
             _client->onAck(_s_onAck, this);
@@ -46,17 +48,23 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
         void close(bool now = false);
         bool connected();
 
-        unsigned char _id;
         AsyncClient* _client;
 
         container_t _current;
         std::deque<container_t> _queue;
     };
-    using TClient = AsyncTelnetClient;
-#endif
 
-TServer _telnetServer(TELNET_PORT);
-std::unique_ptr<TClient> _telnetClients[TELNET_MAX_CLIENTS];
+    using TTelnetClient = AsyncTelnetClient;
+
+#else
+    using TTelnetClient = AsyncClient;
+
+#endif // TELNET_SERVER_ASYNC_BUFFERED
+
+#endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
+
+TTelnetServer _telnetServer(TELNET_PORT);
+std::unique_ptr<TTelnetClient> _telnetClients[TELNET_MAX_CLIENTS];
 
 bool _telnetAuth = TELNET_AUTHENTICATION;
 bool _telnetClientsAuth[TELNET_MAX_CLIENTS];
@@ -105,6 +113,8 @@ void _telnetCleanUp() {
 void _telnetDisconnect(unsigned char clientId) {
     _telnetClients[clientId]->close();
 }
+
+#if TELNET_SERVER_ASYNC_BUFFERED
 
 void AsyncTelnetClient::_trySend(AsyncTelnetClient* client) {
     if (!client->_queue.empty()) {
@@ -183,6 +193,8 @@ void AsyncTelnetClient::close(bool now) {
 bool AsyncTelnetClient::connected() {
     return _client->connected();
 }
+
+#endif // TELNET_SERVER_ASYNC_BUFFERED
 
 #endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
 
@@ -296,7 +308,7 @@ void _telnetLoop() {
         for (i = 0; i < TELNET_MAX_CLIENTS; i++) {
             if (!_telnetClients[i] || !_telnetClients[i]->connected()) {
 
-                _telnetClients[i] = std::unique_ptr<WiFiClient>(new WiFiClient(_telnetServer.available()));
+                _telnetClients[i] = std::make_unique<TTelnetClient>(_telnetServer.available());
 
                 if (_telnetClients[i]->localIP() != WiFi.softAPIP()) {
                     // Telnet is always available for the ESPurna Core image
@@ -381,7 +393,13 @@ void _telnetNewClient(AsyncClient* client) {
                 _telnetCleanUp();
             });
 
-            _telnetClients[i] = std::make_unique<AsyncTelnetClient>(i, client);
+            // XXX: AsyncClient does not have copy ctor
+            #if TELNET_SERVER_ASYNC_BUFFERED
+                _telnetClients[i] = std::make_unique<TTelnetClient>(client);
+            #else
+                _telnetClients[i] = std::unique_ptr<TTelnetClient>(client);
+            #endif // TELNET_SERVER_ASYNC_BUFFERED
+
             _telnetNotifyConnected(i);
 
             return;
