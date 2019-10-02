@@ -26,6 +26,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
     #include <deque>
 
     struct AsyncTelnetClient {
+        constexpr static const size_t QUEUE_MAX_SIZE = 4;
         using container_t = std::vector<uint8_t>;
 
         AsyncTelnetClient(AsyncClient* client) :
@@ -35,6 +36,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
             _client->onPoll(_s_onPoll, this);
         }
 
+        void _addQueueElem();
         static void _trySend(AsyncTelnetClient* client);
         static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
         static void _s_onPoll(void* client_ptr, AsyncClient* client);
@@ -50,7 +52,6 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 
         AsyncClient* _client;
 
-        container_t _current;
         std::deque<container_t> _queue;
     };
 
@@ -118,19 +119,10 @@ void _telnetDisconnect(unsigned char clientId) {
 
 void AsyncTelnetClient::_trySend(AsyncTelnetClient* client) {
     if (!client->_queue.empty()) {
-        auto& chunk = client->_queue.back();
+        auto& chunk = client->_queue.front();
         if (client->_client->space() >= chunk.size()) {
             client->_client->write((const char*)chunk.data(), chunk.size());
-            client->_queue.pop_back();
-        }
-        return;
-    }
-
-    const auto current_size = client->_current.size();
-    if (current_size) {
-        if (client->_client->space() >= current_size) {
-            client->_client->write((const char*)client->_current.data(), client->_current.size());
-            client->_current.clear();
+            client->_queue.pop_front();
         }
         return;
     }
@@ -144,26 +136,35 @@ void AsyncTelnetClient::_s_onPoll(void* client_ptr, AsyncClient* client) {
     _trySend(reinterpret_cast<AsyncTelnetClient*>(client_ptr));
 }
 
+void AsyncTelnetClient::_addQueueElem() {
+    _queue.emplace_back();
+    _queue.back().reserve(TCP_MSS);
+}
+
 size_t AsyncTelnetClient::write(const char* data, size_t size) {
 
-    const size_t written = _client->add(data, size);
-    if (written == size) return size;
+    if (_queue.size() > AsyncTelnetClient::QUEUE_MAX_SIZE) return 0;
+
+    size_t written = 0;
+    if (_queue.empty()) {
+        written = _client->add(data, size);
+        if (written == size) return size;
+    }
 
     const size_t full_size = size;
     char* data_ptr = const_cast<char*>(data + written);
     size -= written;
 
-    _current.reserve(TCP_MSS);
-
     while (size) {
-        const auto have = _current.capacity() - _current.size();
+        if (_queue.empty()) _addQueueElem();
+        auto& back = _queue.back();
+        const auto have = back.capacity() - back.size();
         if (have >= size) {
-            _current.insert(_current.end(), data_ptr, data_ptr + size);
+            back.insert(back.end(), data_ptr, data_ptr + size);
             size = 0;
         } else {
-            _current.insert(_current.end(), data_ptr, data_ptr + have);
-            _queue.push_front(_current);
-            _current.clear();
+            back.insert(back.end(), data_ptr, data_ptr + have);
+            _addQueueElem();
             data_ptr += have;
             size -= have;
         }
