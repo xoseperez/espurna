@@ -118,11 +118,12 @@ void _telnetDisconnect(unsigned char clientId) {
 #if TELNET_SERVER_ASYNC_BUFFERED
 
 void AsyncTelnetClient::_trySend(AsyncTelnetClient* client) {
-    if (!client->_buffers.empty()) {
+    while (!client->_buffers.empty()) {
         auto& chunk = client->_buffers.front();
         if (client->_client->space() >= chunk.size()) {
             client->_client->write((const char*)chunk.data(), chunk.size());
             client->_buffers.pop_front();
+            continue;
         }
         return;
     }
