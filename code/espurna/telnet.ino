@@ -50,7 +50,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
         void close(bool now = false);
         bool connected();
 
-        AsyncClient* _client;
+        std::unique_ptr<AsyncClient> _client;
 
         std::list<buffer_t> _buffers;
     };
