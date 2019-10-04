@@ -3,8 +3,12 @@
 TELNET MODULE
 
 Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
+
 Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 (https://github.com/sarfata/kbox-firmware/tree/master/src/esp)
+
+AsyncBufferedClient based on ESPAsyncTCPbuffer, distributed with the ESPAsyncTCP
+(https://github.com/me-no-dev/ESPAsyncTCP/blob/master/src/ESPAsyncTCPbuffer.cpp)
 
 */
 
@@ -25,11 +29,11 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
 #if TELNET_SERVER_ASYNC_BUFFERED
     #include <list>
 
-    struct AsyncTelnetClient {
+    struct AsyncBufferedClient {
         constexpr static const size_t BUFFERS_MAX = 5;
         using buffer_t = std::vector<uint8_t>;
 
-        AsyncTelnetClient(AsyncClient* client) :
+        AsyncBufferedClient(AsyncClient* client) :
             _client(client)
         {
             _client->onAck(_s_onAck, this);
@@ -37,7 +41,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
         }
 
         void _addBuffer();
-        static void _trySend(AsyncTelnetClient* client);
+        static void _trySend(AsyncBufferedClient* client);
         static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
         static void _s_onPoll(void* client_ptr, AsyncClient* client);
 
@@ -55,7 +59,7 @@ Parts of the code have been borrowed from Thomas Sarlandie's NetServer
         std::list<buffer_t> _buffers;
     };
 
-    using TTelnetClient = AsyncTelnetClient;
+    using TTelnetClient = AsyncBufferedClient;
 
 #else
     using TTelnetClient = AsyncClient;
@@ -117,7 +121,7 @@ void _telnetDisconnect(unsigned char clientId) {
 
 #if TELNET_SERVER_ASYNC_BUFFERED
 
-void AsyncTelnetClient::_trySend(AsyncTelnetClient* client) {
+void AsyncBufferedClient::_trySend(AsyncBufferedClient* client) {
     while (!client->_buffers.empty()) {
         auto& chunk = client->_buffers.front();
         if (client->_client->space() >= chunk.size()) {
@@ -129,23 +133,23 @@ void AsyncTelnetClient::_trySend(AsyncTelnetClient* client) {
     }
 }
 
-void AsyncTelnetClient::_s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t) {
-    _trySend(reinterpret_cast<AsyncTelnetClient*>(client_ptr));
+void AsyncBufferedClient::_s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t) {
+    _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
 }
 
-void AsyncTelnetClient::_s_onPoll(void* client_ptr, AsyncClient* client) {
-    _trySend(reinterpret_cast<AsyncTelnetClient*>(client_ptr));
+void AsyncBufferedClient::_s_onPoll(void* client_ptr, AsyncClient* client) {
+    _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
 }
 
-void AsyncTelnetClient::_addBuffer() {
+void AsyncBufferedClient::_addBuffer() {
     // Note: c++17 emplace returns created object reference
     _buffers.emplace_back();
     _buffers.back().reserve(TCP_MSS);
 }
 
-size_t AsyncTelnetClient::write(const char* data, size_t size) {
+size_t AsyncBufferedClient::write(const char* data, size_t size) {
 
-    if (_buffers.size() > AsyncTelnetClient::BUFFERS_MAX) return 0;
+    if (_buffers.size() > AsyncBufferedClient::BUFFERS_MAX) return 0;
 
     size_t written = 0;
     if (_buffers.empty()) {
@@ -176,24 +180,24 @@ size_t AsyncTelnetClient::write(const char* data, size_t size) {
 
 }
 
-size_t AsyncTelnetClient::write(char c) {
+size_t AsyncBufferedClient::write(char c) {
     char _c[1] {c};
     return write(_c, 1);
 }
 
-void AsyncTelnetClient::flush() {
+void AsyncBufferedClient::flush() {
     _client->send();
 }
 
-size_t AsyncTelnetClient::available() {
+size_t AsyncBufferedClient::available() {
     return _client->space();
 }
 
-void AsyncTelnetClient::close(bool now) {
+void AsyncBufferedClient::close(bool now) {
     _client->close(now);
 }
 
-bool AsyncTelnetClient::connected() {
+bool AsyncBufferedClient::connected() {
     return _client->connected();
 }
 
