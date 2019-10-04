@@ -114,9 +114,9 @@ void _telnetCleanUp() {
     });
 }
 
-// just mark as closed, clean-up method above will destroy the object later
+// just close, clean-up method above will destroy the object later
 void _telnetDisconnect(unsigned char clientId) {
-    _telnetClients[clientId]->close();
+    _telnetClients[clientId]->close(true);
 }
 
 #if TELNET_SERVER_ASYNC_BUFFERED
