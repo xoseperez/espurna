@@ -197,7 +197,7 @@ class EventSensor : public BaseSensor {
         unsigned char _trigger_value = false;
 
         unsigned char _gpio = GPIO_NONE;
-        unsigned char _pin_mode = INPUT;
+        unsigned char _pin_mode = INPUT_PULLUP;
         unsigned char _interrupt_mode = RISING;
 
 };
