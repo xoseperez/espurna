@@ -22,5 +22,10 @@ namespace Light {
     constexpr const long PWM_MIN = LIGHT_MIN_PWM;
     constexpr const long PWM_MAX = LIGHT_MAX_PWM;
     constexpr const long PWM_LIMIT = LIGHT_LIMIT_PWM;
-}
 
+    enum Communications : unsigned char {
+        COMMS_NONE = 0,
+        COMMS_NORMAL = 1 << 0,
+        COMMS_GROUP = 1 << 1
+    };
+}

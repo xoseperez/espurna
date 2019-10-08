@@ -819,12 +819,12 @@ bool lightUseCCT() {
     return _light_use_cct;
 }
 
-void _lightComms(unsigned char mask) {
+void _lightComms(const unsigned char mask) {
 
-    // Report color & brightness to MQTT broker
+    // Report color and brightness to MQTT broker
     #if MQTT_SUPPORT
-        if (mask & 0x01) lightMQTT();
-        if (mask & 0x02) lightMQTTGroup();
+        if (mask & Light::COMMS_NORMAL) lightMQTT();
+        if (mask & Light::COMMS_GROUP) lightMQTTGroup();
     #endif
 
     // Report color to WS clients (using current brightness setting)
@@ -856,13 +856,13 @@ void lightUpdate(bool save, bool forward, bool group_forward) {
 
     // Channel transition will be handled by the provider function
     // User can configure total transition time, step time is a fixed value
-    unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
+    const unsigned long steps = _light_use_transitions ? _light_transition_time / LIGHT_TRANSITION_STEP : 1;
     _light_transition_ticker.once_ms(LIGHT_TRANSITION_STEP, _lightProviderScheduleUpdate, steps);
 
     // Delay every communication 100ms to avoid jamming
-    unsigned char mask = 0;
-    if (forward) mask += 1;
-    if (group_forward) mask += 2;
+    const unsigned char mask =
+        ((forward) ? Light::COMMS_NORMAL : Light::COMMS_NONE) |
+        ((group_forward) ? Light::COMMS_GROUP : Light::COMMS_NONE);
     _light_comms_ticker.once_ms(LIGHT_COMMS_DELAY, _lightComms, mask);
 
     _lightSaveRtcmem();
