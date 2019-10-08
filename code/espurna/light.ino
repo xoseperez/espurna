@@ -453,19 +453,18 @@ void _toLong(char * color, size_t len) {
     _toLong(color, len, false);
 }
 
-void _toCSV(char * buffer, size_t len, bool applyBrightness, bool target) {
-    char num[10];
-    float b = applyBrightness ? (float) _light_brightness / Light::BRIGHTNESS_MAX : 1;
-    for (unsigned char i=0; i<_light_channel.size(); i++) {
-        itoa((target ? _light_channel[i].target : _light_channel[i].inputValue) * b, num, 10);
-        if (i>0) strncat(buffer, ",", len--);
-        strncat(buffer, num, len);
-        len = len - strlen(num);
-    }
-}
+String _toCSV(bool target) {
+    const auto channels = lightChannels();
 
-void _toCSV(char * buffer, size_t len, bool applyBrightness) {
-    _toCSV(buffer, len, applyBrightness, false);
+    String result;
+    result.reserve(4 * channels);
+
+    for (auto& channel : _light_channel) {
+        if (result.length()) result += ',';
+        result += String(target ? channel.target : channel.inputValue);
+    }
+
+    return result;
 }
 
 // See cores/esp8266/WMath.cpp::map
@@ -673,7 +672,7 @@ void _lightMQTTCallback(unsigned int type, const char * topic, const char * payl
     if (type == MQTT_MESSAGE_EVENT) {
 
         // Group color
-        if ((mqtt_group_color.length() > 0) & (mqtt_group_color.equals(topic))) {
+        if ((mqtt_group_color.length() > 0) && (mqtt_group_color.equals(topic))) {
             lightColor(payload, true);
             lightUpdate(true, mqttForward(), false);
             return;
@@ -777,11 +776,9 @@ void lightMQTT() {
 }
 
 void lightMQTTGroup() {
-    String mqtt_group_color = getSetting("mqttGroupColor");
-    if (mqtt_group_color.length()>0) {
-        char buffer[20];
-        _toCSV(buffer, sizeof(buffer), true);
-        mqttSendRaw(mqtt_group_color.c_str(), buffer);
+    const String mqtt_group_color = getSetting("mqttGroupColor");
+    if (mqtt_group_color.length()) {
+        mqttSendRaw(mqtt_group_color.c_str(), _toCSV(false).c_str());
     }
 }
 
