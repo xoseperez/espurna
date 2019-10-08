@@ -196,7 +196,7 @@ void _lightApplyBrightnessColor() {
 }
 
 String lightDesc(unsigned char id) {
-    if (id >= _light_channel.size()) return F("UNKNOWN");
+    if (id >= _light_channel.size()) return FPSTR(pstr_unknown);
 
     const char tag = pgm_read_byte(&_light_channel_desc[_light_channel.size() - 1][id]);
     switch (tag) {
@@ -208,7 +208,7 @@ String lightDesc(unsigned char id) {
         default: break;
     }
 
-    return F("UNKNOWN");
+    return FPSTR(pstr_unknown);
 }
 
 // -----------------------------------------------------------------------------
