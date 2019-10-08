@@ -181,7 +181,7 @@ void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 // Lights
 // -----------------------------------------------------------------------------
 
-unsigned char lightChannels();
+size_t lightChannels();
 
 void lightState(unsigned char i, bool state);
 bool lightState(unsigned char i);
@@ -189,11 +189,14 @@ bool lightState(unsigned char i);
 void lightState(bool state);
 bool lightState();
 
-void lightBrightness(unsigned int brightness);
-unsigned int lightBrightness();
+void lightBrightness(long brightness);
+long lightBrightness();
 
-unsigned int lightChannel(unsigned char id);
-void lightChannel(unsigned char id, unsigned char value);
+long lightChannel(unsigned char id);
+void lightChannel(unsigned char id, long value);
+
+void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
+void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP);
 
 // -----------------------------------------------------------------------------
 // MQTT
