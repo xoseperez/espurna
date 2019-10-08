@@ -225,31 +225,21 @@ void _fromLong(unsigned long value, bool brightness) {
 }
 
 void _fromRGB(const char * rgb) {
-    char * p = (char *) rgb;
-    if (strlen(p) == 0) return;
+    // 9 char #........ , 11 char ...,...,...
+    if (!_light_has_color) return;
+    if (!rgb || (strlen(rgb) == 0)) return;
 
-    switch (p[0]) {
-      case '#': // HEX Value
-        if (_light_has_color) {
-            ++p;
-            unsigned long value = strtoul(p, NULL, 16);
-            // RGBA values are interpreted like RGB + brightness
-            _fromLong(value, strlen(p) > 7);
-        }
-        break;
-      case 'M': // Mired Value
-          _fromMireds(atol(p + 1));
-        break;
-      case 'K': // Kelvin Value
-          _fromKelvin(atol(p + 1));
-        break;
-      default: // assume decimal values separated by commas
-        char * tok;
+    // HEX value is always prefixed, like CSS
+    // values are interpreted like RGB + optional brightness
+    if (rgb[0] == '#') {
+        _fromLong(strtoul(rgb + 1, nullptr, 16), strlen(rgb + 1) > 7);
+    // With comma separated string, assume decimal values
+    } else {
+        const auto channels = _light_channel.size();
         unsigned char count = 0;
 
-        const auto channels = _light_channel.size();
         char buf[16] = {0};
-        memmove(buf, rgb, sizeof(buf));
+        strncpy(buf, rgb, sizeof(buf) - 1);
         char *tok = strtok(buf, ",");
         while (tok != NULL) {
             _setInputValue(count, atoi(tok));
@@ -269,16 +259,16 @@ void _fromRGB(const char * rgb) {
 //   0 <= S <= 100
 //   0 <= V <= 100
 void _fromHSV(const char * hsv) {
-
-    char * ptr = (char *) hsv;
-    if (strlen(ptr) == 0) return;
     if (!_light_has_color) return;
+    if (strlen(hsv) == 0) return;
 
-    char * tok;
+    char buf[16] = {0};
+    strncpy(buf, hsv, sizeof(buf) - 1);
+
     unsigned char count = 0;
     unsigned int value[3] = {0};
 
-    tok = strtok(ptr, ",");
+    char * tok = strtok(buf, ",");
     while (tok != NULL) {
         value[count] = atoi(tok);
         if (++count == 3) break;
@@ -292,14 +282,14 @@ void _fromHSV(const char * hsv) {
     //IS: [145,0,0]
     //SHOULD: [255,0,0]
 
-    double h = (value[0] == 360) ? 0 : (double) value[0] / 60.0;
-    double f = (h - floor(h));
-    double s = (double) value[1] / 100.0;
+    const double h = (value[0] == 360) ? 0 : (double) value[0] / 60.0;
+    const double f = (h - floor(h));
+    const double s = (double) value[1] / 100.0;
 
     _light_brightness = lround((double) value[2] * (static_cast<double>(Light::BRIGHTNESS_MAX) / 100.0)); // (default 255/100)
-    unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
-    unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
-    unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
+    const unsigned char p = lround(Light::VALUE_MAX * (1.0 - s));
+    const unsigned char q = lround(Light::VALUE_MAX * (1.0 - s * f));
+    const unsigned char t = lround(Light::VALUE_MAX * (1.0 - s * (1.0 - f)));
 
     switch (int(h)) {
         case 0:
