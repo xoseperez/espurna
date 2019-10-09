@@ -130,6 +130,13 @@
 #define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
 #endif
 
+// Enable this flag to add support for reverse telnet (+800 bytes)
+// This is useful to telnet to a device behind a NAT or firewall
+// To use this feature, start a listen server on a publicly reachable host with e.g. "ncat -vlp <port>" and use the MQTT reverse telnet command to connect
+#ifndef TELNET_REVERSE_SUPPORT
+#define TELNET_REVERSE_SUPPORT  0
+#endif
+
 //------------------------------------------------------------------------------
 // TERMINAL
 //------------------------------------------------------------------------------
@@ -1068,6 +1075,7 @@
 #define MQTT_TOPIC_IRIN             "irin"
 #define MQTT_TOPIC_IROUT            "irout"
 #define MQTT_TOPIC_OTA              "ota"
+#define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
 
 // Light module
 #define MQTT_TOPIC_CHANNEL          "channel"
