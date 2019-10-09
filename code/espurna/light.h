@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// Light
+// Lights
 // -----------------------------------------------------------------------------
 
 #pragma once
@@ -29,3 +29,20 @@ namespace Light {
         COMMS_GROUP = 1 << 1
     };
 }
+
+size_t lightChannels();
+
+void lightState(unsigned char i, bool state);
+bool lightState(unsigned char i);
+
+void lightState(bool state);
+bool lightState();
+
+void lightBrightness(long brightness);
+long lightBrightness();
+
+long lightChannel(unsigned char id);
+void lightChannel(unsigned char id, long value);
+
+void lightBrightnessStep(long steps, long multiplier = LIGHT_STEP);
+void lightChannelStep(unsigned char id, long steps, long multiplier = LIGHT_STEP);

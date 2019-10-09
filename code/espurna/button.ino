@@ -15,6 +15,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <DebounceEvent.h>
 #include <vector>
 
+#include "light.h"
+
 typedef struct {
     DebounceEvent * button;
     unsigned long actions;
